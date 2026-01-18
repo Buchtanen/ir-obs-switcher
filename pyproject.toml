@@ -1,0 +1,39 @@
+[project]
+name = "irswitch"
+version = "0.1.0"
+description = "iRacing to OBS auto scene switcher"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+
+dependencies = [
+  "aiohttp>=3.9",
+  "obsws-python>=1.6",
+  "pydantic>=2.6",
+  "pyirsdk>=1.3",
+  "textual>=0.60",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=7.4",
+  "pytest-asyncio>=0.23",
+  "freezegun>=1.4",
+]
+
+[project.scripts]
+irswitchd = "irswitch.main:main"
+irswitch-tui = "irswitch_tui.main:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
