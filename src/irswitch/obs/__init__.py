@@ -1,0 +1,1 @@
+"""OBS websocket client package."""
