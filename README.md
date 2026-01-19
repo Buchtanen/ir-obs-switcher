@@ -363,26 +363,40 @@ Viz `config/config.example.ini` pro kompletní příklad.
     - Nižší hodnoty (20-50) = méně historie, menší paměť
   - **Příklad**: `dashboard_event_log_size = 50`
 
+- **`log_file`** (volitelné)
+  - Cesta k log souboru (relativní k working directory)
+  - **Kdy použít**: Pokud chceš logy do souboru místo jen na konzoli
+  - **Příklad**: `log_file = logs/irswitch.log` (relativní) nebo `log_file = C:/irswitch/logs/irswitch.log` (absolutní)
+
+- **`log_max_bytes`** (výchozí: `10485760` = 10 MB)
+  - Maximální velikost log souboru před rotací
+  - **Příklad**: `log_max_bytes = 10485760`
+
+- **`log_backup_count`** (výchozí: `5`)
+  - Počet backup log souborů k uchování
+  - **Příklad**: `log_backup_count = 5`
+
 - **`dashboard_gr_background_image`** (volitelné)
   - Cesta k obrázku pozadí pro GR dashboard (`/gr-status`)
   - **Kdy použít**: Pokud chceš vlastní pozadí místo černé
-  - **Příklad**: `dashboard_gr_background_image = C:/path/to/background.png`
+  - **Poznámka**: Cesta je relativní k working directory
+  - **Příklad**: `dashboard_gr_background_image = images/background.png` (relativní) nebo `dashboard_gr_background_image = C:/path/to/background.png` (absolutní)
 
 - **`dashboard_gr_logo_obs`** (volitelné)
-  - Cesta k OBS logu pro GR dashboard
-  - **Příklad**: `dashboard_gr_logo_obs = C:/path/to/obs_logo.png`
+  - Cesta k OBS logu pro GR dashboard (relativní k working directory)
+  - **Příklad**: `dashboard_gr_logo_obs = images/obs_logo.png`
 
 - **`dashboard_gr_logo_iracing`** (volitelné)
-  - Cesta k iRacing logu pro GR dashboard
-  - **Příklad**: `dashboard_gr_logo_iracing = C:/path/to/iracing_logo.png`
+  - Cesta k iRacing logu pro GR dashboard (relativní k working directory)
+  - **Příklad**: `dashboard_gr_logo_iracing = images/iracing_logo.png`
 
 - **`dashboard_gr_logo_app`** (volitelné)
-  - Cesta k logu aplikace pro GR dashboard
-  - **Příklad**: `dashboard_gr_logo_app = C:/path/to/app_logo.png`
+  - Cesta k logu aplikace pro GR dashboard (relativní k working directory)
+  - **Příklad**: `dashboard_gr_logo_app = images/app_logo.png`
 
 - **`dashboard_vr_icons_path`** (volitelné)
-  - Cesta k adresáři s ikonami pro VR dashboard (`/vr-status`)
-  - **Příklad**: `dashboard_vr_icons_path = C:/path/to/vr_icons/`
+  - Cesta k adresáři s ikonami pro VR dashboard (`/vr-status`) (relativní k working directory)
+  - **Příklad**: `dashboard_vr_icons_path = icons/` (relativní) nebo `dashboard_vr_icons_path = C:/path/to/vr_icons/` (absolutní)
 
 ## Spuštění (Windows)
 
@@ -410,15 +424,17 @@ pytest
 
 **Test coverage**: Projekt obsahuje 50+ unit testů pokrývajících všechny klíčové komponenty včetně E2E testů hlavní smyčky.
 
-## Vytvoření EXE souborů
+## Build a distribuce
 
-### Automatické build skripty
+### Vytvoření EXE souboru
+
+Aplikace se builduje jako **silent background proces** (bez konzole) pomocí PyInstaller.
 
 **Windows (PowerShell)**:
 ```powershell
 .\build_exe.ps1 --all
-# Nebo jednotlivě:
-.\build_exe.ps1 --core    # Pouze core service
+# Nebo pouze core service:
+.\build_exe.ps1 --core
 ```
 
 **Linux/Mac (Bash)**:
@@ -427,44 +443,135 @@ chmod +x build_exe.sh
 ./build_exe.sh --all
 ```
 
-Výstupní EXE soubory budou v `dist/`:
-- `dist/irswitchd.exe` - Core service
+### Výstup build procesu
 
-### Ruční build (PyInstaller)
+Po buildu najdeš v `dist/` adresáři kompletní distribuci:
 
-Pokud preferuješ ruční build:
-
-**Core service**:
-```powershell
-pip install pyinstaller
-pyinstaller --onefile --name irswitchd --collect-all irswitch src\irswitch\main.py
+```
+dist/
+  ├── irswitchd.exe          # Hlavní aplikace (silent, bez konzole)
+  ├── config/
+  │   ├── config.example.ini  # Příklad konfigurace
+  │   └── config.ini         # Tvá konfigurace (uprav si)
+  └── README.txt             # Instrukce k použití
 ```
 
-### Spuštění EXE
+**Důležité**: Celý `dist/` adresář je samostatná distribuce - můžeš ho zkopírovat kamkoliv a spustit.
 
-**Core service**:
+### Instalace a provoz
+
+#### 1. Příprava konfigurace
+
+1. Zkopíruj `dist/config/config.example.ini` na `dist/config/config.ini`
+2. Uprav `config.ini` podle svých potřeb:
+   - Nastav OBS WebSocket heslo
+   - Uprav názvy scén podle OBS
+   - Nastav cesty k obrázkům (pokud používáš)
+
+#### 2. Spuštění aplikace
+
+**Z adresáře `dist/`**:
 ```powershell
-dist\irswitchd.exe --config config\config.ini
+cd dist
+.\irswitchd.exe --config config\config.ini
 ```
 
-## Instalace jako Windows Service
+Aplikace běží **silent na pozadí** (bez konzole). Pro zastavení:
+- Použij GR Dashboard (`http://127.0.0.1:17321/gr-status`) a klikni "Shutdown Service"
+- Nebo použij Task Manager a ukonči proces `irswitchd.exe`
 
-Doporučený postup je použít [NSSM](https://nssm.cc/) (Non-Sucking Service Manager).
+#### 3. Logování
+
+- **Výchozí**: Logy jdou na konzoli (stderr) - pokud spouštíš z PowerShell, uvidíš je
+- **Do souboru**: Nastav v `config.ini`:
+  ```ini
+  [app]
+  log_file = logs/irswitch.log
+  log_max_bytes = 10485760  # 10 MB
+  log_backup_count = 5      # Počet backup souborů
+  ```
+  Log soubory se automaticky rotují při dosažení maximální velikosti.
+
+#### 4. Automatické spuštění při startu systému
+
+**Možnost A: Windows Task Scheduler** (doporučeno pro EXE)
+
+1. Otevři Task Scheduler (`taskschd.msc`)
+2. Vytvoř nový task:
+   - **Trigger**: "At startup"
+   - **Action**: Start a program
+   - **Program**: `C:\path\to\dist\irswitchd.exe`
+   - **Arguments**: `--config C:\path\to\dist\config\config.ini`
+   - **Start in**: `C:\path\to\dist`
+   - **Run whether user is logged on or not**: ✓ (volitelné)
+
+**Možnost B: Windows Service (NSSM)**
+
+Pokud preferuješ Windows Service, použij [NSSM](https://nssm.cc/):
 
 ```powershell
+# Stáhni a rozbal NSSM do C:\nssm\
 nssm install irswitchd
 ```
 
 V GUI nastav:
 - **Path**: `C:\path\to\dist\irswitchd.exe`
-- **Arguments**: `--config C:\path\to\config\config.ini`
-- **Startup directory**: složka s EXE
+- **Arguments**: `--config C:\path\to\dist\config\config.ini`
+- **Startup directory**: `C:\path\to\dist`
+- **Startup**: Automatic
 
-Poté službu spusť:
-
+Spuštění služby:
 ```powershell
 nssm start irswitchd
 ```
+
+Zastavení služby:
+```powershell
+nssm stop irswitchd
+```
+
+Odinstalace služby:
+```powershell
+nssm remove irswitchd confirm
+```
+
+### Cesty v konfiguraci
+
+**Důležité**: Všechny cesty v `config.ini` jsou **relativní vzhledem k working directory** (adresáři, ze kterého spouštíš aplikaci).
+
+**Příklady**:
+- Pokud spouštíš z `C:\irswitch\dist\`:
+  ```ini
+  log_file = logs/irswitch.log              # → C:\irswitch\dist\logs\irswitch.log
+  dashboard_gr_background_image = bg.png    # → C:\irswitch\dist\bg.png
+  dashboard_vr_icons_path = icons/          # → C:\irswitch\dist\icons\
+  ```
+
+- Pokud chceš absolutní cesty, použij plnou cestu:
+  ```ini
+  log_file = C:/irswitch/logs/irswitch.log
+  dashboard_gr_background_image = C:/irswitch/bg.png
+  ```
+
+**Tip**: Pro distribuci doporučujeme používat relativní cesty - aplikace pak funguje bez úprav, i když ji přesuneš do jiného adresáře.
+
+### Ruční build (PyInstaller)
+
+Pokud preferuješ ruční build:
+
+```powershell
+pip install pyinstaller
+pyinstaller --onefile `
+    --name irswitchd `
+    --noconsole `
+    --collect-all irswitch `
+    --distpath dist `
+    --workpath build `
+    --clean `
+    src\irswitch\main.py
+```
+
+**Poznámka**: `--noconsole` vytváří silent EXE bez konzole (doporučeno pro background proces).
 
 ## Stavový model (návrh)
 
@@ -669,13 +776,24 @@ Widget zobrazí "JS JEDE" pokud JavaScript funguje správně.
 
 ### Jak zkontrolovat logy
 
-Logy se vypisují na stderr (konzole). Pro uložení do souboru:
+**Výchozí chování**:
+- Logy se vypisují na stderr (konzole)
+- Pokud spouštíš z PowerShell, uvidíš je v konzoli
 
-```powershell
-irswitchd --config config/config.ini 2> irswitch.log
-```
+**Logování do souboru**:
+1. Nastav v `config.ini`:
+   ```ini
+   [app]
+   log_file = logs/irswitch.log
+   log_max_bytes = 10485760  # 10 MB
+   log_backup_count = 5
+   ```
+2. Log soubory se automaticky rotují při dosažení maximální velikosti
+3. Backup soubory: `irswitch.log.1`, `irswitch.log.2`, atd.
 
-Nebo změň `log_level = DEBUG` v config pro více detailů.
+**Poznámka**: Cesty k log souborům jsou relativní k working directory (adresáři, ze kterého spouštíš aplikaci).
+
+**Pro více detailů**: Změň `log_level = DEBUG` v config.
 
 **Strukturované logy**:
 - `state_changed` - změna stavu

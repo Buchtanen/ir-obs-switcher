@@ -25,6 +25,9 @@ class AppConfig:
     http_port: int
     log_level: str
     notifications_enabled: bool
+    log_file: str | None  # Optional: path to log file
+    log_max_bytes: int  # Maximum log file size before rotation
+    log_backup_count: int  # Number of backup log files to keep
 
     # [iracing]
     poll_hz: int
@@ -78,6 +81,13 @@ class AppConfig:
         http_port = parser.getint("app", "http_port")
         log_level = app_section.get("log_level", "INFO").upper()
         notifications_enabled = parser.getboolean("app", "notifications_enabled", fallback=True)
+        log_file = app_section.get("log_file") or None
+        log_max_bytes = parser.getint("app", "log_max_bytes", fallback=10 * 1024 * 1024)  # 10 MB default
+        if log_max_bytes <= 0:
+            raise ValueError("app.log_max_bytes must be > 0")
+        log_backup_count = parser.getint("app", "log_backup_count", fallback=5)
+        if log_backup_count < 0:
+            raise ValueError("app.log_backup_count must be >= 0")
 
         # [iracing]
         poll_hz = parser.getint("iracing", "poll_hz")
@@ -167,6 +177,9 @@ class AppConfig:
             http_port=http_port,
             log_level=log_level,
             notifications_enabled=notifications_enabled,
+            log_file=log_file,
+            log_max_bytes=log_max_bytes,
+            log_backup_count=log_backup_count,
             poll_hz=poll_hz,
             quit_stall_seconds=quit_stall_seconds,
             obs_ws_url=obs_ws_url,

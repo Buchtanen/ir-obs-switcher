@@ -2,32 +2,64 @@
 from __future__ import annotations
 
 import logging
+import logging.handlers
 import sys
-from typing import Literal
+from pathlib import Path
+from typing import Literal, Optional
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
-def setup_logging(level: str | LogLevel = "INFO") -> None:
+def setup_logging(
+    level: str | LogLevel = "INFO",
+    log_file: Optional[str | Path] = None,
+    max_bytes: int = 10 * 1024 * 1024,  # 10 MB
+    backup_count: int = 5
+) -> None:
     """
     Configure Python logging with structured format.
-
+    
+    Always logs to stderr (console). Optionally logs to file with rotation.
+    
+    Args:
+        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_file: Optional path to log file (if None, logs only to stderr)
+        max_bytes: Maximum log file size before rotation (default: 10 MB)
+        backup_count: Number of backup log files to keep (default: 5)
+    
     Format: timestamp | level | component | message
     """
     log_level = getattr(logging, level.upper(), logging.INFO)
-
+    
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(formatter)
-
+    
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
-    root_logger.addHandler(handler)
-
+    root_logger.handlers.clear()  # Remove existing handlers
+    
+    # Always log to stderr (console)
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setFormatter(formatter)
+    root_logger.addHandler(stderr_handler)
+    
+    # Optionally log to file with rotation
+    if log_file:
+        log_path = Path(log_file)
+        # Create log directory if it doesn't exist
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_path,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding='utf-8'
+        )
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    
     # Prevent duplicate logs
     root_logger.propagate = False
 

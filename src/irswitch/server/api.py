@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from aiohttp import web
 from aiohttp.web_ws import WebSocketResponse
@@ -26,16 +26,24 @@ _current_state: "SwitchState | None" = None
 _state_machine: "StateMachine | None" = None
 _obs_client: "ObsClient | None" = None
 _restart_mode_active: bool = False
+_shutdown_event: Optional[asyncio.Event] = None
 
 
 def reset_state() -> None:
     """Reset global state (for testing)."""
-    global _current_state, _state_machine, _websocket_clients, _obs_client, _restart_mode_active
+    global _current_state, _state_machine, _websocket_clients, _obs_client, _restart_mode_active, _shutdown_event
     _current_state = None
     _state_machine = None
     _websocket_clients = set()
     _obs_client = None
     _restart_mode_active = False
+    _shutdown_event = None
+
+
+def set_shutdown_event(event: asyncio.Event) -> None:
+    """Set shutdown event for API-triggered shutdown."""
+    global _shutdown_event
+    _shutdown_event = event
 
 
 def set_restart_mode(active: bool) -> None:
@@ -323,6 +331,20 @@ async def handle_config_reload(request: web.Request) -> web.Response:
         }, status=400)
 
 
+async def handle_shutdown(request: web.Request) -> web.Response:
+    """Handle POST /shutdown endpoint."""
+    global _shutdown_event
+    if _shutdown_event is None:
+        return web.json_response({"error": "Shutdown not available"}, status=503)
+    
+    logger.info("Shutdown requested via API")
+    _shutdown_event.set()
+    return web.json_response({
+        "status": "shutting_down",
+        "message": "Service shutdown initiated"
+    })
+
+
 async def handle_get_events(request: web.Request) -> web.Response:
     """
     Handle GET /api/events endpoint.
@@ -418,6 +440,7 @@ def create_app() -> web.Application:
     app.router.add_get("/health", handle_health)
     app.router.add_get("/metrics", handle_metrics)
     app.router.add_post("/config/reload", handle_config_reload)
+    app.router.add_post("/shutdown", handle_shutdown)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/vr-status-wrapper", handle_vr_status_wrapper)  # Wrapper with iframe + meta refresh for RaceLab VR

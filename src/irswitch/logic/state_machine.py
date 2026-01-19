@@ -144,8 +144,8 @@ class StateMachine:
                         target_scene = self._policy.target_for_mode(mode)
                         reason = f"grace_period_ended:IDLE"
                     else:
-                        # First IDLE before inspection - keep waiting
-                        target_scene = self._policy.target_for_mode(mode)  # Apply IDLE scene
+                        # First IDLE before inspection - keep waiting, don't switch scene
+                        target_scene = current_state.target_scene  # Keep current scene, don't switch
                         reason = f"grace_period_first_idle"
                 else:
                     target_scene = current_state.target_scene  # Keep current until debounce expires
@@ -166,8 +166,8 @@ class StateMachine:
                         target_scene = self._policy.target_for_mode(mode)
                         reason = f"grace_period_ended:IDLE"
                     else:
-                        # First IDLE before inspection - keep waiting but apply IDLE scene
-                        target_scene = self._policy.target_for_mode(mode)
+                        # First IDLE before inspection - keep waiting, don't switch scene
+                        target_scene = current_state.target_scene  # Keep current scene, don't switch
                         reason = f"grace_period_first_idle"
                 elif elapsed < self._debounce_ms:
                     # Still debouncing

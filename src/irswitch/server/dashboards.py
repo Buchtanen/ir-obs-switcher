@@ -365,11 +365,12 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <div class="status-card">
                 <h3>Stream Duration</h3>
                 <div class="value" id="stream-duration-display">
-                    {format_stream_duration(stream_duration_ms)}
-                    {f' (Session: {format_duration(metrics_dict.get("stream_duration_current_session_seconds"))})' if metrics_dict.get("stream_duration_current_session_seconds") is not None else ''}
+                    {format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}
+                    {f' | {format_stream_duration(stream_duration_ms)}' if stream_duration_ms is not None else ''}
                 </div>
-                <div class="value" style="font-size: 0.9em; color: #aaa; margin-top: 5px;" id="stream-duration-cumulative">
-                    Total: {format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}
+                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                    <span id="stream-duration-label">Cumulative</span>
+                    {f' | <span>Current</span>' if stream_duration_ms is not None else ''}
                 </div>
             </div>
             
@@ -387,17 +388,17 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
                 <h3>Session Type</h3>
-                <div class="value">{state.session_type or 'N/A'}</div>
+                <div class="value" id="session-type">{'N/A' if state.session_type == 'Test' or state.session_type is None else state.session_type}</div>
             </div>
             
             <div class="status-card">
                 <h3>Session Name</h3>
-                <div class="value" style="font-size: 1.2em;">{state.session_name or 'N/A'}</div>
+                <div class="value" style="font-size: 1.2em;" id="session-name">{'N/A' if state.session_type == 'Test' or state.session_name is None else state.session_name}</div>
             </div>
             
             <div class="status-card">
                 <h3>Session Num</h3>
-                <div class="value">{state.session_num if state.session_num is not None else 'N/A'}</div>
+                <div class="value" id="session-num">{'N/A' if state.session_type == 'Test' or state.session_num is None else state.session_num}</div>
             </div>
         </div>
         
@@ -423,7 +424,11 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 <h3>iRacing Connected</h3>
                 <div class="value" id="metrics-iracing-time">
                     {format_duration(metrics_dict.get('iracing_connected_duration_seconds')) if metrics_dict.get('iracing_connected_duration_seconds') is not None else 'N/A'}
-                    {f' ({format_duration(metrics_dict.get("iracing_connected_duration_current_session_seconds"))})' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
+                    {f' | {format_duration(metrics_dict.get("iracing_connected_duration_current_session_seconds"))}' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
+                </div>
+                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                    <span id="metrics-iracing-label">Cumulative</span>
+                    {f' | <span>Current</span>' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
             </div>
             
@@ -431,7 +436,11 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 <h3>OBS Connected</h3>
                 <div class="value" id="metrics-obs-time">
                     {format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else 'N/A'}
-                    {f' ({format_duration(metrics_dict.get("obs_connected_duration_current_session_seconds"))})' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
+                    {f' | {format_duration(metrics_dict.get("obs_connected_duration_current_session_seconds"))}' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
+                </div>
+                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                    <span id="metrics-obs-label">Cumulative</span>
+                    {f' | <span>Current</span>' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
             </div>
         </div>
@@ -445,6 +454,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <button onclick="toggleAutoswitch()">Toggle Autoswitch</button>
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
             <button onclick="reloadConfig()">Reload Config</button>
+            <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
         </div>
         
         <div class="event-log">
@@ -501,18 +511,18 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     }}
                 }}
                 
-                // Update stream duration - show current session from OBS and cumulative from metrics
-                const streamDurationEl = document.querySelector('#stream-duration-display');
-                const streamCumulativeEl = document.querySelector('#stream-duration-cumulative');
+                // Update stream duration - show cumulative | current
+                const streamDurationEl = document.getElementById('stream-duration-display');
+                const streamLabelEl = document.getElementById('stream-duration-label');
                 if (streamDurationEl) {{
-                    let text = formatStreamDuration(data.stream_duration_ms);
-                    if (data.stream_duration_current_session_seconds !== null && data.stream_duration_current_session_seconds !== undefined) {{
-                        text += ' (Session: ' + formatDuration(data.stream_duration_current_session_seconds) + ')';
+                    let text = formatDuration(data.stream_duration_seconds) || 'N/A';
+                    if (data.stream_duration_ms !== null && data.stream_duration_ms !== undefined) {{
+                        text += ' | ' + formatStreamDuration(data.stream_duration_ms);
                     }}
                     streamDurationEl.textContent = text;
                 }}
-                if (streamCumulativeEl && data.stream_duration_seconds !== null && data.stream_duration_seconds !== undefined) {{
-                    streamCumulativeEl.textContent = 'Total: ' + formatDuration(data.stream_duration_seconds);
+                if (streamLabelEl) {{
+                    streamLabelEl.parentElement.innerHTML = 'Cumulative' + (data.stream_duration_ms !== null && data.stream_duration_ms !== undefined ? ' | <span>Current</span>' : '');
                 }}
                 
                 // Update mode
@@ -521,10 +531,13 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 // Update autoswitch
                 updateValue('Autoswitch', data.autoswitch ? 'ON' : 'OFF');
                 
-                // Update session info
-                updateValue('Session Type', data.session_type || 'N/A');
-                updateValue('Session Name', data.session_name || 'N/A');
-                updateValue('Session Num', data.session_num !== null && data.session_num !== undefined ? data.session_num : 'N/A');
+                // Update session info - hide Test sessions
+                const sessionType = data.session_type === 'Test' || data.session_type === null || data.session_type === undefined ? 'N/A' : data.session_type;
+                const sessionName = data.session_type === 'Test' || data.session_name === null || data.session_name === undefined ? 'N/A' : data.session_name;
+                const sessionNum = data.session_type === 'Test' || data.session_num === null || data.session_num === undefined ? 'N/A' : data.session_num;
+                updateValue('Session Type', sessionType);
+                updateValue('Session Name', sessionName);
+                updateValue('Session Num', sessionNum);
                 
                 // Update reason - find the reason card specifically
                 const reasonCard = Array.from(document.querySelectorAll('.status-card')).find(card => {{
@@ -651,6 +664,25 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }}
         }}
         
+        async function shutdownService() {{
+            if (!confirm('Are you sure you want to shutdown the service? This will stop the iRacing OBS Switcher.')) {{
+                return;
+            }}
+            try {{
+                const response = await fetch(`${{API_BASE}}/shutdown`, {{ method: 'POST' }});
+                const data = await response.json();
+                
+                if (response.ok) {{
+                    alert('Service shutdown initiated. The service will stop shortly.');
+                }} else {{
+                    alert('Failed to shutdown service: ' + (data.error || 'Unknown error'));
+                }}
+            }} catch (error) {{
+                console.error('Failed to shutdown service:', error);
+                alert('Failed to shutdown service: ' + error.message);
+            }}
+        }}
+        
         async function updateMetrics() {{
             try {{
                 const response = await fetch(`${{API_BASE}}/metrics`);
@@ -662,23 +694,37 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 updateValue('Avg Latency', latency !== null && latency !== undefined ? latency.toFixed(4) + ' ms' : 'N/A');
                 updateValue('Uptime', formatDuration(data.uptime_seconds));
                 
-                // iRacing Connected - show cumulative (current session in parentheses if available)
+                // iRacing Connected - show cumulative | current
                 const iracingCumulative = data.iracing_connected_duration_seconds;
                 const iracingCurrent = data.iracing_connected_duration_current_session_seconds;
-                let iracingText = formatDuration(iracingCumulative);
+                let iracingText = formatDuration(iracingCumulative) || 'N/A';
                 if (iracingCurrent !== null && iracingCurrent !== undefined && iracingCurrent > 0) {{
-                    iracingText += ' (' + formatDuration(iracingCurrent) + ')';
+                    iracingText += ' | ' + formatDuration(iracingCurrent);
                 }}
-                updateValue('iRacing Connected', iracingText);
+                const iracingEl = document.getElementById('metrics-iracing-time');
+                const iracingLabelEl = document.getElementById('metrics-iracing-label');
+                if (iracingEl) {{
+                    iracingEl.textContent = iracingText;
+                }}
+                if (iracingLabelEl) {{
+                    iracingLabelEl.parentElement.innerHTML = 'Cumulative' + (iracingCurrent !== null && iracingCurrent !== undefined && iracingCurrent > 0 ? ' | <span>Current</span>' : '');
+                }}
                 
-                // OBS Connected - show cumulative (current session in parentheses if available)
+                // OBS Connected - show cumulative | current
                 const obsCumulative = data.obs_connected_duration_seconds;
                 const obsCurrent = data.obs_connected_duration_current_session_seconds;
-                let obsText = formatDuration(obsCumulative);
+                let obsText = formatDuration(obsCumulative) || 'N/A';
                 if (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0) {{
-                    obsText += ' (' + formatDuration(obsCurrent) + ')';
+                    obsText += ' | ' + formatDuration(obsCurrent);
                 }}
-                updateValue('OBS Connected', obsText);
+                const obsEl = document.getElementById('metrics-obs-time');
+                const obsLabelEl = document.getElementById('metrics-obs-label');
+                if (obsEl) {{
+                    obsEl.textContent = obsText;
+                }}
+                if (obsLabelEl) {{
+                    obsLabelEl.parentElement.innerHTML = 'Cumulative' + (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0 ? ' | <span>Current</span>' : '');
+                }}
             }} catch (error) {{
                 console.error('Failed to update metrics:', error);
             }}

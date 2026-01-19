@@ -326,7 +326,12 @@ async def main_loop(
                         session_type = extract_session_type(session_info)
                         session_num = extract_session_num(session_info)
                         session_name = session_info.get("SessionName")
-                        if session_type or session_name or session_num is not None:
+                        # Ignore Test sessions - don't set session info for Test
+                        if session_type == "Test":
+                            session_type = None
+                            session_num = None
+                            session_name = None
+                        elif session_type or session_name or session_num is not None:
                             logger.info(f"Session info updated: type={session_type}, num={session_num}, name={session_name}")
             
             # Update state with session info if changed
@@ -536,8 +541,13 @@ async def main_loop(
 
 async def run_service(config: AppConfig, config_path: str) -> None:
     """Run the service with all components."""
-    # Setup logging
-    setup_logging(config.log_level)
+    # Setup logging (always to console, optionally to file)
+    setup_logging(
+        level=config.log_level,
+        log_file=config.log_file,
+        max_bytes=config.log_max_bytes,
+        backup_count=config.log_backup_count
+    )
     
     # Set global notifications flag
     set_notifications_enabled(config.notifications_enabled)
@@ -787,7 +797,11 @@ async def run_service(config: AppConfig, config_path: str) -> None:
 
     # Setup signal handlers for graceful shutdown
     shutdown_event = asyncio.Event()
-
+    
+    # Make shutdown event available to API
+    from irswitch.server.api import set_shutdown_event
+    set_shutdown_event(shutdown_event)
+    
     def signal_handler() -> None:
         logger.info("Shutdown signal received")
         shutdown_event.set()
