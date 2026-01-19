@@ -208,6 +208,13 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             margin-bottom: 10px;
         }}
         
+        .status-card .sublabel {{
+            font-size: 0.7em;
+            color: #666;
+            margin-bottom: 5px;
+            min-height: 1.2em;
+        }}
+        
         .status-card .value {{
             font-size: 1.5em;
             font-weight: 600;
@@ -330,6 +337,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <div class="status-grid">
             <div class="status-card">
                 <h3>iRacing Connection</h3>
+                <div class="sublabel"></div>
                 <div class="connection-status">
                     <div class="status-indicator {'disconnected' if not state.connected_iracing else ''}"></div>
                     <span class="value">{'Connected' if state.connected_iracing else 'Disconnected'}</span>
@@ -338,6 +346,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             
             <div class="status-card">
                 <h3>OBS Connection</h3>
+                <div class="sublabel"></div>
                 <div class="connection-status">
                     <div class="status-indicator {'disconnected' if not state.connected_obs else ''}"></div>
                     <span class="value">{'Connected' if state.connected_obs else 'Disconnected'}</span>
@@ -346,16 +355,19 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             
             <div class="status-card">
                 <h3>OBS Profile</h3>
+                <div class="sublabel"></div>
                 <div class="value">{obs_profile or 'N/A'}</div>
             </div>
             
             <div class="status-card">
                 <h3>Current Scene</h3>
+                <div class="sublabel"></div>
                 <div class="value">{state.current_scene}</div>
             </div>
             
             <div class="status-card">
                 <h3>Streaming</h3>
+                <div class="sublabel"></div>
                 <div class="streaming-indicator">
                     <div class="rec-dot"></div>
                     <span class="value">{'LIVE' if is_streaming else 'IDLE'}</span>
@@ -364,23 +376,25 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             
             <div class="status-card">
                 <h3>Stream Duration</h3>
-                <div class="value" id="stream-duration-display">
-                    {format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}
-                    {f' | {format_stream_duration(stream_duration_ms)}' if stream_duration_ms is not None else ''}
-                </div>
-                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                <div class="sublabel">
                     <span id="stream-duration-label">Cumulative</span>
                     {f' | <span>Current</span>' if stream_duration_ms is not None else ''}
+                </div>
+                <div class="value" id="stream-duration-display">
+                    <span>{format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}</span>
+                    {f' <span style="font-size: 0.75em; color: #aaa;">| {format_stream_duration(stream_duration_ms)}</span>' if stream_duration_ms is not None else ''}
                 </div>
             </div>
             
             <div class="status-card">
                 <h3>Mode</h3>
+                <div class="sublabel"></div>
                 <div class="value">{state.mode.value}</div>
             </div>
             
             <div class="status-card">
                 <h3>Autoswitch</h3>
+                <div class="sublabel"></div>
                 <div class="value">{'ON' if state.autoswitch else 'OFF'}</div>
             </div>
         </div>
@@ -388,16 +402,19 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
                 <h3>Session Type</h3>
+                <div class="sublabel"></div>
                 <div class="value" id="session-type">{'N/A' if state.session_type == 'Test' or state.session_type is None else state.session_type}</div>
             </div>
             
             <div class="status-card">
                 <h3>Session Name</h3>
+                <div class="sublabel"></div>
                 <div class="value" style="font-size: 1.2em;" id="session-name">{'N/A' if state.session_type == 'Test' or state.session_name is None else state.session_name}</div>
             </div>
             
             <div class="status-card">
                 <h3>Session Num</h3>
+                <div class="sublabel"></div>
                 <div class="value" id="session-num">{'N/A' if state.session_type == 'Test' or state.session_num is None else state.session_num}</div>
             </div>
         </div>
@@ -405,11 +422,13 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
                 <h3>Scene Switches</h3>
+                <div class="sublabel"></div>
                 <div class="value" id="metrics-switches">{metrics_dict.get('scene_switches_total', 0)}</div>
             </div>
             
             <div class="status-card">
                 <h3>Avg Latency</h3>
+                <div class="sublabel"></div>
                 <div class="value" id="metrics-latency">
                     {f"{metrics_dict.get('scene_switch_latency_avg_ms', 0):.4f} ms" if metrics_dict.get('scene_switch_latency_avg_ms') is not None else 'N/A'}
                 </div>
@@ -417,30 +436,31 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             
             <div class="status-card">
                 <h3>Uptime</h3>
+                <div class="sublabel"></div>
                 <div class="value" id="metrics-uptime">{format_duration(metrics_dict.get('uptime_seconds', 0))}</div>
             </div>
             
             <div class="status-card">
                 <h3>iRacing Connected</h3>
-                <div class="value" id="metrics-iracing-time">
-                    {format_duration(metrics_dict.get('iracing_connected_duration_seconds')) if metrics_dict.get('iracing_connected_duration_seconds') is not None else 'N/A'}
-                    {f' | {format_duration(metrics_dict.get("iracing_connected_duration_current_session_seconds"))}' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
-                </div>
-                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                <div class="sublabel">
                     <span id="metrics-iracing-label">Cumulative</span>
                     {f' | <span>Current</span>' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
+                </div>
+                <div class="value" id="metrics-iracing-time">
+                    <span>{format_duration(metrics_dict.get('iracing_connected_duration_seconds')) if metrics_dict.get('iracing_connected_duration_seconds') is not None else 'N/A'}</span>
+                    {f' <span style="font-size: 0.75em; color: #aaa;">| {format_duration(metrics_dict.get("iracing_connected_duration_current_session_seconds"))}</span>' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
             </div>
             
             <div class="status-card">
                 <h3>OBS Connected</h3>
-                <div class="value" id="metrics-obs-time">
-                    {format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else 'N/A'}
-                    {f' | {format_duration(metrics_dict.get("obs_connected_duration_current_session_seconds"))}' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
-                </div>
-                <div style="font-size: 0.75em; color: #888; margin-top: 3px;">
+                <div class="sublabel">
                     <span id="metrics-obs-label">Cumulative</span>
                     {f' | <span>Current</span>' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
+                </div>
+                <div class="value" id="metrics-obs-time">
+                    <span>{format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else 'N/A'}</span>
+                    {f' <span style="font-size: 0.75em; color: #aaa;">| {format_duration(metrics_dict.get("obs_connected_duration_current_session_seconds"))}</span>' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
             </div>
         </div>
@@ -515,11 +535,11 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 const streamDurationEl = document.getElementById('stream-duration-display');
                 const streamLabelEl = document.getElementById('stream-duration-label');
                 if (streamDurationEl) {{
-                    let text = formatDuration(data.stream_duration_seconds) || 'N/A';
+                    let html = '<span>' + (formatDuration(data.stream_duration_seconds) || 'N/A') + '</span>';
                     if (data.stream_duration_ms !== null && data.stream_duration_ms !== undefined) {{
-                        text += ' | ' + formatStreamDuration(data.stream_duration_ms);
+                        html += ' <span style="font-size: 0.75em; color: #aaa;">| ' + formatStreamDuration(data.stream_duration_ms) + '</span>';
                     }}
-                    streamDurationEl.textContent = text;
+                    streamDurationEl.innerHTML = html;
                 }}
                 if (streamLabelEl) {{
                     streamLabelEl.parentElement.innerHTML = 'Cumulative' + (data.stream_duration_ms !== null && data.stream_duration_ms !== undefined ? ' | <span>Current</span>' : '');
@@ -697,14 +717,14 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 // iRacing Connected - show cumulative | current
                 const iracingCumulative = data.iracing_connected_duration_seconds;
                 const iracingCurrent = data.iracing_connected_duration_current_session_seconds;
-                let iracingText = formatDuration(iracingCumulative) || 'N/A';
-                if (iracingCurrent !== null && iracingCurrent !== undefined && iracingCurrent > 0) {{
-                    iracingText += ' | ' + formatDuration(iracingCurrent);
-                }}
                 const iracingEl = document.getElementById('metrics-iracing-time');
                 const iracingLabelEl = document.getElementById('metrics-iracing-label');
                 if (iracingEl) {{
-                    iracingEl.textContent = iracingText;
+                    let html = '<span>' + (formatDuration(iracingCumulative) || 'N/A') + '</span>';
+                    if (iracingCurrent !== null && iracingCurrent !== undefined && iracingCurrent > 0) {{
+                        html += ' <span style="font-size: 0.75em; color: #aaa;">| ' + formatDuration(iracingCurrent) + '</span>';
+                    }}
+                    iracingEl.innerHTML = html;
                 }}
                 if (iracingLabelEl) {{
                     iracingLabelEl.parentElement.innerHTML = 'Cumulative' + (iracingCurrent !== null && iracingCurrent !== undefined && iracingCurrent > 0 ? ' | <span>Current</span>' : '');
@@ -713,14 +733,14 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 // OBS Connected - show cumulative | current
                 const obsCumulative = data.obs_connected_duration_seconds;
                 const obsCurrent = data.obs_connected_duration_current_session_seconds;
-                let obsText = formatDuration(obsCumulative) || 'N/A';
-                if (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0) {{
-                    obsText += ' | ' + formatDuration(obsCurrent);
-                }}
                 const obsEl = document.getElementById('metrics-obs-time');
                 const obsLabelEl = document.getElementById('metrics-obs-label');
                 if (obsEl) {{
-                    obsEl.textContent = obsText;
+                    let html = '<span>' + (formatDuration(obsCumulative) || 'N/A') + '</span>';
+                    if (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0) {{
+                        html += ' <span style="font-size: 0.75em; color: #aaa;">| ' + formatDuration(obsCurrent) + '</span>';
+                    }}
+                    obsEl.innerHTML = html;
                 }}
                 if (obsLabelEl) {{
                     obsLabelEl.parentElement.innerHTML = 'Cumulative' + (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0 ? ' | <span>Current</span>' : '');

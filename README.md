@@ -8,11 +8,83 @@ Tento repozitář obsahuje službu, která:
 - automaticky přepíná OBS scény přes `obs-websocket` v5
 - vystavuje lokální HTTP + WebSocket API
 
+## Obsah
+
+- [Cíle](#cíle)
+  - [Jak to pracuje](#jak-to-pracuje)
+- [Technologie](#technologie)
+- [Struktura projektu](#struktura-projektu)
+- [Quick Start](#quick-start)
+  - [Instalace](#1-instalace)
+  - [Konfigurace](#2-konfigurace)
+  - [Nastavení OBS](#3-nastavení-obs)
+  - [Spuštění služby](#4-spuštění-služby)
+  - [Testování](#5-testování)
+  - [HTML Dashboards](#6-html-dashboards-volitelné)
+- [Konfigurace (INI)](#konfigurace-ini)
+  - [Sekce konfigurace](#sekce-konfigurace)
+- [Build a distribuce](#build-a-distribuce)
+  - [Vytvoření EXE souboru](#vytvoření-exe-souboru)
+  - [Výstup build procesu](#výstup-build-procesu)
+  - [Instalace a provoz](#instalace-a-provoz)
+  - [Cesty v konfiguraci](#cesty-v-konfiguraci)
+- [Testy](#testy)
+- [API Dokumentace](#api-dokumentace)
+  - [REST Endpointy](#rest-endpointy)
+  - [WebSocket Endpoint](#websocket-endpoint)
+- [Troubleshooting](#troubleshooting)
+- [Nové funkce](#nové-funkce-leden-2026)
+- [Další dokumentace](#další-dokumentace)
+
 ## Cíle
 
+- **Automatické ovládání streamu** - spuštění a zastavení OBS streamu podle stavu iRacing
 - spolehlivé přepínání scén bez flappingu (debounce + cooldown)
 - override s časovým limitem z konfigurace
 - bezpečné chování při výpadku iRacing nebo OBS (čekání v loopu)
+
+### Jak to pracuje
+
+Aplikace automatizuje celý workflow streamování iRacing:
+
+1. **Detekce stavu iRacing**
+   - Sleduje stav iRacing přes shared memory (pyirsdk)
+   - Detekuje módy: IDLE (menu), GARAGE, RACE, REPLAY, QUIT
+   - Detekuje loading screeny a měří jejich délku
+
+2. **Automatické přepínání OBS scén**
+   - Podle módu iRacing automaticky přepíná OBS scény
+   - Mapování: IDLE → Idle scéna, GARAGE → Pits scéna, RACE → Race scéna, atd.
+   - Debounce a cooldown zajišťují stabilní přepínání bez flappingu
+
+3. **Automatické spuštění streamu** (volitelné)
+   - Během loadingu iRacing sleduje průběh
+   - V X% průměrné doby loadingu automaticky spustí OBS broadcast
+   - Používá historii loading časů pro přesné načasování
+   - Kontroluje, zda je broadcast připravený před spuštěním
+
+4. **Automatické zastavení streamu** (volitelné)
+   - Po ukončení iRacing (QUIT mód) počká X sekund
+   - Automaticky zastaví OBS stream
+   - Dává čas na ukončení hry před zastavením streamu
+
+5. **Grace period při připojení**
+   - Po připojení iRacing čeká na IDLE po non-IDLE módu (inspection)
+   - Zabraňuje přepnutí scény během loading screenu
+   - Aplikuje správnou scénu až po dokončení inspection
+
+6. **Background připojení**
+   - Aplikace startuje i když OBS neběží
+   - Na pozadí se opakovaně pokouší připojit k OBS
+   - Nezablokuje start aplikace při výpadku OBS
+
+7. **Monitoring a metriky**
+   - Sleduje uptime, connection times, scene switches
+   - Kumulativní a current session časy pro všechny metriky
+   - Event log pro sledování všech událostí
+   - Web dashboard pro real-time monitoring
+
+**Výsledek**: Kompletně automatizovaný stream - stačí spustit aplikaci a iRacing, vše ostatní se děje automaticky.
 
 ## Technologie
 
@@ -149,8 +221,9 @@ Aplikace poskytuje dva HTML dashboardy:
 **GR Dashboard** (velký monitor):
 - URL: `http://127.0.0.1:17321/gr-status`
 - JavaScript auto-update
-- Zobrazuje status, event log, streaming info
+- Zobrazuje status, event log, streaming info, metrics
 - Konfigurovatelné obrázky a loga
+- **Screenshot**: [GR Dashboard](img/rg-status-screen.png) (otevře se v novém tabu)
 
 **VR Dashboard** (pro VR):
 - URL: `http://127.0.0.1:17321/vr-status`
@@ -818,7 +891,8 @@ Widget zobrazí "JS JEDE" pokud JavaScript funguje správně.
 - Typy: connection, scene_switch, loading, stream, override, atd.
 
 ### HTML Dashboards
-- **GR Dashboard**: Velký dashboard s JavaScript auto-update, event log, streaming status
+- **GR Dashboard**: Velký dashboard s JavaScript auto-update, event log, streaming status, metrics
+  - Screenshot: [GR Dashboard](img/rg-status-screen.png)
 - **VR Dashboard**: Minimalistický dashboard pro VR (⚠️ RaceLab VR nepodporuje auto-refresh)
 - Konfigurovatelné obrázky a loga
 - Cache-busting pro zabránění cachování
