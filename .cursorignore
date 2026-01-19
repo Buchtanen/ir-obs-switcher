@@ -1,0 +1,19 @@
+# Python caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenv
+.venv/
+
+# Builds
+dist/
+build/
+
+# Logs
+*.log
+!.cursor/debug.log
+
+# Windows
+Thumbs.db
