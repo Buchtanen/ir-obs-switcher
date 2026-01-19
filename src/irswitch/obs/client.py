@@ -219,41 +219,157 @@ class ObsClient:
 
         try:
             def _get_profile() -> Optional[str]:
-                # OBS WebSocket v5: get_current_profile() returns current profile name
-                # Try the method - it may be named differently in obsws-python
+                profile_name = None
+                
+                # Method 1: Try GetProfileList first (most reliable - returns currentProfileName)
                 try:
-                    if hasattr(self._client, 'get_current_profile'):
-                        response = self._client.get_current_profile()
-                    elif hasattr(self._client, 'get_profile'):
-                        response = self._client.get_profile()
+                    if hasattr(self._client, 'get_profile_list'):
+                        response = self._client.get_profile_list()
+                        logger.debug(f"GetProfileList response: {type(response)}, {response}")
+                        
+                        # Try to extract currentProfileName from response
+                        if response:
+                            # Try attribute access
+                            if hasattr(response, 'currentProfileName'):
+                                profile_name = str(response.currentProfileName)
+                            elif hasattr(response, 'current_profile_name'):
+                                profile_name = str(response.current_profile_name)
+                            elif hasattr(response, 'current_profile'):
+                                profile_name = str(response.current_profile)
+                            
+                            # Try datain dict format
+                            if not profile_name and hasattr(response, 'datain') and isinstance(response.datain, dict):
+                                data = response.datain
+                                profile_name = (
+                                    data.get("currentProfileName") or
+                                    data.get("current_profile_name") or
+                                    data.get("currentProfile") or
+                                    data.get("current_profile")
+                                )
+                                if profile_name:
+                                    profile_name = str(profile_name)
+                            
+                            # Try if response is a dict directly
+                            if not profile_name and isinstance(response, dict):
+                                profile_name = (
+                                    response.get("currentProfileName") or
+                                    response.get("current_profile_name") or
+                                    response.get("currentProfile") or
+                                    response.get("current_profile")
+                                )
+                                if profile_name:
+                                    profile_name = str(profile_name)
+                            
+                            if profile_name:
+                                logger.info(f"Found OBS profile name via GetProfileList: {profile_name}")
+                                return profile_name
+                except Exception as e:
+                    logger.debug(f"GetProfileList failed: {e}")
+                
+                # Method 2: Try GetCurrentProfile (direct request)
+                try:
+                    if hasattr(self._client, 'req'):
+                        response = self._client.req('GetCurrentProfile')
+                        logger.debug(f"Direct req('GetCurrentProfile') response: {type(response)}, {response}")
+                    elif hasattr(self._client, 'call'):
+                        response = self._client.call('GetCurrentProfile')
+                        logger.debug(f"Direct call('GetCurrentProfile') response: {type(response)}, {response}")
                     else:
-                        # Fallback: try to call it directly (might raise AttributeError)
-                        response = self._client.get_current_profile()
-                except AttributeError:
-                    logger.warning("get_current_profile method not available in obsws-python")
-                    return None
+                        response = None
+                    
+                    if response:
+                        # Try different attribute names
+                        attr_names = [
+                            'profile_name',
+                            'currentProfileName',
+                            'profileName',
+                            'current_profile_name',
+                            'current_profile',
+                            'name',
+                            'profile',
+                        ]
+                        
+                        for attr_name in attr_names:
+                            if hasattr(response, attr_name):
+                                value = getattr(response, attr_name)
+                                if value:
+                                    profile_name = str(value)
+                                    break
+                        
+                        # Try datain dict format
+                        if not profile_name and hasattr(response, 'datain') and isinstance(response.datain, dict):
+                            data = response.datain
+                            profile_name = (
+                                data.get("currentProfileName") or
+                                data.get("profileName") or
+                                data.get("current_profile_name") or
+                                data.get("profile_name") or
+                                data.get("name")
+                            )
+                            if profile_name:
+                                profile_name = str(profile_name)
+                        
+                        # Try if response is a dict directly
+                        if not profile_name and isinstance(response, dict):
+                            profile_name = (
+                                response.get("currentProfileName") or
+                                response.get("profileName") or
+                                response.get("current_profile_name") or
+                                response.get("profile_name") or
+                                response.get("name")
+                            )
+                            if profile_name:
+                                profile_name = str(profile_name)
+                        
+                        if profile_name:
+                            logger.info(f"Found OBS profile name via GetCurrentProfile: {profile_name}")
+                            return profile_name
+                except Exception as e:
+                    logger.debug(f"GetCurrentProfile request failed: {e}")
                 
-                if not response:
-                    return None
+                # Method 3: Try method calls
+                methods_to_try = [
+                    'get_current_profile',
+                    'get_profile',
+                    'get_current_profile_name',
+                    'get_profile_name',
+                ]
                 
-                # Response is a dataclass with profile_name attribute
-                if hasattr(response, 'profile_name'):
-                    return response.profile_name
-                elif hasattr(response, 'currentProfileName'):
-                    return response.currentProfileName
-                elif hasattr(response, 'profileName'):
-                    return response.profileName
-                # Fallback for older versions that might use datain dict
-                elif hasattr(response, 'datain') and isinstance(response.datain, dict):
-                    return response.datain.get("currentProfileName") or response.datain.get("profileName")
+                for method_name in methods_to_try:
+                    try:
+                        if hasattr(self._client, method_name):
+                            method = getattr(self._client, method_name)
+                            response = method()
+                            logger.debug(f"Method {method_name} response: {type(response)}, {response}")
+                            if response:
+                                # Try to extract profile name
+                                if hasattr(response, 'profile_name'):
+                                    profile_name = str(response.profile_name)
+                                elif hasattr(response, 'currentProfileName'):
+                                    profile_name = str(response.currentProfileName)
+                                elif hasattr(response, 'name'):
+                                    profile_name = str(response.name)
+                                
+                                if profile_name:
+                                    logger.info(f"Found OBS profile name via {method_name}: {profile_name}")
+                                    return profile_name
+                    except Exception as e:
+                        logger.debug(f"Method {method_name} failed: {e}")
+                        continue
                 
+                # If all methods failed, log detailed error
+                logger.warning(
+                    "Could not extract OBS profile name. "
+                    "Tried GetProfileList, GetCurrentProfile, and method calls. "
+                    "OBS profile may not be available via WebSocket API or obsws-python version may not support it."
+                )
                 return None
 
             profile = await asyncio.to_thread(_get_profile)
             return profile
 
         except Exception as e:
-            logger.warning(f"Failed to get current profile: {e}")
+            logger.warning(f"Failed to get current profile: {e}", exc_info=True)
             return None
 
     async def get_stream_status(self) -> tuple[bool, Optional[int]]:
@@ -334,3 +450,166 @@ class ObsClient:
         except Exception as e:
             logger.debug(f"Failed to get stream status: {e}")
             return (False, None)
+
+    async def is_broadcast_ready(self) -> bool:
+        """
+        Check if broadcast is ready (configured but not streaming).
+
+        Returns:
+            True if broadcast is ready, False otherwise
+        """
+        if not self.is_connected() or self._client is None:
+            return False
+
+        try:
+            def _check_ready() -> bool:
+                # Check output status
+                output_status = None
+                try:
+                    if hasattr(self._client, 'get_output_status'):
+                        output_status = self._client.get_output_status()
+                except Exception:
+                    pass
+
+                if output_status is None:
+                    return False
+
+                # Check if output is active or reconnecting
+                output_active = False
+                output_reconnecting = False
+                
+                if hasattr(output_status, 'output_active'):
+                    output_active = bool(output_status.output_active)
+                elif hasattr(output_status, 'outputActive'):
+                    output_active = bool(output_status.outputActive)
+                elif hasattr(output_status, 'datain') and isinstance(output_status.datain, dict):
+                    output_active = bool(output_status.datain.get("outputActive", False))
+                    output_reconnecting = bool(output_status.datain.get("outputReconnecting", False))
+
+                if hasattr(output_status, 'output_reconnecting'):
+                    output_reconnecting = bool(output_status.output_reconnecting)
+                elif hasattr(output_status, 'outputReconnecting'):
+                    output_reconnecting = bool(output_status.outputReconnecting)
+
+                # If output is active or reconnecting, broadcast is not ready
+                if output_active or output_reconnecting:
+                    return False
+
+                # Check if stream service is configured
+                service_settings = None
+                try:
+                    if hasattr(self._client, 'get_stream_service_settings'):
+                        service_settings = self._client.get_stream_service_settings()
+                    elif hasattr(self._client, 'get_stream_service'):
+                        service_settings = self._client.get_stream_service()
+                except Exception:
+                    pass
+
+                if service_settings is None:
+                    return False
+
+                # Check if service type is set (configured)
+                service_type = None
+                if hasattr(service_settings, 'stream_service_type'):
+                    service_type = service_settings.stream_service_type
+                elif hasattr(service_settings, 'streamServiceType'):
+                    service_type = service_settings.streamServiceType
+                elif hasattr(service_settings, 'datain') and isinstance(service_settings.datain, dict):
+                    service_type = service_settings.datain.get("streamServiceType")
+
+                # Broadcast is ready if service is configured and not streaming
+                return service_type is not None and service_type != ""
+
+            return await asyncio.to_thread(_check_ready)
+
+        except Exception as e:
+            logger.debug(f"Failed to check broadcast ready status: {e}")
+            return False
+
+    async def start_stream(self) -> bool:
+        """
+        Start streaming in OBS.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.is_connected() or self._client is None:
+            logger.warning("Cannot start stream: not connected to OBS")
+            return False
+
+        try:
+            def _start() -> bool:
+                try:
+                    if hasattr(self._client, 'start_stream'):
+                        response = self._client.start_stream()
+                    else:
+                        # Fallback: try direct call
+                        response = self._client.start_stream()
+                    return response is not None
+                except Exception as e:
+                    error_str = str(e).lower()
+                    # If stream is already running, that's okay
+                    if "already" in error_str or "running" in error_str:
+                        logger.debug("Stream already running")
+                        return True
+                    raise
+
+            success = await asyncio.to_thread(_start)
+            if success:
+                logger.info("Stream started successfully")
+            else:
+                logger.warning("Failed to start stream")
+            return success
+
+        except Exception as e:
+            error_str = str(e).lower()
+            # If stream is already running, that's okay
+            if "already" in error_str or "running" in error_str:
+                logger.debug("Stream already running")
+                return True
+            logger.warning(f"Error starting stream: {e}")
+            return False
+
+    async def stop_stream(self) -> bool:
+        """
+        Stop streaming in OBS.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.is_connected() or self._client is None:
+            logger.warning("Cannot stop stream: not connected to OBS")
+            return False
+
+        try:
+            def _stop() -> bool:
+                try:
+                    if hasattr(self._client, 'stop_stream'):
+                        response = self._client.stop_stream()
+                    else:
+                        # Fallback: try direct call
+                        response = self._client.stop_stream()
+                    return response is not None
+                except Exception as e:
+                    error_str = str(e).lower()
+                    # If stream is not running, that's okay
+                    if "not running" in error_str or "not active" in error_str or "not streaming" in error_str:
+                        logger.debug("Stream not running")
+                        return True
+                    raise
+
+            success = await asyncio.to_thread(_stop)
+            if success:
+                logger.info("Stream stopped successfully")
+            else:
+                logger.warning("Failed to stop stream")
+            return success
+
+        except Exception as e:
+            error_str = str(e).lower()
+            # If stream is not running, that's okay
+            if "not running" in error_str or "not active" in error_str or "not streaming" in error_str:
+                logger.debug("Stream not running")
+                return True
+            logger.warning(f"Error stopping stream: {e}")
+            return False

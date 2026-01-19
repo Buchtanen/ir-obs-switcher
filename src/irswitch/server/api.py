@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from irswitch.models import SwitchState
     from irswitch.obs.client import ObsClient
 
+from irswitch.server.event_log import get_event_log
+from irswitch.server.dashboards import handle_gr_status, handle_vr_status
+
 logger = logging.getLogger(__name__)
 
 # Global state for WebSocket broadcasting
@@ -154,6 +157,14 @@ async def handle_override(request: web.Request) -> web.Response:
         new_state = _state_machine.apply_override(_current_state, scene, seconds)
         set_current_state(new_state)
 
+        # Log override event
+        event_log = get_event_log()
+        await event_log.add_event(
+            "override_applied",
+            f"Scene override applied: {scene} for {seconds}s",
+            {"scene": scene, "seconds": seconds}
+        )
+
         status = await _get_status_dict(new_state)
         return web.json_response(status)
 
@@ -172,6 +183,14 @@ async def handle_toggle_autoswitch(request: web.Request) -> web.Response:
     try:
         new_state = _state_machine.toggle_autoswitch(_current_state)
         set_current_state(new_state)
+
+        # Log autoswitch toggle event
+        event_log = get_event_log()
+        await event_log.add_event(
+            "autoswitch_toggled",
+            f"Autoswitch {'enabled' if new_state.autoswitch else 'disabled'}",
+            {"autoswitch": new_state.autoswitch}
+        )
 
         status = await _get_status_dict(new_state)
         return web.json_response(status)
@@ -193,6 +212,39 @@ async def handle_restart_mode_reset(request: web.Request) -> web.Response:
         return web.json_response(status)
     
     return web.json_response({"restart_mode_active": False})
+
+
+async def handle_get_events(request: web.Request) -> web.Response:
+    """
+    Handle GET /api/events endpoint.
+    
+    Returns last N events from rotating event log (FIFO).
+    Event log automatically rotates when full - oldest events are removed.
+    """
+    try:
+        count_str = request.query.get("count", "50")
+        count = int(count_str) if count_str.isdigit() else 50
+        if count <= 0:
+            count = 50
+    except (ValueError, TypeError):
+        count = 50
+
+    event_log = get_event_log()
+    # Get recent events (log automatically rotates to max_size, so this returns last N)
+    events = await event_log.get_recent_events(count)
+
+    # Convert events to dict for JSON serialization
+    events_dict = [
+        {
+            "timestamp": e.timestamp,
+            "type": e.type,
+            "message": e.message,
+            "data": e.data,
+        }
+        for e in events
+    ]
+
+    return web.json_response({"events": events_dict})
 
 
 async def handle_websocket(request: web.Request) -> web.WebSocketResponse:
@@ -253,6 +305,9 @@ def create_app() -> web.Application:
     app.router.add_post("/override", handle_override)
     app.router.add_post("/autoswitch/toggle", handle_toggle_autoswitch)
     app.router.add_post("/restart-mode/reset", handle_restart_mode_reset)
+    app.router.add_get("/api/events", handle_get_events)
+    app.router.add_get("/gr-status", handle_gr_status)
+    app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/ws", handle_websocket)
 
     return app

@@ -41,12 +41,26 @@ class AppConfig:
     cooldown_ms: int
     override_seconds: int
     safe_scene: str
+    auto_start_broadcast: bool
+    auto_start_at_percent: int
+    default_loading_time_seconds: float
+    auto_stop_stream: bool
+    stop_stream_after_seconds: int
 
     # [hotkeys]
     restart_hotkey: str | None  # Optional: e.g. "ctrl+shift+r" - when held during QUIT, triggers RESTART mode
 
     # [scenes]
     scenes: Mapping[DrivingMode, str]
+
+    # [dashboards]
+    dashboard_update_fps: int
+    dashboard_gr_background_image: str | None
+    dashboard_gr_logo_obs: str | None
+    dashboard_gr_logo_iracing: str | None
+    dashboard_gr_logo_app: str | None
+    dashboard_vr_icons_path: str | None
+    dashboard_event_log_size: int
 
     @classmethod
     def from_file(cls, path: Path | str) -> AppConfig:
@@ -88,6 +102,21 @@ class AppConfig:
         safe_scene = switching_section.get("safe_scene")
         if not safe_scene:
             raise ValueError("switching.safe_scene is required")
+        
+        # Auto-start broadcast settings
+        auto_start_broadcast = parser.getboolean("switching", "auto_start_broadcast", fallback=False)
+        auto_start_at_percent = parser.getint("switching", "auto_start_at_percent", fallback=50)
+        if auto_start_at_percent < 0 or auto_start_at_percent > 100:
+            raise ValueError("switching.auto_start_at_percent must be between 0 and 100")
+        default_loading_time_seconds = parser.getfloat("switching", "default_loading_time_seconds", fallback=12.0)
+        if default_loading_time_seconds <= 0:
+            raise ValueError("switching.default_loading_time_seconds must be > 0")
+        
+        # Auto-stop stream settings
+        auto_stop_stream = parser.getboolean("switching", "auto_stop_stream", fallback=False)
+        stop_stream_after_seconds = parser.getint("switching", "stop_stream_after_seconds", fallback=30)
+        if stop_stream_after_seconds <= 0:
+            raise ValueError("switching.stop_stream_after_seconds must be > 0")
 
         # [hotkeys] (optional section)
         restart_hotkey: str | None = None
@@ -108,6 +137,31 @@ class AppConfig:
             except KeyError:
                 raise ValueError(f"Unknown driving mode in config: {mode_name}")
 
+        # [dashboards] (optional section)
+        dashboard_update_fps = 2
+        dashboard_gr_background_image: str | None = None
+        dashboard_gr_logo_obs: str | None = None
+        dashboard_gr_logo_iracing: str | None = None
+        dashboard_gr_logo_app: str | None = None
+        dashboard_vr_icons_path: str | None = None
+        dashboard_event_log_size = 50
+        
+        if parser.has_section("dashboards"):
+            dashboards_section = parser["dashboards"]
+            dashboard_update_fps = parser.getint("dashboards", "dashboard_update_fps", fallback=2)
+            if dashboard_update_fps <= 0:
+                raise ValueError("dashboards.dashboard_update_fps must be > 0")
+            
+            dashboard_gr_background_image = dashboards_section.get("dashboard_gr_background_image") or None
+            dashboard_gr_logo_obs = dashboards_section.get("dashboard_gr_logo_obs") or None
+            dashboard_gr_logo_iracing = dashboards_section.get("dashboard_gr_logo_iracing") or None
+            dashboard_gr_logo_app = dashboards_section.get("dashboard_gr_logo_app") or None
+            dashboard_vr_icons_path = dashboards_section.get("dashboard_vr_icons_path") or None
+            
+            dashboard_event_log_size = parser.getint("dashboards", "dashboard_event_log_size", fallback=50)
+            if dashboard_event_log_size <= 0:
+                raise ValueError("dashboards.dashboard_event_log_size must be > 0")
+
         result = cls(
             http_host=http_host,
             http_port=http_port,
@@ -123,7 +177,19 @@ class AppConfig:
             cooldown_ms=cooldown_ms,
             override_seconds=override_seconds,
             safe_scene=safe_scene,
+            auto_start_broadcast=auto_start_broadcast,
+            auto_start_at_percent=auto_start_at_percent,
+            default_loading_time_seconds=default_loading_time_seconds,
+            auto_stop_stream=auto_stop_stream,
+            stop_stream_after_seconds=stop_stream_after_seconds,
             restart_hotkey=restart_hotkey,
             scenes=scenes,
+            dashboard_update_fps=dashboard_update_fps,
+            dashboard_gr_background_image=dashboard_gr_background_image,
+            dashboard_gr_logo_obs=dashboard_gr_logo_obs,
+            dashboard_gr_logo_iracing=dashboard_gr_logo_iracing,
+            dashboard_gr_logo_app=dashboard_gr_logo_app,
+            dashboard_vr_icons_path=dashboard_vr_icons_path,
+            dashboard_event_log_size=dashboard_event_log_size,
         )
         return result

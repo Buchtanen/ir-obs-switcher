@@ -16,7 +16,9 @@ from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.obs.client import ObsClient
 from irswitch.server.api import create_app, set_current_state, set_state_machine, set_obs_client, get_restart_mode, set_restart_mode
+from irswitch.server.event_log import get_event_log, set_event_log, EventLog
 from irswitch.util.clock import now_ms
+from irswitch.util.loading_tracker import LoadingTimeTracker
 from irswitch.util.logging import (
     log_connection_lost,
     log_connection_restored,
@@ -73,6 +75,20 @@ async def main_loop(
     # Track previous mode to detect loading→active transitions
     prev_iracing_mode: DrivingMode | None = None
 
+    # Loading tracker
+    loading_tracker = LoadingTimeTracker(
+        default_loading_time_seconds=config.default_loading_time_seconds
+    )
+
+    # Auto-start broadcast tracking
+    loading_start_ts: float | None = None
+    auto_start_scheduled_ts: float | None = None
+    auto_start_triggered = False
+
+    # Auto-stop stream tracking
+    quit_detected_ts: float | None = None
+    stream_stopped_after_quit = False
+
     logger.info("Starting main loop")
 
     while True:
@@ -80,6 +96,138 @@ async def main_loop(
             # Poll iRacing
             iracing_mode = await reader.read_mode()
             connected_iracing = iracing_mode is not None
+
+            # Loading screen detection and tracking
+            is_loading = iracing_mode is None
+            was_loading = prev_iracing_mode is None
+
+            if is_loading and not was_loading:
+                # Loading started (transition from mode to None)
+                loading_tracker.start_loading()
+                loading_start_ts = now_ms()
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
+                logger.debug("Loading screen detected, starting tracker")
+                await event_log.add_event(
+                    "loading_started",
+                    "iRacing loading screen started",
+                    {"previous_mode": prev_iracing_mode.value if prev_iracing_mode else None}
+                )
+
+            elif not is_loading and was_loading:
+                # Loading ended (transition from None to mode)
+                duration = loading_tracker.end_loading()
+                loading_start_ts = None
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
+                if duration is not None:
+                    logger.info(f"Loading screen ended, duration: {duration:.2f}s")
+                    await event_log.add_event(
+                        "loading_ended",
+                        f"iRacing loading screen ended, duration: {duration:.2f}s",
+                        {"duration_seconds": duration, "new_mode": iracing_mode.value if iracing_mode else None}
+                    )
+            
+            # Auto-start broadcast logic (during loading)
+            if is_loading and config.auto_start_broadcast and loading_start_ts is not None:
+                if auto_start_scheduled_ts is None:
+                    # Calculate when to start broadcast
+                    avg_loading = loading_tracker.get_average_loading_time()
+                    use_default = len(loading_tracker.history) == 0
+                    if use_default:
+                        logger.info(
+                            f"No loading history available, using default: "
+                            f"{config.default_loading_time_seconds}s"
+                        )
+                    
+                    start_delay_ms = int(avg_loading * config.auto_start_at_percent / 100.0 * 1000)
+                    auto_start_scheduled_ts = loading_start_ts + start_delay_ms
+                    logger.debug(
+                        f"Auto-start broadcast scheduled at {start_delay_ms}ms "
+                        f"({config.auto_start_at_percent}% of {avg_loading:.2f}s average)"
+                    )
+                
+                current_ts = now_ms()
+                if not auto_start_triggered and current_ts >= auto_start_scheduled_ts:
+                    # Time to check and start broadcast
+                    is_ready = await obs_client.is_broadcast_ready()
+                    is_streaming, _ = await obs_client.get_stream_status()
+                    
+                    if is_ready and not is_streaming:
+                        success = await obs_client.start_stream()
+                        if success:
+                            logger.info("Auto-started broadcast during loading")
+                            await event_log.add_event(
+                                "stream_started",
+                                "Stream started automatically during loading (broadcast ready)",
+                                {"reason": "auto_start_loading", "broadcast_ready": True, "was_streaming": False}
+                            )
+                        else:
+                            logger.warning("Failed to auto-start broadcast during loading")
+                            await event_log.add_event(
+                                "stream_start_failed",
+                                "Failed to auto-start stream during loading",
+                                {"reason": "auto_start_loading", "broadcast_ready": True, "error": "start_failed"}
+                            )
+                    else:
+                        if not is_ready:
+                            logger.debug("Broadcast not ready for auto-start")
+                            await event_log.add_event(
+                                "stream_start_skipped",
+                                "Stream start skipped: broadcast not ready",
+                                {"reason": "auto_start_loading", "broadcast_ready": False, "was_streaming": is_streaming}
+                            )
+                        if is_streaming:
+                            logger.debug("Stream already running, skipping auto-start")
+                            await event_log.add_event(
+                                "stream_start_skipped",
+                                "Stream start skipped: already running",
+                                {"reason": "auto_start_loading", "broadcast_ready": is_ready, "was_streaming": True}
+                            )
+                    
+                    auto_start_triggered = True  # Only try once per loading
+            
+            # Auto-stop stream logic (after QUIT)
+            if config.auto_stop_stream:
+                if iracing_mode == DrivingMode.QUIT:
+                    if quit_detected_ts is None:
+                        quit_detected_ts = now_ms()
+                        stream_stopped_after_quit = False
+                        logger.debug("QUIT detected, starting auto-stop timer")
+                    
+                    if not stream_stopped_after_quit:
+                        elapsed_ms = now_ms() - quit_detected_ts
+                        if elapsed_ms >= config.stop_stream_after_seconds * 1000:
+                            is_streaming, _ = await obs_client.get_stream_status()
+                            if is_streaming:
+                                success = await obs_client.stop_stream()
+                                if success:
+                                    logger.info(f"Auto-stopped stream {config.stop_stream_after_seconds}s after QUIT")
+                                    await event_log.add_event(
+                                        "stream_stopped",
+                                        f"Stream stopped automatically {config.stop_stream_after_seconds}s after QUIT (was running)",
+                                        {"reason": "auto_stop_quit", "was_streaming": True, "delay_seconds": config.stop_stream_after_seconds}
+                                    )
+                                else:
+                                    logger.warning("Failed to auto-stop stream after QUIT")
+                                    await event_log.add_event(
+                                        "stream_stop_failed",
+                                        f"Failed to auto-stop stream {config.stop_stream_after_seconds}s after QUIT",
+                                        {"reason": "auto_stop_quit", "was_streaming": True, "error": "stop_failed"}
+                                    )
+                            else:
+                                logger.debug("Stream not running, skipping auto-stop")
+                                await event_log.add_event(
+                                    "stream_stop_skipped",
+                                    f"Stream stop skipped: not running {config.stop_stream_after_seconds}s after QUIT",
+                                    {"reason": "auto_stop_quit", "was_streaming": False, "delay_seconds": config.stop_stream_after_seconds}
+                                )
+                            
+                            stream_stopped_after_quit = True
+                else:
+                    # Reset QUIT tracking when not in QUIT mode
+                    quit_detected_ts = None
+                    stream_stopped_after_quit = False
             
             # Reset RESTART mode when entering IDLE (active game lobby)
             # But NOT when transitioning from loading screen (None → IDLE)
@@ -144,22 +292,26 @@ async def main_loop(
             connected_obs = obs_current_scene is not None
 
             # Update connection states
+            event_log = get_event_log()
             if connected_iracing != current_state.connected_iracing:
                 if connected_iracing:
                     log_connection_restored(logger, "iRacing")
+                    await event_log.add_event("connection_restored", "iRacing connection restored")
                 else:
                     log_connection_lost(logger, "iRacing")
+                    await event_log.add_event("connection_lost", "iRacing connection lost")
                     if config.notifications_enabled:
                         notify_connection_lost("iRacing")
 
             if connected_obs != current_state.connected_obs:
                 if connected_obs:
                     log_connection_restored(logger, "OBS")
-                    if config.notifications_enabled:
-                        notify_connection_restored("OBS")
+                    await event_log.add_event("connection_restored", "OBS connection restored")
+                    # Note: OBS connection restored notification removed (only show connection lost)
                     last_obs_notification_ts = None  # Reset notification timer on successful connection
                 else:
                     log_connection_lost(logger, "OBS")
+                    await event_log.add_event("connection_lost", "OBS connection lost")
                     if config.notifications_enabled:
                         notify_connection_lost("OBS")
                     # Try to reconnect OBS
@@ -266,6 +418,11 @@ async def main_loop(
                             new_state.reason,
                             latency_ms=latency,
                         )
+                        await event_log.add_event(
+                            "scene_switch",
+                            f"Scene switched to: {new_state.target_scene}",
+                            {"scene": new_state.target_scene, "reason": new_state.reason, "latency_ms": latency}
+                        )
                         # Update state with new current scene
                         new_state = SwitchState(
                             connected_iracing=new_state.connected_iracing,
@@ -330,6 +487,10 @@ async def run_service(config: AppConfig) -> None:
     )
     set_state_machine(state_machine)
     set_obs_client(obs_client)
+    
+    # Initialize event log
+    event_log = EventLog(max_size=config.dashboard_event_log_size)
+    set_event_log(event_log)
 
     # Initial state
     logger.info(f"Initializing with safe_scene: {config.safe_scene}, scenes mapping: {dict(config.scenes)}")
@@ -438,6 +599,7 @@ async def run_service(config: AppConfig) -> None:
 
     # Create and start API server
     app = create_app()
+    app["config"] = config  # Store config in app for dashboard access
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, config.http_host, config.http_port)
