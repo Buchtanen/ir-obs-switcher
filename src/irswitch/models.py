@@ -7,7 +7,10 @@ from typing import Optional
 
 
 class DrivingMode(str, Enum):
-    IDLE = "IDLE"
+    CONNECTING = "CONNECTING"  # Waiting for OBS and iRacing connection
+    LOADING = "LOADING"  # After connecting, waiting for iRacing lobby
+    LOBBY = "LOBBY"  # iRacing lobby (replaces IDLE for active game)
+    IDLE = "IDLE"  # Deprecated, use LOBBY instead (kept for compatibility)
     GARAGE = "GARAGE"
     RACE = "RACE"
     REPLAY = "REPLAY"

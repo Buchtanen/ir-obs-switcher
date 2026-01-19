@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from typing import TYPE_CHECKING, Optional
 
 from aiohttp import web
@@ -112,6 +113,24 @@ def set_current_state(state: "SwitchState") -> None:
 
 async def _get_status_dict(state: "SwitchState") -> dict:
     """Convert SwitchState to dictionary with streaming info."""
+    # #region agent log
+    try:
+        with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
+            f.write(json.dumps({
+                "location": "api.py:_get_status_dict",
+                "message": "Building status dict",
+                "data": {
+                    "state_session_type": state.session_type,
+                    "state_session_name": state.session_name,
+                    "state_session_num": state.session_num,
+                },
+                "timestamp": int(time.time() * 1000),
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "E"
+            }) + "\n")
+    except: pass
+    # #endregion
     status = {
         "connected_iracing": state.connected_iracing,
         "connected_obs": state.connected_obs,
@@ -129,12 +148,19 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         "session_num": state.session_num,
     }
     
-    # Add streaming status if OBS client is available
+    # Add streaming status and OBS profile if OBS client is available
     if _obs_client is not None and state.connected_obs:
         try:
             is_streaming, stream_duration_ms = await _obs_client.get_stream_status()
             status["streaming"] = is_streaming
             status["stream_duration_ms"] = stream_duration_ms
+            
+            # Get OBS profile
+            try:
+                obs_profile = await _obs_client.get_current_profile()
+                status["obs_profile"] = obs_profile
+            except Exception:
+                status["obs_profile"] = None
             
             # Update metrics with streaming status
             from irswitch.server.metrics import get_metrics
@@ -150,6 +176,7 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             logger.debug(f"Failed to get stream status: {e}")
             status["streaming"] = False
             status["stream_duration_ms"] = None
+            status["obs_profile"] = None
             # Update metrics
             from irswitch.server.metrics import get_metrics
             metrics = get_metrics()
@@ -157,6 +184,7 @@ async def _get_status_dict(state: "SwitchState") -> dict:
     else:
         status["streaming"] = False
         status["stream_duration_ms"] = None
+        status["obs_profile"] = None
         # Update metrics
         from irswitch.server.metrics import get_metrics
         metrics = get_metrics()
@@ -345,6 +373,63 @@ async def handle_shutdown(request: web.Request) -> web.Response:
     })
 
 
+async def handle_reset(request: web.Request) -> web.Response:
+    """Handle POST /reset endpoint - reset state and metrics to CONNECTING."""
+    global _current_state, _state_machine
+    from irswitch.models import DrivingMode, SwitchState
+    from irswitch.server.metrics import get_metrics, reset_metrics
+    
+    if _state_machine is None:
+        return web.json_response({"error": "State machine not available"}, status=503)
+    
+    # Get safe_scene from policy
+    safe_scene = _state_machine._policy.safe_scene
+    
+    # Get current connection states before reset
+    was_iracing_connected = _current_state.connected_iracing if _current_state else False
+    was_obs_connected = _current_state.connected_obs if _current_state else False
+    
+    # Reset metrics
+    reset_metrics()
+    metrics = get_metrics()
+    
+    # Restart metrics tracking for currently connected services
+    if was_iracing_connected:
+        metrics.set_iracing_connected(True)
+    if was_obs_connected:
+        metrics.set_obs_connected(True)
+    
+    # Reset restart mode
+    set_restart_mode(False)
+    
+    # Create new CONNECTING state
+    new_state = SwitchState(
+        connected_iracing=was_iracing_connected,
+        connected_obs=was_obs_connected,
+        autoswitch=_current_state.autoswitch if _current_state else True,
+        override_scene=None,
+        override_until=None,
+        mode=DrivingMode.CONNECTING,
+        target_scene=safe_scene,
+        current_scene=safe_scene,
+        last_switch_ts=None,
+        reason="reset:connecting",
+        session_type=None,
+        session_name=None,
+        session_num=None,
+    )
+    
+    set_current_state(new_state)
+    logger.info("State and metrics reset to CONNECTING via API")
+    
+    status = await _get_status_dict(new_state)
+    return web.json_response({
+        "status": "reset",
+        "message": "State and metrics reset to CONNECTING",
+        **status
+    })
+
+
 async def handle_get_events(request: web.Request) -> web.Response:
     """
     Handle GET /api/events endpoint.
@@ -441,6 +526,7 @@ def create_app() -> web.Application:
     app.router.add_get("/metrics", handle_metrics)
     app.router.add_post("/config/reload", handle_config_reload)
     app.router.add_post("/shutdown", handle_shutdown)
+    app.router.add_post("/reset", handle_reset)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)

@@ -59,7 +59,40 @@ def format_duration(seconds: Optional[float]) -> str:
 async def handle_gr_status(request: web.Request) -> web.Response:
     """Handle GET /gr-status - large dashboard."""
     try:
+        # #region agent log
+        import json
+        import time
+        try:
+            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
+                f.write(json.dumps({
+                    "location": "dashboards.py:handle_gr_status:entry",
+                    "message": "handle_gr_status called",
+                    "data": {},
+                    "timestamp": int(time.time() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "F"
+                }) + "\n")
+        except: pass
+        # #endregion
         config: Optional[AppConfig] = request.app.get("config")
+        # #region agent log
+        try:
+            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
+                f.write(json.dumps({
+                    "location": "dashboards.py:handle_gr_status:after_get_config",
+                    "message": "After get config",
+                    "data": {
+                        "config_is_none": config is None,
+                        "has_dashboard_event_log_size": hasattr(config, "dashboard_event_log_size") if config else False,
+                    },
+                    "timestamp": int(time.time() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "F"
+                }) + "\n")
+        except: pass
+        # #endregion
         if config is None:
             return web.Response(text="Configuration not available", status=500)
 
@@ -323,6 +356,275 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             font-size: 0.85em;
             margin-right: 10px;
         }}
+        
+        /* Toast notifications */
+        .toast-container {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }}
+        
+        .toast {{
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.98) 0%, rgba(20, 20, 20, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 18px 24px;
+            min-width: 320px;
+            max-width: 500px;
+            color: #fff;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(20px) saturate(180%);
+            position: relative;
+            overflow: hidden;
+            pointer-events: auto;
+        }}
+        
+        .toast::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            opacity: 0.3;
+        }}
+        
+        .toast.success {{
+            border-left: 4px solid #4caf50;
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .toast.success::before {{
+            background: linear-gradient(90deg, transparent, #4caf50, transparent);
+        }}
+        
+        .toast.error {{
+            border-left: 4px solid #f44336;
+            box-shadow: 0 8px 32px rgba(244, 67, 54, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .toast.error::before {{
+            background: linear-gradient(90deg, transparent, #f44336, transparent);
+        }}
+        
+        .toast.warning {{
+            border-left: 4px solid #ff9800;
+            box-shadow: 0 8px 32px rgba(255, 152, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .toast.warning::before {{
+            background: linear-gradient(90deg, transparent, #ff9800, transparent);
+        }}
+        
+        .toast.info {{
+            border-left: 4px solid #2196f3;
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .toast.info::before {{
+            background: linear-gradient(90deg, transparent, #2196f3, transparent);
+        }}
+        
+        .toast-title {{
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 1em;
+            color: #fff;
+            letter-spacing: 0.3px;
+        }}
+        
+        .toast-message {{
+            font-size: 0.9em;
+            color: #e0e0e0;
+            line-height: 1.5;
+        }}
+        
+        @keyframes slideIn {{
+            from {{
+                transform: translateX(120%);
+                opacity: 0;
+            }}
+            to {{
+                transform: translateX(0);
+                opacity: 1;
+            }}
+        }}
+        
+        @keyframes slideOut {{
+            from {{
+                transform: translateX(0);
+                opacity: 1;
+            }}
+            to {{
+                transform: translateX(120%);
+                opacity: 0;
+            }}
+        }}
+        
+        .toast.hiding {{
+            animation: slideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }}
+        
+        /* Confirm dialog overlay */
+        #confirm-overlay-container {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 20000;
+            pointer-events: none;
+        }}
+        
+        .confirm-overlay {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+            pointer-events: auto;
+        }}
+        
+        .confirm-dialog {{
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.98) 0%, rgba(20, 20, 20, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 32px;
+            min-width: 400px;
+            max-width: 600px;
+            color: #fff;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px) saturate(180%);
+            animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            pointer-events: auto;
+        }}
+        
+        .confirm-dialog h3 {{
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #fff;
+            letter-spacing: 0.3px;
+        }}
+        
+        .confirm-dialog p {{
+            font-size: 1em;
+            color: #e0e0e0;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }}
+        
+        .confirm-buttons {{
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }}
+        
+        .confirm-button {{
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 100px;
+        }}
+        
+        .confirm-button:hover {{
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }}
+        
+        .confirm-button:active {{
+            transform: translateY(0);
+        }}
+        
+        .confirm-button.primary {{
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            border-color: #4caf50;
+        }}
+        
+        .confirm-button.primary:hover {{
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }}
+        
+        .confirm-button.danger {{
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            border-color: #f44336;
+        }}
+        
+        .confirm-button.danger:hover {{
+            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }}
+        
+        @keyframes fadeIn {{
+            from {{
+                opacity: 0;
+            }}
+            to {{
+                opacity: 1;
+            }}
+        }}
+        
+        @keyframes scaleIn {{
+            from {{
+                transform: scale(0.9);
+                opacity: 0;
+            }}
+            to {{
+                transform: scale(1);
+                opacity: 1;
+            }}
+        }}
+        
+        .confirm-overlay.hiding {{
+            animation: fadeOut 0.2s ease-out forwards;
+        }}
+        
+        .confirm-overlay.hiding .confirm-dialog {{
+            animation: scaleOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }}
+        
+        @keyframes fadeOut {{
+            from {{
+                opacity: 1;
+            }}
+            to {{
+                opacity: 0;
+            }}
+        }}
+        
+        @keyframes scaleOut {{
+            from {{
+                transform: scale(1);
+                opacity: 1;
+            }}
+            to {{
+                transform: scale(0.9);
+                opacity: 0;
+            }}
+        }}
     </style>
 </head>
 <body>
@@ -366,6 +668,14 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             </div>
             
             <div class="status-card">
+                <h3>Mode</h3>
+                <div class="sublabel"></div>
+                <div class="value">{state.mode.value}</div>
+            </div>
+        </div>
+        
+        <div class="status-grid" style="margin-top: 20px;">
+            <div class="status-card">
                 <h3>Streaming</h3>
                 <div class="sublabel"></div>
                 <div class="streaming-indicator">
@@ -384,12 +694,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     <span>{format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}</span>
                     {f' <span style="font-size: 0.75em; color: #aaa;">| {format_stream_duration(stream_duration_ms)}</span>' if stream_duration_ms is not None else ''}
                 </div>
-            </div>
-            
-            <div class="status-card">
-                <h3>Mode</h3>
-                <div class="sublabel"></div>
-                <div class="value">{state.mode.value}</div>
             </div>
             
             <div class="status-card">
@@ -474,6 +778,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <button onclick="toggleAutoswitch()">Toggle Autoswitch</button>
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
             <button onclick="reloadConfig()">Reload Config</button>
+            <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
             <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
         </div>
         
@@ -483,9 +788,15 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         </div>
     </div>
     
+    <div class="toast-container" id="toast-container"></div>
+    <div id="confirm-overlay-container"></div>
+    
     <script>
         const API_BASE = window.location.origin;
         const UPDATE_INTERVAL = {update_interval_ms};
+        const config = {{
+            dashboard_event_log_size: {config.dashboard_event_log_size}
+        }};
         
         let events = {json.dumps(events)};
         
@@ -552,12 +863,45 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 updateValue('Autoswitch', data.autoswitch ? 'ON' : 'OFF');
                 
                 // Update session info - hide Test sessions
+                // #region agent log
+                console.log('[DEBUG] Session info from API:', JSON.stringify({{
+                    session_type: data.session_type,
+                    session_name: data.session_name,
+                    session_num: data.session_num
+                }}));
+                // #endregion
                 const sessionType = data.session_type === 'Test' || data.session_type === null || data.session_type === undefined ? 'N/A' : data.session_type;
                 const sessionName = data.session_type === 'Test' || data.session_name === null || data.session_name === undefined ? 'N/A' : data.session_name;
-                const sessionNum = data.session_type === 'Test' || data.session_num === null || data.session_num === undefined ? 'N/A' : data.session_num;
-                updateValue('Session Type', sessionType);
-                updateValue('Session Name', sessionName);
-                updateValue('Session Num', sessionNum);
+                // session_num can be 0, so check for null/undefined explicitly
+                const sessionNum = data.session_type === 'Test' || data.session_num === null || data.session_num === undefined ? 'N/A' : String(data.session_num);
+                
+                // #region agent log
+                console.log('[DEBUG] Processed session info:', JSON.stringify({{
+                    sessionType: sessionType,
+                    sessionName: sessionName,
+                    sessionNum: sessionNum
+                }}));
+                // #endregion
+                
+                // Update session info directly by ID
+                const sessionTypeEl = document.getElementById('session-type');
+                const sessionNameEl = document.getElementById('session-name');
+                const sessionNumEl = document.getElementById('session-num');
+                // #region agent log
+                console.log('[DEBUG] Session info elements:', JSON.stringify({{
+                    sessionTypeEl: !!sessionTypeEl,
+                    sessionNameEl: !!sessionNameEl,
+                    sessionNumEl: !!sessionNumEl
+                }}));
+                // #endregion
+                if (sessionTypeEl) sessionTypeEl.textContent = sessionType;
+                if (sessionNameEl) sessionNameEl.textContent = sessionName;
+                if (sessionNumEl) sessionNumEl.textContent = sessionNum;
+                
+                // Update OBS Profile if available
+                if (data.obs_profile !== undefined) {{
+                    updateValue('OBS Profile', data.obs_profile || 'N/A');
+                }}
                 
                 // Update reason - find the reason card specifically
                 const reasonCard = Array.from(document.querySelectorAll('.status-card')).find(card => {{
@@ -579,32 +923,58 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         async function updateEvents() {{
             try {{
                 const response = await fetch(`${{API_BASE}}/api/events?count=${{config.dashboard_event_log_size}}`);
+                if (!response.ok) {{
+                    console.error('Failed to fetch events:', response.status);
+                    return;
+                }}
                 const data = await response.json();
-                events = data.events;
-                renderEvents();
+                if (data && data.events && Array.isArray(data.events)) {{
+                    // Only update if events actually changed
+                    const eventsJson = JSON.stringify(events);
+                    const newEventsJson = JSON.stringify(data.events);
+                    if (eventsJson !== newEventsJson) {{
+                        events = data.events;
+                        renderEvents();
+                    }}
+                }}
             }} catch (error) {{
                 console.error('Failed to update events:', error);
             }}
         }}
         
         function updateConnectionStatus(type, connected) {{
-            // Update iRacing connection (first indicator)
-            const iracingIndicator = document.querySelectorAll('.status-indicator')[0];
-            if (type === 'iracing') {{
-                if (connected) {{
-                    iracingIndicator.classList.remove('disconnected');
-                }} else {{
-                    iracingIndicator.classList.add('disconnected');
+            // Find connection status cards
+            const cards = document.querySelectorAll('.status-card');
+            let targetCard = null;
+            
+            for (const card of cards) {{
+                const h3 = card.querySelector('h3');
+                if (h3) {{
+                    if (type === 'iracing' && h3.textContent.trim() === 'iRacing Connection') {{
+                        targetCard = card;
+                        break;
+                    }} else if (type === 'obs' && h3.textContent.trim() === 'OBS Connection') {{
+                        targetCard = card;
+                        break;
+                    }}
                 }}
             }}
             
-            // Update OBS connection (second indicator)
-            const obsIndicator = document.querySelectorAll('.status-indicator')[1];
-            if (type === 'obs') {{
-                if (connected) {{
-                    obsIndicator.classList.remove('disconnected');
-                }} else {{
-                    obsIndicator.classList.add('disconnected');
+            if (targetCard) {{
+                // Update indicator
+                const indicator = targetCard.querySelector('.status-indicator');
+                if (indicator) {{
+                    if (connected) {{
+                        indicator.classList.remove('disconnected');
+                    }} else {{
+                        indicator.classList.add('disconnected');
+                    }}
+                }}
+                
+                // Update text value
+                const valueEl = targetCard.querySelector('.connection-status .value');
+                if (valueEl) {{
+                    valueEl.textContent = connected ? 'Connected' : 'Disconnected';
                 }}
             }}
         }}
@@ -647,6 +1017,95 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             return `${{minutes.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
         }}
         
+        // Toast notification functions
+        function showToast(title, message, type = 'info') {{
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${{type}}`;
+            toast.innerHTML = `
+                <div class="toast-title">${{title}}</div>
+                <div class="toast-message">${{message}}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {{
+                toast.classList.add('hiding');
+                setTimeout(() => {{
+                    if (toast.parentNode) {{
+                        toast.parentNode.removeChild(toast);
+                    }}
+                }}, 300);
+            }}, 5000);
+        }}
+        
+        function showConfirm(title, message, confirmText = 'Confirm', cancelText = 'Cancel', danger = false) {{
+            return new Promise((resolve) => {{
+                const container = document.getElementById('confirm-overlay-container');
+                if (!container) {{
+                    resolve(false);
+                    return;
+                }}
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'confirm-overlay';
+                overlay.innerHTML = `
+                    <div class="confirm-dialog">
+                        <h3>${{title}}</h3>
+                        <p>${{message}}</p>
+                        <div class="confirm-buttons">
+                            <button class="confirm-button" data-action="cancel">${{cancelText}}</button>
+                            <button class="confirm-button ${{danger ? 'danger' : 'primary'}}" data-action="confirm">${{confirmText}}</button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(overlay);
+                
+                const closeDialog = (confirmed) => {{
+                    overlay.classList.add('hiding');
+                    setTimeout(() => {{
+                        if (overlay.parentNode) {{
+                            overlay.parentNode.removeChild(overlay);
+                        }}
+                        resolve(confirmed);
+                    }}, 200);
+                }};
+                
+                // Handle button clicks
+                overlay.querySelectorAll('.confirm-button').forEach(btn => {{
+                    btn.addEventListener('click', (e) => {{
+                        e.stopPropagation();
+                        const action = btn.getAttribute('data-action');
+                        if (action === 'confirm') {{
+                            closeDialog(true);
+                        }} else if (action === 'cancel') {{
+                            closeDialog(false);
+                        }}
+                    }});
+                }});
+                
+                // Handle overlay click (outside dialog)
+                overlay.addEventListener('click', (e) => {{
+                    if (e.target === overlay) {{
+                        closeDialog(false);
+                    }}
+                }});
+                
+                // Handle Escape key
+                const handleEscape = (e) => {{
+                    if (e.key === 'Escape') {{
+                        closeDialog(false);
+                        document.removeEventListener('keydown', handleEscape);
+                    }}
+                }};
+                document.addEventListener('keydown', handleEscape);
+            }});
+        }}
+        
         async function toggleAutoswitch() {{
             try {{
                 await fetch(`${{API_BASE}}/autoswitch/toggle`, {{ method: 'POST' }});
@@ -672,20 +1131,55 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 const data = await response.json();
                 
                 if (response.ok) {{
-                    // Show success notification
-                    alert('Config reloaded successfully');
+                    showToast('Config Reloaded', 'Configuration reloaded successfully', 'success');
                 }} else {{
-                    // Show error notification
-                    alert('Failed to reload config: ' + (data.error || 'Unknown error'));
+                    showToast('Config Reload Failed', data.error || 'Unknown error', 'error');
                 }}
             }} catch (error) {{
                 console.error('Failed to reload config:', error);
-                alert('Failed to reload config: ' + error.message);
+                showToast('Config Reload Failed', error.message || 'Network error', 'error');
+            }}
+        }}
+        
+        async function resetService() {{
+            try {{
+                const confirmed = await showConfirm(
+                    'Reset Service',
+                    'This will reset state to CONNECTING, clear metrics, and set safe scene. Continue?',
+                    'Reset',
+                    'Cancel',
+                    false
+                );
+                if (!confirmed) {{
+                    return;
+                }}
+                
+                const response = await fetch(`${{API_BASE}}/reset`, {{ method: 'POST' }});
+                const data = await response.json();
+                
+                if (response.ok) {{
+                    showToast('Service Reset', 'State and metrics reset to CONNECTING', 'success');
+                    await updateStatus();
+                    await updateMetrics();
+                    await updateEvents();
+                }} else {{
+                    showToast('Reset Failed', data.error || 'Unknown error', 'error');
+                }}
+            }} catch (error) {{
+                console.error('Failed to reset service:', error);
+                showToast('Reset Failed', error.message || 'Network error', 'error');
             }}
         }}
         
         async function shutdownService() {{
-            if (!confirm('Are you sure you want to shutdown the service? This will stop the iRacing OBS Switcher.')) {{
+            const confirmed = await showConfirm(
+                'Shutdown Service',
+                'Are you sure you want to shutdown the service? This will stop the iRacing OBS Switcher.',
+                'Shutdown',
+                'Cancel',
+                true
+            );
+            if (!confirmed) {{
                 return;
             }}
             try {{
@@ -693,13 +1187,13 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 const data = await response.json();
                 
                 if (response.ok) {{
-                    alert('Service shutdown initiated. The service will stop shortly.');
+                    showToast('Shutdown Initiated', 'The service will stop shortly', 'warning');
                 }} else {{
-                    alert('Failed to shutdown service: ' + (data.error || 'Unknown error'));
+                    showToast('Shutdown Failed', data.error || 'Unknown error', 'error');
                 }}
             }} catch (error) {{
                 console.error('Failed to shutdown service:', error);
-                alert('Failed to shutdown service: ' + error.message);
+                showToast('Shutdown Failed', error.message || 'Network error', 'error');
             }}
         }}
         
@@ -777,6 +1271,26 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         response.headers["ETag"] = f'"{cache_bust}"'  # Unique ETag for each request
         return response
     except Exception as e:
+        # #region agent log
+        import json
+        import traceback
+        try:
+            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
+                f.write(json.dumps({
+                    "location": "dashboards.py:handle_gr_status:exception",
+                    "message": "Exception in handle_gr_status",
+                    "data": {
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                        "traceback": traceback.format_exc(),
+                    },
+                    "timestamp": int(time.time() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "F"
+                }) + "\n")
+        except: pass
+        # #endregion
         logger.error(f"Error in handle_gr_status: {e}", exc_info=True)
         return web.Response(text=f"Internal server error: {e}", status=500)
 
@@ -949,6 +1463,75 @@ async def handle_vr_status(request: web.Request) -> web.Response:
             <span class="scene-name" id="scene-name">{state.current_scene}</span>
         </div>
     </div>
+    
+    <script>
+        const API_BASE = window.location.origin;
+        const UPDATE_INTERVAL = {update_interval_ms};
+        
+        async function updateStatus() {{
+            try {{
+                const response = await fetch(`${{API_BASE}}/status`);
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                // Update connection statuses
+                const obsDiode = document.getElementById('obs-diode');
+                const iracingDiode = document.getElementById('iracing-diode');
+                if (obsDiode) {{
+                    if (data.connected_obs) {{
+                        obsDiode.classList.remove('disconnected');
+                    }} else {{
+                        obsDiode.classList.add('disconnected');
+                    }}
+                }}
+                if (iracingDiode) {{
+                    if (data.connected_iracing) {{
+                        iracingDiode.classList.remove('disconnected');
+                    }} else {{
+                        iracingDiode.classList.add('disconnected');
+                    }}
+                }}
+                
+                // Update scene
+                const sceneName = document.getElementById('scene-name');
+                if (sceneName && data.current_scene) {{
+                    sceneName.textContent = data.current_scene;
+                }}
+                
+                // Update streaming
+                const recDot = document.getElementById('rec-dot');
+                const streamDuration = document.getElementById('stream-duration');
+                if (recDot) {{
+                    if (data.streaming) {{
+                        recDot.style.background = '#f44336';
+                        recDot.style.animation = 'pulse 2s infinite';
+                    }} else {{
+                        recDot.style.background = '#666';
+                        recDot.style.animation = 'none';
+                    }}
+                }}
+                if (streamDuration && data.stream_duration_ms !== null && data.stream_duration_ms !== undefined) {{
+                    const totalSeconds = Math.floor(data.stream_duration_ms / 1000);
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    const seconds = totalSeconds % 60;
+                    if (hours > 0) {{
+                        streamDuration.textContent = `${{hours.toString().padStart(2, '0')}}:${{minutes.toString().padStart(2, '0')}}:${{seconds.toString().padStart(2, '0')}}`;
+                    }} else {{
+                        streamDuration.textContent = `${{minutes.toString().padStart(2, '0')}}:${{seconds.toString().padStart(2, '0')}}`;
+                    }}
+                }}
+            }} catch (error) {{
+                console.error('Failed to update VR status:', error);
+            }}
+        }}
+        
+        // Initial update
+        updateStatus();
+        
+        // Auto-update
+        setInterval(updateStatus, UPDATE_INTERVAL);
+    </script>
 </body>
 </html>
 """
