@@ -28,7 +28,7 @@ class SwitchState:
     target_scene: str
     current_scene: str
     last_switch_ts: Optional[float]  # Monotonic time in milliseconds
-    reason: str = ""  # Default empty string to allow optional fields after
+    reason: str
     session_type: Optional[str] = None  # Session type: "Practice", "Qualify", "Race", etc.
     session_name: Optional[str] = None  # Session name from iRacing
     session_num: Optional[int] = None  # Session number (0-based)
