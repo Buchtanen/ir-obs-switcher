@@ -915,3 +915,8 @@ Widget zobrazí "JS JEDE" pokud JavaScript funguje správně.
 ### Notifications Control
 - Globální zapnutí/vypnutí notifikací přes config
 - Respektuje se v `show_toast()` funkci
+
+### Úpravy a cleanup (leden 2026)
+- Odstraněn testovací kód z VR Dashboard (testy location a xhr)
+- Odstraněn VR status wrapper endpoint (`/vr-status-wrapper`) s iframe
+- VR Dashboard nyní zobrazuje pouze čisté jméno scény bez testovacích informací

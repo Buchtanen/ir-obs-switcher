@@ -781,63 +781,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         return web.Response(text=f"Internal server error: {e}", status=500)
 
 
-async def handle_vr_status_wrapper(request: web.Request) -> web.Response:
-    """
-    Handle GET /vr-status-wrapper - Wrapper for RaceLab VR with iframe and meta refresh.
-    
-    RaceLab VR widgety se načítají jen při startu a nepodporují JS ani meta refresh.
-    Tento wrapper vrací HTML s iframe, který se refreshuje pomocí meta refresh.
-    """
-    config: Optional[AppConfig] = request.app.get("config")
-    update_interval_ms = int(1000 / (config.dashboard_update_fps if config else 2))
-    refresh_seconds = max(1, update_interval_ms // 1000)
-    
-    import time
-    cache_bust = int(time.time() * 1000)
-    
-    # Get base URL from request
-    base_url = f"{request.scheme}://{request.host}"
-    iframe_url = f"{base_url}/vr-status?t={cache_bust}"
-    
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="{refresh_seconds}">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>VR Status Wrapper</title>
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-        html, body {{
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }}
-        iframe {{
-            width: 100%;
-            height: 100%;
-            border: none;
-        }}
-    </style>
-</head>
-<body>
-    <iframe src="{iframe_url}" frameborder="0"></iframe>
-</body>
-</html>
-"""
-    
-    response = web.Response(text=html, content_type="text/html")
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
-
-
 async def handle_vr_status(request: web.Request) -> web.Response:
     """
     Handle GET /vr-status - VR widget.
@@ -846,9 +789,8 @@ async def handle_vr_status(request: web.Request) -> web.Response:
     Pokud RaceLab VR nepodporuje refresh interval, widget se neaktualizuje.
     
     Možná řešení:
-    1. Zkus použít /vr-status-wrapper (s iframe a meta refresh)
-    2. Nastav refresh interval v RaceLab VR widget nastavení
-    3. Použij externí nástroj pro periodický refresh
+    1. Nastav refresh interval v RaceLab VR widget nastavení
+    2. Použij externí nástroj pro periodický refresh
     """
     # Check if this is a redirect request (for cache busting)
     redirect_param = request.query.get("redirect")
@@ -1007,42 +949,6 @@ async def handle_vr_status(request: web.Request) -> web.Response:
             <span class="scene-name" id="scene-name">{state.current_scene}</span>
         </div>
     </div>
-    
-    <script>
-        // Test JavaScript availability immediately
-        (function() {{
-            const testResults = [];
-            
-            // Test window.location
-            const hasWindowLocation = typeof window !== 'undefined' && typeof window.location !== 'undefined';
-            testResults.push('window.location: ' + (hasWindowLocation ? 'EXISTS' : 'NOT FOUND'));
-            
-            // Test XMLHttpRequest
-            const hasXHR = typeof XMLHttpRequest !== 'undefined';
-            testResults.push('XMLHttpRequest: ' + (hasXHR ? 'EXISTS' : 'NOT FOUND'));
-            
-            // Test fetch
-            const hasFetch = typeof fetch !== 'undefined';
-            testResults.push('fetch: ' + (hasFetch ? 'EXISTS' : 'NOT FOUND'));
-            
-            // Test window object
-            const hasWindow = typeof window !== 'undefined';
-            testResults.push('window: ' + (hasWindow ? 'EXISTS' : 'NOT FOUND'));
-            
-            // Display results in the scene name element
-            const sceneNameEl = document.getElementById('scene-name');
-            if (sceneNameEl) {{
-                const originalText = sceneNameEl.textContent;
-                sceneNameEl.textContent = originalText + ' | JS: ' + testResults.join(', ');
-                sceneNameEl.style.color = '#ffff00'; // Yellow to make it visible
-            }}
-            
-            // Also log to console if available
-            if (typeof console !== 'undefined' && typeof console.log !== 'undefined') {{
-                console.log('VR Dashboard JS Test Results:', testResults);
-            }}
-        }})();
-    </script>
 </body>
 </html>
 """

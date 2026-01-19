@@ -3,30 +3,38 @@
 ## ✅ Hotové (100% implementováno)
 
 ### Core funkcionalita
-- ✅ **Konfigurace** (`config.py`) - načítání INI, validace
+- ✅ **Konfigurace** (`config.py`) - načítání INI, validace, hot reload
 - ✅ **iRacing Reader** (`iracing/reader.py`) - async wrapper pro pyirsdk
 - ✅ **Extractors** (`iracing/extractors.py`) - extrakce módu s prioritou
 - ✅ **OBS Client** (`obs/client.py`) - async WebSocket klient s retry logikou
 - ✅ **State Machine** (`logic/state_machine.py`) - debounce, cooldown, override
 - ✅ **Policy** (`logic/policy.py`) - mapování módu na scény
 - ✅ **API Server** (`server/api.py`) - REST + WebSocket endpointy
+  - ✅ Health check endpoint (`GET /health`)
+  - ✅ Metrics endpoint (`GET /metrics`)
+  - ✅ Config reload endpoint (`POST /config/reload`)
+  - ✅ Shutdown endpoint (`POST /shutdown`)
 - ✅ **Main Loop** (`main.py`) - koordinace všech komponent
-- ✅ **Utilities** (`util/`) - clock, logging
+- ✅ **Metrics Collector** (`server/metrics.py`) - sběr metrik (scene switches, latence, connection times, stream duration)
+- ✅ **Utilities** (`util/`) - clock, logging (s file rotation)
 
 ### Testy
-- ✅ **50+ unit testů** - všechny prošly
+- ✅ **79+ unit testů** - všechny prošly
   - Extractors (4 testy)
   - Policy (1 test)
   - iRacing Reader (8 testů)
   - OBS Client (11 testů)
   - State Machine (11 testů)
-  - API Server (6 testů)
+  - API Server (15 testů) - včetně health, metrics, config/reload, shutdown
   - Main Service (3 testy)
   - Loading Tracker (9 testů)
   - Event Log (9 testů)
   - E2E Main Loop (7 testů)
+  - Metrics Collector (13 testů) - nové
+  - Logging (8 testů) - nové
 - ✅ **0 warnings** - vše opraveno
 - ✅ **Dokumentace testů** (`tests.md`) - detailní popis všech testů
+- ✅ **Testovací checklist** (`TESTING_CHECKLIST.md`) - přehled testovacího pokrytí
 
 ### Dokumentace
 - ✅ **README.md** - základní dokumentace projektu
@@ -181,11 +189,11 @@
 2. ✅ Dokumentace (Quick Start, Troubleshooting, API)
 3. ✅ Rozšíření (CI/CD, Build skripty, CHANGELOG)
 
-**Testy**: ✅ Všechny prošly (43/43)  
+**Testy**: ✅ Všechny prošly (79+ testů, 29 nových testů přidáno v lednu 2026)  
 **Kód**: ✅ Implementováno podle plánu  
-**Dokumentace**: ✅ Kompletní (README, tests.md, STATUS.md, CHANGELOG.md)  
+**Dokumentace**: ✅ Kompletní (README, tests.md, STATUS.md, CHANGELOG.md, TESTING_CHECKLIST.md)  
 **CI/CD**: ✅ GitHub Actions workflow  
-**Build**: ✅ Automatizované skripty
+**Build**: ✅ Automatizované skripty (silent EXE build s `--noconsole`)
 
 ### Co je volitelné (nice to have)
 
@@ -254,7 +262,6 @@
   - Bílé písmo, větší fonty, oranžový border
   - Bez JavaScriptu (RaceLab VR nepodporuje)
   - Silné cache-control headers
-  - Wrapper endpoint (`/vr-status-wrapper`) s iframe a meta refresh
 
 #### ✅ Broadcast Management
 - Automatické spuštění broadcastu během loadingu
@@ -287,6 +294,60 @@
 - Kontrola existence config souboru
 - Kontrola Python a balíčku
 - Automatická instalace v dev módu
+
+#### ✅ Health Check & Metrics (leden 2026)
+- **Health Check Endpoint** (`GET /health`)
+  - Kontrola stavu připojení iRacing a OBS
+  - Status: `healthy`, `degraded`, `unhealthy`
+  - Timestamp a detailní checks
+- **Metrics Endpoint** (`GET /metrics`)
+  - Scene switches total a průměrná latence
+  - Uptime služby
+  - Connection durations (cumulative + current session) pro iRacing a OBS
+  - Stream duration (cumulative + current session)
+  - Error tracking
+  - Current state info
+
+#### ✅ Config Hot Reload (leden 2026)
+- **Config Reload Endpoint** (`POST /config/reload`)
+  - Dynamické reloadování konfigurace bez restartu služby
+  - Validace nového configu před aplikací
+  - Error handling pro neplatné configy
+  - Aktualizace `app["config"]` objektu
+
+#### ✅ Graceful Shutdown (leden 2026)
+- **Shutdown Endpoint** (`POST /shutdown`)
+  - API-triggered graceful shutdown
+  - Nastavení shutdown eventu pro ukončení main loopu
+  - Tlačítko v GR Dashboard pro shutdown
+  - Error handling když shutdown není dostupný
+
+#### ✅ File Logging s Rotací (leden 2026)
+- **Logging do souboru** (`util/logging.py`)
+  - Vždy loguje do stderr (console)
+  - Volitelné logování do souboru s rotací
+  - Konfigurovatelné: `log_file`, `log_max_bytes`, `log_backup_count`
+  - Automatické vytváření log directory
+  - UTF-8 encoding
+  - Rotace při dosažení max_bytes
+  - Omezení počtu backup souborů
+
+#### ✅ Session Info v API (leden 2026)
+- **Session Information** v status endpointu
+  - `session_type` - typ session (Practice, Qualify, Race, atd.)
+  - `session_name` - název session
+  - `session_num` - číslo session
+  - Ignorování "Test" session (nastavení na `None`)
+  - Zobrazení v GR Dashboard
+
+#### ✅ GR Dashboard Vylepšení (leden 2026)
+- **Metrics sekce** - zobrazení všech metrik
+- **Session Info sekce** - zobrazení session informací
+- **Reload Config tlačítko** - hot reload configu
+- **Shutdown Service tlačítko** - graceful shutdown
+- **Cumulative | Current formát** - pro connection times a stream duration
+- **Sublabels** - popisky hodnot s potlačenou barvou
+- **Vertikální zarovnání** - konzistentní spacing napříč řádky
 
 ### Konfigurační změny
 
@@ -322,6 +383,9 @@ dashboard_vr_icons_path = path/to/icons/
 
 [app]
 notifications_enabled = true  # Globální zapnutí/vypnutí notifikací
+log_file = logs/irswitch.log  # Volitelné: cesta k log souboru
+log_max_bytes = 10485760  # 10 MB default
+log_backup_count = 5  # Počet backup souborů
 ```
 
 ### Odstraněné funkce
@@ -333,6 +397,33 @@ notifications_enabled = true  # Globální zapnutí/vypnutí notifikací
 ## 📝 Poznámky
 
 - Projekt je **funkčně kompletní** - všechny požadované funkce jsou implementované
-- Testy pokrývají všechny klíčové komponenty
-- Chybí hlavně **dokumentace pro uživatele** a **projektové soubory** (.gitignore, LICENSE)
-- Pro vývoj je projekt připravený, pro end-usery by bylo dobré doplnit dokumentaci
+- **79+ testů** pokrývají všechny klíčové komponenty včetně nových funkcí
+- **Nové funkce (leden 2026)**: Health check, Metrics, Config hot reload, Shutdown, File logging, Session info
+- **Testovací pokrytí**: Všechny nové endpointy a funkcionality jsou plně otestované
+- Pro vývoj je projekt připravený, pro end-usery je k dispozici kompletní dokumentace
+
+## 🆕 Poslední aktualizace (leden 2026)
+
+### Nové funkce
+- ✅ Health check endpoint (`GET /health`)
+- ✅ Metrics endpoint (`GET /metrics`) s cumulative/current session časy
+- ✅ Config hot reload (`POST /config/reload`)
+- ✅ Graceful shutdown endpoint (`POST /shutdown`)
+- ✅ File logging s rotací (console vždy, file volitelně)
+- ✅ Session info v API a GR Dashboard
+- ✅ GR Dashboard vylepšení (metrics, session info, tlačítka)
+
+### Nové testy (29 testů)
+- ✅ 9 testů pro nové API endpointy (`tests/test_api.py`)
+- ✅ 13 testů pro MetricsCollector (`tests/test_metrics.py`)
+- ✅ 8 testů pro file logging (`tests/test_logging.py`)
+
+### Build & Distribuce
+- ✅ Silent EXE build (`--noconsole` pro background executable)
+- ✅ Automatické kopírování config/ do dist/
+- ✅ README.txt v dist/ pro uživatele
+
+### Úpravy a cleanup (leden 2026)
+- ✅ Odstraněn testovací kód z VR Dashboard (testy location a xhr)
+- ✅ Odstraněn VR status wrapper endpoint (`/vr-status-wrapper`) s iframe
+- ✅ VR Dashboard nyní zobrazuje pouze čisté jméno scény bez testovacích informací

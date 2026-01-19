@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from irswitch.obs.client import ObsClient
 
 from irswitch.server.event_log import get_event_log
-from irswitch.server.dashboards import handle_gr_status, handle_vr_status, handle_vr_status_wrapper, handle_test_widget
+from irswitch.server.dashboards import handle_gr_status, handle_vr_status, handle_test_widget
 from irswitch.server.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
@@ -443,7 +443,6 @@ def create_app() -> web.Application:
     app.router.add_post("/shutdown", handle_shutdown)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
-    app.router.add_get("/vr-status-wrapper", handle_vr_status_wrapper)  # Wrapper with iframe + meta refresh for RaceLab VR
     app.router.add_get("/test", handle_test_widget)
     app.router.add_get("/ws", handle_websocket)
 
