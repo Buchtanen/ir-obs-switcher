@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Mapping
+from typing import Mapping, Optional
 
 from irswitch.models import DrivingMode
 
@@ -75,3 +75,62 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
         mode = DrivingMode.RACE
     
     return mode
+
+
+def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
+    """
+    Extract session type from iRacing SDK data.
+    
+    Returns:
+        Session type string: "Practice", "Qualify", "Race", "Warmup", "Test", or None
+    """
+    session_type = data.get("SessionType")
+    session_name = data.get("SessionName")
+    
+    # Try SessionType first (numeric: 0=test, 1=practice, 2=qualify, 3=warmup, 4=race)
+    if session_type is not None:
+        try:
+            st = int(session_type)
+            type_map = {
+                0: "Test",
+                1: "Practice",
+                2: "Qualify",
+                3: "Warmup",
+                4: "Race",
+            }
+            if st in type_map:
+                return type_map[st]
+        except (ValueError, TypeError):
+            pass
+    
+    # Fallback: try to parse SessionName
+    if session_name is not None:
+        name = str(session_name).lower()
+        if "practice" in name:
+            return "Practice"
+        elif "qualify" in name or "qualifying" in name:
+            return "Qualify"
+        elif "race" in name:
+            return "Race"
+        elif "warmup" in name:
+            return "Warmup"
+        elif "test" in name:
+            return "Test"
+    
+    return None
+
+
+def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
+    """
+    Extract session number from iRacing SDK data.
+    
+    Returns:
+        Session number (0-based) or None
+    """
+    session_num = data.get("SessionNum")
+    if session_num is not None:
+        try:
+            return int(session_num)
+        except (ValueError, TypeError):
+            pass
+    return None

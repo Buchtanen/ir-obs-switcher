@@ -15,7 +15,8 @@ if TYPE_CHECKING:
     from irswitch.obs.client import ObsClient
 
 from irswitch.server.event_log import get_event_log
-from irswitch.server.dashboards import handle_gr_status, handle_vr_status
+from irswitch.server.dashboards import handle_gr_status, handle_vr_status, handle_vr_status_wrapper, handle_test_widget
+from irswitch.server.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,11 @@ async def _broadcast_state_update(state: "SwitchState") -> None:
     _websocket_clients -= disconnected
 
 
+def get_current_state() -> "SwitchState | None":
+    """Get current switch state."""
+    return _current_state
+
+
 def set_current_state(state: "SwitchState") -> None:
     """Update current state and broadcast to WebSocket clients."""
     global _current_state, _websocket_clients
@@ -110,6 +116,9 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         "last_switch_ts": state.last_switch_ts,
         "reason": state.reason,
         "restart_mode_active": _restart_mode_active,
+        "session_type": state.session_type,
+        "session_name": state.session_name,
+        "session_num": state.session_num,
     }
     
     # Add streaming status if OBS client is available
@@ -118,13 +127,32 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             is_streaming, stream_duration_ms = await _obs_client.get_stream_status()
             status["streaming"] = is_streaming
             status["stream_duration_ms"] = stream_duration_ms
+            
+            # Update metrics with streaming status
+            from irswitch.server.metrics import get_metrics
+            metrics = get_metrics()
+            metrics.set_streaming(is_streaming)
+            
+            # Add cumulative and current session stream duration from metrics
+            stream_cumulative, stream_current = metrics.get_stream_duration_seconds()
+            if stream_cumulative is not None:
+                status["stream_duration_seconds"] = stream_cumulative
+                status["stream_duration_current_session_seconds"] = stream_current
         except Exception as e:
             logger.debug(f"Failed to get stream status: {e}")
             status["streaming"] = False
             status["stream_duration_ms"] = None
+            # Update metrics
+            from irswitch.server.metrics import get_metrics
+            metrics = get_metrics()
+            metrics.set_streaming(False)
     else:
         status["streaming"] = False
         status["stream_duration_ms"] = None
+        # Update metrics
+        from irswitch.server.metrics import get_metrics
+        metrics = get_metrics()
+        metrics.set_streaming(False)
     
     return status
 
@@ -212,6 +240,87 @@ async def handle_restart_mode_reset(request: web.Request) -> web.Response:
         return web.json_response(status)
     
     return web.json_response({"restart_mode_active": False})
+
+
+async def handle_health(request: web.Request) -> web.Response:
+    """Handle GET /health endpoint."""
+    import time
+    
+    checks = {}
+    overall_status = "healthy"
+    
+    # Check iRacing connection
+    iracing_connected = _current_state is not None and _current_state.connected_iracing if _current_state else False
+    checks["iracing"] = {
+        "status": "connected" if iracing_connected else "disconnected",
+        "available": iracing_connected,
+    }
+    if not iracing_connected:
+        overall_status = "degraded"
+    
+    # Check OBS connection
+    obs_connected = _current_state is not None and _current_state.connected_obs if _current_state else False
+    checks["obs"] = {
+        "status": "connected" if obs_connected else "disconnected",
+        "available": obs_connected,
+    }
+    if not obs_connected:
+        overall_status = "degraded"
+    
+    # Check API server
+    checks["api"] = {
+        "status": "running",
+        "available": True,
+    }
+    
+    # If both critical services are down, mark as unhealthy
+    if not iracing_connected and not obs_connected:
+        overall_status = "unhealthy"
+    
+    return web.json_response({
+        "status": overall_status,
+        "checks": checks,
+        "timestamp": int(time.time()),
+    })
+
+
+async def handle_metrics(request: web.Request) -> web.Response:
+    """Handle GET /metrics endpoint."""
+    metrics = get_metrics()
+    metrics_dict = metrics.to_dict(_current_state)
+    return web.json_response(metrics_dict)
+
+
+async def handle_config_reload(request: web.Request) -> web.Response:
+    """Handle POST /config/reload endpoint."""
+    from irswitch.config import AppConfig
+    
+    config_path = request.app.get("config_path")
+    if not config_path:
+        return web.json_response({"error": "Config path not available"}, status=500)
+    
+    try:
+        # Load and validate new config
+        new_config = AppConfig.from_file(config_path)
+        
+        # Update global config
+        request.app["config"] = new_config
+        
+        logger.info("Config reloaded successfully")
+        return web.json_response({
+            "status": "success",
+            "message": "Config reloaded successfully",
+        })
+    except FileNotFoundError as e:
+        logger.error(f"Config file not found during reload: {e}")
+        return web.json_response({
+            "error": f"Config file not found: {e}",
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Failed to reload config: {e}", exc_info=True)
+        return web.json_response({
+            "error": f"Failed to reload config: {str(e)}",
+        }, status=400)
 
 
 async def handle_get_events(request: web.Request) -> web.Response:
@@ -306,8 +415,13 @@ def create_app() -> web.Application:
     app.router.add_post("/autoswitch/toggle", handle_toggle_autoswitch)
     app.router.add_post("/restart-mode/reset", handle_restart_mode_reset)
     app.router.add_get("/api/events", handle_get_events)
+    app.router.add_get("/health", handle_health)
+    app.router.add_get("/metrics", handle_metrics)
+    app.router.add_post("/config/reload", handle_config_reload)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
+    app.router.add_get("/vr-status-wrapper", handle_vr_status_wrapper)  # Wrapper with iframe + meta refresh for RaceLab VR
+    app.router.add_get("/test", handle_test_widget)
     app.router.add_get("/ws", handle_websocket)
 
     return app

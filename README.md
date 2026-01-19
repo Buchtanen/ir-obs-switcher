@@ -1,4 +1,4 @@
-# iRacing → OBS Auto Scene Switcher (Python) + External TUI
+# iRacing → OBS Auto Scene Switcher (Python)
 
 **Status projektu**: Viz [STATUS.md](STATUS.md) pro přehled co je hotové a co následuje.
 
@@ -7,7 +7,6 @@ Tento repozitář obsahuje službu, která:
 - čte stav iRacingu přes `pyirsdk` (shared memory)
 - automaticky přepíná OBS scény přes `obs-websocket` v5
 - vystavuje lokální HTTP + WebSocket API
-- poskytuje externí Textual TUI dashboard jako samostatný proces
 
 ## Cíle
 
@@ -25,9 +24,6 @@ Core:
 - pydantic
 - logging
 
-TUI:
-- textual
-
 Testy:
 - pytest
 - pytest-asyncio
@@ -38,6 +34,10 @@ Testy:
 ```
 iracing-obs-switcher/
   README.md
+  STATUS.md
+  CHANGELOG.md
+  tests.md
+  RACELAB_VR_SETUP.md
   pyproject.toml
   config/
     config.example.ini
@@ -62,15 +62,21 @@ iracing-obs-switcher/
         __init__.py
         api.py
         commands.py
+        dashboards.py
+        event_log.py
       util/
         __init__.py
         logging.py
         clock.py
-    irswitch_tui/
-      __init__.py
-      main.py
-      ui.py
-      client.py
+        hotkeys.py
+        loading_tracker.py
+        notifications.py
+  tests/
+    test_*.py
+  start_app.ps1
+  build_exe.ps1
+  build_exe.sh
+  loading_history.json  # Generuje se automaticky
 ```
 
 ## Quick Start
@@ -110,6 +116,12 @@ password = tvé_obs_heslo
 
 ### 4. Spuštění služby
 
+**PowerShell skript (doporučeno)**:
+```powershell
+.\start_app.ps1 --config config\config.ini
+```
+
+**Nebo přímo**:
 ```powershell
 irswitchd --config config/config.ini
 ```
@@ -122,19 +134,30 @@ API server started on http://127.0.0.1:17321
 Starting main loop
 ```
 
-### 5. Spuštění TUI (volitelné)
+**Poznámka**: Pokud OBS neběží, aplikace se spustí i tak - připojení k OBS proběhne na pozadí.
 
-V novém terminálu:
-
-```powershell
-irswitch-tui --url http://127.0.0.1:17321
-```
-
-### 6. Testování
+### 5. Testování
 
 1. Spusť iRacing
-2. V TUI nebo logu sleduj změny módu (IDLE → GARAGE → RACE)
+2. V logu nebo HTML dashboardech sleduj změny módu (IDLE → GARAGE → RACE)
 3. OBS by měl automaticky přepínat scény podle módu
+
+### 6. HTML Dashboards (volitelné)
+
+Aplikace poskytuje dva HTML dashboardy:
+
+**GR Dashboard** (velký monitor):
+- URL: `http://127.0.0.1:17321/gr-status`
+- JavaScript auto-update
+- Zobrazuje status, event log, streaming info
+- Konfigurovatelné obrázky a loga
+
+**VR Dashboard** (pro VR):
+- URL: `http://127.0.0.1:17321/vr-status`
+- Minimalistický design, bílé písmo, větší fonty
+- Bez JavaScriptu (pro RaceLab VR)
+- ⚠️ **Omezení**: RaceLab VR widgety nepodporují auto-refresh - widget se neaktualizuje automaticky
+- Viz [RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md) pro detaily a alternativy
 
 ## Konfigurace (INI)
 
@@ -142,11 +165,224 @@ Viz `config/config.example.ini` pro kompletní příklad.
 
 ### Sekce konfigurace
 
-- `[app]` - HTTP server nastavení (host, port, log level)
-- `[iracing]` - Polling frekvence (poll_hz)
-- `[obs]` - WebSocket URL a heslo
-- `[switching]` - Debounce, cooldown, override nastavení
-- `[scenes]` - Mapování módu na názvy OBS scén
+#### `[app]` - HTTP server nastavení
+
+- **`http_host`** (výchozí: `127.0.0.1`)
+  - IP adresa, na které běží HTTP server
+  - **Kdy použít**: Změň na `0.0.0.0` pokud chceš přístup z jiných počítačů v síti
+  - **Příklad**: `http_host = 0.0.0.0` pro přístup z jiných zařízení
+
+- **`http_port`** (povinné)
+  - Port pro HTTP server a WebSocket
+  - **Kdy použít**: Změň pokud je port obsazený jinou aplikací
+  - **Příklad**: `http_port = 17321`
+
+- **`log_level`** (výchozí: `INFO`)
+  - Úroveň logování: `DEBUG`, `INFO`, `WARNING`, `ERROR`
+  - **Kdy použít**: 
+    - `DEBUG` - pro ladění problémů (zobrazuje všechny detaily)
+    - `INFO` - normální provoz (doporučeno)
+    - `WARNING` - jen varování a chyby
+  - **Příklad**: `log_level = DEBUG` pro detailní logy
+
+- **`notifications_enabled`** (výchozí: `true`)
+  - Zapne/vypne Windows notifikace při změně připojení
+  - **Kdy použít**: Nastav na `false` pokud nechceš notifikace
+  - **Příklad**: `notifications_enabled = false`
+
+#### `[iracing]` - iRacing detekce
+
+- **`poll_hz`** (povinné)
+  - Frekvence čtení dat z iRacing SDK (polling rate)
+  - **Kdy použít**: 
+    - Nižší hodnoty (3-5 Hz) = menší zátěž CPU, pomalejší reakce
+    - Vyšší hodnoty (10-20 Hz) = rychlejší reakce, větší zátěž
+  - **Doporučení**: `5` Hz je dobrý kompromis (200ms interval)
+  - **Příklad**: `poll_hz = 5`
+
+- **`quit_stall_seconds`** (výchozí: `0.4`)
+  - Práh pro detekci ukončení iRacing (v sekundách)
+  - **Kdy použít**: 
+    - Pokud se QUIT detekuje příliš brzy → zvyš hodnotu (např. `0.6`)
+    - Pokud se QUIT nedetekuje → sniž hodnotu (např. `0.3`)
+  - **Jak to funguje**: Aplikace detekuje, když `SessionTime` přestane měnit hodnotu
+  - **Příklad**: `quit_stall_seconds = 0.4`
+
+#### `[obs]` - OBS WebSocket připojení
+
+- **`ws_url`** (povinné)
+  - WebSocket URL OBS serveru
+  - **Kdy použít**: Změň pokud OBS běží na jiném počítači nebo portu
+  - **Příklad**: `ws_url = ws://127.0.0.1:4455` (lokální), `ws://192.168.1.100:4455` (síť)
+
+- **`password`** (povinné)
+  - Heslo pro OBS WebSocket server
+  - **Kdy použít**: Musí odpovídat heslu nastavenému v OBS (Tools → WebSocket Server Settings)
+  - **Příklad**: `password = tvé_obs_heslo`
+
+- **`required_profile`** (volitelné)
+  - Název OBS profilu, který musí být aktivní
+  - **Kdy použít**: Pokud máš více OBS profilů a chceš, aby switcher fungoval jen s konkrétním
+  - **Příklad**: `required_profile = RacingProfile`
+
+#### `[switching]` - Logika přepínání scén
+
+- **`autoswitch_default`** (povinné)
+  - Výchozí stav automatického přepínání při startu
+  - **Kdy použít**: 
+    - `true` - automatické přepínání zapnuté hned po startu
+    - `false` - automatické přepínání vypnuté (musíš ho zapnout ručně přes API)
+  - **Příklad**: `autoswitch_default = true`
+
+- **`debounce_ms`** (povinné)
+  - Čekací doba před přepnutím scény po změně módu (v milisekundách)
+  - **Kdy použít**: 
+    - Vyšší hodnoty (1000-2000ms) = stabilnější, ale pomalejší reakce
+    - Nižší hodnoty (500-900ms) = rychlejší reakce, ale může dojít k flappingu
+  - **Jak to funguje**: Po změně módu čeká X ms, než skutečně přepne scénu (zabraňuje flappingu)
+  - **Doporučení**: `900` ms je dobrý kompromis
+  - **Příklad**: `debounce_ms = 900`
+
+- **`cooldown_ms`** (povinné)
+  - Minimální interval mezi přepnutími scén (v milisekundách)
+  - **Kdy použít**: 
+    - Vyšší hodnoty (1500-2000ms) = zabraňuje příliš rychlému přepínání
+    - Nižší hodnoty (500-1000ms) = umožňuje rychlejší přepínání
+  - **Jak to funguje**: Po přepnutí scény musí uplynout X ms před dalším přepnutím
+  - **Doporučení**: `1000` ms (1 sekunda)
+  - **Příklad**: `cooldown_ms = 1000`
+
+- **`override_seconds`** (povinné)
+  - Délka trvání manuálního override scény (v sekundách)
+  - **Kdy použít**: 
+    - Vyšší hodnoty (180-300s) = override trvá déle
+    - Nižší hodnoty (60-120s) = override trvá kratší dobu
+  - **Jak to funguje**: Když použiješ override přes API, trvá X sekund než se vrátí automatické přepínání
+  - **Doporučení**: `120` sekund (2 minuty)
+  - **Příklad**: `override_seconds = 120`
+
+- **`safe_scene`** (povinné)
+  - Název scény, která se použije když není iRacing připojen nebo při chybách
+  - **Kdy použít**: Nastav na scénu, která je bezpečná pro zobrazení (např. menu, idle scéna)
+  - **Příklad**: `safe_scene = Idle`
+
+- **`auto_start_broadcast`** (výchozí: `false`)
+  - Automatické spuštění OBS broadcastu během loadingu iRacing
+  - **Kdy použít**: 
+    - `true` - pokud chceš automaticky spouštět stream během loadingu
+    - `false` - pokud chceš spouštět stream ručně
+  - **Jak to funguje**: Spustí broadcast v X% průměrné doby loadingu (viz `auto_start_at_percent`)
+  - **Příklad**: `auto_start_broadcast = true`
+
+- **`auto_start_at_percent`** (výchozí: `50`)
+  - Procento průměrné doby loadingu, kdy se spustí broadcast (0-100)
+  - **Kdy použít**: 
+    - `30-50` - spustí se brzy během loadingu
+    - `70-90` - spustí se později, téměř na konci loadingu
+  - **Jak to funguje**: Pokud průměrný loading trvá 12s a nastavíš `50`, broadcast se spustí po 6s
+  - **Příklad**: `auto_start_at_percent = 50`
+
+- **`default_loading_time_seconds`** (výchozí: `12.0`)
+  - Výchozí doba loadingu, pokud nemáš historii (použije se při prvním spuštění)
+  - **Kdy použít**: Nastav podle typické doby loadingu na tvém systému
+  - **Jak to funguje**: Aplikace sleduje historii loadingu a počítá průměr, ale při prvním spuštění použije tuto hodnotu
+  - **Příklad**: `default_loading_time_seconds = 12.0`
+
+- **`auto_stop_stream`** (výchozí: `false`)
+  - Automatické zastavení OBS streamu po ukončení iRacing (QUIT mód)
+  - **Kdy použít**: 
+    - `true` - pokud chceš automaticky zastavit stream po ukončení hry
+    - `false` - pokud chceš zastavit stream ručně
+  - **Příklad**: `auto_stop_stream = true`
+
+- **`stop_stream_after_seconds`** (výchozí: `30`)
+  - Po kolika sekundách po QUIT se zastaví stream
+  - **Kdy použít**: 
+    - Nižší hodnoty (10-20s) - zastaví se rychle po ukončení
+    - Vyšší hodnoty (30-60s) - zastaví se později (dává čas na ukončení hry)
+  - **Příklad**: `stop_stream_after_seconds = 30`
+
+#### `[hotkeys]` - Globální hotkey (volitelné)
+
+- **`restart_hotkey`** (volitelné)
+  - Globální klávesová zkratka pro RESTART mód
+  - **Kdy použít**: Pokud chceš mít možnost přepnout na RESTART scénu při ukončení iRacing (např. pro VR restarty)
+  - **Jak to funguje**: Drž tuto kombinaci kláves když ukončuješ iRacing → aplikace detekuje QUIT a přepne na RESTART scénu místo QUIT
+  - **Formát**: `modifier+modifier+key` (např. `ctrl+shift+f7`, `alt+r`)
+  - **Příklad**: `restart_hotkey = ctrl+shift+f7`
+
+#### `[scenes]` - Mapování módu na OBS scény
+
+- **`IDLE`** (povinné)
+  - Název OBS scény pro IDLE mód (menu/lobby)
+  - **Kdy nastává**: Když je iRacing v menu nebo lobby
+  - **Příklad**: `IDLE = Idle`
+
+- **`GARAGE`** (povinné)
+  - Název OBS scény pro GARAGE mód (garáž ve hře)
+  - **Kdy nastává**: Když je hráč v garáži během session
+  - **Příklad**: `GARAGE = Pits`
+
+- **`RACE`** (povinné)
+  - Název OBS scény pro RACE mód (na trati)
+  - **Kdy nastává**: Když je hráč na trati v autě
+  - **Příklad**: `RACE = Race`
+
+- **`REPLAY`** (povinné)
+  - Název OBS scény pro REPLAY mód (přehrávání)
+  - **Kdy nastává**: Když běží replay v iRacing
+  - **Příklad**: `REPLAY = Replay`
+
+- **`QUIT`** (povinné)
+  - Název OBS scény pro QUIT mód (ukončení hry)
+  - **Kdy nastává**: Když je iRacing ukončen (detekce přes `quit_stall_seconds`)
+  - **Příklad**: `QUIT = End`
+
+- **`RESTART`** (volitelné)
+  - Název OBS scény pro RESTART mód
+  - **Kdy nastává**: Když je detekován QUIT a zároveň je držen `restart_hotkey`
+  - **Kdy použít**: Pouze pokud používáš `restart_hotkey`
+  - **Příklad**: `RESTART = Restart`
+
+**Důležité**: Názvy scén musí přesně odpovídat názvům scén v OBS (case-sensitive)!
+
+#### `[dashboards]` - HTML dashboardy (volitelné)
+
+- **`dashboard_update_fps`** (výchozí: `2`)
+  - Frekvence aktualizace HTML dashboardů (FPS)
+  - **Kdy použít**: 
+    - Nižší hodnoty (1-2 FPS) = menší zátěž, pomalejší aktualizace
+    - Vyšší hodnoty (5-10 FPS) = rychlejší aktualizace, větší zátěž
+  - **Doporučení**: `2` FPS (500ms interval) je dostatečné
+  - **Příklad**: `dashboard_update_fps = 2`
+
+- **`dashboard_event_log_size`** (výchozí: `50`)
+  - Počet posledních eventů zobrazených v GR dashboardu
+  - **Kdy použít**: 
+    - Vyšší hodnoty (100-200) = více historie, ale větší paměť
+    - Nižší hodnoty (20-50) = méně historie, menší paměť
+  - **Příklad**: `dashboard_event_log_size = 50`
+
+- **`dashboard_gr_background_image`** (volitelné)
+  - Cesta k obrázku pozadí pro GR dashboard (`/gr-status`)
+  - **Kdy použít**: Pokud chceš vlastní pozadí místo černé
+  - **Příklad**: `dashboard_gr_background_image = C:/path/to/background.png`
+
+- **`dashboard_gr_logo_obs`** (volitelné)
+  - Cesta k OBS logu pro GR dashboard
+  - **Příklad**: `dashboard_gr_logo_obs = C:/path/to/obs_logo.png`
+
+- **`dashboard_gr_logo_iracing`** (volitelné)
+  - Cesta k iRacing logu pro GR dashboard
+  - **Příklad**: `dashboard_gr_logo_iracing = C:/path/to/iracing_logo.png`
+
+- **`dashboard_gr_logo_app`** (volitelné)
+  - Cesta k logu aplikace pro GR dashboard
+  - **Příklad**: `dashboard_gr_logo_app = C:/path/to/app_logo.png`
+
+- **`dashboard_vr_icons_path`** (volitelné)
+  - Cesta k adresáři s ikonami pro VR dashboard (`/vr-status`)
+  - **Příklad**: `dashboard_vr_icons_path = C:/path/to/vr_icons/`
 
 ## Spuštění (Windows)
 
@@ -163,12 +399,6 @@ Core:
 irswitchd --config config/config.ini
 ```
 
-TUI:
-
-```powershell
-irswitch-tui --url http://127.0.0.1:17321
-```
-
 ## Testy
 
 ```powershell
@@ -177,6 +407,8 @@ pytest
 ```
 
 **Dokumentace testů**: Detailní popis všech testů, co testují a proč, najdeš v [tests.md](tests.md).
+
+**Test coverage**: Projekt obsahuje 50+ unit testů pokrývajících všechny klíčové komponenty včetně E2E testů hlavní smyčky.
 
 ## Vytvoření EXE souborů
 
@@ -187,7 +419,6 @@ pytest
 .\build_exe.ps1 --all
 # Nebo jednotlivě:
 .\build_exe.ps1 --core    # Pouze core service
-.\build_exe.ps1 --tui     # Pouze TUI
 ```
 
 **Linux/Mac (Bash)**:
@@ -198,7 +429,6 @@ chmod +x build_exe.sh
 
 Výstupní EXE soubory budou v `dist/`:
 - `dist/irswitchd.exe` - Core service
-- `dist/irswitch-tui.exe` - TUI klient
 
 ### Ruční build (PyInstaller)
 
@@ -210,21 +440,11 @@ pip install pyinstaller
 pyinstaller --onefile --name irswitchd --collect-all irswitch src\irswitch\main.py
 ```
 
-**TUI**:
-```powershell
-pyinstaller --onefile --name irswitch-tui --collect-all irswitch_tui src\irswitch_tui\main.py
-```
-
 ### Spuštění EXE
 
 **Core service**:
 ```powershell
 dist\irswitchd.exe --config config\config.ini
-```
-
-**TUI**:
-```powershell
-dist\irswitch-tui.exe --url http://127.0.0.1:17321
 ```
 
 ## Instalace jako Windows Service
@@ -292,6 +512,7 @@ Konkrétní mapování scén řešíte v `[scenes]` v INI souboru.
 - **[tests.md](tests.md)** - Detailní dokumentace všech testů
 - **[STATUS.md](STATUS.md)** - Přehled stavu projektu a co je hotové
 - **[CHANGELOG.md](CHANGELOG.md)** - Historie změn projektu
+- **[RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md)** - Návod pro nastavení VR dashboardu v RaceLab VR
 
 ---
 
@@ -389,46 +610,15 @@ ws.onmessage = (event) => {
 
 ---
 
-## TUI Dokumentace
+## Test Widget
 
-Textual TUI poskytuje real-time monitoring a ovládání služby.
+Pro testování JavaScript funkcionality v běžném webovém prohlížeči:
 
-### Spuštění
+**URL**: `http://127.0.0.1:17321/test`
 
-```powershell
-irswitch-tui --url http://127.0.0.1:17321
-```
+Widget zobrazí "JS JEDE" pokud JavaScript funguje správně.
 
-### Ovládání
-
-#### Keybindings
-
-- `q` - Ukončit TUI
-- `t` - Přepnout autoswitch on/off
-
-#### Tlačítka
-
-- **Toggle Autoswitch** - Zapne/vypne automatické přepínání scén
-- **Override: Race** - Dočasně přepne na Race scénu (120 sekund)
-- **Override: Pits** - Dočasně přepne na Pits scénu (120 sekund)
-- **Override: Idle** - Dočasně přepne na Idle scénu (120 sekund)
-
-### Zobrazení
-
-**Status Panel** zobrazuje:
-- **iRacing**: Connected/Disconnected
-- **OBS**: Connected/Disconnected
-- **Mode**: Aktuální iRacing mód (IDLE, GARAGE, RACE, REPLAY)
-- **Current Scene**: Aktuální OBS scéna
-- **Target Scene**: Cílová scéna (kam se má přepnout)
-- **Autoswitch**: ON/OFF
-- **Reason**: Důvod aktuálního stavu (např. "mode:RACE (debounced)")
-
-**Control Panel** obsahuje tlačítka pro ovládání.
-
-### Real-time Updates
-
-TUI automaticky aktualizuje zobrazení při změně stavu přes WebSocket.
+**Poznámka**: Tento widget **není určen pro RaceLab VR**, protože RaceLab VR widgety nepodporují JavaScript ani auto-refresh. VR dashboard (`/vr-status`) je dostupný, ale v RaceLab VR se neaktualizuje automaticky - viz [RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md) pro detaily.
 
 ---
 
@@ -436,7 +626,7 @@ TUI automaticky aktualizuje zobrazení při změně stavu přes WebSocket.
 
 ### OBS se nepřipojuje
 
-**Příznaky**: V logu vidíš "Failed to connect to OBS" nebo "OBS: Disconnected" v TUI
+**Příznaky**: V logu vidíš "Failed to connect to OBS" nebo "OBS: Disconnected"
 
 **Řešení**:
 1. Zkontroluj, že OBS Studio běží
@@ -447,7 +637,7 @@ TUI automaticky aktualizuje zobrazení při změně stavu přes WebSocket.
 
 ### iRacing není detekován
 
-**Příznaky**: "iRacing: Disconnected" v TUI, mode zůstává IDLE
+**Příznaky**: "iRacing: Disconnected" v logu, mode zůstává IDLE
 
 **Řešení**:
 1. Zkontroluj, že iRacing běží
@@ -460,10 +650,10 @@ TUI automaticky aktualizuje zobrazení při změně stavu přes WebSocket.
 **Příznaky**: Mode se mění, ale OBS scéna ne
 
 **Řešení**:
-1. Zkontroluj `autoswitch` - pokud je OFF, zapni ho (tlačítko v TUI nebo API)
+1. Zkontroluj `autoswitch` - pokud je OFF, zapni ho (přes API nebo GR dashboard)
 2. Zkontroluj názvy scén v OBS - musí přesně odpovídat `[scenes]` v config
 3. Zkontroluj cooldown - možná je příliš krátký interval mezi změnami
-4. Podívej se na `reason` v TUI - může být "cooldown" nebo "debouncing"
+4. Podívej se na `reason` v logu nebo GR dashboardu - může být "cooldown" nebo "debouncing"
 5. Zkontroluj logy pro detailní informace
 
 ### Služba se nespustí
@@ -476,15 +666,6 @@ TUI automaticky aktualizuje zobrazení při změně stavu přes WebSocket.
 3. Zkontroluj, že port 17321 není obsazený jinou aplikací
 4. Podívej se na error message - často obsahuje konkrétní problém
 
-### TUI se nepřipojuje k API
-
-**Příznaky**: "Failed to connect" při spuštění TUI
-
-**Řešení**:
-1. Zkontroluj, že core služba běží (`irswitchd`)
-2. Ověř URL - musí být `http://127.0.0.1:17321` (nebo podle config)
-3. Zkontroluj firewall
-4. Zkontroluj logy core služby - mělo by být "API server started"
 
 ### Jak zkontrolovat logy
 
@@ -501,3 +682,44 @@ Nebo změň `log_level = DEBUG` v config pro více detailů.
 - `scene_switch` - přepnutí scény (s latencí)
 - `override_applied` - aplikace override
 - `connection_lost` / `connection_restored` - změna připojení
+- `loading_started` / `loading_ended` - začátek/konec loadingu
+- `stream_started` / `stream_stopped` - spuštění/zastavení streamu
+
+## Nové funkce (leden 2026)
+
+### Loading Time Tracker
+- Automatické sledování doby trvání loading screenů iRacing
+- Historie se ukládá do `loading_history.json`
+- Průměrná doba se používá pro automatické spuštění broadcastu
+- Konfigurovatelný výchozí čas pro první spuštění
+
+### Event Log System
+- Thread-safe event log pro ukládání událostí
+- Zobrazuje se v GR dashboardu
+- Konfigurovatelná velikost (výchozí 50 eventů)
+- Typy: connection, scene_switch, loading, stream, override, atd.
+
+### HTML Dashboards
+- **GR Dashboard**: Velký dashboard s JavaScript auto-update, event log, streaming status
+- **VR Dashboard**: Minimalistický dashboard pro VR (⚠️ RaceLab VR nepodporuje auto-refresh)
+- Konfigurovatelné obrázky a loga
+- Cache-busting pro zabránění cachování
+
+### Broadcast Management
+- Automatické spuštění broadcastu během loadingu (konfigurovatelné)
+- Automatické zastavení streamu po QUIT (konfigurovatelné)
+- Kontrola připravenosti broadcastu před spuštěním
+
+### Session Information
+- Detekce typu session během loadingu (Practice, Qualify, Race)
+- Ukládání do event logu
+- Zobrazení v dashboardech
+
+### Background OBS Connection
+- Non-blocking připojení k OBS při startu
+- Aplikace startuje i když OBS neběží
+- Background task pro opakované pokusy o připojení
+
+### Notifications Control
+- Globální zapnutí/vypnutí notifikací přes config
+- Respektuje se v `show_toast()` funkci

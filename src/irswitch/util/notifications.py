@@ -15,6 +15,14 @@ MB_ICONWARNING = 0x30
 MB_ICONERROR = 0x10
 MB_TOPMOST = 0x40000
 
+# Global flag to enable/disable notifications
+_notifications_enabled: bool = True
+
+
+def set_notifications_enabled(enabled: bool) -> None:
+    """Set global notifications enabled flag."""
+    global _notifications_enabled
+    _notifications_enabled = enabled
 
 
 def show_toast(title: str, message: str, duration: int = 3) -> None:
@@ -27,6 +35,10 @@ def show_toast(title: str, message: str, duration: int = 3) -> None:
         message: Notification message
         duration: Duration in seconds
     """
+    # Check global notifications flag first
+    if not _notifications_enabled:
+        return
+    
     if platform.system() != "Windows":
         return  # Only works on Windows
     

@@ -81,6 +81,36 @@ class IRacingReader:
                 result[name] = None
         return result
 
+    async def read_session_info(self) -> Optional[dict[str, object]]:
+        """
+        Read session information from iRacing (async).
+        
+        Returns:
+            Dictionary with session info (SessionType, SessionName, SessionNum, etc.) or None if disconnected
+        """
+        if not self.is_connected():
+            return None
+        
+        # Variables for session type detection
+        session_var_names = [
+            "SessionType",  # 0=test, 1=practice, 2=qualify, 3=warmup, 4=race
+            "SessionName",  # Name of the session
+            "SessionNum",   # Session number in weekend (0-based)
+            "SessionTime", # Current session time
+            "SessionState", # Session state string
+            "SessionStateNum", # Session state number
+        ]
+        
+        try:
+            data = await asyncio.wait_for(
+                asyncio.to_thread(self.read_vars, session_var_names),
+                timeout=2.0
+            )
+            return data
+        except Exception as e:
+            logger.debug(f"Failed to read session info: {e}")
+            return None
+
     async def read_mode(self) -> Optional[DrivingMode]:
         """
         Read and extract driving mode from iRacing (async).

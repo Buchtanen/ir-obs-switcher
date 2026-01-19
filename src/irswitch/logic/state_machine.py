@@ -228,6 +228,9 @@ class StateMachine:
             current_scene=current_scene if should_switch else current_state.current_scene,
             last_switch_ts=last_switch_ts,
             reason=switch_reason,
+            session_type=current_state.session_type,
+            session_name=current_state.session_name,
+            session_num=current_state.session_num,
         )
 
     def apply_override(self, current_state: SwitchState, scene: str, seconds: int) -> SwitchState:
@@ -256,6 +259,9 @@ class StateMachine:
             current_scene=current_state.current_scene,
             last_switch_ts=current_state.last_switch_ts,
             reason=f"override_applied:{scene}",
+            session_type=current_state.session_type,
+            session_name=current_state.session_name,
+            session_num=current_state.session_num,
         )
 
     def toggle_autoswitch(self, current_state: SwitchState) -> SwitchState:
@@ -279,4 +285,7 @@ class StateMachine:
             current_scene=current_state.current_scene,
             last_switch_ts=current_state.last_switch_ts,
             reason=f"autoswitch_toggled:{not current_state.autoswitch}",
+            session_type=current_state.session_type,
+            session_name=current_state.session_name,
+            session_num=current_state.session_num,
         )

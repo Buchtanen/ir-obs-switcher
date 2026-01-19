@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -39,65 +40,90 @@ def format_stream_duration(ms: Optional[int]) -> str:
         return f"{minutes:02d}:{seconds:02d}"
 
 
+def format_duration(seconds: Optional[float]) -> str:
+    """Format duration in seconds to HH:MM:SS or MM:SS format."""
+    if seconds is None:
+        return "N/A"
+    
+    total_seconds = int(seconds)
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    secs = total_seconds % 60
+    
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    else:
+        return f"{minutes:02d}:{secs:02d}"
+
+
 async def handle_gr_status(request: web.Request) -> web.Response:
     """Handle GET /gr-status - large dashboard."""
-    config: Optional[AppConfig] = request.app.get("config")
-    if config is None:
-        return web.Response(text="Configuration not available", status=500)
-
-    # Get current state
-    state = _get_current_state()
-    if state is None:
-        return web.Response(text="Service not initialized", status=503)
-
-    # Get streaming status
-    is_streaming = False
-    stream_duration_ms: Optional[int] = None
-    obs_client = _get_obs_client()
-    if obs_client is not None and state.connected_obs:
-        try:
-            is_streaming, stream_duration_ms = await obs_client.get_stream_status()
-        except Exception:
-            pass
-
-    # Get OBS profile
-    obs_profile: Optional[str] = None
-    if obs_client is not None and state.connected_obs:
-        try:
-            obs_profile = await obs_client.get_current_profile()
-            if obs_profile is None:
-                logger.debug("OBS profile is None - profile may not be available via WebSocket API")
-        except Exception as e:
-            logger.debug(f"Failed to get OBS profile: {e}")
-            obs_profile = None
-
-    # Get recent events
-    events = []
     try:
-        event_log = get_event_log()
-        events_data = await event_log.get_recent_events(config.dashboard_event_log_size)
-        events = [
-            {
-                "timestamp": e.timestamp,
-                "type": e.type,
-                "message": e.message,
-                "data": e.data,
-            }
-            for e in events_data
-        ]
-    except Exception as e:
-        logger.debug(f"Failed to get events: {e}")
+        config: Optional[AppConfig] = request.app.get("config")
+        if config is None:
+            return web.Response(text="Configuration not available", status=500)
 
-    # Calculate update interval from FPS
-    update_interval_ms = int(1000 / config.dashboard_update_fps)
+        # Get current state
+        state = _get_current_state()
+        if state is None:
+            return web.Response(text="Service not initialized", status=503)
 
-    # Build image paths
-    bg_image = config.dashboard_gr_background_image or ""
-    logo_obs = config.dashboard_gr_logo_obs or ""
-    logo_iracing = config.dashboard_gr_logo_iracing or ""
-    logo_app = config.dashboard_gr_logo_app or ""
+        # Get streaming status
+        is_streaming = False
+        stream_duration_ms: Optional[int] = None
+        obs_client = _get_obs_client()
+        if obs_client is not None and state.connected_obs:
+            try:
+                is_streaming, stream_duration_ms = await obs_client.get_stream_status()
+            except Exception:
+                pass
 
-    html = f"""<!DOCTYPE html>
+        # Get OBS profile
+        obs_profile: Optional[str] = None
+        if obs_client is not None and state.connected_obs:
+            try:
+                obs_profile = await obs_client.get_current_profile()
+                if obs_profile is None:
+                    logger.debug("OBS profile is None - profile may not be available via WebSocket API")
+            except Exception as e:
+                logger.debug(f"Failed to get OBS profile: {e}")
+                obs_profile = None
+
+        # Get recent events
+        events = []
+        try:
+            event_log = get_event_log()
+            events_data = await event_log.get_recent_events(config.dashboard_event_log_size)
+            events = [
+                {
+                    "timestamp": e.timestamp,
+                    "type": e.type,
+                    "message": e.message,
+                    "data": e.data,
+                }
+                for e in events_data
+            ]
+        except Exception as e:
+            logger.debug(f"Failed to get events: {e}")
+
+        # Get metrics
+        from irswitch.server.metrics import get_metrics
+        metrics = get_metrics()
+        metrics_dict = metrics.to_dict(state)
+
+        # Calculate update interval from FPS
+        update_interval_ms = int(1000 / config.dashboard_update_fps)
+        
+        # Cache busting timestamp
+        cache_bust = int(time.time() * 1000)
+
+        # Build image paths
+        bg_image = config.dashboard_gr_background_image or ""
+        logo_obs = config.dashboard_gr_logo_obs or ""
+        logo_iracing = config.dashboard_gr_logo_iracing or ""
+        logo_app = config.dashboard_gr_logo_app or ""
+
+        html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -338,7 +364,13 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             
             <div class="status-card">
                 <h3>Stream Duration</h3>
-                <div class="value">{format_stream_duration(stream_duration_ms)}</div>
+                <div class="value" id="stream-duration-display">
+                    {format_stream_duration(stream_duration_ms)}
+                    {f' (Session: {format_duration(metrics_dict.get("stream_duration_current_session_seconds"))})' if metrics_dict.get("stream_duration_current_session_seconds") is not None else ''}
+                </div>
+                <div class="value" style="font-size: 0.9em; color: #aaa; margin-top: 5px;" id="stream-duration-cumulative">
+                    Total: {format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}
+                </div>
             </div>
             
             <div class="status-card">
@@ -352,6 +384,58 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             </div>
         </div>
         
+        <div class="status-grid" style="margin-top: 20px;">
+            <div class="status-card">
+                <h3>Session Type</h3>
+                <div class="value">{state.session_type or 'N/A'}</div>
+            </div>
+            
+            <div class="status-card">
+                <h3>Session Name</h3>
+                <div class="value" style="font-size: 1.2em;">{state.session_name or 'N/A'}</div>
+            </div>
+            
+            <div class="status-card">
+                <h3>Session Num</h3>
+                <div class="value">{state.session_num if state.session_num is not None else 'N/A'}</div>
+            </div>
+        </div>
+        
+        <div class="status-grid" style="margin-top: 20px;">
+            <div class="status-card">
+                <h3>Scene Switches</h3>
+                <div class="value" id="metrics-switches">{metrics_dict.get('scene_switches_total', 0)}</div>
+            </div>
+            
+            <div class="status-card">
+                <h3>Avg Latency</h3>
+                <div class="value" id="metrics-latency">
+                    {f"{metrics_dict.get('scene_switch_latency_avg_ms', 0):.4f} ms" if metrics_dict.get('scene_switch_latency_avg_ms') is not None else 'N/A'}
+                </div>
+            </div>
+            
+            <div class="status-card">
+                <h3>Uptime</h3>
+                <div class="value" id="metrics-uptime">{format_duration(metrics_dict.get('uptime_seconds', 0))}</div>
+            </div>
+            
+            <div class="status-card">
+                <h3>iRacing Connected</h3>
+                <div class="value" id="metrics-iracing-time">
+                    {format_duration(metrics_dict.get('iracing_connected_duration_seconds')) if metrics_dict.get('iracing_connected_duration_seconds') is not None else 'N/A'}
+                    {f' ({format_duration(metrics_dict.get("iracing_connected_duration_current_session_seconds"))})' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
+                </div>
+            </div>
+            
+            <div class="status-card">
+                <h3>OBS Connected</h3>
+                <div class="value" id="metrics-obs-time">
+                    {format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else 'N/A'}
+                    {f' ({format_duration(metrics_dict.get("obs_connected_duration_current_session_seconds"))})' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
+                </div>
+            </div>
+        </div>
+        
         <div class="status-card" style="margin-bottom: 30px;">
             <h3>Scene Switch Reason</h3>
             <div class="value" style="font-size: 1.2em;">{state.reason}</div>
@@ -360,6 +444,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <div class="controls">
             <button onclick="toggleAutoswitch()">Toggle Autoswitch</button>
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
+            <button onclick="reloadConfig()">Reload Config</button>
         </div>
         
         <div class="event-log">
@@ -416,14 +501,30 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     }}
                 }}
                 
-                // Update stream duration
-                updateValue('Stream Duration', formatStreamDuration(data.stream_duration_ms));
+                // Update stream duration - show current session from OBS and cumulative from metrics
+                const streamDurationEl = document.querySelector('#stream-duration-display');
+                const streamCumulativeEl = document.querySelector('#stream-duration-cumulative');
+                if (streamDurationEl) {{
+                    let text = formatStreamDuration(data.stream_duration_ms);
+                    if (data.stream_duration_current_session_seconds !== null && data.stream_duration_current_session_seconds !== undefined) {{
+                        text += ' (Session: ' + formatDuration(data.stream_duration_current_session_seconds) + ')';
+                    }}
+                    streamDurationEl.textContent = text;
+                }}
+                if (streamCumulativeEl && data.stream_duration_seconds !== null && data.stream_duration_seconds !== undefined) {{
+                    streamCumulativeEl.textContent = 'Total: ' + formatDuration(data.stream_duration_seconds);
+                }}
                 
                 // Update mode
                 updateValue('Mode', data.mode);
                 
                 // Update autoswitch
                 updateValue('Autoswitch', data.autoswitch ? 'ON' : 'OFF');
+                
+                // Update session info
+                updateValue('Session Type', data.session_type || 'N/A');
+                updateValue('Session Name', data.session_name || 'N/A');
+                updateValue('Session Num', data.session_num !== null && data.session_num !== undefined ? data.session_num : 'N/A');
                 
                 // Update reason - find the reason card specifically
                 const reasonCard = Array.from(document.querySelectorAll('.status-card')).find(card => {{
@@ -501,6 +602,18 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             return `${{minutes.toString().padStart(2, '0')}}:${{seconds.toString().padStart(2, '0')}}`;
         }}
         
+        function formatDuration(seconds) {{
+            if (seconds === null || seconds === undefined) return 'N/A';
+            const totalSeconds = Math.floor(seconds);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            if (hours > 0) {{
+                return `${{hours.toString().padStart(2, '0')}}:${{minutes.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
+            }}
+            return `${{minutes.toString().padStart(2, '0')}}:${{secs.toString().padStart(2, '0')}}`;
+        }}
+        
         async function toggleAutoswitch() {{
             try {{
                 await fetch(`${{API_BASE}}/autoswitch/toggle`, {{ method: 'POST' }});
@@ -520,30 +633,166 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }}
         }}
         
+        async function reloadConfig() {{
+            try {{
+                const response = await fetch(`${{API_BASE}}/config/reload`, {{ method: 'POST' }});
+                const data = await response.json();
+                
+                if (response.ok) {{
+                    // Show success notification
+                    alert('Config reloaded successfully');
+                }} else {{
+                    // Show error notification
+                    alert('Failed to reload config: ' + (data.error || 'Unknown error'));
+                }}
+            }} catch (error) {{
+                console.error('Failed to reload config:', error);
+                alert('Failed to reload config: ' + error.message);
+            }}
+        }}
+        
+        async function updateMetrics() {{
+            try {{
+                const response = await fetch(`${{API_BASE}}/metrics`);
+                const data = await response.json();
+                
+                // Update metrics
+                updateValue('Scene Switches', data.scene_switches_total || 0);
+                const latency = data.scene_switch_latency_avg_ms;
+                updateValue('Avg Latency', latency !== null && latency !== undefined ? latency.toFixed(4) + ' ms' : 'N/A');
+                updateValue('Uptime', formatDuration(data.uptime_seconds));
+                
+                // iRacing Connected - show cumulative (current session in parentheses if available)
+                const iracingCumulative = data.iracing_connected_duration_seconds;
+                const iracingCurrent = data.iracing_connected_duration_current_session_seconds;
+                let iracingText = formatDuration(iracingCumulative);
+                if (iracingCurrent !== null && iracingCurrent !== undefined && iracingCurrent > 0) {{
+                    iracingText += ' (' + formatDuration(iracingCurrent) + ')';
+                }}
+                updateValue('iRacing Connected', iracingText);
+                
+                // OBS Connected - show cumulative (current session in parentheses if available)
+                const obsCumulative = data.obs_connected_duration_seconds;
+                const obsCurrent = data.obs_connected_duration_current_session_seconds;
+                let obsText = formatDuration(obsCumulative);
+                if (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0) {{
+                    obsText += ' (' + formatDuration(obsCurrent) + ')';
+                }}
+                updateValue('OBS Connected', obsText);
+            }} catch (error) {{
+                console.error('Failed to update metrics:', error);
+            }}
+        }}
+        
         // Initial render
         renderEvents();
         
         // Auto-update
         setInterval(updateStatus, UPDATE_INTERVAL);
         setInterval(updateEvents, UPDATE_INTERVAL);
+        setInterval(updateMetrics, UPDATE_INTERVAL);
         
         // Initial load
         updateStatus();
         updateEvents();
+        updateMetrics();
     </script>
 </body>
 </html>
 """
 
+        response = web.Response(text=html, content_type="text/html")
+        # Strong cache control headers
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        response.headers["X-Accel-Expires"] = "0"  # For nginx proxy
+        response.headers["Last-Modified"] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+        response.headers["ETag"] = f'"{cache_bust}"'  # Unique ETag for each request
+        return response
+    except Exception as e:
+        logger.error(f"Error in handle_gr_status: {e}", exc_info=True)
+        return web.Response(text=f"Internal server error: {e}", status=500)
+
+
+async def handle_vr_status_wrapper(request: web.Request) -> web.Response:
+    """
+    Handle GET /vr-status-wrapper - Wrapper for RaceLab VR with iframe and meta refresh.
+    
+    RaceLab VR widgety se načítají jen při startu a nepodporují JS ani meta refresh.
+    Tento wrapper vrací HTML s iframe, který se refreshuje pomocí meta refresh.
+    """
+    config: Optional[AppConfig] = request.app.get("config")
+    update_interval_ms = int(1000 / (config.dashboard_update_fps if config else 2))
+    refresh_seconds = max(1, update_interval_ms // 1000)
+    
+    import time
+    cache_bust = int(time.time() * 1000)
+    
+    # Get base URL from request
+    base_url = f"{request.scheme}://{request.host}"
+    iframe_url = f"{base_url}/vr-status?t={cache_bust}"
+    
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="{refresh_seconds}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>VR Status Wrapper</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        html, body {{
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }}
+        iframe {{
+            width: 100%;
+            height: 100%;
+            border: none;
+        }}
+    </style>
+</head>
+<body>
+    <iframe src="{iframe_url}" frameborder="0"></iframe>
+</body>
+</html>
+"""
+    
     response = web.Response(text=html, content_type="text/html")
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
 
 
 async def handle_vr_status(request: web.Request) -> web.Response:
-    """Handle GET /vr-status - VR widget."""
+    """
+    Handle GET /vr-status - VR widget.
+    
+    Note: RaceLab VR widgety se načítají jen při startu a neaktualizují se automaticky.
+    Pokud RaceLab VR nepodporuje refresh interval, widget se neaktualizuje.
+    
+    Možná řešení:
+    1. Zkus použít /vr-status-wrapper (s iframe a meta refresh)
+    2. Nastav refresh interval v RaceLab VR widget nastavení
+    3. Použij externí nástroj pro periodický refresh
+    """
+    # Check if this is a redirect request (for cache busting)
+    redirect_param = request.query.get("redirect")
+    if redirect_param == "1":
+        # Redirect to URL with timestamp to force refresh
+        import time
+        timestamp = int(time.time() * 1000)
+        redirect_url = f"{request.scheme}://{request.host}/vr-status?t={timestamp}"
+        return web.Response(status=302, headers={"Location": redirect_url})
+    
     # Get current state
     state = _get_current_state()
     if state is None:
@@ -561,6 +810,7 @@ async def handle_vr_status(request: web.Request) -> web.Response:
 
     config: Optional[AppConfig] = request.app.get("config")
     update_interval_ms = int(1000 / (config.dashboard_update_fps if config else 2))
+    refresh_seconds = max(1, update_interval_ms // 1000)  # Convert to seconds, minimum 1 second
 
     # Get icon paths
     icons_path = config.dashboard_vr_icons_path if config else None
@@ -568,14 +818,20 @@ async def handle_vr_status(request: web.Request) -> web.Response:
     import time
     cache_bust = int(time.time() * 1000)  # Timestamp for cache busting
     
+    # Note: RaceLab VR may not support meta refresh or JS
+    # The widget should be configured in RaceLab VR with a refresh interval
+    # URL should include timestamp parameter for cache busting: /vr-status?t=1234567890
+    
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- Note: RaceLab VR may not support meta refresh - configure refresh interval in RaceLab VR widget settings -->
+    <!-- <meta http-equiv="refresh" content="{refresh_seconds}"> -->
     <title>iRacing OBS Switcher - VR Status</title>
     <!-- Cache bust: {cache_bust} -->
     <style>
@@ -687,63 +943,71 @@ async def handle_vr_status(request: web.Request) -> web.Response:
     </div>
     
     <script>
-        const API_BASE = window.location.origin;
-        const UPDATE_INTERVAL = {update_interval_ms};
-        
-        function formatStreamDuration(ms) {{
-            if (!ms) return '00:00';
-            const totalSeconds = Math.floor(ms / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            if (hours > 0) {{
-                return `${{hours.toString().padStart(2, '0')}}:${{minutes.toString().padStart(2, '0')}}:${{seconds.toString().padStart(2, '0')}}`;
+        // Test JavaScript availability immediately
+        (function() {{
+            const testResults = [];
+            
+            // Test window.location
+            const hasWindowLocation = typeof window !== 'undefined' && typeof window.location !== 'undefined';
+            testResults.push('window.location: ' + (hasWindowLocation ? 'EXISTS' : 'NOT FOUND'));
+            
+            // Test XMLHttpRequest
+            const hasXHR = typeof XMLHttpRequest !== 'undefined';
+            testResults.push('XMLHttpRequest: ' + (hasXHR ? 'EXISTS' : 'NOT FOUND'));
+            
+            // Test fetch
+            const hasFetch = typeof fetch !== 'undefined';
+            testResults.push('fetch: ' + (hasFetch ? 'EXISTS' : 'NOT FOUND'));
+            
+            // Test window object
+            const hasWindow = typeof window !== 'undefined';
+            testResults.push('window: ' + (hasWindow ? 'EXISTS' : 'NOT FOUND'));
+            
+            // Display results in the scene name element
+            const sceneNameEl = document.getElementById('scene-name');
+            if (sceneNameEl) {{
+                const originalText = sceneNameEl.textContent;
+                sceneNameEl.textContent = originalText + ' | JS: ' + testResults.join(', ');
+                sceneNameEl.style.color = '#ffff00'; // Yellow to make it visible
             }}
-            return `${{minutes.toString().padStart(2, '0')}}:${{seconds.toString().padStart(2, '0')}}`;
-        }}
-        
-        async function updateStatus() {{
-            try {{
-                const response = await fetch(`${{API_BASE}}/status`);
-                const data = await response.json();
-                
-                // Update connection diodes
-                document.getElementById('obs-diode').classList.toggle('disconnected', !data.connected_obs);
-                document.getElementById('iracing-diode').classList.toggle('disconnected', !data.connected_iracing);
-                
-                // Update streaming
-                const recDot = document.getElementById('rec-dot');
-                if (data.streaming) {{
-                    recDot.style.background = '#f44336';
-                    recDot.style.animation = 'pulse 2s infinite';
-                }} else {{
-                    recDot.style.background = '#666';
-                    recDot.style.animation = 'none';
-                }}
-                
-                // Update stream duration
-                document.getElementById('stream-duration').textContent = formatStreamDuration(data.stream_duration_ms);
-                
-                // Update scene
-                document.getElementById('scene-name').textContent = data.current_scene;
-                
-            }} catch (error) {{
-                console.error('Failed to update status:', error);
+            
+            // Also log to console if available
+            if (typeof console !== 'undefined' && typeof console.log !== 'undefined') {{
+                console.log('VR Dashboard JS Test Results:', testResults);
             }}
-        }}
-        
-        // Auto-update
-        setInterval(updateStatus, UPDATE_INTERVAL);
-        
-        // Initial load
-        updateStatus();
+        }})();
     </script>
 </body>
 </html>
 """
 
     response = web.Response(text=html, content_type="text/html")
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    # Strong cache control headers for RaceLab VR
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0, private"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+    response.headers["X-Accel-Expires"] = "0"  # For nginx proxy
+    response.headers["Last-Modified"] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+    response.headers["ETag"] = f'"{cache_bust}"'  # Unique ETag for each request
+    return response
+
+
+async def handle_test_widget(request: web.Request) -> web.Response:
+    """Handle GET /test - simple test widget to verify JS works."""
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>JS Test</title>
+</head>
+<body>
+    <div id="content">STARTED</div>
+    <script>
+        document.getElementById('content').textContent = 'JS JEDE';
+    </script>
+</body>
+</html>
+"""
+    response = web.Response(text=html, content_type="text/html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response

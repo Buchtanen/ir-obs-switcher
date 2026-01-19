@@ -26,16 +26,18 @@ class LoadingTimeTracker:
             history_file: Path to JSON file for storing loading history
             default_loading_time_seconds: Default loading time to use when no history exists
         """
-        self.history_file = Path(history_file)
+        # Resolve to absolute path and log it
+        self.history_file = Path(history_file).resolve()  # Resolve to absolute path
+        logger.info(f"LoadingTimeTracker initialized, history file: {self.history_file}")
         self.default_loading_time_seconds = default_loading_time_seconds
         self.history: list[float] = []
-        self._loading_start_ts: Optional[float] = None
+        self._loading_start_ts: Optional[int] = None  # Changed to int to match now_ms() return type
         self._load_history()
 
     def _load_history(self) -> None:
         """Load loading history from JSON file."""
         if not self.history_file.exists():
-            logger.debug(f"Loading history file not found: {self.history_file}, starting with empty history")
+            logger.info(f"Loading history file not found: {self.history_file}, starting with empty history")
             return
 
         try:
@@ -49,17 +51,20 @@ class LoadingTimeTracker:
                     logger.warning(f"Invalid history file format: {self.history_file}, starting with empty history")
                     self.history = []
         except Exception as e:
-            logger.warning(f"Failed to load loading history from {self.history_file}: {e}, starting with empty history")
+            logger.error(f"Failed to load loading history from {self.history_file}: {e}, starting with empty history", exc_info=True)
             self.history = []
 
     def _save_history(self) -> None:
         """Save loading history to JSON file."""
         try:
+            # Ensure directory exists
+            self.history_file.parent.mkdir(parents=True, exist_ok=True)
+            
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump(self.history, f, indent=2)
-            logger.debug(f"Saved {len(self.history)} loading time records to {self.history_file}")
+            logger.info(f"Saved {len(self.history)} loading time records to {self.history_file}")
         except Exception as e:
-            logger.warning(f"Failed to save loading history to {self.history_file}: {e}")
+            logger.error(f"Failed to save loading history to {self.history_file}: {e}", exc_info=True)
 
     def start_loading(self) -> None:
         """Mark the start of a loading screen."""
@@ -92,7 +97,9 @@ class LoadingTimeTracker:
             self.history = self.history[-MAX_HISTORY_SIZE:]
 
         # Save history
+        logger.debug(f"About to save history: {len(self.history)} records, file: {self.history_file}")
         self._save_history()
+        logger.debug(f"History save completed, file exists: {self.history_file.exists()}")
 
         logger.info(f"Loading screen ended, duration: {duration_seconds:.2f}s")
         return duration_seconds

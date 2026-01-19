@@ -11,11 +11,20 @@
 - ✅ **Policy** (`logic/policy.py`) - mapování módu na scény
 - ✅ **API Server** (`server/api.py`) - REST + WebSocket endpointy
 - ✅ **Main Loop** (`main.py`) - koordinace všech komponent
-- ✅ **TUI** (`irswitch_tui/`) - Textual UI s real-time updates
 - ✅ **Utilities** (`util/`) - clock, logging
 
 ### Testy
-- ✅ **43 unit testů** - všechny prošly
+- ✅ **50+ unit testů** - všechny prošly
+  - Extractors (4 testy)
+  - Policy (1 test)
+  - iRacing Reader (8 testů)
+  - OBS Client (11 testů)
+  - State Machine (11 testů)
+  - API Server (6 testů)
+  - Main Service (3 testy)
+  - Loading Tracker (9 testů)
+  - Event Log (9 testů)
+  - E2E Main Loop (7 testů)
 - ✅ **0 warnings** - vše opraveno
 - ✅ **Dokumentace testů** (`tests.md`) - detailní popis všech testů
 
@@ -23,10 +32,14 @@
 - ✅ **README.md** - základní dokumentace projektu
 - ✅ **tests.md** - dokumentace testů
 - ✅ **config.example.ini** - příklad konfigurace
+- ✅ **RACELAB_VR_SETUP.md** - návod pro nastavení VR dashboardu v RaceLab VR
+- ✅ **CHANGELOG.md** - historie změn projektu
 
 ### Build & Scripts
 - ✅ **pyproject.toml** - konfigurace projektu
 - ✅ **run_tests.ps1** / **run_tests.sh** - skripty pro spouštění testů
+- ✅ **build_exe.ps1** / **build_exe.sh** - skripty pro vytváření EXE souborů
+- ✅ **start_app.ps1** - PowerShell skript pro spuštění aplikace
 
 ---
 
@@ -63,14 +76,6 @@
 - `POST /autoswitch/toggle` - response schema
 - `WS /ws` - message formáty
 
-#### 5. TUI dokumentace
-**Priorita**: Střední  
-**Důvod**: Uživatel potřebuje vědět jak používat TUI
-
-**Co by mělo obsahovat**:
-- Keybindings (q=quit, t=toggle autoswitch)
-- Jak ovládat override scény
-- Co znamenají jednotlivé indikátory
 
 #### 6. Troubleshooting sekce v README
 **Priorita**: Střední  
@@ -91,7 +96,6 @@
 2. Vytvoření config.ini z example
 3. Nastavení OBS WebSocket
 4. Spuštění služby
-5. Spuštění TUI
 6. Testování
 
 ---
@@ -105,7 +109,6 @@
 **Co by mělo testovat**:
 - Celý flow: iRacing → state machine → OBS switch
 - API komunikace s reálným serverem
-- TUI komunikace s API
 
 #### 9. CI/CD konfigurace
 **Priorita**: Nízká  
@@ -159,7 +162,6 @@
 
 ### Fáze 2: Dokumentace ✅
 5. ✅ API dokumentace (v README)
-6. ✅ TUI dokumentace (v README)
 7. ✅ Aktualizovat README s více detaily
 
 ### Fáze 3: Rozšíření ✅
@@ -176,7 +178,7 @@
 
 ✅ **Všechny fáze dokončeny**:
 1. ✅ Základní dokončení (`.gitignore`, `LICENSE`)
-2. ✅ Dokumentace (Quick Start, Troubleshooting, API, TUI)
+2. ✅ Dokumentace (Quick Start, Troubleshooting, API)
 3. ✅ Rozšíření (CI/CD, Build skripty, CHANGELOG)
 
 **Testy**: ✅ Všechny prošly (43/43)  
@@ -228,10 +230,63 @@
 - Validace konfigurovaných scén proti dostupným OBS scénám
 - Detekce aktivního OBS profilu (volitelné)
 
-#### ✅ TUI Improvements
-- Dynamické scény místo hardcodovaných hodnot
-- Barevné indikátory připojení (zelená/červená)
-- In-app notifikace pro změny stavu
+
+#### ✅ Loading Time Tracker
+- Sledování doby trvání loading screenů iRacing
+- Ukládání historie do JSON souboru (`loading_history.json`)
+- Výpočet průměrné doby loadingu pro automatické spuštění broadcastu
+- Konfigurovatelný výchozí čas (`default_loading_time_seconds`)
+- Automatické ukládání po každém ukončení loadingu
+
+#### ✅ Event Log System
+- Thread-safe FIFO event log pro ukládání událostí
+- Používá se pro HTML dashboards (event log sekce)
+- Konfigurovatelná velikost (`dashboard_event_log_size`)
+- Typy eventů: `connection_lost`, `connection_restored`, `scene_switch`, `override_applied`, `loading_started`, `loading_ended`, `stream_started`, `stream_stopped`, atd.
+
+#### ✅ HTML Dashboards
+- **GR Dashboard** (`/gr-status`): Velký dashboard s JavaScript auto-update
+  - Zobrazuje status připojení, scény, streaming, OBS profil
+  - Event log s posledními X událostmi
+  - Cache-busting headers pro zabránění cachování
+  - Konfigurovatelné obrázky (background, loga)
+- **VR Dashboard** (`/vr-status`): Minimalistický dashboard pro VR
+  - Bílé písmo, větší fonty, oranžový border
+  - Bez JavaScriptu (RaceLab VR nepodporuje)
+  - Silné cache-control headers
+  - Wrapper endpoint (`/vr-status-wrapper`) s iframe a meta refresh
+
+#### ✅ Broadcast Management
+- Automatické spuštění broadcastu během loadingu
+  - Konfigurovatelné: `auto_start_broadcast`, `auto_start_at_percent`
+  - Spouští se v X% průměrné doby loadingu
+  - Kontrola připravenosti broadcastu (`is_broadcast_ready`)
+- Automatické zastavení streamu po QUIT
+  - Konfigurovatelné: `auto_stop_stream`, `stop_stream_after_seconds`
+  - Zastaví stream X sekund po detekci QUIT módu
+
+#### ✅ Session Information Detection
+- Detekce typu session během loadingu (`SessionType`, `SessionName`, `SessionNum`)
+- Extrakce: Practice, Qualify, Race, atd.
+- Ukládání do event logu při startu/konci loadingu
+
+#### ✅ Background OBS Connection
+- Non-blocking připojení k OBS při startu aplikace
+- Pokud OBS neběží, aplikace startuje okamžitě
+- Background task pro opakované pokusy o připojení
+- API server startuje i bez OBS připojení
+
+#### ✅ Notifications Control
+- Globální flag pro zapnutí/vypnutí notifikací
+- Konfigurovatelné přes `notifications_enabled` v configu
+- Respektuje se i v `show_toast()` funkci
+
+#### ✅ PowerShell Start Script
+- `start_app.ps1` pro snadné spuštění aplikace
+- Podporuje `-Config` i `--config` formát
+- Kontrola existence config souboru
+- Kontrola Python a balíčku
+- Automatická instalace v dev módu
 
 ### Konfigurační změny
 
@@ -245,6 +300,28 @@ restart_hotkey = ctrl+shift+f7  # Globální hotkey pro RESTART mód
 [scenes]
 QUIT = End       # Scéna při ukončení hry
 RESTART = Restart # Scéna při RESTART módu (sticky)
+
+[switching]
+# Automatické spuštění broadcastu během loadingu
+auto_start_broadcast = false
+auto_start_at_percent = 50
+default_loading_time_seconds = 12.0
+
+# Automatické zastavení streamu po QUIT
+auto_stop_stream = false
+stop_stream_after_seconds = 30
+
+[dashboards]
+dashboard_update_fps = 2
+dashboard_event_log_size = 50
+dashboard_gr_background_image = path/to/bg.png
+dashboard_gr_logo_obs = path/to/obs.png
+dashboard_gr_logo_iracing = path/to/iracing.png
+dashboard_gr_logo_app = path/to/app.png
+dashboard_vr_icons_path = path/to/icons/
+
+[app]
+notifications_enabled = true  # Globální zapnutí/vypnutí notifikací
 ```
 
 ### Odstraněné funkce

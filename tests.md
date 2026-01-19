@@ -4,7 +4,7 @@ Tento dokument popisuje všechny testy v projektu iRacing OBS Switcher. Pro zák
 
 ## Přehled
 
-Projekt obsahuje **43 unit testů** a **manuální TUI testy** pokrývající všechny klíčové komponenty:
+Projekt obsahuje **50+ unit testů** pokrývající všechny klíčové komponenty:
 
 - **Extractors** (4 testy) - extrakce módu z iRacing dat
 - **Policy** (1 test) - mapování módu na scény
@@ -13,7 +13,9 @@ Projekt obsahuje **43 unit testů** a **manuální TUI testy** pokrývající v�
 - **State Machine** (11 testů) - logika přepínání scén
 - **API Server** (6 testů) - REST a WebSocket API
 - **Main Service** (3 testy) - inicializace a spuštění služby
-- **TUI Client** (manuální testy) - Textual UI funkcionalita
+- **Loading Tracker** (9 testů) - sledování doby loadingu
+- **Event Log** (9 testů) - thread-safe event log systém
+- **E2E Main Loop** (7 testů) - end-to-end testy hlavní smyčky
 
 ## Spuštění testů
 
@@ -328,114 +330,170 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 
 ---
 
-## 8. TUI Client (Manuální testy)
+## 9. Loading Tracker (`tests/test_loading_tracker.py`)
 
-**Cíl**: Ověřit Textual TUI funkcionalitu a uživatelské rozhraní.
+**Cíl**: Ověřit sledování doby trvání loading screenů iRacing a ukládání historie.
 
-**Testované soubory**: `src/irswitch_tui/ui.py`, `src/irswitch_tui/client.py`
-
-**Poznámka**: TUI testy jsou manuální, protože vyžadují interakci s uživatelem a real-time WebSocket komunikaci.
+**Testované soubory**: `src/irswitch/util/loading_tracker.py`
 
 ### Testy
 
-#### `test_tui_connection`
-- **Co testuje**: Připojení TUI k API serveru
-- **Proč**: TUI se musí správně připojit k běžící službě
-- **Postup**:
-  1. Spusť službu: `irswitchd --config config/config.ini`
-  2. Spusť TUI: `irswitch-tui --url http://127.0.0.1:17321`
-  3. Ověř, že TUI se připojí bez chyb
-- **Očekávaný výsledek**: TUI se zobrazí s aktuálním stavem služby
+#### `test_load_empty_history`
+- **Co testuje**: Inicializace trackeru s prázdnou historií
+- **Proč**: Při prvním spuštění nebo bez historie musí použít výchozí čas
+- **Očekávaný výsledek**: `get_average_loading_time()` vrací `default_loading_time_seconds`
 
-#### `test_tui_status_display`
-- **Co testuje**: Zobrazení status informací
-- **Proč**: Uživatel musí vidět aktuální stav služby
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Ověř zobrazení všech status polí:
-     - iRacing: Connected/Disconnected
-     - OBS: Connected/Disconnected
-     - Mode: IDLE/GARAGE/RACE/REPLAY
-     - Current Scene: název aktuální scény
-     - Target Scene: název cílové scény
-     - Autoswitch: ON/OFF
-     - Reason: důvod aktuálního stavu
-- **Očekávaný výsledek**: Všechna pole jsou zobrazena a aktualizována v real-time
+#### `test_load_existing_history`
+- **Co testuje**: Načtení existující historie z JSON souboru
+- **Proč**: Tracker musí správně načíst a použít uloženou historii
+- **Očekávaný výsledek**: Průměrná doba loadingu se počítá z načtené historie
 
-#### `test_tui_controls`
-- **Co testuje**: Ovládání služby přes TUI tlačítka
-- **Proč**: Uživatel musí mít možnost ovládat službu z TUI
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Testuj každé tlačítko:
-     - **Toggle Autoswitch**: Ověř, že se přepne autoswitch on/off
-     - **Override: Race**: Ověř, že se aplikuje override na Race scénu
-     - **Override: Pits**: Ověř, že se aplikuje override na Pits scénu
-     - **Override: Safe**: Ověř, že se aplikuje override na Safe scénu (dynamicky získáno ze statusu, ne hardcodované)
-- **Očekávaný výsledek**: Všechna tlačítka fungují a aktualizují stav, scény jsou dynamické
+#### `test_start_loading`
+- **Co testuje**: Označení začátku loadingu
+- **Proč**: Tracker musí správně detekovat start loadingu
+- **Očekávaný výsledek**: `is_loading()` vrací `True` po `start_loading()`
 
-#### `test_tui_keybindings`
-- **Co testuje**: Klávesové zkratky
-- **Proč**: Uživatel musí mít možnost ovládat TUI pomocí kláves
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Testuj klávesové zkratky:
-     - `q`: Ověř, že TUI se ukončí
-     - `t`: Ověř, že se přepne autoswitch on/off
-- **Očekávaný výsledek**: Všechny klávesové zkratky fungují
+#### `test_end_loading_without_start`
+- **Co testuje**: Ukončení loadingu bez předchozího startu
+- **Proč**: Robustnost - tracker musí zvládnout edge case
+- **Očekávaný výsledek**: Vrací `None`, historie se nezmění
 
-#### `test_tui_realtime_updates`
-- **Co testuje**: Real-time aktualizace přes WebSocket
-- **Proč**: TUI musí zobrazovat aktuální stav bez refresh
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Změň stav služby (např. připoj OBS, změň mód v iRacing)
-  3. Ověř, že TUI se automaticky aktualizuje
-- **Očekávaný výsledek**: TUI se aktualizuje automaticky při změně stavu
-
-#### `test_tui_connection_status_indicators`
-- **Co testuje**: Barevné indikátory připojení
-- **Proč**: Uživatel musí rychle vidět stav připojení
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Ověř barevné indikátory:
-     - **Zelená**: Connected (iRacing/OBS připojen)
-     - **Červená**: Disconnected (iRacing/OBS odpojen)
-  3. Změň stav připojení (vypni/zapni OBS nebo iRacing)
-  4. Ověř, že se barvy aktualizují
-- **Očekávaný výsledek**: Barevné indikátory správně zobrazují stav připojení
-
-#### `test_tui_notifications`
-- **Co testuje**: Notifikace v TUI při změně připojení
-- **Proč**: Uživatel musí být informován o změnách stavu připojení
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Testuj notifikace při změně připojení:
-     - **iRacing disconnected**: Vypni iRacing → Ověř, že se zobrazí notifikace "iRacing disconnected" (severity: error)
-     - **iRacing connected**: Zapni iRacing → Ověř, že se zobrazí notifikace "iRacing connected" (severity: success)
-     - **OBS disconnected**: Vypni OBS → Ověř, že se zobrazí notifikace "OBS disconnected" (severity: error)
-     - **OBS connected**: Zapni OBS → Ověř, že se zobrazí notifikace "OBS connected" (severity: success)
-  3. Ověř, že notifikace se zobrazují v TUI (ne jako Windows notifikace)
-  4. Ověř, že notifikace mají správnou barvu (error = červená, success = zelená)
+#### `test_start_end_loading`
+- **Co testuje**: Kompletní cyklus loadingu (start → end)
+- **Proč**: Základní funkcionalita - měření doby trvání
 - **Očekávaný výsledek**: 
-  - Notifikace se zobrazují v TUI při každé změně připojení
-  - Notifikace mají správnou barvu podle severity
-  - Notifikace se zobrazují i když jsou Windows notifikace vypnuté (`notifications_enabled = false`)
+  - `end_loading()` vrací správnou dobu v sekundách
+  - Doba se přidá do historie
+  - `is_loading()` vrací `False`
 
-#### `test_tui_error_handling`
-- **Co testuje**: Zpracování chyb v TUI
-- **Proč**: TUI musí správně reagovat na chyby (např. ztráta připojení k API)
-- **Postup**:
-  1. Spusť službu a TUI
-  2. Vypni službu (zastav `irswitchd`)
-  3. Ověř, že TUI zobrazí chybovou notifikaci
-  4. Zapni službu znovu
-  5. Ověř, že TUI se znovu připojí
-- **Očekávaný výsledek**: TUI správně zpracovává chyby a zobrazuje uživatelsky přívětivé zprávy
+#### `test_history_limit`
+- **Co testuje**: Omezení velikosti historie na `MAX_HISTORY_SIZE` (50)
+- **Proč**: Historie nesmí růst neomezeně
+- **Očekávaný výsledek**: Po přidání více než 50 záznamů se zachová jen posledních 50 (FIFO)
+
+#### `test_get_average_with_history`
+- **Co testuje**: Výpočet průměru s existující historií
+- **Proč**: Průměr se používá pro automatické spuštění broadcastu
+- **Očekávaný výsledek**: Průměr se počítá z historie, ne z výchozí hodnoty
+
+#### `test_get_average_without_history`
+- **Co testuje**: Výpočet průměru bez historie
+- **Proč**: Při prvním spuštění musí použít výchozí hodnotu
+- **Očekávaný výsledek**: Vrací `default_loading_time_seconds`
+
+#### `test_save_history`
+- **Co testuje**: Uložení historie do JSON souboru
+- **Proč**: Historie se musí persistovat mezi spuštěními
+- **Očekávaný výsledek**: Po `end_loading()` se historie uloží do souboru
+
+#### `test_duplicate_start_loading`
+- **Co testuje**: Ignorování duplicitních `start_loading()` volání
+- **Proč**: Robustnost - tracker nesmí resetovat čas při duplicitním volání
+- **Očekávaný výsledek**: Druhé `start_loading()` se ignoruje, čas se počítá od prvního
 
 ---
 
-## 9. Ladění na reálném systému
+## 10. Event Log (`tests/test_event_log.py`)
+
+**Cíl**: Ověřit thread-safe event log systém pro ukládání událostí.
+
+**Testované soubory**: `src/irswitch/server/event_log.py`
+
+### Testy
+
+#### `test_add_event`
+- **Co testuje**: Přidání eventu do logu
+- **Proč**: Základní funkcionalita - eventy se musí ukládat
+- **Očekávaný výsledek**: Event se přidá s timestampem, typem, zprávou a daty
+
+#### `test_get_recent_events`
+- **Co testuje**: Získání posledních N eventů
+- **Proč**: Dashboards potřebují zobrazit poslední události
+- **Očekávaný výsledek**: Vrací poslední N eventů (nejnovější poslední)
+
+#### `test_get_all_events`
+- **Co testuje**: Získání všech eventů
+- **Proč**: Pro debugging a analýzu
+- **Očekávaný výsledek**: Vrací všechny eventy v logu
+
+#### `test_event_log_max_size`
+- **Co testuje**: Omezení velikosti logu (FIFO)
+- **Proč**: Log nesmí růst neomezeně
+- **Očekávaný výsledek**: Po přidání více než `max_size` eventů se zachová jen posledních `max_size`
+
+#### `test_event_timestamp`
+- **Co testuje**: Timestamp každého eventu
+- **Proč**: Eventy musí mít časovou značku pro zobrazení
+- **Očekávaný výsledek**: Každý event má `timestamp > 0` (monotonic time v ms)
+
+#### `test_get_recent_events_zero_count`
+- **Co testuje**: Získání eventů s `count=0`
+- **Proč**: Edge case - `count=0` by mělo vrátit všechny eventy
+- **Očekávaný výsledek**: Vrací všechny eventy
+
+#### `test_get_recent_events_more_than_available`
+- **Co testuje**: Získání více eventů než je dostupných
+- **Proč**: Robustnost - nesmí crashnout
+- **Očekávaný výsledek**: Vrací všechny dostupné eventy
+
+#### `test_clear_events`
+- **Co testuje**: Vymazání všech eventů
+- **Proč**: Pro resetování logu
+- **Očekávaný výsledek**: Po `clear()` je log prázdný
+
+#### `test_global_event_log`
+- **Co testuje**: Globální instance event logu
+- **Proč**: Aplikace používá globální instanci pro sdílení mezi komponentami
+- **Očekávaný výsledek**: `get_event_log()` vrací stejnou instanci, `set_event_log()` ji může změnit
+
+---
+
+## 11. E2E Main Loop (`tests/test_main_loop_e2e.py`)
+
+**Cíl**: Ověřit end-to-end funkcionalitu hlavní smyčky s mockovanými iRacing a OBS.
+
+**Testované soubory**: `src/irswitch/main.py`
+
+### Testy
+
+#### `test_main_loop_mode_change_triggers_scene_switch`
+- **Co testuje**: Změna módu spustí přepnutí scény přes OBS
+- **Proč**: Hlavní funkcionalita - změna módu musí vést k přepnutí scény
+- **Očekávaný výsledek**: `set_scene()` je voláno s správnou scénou po debounce
+
+#### `test_main_loop_debounce_delays_switch`
+- **Co testuje**: Debounce zpožďuje přepnutí scény
+- **Proč**: Debounce zabraňuje flappingu při rychlých změnách
+- **Očekávaný výsledek**: `set_scene()` není voláno během debounce, ale po jeho expiraci
+
+#### `test_main_loop_cooldown_prevents_rapid_switches`
+- **Co testuje**: Cooldown zabraňuje rychlému přepínání scén
+- **Proč**: Cooldown zabraňuje příliš častým přepnutím
+- **Očekávaný výsledek**: Po prvním přepnutí se další přepnutí zpozdí o cooldown
+
+#### `test_main_loop_autoswitch_disabled_no_switch`
+- **Co testuje**: Vypnutý autoswitch zabraňuje přepínání
+- **Proč**: Uživatel musí mít možnost vypnout automatické přepínání
+- **Očekávaný výsledek**: `set_scene()` není voláno když je `autoswitch=False`
+
+#### `test_main_loop_override_takes_precedence`
+- **Co testuje**: Override má prioritu před automatickým přepínáním
+- **Proč**: Override umožňuje manuální přepnutí scény
+- **Očekávaný výsledek**: `set_scene()` je voláno s override scénou, ne s módovou scénou
+
+#### `test_main_loop_connection_state_tracking`
+- **Co testuje**: Sledování změn stavu připojení
+- **Proč**: Aplikace musí detekovat připojení/odpojení iRacing a OBS
+- **Očekávaný výsledek**: Eventy `connection_lost`/`connection_restored` jsou logovány
+
+#### `test_main_loop_scene_switch_logs_event`
+- **Co testuje**: Přepnutí scény je logováno do event logu
+- **Proč**: Dashboards potřebují zobrazit historii přepnutí
+- **Očekávaný výsledek**: Event `scene_switch` je přidán do event logu
+
+---
+
+## 12. Ladění na reálném systému
 
 **Cíl**: Ověřit funkcionalitu aplikace na reálném systému s iRacing a OBS.
 
@@ -459,13 +517,6 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
   - ✅ Aplikace pokračuje v běhu i při chybějících scénách (graceful degradation)
 - **Status**: Dokončeno
 
-#### ✅ `debug_tui_dynamic_scenes`
-- **Co bylo testováno**: Dynamické scény v TUI místo hardcodovaných hodnot
-- **Výsledek**:
-  - ✅ Tlačítko "Override: Safe" používá dynamickou scénu ze statusu (`target_scene` nebo `current_scene`)
-  - ✅ Žádné hardcodované názvy scén v TUI kódu
-  - ✅ TUI správně zobrazuje aktuální scény z aplikace
-- **Status**: Dokončeno
 
 #### ✅ `debug_logging`
 - **Co bylo testováno**: Debug logování do `.cursor/debug.log`
@@ -481,7 +532,6 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
   - ✅ MessageBox notifikace fungují spolehlivě
   - ✅ PowerShell toast notifikace jako sekundární metoda
   - ✅ Notifikace lze vypnout přes `notifications_enabled = false` v configu
-  - ✅ TUI notifikace fungují nezávisle na Windows notifikacích
 - **Status**: Dokončeno
 
 ### Dokončené úkoly (iRacing) ✅
@@ -541,7 +591,7 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 - **Postup**:
   1. Zajisti, že iRacing není spuštěno
   2. Spusť aplikaci
-  3. Ověř v logách a TUI, že `connected_iracing = False`
+  3. Ověř v logách, že `connected_iracing = False`
   4. Spusť iRacing
   5. Ověř, že aplikace detekuje připojení (`connected_iracing = True`)
   6. Ověř, že se zobrazí notifikace "iRacing connected" (pokud jsou notifikace povolené)
@@ -564,7 +614,7 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
      - **RACE**: Na trati → Ověř, že `mode = RACE`
      - **REPLAY**: Přehrávání → Ověř, že `mode = REPLAY` (má prioritu)
   3. Ověř v logách, že se mód správně extrahuje
-  4. Ověř v TUI, že se mód zobrazuje správně
+  4. Ověř v logách, že se mód zobrazuje správně
 - **Očekávaný výsledek**: 
   - Aplikace správně detekuje všechny módy
   - REPLAY má prioritu nad ostatními módy
@@ -594,7 +644,7 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 - **Postup**:
   1. Spusť iRacing, OBS a aplikaci
   2. Přejdi do módu RACE (na trať)
-  3. Použij override přes TUI nebo API:
+  3. Použij override přes API:
      - **Override: Race**: Ověř, že se aplikuje override na Race scénu
      - **Override: Pits**: Ověř, že se aplikuje override na Pits scénu
      - **Override: Safe**: Ověř, že se aplikuje override na Safe scénu

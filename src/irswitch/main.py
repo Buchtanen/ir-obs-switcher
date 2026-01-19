@@ -11,12 +11,14 @@ from aiohttp import web
 
 from irswitch.config import AppConfig
 from irswitch.iracing.reader import IRacingReader
+from irswitch.iracing.extractors import extract_session_type, extract_session_num
 from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.obs.client import ObsClient
-from irswitch.server.api import create_app, set_current_state, set_state_machine, set_obs_client, get_restart_mode, set_restart_mode
+from irswitch.server.api import create_app, set_current_state, get_current_state, set_state_machine, set_obs_client, get_restart_mode, set_restart_mode
 from irswitch.server.event_log import get_event_log, set_event_log, EventLog
+from irswitch.server.metrics import get_metrics
 from irswitch.util.clock import now_ms
 from irswitch.util.loading_tracker import LoadingTimeTracker
 from irswitch.util.logging import (
@@ -28,6 +30,7 @@ from irswitch.util.logging import (
 from irswitch.util.notifications import (
     notify_connection_lost,
     notify_connection_restored,
+    set_notifications_enabled,
 )
 from irswitch.util.hotkeys import start_listener, stop_listener, is_hotkey_pressed, was_hotkey_pressed_recently
 
@@ -95,7 +98,6 @@ async def main_loop(
         try:
             # Poll iRacing
             iracing_mode = await reader.read_mode()
-            connected_iracing = iracing_mode is not None
 
             # Loading screen detection and tracking
             is_loading = iracing_mode is None
@@ -108,10 +110,27 @@ async def main_loop(
                 auto_start_scheduled_ts = None
                 auto_start_triggered = False
                 logger.debug("Loading screen detected, starting tracker")
+                
+                # Try to read session info during loading
+                session_info = await reader.read_session_info()
+                session_type = None
+                session_num = None
+                session_name = None
+                if session_info:
+                    session_type = extract_session_type(session_info)
+                    session_num = extract_session_num(session_info)
+                    session_name = session_info.get("SessionName")
+                    logger.info(f"Session info during loading: type={session_type}, num={session_num}, name={session_name}")
+                
                 await event_log.add_event(
                     "loading_started",
-                    "iRacing loading screen started",
-                    {"previous_mode": prev_iracing_mode.value if prev_iracing_mode else None}
+                    f"iRacing loading screen started" + (f" - {session_type}" if session_type else ""),
+                    {
+                        "previous_mode": prev_iracing_mode.value if prev_iracing_mode else None,
+                        "session_type": session_type,
+                        "session_num": session_num,
+                        "session_name": str(session_name) if session_name else None,
+                    }
                 )
 
             elif not is_loading and was_loading:
@@ -283,27 +302,80 @@ async def main_loop(
                     # Sticky mode - keep using RESTART until IDLE
                     iracing_mode = DrivingMode.RESTART
             
-            # Log mode change only (not every cycle)
-            if iracing_mode != current_state.mode:
-                logger.info(f"iRacing mode changed: {current_state.mode.value} -> {iracing_mode.value if iracing_mode else 'None'}")
-
-            # Get current OBS scene
+            # Get current OBS scene first (needed for state machine)
             obs_current_scene = await obs_client.get_current_scene()
-            connected_obs = obs_current_scene is not None
+            
+            # Tick state machine to get new state
+            new_state = state_machine.tick(current_state, iracing_mode, obs_current_scene)
+            
+            # Use connection states from state machine (already handles QUIT/RESTART correctly)
+            connected_iracing = new_state.connected_iracing
+            connected_obs = new_state.connected_obs
+            
+            # Update session info when entering RACE or GARAGE mode
+            session_type = new_state.session_type
+            session_name = new_state.session_name
+            session_num = new_state.session_num
+            
+            # Read session info when mode changes to RACE or GARAGE
+            if new_state.mode in (DrivingMode.RACE, DrivingMode.GARAGE) and new_state.connected_iracing:
+                if new_state.mode != current_state.mode or new_state.session_type is None:
+                    # Mode changed to RACE/GARAGE or session info not yet set
+                    session_info = await reader.read_session_info()
+                    if session_info:
+                        session_type = extract_session_type(session_info)
+                        session_num = extract_session_num(session_info)
+                        session_name = session_info.get("SessionName")
+                        if session_type or session_name or session_num is not None:
+                            logger.info(f"Session info updated: type={session_type}, num={session_num}, name={session_name}")
+            
+            # Update state with session info if changed
+            if (session_type != new_state.session_type or 
+                session_name != new_state.session_name or 
+                session_num != new_state.session_num):
+                new_state = SwitchState(
+                    connected_iracing=new_state.connected_iracing,
+                    connected_obs=new_state.connected_obs,
+                    autoswitch=new_state.autoswitch,
+                    override_scene=new_state.override_scene,
+                    override_until=new_state.override_until,
+                    mode=new_state.mode,
+                    target_scene=new_state.target_scene,
+                    current_scene=new_state.current_scene,
+                    last_switch_ts=new_state.last_switch_ts,
+                    reason=new_state.reason,
+                    session_type=session_type,
+                    session_name=session_name,
+                    session_num=session_num,
+                )
+            
+            # Log mode change only (not every cycle) - compare with new_state.mode, not current_state.mode
+            if new_state.mode != current_state.mode:
+                logger.info(f"iRacing mode changed: {current_state.mode.value} -> {new_state.mode.value}")
 
             # Update connection states
             event_log = get_event_log()
+            metrics = get_metrics()
+            
+            # Only log connection changes if not in QUIT/RESTART mode (to avoid spam)
+            # QUIT/RESTART are considered disconnected, so connection state changes during these modes are expected
+            is_quit_or_restart = new_state.mode in (DrivingMode.QUIT, DrivingMode.RESTART)
+            
             if connected_iracing != current_state.connected_iracing:
-                if connected_iracing:
-                    log_connection_restored(logger, "iRacing")
-                    await event_log.add_event("connection_restored", "iRacing connection restored")
-                else:
-                    log_connection_lost(logger, "iRacing")
-                    await event_log.add_event("connection_lost", "iRacing connection lost")
-                    if config.notifications_enabled:
-                        notify_connection_lost("iRacing")
+                metrics.set_iracing_connected(connected_iracing)
+                # Only log if not in QUIT/RESTART mode, or if transitioning TO connected (not FROM)
+                if not is_quit_or_restart or connected_iracing:
+                    if connected_iracing:
+                        log_connection_restored(logger, "iRacing")
+                        await event_log.add_event("connection_restored", "iRacing connection restored")
+                    else:
+                        log_connection_lost(logger, "iRacing")
+                        await event_log.add_event("connection_lost", "iRacing connection lost")
+                        if config.notifications_enabled:
+                            notify_connection_lost("iRacing")
 
             if connected_obs != current_state.connected_obs:
+                metrics.set_obs_connected(connected_obs)
                 if connected_obs:
                     log_connection_restored(logger, "OBS")
                     await event_log.add_event("connection_restored", "OBS connection restored")
@@ -386,8 +458,7 @@ async def main_loop(
                             except Exception as notify_error:
                                 logger.error(f"Failed to show notification: {notify_error}")
 
-            # Tick state machine
-            new_state = state_machine.tick(current_state, iracing_mode, obs_current_scene)
+            # State machine already ticked above (with session info updated if needed)
             set_current_state(new_state)
 
             # Check if scene switch is needed
@@ -418,6 +489,10 @@ async def main_loop(
                             new_state.reason,
                             latency_ms=latency,
                         )
+                        # Track metrics
+                        metrics = get_metrics()
+                        metrics.record_scene_switch(latency)
+                        
                         await event_log.add_event(
                             "scene_switch",
                             f"Scene switched to: {new_state.target_scene}",
@@ -435,8 +510,15 @@ async def main_loop(
                             current_scene=new_state.target_scene,  # Updated after switch
                             last_switch_ts=new_state.last_switch_ts,
                             reason=new_state.reason,
+                            session_type=new_state.session_type,
+                            session_name=new_state.session_name,
+                            session_num=new_state.session_num,
                         )
                         set_current_state(new_state)
+                    else:
+                        # Track failed scene switch
+                        metrics = get_metrics()
+                        metrics.record_error("scene_switch_failed")
 
             current_state = new_state
 
@@ -452,10 +534,14 @@ async def main_loop(
             await asyncio.sleep(poll_interval)
 
 
-async def run_service(config: AppConfig) -> None:
+async def run_service(config: AppConfig, config_path: str) -> None:
     """Run the service with all components."""
     # Setup logging
     setup_logging(config.log_level)
+    
+    # Set global notifications flag
+    set_notifications_enabled(config.notifications_enabled)
+    logger.info(f"Notifications enabled: {config.notifications_enabled}")
 
     logger.info("Starting iRacing OBS switcher service")
 
@@ -491,6 +577,12 @@ async def run_service(config: AppConfig) -> None:
     # Initialize event log
     event_log = EventLog(max_size=config.dashboard_event_log_size)
     set_event_log(event_log)
+    
+    # Initialize metrics (will be used in main loop)
+    metrics = get_metrics()
+    # Set initial connection states
+    metrics.set_iracing_connected(reader.is_connected())
+    metrics.set_obs_connected(False)  # Will be updated after OBS connection attempt
 
     # Initial state
     logger.info(f"Initializing with safe_scene: {config.safe_scene}, scenes mapping: {dict(config.scenes)}")
@@ -505,11 +597,15 @@ async def run_service(config: AppConfig) -> None:
         current_scene=config.safe_scene,
         last_switch_ts=None,
         reason="initial",
+        session_type=None,
+        session_name=None,
+        session_num=None,
     )
 
-    # Connect to OBS
+    # Try to connect to OBS (non-blocking - don't wait too long on startup)
+    # Use fewer retries and shorter timeout on startup so API server can start quickly
     try:
-        await obs_client.connect()
+        await obs_client.connect(max_retries=1, initial_backoff=0.5)
         if obs_client.is_connected():
             # Validate scene mappings after connection
             available_scenes = await obs_client.get_scene_list()
@@ -556,7 +652,12 @@ async def run_service(config: AppConfig) -> None:
                 current_scene=initial_state.current_scene,
                 last_switch_ts=initial_state.last_switch_ts,
                 reason=initial_state.reason,
+                session_type=initial_state.session_type,
+                session_name=initial_state.session_name,
+                session_num=initial_state.session_num,
             )
+            # Update metrics for OBS connection
+            metrics.set_obs_connected(True)
         else:
             # Connection failed after retries (OBS never connected)
             # This shouldn't happen if connect() raises exception, but handle it anyway
@@ -597,18 +698,92 @@ async def run_service(config: AppConfig) -> None:
             except Exception as notify_error:
                 logger.error(f"Failed to show notification: {notify_error}")
 
-    # Create and start API server
-    app = create_app()
-    app["config"] = config  # Store config in app for dashboard access
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, config.http_host, config.http_port)
-    try:
-        await site.start()
-    except Exception as e:
-        raise
+    # Set initial state BEFORE starting API server (so dashboards have state available)
+    set_current_state(initial_state)
+    logger.info(f"Initial state set: mode={initial_state.mode.value}, scene={initial_state.current_scene}, connected_obs={initial_state.connected_obs}, connected_iracing={initial_state.connected_iracing}")
 
-    logger.info(f"API server started on http://{config.http_host}:{config.http_port}")
+    # Create and start API server
+    logger.info("Creating API server...")
+    try:
+        app = create_app()
+        app["config"] = config  # Store config in app for dashboard access
+        app["config_path"] = config_path  # Store config path for hot reload
+        logger.info("API application created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create API application: {e}", exc_info=True)
+        raise
+    
+    logger.info("Setting up AppRunner...")
+    try:
+        runner = web.AppRunner(app)
+        await runner.setup()
+        logger.info("AppRunner setup complete")
+    except Exception as e:
+        logger.error(f"Failed to setup AppRunner: {e}", exc_info=True)
+        raise
+    
+    logger.info(f"Starting TCP site on {config.http_host}:{config.http_port}...")
+    try:
+        site = web.TCPSite(runner, config.http_host, config.http_port)
+        await site.start()
+        logger.info(f"API server started successfully on http://{config.http_host}:{config.http_port}")
+    except OSError as e:
+        error_str = str(e).lower()
+        if "address already in use" in error_str or "10048" in error_str or "address in use" in error_str:
+            logger.error(f"Port {config.http_port} is already in use. Please stop the other application or change the port in config.ini")
+        else:
+            logger.error(f"Failed to start API server (OSError): {e}", exc_info=True)
+        raise
+    except Exception as e:
+        logger.error(f"Failed to start API server: {e}", exc_info=True)
+        raise
+    
+    # Start background task to continue trying to connect to OBS if not connected yet
+    async def background_obs_connect():
+        """Background task to keep trying to connect to OBS."""
+        # Wait a bit before first attempt (to let API server start)
+        await asyncio.sleep(2.0)
+        
+        while True:
+            try:
+                if not obs_client.is_connected():
+                    try:
+                        await obs_client.connect(max_retries=1, initial_backoff=5.0)
+                        if obs_client.is_connected():
+                            logger.info("OBS connected via background task")
+                            # Update state to reflect OBS connection
+                            current = get_current_state()
+                            if current:
+                                new_state = SwitchState(
+                                    connected_iracing=current.connected_iracing,
+                                    connected_obs=True,
+                                    autoswitch=current.autoswitch,
+                                    override_scene=current.override_scene,
+                                    override_until=current.override_until,
+                                    mode=current.mode,
+                                    target_scene=current.target_scene,
+                                    current_scene=current.current_scene,
+                                    last_switch_ts=current.last_switch_ts,
+                                    reason=current.reason,
+                                    session_type=current.session_type,
+                                    session_name=current.session_name,
+                                    session_num=current.session_num,
+                                )
+                                set_current_state(new_state)
+                    except Exception as e:
+                        logger.debug(f"Background OBS connection attempt failed: {e}")
+                    await asyncio.sleep(10.0)  # Wait 10 seconds before next attempt
+                else:
+                    # Already connected, check periodically if still connected
+                    await asyncio.sleep(30.0)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in background OBS connection task: {e}", exc_info=True)
+                await asyncio.sleep(10.0)
+    
+    obs_connect_task = asyncio.create_task(background_obs_connect())
+    logger.info("Background OBS connection task started")
 
     # Setup signal handlers for graceful shutdown
     shutdown_event = asyncio.Event()
@@ -636,6 +811,13 @@ async def run_service(config: AppConfig) -> None:
         # Wait for shutdown signal
         await shutdown_event.wait()
     finally:
+        # Cancel background tasks
+        obs_connect_task.cancel()
+        try:
+            await obs_connect_task
+        except asyncio.CancelledError:
+            pass
+        
         # Cancel main loop
         main_task.cancel()
         try:
@@ -662,7 +844,7 @@ def main() -> int:
         return 1
 
     try:
-        asyncio.run(run_service(config))
+        asyncio.run(run_service(config, args.config))
         return 0
     except KeyboardInterrupt:
         return 0

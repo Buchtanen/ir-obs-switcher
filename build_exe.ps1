@@ -1,14 +1,13 @@
 # PowerShell script to build EXE files for Windows
-# Usage: .\build_exe.ps1 [--core] [--tui] [--all]
+# Usage: .\build_exe.ps1 [--core] [--all]
 
 param(
     [switch]$Core,
-    [switch]$Tui,
     [switch]$All
 )
 
 # Default to all if no option specified
-if (-not $Core -and -not $Tui) {
+if (-not $Core) {
     $All = $true
 }
 
@@ -46,29 +45,9 @@ if ($Core -or $All) {
     }
 }
 
-# Build TUI
-if ($Tui -or $All) {
-    Write-Host "Building TUI (irswitch-tui.exe)..." -ForegroundColor Green
-    pyinstaller --onefile `
-        --name irswitch-tui `
-        --collect-all irswitch_tui `
-        --collect-all textual `
-        --distpath dist `
-        --workpath build `
-        --clean `
-        src\irswitch_tui\main.py
-    
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ TUI built: dist\irswitch-tui.exe" -ForegroundColor Green
-    } else {
-        Write-Host "✗ Failed to build TUI" -ForegroundColor Red
-        exit 1
-    }
-}
 
 Write-Host ""
 Write-Host "Build complete! Files are in dist\" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Usage:" -ForegroundColor Yellow
 Write-Host "  dist\irswitchd.exe --config config\config.ini"
-Write-Host "  dist\irswitch-tui.exe --url http://127.0.0.1:17321"
