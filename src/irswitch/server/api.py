@@ -26,17 +26,19 @@ _websocket_clients: set[web.WebSocketResponse] = set()
 _current_state: "SwitchState | None" = None
 _state_machine: "StateMachine | None" = None
 _obs_client: "ObsClient | None" = None
+_reader: Optional[object] = None  # IRacingReader instance
 _restart_mode_active: bool = False
 _shutdown_event: Optional[asyncio.Event] = None
 
 
 def reset_state() -> None:
     """Reset global state (for testing)."""
-    global _current_state, _state_machine, _websocket_clients, _obs_client, _restart_mode_active, _shutdown_event
+    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event
     _current_state = None
     _state_machine = None
     _websocket_clients = set()
     _obs_client = None
+    _reader = None
     _restart_mode_active = False
     _shutdown_event = None
 
@@ -68,6 +70,12 @@ def set_obs_client(obs_client: "ObsClient") -> None:
     """Set the OBS client instance for API handlers."""
     global _obs_client
     _obs_client = obs_client
+
+
+def set_reader(reader: object) -> None:
+    """Set the iRacing reader instance for API handlers."""
+    global _reader
+    _reader = reader
 
 
 async def _broadcast_state_update(state: "SwitchState") -> None:
@@ -113,24 +121,6 @@ def set_current_state(state: "SwitchState") -> None:
 
 async def _get_status_dict(state: "SwitchState") -> dict:
     """Convert SwitchState to dictionary with streaming info."""
-    # #region agent log
-    try:
-        with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-            f.write(json.dumps({
-                "location": "api.py:_get_status_dict",
-                "message": "Building status dict",
-                "data": {
-                    "state_session_type": state.session_type,
-                    "state_session_name": state.session_name,
-                    "state_session_num": state.session_num,
-                },
-                "timestamp": int(time.time() * 1000),
-                "sessionId": "debug-session",
-                "runId": "run1",
-                "hypothesisId": "E"
-            }) + "\n")
-    except: pass
-    # #endregion
     status = {
         "connected_iracing": state.connected_iracing,
         "connected_obs": state.connected_obs,
@@ -146,7 +136,20 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         "session_type": state.session_type,
         "session_name": state.session_name,
         "session_num": state.session_num,
+        "total_sessions": state.total_sessions if hasattr(state, 'total_sessions') else None,
     }
+    
+    # Format session_num as "x of y" if total_sessions is available
+    if state.session_num is not None:
+        total = state.total_sessions if hasattr(state, 'total_sessions') else None
+        if total is not None and total > 0:
+            # Convert 0-based to 1-based for display: "1 of 3"
+            status["session_num_display"] = f"{state.session_num + 1} of {total}"
+        else:
+            # Just show 1-based number: "1"
+            status["session_num_display"] = str(state.session_num + 1)
+    else:
+        status["session_num_display"] = None
     
     # Add streaming status and OBS profile if OBS client is available
     if _obs_client is not None and state.connected_obs:
@@ -492,6 +495,47 @@ async def handle_websocket(request: web.Request) -> web.WebSocketResponse:
     return ws
 
 
+async def handle_sdk_snapshot(request: web.Request) -> web.Response:
+    """
+    Capture and return a snapshot of all iRacing SDK variables.
+    
+    Also logs the snapshot to debug.log for analysis.
+    """
+    global _reader
+    
+    if _reader is None:
+        return web.json_response({
+            "error": "iRacing reader not available"
+        }, status=503)
+    
+    try:
+        # Get current state for context
+        current_state = get_current_state()
+        state_mode = current_state.mode.value if current_state and current_state.mode else None
+        
+        # Capture snapshot
+        snapshot = await asyncio.to_thread(_reader.get_all_vars)
+        
+        # Get connection status
+        is_connected = _reader.is_connected()
+        
+        # Prepare response
+        response_data = {
+            "timestamp": int(time.time() * 1000),
+            "is_connected": is_connected,
+            "current_mode": state_mode,
+            "snapshot": snapshot,
+            "snapshot_size": len(snapshot),
+        }
+        
+        return web.json_response(response_data)
+    except Exception as e:
+        logger.error(f"Failed to capture SDK snapshot: {e}", exc_info=True)
+        return web.json_response({
+            "error": str(e)
+        }, status=500)
+
+
 def create_app() -> web.Application:
     """
     Create aiohttp application with REST and WebSocket endpoints.
@@ -527,6 +571,7 @@ def create_app() -> web.Application:
     app.router.add_post("/config/reload", handle_config_reload)
     app.router.add_post("/shutdown", handle_shutdown)
     app.router.add_post("/reset", handle_reset)
+    app.router.add_get("/api/sdk-snapshot", handle_sdk_snapshot)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)

@@ -1,6 +1,7 @@
 """State machine for switching decisions."""
 from __future__ import annotations
 
+import json
 from typing import Optional
 
 from irswitch.logic.policy import Policy
@@ -111,20 +112,21 @@ class StateMachine:
             mode = DrivingMode.QUIT
             target_scene = self._policy.target_for_mode(mode)
             reason = "iracing_quit"
+        elif is_loading and both_connected:
+            # LOADING - iRacing is in loading screen (only if both are connected)
+            # This takes priority over CONNECTING when iRacing is connected but loading
+            mode = DrivingMode.LOADING
+            target_scene = current_state.target_scene  # Keep current scene, don't switch
+            reason = "loading:no_switch"
+            # Reset debounce when entering LOADING
+            self._pending_mode = None
+            self._pending_since = None
         elif not both_connected:
             # CONNECTING - waiting for both OBS and iRacing
             mode = DrivingMode.CONNECTING
             target_scene = self._policy.safe_scene  # Use safe_scene
             reason = "connecting:waiting_for_both"
             # Reset debounce when entering CONNECTING
-            self._pending_mode = None
-            self._pending_since = None
-        elif is_loading:
-            # LOADING - iRacing is in loading screen
-            mode = DrivingMode.LOADING
-            target_scene = current_state.target_scene  # Keep current scene, don't switch
-            reason = "loading:no_switch"
-            # Reset debounce when entering LOADING
             self._pending_mode = None
             self._pending_since = None
         elif not current_state.autoswitch:
@@ -168,6 +170,7 @@ class StateMachine:
                 
                 if self._waiting_for_idle:
                     # Grace period active - wait for LOBBY after seeing non-LOBBY
+                    # OR if LOBBY is stable for 3 seconds (timeout), end grace period
                     if mode != DrivingMode.LOBBY:
                         self._seen_non_idle = True
                         target_scene = current_state.target_scene  # Keep current scene
@@ -179,9 +182,24 @@ class StateMachine:
                         target_scene = self._policy.target_for_mode(mode)
                         reason = f"grace_period_ended:LOBBY"
                     else:
-                        # First LOBBY before inspection - keep waiting, don't switch scene
-                        target_scene = current_state.target_scene  # Keep current scene, don't switch
-                        reason = f"grace_period_first_lobby"
+                        # First LOBBY before inspection - check if stable for 3 seconds
+                        # If yes, end grace period and switch scene
+                        if self._pending_since is not None:
+                            elapsed = now - self._pending_since
+                            if elapsed >= 3000:  # 3 seconds timeout
+                                # LOBBY stable for 3 seconds - end grace period
+                                self._waiting_for_idle = False
+                                self._seen_non_idle = False
+                                target_scene = self._policy.target_for_mode(mode)
+                                reason = f"grace_period_timeout:LOBBY"
+                            else:
+                                # Still waiting for timeout or non-LOBBY
+                                target_scene = current_state.target_scene  # Keep current scene, don't switch
+                                reason = f"grace_period_first_lobby"
+                        else:
+                            # No pending_since yet - keep waiting
+                            target_scene = current_state.target_scene  # Keep current scene, don't switch
+                            reason = f"grace_period_first_lobby"
                 else:
                     # No grace period or game mode - debounce normally
                     target_scene = current_state.target_scene  # Keep current until debounce expires
@@ -202,9 +220,18 @@ class StateMachine:
                         target_scene = self._policy.target_for_mode(mode)
                         reason = f"grace_period_ended:LOBBY"
                     else:
-                        # First LOBBY before inspection - keep waiting, don't switch scene
-                        target_scene = current_state.target_scene  # Keep current scene, don't switch
-                        reason = f"grace_period_first_lobby"
+                        # First LOBBY before inspection - check if stable for 3 seconds
+                        # If yes, end grace period and switch scene
+                        if elapsed >= 3000:  # 3 seconds timeout
+                            # LOBBY stable for 3 seconds - end grace period
+                            self._waiting_for_idle = False
+                            self._seen_non_idle = False
+                            target_scene = self._policy.target_for_mode(mode)
+                            reason = f"grace_period_timeout:LOBBY"
+                        else:
+                            # Still waiting for timeout or non-LOBBY
+                            target_scene = current_state.target_scene  # Keep current scene, don't switch
+                            reason = f"grace_period_first_lobby"
                 elif elapsed < self._debounce_ms:
                     # Still debouncing
                     target_scene = current_state.target_scene

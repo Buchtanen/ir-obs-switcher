@@ -1,4 +1,4 @@
-﻿"""Wrapper around pyirsdk shared memory reader."""
+"""Wrapper around pyirsdk shared memory reader."""
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +12,32 @@ from irswitch.iracing.extractors import extract_mode
 from irswitch.models import DrivingMode
 
 logger = logging.getLogger(__name__)
+
+
+def is_iracing_process_running() -> bool:
+    """
+    Check if iRacing process is running (iRacingSim64DX11.exe).
+    
+    This can detect iRacing even during loading screen when SDK is not yet connected.
+    
+    Returns:
+        True if iRacing process is running, False otherwise
+    """
+    try:
+        import subprocess
+        # Use tasklist to check for iRacing process (Windows)
+        result = subprocess.run(
+            ['tasklist', '/FI', 'IMAGENAME eq iRacingSim64DX11.exe', '/NH'],
+            capture_output=True,
+            text=True,
+            timeout=2
+        )
+        # If process is found, tasklist returns the process info
+        # If not found, it returns "INFO: No tasks are running..."
+        return 'iRacingSim64DX11.exe' in result.stdout
+    except Exception as e:
+        logger.debug(f"Failed to check iRacing process: {e}")
+        return False
 
 
 def _as_bool(value: object) -> bool:
@@ -41,10 +67,23 @@ class IRacingReader:
         self._last_session_change_ts: float | None = None
         self._quit_stall_seconds = quit_stall_seconds
         self._last_mode: DrivingMode | None = None
+        self._last_session_state: int | None = None
+        self._last_session_time_value: float | None = None
 
     def startup(self) -> None:
         """Startup the SDK (synchronous, called once)."""
         self._sdk.startup()
+    
+    def is_process_running(self) -> bool:
+        """
+        Check if iRacing process is running.
+        
+        This detects iRacing even during loading screen when SDK is not connected.
+        
+        Returns:
+            True if iRacing process is running, False otherwise
+        """
+        return is_iracing_process_running()
 
     def is_connected(self) -> bool:
         """Check if iRacing is connected."""
@@ -58,7 +97,12 @@ class IRacingReader:
             except Exception:
                 pass
         
-        return bool(self._sdk.is_initialized)
+        is_initialized = bool(self._sdk.is_initialized)
+        # CRITICAL FIX: Use is_connected property, not is_initialized
+        # is_initialized only means shared memory exists (can persist after iRacing quits)
+        # is_connected checks if iRacing process is actually running
+        is_connected_real = is_initialized and bool(self._sdk.is_connected)
+        return is_connected_real
 
     def read_vars(self, names: Iterable[str]) -> dict[str, object]:
         """
@@ -81,6 +125,55 @@ class IRacingReader:
                 result[name] = None
         return result
 
+    def get_all_vars(self) -> dict[str, object]:
+        """
+        Get all available variables from iRacing SDK (synchronous).
+        
+        Returns:
+            Dictionary mapping all available variable names to values
+        """
+        if not self.is_connected():
+            return {}
+        
+        result: dict[str, object] = {}
+        try:
+            # Try to get all variables by iterating through SDK
+            # pyirsdk may have different ways to access all vars
+            # Try common approaches
+            if hasattr(self._sdk, 'var_dict'):
+                # Some SDK versions expose var_dict
+                for name, var in self._sdk.var_dict.items():
+                    try:
+                        result[name] = self._sdk[name]
+                    except (KeyError, AttributeError):
+                        pass
+            elif hasattr(self._sdk, '__iter__'):
+                # Try iterating SDK object
+                for name in self._sdk:
+                    try:
+                        result[name] = self._sdk[name]
+                    except (KeyError, AttributeError):
+                        pass
+            else:
+                # Fallback: try to access common variable names
+                # This is a limited approach but better than nothing
+                common_vars = [
+                    "SessionTime", "SessionState", "SessionStateNum", "SessionType",
+                    "SessionName", "SessionNum", "SessionTotalSessions",
+                    "IsReplay", "IsOnTrack", "IsOnTrackCar", "PlayerCarInGarage",
+                    "IsInGarage", "IsInCar", "PlayerCarIdx", "CamCarIdx", "CamCameraState",
+                    "IsOnTrackSession", "SessionFlags", "WeekendInfo"
+                ]
+                for name in common_vars:
+                    try:
+                        result[name] = self._sdk[name]
+                    except (KeyError, AttributeError):
+                        result[name] = None
+        except Exception as e:
+            logger.debug(f"Failed to get all vars: {e}")
+        
+        return result
+
     async def read_session_info(self) -> Optional[dict[str, object]]:
         """
         Read session information from iRacing (async).
@@ -96,9 +189,11 @@ class IRacingReader:
             "SessionType",  # 0=test, 1=practice, 2=qualify, 3=warmup, 4=race
             "SessionName",  # Name of the session
             "SessionNum",   # Session number in weekend (0-based)
+            "SessionTotalSessions",  # Total number of sessions in weekend
             "SessionTime", # Current session time
             "SessionState", # Session state string
             "SessionStateNum", # Session state number
+            "WeekendInfo",  # Weekend info (may contain total sessions)
         ]
         
         try:
@@ -151,11 +246,54 @@ class IRacingReader:
             session_state_num = data.get("SessionStateNum")
             session_time = data.get("SessionTime")
             cam_camera_state = data.get("CamCameraState")
+            session_state = data.get("SessionState")
 
-            # Detect loading screen (SessionTime is empty list or None)
-            # During loading, iRacing returns empty arrays instead of values
-            # Return None to signal "loading" state - distinct from IDLE
-            if session_time is None or (isinstance(session_time, list) and len(session_time) == 0):
+            # Detect loading screen using multiple indicators (based on iRacing SDK documentation):
+            # 1. SessionTime is None or empty list (legacy check) - telemetry not available yet
+            # 2. SessionState is 0 (irsdk_StateInvalid) - indicates loading/invalid state
+            #    According to docs: "SessionState=0 (Invalid) usually means sim hasn't finished loading and no session is running"
+            #    Note: SessionStateNum is not available in SDK, use SessionState instead
+            # 3. SessionTime is 0.0 and SessionState is 0 (initial loading state)
+            # 4. SDK is not connected (telemetry file doesn't exist or is not available) - loading screen
+            # 5. Transition to loading: SessionState changed from non-0 to 0 (detecting loading screen during session transition)
+            # 6. Transition to loading: SessionTime changed from non-0 to 0.0 (detecting loading screen during session transition)
+            is_loading_by_time = session_time is None or (isinstance(session_time, list) and len(session_time) == 0)
+            is_loading_by_state = session_state is not None and int(session_state) == 0  # irsdk_StateInvalid = loading/lobby
+            is_loading_by_initial = (isinstance(session_time, (int, float)) and abs(float(session_time)) < 0.001 and 
+                                     session_state is not None and int(session_state) == 0)
+            is_loading_by_sdk_unavailable = not self.is_connected()  # SDK not ready = loading screen
+            
+            # Detect transition to loading: SessionState changed from non-0 to 0
+            # Also detect if we're transitioning from a running session (state 4) to loading (state 0)
+            is_loading_by_state_transition = False
+            if session_state is not None:
+                session_state_int = int(session_state)
+                if session_state_int == 0:
+                    # Loading state detected - check if we transitioned from a non-loading state
+                    if self._last_session_state is not None and self._last_session_state != 0:
+                        is_loading_by_state_transition = True
+                # Always update last_session_state (even if None, to track first connection)
+                self._last_session_state = session_state_int
+            
+            # Detect transition to loading: SessionTime changed from non-0 to 0.0
+            # Also detect if we're transitioning from a running session (high time) to loading (0.0)
+            is_loading_by_time_transition = False
+            if isinstance(session_time, (int, float)):
+                session_time_float = float(session_time)
+                if abs(session_time_float) < 0.001:
+                    # Loading time detected - check if we transitioned from a non-loading time
+                    if self._last_session_time_value is not None and abs(self._last_session_time_value) >= 0.001:
+                        is_loading_by_time_transition = True
+                # Always update last_session_time_value (even if None, to track first connection)
+                self._last_session_time_value = session_time_float
+            elif session_time is None:
+                # SessionTime is None - this is also a loading indicator
+                # Check if we transitioned from a non-None value
+                if self._last_session_time_value is not None:
+                    is_loading_by_time_transition = True
+                self._last_session_time_value = None
+            
+            if is_loading_by_time or is_loading_by_state or is_loading_by_initial or is_loading_by_sdk_unavailable or is_loading_by_state_transition or is_loading_by_time_transition:
                 return None
 
             # Detect stalled session time (potential QUIT)
@@ -179,7 +317,10 @@ class IRacingReader:
                     stall_for = now_ts - self._last_session_change_ts
                     if stall_for >= self._quit_stall_seconds:
                         # IsOnTrackCar may stay true (cached) after game exit, so only check IsOnTrack
-                        if is_session_screen and not _as_bool(data.get("IsOnTrack")):
+                        # CRITICAL: Don't detect QUIT if session_state is 4 (active session)
+                        # In LOBBY, SessionTime can be constant but session_state is still 4
+                        session_state_active = session_state is not None and int(session_state) == 4
+                        if is_session_screen and not _as_bool(data.get("IsOnTrack")) and not session_state_active:
                             logger.debug(f"QUIT detected: SessionTime stalled for {stall_for:.1f}s")
                             return DrivingMode.QUIT
 
@@ -191,13 +332,17 @@ class IRacingReader:
                 return None
 
             # Detect "no session" state (QUIT or not yet in session)
+            # BUT: if SessionState is 0, this is likely loading screen, not QUIT
+            # So we should return None for loading screen, not continue to QUIT detection
             no_session = (
-                (session_time is None or session_time == 0.0) and
+                (session_time is None or (isinstance(session_time, (int, float)) and abs(float(session_time)) < 0.001)) and
                 (session_state_num is None or session_state_num == 0) and
                 (cam_camera_state is None or cam_camera_state == 0) and
                 not _as_bool(data.get("IsOnTrack")) and
                 not _as_bool(data.get("IsOnTrackCar"))
             )
+            # If SessionState is 0, this is loading screen, not QUIT
+            # Return None to indicate loading screen
             if no_session:
                 return None
 

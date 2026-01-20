@@ -1,4 +1,4 @@
-﻿"""OBS websocket client wrapper."""
+"""OBS websocket client wrapper."""
 from __future__ import annotations
 
 import asyncio
@@ -454,55 +454,47 @@ class ObsClient:
     async def is_broadcast_ready(self) -> bool:
         """
         Check if broadcast is ready (configured but not streaming).
-
+        
+        Uses get_stream_status() to check if streaming, and get_stream_service_settings()
+        to check if stream service is configured.
+        
         Returns:
-            True if broadcast is ready, False otherwise
+            True if broadcast is ready (configured and not streaming), False otherwise
         """
         if not self.is_connected() or self._client is None:
             return False
 
         try:
             def _check_ready() -> bool:
-                # Check output status
-                output_status = None
+                # Step 1: Check if already streaming using get_stream_status()
+                is_streaming = False
+                stream_status = None
                 try:
-                    if hasattr(self._client, 'get_output_status'):
-                        output_status = self._client.get_output_status()
-                except Exception:
+                    if hasattr(self._client, 'get_stream_status'):
+                        stream_status = self._client.get_stream_status()
+                        if stream_status is not None:
+                            # Extract streaming state from response
+                            if hasattr(stream_status, 'output_active'):
+                                is_streaming = bool(stream_status.output_active)
+                            elif hasattr(stream_status, 'outputActive'):
+                                is_streaming = bool(stream_status.outputActive)
+                            elif hasattr(stream_status, 'datain') and isinstance(stream_status.datain, dict):
+                                is_streaming = bool(stream_status.datain.get("outputActive", False))
+                except Exception as e:
                     pass
 
-                if output_status is None:
+                # If already streaming, broadcast is not "ready to start"
+                if is_streaming:
                     return False
 
-                # Check if output is active or reconnecting
-                output_active = False
-                output_reconnecting = False
-                
-                if hasattr(output_status, 'output_active'):
-                    output_active = bool(output_status.output_active)
-                elif hasattr(output_status, 'outputActive'):
-                    output_active = bool(output_status.outputActive)
-                elif hasattr(output_status, 'datain') and isinstance(output_status.datain, dict):
-                    output_active = bool(output_status.datain.get("outputActive", False))
-                    output_reconnecting = bool(output_status.datain.get("outputReconnecting", False))
-
-                if hasattr(output_status, 'output_reconnecting'):
-                    output_reconnecting = bool(output_status.output_reconnecting)
-                elif hasattr(output_status, 'outputReconnecting'):
-                    output_reconnecting = bool(output_status.outputReconnecting)
-
-                # If output is active or reconnecting, broadcast is not ready
-                if output_active or output_reconnecting:
-                    return False
-
-                # Check if stream service is configured
+                # Step 2: Check if stream service is configured
                 service_settings = None
                 try:
                     if hasattr(self._client, 'get_stream_service_settings'):
                         service_settings = self._client.get_stream_service_settings()
                     elif hasattr(self._client, 'get_stream_service'):
                         service_settings = self._client.get_stream_service()
-                except Exception:
+                except Exception as e:
                     pass
 
                 if service_settings is None:
@@ -518,7 +510,8 @@ class ObsClient:
                     service_type = service_settings.datain.get("streamServiceType")
 
                 # Broadcast is ready if service is configured and not streaming
-                return service_type is not None and service_type != ""
+                result = service_type is not None and service_type != ""
+                return result
 
             return await asyncio.to_thread(_check_ready)
 
@@ -545,7 +538,9 @@ class ObsClient:
                     else:
                         # Fallback: try direct call
                         response = self._client.start_stream()
-                    return response is not None
+                    # OBS WebSocket v5: StartStream returns None/empty on success
+                    # If no exception was raised, the command was successful
+                    return True
                 except Exception as e:
                     error_str = str(e).lower()
                     # If stream is already running, that's okay

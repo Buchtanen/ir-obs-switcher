@@ -99,7 +99,8 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
                 4: "Race",
             }
             if st in type_map:
-                return type_map[st]
+                result = type_map[st]
+                return result
         except (ValueError, TypeError):
             pass
     
@@ -107,15 +108,51 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
     if session_name is not None:
         name = str(session_name).lower()
         if "practice" in name:
-            return "Practice"
+            result = "Practice"
         elif "qualify" in name or "qualifying" in name:
-            return "Qualify"
+            result = "Qualify"
         elif "race" in name:
-            return "Race"
+            result = "Race"
         elif "warmup" in name:
-            return "Warmup"
+            result = "Warmup"
         elif "test" in name:
-            return "Test"
+            result = "Test"
+        else:
+            result = None
+        
+        if result:
+            return result
+    
+    # Try WeekendInfo.EventType as fallback
+    weekend_info = data.get("WeekendInfo")
+    if weekend_info is not None:
+        if isinstance(weekend_info, dict):
+            event_type = weekend_info.get("EventType")
+        elif hasattr(weekend_info, '__dict__'):
+            event_type = weekend_info.__dict__.get("EventType")
+        elif hasattr(weekend_info, 'EventType'):
+            event_type = weekend_info.EventType
+        else:
+            event_type = None
+        
+        if event_type is not None:
+            event_type_str = str(event_type)
+            # Map common event types
+            if event_type_str.lower() in ["practice", "practise"]:
+                result = "Practice"
+            elif event_type_str.lower() in ["qualify", "qualifying"]:
+                result = "Qualify"
+            elif event_type_str.lower() == "race":
+                result = "Race"
+            elif event_type_str.lower() == "warmup":
+                result = "Warmup"
+            elif event_type_str.lower() == "test":
+                result = "Test"
+            else:
+                result = event_type_str  # Return as-is if not recognized
+            
+            if result:
+                return result
     
     return None
 
@@ -130,7 +167,60 @@ def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
     session_num = data.get("SessionNum")
     if session_num is not None:
         try:
-            return int(session_num)
+            result = int(session_num)
+            # Convert from 0-based to 1-based for display (0 -> 1, 1 -> 2, etc.)
+            # iRacing SDK uses 0-based indexing, but users expect 1-based
+            result_1based = result + 1
+            return result_1based
         except (ValueError, TypeError):
             pass
+    return None
+
+
+def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
+    """
+    Extract total number of sessions from iRacing SDK data.
+    
+    Tries to get from WeekendInfo if available, otherwise returns None.
+    
+    Returns:
+        Total number of sessions or None if not available
+    """
+    
+    # Try SessionTotalSessions first (direct field from iRacing)
+    if "SessionTotalSessions" in data:
+        try:
+            result = int(data["SessionTotalSessions"])
+            return result
+        except (ValueError, TypeError):
+            pass
+    
+    # Try WeekendInfo first (if it's a dict/object with sessions)
+    weekend_info = data.get("WeekendInfo")
+    if weekend_info is not None:
+        # WeekendInfo might be a dict-like object
+        if isinstance(weekend_info, dict):
+            # Try common field names
+            for field in ["NumSessions", "SessionCount", "TotalSessions", "n_sessions"]:
+                if field in weekend_info:
+                    try:
+                        result = int(weekend_info[field])
+                        return result
+                    except (ValueError, TypeError):
+                        pass
+            # Try to get length of sessions array if it exists
+            if "Sessions" in weekend_info:
+                sessions = weekend_info["Sessions"]
+                if isinstance(sessions, (list, tuple)):
+                    result = len(sessions)
+                    return result
+    
+    # Try direct fields in data
+    for field in ["NumSessions", "SessionCount", "TotalSessions", "n_sessions"]:
+        if field in data:
+            try:
+                result = int(data[field])
+                return result
+            except (ValueError, TypeError):
+                pass
     return None

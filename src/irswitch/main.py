@@ -1,4 +1,4 @@
-﻿"""Entry point for the core service."""
+"""Entry point for the core service."""
 from __future__ import annotations
 
 import argparse
@@ -12,12 +12,12 @@ from aiohttp import web
 
 from irswitch.config import AppConfig
 from irswitch.iracing.reader import IRacingReader
-from irswitch.iracing.extractors import extract_session_type, extract_session_num
+from irswitch.iracing.extractors import extract_session_type, extract_session_num, extract_total_sessions
 from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.obs.client import ObsClient
-from irswitch.server.api import create_app, set_current_state, get_current_state, set_state_machine, set_obs_client, get_restart_mode, set_restart_mode
+from irswitch.server.api import create_app, set_current_state, get_current_state, set_state_machine, set_obs_client, set_reader, get_restart_mode, set_restart_mode
 from irswitch.server.event_log import get_event_log, set_event_log, EventLog
 from irswitch.server.metrics import get_metrics
 from irswitch.util.clock import now_ms
@@ -76,7 +76,7 @@ async def main_loop(
     active_mode_start_ts: float | None = None
     active_mode_reset_delay_s = 3.0  # Wait 3 seconds in active mode before resetting sticky mode
     
-    # Track previous mode to detect loading→active transitions
+    # Track previous mode to detect loading�active transitions
     prev_iracing_mode: DrivingMode | None = None
 
     # Loading tracker
@@ -85,14 +85,16 @@ async def main_loop(
     )
 
     # Auto-start broadcast tracking
-    loading_start_ts: float | None = None
-    auto_start_scheduled_ts: float | None = None
+    loading_start_ts = None  # type: float | None
+    auto_start_scheduled_ts = None  # type: float | None
     auto_start_triggered = False
 
     # Auto-stop stream tracking
     quit_detected_ts: float | None = None
     stream_stopped_after_quit = False
     quit_reset_active = False  # Flag to prevent QUIT mode after reset
+    quit_reset_disconnect_ts: Optional[float] = None  # Timestamp when iRacing disconnected after QUIT reset
+    last_valid_mode: Optional[DrivingMode] = None  # Track last valid mode (not None) for QUIT detection
 
     logger.info("Starting main loop")
 
@@ -100,17 +102,85 @@ async def main_loop(
         try:
             # Poll iRacing
             iracing_mode = await reader.read_mode()
+            # Store actual iRacing mode before it might be modified by quit_reset_active
+            actual_iracing_mode = iracing_mode
 
             # Loading screen detection and tracking
-            is_loading = iracing_mode is None
-            was_loading = prev_iracing_mode is None
+            # NEW: Use process detection for more accurate loading screen detection
+            # Loading screen = iRacing process is running but SDK is not connected
+            iracing_process_running = reader.is_process_running()
+            sdk_connected = reader.is_connected()
+            
+            # Loading screen: process running but SDK not connected
+            is_loading = iracing_process_running and not sdk_connected
+            was_loading = prev_iracing_mode is None and not sdk_connected
+            
+            # Track first connection for auto-start stream logic
+            # When we go from loading (process running, SDK not connected) to connected,
+            # this is the end of loading screen
+            _has_was_loading = hasattr(main_loop, '_was_loading_process')
+            _prev_was_loading = main_loop._was_loading_process if _has_was_loading else False
+            
+            # First connection: was loading (process running, SDK not connected) and now connected
+            is_first_connection = _prev_was_loading and sdk_connected and iracing_mode is not None
+            
+            # Update tracking
+            main_loop._was_loading_process = is_loading
+            main_loop._was_connected = sdk_connected
 
-            if is_loading and not was_loading:
-                # Loading started (transition from mode to None)
-                loading_tracker.start_loading()
+            # Start loading tracking when we detect loading screen (process running, SDK not connected)
+            if is_loading and not _prev_was_loading and loading_start_ts is None:
+                # Loading screen started - start tracking
                 loading_start_ts = now_ms()
                 auto_start_scheduled_ts = None
                 auto_start_triggered = False
+                loading_tracker.start_loading()
+                logger.info("Loading screen detected (iRacing process running, SDK not connected)")
+                await event_log.add_event(
+                    "loading_started",
+                    "iRacing loading screen started (process detected)",
+                    {"process_running": True, "sdk_connected": False}
+                )
+            
+            # Handle first connection (end of loading) - for auto-start purposes
+            if is_first_connection:
+                logger.info("First connection detected - loading screen ended")
+            
+            # Update last_valid_mode when we have a valid mode (not None, not QUIT, not RESTART)
+            if iracing_mode is not None and iracing_mode not in (DrivingMode.QUIT, DrivingMode.RESTART, DrivingMode.CONNECTING, DrivingMode.LOADING):
+                last_valid_mode = iracing_mode
+            
+            # Detect "implicit QUIT" - when iRacing was in game (had a valid mode) and process stops
+            # Use last_valid_mode instead of prev_iracing_mode because prev might be None during loading
+            # IMPORTANT: Don't detect QUIT during loading screen (process running, SDK not connected)
+            was_in_game = last_valid_mode is not None
+            is_now_truly_disconnected = iracing_mode is None and not sdk_connected and not iracing_process_running
+            implicit_quit = was_in_game and is_now_truly_disconnected and not quit_reset_active
+            
+            # If we're already in QUIT mode (quit_detected_ts is set), continue QUIT mode
+            # until it resets (after 15 seconds)
+            if quit_detected_ts is not None and iracing_mode is None and not quit_reset_active:
+                iracing_mode = DrivingMode.QUIT
+            
+            if implicit_quit:
+                # Treat this as QUIT mode
+                iracing_mode = DrivingMode.QUIT
+                logger.info(f"Implicit QUIT detected - iRacing process stopped after being in {last_valid_mode.value if last_valid_mode else 'game'}")
+                # DON'T clear last_valid_mode here - it will be cleared after QUIT reset
+                # This allows QUIT mode to persist until the 15-second reset
+
+            # Only track loading if we're transitioning from a known mode (not None) to None
+            # This prevents tracking loading on first iteration when prev_iracing_mode is None
+            # IMPORTANT: Don't reset loading_start_ts if it's already set and auto_start hasn't triggered yet
+            # This preserves the first_connection loading_start_ts for auto-start
+            if is_loading and not was_loading and prev_iracing_mode is not None:
+                # Loading started (transition from mode to None)
+                # Only set loading_start_ts if it's not already set or auto_start has already triggered
+                if loading_start_ts is None or auto_start_triggered:
+                    loading_tracker.start_loading()
+                    loading_start_ts = now_ms()
+                    auto_start_scheduled_ts = None
+                    auto_start_triggered = False
                 logger.debug("Loading screen detected, starting tracker")
                 
                 # Try to read session info during loading
@@ -135,9 +205,16 @@ async def main_loop(
                     }
                 )
 
-            elif not is_loading and was_loading:
+            elif not is_loading and was_loading and not is_first_connection:
                 # Loading ended (transition from None to mode)
-                duration = loading_tracker.end_loading()
+                # Skip this block on first connection - we want to keep loading_start_ts for auto-start
+                # Only end loading if tracker is actually tracking a loading
+                if loading_tracker.is_loading():
+                    duration = loading_tracker.end_loading()
+                else:
+                    # Loading tracker is not tracking, but we detected a transition from None to mode
+                    # This can happen if loading was never started (e.g., QUIT mode)
+                    duration = None
                 loading_start_ts = None
                 auto_start_scheduled_ts = None
                 auto_start_triggered = False
@@ -149,77 +226,35 @@ async def main_loop(
                         {"duration_seconds": duration, "new_mode": iracing_mode.value if iracing_mode else None}
                     )
             
-            # Auto-start broadcast logic (during loading)
-            if is_loading and config.auto_start_broadcast and loading_start_ts is not None:
-                if auto_start_scheduled_ts is None:
-                    # Calculate when to start broadcast
-                    avg_loading = loading_tracker.get_average_loading_time()
-                    use_default = len(loading_tracker.history) == 0
-                    if use_default:
-                        logger.info(
-                            f"No loading history available, using default: "
-                            f"{config.default_loading_time_seconds}s"
-                        )
-                    
-                    start_delay_ms = int(avg_loading * config.auto_start_at_percent / 100.0 * 1000)
-                    auto_start_scheduled_ts = loading_start_ts + start_delay_ms
-                    logger.debug(
-                        f"Auto-start broadcast scheduled at {start_delay_ms}ms "
-                        f"({config.auto_start_at_percent}% of {avg_loading:.2f}s average)"
-                    )
-                
-                current_ts = now_ms()
-                if not auto_start_triggered and current_ts >= auto_start_scheduled_ts:
-                    # Time to check and start broadcast
-                    is_ready = await obs_client.is_broadcast_ready()
-                    is_streaming, _ = await obs_client.get_stream_status()
-                    
-                    if is_ready and not is_streaming:
-                        success = await obs_client.start_stream()
-                        if success:
-                            logger.info("Auto-started broadcast during loading")
-                            await event_log.add_event(
-                                "stream_started",
-                                "Stream started automatically during loading (broadcast ready)",
-                                {"reason": "auto_start_loading", "broadcast_ready": True, "was_streaming": False}
-                            )
-                        else:
-                            logger.warning("Failed to auto-start broadcast during loading")
-                            await event_log.add_event(
-                                "stream_start_failed",
-                                "Failed to auto-start stream during loading",
-                                {"reason": "auto_start_loading", "broadcast_ready": True, "error": "start_failed"}
-                            )
-                    else:
-                        if not is_ready:
-                            logger.debug("Broadcast not ready for auto-start")
-                            await event_log.add_event(
-                                "stream_start_skipped",
-                                "Stream start skipped: broadcast not ready",
-                                {"reason": "auto_start_loading", "broadcast_ready": False, "was_streaming": is_streaming}
-                            )
-                        if is_streaming:
-                            logger.debug("Stream already running, skipping auto-start")
-                            await event_log.add_event(
-                                "stream_start_skipped",
-                                "Stream start skipped: already running",
-                                {"reason": "auto_start_loading", "broadcast_ready": is_ready, "was_streaming": True}
-                            )
-                    
-                    auto_start_triggered = True  # Only try once per loading
-            
             # QUIT mode handling: reset to CONNECTING after 15 seconds
             # If quit_reset_active is True, ignore QUIT mode and treat as disconnected
             if quit_reset_active:
-                # After reset, ignore QUIT mode until iRacing disconnects or mode changes
-                if iracing_mode != DrivingMode.QUIT:
-                    # Mode changed away from QUIT, clear reset flag
+                # After reset, ignore QUIT mode until iRacing actually disconnects and stays disconnected
+                # Check if iRacing is actually disconnected (not just QUIT mode)
+                if not reader.is_connected():
+                    # iRacing disconnected - start tracking disconnect time
+                    if quit_reset_disconnect_ts is None:
+                        quit_reset_disconnect_ts = now_ms()
+                    # Only clear reset flag after iRacing has been disconnected for at least 2 seconds
+                    elif now_ms() - quit_reset_disconnect_ts >= 2000:
+                        # iRacing has been disconnected for 2+ seconds - clear reset flag
+                        quit_reset_active = False
+                        quit_detected_ts = None
+                        stream_stopped_after_quit = False
+                        quit_reset_disconnect_ts = None
+                elif iracing_mode is not None and iracing_mode != DrivingMode.QUIT:
+                    # Mode changed away from QUIT to something else (e.g., IDLE, RACE) - clear reset flag
                     quit_reset_active = False
                     quit_detected_ts = None
                     stream_stopped_after_quit = False
+                    quit_reset_disconnect_ts = None
                 else:
-                    # Still in QUIT mode, but we've reset - treat as disconnected
-                    iracing_mode = None
+                    # Still in QUIT mode (or None after reset), but we've reset - treat as disconnected
+                    # Reset disconnect timestamp if iRacing reconnected
+                    quit_reset_disconnect_ts = None
+                    if iracing_mode == DrivingMode.QUIT:
+                        # Ignore QUIT mode - set to None to force CONNECTING state
+                        iracing_mode = None
             
             if iracing_mode == DrivingMode.QUIT and not quit_reset_active:
                 if quit_detected_ts is None:
@@ -269,18 +304,21 @@ async def main_loop(
                         logger.info(f"Switched to safe scene after QUIT reset: {config.safe_scene}")
                     # Set flag to ignore QUIT mode and treat as disconnected
                     quit_reset_active = True
+                    quit_reset_disconnect_ts = None  # Will be set when iRacing actually disconnects
                     iracing_mode = None
                     # Reset QUIT tracking
                     quit_detected_ts = None
                     stream_stopped_after_quit = False
-            elif iracing_mode != DrivingMode.QUIT:
-                # Reset QUIT tracking when not in QUIT mode
+                    last_valid_mode = None  # Clear last_valid_mode after QUIT reset
+            elif iracing_mode is not None and iracing_mode != DrivingMode.QUIT:
+                # Reset QUIT tracking when not in QUIT mode (but not when None after reset)
+                # Only clear if iRacing is actually connected and in a non-QUIT mode
                 quit_detected_ts = None
                 stream_stopped_after_quit = False
                 quit_reset_active = False
             
             # Reset RESTART mode when entering LOBBY (active game lobby)
-            # But NOT when transitioning from loading screen (None → LOBBY)
+            # But NOT when transitioning from loading screen (None � LOBBY)
             # Loading screen returns None, so prev_iracing_mode == None means "was loading"
             import time as time_module
             
@@ -290,18 +328,6 @@ async def main_loop(
             if current_mode_for_restart == DrivingMode.LOBBY and get_restart_mode():
                 # Only reset if coming from actual game state, not loading screen
                 if prev_iracing_mode is not None:
-                    # Debug log
-                    import json
-                    try:
-                        with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                            f.write(json.dumps({
-                                "event": "restart_mode_reset",
-                                "mode": current_mode_for_restart.value if current_mode_for_restart else None,
-                                "prev_mode": prev_iracing_mode.value if prev_iracing_mode else None,
-                                "reason": "entered_lobby_from_game",
-                                "ts": int(now_ms())
-                            }) + "\n")
-                    except: pass
                     set_restart_mode(False)
                     logger.info(f"RESTART mode deactivated (entered LOBBY from {prev_iracing_mode.value})")
             
@@ -313,18 +339,6 @@ async def main_loop(
                 hotkey_now = is_hotkey_pressed()
                 hotkey_recent = was_hotkey_pressed_recently()
                 restart_mode_active = get_restart_mode()
-                # Debug log
-                import json, os
-                try:
-                    with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                        f.write(json.dumps({
-                            "event": "quit_hotkey_check",
-                            "hotkey_now": hotkey_now,
-                            "hotkey_recent": hotkey_recent,
-                            "restart_mode_active": restart_mode_active,
-                            "ts": int(now_ms())
-                        }) + "\n")
-                except: pass
                 
                 # Activate RESTART mode on hotkey, or use sticky mode
                 if hotkey_now or hotkey_recent:
@@ -341,6 +355,8 @@ async def main_loop(
             
             # Detect loading screen (iracing_mode is None when SessionTime is empty)
             is_loading = iracing_mode is None
+            # Note: is_first_connection is already calculated earlier in the loop (line ~161)
+            # We use the existing value here instead of recalculating
             
             # Sync local current_state with global state (in case it was changed via API, e.g. toggle autoswitch)
             global_state = get_current_state()
@@ -350,6 +366,103 @@ async def main_loop(
             # Tick state machine to get new state
             new_state = state_machine.tick(current_state, iracing_mode, obs_current_scene, is_loading=is_loading)
             
+            # Auto-start broadcast logic (during loading)
+            # Use state machine's LOADING mode instead of is_loading flag
+            is_loading_state = new_state.mode == DrivingMode.LOADING
+            # Initialize loading_start_ts if we're in LOADING state and it's not set
+            if is_loading_state and loading_start_ts is None:
+                loading_start_ts = now_ms()
+                loading_tracker.start_loading()
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
+            elif not is_loading_state and loading_start_ts is not None and not is_first_connection and auto_start_triggered:
+                # Loading ended, reset tracking (but not on first connection or while waiting for auto-start)
+                duration = loading_tracker.end_loading()
+                loading_start_ts = None
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
+            
+            # Reset auto-start tracking when iRacing truly disconnects (CONNECTING state AND process not running)
+            # This prevents auto-start from triggering after iRacing quits
+            # BUT: Don't reset during loading screen (process running, SDK not connected)
+            is_truly_disconnected = new_state.mode == DrivingMode.CONNECTING and not iracing_process_running
+            if is_truly_disconnected and loading_start_ts is not None and not is_first_connection:
+                # iRacing truly disconnected (process not running) - cancel any pending auto-start
+                loading_start_ts = None
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
+            # Check if we're in LOADING state (either from state machine or directly from is_loading)
+            is_loading_state = new_state.mode == DrivingMode.LOADING
+            is_loading_direct = is_loading and new_state.connected_iracing  # Loading when iRacing is connected but mode is None
+            # First connection is treated as "end of loading" - we should try auto-start immediately
+            # Also try auto-start if loading_start_ts is set and auto_start hasn't triggered yet
+            has_pending_auto_start = loading_start_ts is not None and not auto_start_triggered
+            # Auto-start should only happen when:
+            # 1. In LOADING state (iRacing connected, loading screen)
+            # 2. Loading screen via process detection (process running, SDK not connected)
+            # 3. First connection (just connected to iRacing)
+            # 4. Pending auto-start AND (iRacing is connected OR loading screen)
+            iracing_is_connected_or_loading = new_state.connected_iracing or is_first_connection or is_loading
+            should_try_auto_start = (is_loading_state or is_loading_direct or is_first_connection or is_loading or
+                                     (has_pending_auto_start and iracing_is_connected_or_loading))
+            
+            if should_try_auto_start and config.auto_start_broadcast and loading_start_ts is not None:
+                if auto_start_scheduled_ts is None:
+                    # Calculate when to start broadcast
+                    avg_loading = loading_tracker.get_average_loading_time()
+                    use_default = len(loading_tracker.history) == 0
+                    if use_default:
+                        logger.info(
+                            f"No loading history available, using default: "
+                            f"{config.default_loading_time_seconds}s"
+                        )
+                    
+                    start_delay_ms = int(avg_loading * config.auto_start_at_percent / 100.0 * 1000)
+                    auto_start_scheduled_ts = loading_start_ts + start_delay_ms
+                    logger.debug(
+                        f"Auto-start broadcast scheduled at {start_delay_ms}ms "
+                        f"({config.auto_start_at_percent}% of {avg_loading:.2f}s average)"
+                    )
+                
+                current_ts = now_ms()
+                if not auto_start_triggered and auto_start_scheduled_ts is not None and current_ts >= auto_start_scheduled_ts:
+                    # Time to check and start broadcast
+                    is_ready = await obs_client.is_broadcast_ready()
+                    is_streaming, _ = await obs_client.get_stream_status()
+                    if is_ready and not is_streaming:
+                        success = await obs_client.start_stream()
+                        if success:
+                            logger.info("Auto-started broadcast during loading")
+                            await event_log.add_event(
+                                "stream_started",
+                                "Stream started automatically during loading (broadcast ready)",
+                                {"reason": "auto_start_loading", "broadcast_ready": True, "was_streaming": False}
+                            )
+                        else:
+                            logger.warning("Failed to auto-start broadcast during loading")
+                            await event_log.add_event(
+                                "stream_start_failed",
+                                "Failed to auto-start stream during loading",
+                                {"reason": "auto_start_loading", "broadcast_ready": True, "error": "start_failed"}
+                            )
+                    else:
+                        if not is_ready:
+                            logger.debug("Broadcast not ready for auto-start")
+                            await event_log.add_event(
+                                "stream_start_skipped",
+                                "Stream start skipped: broadcast not ready",
+                                {"reason": "auto_start_loading", "broadcast_ready": False, "was_streaming": is_streaming}
+                            )
+                        if is_streaming:
+                            logger.debug("Stream already running, skipping auto-start")
+                            await event_log.add_event(
+                                "stream_start_skipped",
+                                "Stream start skipped: already running",
+                                {"reason": "auto_start_loading", "broadcast_ready": is_ready, "was_streaming": True}
+                            )
+                    
+                    auto_start_triggered = True  # Only try once per loading
+            
             # Use connection states from state machine (already handles QUIT/RESTART correctly)
             connected_iracing = new_state.connected_iracing
             connected_obs = new_state.connected_obs
@@ -358,104 +471,73 @@ async def main_loop(
             session_type = new_state.session_type
             session_name = new_state.session_name
             session_num = new_state.session_num
+            total_sessions = new_state.total_sessions if hasattr(new_state, 'total_sessions') else None
             
+            # Check if iRacing is actually connected (not just state machine's view)
+            # Use reader.is_connected() to check actual connection status
+            iracing_actually_connected = reader.is_connected()
             # Read session info when mode changes to RACE, GARAGE, or LOBBY
             # Also read when transitioning from LOADING to LOBBY (session info should be available)
-            if new_state.mode in (DrivingMode.RACE, DrivingMode.GARAGE, DrivingMode.LOBBY) and new_state.connected_iracing:
+            # Use actual_iracing_mode (before quit_reset_active modification) to check if we're in LOBBY/RACE/GARAGE
+            # This ensures session info is read even when quit_reset_active forces CONNECTING state
+            actual_mode_for_session = actual_iracing_mode
+            if actual_mode_for_session == DrivingMode.IDLE:
+                actual_mode_for_session = DrivingMode.LOBBY
+            is_actual_race_garage_lobby = actual_mode_for_session in (DrivingMode.RACE, DrivingMode.GARAGE, DrivingMode.LOBBY)
+            
+            if condition_met:
                 if new_state.mode != current_state.mode or new_state.session_type is None:
                     # Mode changed to RACE/GARAGE/LOBBY or session info not yet set
-                    # #region agent log
-                    try:
-                        with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                            f.write(json.dumps({
-                                "location": "main.py:before_read_session_info",
-                                "message": "About to read session info",
-                                "data": {
-                                    "mode": new_state.mode.value,
-                                    "current_mode": current_state.mode.value,
-                                    "connected_iracing": new_state.connected_iracing,
-                                    "current_session_type": new_state.session_type,
-                                },
-                                "timestamp": int(now_ms()),
-                                "sessionId": "debug-session",
-                                "runId": "run1",
-                                "hypothesisId": "A"
-                            }) + "\n")
-                    except: pass
-                    # #endregion
                     session_info = await reader.read_session_info()
-                    # #region agent log
-                    try:
-                        with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                            f.write(json.dumps({
-                                "location": "main.py:after_read_session_info",
-                                "message": "After read session info",
-                                "data": {
-                                    "session_info": session_info,
-                                    "has_session_info": session_info is not None,
-                                },
-                                "timestamp": int(now_ms()),
-                                "sessionId": "debug-session",
-                                "runId": "run1",
-                                "hypothesisId": "B"
-                            }) + "\n")
-                    except: pass
-                    # #endregion
                     if session_info:
                         session_type = extract_session_type(session_info)
                         session_num = extract_session_num(session_info)
+                        total_sessions = extract_total_sessions(session_info)
+                        # Also try direct SessionTotalSessions from iRacing
+                        if total_sessions is None and "SessionTotalSessions" in session_info:
+                            try:
+                                total_sessions = int(session_info["SessionTotalSessions"])
+                            except (ValueError, TypeError):
+                                pass
                         session_name = session_info.get("SessionName")
-                        # #region agent log
-                        try:
-                            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                                f.write(json.dumps({
-                                    "location": "main.py:after_extract",
-                                    "message": "After extract session info",
-                                    "data": {
-                                        "session_type": session_type,
-                                        "session_name": session_name,
-                                        "session_num": session_num,
-                                    },
-                                    "timestamp": int(now_ms()),
-                                    "sessionId": "debug-session",
-                                    "runId": "run1",
-                                    "hypothesisId": "C"
-                                }) + "\n")
-                        except: pass
-                        # #endregion
+                        # Try WeekendInfo for session name if SessionName is not available
+                        if not session_name:
+                            weekend_info = session_info.get("WeekendInfo")
+                            if weekend_info is not None:
+                                if isinstance(weekend_info, dict):
+                                    # Try common session name fields in WeekendInfo
+                                    session_name = weekend_info.get("SessionName") or weekend_info.get("SessionDisplayName") or weekend_info.get("EventName")
+                                elif hasattr(weekend_info, '__dict__'):
+                                    session_name = weekend_info.__dict__.get("SessionName") or weekend_info.__dict__.get("SessionDisplayName") or weekend_info.__dict__.get("EventName")
+                                elif hasattr(weekend_info, 'SessionName'):
+                                    session_name = weekend_info.SessionName
+                                elif hasattr(weekend_info, 'SessionDisplayName'):
+                                    session_name = weekend_info.SessionDisplayName
+                                elif hasattr(weekend_info, 'EventName'):
+                                    session_name = weekend_info.EventName
                         # Ignore Test sessions - don't set session info for Test
                         if session_type == "Test":
                             session_type = None
                             session_num = None
                             session_name = None
+                            total_sessions = None
                         elif session_type or session_name or session_num is not None:
-                            logger.info(f"Session info updated: type={session_type}, num={session_num}, name={session_name}")
+                            # Format session_num as "x of y" if total_sessions is available
+                            session_num_display = None
+                            if session_num is not None:
+                                if total_sessions is not None and total_sessions > 0:
+                                    # Convert 0-based to 1-based for display: "1 of 3"
+                                    session_num_display = f"{session_num + 1} of {total_sessions}"
+                                else:
+                                    # Just show 1-based number: "1"
+                                    session_num_display = str(session_num + 1)
+                            logger.info(f"Session info updated: type={session_type}, num={session_num_display}, name={session_name}")
             
             # Update state with session info if changed
             if (session_type != new_state.session_type or 
                 session_name != new_state.session_name or 
-                session_num != new_state.session_num):
-                # #region agent log
-                try:
-                    with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                        f.write(json.dumps({
-                            "location": "main.py:before_update_state",
-                            "message": "Before updating state with session info",
-                            "data": {
-                                "old_session_type": new_state.session_type,
-                                "new_session_type": session_type,
-                                "old_session_name": new_state.session_name,
-                                "new_session_name": session_name,
-                                "old_session_num": new_state.session_num,
-                                "new_session_num": session_num,
-                            },
-                            "timestamp": int(now_ms()),
-                            "sessionId": "debug-session",
-                            "runId": "run1",
-                            "hypothesisId": "D"
-                        }) + "\n")
-                except: pass
-                # #endregion
+                session_num != new_state.session_num or
+                total_sessions != (new_state.total_sessions if hasattr(new_state, 'total_sessions') else None)):
                 new_state = SwitchState(
                     connected_iracing=new_state.connected_iracing,
                     connected_obs=new_state.connected_obs,
@@ -470,29 +552,19 @@ async def main_loop(
                     session_type=session_type,
                     session_name=session_name,
                     session_num=session_num,
+                    total_sessions=total_sessions,
                 )
-                # #region agent log
-                try:
-                    with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                        f.write(json.dumps({
-                            "location": "main.py:after_update_state",
-                            "message": "After updating state with session info",
-                            "data": {
-                                "state_session_type": new_state.session_type,
-                                "state_session_name": new_state.session_name,
-                                "state_session_num": new_state.session_num,
-                            },
-                            "timestamp": int(now_ms()),
-                            "sessionId": "debug-session",
-                            "runId": "run1",
-                            "hypothesisId": "D"
-                        }) + "\n")
-                except: pass
-                # #endregion
             
             # Log mode change only (not every cycle) - compare with new_state.mode, not current_state.mode
             if new_state.mode != current_state.mode:
                 logger.info(f"iRacing mode changed: {current_state.mode.value} -> {new_state.mode.value}")
+                # Add event for mode change to game modes
+                if new_state.mode in (DrivingMode.RACE, DrivingMode.GARAGE, DrivingMode.LOBBY):
+                    await event_log.add_event(
+                        "game_started",
+                        f"Game started: {new_state.mode.value}",
+                        {"mode": new_state.mode.value}
+                    )
 
             # Update connection states
             event_log = get_event_log()
@@ -522,6 +594,45 @@ async def main_loop(
                     await event_log.add_event("connection_restored", "OBS connection restored")
                     # Note: OBS connection restored notification removed (only show connection lost)
                     last_obs_notification_ts = None  # Reset notification timer on successful connection
+                    # If we're in CONNECTING state and OBS just connected, switch to safe_scene
+                    if new_state.mode == DrivingMode.CONNECTING and obs_client.is_connected():
+                        obs_current = await obs_client.get_current_scene()
+                        if new_state.target_scene != obs_current:
+                            # Switch to safe_scene if not already on it
+                            switch_start = now_ms()
+                            success = await obs_client.set_scene(new_state.target_scene)
+                            if success:
+                                latency = now_ms() - switch_start
+                                log_scene_switch(
+                                    logger,
+                                    new_state.target_scene,
+                                    "obs_connected_safe_scene",
+                                    latency_ms=latency,
+                                )
+                                metrics = get_metrics()
+                                metrics.record_scene_switch(latency)
+                                await event_log.add_event(
+                                    "scene_switch",
+                                    f"Scene switched to safe scene after OBS connection: {new_state.target_scene}",
+                                    {"scene": new_state.target_scene, "reason": "obs_connected_safe_scene", "latency_ms": latency}
+                                )
+                                # Update state with new current scene
+                                new_state = SwitchState(
+                                    connected_iracing=new_state.connected_iracing,
+                                    connected_obs=new_state.connected_obs,
+                                    autoswitch=new_state.autoswitch,
+                                    override_scene=new_state.override_scene,
+                                    override_until=new_state.override_until,
+                                    mode=new_state.mode,
+                                    target_scene=new_state.target_scene,
+                                    current_scene=new_state.target_scene,  # Updated after switch
+                                    last_switch_ts=now_ms(),
+                                    reason=new_state.reason,
+                                    session_type=new_state.session_type,
+                                    session_name=new_state.session_name,
+                                    session_num=new_state.session_num,
+                                )
+                                set_current_state(new_state)
                 else:
                     log_connection_lost(logger, "OBS")
                     await event_log.add_event("connection_lost", "OBS connection lost")
@@ -719,6 +830,7 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     )
     set_state_machine(state_machine)
     set_obs_client(obs_client)
+    set_reader(reader)
     
     # Initialize event log
     event_log = EventLog(max_size=config.dashboard_event_log_size)
@@ -787,6 +899,18 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                     logger.info(f"Scene validation passed. All {len(all_configured_scenes)} configured scenes exist in OBS.")
                     logger.debug(f"Available OBS scenes: {', '.join(sorted(available_scenes))}")
             
+            # Get current scene from OBS and switch to safe_scene if needed
+            obs_current_scene = await obs_client.get_current_scene()
+            if obs_current_scene != config.safe_scene:
+                # Switch to safe_scene on startup
+                logger.info(f"Switching to safe scene on startup: {config.safe_scene} (current: {obs_current_scene})")
+                success = await obs_client.set_scene(config.safe_scene)
+                if success:
+                    obs_current_scene = config.safe_scene
+                    logger.info(f"Switched to safe scene on startup: {config.safe_scene}")
+                else:
+                    logger.warning(f"Failed to switch to safe scene on startup: {config.safe_scene}")
+            
             initial_state = SwitchState(
                 connected_iracing=initial_state.connected_iracing,
                 connected_obs=True,
@@ -795,8 +919,8 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                 override_until=initial_state.override_until,
                 mode=initial_state.mode,
                 target_scene=initial_state.target_scene,
-                current_scene=initial_state.current_scene,
-                last_switch_ts=initial_state.last_switch_ts,
+                current_scene=obs_current_scene,  # Use actual OBS scene (should be safe_scene now)
+                last_switch_ts=now_ms() if obs_current_scene == config.safe_scene else initial_state.last_switch_ts,
                 reason=initial_state.reason,
                 session_type=initial_state.session_type,
                 session_name=initial_state.session_name,

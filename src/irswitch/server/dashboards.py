@@ -59,40 +59,7 @@ def format_duration(seconds: Optional[float]) -> str:
 async def handle_gr_status(request: web.Request) -> web.Response:
     """Handle GET /gr-status - large dashboard."""
     try:
-        # #region agent log
-        import json
-        import time
-        try:
-            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                f.write(json.dumps({
-                    "location": "dashboards.py:handle_gr_status:entry",
-                    "message": "handle_gr_status called",
-                    "data": {},
-                    "timestamp": int(time.time() * 1000),
-                    "sessionId": "debug-session",
-                    "runId": "run1",
-                    "hypothesisId": "F"
-                }) + "\n")
-        except: pass
-        # #endregion
         config: Optional[AppConfig] = request.app.get("config")
-        # #region agent log
-        try:
-            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                f.write(json.dumps({
-                    "location": "dashboards.py:handle_gr_status:after_get_config",
-                    "message": "After get config",
-                    "data": {
-                        "config_is_none": config is None,
-                        "has_dashboard_event_log_size": hasattr(config, "dashboard_event_log_size") if config else False,
-                    },
-                    "timestamp": int(time.time() * 1000),
-                    "sessionId": "debug-session",
-                    "runId": "run1",
-                    "hypothesisId": "F"
-                }) + "\n")
-        except: pass
-        # #endregion
         if config is None:
             return web.Response(text="Configuration not available", status=500)
 
@@ -719,7 +686,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <div class="status-card">
                 <h3>Session Num</h3>
                 <div class="sublabel"></div>
-                <div class="value" id="session-num">{'N/A' if state.session_type == 'Test' or state.session_num is None else state.session_num}</div>
+                <div class="value" id="session-num">{'N/A' if state.session_type == 'Test' or state.session_num is None else (state.session_num_display if hasattr(state, 'session_num_display') and state.session_num_display else (state.session_num + 1 if state.session_num is not None else 'N/A'))}</div>
             </div>
         </div>
         
@@ -779,6 +746,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
             <button onclick="reloadConfig()">Reload Config</button>
             <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
+            <button onclick="captureSdkSnapshot()" style="background: rgba(33, 150, 243, 0.2); border-color: rgba(33, 150, 243, 0.4);">Capture SDK Snapshot</button>
             <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
         </div>
         
@@ -873,7 +841,10 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 const sessionType = data.session_type === 'Test' || data.session_type === null || data.session_type === undefined ? 'N/A' : data.session_type;
                 const sessionName = data.session_type === 'Test' || data.session_name === null || data.session_name === undefined ? 'N/A' : data.session_name;
                 // session_num can be 0, so check for null/undefined explicitly
-                const sessionNum = data.session_type === 'Test' || data.session_num === null || data.session_num === undefined ? 'N/A' : String(data.session_num);
+                // Use session_num_display if available (formatted as "x of y"), otherwise format manually
+                const sessionNum = data.session_type === 'Test' || data.session_num === null || data.session_num === undefined 
+                    ? 'N/A' 
+                    : (data.session_num_display || String(data.session_num + 1));
                 
                 // #region agent log
                 console.log('[DEBUG] Processed session info:', JSON.stringify({{
@@ -1171,6 +1142,24 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }}
         }}
         
+        async function captureSdkSnapshot() {{
+            try {{
+                showToast('Capturing SDK Snapshot', 'Please wait...', 'info');
+                const response = await fetch(`${{API_BASE}}/api/sdk-snapshot`, {{ method: 'GET' }});
+                const data = await response.json();
+                
+                if (response.ok) {{
+                    showToast('SDK Snapshot Captured', `Captured ${{data.snapshot_size}} variables. Check debug.log for details.`, 'success');
+                    console.log('SDK Snapshot:', data);
+                }} else {{
+                    showToast('Snapshot Failed', data.error || 'Unknown error', 'error');
+                }}
+            }} catch (error) {{
+                console.error('Failed to capture SDK snapshot:', error);
+                showToast('Snapshot Failed', error.message || 'Network error', 'error');
+            }}
+        }}
+        
         async function shutdownService() {{
             const confirmed = await showConfirm(
                 'Shutdown Service',
@@ -1271,26 +1260,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         response.headers["ETag"] = f'"{cache_bust}"'  # Unique ETag for each request
         return response
     except Exception as e:
-        # #region agent log
-        import json
-        import traceback
-        try:
-            with open(r"c:\Users\richa\Projekty\obs-switcher\richa\.cursor\debug.log", "a") as f:
-                f.write(json.dumps({
-                    "location": "dashboards.py:handle_gr_status:exception",
-                    "message": "Exception in handle_gr_status",
-                    "data": {
-                        "error": str(e),
-                        "error_type": type(e).__name__,
-                        "traceback": traceback.format_exc(),
-                    },
-                    "timestamp": int(time.time() * 1000),
-                    "sessionId": "debug-session",
-                    "runId": "run1",
-                    "hypothesisId": "F"
-                }) + "\n")
-        except: pass
-        # #endregion
         logger.error(f"Error in handle_gr_status: {e}", exc_info=True)
         return web.Response(text=f"Internal server error: {e}", status=500)
 
