@@ -18,13 +18,17 @@ if (-not (Test-Path $gitHooksDir)) {
 $hookScript = Join-Path $projectRoot "scripts" "commit-msg-hook.ps1"
 if (Test-Path $hookScript) {
     # Vytvořit wrapper batch soubor pro Windows Git
+    # Použijeme absolutní cestu k PowerShell skriptu pro spolehlivost
+    $hookScriptAbs = (Resolve-Path $hookScript).Path
     $hookContent = @"
 @echo off
-powershell.exe -ExecutionPolicy Bypass -File "$hookScript" %1
+powershell.exe -ExecutionPolicy Bypass -File "$hookScriptAbs" %1
 "@
     
     $hookContent | Out-File -FilePath $hookFile -Encoding ASCII -NoNewline
     Write-Host "✓ Installed commit-msg hook (Windows wrapper)"
+    Write-Host "  Hook file: $hookFile"
+    Write-Host "  Script: $hookScriptAbs"
 } else {
     Write-Error "Hook script not found: $hookScript"
     exit 1

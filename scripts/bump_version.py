@@ -59,22 +59,41 @@ def get_current_version() -> str:
 def update_version_files(new_version: str) -> None:
     """Update version in both __init__.py and pyproject.toml."""
     # Update __init__.py
-    content = INIT_FILE.read_text(encoding="utf-8")
-    content = re.sub(
-        r'__version__\s*=\s*["\'][^"\']+["\']',
-        f'__version__ = "{new_version}"',
-        content
-    )
-    INIT_FILE.write_text(content, encoding="utf-8")
+    try:
+        content = INIT_FILE.read_text(encoding="utf-8")
+        old_content = content
+        content = re.sub(
+            r'__version__\s*=\s*["\'][^"\']+["\']',
+            f'__version__ = "{new_version}"',
+            content
+        )
+        if content != old_content:
+            INIT_FILE.write_text(content, encoding="utf-8")
+            print(f"✓ Updated {INIT_FILE.name}: {new_version}")
+        else:
+            print(f"⚠ Warning: {INIT_FILE.name} was not modified")
+    except Exception as e:
+        print(f"✗ Error updating {INIT_FILE}: {e}", file=sys.stderr)
+        raise
     
     # Update pyproject.toml
-    content = PYPROJECT_FILE.read_text(encoding="utf-8")
-    content = re.sub(
-        r'version\s*=\s*["\'][^"\']+["\']',
-        f'version = "{new_version}"',
-        content
-    )
-    PYPROJECT_FILE.write_text(content, encoding="utf-8")
+    try:
+        content = PYPROJECT_FILE.read_text(encoding="utf-8")
+        old_content = content
+        # Match version = "..." or version="..." (with or without spaces)
+        content = re.sub(
+            r'version\s*=\s*["\'][^"\']+["\']',
+            f'version = "{new_version}"',
+            content
+        )
+        if content != old_content:
+            PYPROJECT_FILE.write_text(content, encoding="utf-8")
+            print(f"✓ Updated {PYPROJECT_FILE.name}: {new_version}")
+        else:
+            print(f"⚠ Warning: {PYPROJECT_FILE.name} was not modified")
+    except Exception as e:
+        print(f"✗ Error updating {PYPROJECT_FILE}: {e}", file=sys.stderr)
+        raise
     
     print(f"✓ Version bumped to {new_version}")
 

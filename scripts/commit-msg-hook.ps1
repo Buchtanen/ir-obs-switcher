@@ -15,7 +15,10 @@ param(
 $commitMsg = Get-Content -Path $CommitMsgFile -Raw
 
 # Získat cestu k projektu
-$projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+# Hook běží z .git/hooks/, potřebujeme najít project root
+$hookDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$gitDir = Split-Path -Parent $hookDir
+$projectRoot = Split-Path -Parent $gitDir
 $bumpScript = Join-Path $projectRoot "scripts" "bump_version.py"
 
 # Zkontrolovat, zda existuje bump script
@@ -26,12 +29,16 @@ if (-not (Test-Path $bumpScript)) {
 
 # Spustit bump script s commit message
 try {
+    # Změnit working directory na project root pro správné relativní cesty
+    Push-Location $projectRoot
+    
     # Spustit Python skript a zachytit výstup
     $output = python $bumpScript $commitMsg 2>&1
     $exitCode = $LASTEXITCODE
     
     if ($exitCode -ne 0) {
         Write-Warning "Failed to bump version: $output"
+        Pop-Location
         exit 0  # Nechceme blokovat commit, jen varování
     }
     
@@ -50,11 +57,21 @@ try {
         $initFile = Join-Path $projectRoot "src" "irswitch" "__init__.py"
         $pyprojectFile = Join-Path $projectRoot "pyproject.toml"
         
-        git add $initFile $pyprojectFile 2>$null
-        Write-Host "✓ Version bumped to $newVersion - files staged for commit"
+        # Zkontrolovat, zda soubory skutečně existují a byly změněny
+        if ((Test-Path $initFile) -and (Test-Path $pyprojectFile)) {
+            git add $initFile $pyprojectFile 2>$null
+            Write-Host "✓ Version bumped to $newVersion - files staged for commit"
+        } else {
+            Write-Warning "Version files not found or not modified"
+        }
     }
+    
+    Pop-Location
 } catch {
     Write-Warning "Error in version bump hook: $_"
+    if (Get-Location -Stack) {
+        Pop-Location
+    }
 }
 
 exit 0
