@@ -38,11 +38,11 @@ jobs:
     - name: Verify installation
       run: |
         python -c "import sys; print('Python path:', sys.path)"
-        python -c "import irswitch; print(f'✓ irswitch version: {irswitch.__version__}')"
-        python -c "from irswitch.obs.client import ObsClient; print('✓ OBS client import OK')"
-        python -c "from irswitch.iracing.reader import IRacingReader; print('✓ iRacing reader import OK')"
-        python -c "from irswitch.logic.state_machine import StateMachine; print('✓ State machine import OK')"
-        python -c "from irswitch.server.metrics import MetricsCollector; print('✓ Metrics import OK')"
+        python -c "import irswitch; print(f'OK: irswitch version: {irswitch.__version__}')"
+        python -c "from irswitch.obs.client import ObsClient; print('OK: OBS client import')"
+        python -c "from irswitch.iracing.reader import IRacingReader; print('OK: iRacing reader import')"
+        python -c "from irswitch.logic.state_machine import StateMachine; print('OK: State machine import')"
+        python -c "from irswitch.server.metrics import MetricsCollector; print('OK: Metrics import')"
       env:
         PYTHONPATH: ${{ github.workspace }}/src
 
