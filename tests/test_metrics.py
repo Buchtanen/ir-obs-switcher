@@ -185,7 +185,7 @@ def test_to_dict_basic(metrics: MetricsCollector) -> None:
     result = metrics.to_dict()
 
     assert result["scene_switches_total"] == 1
-    assert result["uptime_seconds"] > 0
+    assert result["uptime_seconds"] >= 0  # Can be 0 if test runs very fast
     assert result["errors_total"]["test_error"] == 1
     assert result["scene_switch_latency_avg_ms"] == 50.0
 
