@@ -25,9 +25,6 @@ test = [
 [project.scripts]
 irswitchd = "irswitch.main:main"
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
@@ -41,5 +38,6 @@ namespaces = false
 include = ["irswitch*"]
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
