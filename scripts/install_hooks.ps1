@@ -2,12 +2,15 @@
 
 <#
 .SYNOPSIS
-    Instaluje Git prepare-commit-msg hook pro automatické verzování.
+    Instaluje Git hooks pro automatické verzování.
 
 .DESCRIPTION
-    Tento skript instaluje prepare-commit-msg hook, který automaticky zvyšuje verzi aplikace
-    podle prefixu commit message. Hook běží PŘED vytvořením commitu, což umožňuje
-    modifikovat staging area tak, aby změny byly zahrnuty ve stejném commitu.
+    Tento skript instaluje prepare-commit-msg a post-commit hooky.
+    Workflow:
+    1. prepare-commit-msg: bumps version, stores pre-commit hashes
+    2. Commit created (without version files)
+    3. post-commit: detects version change, amends commit
+    Result: One commit including version changes
 
     Prefixy:
     - fix:  -> PATCH (0.3.0 -> 0.3.1)
@@ -28,9 +31,13 @@ $scriptDir = $PSScriptRoot
 $projectRoot = Split-Path -Parent $scriptDir
 $gitDir = Join-Path -Path $projectRoot -ChildPath '.git'
 $gitHooksDir = Join-Path -Path $gitDir -ChildPath 'hooks'
-$hookFile = Join-Path -Path $gitHooksDir -ChildPath 'prepare-commit-msg'
 $scriptsDir = Join-Path -Path $projectRoot -ChildPath 'scripts'
-$hookScript = Join-Path -Path $scriptsDir -ChildPath 'prepare-commit-msg-hook.ps1'
+
+# Hook soubory
+$prepareHookFile = Join-Path -Path $gitHooksDir -ChildPath 'prepare-commit-msg'
+$postHookFile = Join-Path -Path $gitHooksDir -ChildPath 'post-commit'
+$prepareScript = Join-Path -Path $scriptsDir -ChildPath 'prepare-commit-msg-hook.sh'
+$postScript = Join-Path -Path $scriptsDir -ChildPath 'post-commit-hook.sh'
 
 # Funkce pro výstup
 function Write-Success {
@@ -43,9 +50,9 @@ function Write-Info {
     Write-Host $Message -ForegroundColor Cyan
 }
 
-function Write-WarningMsg {
+function Write-ErrorMsg {
     param([string]$Message)
-    Write-Host ('⚠ ' + $Message) -ForegroundColor Yellow
+    Write-Host ('✗ ' + $Message) -ForegroundColor Red
 }
 
 # Vytvořit .git/hooks adresář pokud neexistuje
@@ -54,39 +61,44 @@ if (-not (Test-Path $gitHooksDir)) {
     Write-Info "Created .git/hooks directory"
 }
 
-# Zkontrolovat existenci hook skriptu
-if (-not (Test-Path $hookScript)) {
-    Write-Error "Hook script not found: $hookScript"
+# Zkontrolovat existenci hook skriptů
+if (-not (Test-Path $prepareScript)) {
+    Write-ErrorMsg "Prepare hook script not found: $prepareScript"
     exit 1
 }
 
-# Vždy použít bash hook (funguje v Git Bash i Git CMD přes sh.exe)
-$bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'prepare-commit-msg-hook.sh'
-
-if (-not (Test-Path $bashHookScript)) {
-    Write-Error "Bash hook script not found: $bashHookScript"
+if (-not (Test-Path $postScript)) {
+    Write-ErrorMsg "Post-commit hook script not found: $postScript"
     exit 1
 }
 
+# Kopírovat prepare-commit-msg hook
 try {
-    # Kopírovat bash hook přímo (Git Bash i Git CMD ho dokáží spustit přes sh.exe)
-    Copy-Item -Path $bashHookScript -Destination $hookFile -Force
+    Copy-Item -Path $prepareScript -Destination $prepareHookFile -Force
     Write-Success "Installed prepare-commit-msg hook"
-    Write-Info "  Hook file: $hookFile"
-    Write-Info "  Script: $bashHookScript"
-    Write-Info "  Note: Works in both Git Bash and Git CMD"
 } catch {
-    Write-Error "Failed to install hook: $_"
+    Write-ErrorMsg "Failed to install prepare-commit-msg hook: $_"
+    exit 1
+}
+
+# Kopírovat post-commit hook
+try {
+    Copy-Item -Path $postScript -Destination $postHookFile -Force
+    Write-Success "Installed post-commit hook"
+} catch {
+    Write-ErrorMsg "Failed to install post-commit hook: $_"
     exit 1
 }
 
 # Výstup s instrukcemi
 Write-Host ''
-Write-Host 'Git hook installed successfully!' -ForegroundColor Green
+Write-Host 'Git hooks installed successfully!' -ForegroundColor Green
 Write-Host ''
-Write-Host 'Key difference from commit-msg hook:'
-Write-Host '  prepare-commit-msg runs BEFORE commit creation,' -ForegroundColor Cyan
-Write-Host '  so version-bumped files ARE included in the same commit.'
+Write-Host 'Workflow:' -ForegroundColor Cyan
+Write-Host '  1. prepare-commit-msg: bumps version, stores pre-commit hashes'
+Write-Host '  2. Commit created (without version files)'
+Write-Host '  3. post-commit: detects version change, amends commit'
+Write-Host '  Result: One commit including version changes'
 Write-Host ''
 Write-Host 'Usage examples:' -ForegroundColor Cyan
 Write-Host '  git commit -m ''fix: oprava bugu''     -> 0.3.0 -> 0.3.1 (PATCH)'

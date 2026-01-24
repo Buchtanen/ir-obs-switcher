@@ -50,17 +50,21 @@ Verze se zobrazuje na následujících místech:
    }
    ```
 
-## Automatické verzování (Git Hook)
+## Automatické verzování (Git Hooky)
 
-Aplikace má automatický mechanismus pro správu verzí pomocí Git **prepare-commit-msg** hooku.
+Aplikace má automatický mechanismus pro správu verzí pomocí dvou Git hooků:
+- **prepare-commit-msg** - běží před vytvořením commitu
+- **post-commit** - běží po vytvoření commitu
 
-### Proč prepare-commit-msg místo commit-msg?
+### Proč dva hooky?
 
-Git hook `commit-msg` běží **po** tom, co git připravil commit, ale **před** jeho uložením. Jakékoli změny v staging area uvnitř `commit-msg` hooku se nedostanou do commitu.
+Git commit je atomická operace - jakmile začne, nelze změnit staging area.
+Proto používáme dvoufázový přístup:
 
-**prepare-commit-msg** hook běží **před** vytvořením commitu, což umožňuje modifikovat staging area tak, aby změny verzí byly zahrnuty ve **stejném commitu**.
+1. **prepare-commit-msg**: Uloží hashe verzí souborů PŘED commitem
+2. **post-commit**: Porovná hashe, pokud se liší, provede `git commit --amend`
 
-### Instalace hooku
+### Instalace hooků
 
 **Windows (PowerShell)**:
 ```powershell
@@ -75,7 +79,7 @@ chmod +x scripts/install_hooks.sh
 
 ### Použití
 
-Po instalaci hooku se verze automaticky zvýší podle prefixu commit message:
+Po instalaci hooků se verze automaticky zvýší podle prefixu commit message:
 
 - **`fix:`** → zvýší **PATCH** (0.3.0 → 0.3.1)
   ```bash
@@ -92,13 +96,13 @@ Po instalaci hooku se verze automaticky zvýší podle prefixu commit message:
   git commit -m "rel: major release s breaking changes"
   ```
 
-Hook automaticky:
-1. Přečte commit message
-2. Detekuje prefix (`fix:`, `feat:`, `rel:`)
-3. Zvýší verzi v `__init__.py` a `pyproject.toml`
-4. Přidá změny do staging area **před** vytvořením commitu
+Workflow:
+1. prepare-commit-msg detekuje prefix a zvýší verzi
+2. Commit se vytvoří (bez verzí)
+3. post-commit detekuje změnu a provede amend
+4. Výsledek: Jeden commit včetně změn verzí
 
-**Poznámka**: Pokud commit message nezačíná žádným z těchto prefixů, verze se nezmění. Hook se také nespouští při merge, squash nebo template commitech.
+**Poznámka**: Pokud commit message nezačíná žádným z těchto prefixů, verze se nezmění. Hooky se také nespouští při merge, squash nebo template commitech.
 
 ### Ruční změna verze
 
