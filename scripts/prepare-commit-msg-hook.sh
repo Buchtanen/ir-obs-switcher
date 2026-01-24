@@ -34,11 +34,14 @@ fi
 
 # Uložit hashe verzí souborů PŘED jakoukoli změnou
 # Tyto hashe použije post-commit hook pro detekci změn
+PRE_COMMIT_INIT_HASH_FILE="$PROJECT_ROOT/.git/.version_init_hash"
+PRE_COMMIT_PYPROJECT_HASH_FILE="$PROJECT_ROOT/.git/.version_pyproject_hash"
+
 if [ -f "$INIT_FILE" ]; then
-    sha256sum "$INIT_FILE" | cut -d' ' -f1 > ".git/.version_init_hash"
+    sha256sum "$INIT_FILE" | cut -d' ' -f1 > "$PRE_COMMIT_INIT_HASH_FILE"
 fi
 if [ -f "$PYPROJECT_FILE" ]; then
-    sha256sum "$PYPROJECT_FILE" | cut -d' ' -f1 > ".git/.version_pyproject_hash"
+    sha256sum "$PYPROJECT_FILE" | cut -d' ' -f1 > "$PRE_COMMIT_PYPROJECT_HASH_FILE"
 fi
 
 # Kontrolovat, zda existuje bump script
