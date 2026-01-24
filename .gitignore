@@ -32,6 +32,7 @@ env/
 *.swp
 *.swo
 *~
+.cursor/debug.log
 
 # Testing
 .pytest_cache/
@@ -42,6 +43,16 @@ htmlcov/
 # Project specific
 config/config.ini
 *.log
+logs/*.log*
+logs/*.log.*
+data/*.json
+!data/*.example.json
+docs/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
 
 # OS
 .DS_Store

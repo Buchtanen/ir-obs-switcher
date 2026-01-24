@@ -8,6 +8,159 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 ## [Unreleased]
 
 ### Přidáno
+- N/A
+
+### Změněno
+- N/A
+
+### Opraveno
+- N/A
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.6.1] - 2026-01-24
+
+### Přidáno
+- N/A
+
+### Změněno
+- N/A
+
+### Změněno
+- **CI konfigurace** - aktualizace pro testování více Python verzí
+  - Přidání testování pro Python verze 3.11, 3.12 a 3.13
+  - Detailní logy pro test execution napříč různými prostředími
+  - Nové test result soubory pro každou Python verzi pro sledování výkonu a výsledků
+
+### Opraveno
+- **CI testy** - vylepšená stabilita testů
+  - Potlačení barevného výstupu v CI test logech pro lepší čitelnost
+  - Úprava sleep duration v metrics testech pro přesnější měření connection duration
+  - Odstranění redundantních importů v testech
+  - Úprava uptime assertion v metrics testech pro povolení nulové hodnoty
+  - Odstranění zastaralých konfigurací z CI
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.5.1] - 2026-01-24
+
+### Přidáno
+- **Vylepšené stream information retrieval a caching**
+  - Cachování detailních stream informací jako dictionary (title, description, scheduled start time, actual start time, concurrent viewers, status, privacy status)
+  - Nová metoda `get_cached_stream_info_full` pro získání plných cachovaných stream informací bez API volání
+  - Rozšířené zobrazení stream detailů v dashboardech pro lepší viditelnost stream statusu a metrik
+
+### Změněno
+- **Stream information handling** - refaktorování v OBS klientu a API
+  - Změna návratové hodnoty na tuple (title, description) pro zpětnou kompatibilitu
+  - Odstranění dříve cachovaných polí
+  - Přidání flagu pro missing API keys v `get_cached_stream_info`
+  - Aktualizace server API a dashboardů pro novou strukturu stream dat
+  - Vylepšené testy pro stream information retrieval a caching logiku
+- **Git hooks** - další vylepšení pro správu verzí a error handling
+  - Prevence rekurze během amend operací v `post-commit-hook.sh`
+  - Přidání error handling pro staging failures
+  - Oprava cest pro version hash storage pro zajištění správné detekce verzí během commitů
+
+### Opraveno
+- N/A
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.5.0] - 2026-01-24
+
+### Přidáno
+- **OAuth 2.0 token management pro YouTube API**
+  - Nový modul `oauth.py` pro správu OAuth tokenů včetně funkcí pro získání a obnovu tokenů
+  - Integrace OAuth flow do main service pro automatické zpracování YouTube API autentizace
+  - Nové API endpointy pro OAuth iniciaci, callback a status
+  - Vylepšené logování a error handling pro OAuth procesy
+  - Testy pro novou OAuth funkcionalitu
+
+### Změněno
+- **Main service** - aktualizace pro OAuth flow a správu tokenů
+- **API server** - přidání OAuth endpointů
+
+### Opraveno
+- N/A
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.4.2] - 2026-01-24
+
+### Přidáno
+- N/A
+
+### Změněno
+- N/A
+
+### Opraveno
+- **pytest asyncio mode** - oprava umístění v `pyproject.toml`
+  - Správné nastavení pytest asyncio módu pro async testy
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.4.1] - 2026-01-24
+
+### Přidáno
+- N/A
+
+### Změněno
+- N/A
+
+### Opraveno
+- N/A
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.4.0] - 2026-01-24
+
+### Přidáno
+- **Git hooks enhancements**
+  - Vylepšená instalace Git hooks s lepším path handlingem a output messages
+  - Nový skript `test_version_bump.ps1` pro testování automatického versioningu
+  - Commit message hook pro konzistentní commit zprávy
+  - Dokumentace pro testování version bump procesu (`scripts/TEST_VERSION_BUMP.md`)
+
+### Změněno
+- **Version bumping script** - vylepšený skript pro správu verzí
+  - Kontrola změn před zápisem do `__init__.py` a `pyproject.toml`
+  - Varování pokud nedojde k žádným změnám
+  - Commit message hook změněn pro správné cesty a kontrolu existence version souborů před stagingem
+- **Git hook installation** - aktualizace pro použití bash skriptů
+  - Nahrazení Windows batch wrapperu přímou kopií bash hook skriptu
+  - Kompatibilita s Git Bash i Git CMD
+  - Vylepšené error handling pro chybějící bash hook skripty
+
+### Opraveno
+- N/A
+
+### Odstraněno
+- N/A
+
+---
+
+## [0.3.0] - 2026-01-24
+
+### Přidáno
 - **Stream Cache Optimization**
   - Cache-aware auto-start logika využívající cached hodnot z `stream_selected` eventu
   - Konstanty `STREAM_CACHE_FRESH_MS = 5000` (5 sekund) a `STREAM_CACHE_GRACE_MS = 10000` (10 sekund)
@@ -37,6 +190,28 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
   - Testy pro `extract_session_type()` (všechny metody extrakce)
   - Testy pro `extract_session_num()` a `extract_total_sessions()`
   - Testy pro priority mezi různými zdroji dat
+- **State Machine Redesign**
+  - Nové stavy: `CONNECTING`, `LOADING`, `LOBBY` (nahrazuje IDLE pro aktivní hru)
+  - Explicitní handling pro QUIT a RESTART módy
+  - Vylepšené přechody mezi stavy
+- **Loading Screen Detection**
+  - Vylepšená detekce loading screenů pomocí process checks
+  - Lepší handling i když SDK není připojen
+  - Tracking doby loadingu pro automatické spuštění broadcastu
+- **Session Management**
+  - Extrakce `session_type` (Practice, Qualify, Race, Warmup, Test)
+  - Extrakce `session_name` a `session_num`
+  - Extrakce `total_sessions` z WeekendInfo
+  - Zobrazení session info v GR Dashboard
+- **API Enhancements**
+  - Endpoint `/reset` pro reset stavu a metrik na CONNECTING
+  - Vylepšené error handling v API
+- **iRacing Mode Extraction**
+  - Priorita LOBBY nad IDLE pro aktivní hru
+  - Vylepšené přechody mezi LOBBY a IDLE stavy
+- **OBS Connection Logging**
+  - Logování úspěšných připojení při startu
+  - Event notifikace pro background reconnection
 
 ### Změněno
 - **README.md** - reorganizováno, zjednodušeno
@@ -49,16 +224,17 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
   - Fresh cache (< 5s): použití cached hodnot přímo
   - Stale cache (5-10s): API fallback pro spolehlivost
   - Expired cache (> 10s): forced API call
+- **State Machine** - kompletní redesign s novými stavy
+- **Main Loop** - vylepšené handling loading screenů a state transitions
+- **Extractors** - rozšířená extrakce session informací
+- **VR Dashboard** - aktualizován pro nové stavy a session info
 
 ### Opraveno
 - N/A
 
 ### Odstraněno
-- N/A
-
----
-
-## [0.3.0] - 2026-01-24
+- **SDK Snapshot API endpoint** - odstraněn `/api/snapshot` endpoint
+- **Console Alerts** - odstraněn `util/console_alerts.py` (285 řádků)
 
 ### Přidáno
 - **State Machine Redesign**

@@ -11,8 +11,8 @@ from irswitch.util.clock import now_ms
 
 logger = logging.getLogger(__name__)
 
-# Default history file location (in user's home directory or current directory)
-DEFAULT_HISTORY_FILE = Path("loading_history.json")
+# Default history file location (in data/ directory)
+DEFAULT_HISTORY_FILE = Path("data/loading_history.json")
 MAX_HISTORY_SIZE = 50
 
 

@@ -84,7 +84,7 @@ $readmeContent = @"
 - The application runs silently in the background (no console window)
 - Logs go to console (stderr) by default
 - If `log_file` is set in config.ini, logs will also be written to that file
-- `loading_history.json` will be created automatically in the current directory when first run
+- `data/loading_history.json` will be created automatically in the data/ directory when first run
 
 ## Stopping the Service
 
