@@ -292,14 +292,18 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         }}
         
         .status-indicator {{
-            width: 12px;
-            height: 12px;
+            width: 17px;
+            height: 17px;
             border-radius: 50%;
             background: #4caf50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+            margin-top: 3px;
+            flex-shrink: 0;
         }}
         
         .status-indicator.disconnected {{
             background: #f44336;
+            box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
         }}
         
         .streaming-indicator {{
@@ -808,13 +812,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 <div class="connection-status">
                     <div class="status-indicator {'disconnected' if not state.connected_iracing else ''}" title="iRacing"></div>
                     <div class="status-indicator {'disconnected' if not state.connected_obs else ''}" title="OBS"></div>
-                    <span class="value">{translator.t('connected') if state.connected_iracing else translator.t('disconnected')} / {translator.t('connected') if state.connected_obs else translator.t('disconnected')}</span>
                 </div>
-            </div>
-
-            <div class="status-card">
-                <h3>OAuth</h3>
-                <div class="value" id="oauth-status">Checking...</div>
             </div>
 
             <div class="status-card">
@@ -833,17 +831,14 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             </div>
         </div>
         
-        {f'''
-        <div class="status-grid" style="margin-bottom: 12px;">
+        <div class="status-grid" style="margin-bottom: 12px;" id="stream-row-container">
             <div class="status-card" style="grid-column: 1 / -1;">
-                <h3>{stream_status_label or translator.t('current_stream')}</h3>
-                <div class="value" style="font-size: 1em;">{stream_title or translator.t('not_available')}</div>
-                {f'''
-                <div class="sublabel" style="margin-top: 4px;">{stream_description}</div>
-                ''' if stream_description and stream_description != translator.t('not_available') else ''}
+                <h3 id="stream-row-header">Stream</h3>
+                <div id="stream-row-content">
+                    <div class="value" style="font-size: 0.9em; color: #888;">No stream information available</div>
+                </div>
             </div>
         </div>
-        ''' if state.connected_obs and should_show_stream_row else ''}
 
         <div class="status-grid" style="margin-bottom: 12px;">
             <div class="status-card">
@@ -1110,23 +1105,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     updateValue('OBS Profile', data.obs_profile || 'N/A');
                 }}
 
-                // Update OAuth status
-                const oauthStatusEl = document.getElementById('oauth-status');
-                if (oauthStatusEl) {{
-                    if (data.oauth_configured) {{
-                        if (data.oauth_authenticated) {{
-                            oauthStatusEl.textContent = data.oauth_has_refresh_token ? 'Active' : 'Expired';
-                            oauthStatusEl.style.color = '#4caf50';
-                        }} else {{
-                            oauthStatusEl.textContent = 'Pending';
-                            oauthStatusEl.style.color = '#ff9800';
-                        }}
-                    }} else {{
-                        oauthStatusEl.textContent = 'Not Configured';
-                        oauthStatusEl.style.color = '#888';
-                    }}
-                }}
-
                 // Update reason - find the reason card specifically
                 const reasonCard = Array.from(document.querySelectorAll('.status-card')).find(card => {{
                     const h3 = card.querySelector('h3');
@@ -1147,92 +1125,170 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }}
         }}
         
+        function formatDateTime(isoString) {{
+            if (!isoString) return null;
+            try {{
+                const date = new Date(isoString);
+                return date.toLocaleString('cs-CZ', {{ 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }});
+            }} catch (e) {{
+                return null;
+            }}
+        }}
+        
+        function formatStreamStatus(status) {{
+            const statusMap = {{
+                'created': 'Vytvořen',
+                'ready': 'Připraven',
+                'testing': 'Testování',
+                'live': 'ŽIVĚ',
+                'complete': 'Dokončen',
+                'revoked': 'Zrušen'
+            }};
+            return statusMap[status] || status || 'Neznámý';
+        }}
+        
+        function formatPrivacyStatus(privacy) {{
+            const privacyMap = {{
+                'private': 'Soukromé',
+                'unlisted': 'Neveřejné',
+                'public': 'Veřejné'
+            }};
+            return privacyMap[privacy] || privacy || 'Neznámé';
+        }}
+        
         function updateStreamRow(data) {{
-            // Find or create stream row container
-            const statusGrids = document.querySelectorAll('.status-grid');
-            let streamRowContainer = null;
+            // Stream row is always visible - find container by ID
+            const streamRowContainer = document.getElementById('stream-row-container');
+            if (!streamRowContainer) return;
             
-            // Look for existing stream row
-            for (const grid of statusGrids) {{
-                const streamCard = grid.querySelector('.status-card h3');
-                if (streamCard && (streamCard.textContent.includes('Stream') || streamCard.textContent.includes('Current') || streamCard.textContent.includes('Planned'))) {{
-                    streamRowContainer = grid;
-                    break;
+            const headerEl = document.getElementById('stream-row-header');
+            const contentEl = document.getElementById('stream-row-content');
+            if (!headerEl || !contentEl) return;
+            
+            // Determine OAuth status for header
+            let oauthStatus = '';
+            let oauthColor = '#888';
+            let oauthIcon = '🔒';
+            if (data.oauth_configured) {{
+                if (data.oauth_authenticated) {{
+                    oauthStatus = data.oauth_has_refresh_token ? 'Active' : 'Expired';
+                    oauthColor = data.oauth_has_refresh_token ? '#4caf50' : '#ffc107';
+                    oauthIcon = data.oauth_has_refresh_token ? '✅' : '⚠️';
+                }} else {{
+                    oauthStatus = 'Pending';
+                    oauthColor = '#ff9800';
+                    oauthIcon = '⏳';
                 }}
+            }} else {{
+                oauthStatus = 'Not Configured';
+                oauthColor = '#888';
+                oauthIcon = '⚪';
             }}
             
-            // Determine if we should show stream row
-            const shouldShow = data.connected_obs && (
-                (data.stream_title && data.stream_title !== '') ||
+            // Determine stream readiness
+            const isStreamReady = data.connected_obs && (
                 data.streaming ||
-                data.stream_selected ||
-                (data.stream_ready_selected !== undefined && data.stream_ready_selected)
+                (data.stream_selected && data.stream_ready_selected) ||
+                (data.stream_title && data.stream_title !== '')
             );
             
-            // Determine stream status label
-            let streamStatusLabel = t('current_stream');
-            if (data.streaming) {{
-                streamStatusLabel = t('current_stream');
-            }} else if (data.stream_selected) {{
-                streamStatusLabel = t('current_stream');
-            }} else if (data.stream_title) {{
-                streamStatusLabel = t('planned_stream');
-            }}
+            // Build header with OAuth status and icon
+            headerEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 6px;"><span>📺</span> Stream</span> <span style="font-size: 0.7em; font-weight: normal; color: ${{oauthColor}}; margin-left: 12px; display: inline-flex; align-items: center; gap: 4px;"><span>${{oauthIcon}}</span> YouTube OAuth: ${{oauthStatus}}</span>`;
             
-            // Determine stream title and description to display
-            let streamTitle = data.stream_title || t('not_available');
-            if (!data.stream_title && (data.streaming || data.stream_ready_selected || data.stream_selected)) {{
-                streamTitle = t('not_available');
-            }}
-            const streamDescription = data.stream_description || null;
-            const quotaExceeded = data.youtube_quota_exceeded || false;
-            
-            if (shouldShow) {{
-                // Create or update stream row
-                if (!streamRowContainer) {{
-                    // Find the grid after the first status-grid (connection statuses)
-                    const firstGrid = document.querySelector('.status-grid');
-                    if (firstGrid && firstGrid.parentElement) {{
-                        streamRowContainer = document.createElement('div');
-                        streamRowContainer.className = 'status-grid';
-                        streamRowContainer.style.marginTop = '20px';
-                        firstGrid.parentElement.insertBefore(streamRowContainer, firstGrid.nextSibling);
-                    }}
+            // Build content based on stream readiness
+            if (!data.connected_obs) {{
+                contentEl.innerHTML = `
+                    <div class="value" style="font-size: 0.9em; color: #888;">OBS not connected</div>
+                `;
+            }} else if (!isStreamReady) {{
+                contentEl.innerHTML = `
+                    <div class="value" style="font-size: 0.9em; color: #888;">Stream not ready</div>
+                `;
+            }} else {{
+                // Stream is ready - show compact info with all details
+                const streamTitle = data.stream_title || 'No title available';
+                const streamDescription = data.stream_description || null;
+                const quotaExceeded = data.youtube_quota_exceeded || false;
+                
+                // Format times
+                const scheduledTime = formatDateTime(data.stream_scheduled_start_time);
+                const actualTime = formatDateTime(data.stream_actual_start_time);
+                
+                // Format status and privacy
+                const streamStatus = formatStreamStatus(data.stream_status);
+                const privacyStatus = formatPrivacyStatus(data.stream_privacy_status);
+                
+                // Format viewers
+                const viewers = data.stream_concurrent_viewers !== null && data.stream_concurrent_viewers !== undefined 
+                    ? data.stream_concurrent_viewers.toLocaleString('cs-CZ') 
+                    : null;
+                
+                // Build info rows
+                let infoRows = [];
+                
+                if (scheduledTime) {{
+                    infoRows.push(`<span style="display: inline-flex; align-items: center; gap: 4px;"><span>📅</span> Scheduled: ${{scheduledTime}}</span>`);
+                }}
+                if (actualTime) {{
+                    infoRows.push(`<span style="display: inline-flex; align-items: center; gap: 4px;"><span>▶️</span> Started: ${{actualTime}}</span>`);
+                }}
+                if (viewers !== null) {{
+                    infoRows.push(`<span style="display: inline-flex; align-items: center; gap: 4px;"><span>👁️</span> Viewers: ${{viewers}}</span>`);
+                }}
+                if (streamStatus) {{
+                    const statusColor = data.stream_status === 'live' ? '#f44336' : '#888';
+                    infoRows.push(`<span style="display: inline-flex; align-items: center; gap: 4px;"><span>🔴</span> Status: <span style="color: ${{statusColor}}; font-weight: 600;">${{streamStatus}}</span></span>`);
+                }}
+                if (privacyStatus) {{
+                    const privacyIcon = data.stream_privacy_status === 'public' ? '🌐' : data.stream_privacy_status === 'unlisted' ? '🔗' : '🔒';
+                    infoRows.push(`<span style="display: inline-flex; align-items: center; gap: 4px;"><span>${{privacyIcon}}</span> Privacy: ${{privacyStatus}}</span>`);
                 }}
                 
-                if (streamRowContainer) {{
-                    let descriptionHtml = '';
-                    if (streamDescription && streamDescription !== t('not_available')) {{
-                        descriptionHtml = `
-                            <div class="sublabel" style="margin-top: 10px;">${{t('stream_description')}}</div>
-                            <div class="value" style="font-size: 0.9em; color: #aaa;">${{streamDescription}}</div>
-                        `;
-                    }}
-                    let warningHtml = '';
-                    if (quotaExceeded) {{
-                        const resetTime = getQuotaResetTimeLocal();
-                        const params = {{}};
-                        params.time = resetTime;
-                        const quotaMsg = t('youtube_quota_message', params);
-                        warningHtml = `
-                            <div class="value" style="margin-top: 10px; font-size: 0.85em; color: #ff9800; font-weight: 400;">${{t('youtube_api_quota_exceeded')}} - ${{quotaMsg}}</div>
-                        `;
-                    }}
-                    streamRowContainer.innerHTML = `
-                        <div class="status-card" style="grid-column: 1 / -1;">
-                            <h3>${{streamStatusLabel}} ${{t('stream')}}</h3>
-                            <div class="sublabel">${{t('stream_title')}}</div>
-                            <div class="value" style="font-size: 1.1em;">${{streamTitle}}</div>
-                            ${{descriptionHtml}}
-                            ${{warningHtml}}
+                let infoHtml = '';
+                if (infoRows.length > 0) {{
+                    infoHtml = `
+                        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.8em; color: #aaa;">
+                            ${{infoRows.join('')}}
                         </div>
                     `;
                 }}
-            }} else {{
-                // Remove stream row if it exists
-                if (streamRowContainer) {{
-                    streamRowContainer.remove();
+                
+                let descriptionHtml = '';
+                if (streamDescription && streamDescription !== t('not_available') && streamDescription.trim() !== '') {{
+                    // Truncate description if too long
+                    const maxDescLength = 120;
+                    const truncatedDesc = streamDescription.length > maxDescLength 
+                        ? streamDescription.substring(0, maxDescLength) + '...' 
+                        : streamDescription;
+                    descriptionHtml = `
+                        <div style="margin-top: 8px; font-size: 0.85em; color: #aaa; line-height: 1.4;">${{truncatedDesc}}</div>
+                    `;
                 }}
+                
+                let warningHtml = '';
+                if (quotaExceeded) {{
+                    const resetTime = getQuotaResetTimeLocal();
+                    const params = {{}};
+                    params.time = resetTime;
+                    const quotaMsg = t('youtube_quota_message', params);
+                    warningHtml = `
+                        <div style="margin-top: 8px; font-size: 0.8em; color: #ff9800; display: inline-flex; align-items: center; gap: 4px;"><span>⚠️</span> ${{t('youtube_api_quota_exceeded')}} - ${{quotaMsg}}</div>
+                    `;
+                }}
+                
+                // Layout: title on top, then info rows, then description
+                contentEl.innerHTML = `
+                    <div class="value" style="font-size: 0.95em; font-weight: 600; line-height: 1.3;">${{streamTitle}}</div>
+                    ${{infoHtml}}
+                    ${{descriptionHtml}}
+                    ${{warningHtml}}
+                `;
             }}
         }}
         

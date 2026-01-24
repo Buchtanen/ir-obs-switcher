@@ -225,11 +225,26 @@ async def _get_status_dict(state: "SwitchState") -> dict:
                 status["stream_selected"] = False
                 status["stream_ready_selected"] = False
             
-            # Get cached stream title (don't make API calls from API endpoint)
+            # Get cached stream info (don't make API calls from API endpoint)
             stream_title, stream_description, quota_exceeded = _obs_client.get_cached_stream_info()
             status["stream_title"] = stream_title
             status["stream_description"] = stream_description
             status["youtube_quota_exceeded"] = quota_exceeded
+            
+            # Get full cached stream info for extended fields
+            stream_info_full = _obs_client.get_cached_stream_info_full()
+            if stream_info_full:
+                status["stream_scheduled_start_time"] = stream_info_full.get("scheduled_start_time")
+                status["stream_actual_start_time"] = stream_info_full.get("actual_start_time")
+                status["stream_concurrent_viewers"] = stream_info_full.get("concurrent_viewers")
+                status["stream_status"] = stream_info_full.get("status")
+                status["stream_privacy_status"] = stream_info_full.get("privacy_status")
+            else:
+                status["stream_scheduled_start_time"] = None
+                status["stream_actual_start_time"] = None
+                status["stream_concurrent_viewers"] = None
+                status["stream_status"] = None
+                status["stream_privacy_status"] = None
             
             # Update metrics with streaming status
             from irswitch.server.metrics import get_metrics
@@ -250,6 +265,11 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             status["stream_ready_selected"] = False
             status["stream_title"] = None
             status["stream_description"] = None
+            status["stream_scheduled_start_time"] = None
+            status["stream_actual_start_time"] = None
+            status["stream_concurrent_viewers"] = None
+            status["stream_status"] = None
+            status["stream_privacy_status"] = None
             # Update metrics
             from irswitch.server.metrics import get_metrics
             metrics = get_metrics()
@@ -262,6 +282,11 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         status["stream_ready_selected"] = False
         status["stream_title"] = None
         status["stream_description"] = None
+        status["stream_scheduled_start_time"] = None
+        status["stream_actual_start_time"] = None
+        status["stream_concurrent_viewers"] = None
+        status["stream_status"] = None
+        status["stream_privacy_status"] = None
         # Update metrics
         from irswitch.server.metrics import get_metrics
         metrics = get_metrics()
