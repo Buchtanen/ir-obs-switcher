@@ -2,11 +2,14 @@
 
 <#
 .SYNOPSIS
-    Instaluje Git commit-msg hook pro automatické verzování.
+    Instaluje Git prepare-commit-msg hook pro automatické verzování.
 
 .DESCRIPTION
-    Tento skript instaluje commit-msg hook, který automaticky zvyšuje verzi aplikace
-    podle prefixu commit message:
+    Tento skript instaluje prepare-commit-msg hook, který automaticky zvyšuje verzi aplikace
+    podle prefixu commit message. Hook běží PŘED vytvořením commitu, což umožňuje
+    modifikovat staging area tak, aby změny byly zahrnuty ve stejném commitu.
+
+    Prefixy:
     - fix:  -> PATCH (0.3.0 -> 0.3.1)
     - feat: -> MINOR (0.3.0 -> 0.4.0)
     - rel:  -> MAJOR (0.3.0 -> 1.0.0)
@@ -25,9 +28,9 @@ $scriptDir = $PSScriptRoot
 $projectRoot = Split-Path -Parent $scriptDir
 $gitDir = Join-Path -Path $projectRoot -ChildPath '.git'
 $gitHooksDir = Join-Path -Path $gitDir -ChildPath 'hooks'
-$hookFile = Join-Path -Path $gitHooksDir -ChildPath 'commit-msg'
+$hookFile = Join-Path -Path $gitHooksDir -ChildPath 'prepare-commit-msg'
 $scriptsDir = Join-Path -Path $projectRoot -ChildPath 'scripts'
-$hookScript = Join-Path -Path $scriptsDir -ChildPath 'commit-msg-hook.ps1'
+$hookScript = Join-Path -Path $scriptsDir -ChildPath 'prepare-commit-msg-hook.ps1'
 
 # Funkce pro výstup
 function Write-Success {
@@ -58,7 +61,7 @@ if (-not (Test-Path $hookScript)) {
 }
 
 # Vždy použít bash hook (funguje v Git Bash i Git CMD přes sh.exe)
-$bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'commit-msg-hook.sh'
+$bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'prepare-commit-msg-hook.sh'
 
 if (-not (Test-Path $bashHookScript)) {
     Write-Error "Bash hook script not found: $bashHookScript"
@@ -68,7 +71,7 @@ if (-not (Test-Path $bashHookScript)) {
 try {
     # Kopírovat bash hook přímo (Git Bash i Git CMD ho dokáží spustit přes sh.exe)
     Copy-Item -Path $bashHookScript -Destination $hookFile -Force
-    Write-Success "Installed commit-msg hook"
+    Write-Success "Installed prepare-commit-msg hook"
     Write-Info "  Hook file: $hookFile"
     Write-Info "  Script: $bashHookScript"
     Write-Info "  Note: Works in both Git Bash and Git CMD"
@@ -77,19 +80,13 @@ try {
     exit 1
 }
 
-# Informace o alternativních hook skriptech
-if (-not $useBashHook) {
-    $bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'commit-msg-hook.sh'
-    if (Test-Path $bashHookScript) {
-        Write-Info ''
-        Write-Info ('Note: Bash hook script available at: ' + $bashHookScript)
-        Write-Info '      If using Git Bash, the hook will use bash script automatically'
-    }
-}
-
 # Výstup s instrukcemi
 Write-Host ''
 Write-Host 'Git hook installed successfully!' -ForegroundColor Green
+Write-Host ''
+Write-Host 'Key difference from commit-msg hook:'
+Write-Host '  prepare-commit-msg runs BEFORE commit creation,' -ForegroundColor Cyan
+Write-Host '  so version-bumped files ARE included in the same commit.'
 Write-Host ''
 Write-Host 'Usage examples:' -ForegroundColor Cyan
 Write-Host '  git commit -m ''fix: oprava bugu''     -> 0.3.0 -> 0.3.1 (PATCH)'

@@ -302,6 +302,7 @@ class StateMachine:
             session_type=current_state.session_type,
             session_name=current_state.session_name,
             session_num=current_state.session_num,
+            stream_extended_info=current_state.stream_extended_info,
         )
 
     def apply_override(self, current_state: SwitchState, scene: str, seconds: int) -> SwitchState:
@@ -333,6 +334,7 @@ class StateMachine:
             session_type=current_state.session_type,
             session_name=current_state.session_name,
             session_num=current_state.session_num,
+            stream_extended_info=current_state.stream_extended_info,
         )
 
     def toggle_autoswitch(self, current_state: SwitchState) -> SwitchState:
@@ -359,4 +361,5 @@ class StateMachine:
             session_type=current_state.session_type,
             session_name=current_state.session_name,
             session_num=current_state.session_num,
+            stream_extended_info=current_state.stream_extended_info,
         )

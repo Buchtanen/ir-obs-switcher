@@ -4,7 +4,7 @@ Tento dokument popisuje všechny testy v projektu iRacing OBS Switcher. Pro zák
 
 ## Přehled
 
-Projekt obsahuje **50+ unit testů** pokrývající všechny klíčové komponenty:
+Projekt obsahuje **84+ unit testů** pokrývající všechny klíčové komponenty:
 
 - **Extractors** (4 testy) - extrakce módu z iRacing dat
 - **Policy** (1 test) - mapování módu na scény
@@ -12,7 +12,7 @@ Projekt obsahuje **50+ unit testů** pokrývající všechny klíčové komponen
 - **OBS Client** (11 testů) - komunikace s OBS WebSocket
 - **State Machine** (11 testů) - logika přepínání scén
 - **API Server** (6 testů) - REST a WebSocket API
-- **Main Service** (3 testy) - inicializace a spuštění služby
+- **Main Service** (8 testů) - včetně 5 nových testů pro stream cache
 - **Loading Tracker** (9 testů) - sledování doby loadingu
 - **Event Log** (9 testů) - thread-safe event log systém
 - **E2E Main Loop** (7 testů) - end-to-end testy hlavní smyčky
@@ -307,7 +307,7 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 
 ## 7. Main Service (`tests/test_main.py`)
 
-**Cíl**: Ověřit inicializaci a spuštění hlavní služby.
+**Cíl**: Ověřit inicializaci a spuštění hlavní služby včetně stream cache optimalizace.
 
 **Testované soubory**: `src/irswitch/main.py`
 
@@ -328,9 +328,34 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 - **Proč**: Aplikace musí správně načíst a parsovat config soubor
 - **Očekávaný výsledek**: Config je načten bez chyb
 
+#### `test_stream_cache_fresh_scenario`
+- **Co testuje**: Fresh cache je použito přímo pro auto-start rozhodování
+- **Proč**: Když je cache mladší 5 sekund, nemusíme volat API - stačí cached hodnoty
+- **Očekávaný výsledek**: Cache age <= 5000ms, použijeme cached `is_ready` hodnotu
+
+#### `test_stream_cache_stale_scenario`
+- **Co testuje**: Stará cache (5-10s) triggruje API fallback
+- **Proč**: Pro spolehlivost potřebujeme aktuální data když cache stárne
+- **Očekávaný výsledek**: 5000 < cache_age <= 10000ms, použijeme API fallback
+
+#### `test_stream_cache_expired_scenario`
+- **Co testuje**: Expired cache (>10s) vynutí API volání
+- **Proč**: Příliš stará cache není spolehlivá - musíme získat свежие данные
+- **Očekávaný výsledek**: Cache age > 10000ms, forced API call
+
+#### `test_stream_no_cache_scenario`
+- **Co testuje**: Absence cache vynutí API volání
+- **Proč**: Když stream nikdy nebyl vybrán, musíme získat stav z API
+- **Očekávaný výsledek**: `last_stream_selected = False`, API call required
+
+#### `test_stream_cache_constants`
+- **Co testuje**: Konstanty cache threshold jsou definovány správně
+- **Proč**: Module-level konstanty musí být importovatelné a správně nastavené
+- **Očekávaný výsledek**: `STREAM_CACHE_FRESH_MS = 5000`, `STREAM_CACHE_GRACE_MS = 10000`
+
 ---
 
-## 9. Loading Tracker (`tests/test_loading_tracker.py`)
+## 8. Loading Tracker (`tests/test_loading_tracker.py`)
 
 **Cíl**: Ověřit sledování doby trvání loading screenů iRacing a ukládání historie.
 

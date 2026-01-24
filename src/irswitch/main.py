@@ -6,8 +6,12 @@ import asyncio
 import logging
 import signal
 import sys
+import threading
+import time
+import webbrowser
 from typing import Optional
 
+import aiohttp
 from aiohttp import web
 
 from irswitch.config import AppConfig
@@ -18,7 +22,8 @@ from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.obs.client import ObsClient
-from irswitch.server.api import create_app, set_current_state, get_current_state, set_state_machine, set_obs_client, set_reader, get_restart_mode, set_restart_mode
+from irswitch.oauth import create_oauth_manager, OAuthError
+from irswitch.server.api import APP_CONFIG, APP_CONFIG_PATH, create_app, set_current_state, get_current_state, set_state_machine, set_obs_client, set_reader, get_restart_mode, set_restart_mode
 from irswitch.server.event_log import get_event_log, set_event_log, EventLog
 from irswitch.server.metrics import get_metrics
 from irswitch.util.clock import now_ms
@@ -29,14 +34,95 @@ from irswitch.util.logging import (
     log_scene_switch,
     setup_logging,
 )
-from irswitch.util.notifications import (
-    notify_connection_lost,
-    notify_connection_restored,
-    set_notifications_enabled,
-)
+from irswitch.util.notifications import set_notifications_enabled
 from irswitch.util.hotkeys import start_listener, stop_listener, is_hotkey_pressed, was_hotkey_pressed_recently
 
 logger = logging.getLogger(__name__)
+
+# Cache thresholds for stream selection data (module-level constants)
+STREAM_CACHE_FRESH_MS = 5000  # 5 seconds - fresh cache, use directly
+STREAM_CACHE_GRACE_MS = 10000  # 10 seconds - stale cache, use API fallback
+
+
+async def handle_oauth_flow(config: AppConfig) -> None:
+    """
+    Automated OAuth flow at startup.
+
+    If OAuth credentials are configured but not yet authorized:
+    1. Calls /oauth/initiate to get authorization URL with valid state
+    2. Opens browser for user authorization
+    3. Waits for OAuth callback to complete
+    4. Only then proceeds with main functionality
+    """
+    oauth_manager = create_oauth_manager()
+
+    if oauth_manager is None:
+        logger.debug("OAuth not configured - skipping OAuth flow")
+        return
+
+    # Check if already authenticated
+    if oauth_manager.is_authenticated():
+        logger.info("OAuth already authenticated")
+        return
+
+    logger.info("OAuth not authenticated - initiating automated OAuth flow")
+
+    # Call /oauth/initiate to get authorization URL with valid state
+    # This ensures state is stored in _oauth_states for callback validation
+    api_url = f"http://127.0.0.1:{config.http_port}/oauth/initiate"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as response:
+                if response.status != 200:
+                    logger.error(f"Failed to initiate OAuth: {response.status}")
+                    return
+
+                data = await response.json()
+                auth_url = data["authorization_url"]
+                # State is now stored in _oauth_states by handle_oauth_initiate
+    except Exception as e:
+        logger.error(f"Failed to call /oauth/initiate: {e}")
+        return
+
+    logger.info(f"Opening browser for OAuth authorization...")
+    logger.info(f"Authorization URL: {auth_url[:80]}...")
+
+    # Open browser in new thread (non-blocking)
+    def open_browser():
+        try:
+            webbrowser.open(auth_url)
+        except Exception as e:
+            logger.warning(f"Failed to open browser: {e}")
+
+    threading.Thread(target=open_browser, daemon=True).start()
+
+    # Wait for user to complete authorization
+    logger.info("Waiting for OAuth authorization... (complete in browser)")
+
+    # Poll for authentication status
+    max_wait_seconds = 300  # 5 minutes timeout
+    poll_interval = 2.0
+    waited = 0
+
+    while waited < max_wait_seconds:
+        await asyncio.sleep(poll_interval)
+        waited += poll_interval
+
+        # Reload token from disk to check if it was saved
+        loaded = await oauth_manager.load_token()
+        is_auth = oauth_manager.is_authenticated()
+        logger.debug(f"OAuth poll: loaded={loaded}, is_authenticated={is_auth}")
+
+        if is_auth:
+            logger.info("OAuth authorization completed successfully!")
+            return
+
+        # Show progress
+        remaining = max_wait_seconds - waited
+        logger.info(f"Waiting for OAuth... ({remaining}s remaining)")
+
+    logger.warning("OAuth authorization timed out - continuing without YouTube API access")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -69,10 +155,6 @@ async def main_loop(
     # Calculate polling interval
     poll_interval = 1.0 / config.poll_hz
     
-    # Track last notification time to avoid spam
-    last_obs_notification_ts: float | None = None
-    obs_notification_cooldown_ms = 30000  # 30 seconds
-    
     # Track time in active gameplay mode for debounced sticky mode reset
     active_mode_start_ts: float | None = None
     active_mode_reset_delay_s = 3.0  # Wait 3 seconds in active mode before resetting sticky mode
@@ -100,6 +182,10 @@ async def main_loop(
     # Stream title tracking
     last_stream_title: Optional[str] = None
     last_stream_selected: bool = False  # Track if stream was selected
+    last_stream_ready_selected: bool = False  # Track if stream is ready (selected and configured)
+    last_stream_selection_check_ts: float = 0.0  # Timestamp of last stream selection check
+    stream_selection_consecutive_readings: int = 0  # Consecutive readings for stability
+    stream_selection_min_confirm_count: int = 3  # Need 3 consecutive same readings to confirm change
 
     logger.info("Starting main loop")
 
@@ -430,24 +516,45 @@ async def main_loop(
                 
                 current_ts = now_ms()
                 if not auto_start_triggered and auto_start_scheduled_ts is not None and current_ts >= auto_start_scheduled_ts:
-                    # Time to check and start broadcast
-                    is_ready = await obs_client.is_broadcast_ready()
-                    is_streaming, _ = await obs_client.get_stream_status()
+                    # Calculate cache age for decision making
+                    cache_age_ms = current_ts - last_stream_selection_check_ts
+
+                    # Determine data source: fresh cache, stale cache with API fallback, or forced API
+                    if last_stream_selected and cache_age_ms <= STREAM_CACHE_FRESH_MS:
+                        # Fresh cache - use cached values directly
+                        is_ready = last_stream_ready_selected
+                        is_streaming = False  # ready_selected implies not streaming
+                        data_source = "cache_fresh"
+                        logger.debug(f"Using fresh cache for auto-start (age={cache_age_ms}ms)")
+                    elif last_stream_selected and cache_age_ms <= STREAM_CACHE_GRACE_MS:
+                        # Stale cache - use API fallback for reliability
+                        is_ready = await obs_client.is_broadcast_ready()
+                        is_streaming, _ = await obs_client.get_stream_status()
+                        data_source = "cache_stale_api"
+                        logger.debug(f"Stale cache, using API fallback (age={cache_age_ms}ms)")
+                    else:
+                        # Cache too old or no cache - forced API call
+                        is_ready = await obs_client.is_broadcast_ready()
+                        is_streaming, _ = await obs_client.get_stream_status()
+                        data_source = "api_fallback"
+                        logger.debug(f"Cache expired, using API (age={cache_age_ms}ms)")
+
+                    # Attempt to start stream
                     if is_ready and not is_streaming:
                         success = await obs_client.start_stream()
                         if success:
-                            logger.info("Auto-started broadcast during loading")
+                            logger.info(f"Auto-started broadcast during loading ({data_source})")
                             await event_log.add_event(
                                 "stream_started",
-                                "Stream started automatically during loading (broadcast ready)",
-                                {"reason": "auto_start_loading", "broadcast_ready": True, "was_streaming": False}
+                                f"Stream started automatically during loading ({data_source})",
+                                {"reason": "auto_start_loading", "data_source": data_source, "cache_age_ms": cache_age_ms}
                             )
                         else:
                             logger.warning("Failed to auto-start broadcast during loading")
                             await event_log.add_event(
                                 "stream_start_failed",
                                 "Failed to auto-start stream during loading",
-                                {"reason": "auto_start_loading", "broadcast_ready": True, "error": "start_failed"}
+                                {"reason": "auto_start_loading", "data_source": data_source, "error": "start_failed"}
                             )
                     else:
                         if not is_ready:
@@ -455,16 +562,16 @@ async def main_loop(
                             await event_log.add_event(
                                 "stream_start_skipped",
                                 "Stream start skipped: broadcast not ready",
-                                {"reason": "auto_start_loading", "broadcast_ready": False, "was_streaming": is_streaming}
+                                {"reason": "auto_start_loading", "data_source": data_source, "cache_age_ms": cache_age_ms}
                             )
                         if is_streaming:
                             logger.debug("Stream already running, skipping auto-start")
                             await event_log.add_event(
                                 "stream_start_skipped",
                                 "Stream start skipped: already running",
-                                {"reason": "auto_start_loading", "broadcast_ready": is_ready, "was_streaming": True}
+                                {"reason": "auto_start_loading", "data_source": data_source}
                             )
-                    
+
                     auto_start_triggered = True  # Only try once per loading
             
             # Use connection states from state machine (already handles QUIT/RESTART correctly)
@@ -557,8 +664,12 @@ async def main_loop(
                     session_name=session_name,
                     session_num=session_num,
                     total_sessions=total_sessions,
+                    stream_extended_info=new_state.stream_extended_info,
                 )
             
+            # Update connection states
+            event_log = get_event_log()
+
             # Log mode change only (not every cycle) - compare with new_state.mode, not current_state.mode
             if new_state.mode != current_state.mode:
                 logger.info(f"iRacing mode changed: {current_state.mode.value} -> {new_state.mode.value}")
@@ -569,9 +680,6 @@ async def main_loop(
                         f"Game started: {new_state.mode.value}",
                         {"mode": new_state.mode.value}
                     )
-
-            # Update connection states
-            event_log = get_event_log()
             metrics = get_metrics()
             
             # Only log connection changes if not in QUIT/RESTART mode (to avoid spam)
@@ -588,16 +696,12 @@ async def main_loop(
                     else:
                         log_connection_lost(logger, "iRacing")
                         await event_log.add_event("connection_lost", "iRacing connection lost")
-                        if config.notifications_enabled:
-                            notify_connection_lost("iRacing")
 
             if connected_obs != current_state.connected_obs:
                 metrics.set_obs_connected(connected_obs)
                 if connected_obs:
                     log_connection_restored(logger, "OBS")
                     await event_log.add_event("connection_restored", "OBS connection restored")
-                    # Note: OBS connection restored notification removed (only show connection lost)
-                    last_obs_notification_ts = None  # Reset notification timer on successful connection
                     # If we're in CONNECTING state and OBS just connected, switch to safe_scene
                     if new_state.mode == DrivingMode.CONNECTING and obs_client.is_connected():
                         obs_current = await obs_client.get_current_scene()
@@ -640,8 +744,6 @@ async def main_loop(
                 else:
                     log_connection_lost(logger, "OBS")
                     await event_log.add_event("connection_lost", "OBS connection lost")
-                    if config.notifications_enabled:
-                        notify_connection_lost("OBS")
                     # Reset stream title tracking when OBS disconnects
                     last_stream_title = None
                     last_stream_title_check_ts = 0.0
@@ -652,71 +754,13 @@ async def main_loop(
                             await obs_client.connect(max_retries=1, initial_backoff=1.0)
                         except Exception as e:
                             logger.debug(f"OBS reconnection attempt failed: {e}")
-                            # Determine connection failure reason for notification
-                            error_str = str(e).lower()
-                            error_type = type(e).__name__
-                            is_auth_failed = (
-                                "failed to identify" in error_str or
-                                "authentication" in error_str or
-                                "password" in error_str or
-                                error_type == "OBSSDKError"
-                            )
-                            is_connection_refused = (
-                                "connection refused" in error_str or
-                                "10061" in error_str or
-                                error_type == "ConnectionRefusedError"
-                            )
-                            connection_failed = is_auth_failed and not is_connection_refused
-                            
-                            # Notify user about failed reconnection attempt (with cooldown)
-                            current_time = now_ms()
-                            should_notify = (
-                                config.notifications_enabled and
-                                (last_obs_notification_ts is None or
-                                 current_time - last_obs_notification_ts >= obs_notification_cooldown_ms)
-                            )
-                            if should_notify:
-                                try:
-                                    notify_connection_lost("OBS", was_connected=False, connection_failed=connection_failed)
-                                    last_obs_notification_ts = current_time
-                                except Exception as notify_error:
-                                    logger.error(f"Failed to show notification: {notify_error}")
             elif not connected_obs and not obs_client.is_connected():
                 # OBS is not connected and state hasn't changed (still trying to connect)
                 # Try to reconnect periodically
-                current_time = now_ms()
-                should_retry = (
-                    last_obs_notification_ts is None or
-                    current_time - last_obs_notification_ts >= obs_notification_cooldown_ms
-                )
-                if should_retry:
-                    try:
-                        await obs_client.connect(max_retries=1, initial_backoff=1.0)
-                    except Exception as e:
-                        logger.debug(f"OBS periodic reconnection attempt failed: {e}")
-                        # Determine connection failure reason for notification
-                        error_str = str(e).lower()
-                        error_type = type(e).__name__
-                        is_auth_failed = (
-                            "failed to identify" in error_str or
-                            "authentication" in error_str or
-                            "password" in error_str or
-                            error_type == "OBSSDKError"
-                        )
-                        is_connection_refused = (
-                            "connection refused" in error_str or
-                            "10061" in error_str or
-                            error_type == "ConnectionRefusedError"
-                        )
-                        connection_failed = is_auth_failed and not is_connection_refused
-                        
-                        # Notify user about failed connection attempt (with cooldown)
-                        if config.notifications_enabled:
-                            try:
-                                notify_connection_lost("OBS", was_connected=False, connection_failed=connection_failed)
-                                last_obs_notification_ts = current_time
-                            except Exception as notify_error:
-                                logger.error(f"Failed to show notification: {notify_error}")
+                try:
+                    await obs_client.connect(max_retries=1, initial_backoff=1.0)
+                except Exception as e:
+                    logger.debug(f"OBS periodic reconnection attempt failed: {e}")
 
             # State machine already ticked above (with session info updated if needed)
             set_current_state(new_state)
@@ -726,38 +770,58 @@ async def main_loop(
                 try:
                     is_streaming, _ = await obs_client.get_stream_status()
                     is_selected, is_ready_selected = await obs_client.is_stream_selected()
-                    
-                    # Check if stream selection changed
+
+                    # Update cache timestamp for auto-start logic
+                    current_check_ts = now_ms()
+                    last_stream_selection_check_ts = current_check_ts
+
+                    # Apply hysteresis/debouncing to stream selection detection
+                    # Require multiple consecutive readings to confirm change
                     if is_selected != last_stream_selected:
-                        if is_selected:
-                            # Stream was selected - NOW fetch title (only when needed)
-                            logger.info(f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})")
-                            try:
-                                stream_title, stream_description = await obs_client.get_stream_info()
+                        stream_selection_consecutive_readings += 1
+                        if stream_selection_consecutive_readings >= stream_selection_min_confirm_count:
+                            # Confirmed change - process it
+                            stream_selection_consecutive_readings = 0
+
+                            if is_selected:
+                                # Stream was selected - NOW fetch title (only when needed)
+                                logger.info(f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})")
+                                try:
+                                    stream_title, stream_description, stream_extended = await obs_client.get_stream_info()
+                                    await event_log.add_event(
+                                        "stream_selected",
+                                        f"Stream selected in OBS",
+                                        {"is_streaming": is_streaming, "is_ready": is_ready_selected, "stream_title": stream_title}
+                                    )
+                                    if stream_title:
+                                        logger.info(f"Stream title detected: {stream_title}")
+                                        last_stream_title = stream_title
+                                    # Store extended info for dashboard
+                                    if stream_extended:
+                                        last_stream_extended = stream_extended
+                                except Exception as e:
+                                    logger.warning(f"Failed to get stream info when stream selected: {e}")
+                                    await event_log.add_event(
+                                        "stream_selected",
+                                        f"Stream selected in OBS",
+                                        {"is_streaming": is_streaming, "is_ready": is_ready_selected, "stream_title": None}
+                                    )
+                            else:
+                                logger.info("Stream deselected in OBS")
                                 await event_log.add_event(
-                                    "stream_selected",
-                                    f"Stream selected in OBS",
-                                    {"is_streaming": is_streaming, "is_ready": is_ready_selected, "stream_title": stream_title}
+                                    "stream_deselected",
+                                    "Stream deselected in OBS",
+                                    {}
                                 )
-                                if stream_title:
-                                    logger.info(f"Stream title detected: {stream_title}")
-                                    last_stream_title = stream_title
-                            except Exception as e:
-                                logger.warning(f"Failed to get stream info when stream selected: {e}")
-                                await event_log.add_event(
-                                    "stream_selected",
-                                    f"Stream selected in OBS",
-                                    {"is_streaming": is_streaming, "is_ready": is_ready_selected, "stream_title": None}
-                                )
+                                last_stream_title = None
+                            last_stream_selected = is_selected
+                            last_stream_ready_selected = is_ready_selected
                         else:
-                            logger.info("Stream deselected in OBS")
-                            await event_log.add_event(
-                                "stream_deselected",
-                                "Stream deselected in OBS",
-                                {}
-                            )
-                            last_stream_title = None
-                        last_stream_selected = is_selected
+                            # Still accumulating confirming readings
+                            logger.debug(f"Stream selection unstable: {is_selected} (reading {stream_selection_consecutive_readings}/{stream_selection_min_confirm_count})")
+                    else:
+                        # Same as last reading, reset counter
+                        stream_selection_consecutive_readings = 0
                 except Exception as e:
                     logger.debug(f"Failed to check stream selection: {e}")
 
@@ -884,7 +948,16 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     set_state_machine(state_machine)
     set_obs_client(obs_client)
     set_reader(reader)
-    
+
+    # Initialize OAuth manager
+    oauth_manager = create_oauth_manager()
+    from irswitch.server.api import set_oauth_manager
+    set_oauth_manager(oauth_manager)
+
+    # Pass OAuth manager to OBS client for YouTube API access
+    if oauth_manager:
+        obs_client.set_oauth_manager(oauth_manager)
+
     # Initialize event log
     event_log = EventLog(max_size=config.dashboard_event_log_size)
     set_event_log(event_log)
@@ -918,6 +991,7 @@ async def run_service(config: AppConfig, config_path: str) -> None:
         session_type=None,
         session_name=None,
         session_num=None,
+        stream_extended_info=None,
     )
 
     # Try to connect to OBS (non-blocking - don't wait too long on startup)
@@ -949,16 +1023,6 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                         f"Please update your config.ini file to use only available scene names."
                     )
                     logger.error(error_msg)
-                    # Also show notification if enabled
-                    if config.notifications_enabled:
-                        from irswitch.util.notifications import show_toast
-                        try:
-                            show_toast(
-                                "iRacing OBS Switcher - Configuration Error",
-                                f"Missing scenes: {missing_list}\nAvailable: {available_list}"
-                            )
-                        except Exception:
-                            pass  # Notification is optional
                 else:
                     logger.info(f"Scene validation passed. All {len(all_configured_scenes)} configured scenes exist in OBS.")
                     logger.debug(f"Available OBS scenes: {', '.join(sorted(available_scenes))}")
@@ -989,6 +1053,7 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                 session_type=initial_state.session_type,
                 session_name=initial_state.session_name,
                 session_num=initial_state.session_num,
+                stream_extended_info=initial_state.stream_extended_info,
             )
             # Update metrics for OBS connection
             metrics.set_obs_connected(True)
@@ -996,41 +1061,8 @@ async def run_service(config: AppConfig, config_path: str) -> None:
             # Connection failed after retries (OBS never connected)
             # This shouldn't happen if connect() raises exception, but handle it anyway
             logger.warning("Failed to connect to OBS on startup after retries. Will retry in main loop.")
-            # Notify user about failed connection on startup
-            if config.notifications_enabled:
-                notify_connection_lost("OBS", was_connected=False, connection_failed=False)
     except Exception as e:
         logger.warning(f"Failed to connect to OBS on startup: {e}. Will retry in main loop.")
-        # Determine connection failure reason (check in priority order)
-        error_str = str(e).lower()
-        error_type = type(e).__name__
-        
-        # Priority 1: Authentication/identification error (OBS running, wrong password)
-        is_auth_failed = (
-            "failed to identify" in error_str or
-            "authentication" in error_str or
-            "password" in error_str or
-            error_type == "OBSSDKError"
-        )
-        
-        # Priority 2: Connection refused (OBS not running or WebSocket disabled)
-        is_connection_refused = (
-            "connection refused" in error_str or
-            "10061" in error_str or
-            error_type == "ConnectionRefusedError"
-        )
-        
-        # Determine connection_failed flag
-        # True only if OBS is running but connection failed (auth error)
-        # False if OBS is not running (connection refused) or unknown error
-        connection_failed = is_auth_failed and not is_connection_refused
-        
-        # Notify user about failed connection on startup
-        if config.notifications_enabled:
-            try:
-                notify_connection_lost("OBS", was_connected=False, connection_failed=connection_failed)
-            except Exception as notify_error:
-                logger.error(f"Failed to show notification: {notify_error}")
 
     # Set initial state BEFORE starting API server (so dashboards have state available)
     set_current_state(initial_state)
@@ -1040,8 +1072,8 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     logger.info("Creating API server...")
     try:
         app = create_app()
-        app["config"] = config  # Store config in app for dashboard access
-        app["config_path"] = config_path  # Store config path for hot reload
+        app[APP_CONFIG] = config  # Store config in app for dashboard access
+        app[APP_CONFIG_PATH] = config_path  # Store config path for hot reload
         logger.info("API application created successfully")
     except Exception as e:
         logger.error(f"Failed to create API application: {e}", exc_info=True)
@@ -1071,7 +1103,11 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     except Exception as e:
         logger.error(f"Failed to start API server: {e}", exc_info=True)
         raise
-    
+
+    # --- Automatic OAuth Flow ---
+    await handle_oauth_flow(config)
+    # --------------------------
+
     # Start background task to continue trying to connect to OBS if not connected yet
     async def background_obs_connect():
         """Background task to keep trying to connect to OBS."""
@@ -1105,6 +1141,7 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                                     session_type=current.session_type,
                                     session_name=current.session_name,
                                     session_num=current.session_num,
+                                    stream_extended_info=current.stream_extended_info,
                                 )
                                 set_current_state(new_state)
                     except Exception as e:

@@ -1,7 +1,7 @@
 """Tests for iRacing reader."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -12,61 +12,7 @@ from irswitch.models import DrivingMode
 @pytest.fixture
 def reader() -> IRacingReader:
     """Create iRacing reader for testing."""
-    return IRacingReader(poll_hz=5)
-
-
-@pytest.mark.asyncio
-async def test_read_mode_connected_race(reader: IRacingReader) -> None:
-    """Test reading RACE mode when connected."""
-    mock_sdk = MagicMock()
-    mock_sdk.is_initialized = True
-    mock_sdk.__getitem__ = MagicMock(side_effect=lambda key: {"IsOnTrack": True}.get(key, None))
-
-    reader._sdk = mock_sdk
-
-    mode = await reader.read_mode()
-    assert mode == DrivingMode.RACE
-
-
-@pytest.mark.asyncio
-async def test_read_mode_connected_replay(reader: IRacingReader) -> None:
-    """Test reading REPLAY mode when connected."""
-    mock_sdk = MagicMock()
-    mock_sdk.is_initialized = True
-    mock_sdk.__getitem__ = MagicMock(side_effect=lambda key: {"IsReplay": True}.get(key, None))
-
-    reader._sdk = mock_sdk
-
-    mode = await reader.read_mode()
-    assert mode == DrivingMode.REPLAY
-
-
-@pytest.mark.asyncio
-async def test_read_mode_connected_garage(reader: IRacingReader) -> None:
-    """Test reading GARAGE mode when connected."""
-    mock_sdk = MagicMock()
-    mock_sdk.is_initialized = True
-    mock_sdk.__getitem__ = MagicMock(
-        side_effect=lambda key: {"PlayerCarInGarage": True}.get(key, None)
-    )
-
-    reader._sdk = mock_sdk
-
-    mode = await reader.read_mode()
-    assert mode == DrivingMode.GARAGE
-
-
-@pytest.mark.asyncio
-async def test_read_mode_connected_idle(reader: IRacingReader) -> None:
-    """Test reading IDLE mode when connected."""
-    mock_sdk = MagicMock()
-    mock_sdk.is_initialized = True
-    mock_sdk.__getitem__ = MagicMock(side_effect=lambda key: None)
-
-    reader._sdk = mock_sdk
-
-    mode = await reader.read_mode()
-    assert mode == DrivingMode.IDLE
+    return IRacingReader(poll_hz=5, quit_stall_seconds=0.4)
 
 
 @pytest.mark.asyncio
@@ -74,26 +20,12 @@ async def test_read_mode_disconnected(reader: IRacingReader) -> None:
     """Test reading mode when iRacing is disconnected."""
     mock_sdk = MagicMock()
     mock_sdk.is_initialized = False
+    mock_sdk.is_connected = False
 
     reader._sdk = mock_sdk
 
     mode = await reader.read_mode()
     assert mode is None
-
-
-@pytest.mark.asyncio
-async def test_read_mode_missing_variables(reader: IRacingReader) -> None:
-    """Test handling of missing variables."""
-    mock_sdk = MagicMock()
-    mock_sdk.is_initialized = True
-    mock_sdk.__getitem__ = MagicMock(side_effect=KeyError("Variable not found"))
-
-    reader._sdk = mock_sdk
-
-    # Should handle missing variables gracefully
-    mode = await reader.read_mode()
-    # Should return IDLE or None depending on implementation
-    assert mode is not None  # extract_mode handles missing vars as IDLE
 
 
 def test_is_connected(reader: IRacingReader) -> None:

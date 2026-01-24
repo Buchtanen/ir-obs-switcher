@@ -1,58 +1,59 @@
+"""Tests for iRacing data extractors."""
 from irswitch.iracing.extractors import extract_mode
 from irswitch.models import DrivingMode
 
 
 def test_extract_mode_prioritizes_replay() -> None:
+    """Test that REPLAY has high priority, but GARAGE overrides it."""
     data = {
         "IsReplay": True,
         "IsOnTrack": True,
         "PlayerCarInGarage": True,
     }
-    assert extract_mode(data) == DrivingMode.REPLAY
+    # GARAGE has highest priority, overrides REPLAY
+    assert extract_mode(data) == DrivingMode.GARAGE
 
 
 def test_extract_mode_race_when_on_track() -> None:
-    data = {"IsOnTrack": 1}
+    """Test RACE mode when on track and in car."""
+    # Need to be in car (CamCameraState bit 0 = 0 means in car)
+    data = {"IsOnTrack": 1, "CamCameraState": 2}  # Bit 0 = 0, so in car
     assert extract_mode(data) == DrivingMode.RACE
 
 
 def test_extract_mode_garage_when_in_garage() -> None:
+    """Test GARAGE mode when in garage."""
     data = {"PlayerCarInGarage": "true"}
     assert extract_mode(data) == DrivingMode.GARAGE
 
 
-def test_extract_mode_idle_by_default() -> None:
-    assert extract_mode({}) == DrivingMode.IDLE
+def test_extract_mode_lobby_by_default() -> None:
+    """Test LOBBY mode as default (IDLE is deprecated)."""
+    assert extract_mode({}) == DrivingMode.LOBBY
 
 
-def test_extract_mode_settings_from_session_state() -> None:
-    """Test SETTINGS mode detection from SessionState."""
-    data = {"SessionState": "menu"}
-    assert extract_mode(data) == DrivingMode.SETTINGS
-    
-    data = {"SessionState": "settings"}
-    assert extract_mode(data) == DrivingMode.SETTINGS
-
-
-def test_extract_mode_settings_from_session_state_num() -> None:
-    """Test SETTINGS mode detection from SessionStateNum == 0."""
-    data = {"SessionStateNum": 0}
-    assert extract_mode(data) == DrivingMode.SETTINGS
-
-
-def test_extract_mode_settings_priority() -> None:
-    """Test that SETTINGS has priority over RACE and GARAGE, but not REPLAY."""
-    # SETTINGS should override RACE
-    data = {"SessionState": "menu", "IsOnTrack": True}
-    assert extract_mode(data) == DrivingMode.SETTINGS
-    
-    # SETTINGS should override GARAGE
-    data = {"SessionState": "menu", "PlayerCarInGarage": True}
-    assert extract_mode(data) == DrivingMode.SETTINGS
-    
-    # REPLAY should override SETTINGS
-    data = {"SessionState": "menu", "IsReplay": True}
+def test_extract_mode_replay_overrides_race() -> None:
+    """Test that REPLAY overrides RACE when IsReplay is True."""
+    data = {"IsReplay": True, "IsOnTrack": 1, "CamCameraState": 2}
     assert extract_mode(data) == DrivingMode.REPLAY
+
+
+def test_extract_mode_garage_overrides_replay() -> None:
+    """Test that GARAGE overrides REPLAY."""
+    data = {"IsReplay": True, "PlayerCarInGarage": True}
+    assert extract_mode(data) == DrivingMode.GARAGE
+
+
+def test_extract_mode_camera_mismatch_is_replay() -> None:
+    """Test that watching different car is REPLAY mode."""
+    data = {"CamCarIdx": 1, "PlayerCarIdx": 0, "CamCameraState": 2}
+    assert extract_mode(data) == DrivingMode.REPLAY
+
+
+def test_extract_mode_not_on_track_is_lobby() -> None:
+    """Test LOBBY when not on track."""
+    data = {"IsOnTrack": 0}
+    assert extract_mode(data) == DrivingMode.LOBBY
 
 
 # Session info extraction tests

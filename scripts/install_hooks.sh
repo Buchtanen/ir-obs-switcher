@@ -1,14 +1,18 @@
 #!/bin/bash
 # Instalační skript pro Git hooks (Linux/Mac/Git Bash)
-# Instaluje commit-msg hook pro automatické zvýšení verze
+# Instaluje prepare-commit-msg hook pro automatické zvýšení verze
+#
+# prepare-commit-msg hook běží PŘED vytvořením commitu,
+# což umožňuje modifikovat staging area tak, aby změny
+# byly zahrnuty ve stejném commitu.
 
 set -e
 
 # Získat cestu k projektu
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GIT_HOOKS_DIR="$PROJECT_ROOT/.git/hooks"
-HOOK_FILE="$GIT_HOOKS_DIR/commit-msg"
-HOOK_SCRIPT="$PROJECT_ROOT/scripts/commit-msg-hook.sh"
+HOOK_FILE="$GIT_HOOKS_DIR/prepare-commit-msg"
+HOOK_SCRIPT="$PROJECT_ROOT/scripts/prepare-commit-msg-hook.sh"
 
 # Vytvořit .git/hooks adresář pokud neexistuje
 mkdir -p "$GIT_HOOKS_DIR"
@@ -17,7 +21,7 @@ mkdir -p "$GIT_HOOKS_DIR"
 if [ -f "$HOOK_SCRIPT" ]; then
     cp "$HOOK_SCRIPT" "$HOOK_FILE"
     chmod +x "$HOOK_FILE"
-    echo "✓ Installed commit-msg hook"
+    echo "Installed prepare-commit-msg hook"
 else
     echo "Error: Hook script not found: $HOOK_SCRIPT" >&2
     exit 1
@@ -27,7 +31,10 @@ echo ""
 echo "Git hook installed successfully!"
 echo ""
 echo "Usage:"
-echo "  git commit -m 'fix: oprava bugu'     → 0.3.0 → 0.3.1 (PATCH)"
-echo "  git commit -m 'feat: nova funkce'     → 0.3.0 → 0.4.0 (MINOR)"
-echo "  git commit -m 'rel: major release'     → 0.3.0 → 1.0.0 (MAJOR)"
+echo "  git commit -m 'fix: oprava bugu'     -> 0.3.0 -> 0.3.1 (PATCH)"
+echo "  git commit -m 'feat: nova funkce'     -> 0.3.0 -> 0.4.0 (MINOR)"
+echo "  git commit -m 'rel: major release'     -> 0.3.0 -> 1.0.0 (MAJOR)"
+echo ""
+echo "Note: prepare-commit-msg hook modifies staging area BEFORE commit,"
+echo "      so version-bumped files are included in the same commit."
 echo ""

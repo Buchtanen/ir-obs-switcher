@@ -36,3 +36,4 @@ class SwitchState:
     session_name: Optional[str] = None  # Session name from iRacing
     session_num: Optional[int] = None  # Session number (0-based)
     total_sessions: Optional[int] = None  # Total number of sessions (for "x of y" display)
+    stream_extended_info: Optional[dict] = None  # Extended stream info from YouTube API (viewers, status, etc.)

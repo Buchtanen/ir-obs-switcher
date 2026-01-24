@@ -1,231 +1,345 @@
 # YouTube API Setup
 
-Návod pro nastavení YouTube Data API v3 pro získávání názvu a popisu streamu.
+Navod pro nastaveni YouTube Data API v3 pro ziskavani nazvu a popisu streamu.
 
 ## Obsah
 
-- [Přehled](#přehled)
-- [Postup nastavení](#postup-nastavení)
-- [Nastavení API klíče v aplikaci](#nastavení-api-klíče-v-aplikaci)
-- [Kvóty a limity](#kvóty-a-limity)
+- [Prehled](#prehled)
+- [Metody autentifikace](#metody-autentifikace)
+- [Postup nastaveni API klicem](#postup-nastaveni-api-klicem)
+- [Postup nastaveni OAuth](#postup-nastaveni-oauth)
+- [Nastaveni v aplikaci](#nastaveni-v-aplikaci)
+- [Kvoty a limity](#kvoty-a-limity)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## Přehled
+## Prehled
 
-Aplikace používá YouTube Data API v3 pro získávání názvu a popisu streamu z YouTube. API klíč je volitelný - pokud není nastaven, aplikace funguje normálně, ale nebude zobrazovat název streamu.
+Aplikace pouziva YouTube Data API v3 pro ziskavani nazvu a popisu streamu z YouTube. Podporuje dve metody autentifikace:
 
-**Co aplikace dělá s API**:
-- Získává název streamu (`title`) z YouTube
-- Získává popis streamu (`description`) z YouTube
+1. **OAuth 2.0** (doporuceno) - pro pristup k `liveBroadcasts` endpointu
+2. **API klic** (fallback) - pro pristup k `videos` endpointu
+
+Obě metody jsou volitelne - pokud neni nastavena zadna, aplikace funguje normalne, ale nebude zobrazovat nazev streamu.
+
+**Co aplikace dela s API**:
+- Ziskava nazev streamu (`title`) z YouTube
+- Ziskava popis streamu (`description`) z YouTube
 - Zobrazuje tyto informace v GR Dashboardu
 
-**Kdy se API volá**:
-- Pouze když je stream vybrán v OBS Broadcast Manager
-- Pouze jednou při výběru streamu (cachování)
-- Automaticky se resetuje cache při změně broadcast_id
+**Kdy se API vola**:
+- Pouze kdyz je stream vybran v OBS Broadcast Manager
+- Pouze jednou pri vyberu streamu (cachovani)
+- Automaticky se resetuje cache pri zmene broadcast_id
 
 ---
 
-## Postup nastavení
+## Metody autentifikace
 
-### 1. Vytvoření projektu v Google Cloud Console
+### OAuth 2.0 (doporuceno)
 
-1. Otevři [Google Cloud Console](https://console.cloud.google.com/)
-2. Přihlas se pomocí svého Google účtu
-3. Vytvoř nový projekt nebo vyber existující:
-   - Klikni na dropdown s názvem projektu v horní části
+Vyhody:
+- Pristup k `liveBroadcasts.list` endpointu (prime pro live streamy)
+- Automaticky refresh tokenu
+- Bezpecnejsi (uzivatel muze kdykoliv odvolat pristup)
+
+Omezeni:
+- Nutna interaktivni autorizace (otevreni browsery)
+- Ulozeni tokenu na disk
+
+### API klic (fallback)
+
+Vyhody:
+- Jednoduche nastaveni (jen promenna prostredi)
+- Ziadna interakce uzivatele
+
+Omezeni:
+- `liveBroadcasts.list` vraci 401 Unauthorized (OAuth required)
+- Funguje pouze s `videos.list` endpointem (broadcast_id musi byt video_id)
+
+---
+
+## Postup nastaveni API klicem
+
+### 1. Vytvoreni projektu v Google Cloud Console
+
+1. Otevri [Google Cloud Console](https://console.cloud.google.com/)
+2. Prihlas se pomoci sveho Google uctu
+3. Vytvor novy projekt nebo vyber existujici:
+   - Klikni na dropdown s nazvem projektu v hori casti
    - Klikni na "New Project"
-   - Zadej název projektu (např. "iRacing OBS Switcher")
+   - Zadej nazev projektu (napr. "iRacing OBS Switcher")
    - Klikni na "Create"
 
-### 2. Povolení YouTube Data API v3
+### 2. Povoleni YouTube Data API v3
 
-1. V Google Cloud Console přejdi na **APIs & Services** → **Library**
+1. V Google Cloud Console prejdi na **APIs & Services** → **Library**
 2. Vyhledej "YouTube Data API v3"
-3. Klikni na výsledek
-4. Klikni na tlačítko **"Enable"** (Povolit)
+3. Klikni na vysledek
+4. Klikni na tlacitko **"Enable"** (Povolit)
 
-**Poznámka**: Pokud API není povolené, API klíč nebude fungovat.
+**Poznamka**: Pokud API neni povolene, API klic nebude fungovat.
 
-### 3. Vytvoření API klíče
+### 3. Vytvoreni API klice
 
-1. V Google Cloud Console přejdi na **APIs & Services** → **Credentials**
+1. V Google Cloud Console prejdi na **APIs & Services** → **Credentials**
 2. Klikni na **"Create Credentials"** → **"API Key"**
-3. Zobrazí se dialog s vytvořeným API klíčem
-4. **Zkopíruj API klíč** - budeš ho potřebovat později
+3. Zobrazi se dialog s vytvorenym API klicem
+4. **Zkopiruj API klic** - budes ho potrebovat pozdeji
 
-**Důležité**: API klíč je citlivá informace - neukládej ho do git repozitáře!
+**Dulezite**: API klic je citliva informace - neukladej ho do git repozitare!
 
-### 4. (Volitelné) Omezení API klíče
+### 4. (Volitelne) Omezeni API klice
 
-Pro zvýšení bezpečnosti můžeš omezit API klíč:
+Pro zvyseni bezpecnosti muzes omezit API klic:
 
-1. V dialogu s API klíčem klikni na **"Restrict Key"**
+1. V dialogu s API klicem klikni na **"Restrict Key"**
 2. V sekci **"API restrictions"**:
    - Vyber **"Restrict key"**
-   - Zaškrtni pouze **"YouTube Data API v3"**
-3. V sekci **"Application restrictions"** (volitelné):
-   - Můžeš omezit klíč pouze na IP adresu tvého počítače
-   - Nebo nechat bez omezení (pro jednoduchost)
+   - Zaskrtni pouze **"YouTube Data API v3"**
+3. V sekci **"Application restrictions"** (volitelne):
+   - Muzes omezit klic pouze na IP adresu tveho pocitace
+   - Nebo nechat bez omezeni (pro jednoduchost)
 4. Klikni na **"Save"**
 
-**Poznámka**: Omezení API klíče je doporučeno, ale není povinné pro základní funkčnost.
+**Poznamka**: Omezeni API klice je doporceno, ale neni povinne pro zakladni funkcnost.
 
 ---
 
-## Nastavení API klíče v aplikaci
+## Postup nastaveni OAuth
 
-### Windows (PowerShell)
+### 1. Vytvoreni OAuth credentials
 
-Nastav proměnnou prostředí:
+1. V Google Cloud Console prejdi na **APIs & Services** → **Credentials**
+2. Klikni na **"Create Credentials"** → **"OAuth client ID"**
+3. Vyber **"Application type"**: `Desktop application`
+4. Zadej **Name**: `iRacing OBS Switcher`
+5. Klikni na **"Create"**
+6. Stahni `credentials.json` nebo zkopiruj `Client ID` a `Client Secret`
 
-```powershell
-# Pro aktuální session
-$env:YOUTUBE_API_KEY = "tvůj_api_klíč_zde"
+### 2. Nastaveni OAuth Consent Screen
 
-# Nebo trvale pro uživatele
-[System.Environment]::SetEnvironmentVariable("YOUTUBE_API_KEY", "tvůj_api_klíč_zde", "User")
+1. Vlevo menu → **APIs & Services** → **OAuth consent screen**
+2. Vyber **External** → **Create**
+3. Vypln:
+   - **App name**: `iRacing OBS Switcher`
+   - **User support email**: tvuj Gmail ucet
+   - **Developer contact email**: tvuj Gmail ucet
+4. Klikni na **Save and Continue**
+5. Na SCOPES klikni **Save and Continue** (bez pridavani scopes)
+6. Na TEST USERS klikni **Add Users** a pridej tvuj Gmail ucet
+7. Klikni na **Save and Continue**
+
+### 3. Extrakce credentials z JSON
+
+Stazeny JSON soubor ma tento format:
+
+```json
+{
+  "web": {
+    "client_id": "123456789-abcdefghij.apps.googleusercontent.com",
+    "client_secret": "GOCSPX-xxxxxxxxxxxx",
+    ...
+  }
+}
 ```
 
-**Poznámka**: Po nastavení trvalé proměnné prostředí restartuj aplikaci.
+PowerShell pro extrakci:
 
-### Linux/Mac (Bash)
+```powershell
+# Precti JSON a extrahuj hodnoty
+$json = Get-Content "cesta/k/tvuj-soubor.json" | ConvertFrom-Json
+
+# Nastav promenne
+$env:GOOGLE_OAUTH_CLIENT_ID = $json.web.client_id
+$env:GOOGLE_OAUTH_CLIENT_SECRET = $json.web.client_secret
+
+# Overeni
+Write-Host "Client ID: $($env:GOOGLE_OAUTH_CLIENT_ID)"
+Write-Host "Client Secret: $($env:GOOGLE_OAUTH_CLIENT_SECRET.Substring(0, 4))..."
+```
+
+---
+
+## Nastaveni v aplikaci
+
+### Windows (PowerShell) - OAuth
+
+```powershell
+# Nastav z JSON souboru
+$json = Get-Content "C:\cesta\k\credentials.json" | ConvertFrom-Json
+$env:GOOGLE_OAUTH_CLIENT_ID = $json.web.client_id
+$env:GOOGLE_OAUTH_CLIENT_SECRET = $json.web.client_secret
+
+# Nebo rucne
+$env:GOOGLE_OAUTH_CLIENT_ID = "123456789-abcdefghij.apps.googleusercontent.com"
+$env:GOOGLE_OAUTH_CLIENT_SECRET = "GOCSPX-xxxxxxxxxxxx"
+
+# Trvale pro uzivatele
+[System.Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_ID", "hodnota", "User")
+[System.Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET", "hodnota", "User")
+```
+
+### Windows (PowerShell) - API klic
+
+```powershell
+# Pro aktualni session
+$env:YOUTUBE_API_KEY = "tvuj_api_klic"
+
+# Trvale pro uzivatele
+[System.Environment]::SetEnvironmentVariable("YOUTUBE_API_KEY", "tvuj_api_klic", "User")
+```
+
+### Linux/Mac (Bash) - OAuth
 
 ```bash
-# Pro aktuální session
-export YOUTUBE_API_KEY="tvůj_api_klíč_zde"
+# Pro aktualni session
+export GOOGLE_OAUTH_CLIENT_ID="client_id_z_json"
+export GOOGLE_OAUTH_CLIENT_SECRET="secret_z_json"
 
-# Nebo trvale (přidej do ~/.bashrc nebo ~/.zshrc)
-echo 'export YOUTUBE_API_KEY="tvůj_api_klíč_zde"' >> ~/.bashrc
+# Trvale (pridej do ~/.bashrc nebo ~/.zshrc)
+echo 'export GOOGLE_OAUTH_CLIENT_ID="..."' >> ~/.bashrc
+echo 'export GOOGLE_OAUTH_CLIENT_SECRET="..."' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Ověření nastavení
+### Linux/Mac (Bash) - API klic
 
-Po nastavení API klíče restartuj aplikaci a zkontroluj:
+```bash
+# Pro aktualni session
+export YOUTUBE_API_KEY="tvuj_api_klic"
 
-1. Otevři GR Dashboard (`http://127.0.0.1:17321/gr-status`)
-2. Pokud je stream vybrán v OBS, měl by se zobrazit název streamu
-3. Pokud API klíč chybí, zobrazí se varování: "YouTube API Klíč Nenastaven"
+# Trvale
+echo 'export YOUTUBE_API_KEY="tvuj_api_klic"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Overeni nastaveni
+
+Po nastaveni OAuth nebo API klice restartuj aplikaci a zkontroluj:
+
+1. Otevri GR Dashboard (`http://127.0.0.1:17321/gr-status`)
+2. Pokud je stream vybran v OBS, mel by se zobrazit nazev streamu
+3. Over stav na `/oauth/status` endpointu:
+
+```powershell
+Invoke-RestMethod -Uri "http://127.0.0.1:17321/oauth/status"
+```
 
 ---
 
-## Kvóty a limity
+## Kvoty a limity
 
-### Denní kvóta
+### Denni kvota
 
-YouTube Data API v3 má **denní kvótu**:
-- **Výchozí kvóta**: 10,000 jednotek denně
-- **Reset**: Každý den o půlnoci Pacific Time (PT)
+YouTube Data API v3 ma **denni kotu**:
+- **Vychozi kvota**: 10,000 jednotek denne
+- **Reset**: Kazdy den o pulnoci Pacific Time (PT)
 
-### Spotřeba jednotek
+### Spotreba jednotek
 
 - `liveBroadcasts.list` - **1 jednotka** na request
 - `videos.list` - **1 jednotka** na request
 
-**Poznámka**: Aplikace používá pouze tyto dva endpointy. `search.list` endpoint není používán kvůli vysoké spotřebě (100 jednotek).
+### Co se stane pri prekroceni kvoty
 
-### Co se stane při překročení kvóty
+Pokud je kvota prekrocena:
+- Aplikace zobrazi varovani v dashboardu: "YouTube API Kvota Vycerpana"
+- Zobrazi se cas resetu kvoty (prevadi se do lokalniho casoveho pasma)
+- Varovani se zobrazi take v event logu
+- Aplikace prestane volat API az do resetu kvoty
 
-Pokud je kvóta překročena:
-- Aplikace zobrazí varování v dashboardu: "YouTube API Kvóta Vyčerpána"
-- Zobrazí se čas resetu kvóty (převádí se do lokálního časového pásma)
-- Varování se zobrazí také v event logu
-- Aplikace přestane volat API až do resetu kvóty
+### Zvyseni kvoty
 
-### Zvýšení kvóty
-
-Pokud potřebuješ vyšší kvótu:
-1. V Google Cloud Console přejdi na **APIs & Services** → **Quotas**
+Pokud potrebujes vyssi kvotu:
+1. V Google Cloud Console prejdi na **APIs & Services** → **Quotas**
 2. Vyhledej "YouTube Data API v3"
-3. Můžeš požádat o zvýšení kvóty (vyžaduje ověření projektu)
+3. Muzes pozadat o zvyseni kvoty (vyzaduje overeni projektu)
 
 ---
 
 ## Troubleshooting
 
-### API klíč není rozpoznán
+### OAuth: Nelze ziskat access token
 
-**Příznaky**: V dashboardu se zobrazuje "YouTube API Klíč Nenastaven".
+**Priznaky**: Volani YouTube API vraci chybu nebo OAuth status ukazuje chybu.
 
-**Řešení**:
-1. Zkontroluj, že proměnná prostředí `YOUTUBE_API_KEY` je nastavena:
+Reseni:
+1. Zkontroluj, ze `GOOGLE_OAUTH_CLIENT_ID` a `GOOGLE_OAUTH_CLIENT_SECRET` jsou spravne nastaveny
+2. Over, ze OAuth consent screen je nastaven a Test Users jsou pridany
+3. Zkus iniciovat OAuth flow znovu na `/oauth/initiate`
+
+### OAuth: Token vyprsel
+
+**Priznaky**: YouTube API vraci 401 Unauthorized i kdyz je OAuth nastaven.
+
+Reseni:
+- Aplikace se pokusi automaticky refreshnout token
+- Pokud refresh selze, budes muset znovu autorizovat aplikaci
+
+### API klic nerozpoznan
+
+**Priznaky**: V dashboardu se zobrazuje "YouTube API klic nenastaven".
+
+Reseni:
+1. Zkontroluj, ze promenna prostredi `YOUTUBE_API_KEY` je nastavena:
    ```powershell
-   # Windows PowerShell
    $env:YOUTUBE_API_KEY
-   
-   # Linux/Mac
-   echo $YOUTUBE_API_KEY
    ```
-2. Pokud není nastavena, nastav ji podle [Nastavení API klíče v aplikaci](#nastavení-api-klíče-v-aplikaci)
-3. Restartuj aplikaci po nastavení proměnné prostředí
+2. Pokud neni nastavena, nastav ji podle navodu vys
+3. Restartuj aplikaci po nastaveni promenne prostredi
 
-### API vrací chybu 403 (Forbidden)
+### API vraci chybu 403 (Forbidden)
 
-**Příznaky**: V logu vidíš "YouTube API returned status 403".
+**Priznaky**: V logu vidis "YouTube API returned status 403".
 
-**Možné příčiny**:
-1. **API není povolené**: Zkontroluj, že YouTube Data API v3 je povolené v Google Cloud Console
-2. **API klíč je omezený**: Zkontroluj omezení API klíče v Google Cloud Console
-3. **Kvóta překročena**: Zkontroluj, zda není překročena denní kvóta
+Mozne priciny:
+1. **API neni povolene**: Zkontroluj, ze YouTube Data API v3 je povolene v Google Cloud Console
+2. **API klic je omezeny**: Zkontroluj omezeni API klice v Google Cloud Console
+3. **Kvota prekrocena**: Zkontroluj, zda neni prekrocena denni kvota
 
-**Řešení**:
-1. V Google Cloud Console přejdi na **APIs & Services** → **Library**
-2. Ověř, že YouTube Data API v3 je **Enabled**
-3. V **APIs & Services** → **Credentials** zkontroluj omezení API klíče
-4. V **APIs & Services** → **Quotas** zkontroluj využití kvóty
+Reseni:
+1. V Google Cloud Console prejdi na **APIs & Services** → **Library**
+2. Over, ze YouTube Data API v3 je **Enabled**
+3. V **APIs & Services** → **Credentials** zkontroluj omezeni API klice
+4. V **APIs & Services** → **Quotas** zkontroluj vyuziti kvoty
 
-### API vrací chybu 401 (Unauthorized)
+### Nazev streamu se nezobrazuje
 
-**Příznaky**: V logu vidíš "YouTube API returned status 401".
+**Priznaky**: Stream bezi, ale nazev se nezobrazuje v dashboardu.
 
-**Možné příčiny**:
-1. **Neplatný API klíč**: API klíč je nesprávný nebo byl smazán
-2. **API klíč není správně nastaven**: Proměnná prostředí není správně načtena
+Mozne priciny:
+1. **Stream neni vybran v OBS**: Aplikace ziskava nazev pouze kdyz je stream vybran v Broadcast Manager
+2. **Autentifikace neni nastavena**: Nastav OAuth nebo API klic
+3. **Kvota prekrocena**: Zkontroluj varovani v dashboardu
+4. **Broadcast nema broadcast_id**: Stream musi byt spravne nastaven v OBS
 
-**Řešení**:
-1. Zkontroluj, že API klíč je správně nastaven v proměnné prostředí
-2. Vytvoř nový API klíč v Google Cloud Console
-3. Aktualizuj proměnnou prostředí s novým klíčem
-4. Restartuj aplikaci
-
-### Název streamu se nezobrazuje
-
-**Příznaky**: Stream běží, ale název se nezobrazuje v dashboardu.
-
-**Možné příčiny**:
-1. **Stream není vybrán v OBS**: Aplikace získává název pouze když je stream vybrán v Broadcast Manager
-2. **API klíč není nastaven**: Nastav `YOUTUBE_API_KEY` proměnnou prostředí
-3. **Kvóta překročena**: Zkontroluj varování v dashboardu
-4. **Broadcast nemá broadcast_id**: Stream musí být správně nastaven v OBS
-
-**Řešení**:
-1. Otevři OBS → Tools → Broadcast Manager
-2. Vyber stream, který chceš použít
-3. Zkontroluj, že stream má nastavený YouTube broadcast
-4. Zkontroluj, že API klíč je nastaven a aplikace je restartovaná
+Reseni:
+1. Otevri OBS → Tools → Broadcast Manager
+2. Vyber stream, ktery chces pouzit
+3. Zkontroluj, ze stream ma nastaveny YouTube broadcast
+4. Zkontroluj, ze autentifikace je nastavena a aplikace je restartovana
 
 ---
 
-## Bezpečnost
+## Bezpecnost
 
-### Ochrana API klíče
+### Ochrana credentials
 
-**Důležité**: API klíč je citlivá informace. Chraň ho před zveřejněním:
+**Dulezite**: Client ID a Client Secret jsou citlive informace. Chran je pred zverejnencim:
 
-- ❌ **NEUKLÁDEJ** API klíč do git repozitáře
-- ❌ **NESDÍLEJ** API klíč veřejně
-- ✅ **POUŽÍVEJ** proměnné prostředí pro uložení klíče
-- ✅ **OMEZ** API klíč v Google Cloud Console (doporučeno)
+- ❌ **NEUKLADEJ** credentials do git repozitare
+- ❌ **NESDILEJ** credentials verejne
+- ✅ **POUZIVEJ** promenne prostredi pro ulozeni credentials
+- ✅ **OMEZ** credentials v Google Cloud Console (doporuceno)
 
-### Omezení API klíče
+### Omezeni OAuth clienta
 
-Pro zvýšení bezpečnosti:
-1. Omez API klíč pouze na YouTube Data API v3
-2. Omez API klíč na IP adresu tvého počítače (pokud je statická)
-3. Pravidelně rotuj API klíče (vytvoř nový, použij ho, smaž starý)
+Pro zvyseni bezpecnosti:
+1. Omez OAuth clienta na pouziti z konkretni domény/IP
+2. Pravidelne rotuj credentials (vytvor novy, pouzij ho, smaz stary)
+3. Odeber sebe z Test Users po overeni funkcnosti
 
 ---
 
@@ -234,3 +348,4 @@ Pro zvýšení bezpečnosti:
 - [YouTube Data API v3 Dokumentace](https://developers.google.com/youtube/v3)
 - [Google Cloud Console](https://console.cloud.google.com/)
 - [YouTube API Quotas](https://developers.google.com/youtube/v3/getting-started#quota)
+- [Google OAuth 2.0 Dokumentace](https://developers.google.com/identity/protocols/oauth2)

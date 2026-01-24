@@ -10,7 +10,7 @@ from aiohttp.test_utils import make_mocked_request
 from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
-from irswitch.server.api import create_app, set_current_state, set_state_machine, set_obs_client, reset_state
+from irswitch.server.api import APP_CONFIG, APP_CONFIG_PATH, create_app, set_current_state, set_state_machine, set_obs_client, reset_state
 
 
 @pytest.fixture
@@ -373,7 +373,7 @@ dashboard_vr_icons_path =
 dashboard_event_log_size = 50
 """)
 
-    app["config_path"] = str(config_file)
+    app[APP_CONFIG_PATH] = str(config_file)
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -383,7 +383,7 @@ dashboard_event_log_size = 50
             data = await resp.json()
             assert data["status"] == "success"
             assert "message" in data
-            assert "config" in app
+            assert APP_CONFIG in app
 
 
 @pytest.mark.asyncio
@@ -391,7 +391,7 @@ async def test_config_reload_file_not_found(app: web.Application) -> None:
     """Test POST /config/reload endpoint with non-existent config file."""
     from aiohttp.test_utils import TestServer, TestClient
 
-    app["config_path"] = "/nonexistent/config.ini"
+    app[APP_CONFIG_PATH] = "/nonexistent/config.ini"
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -409,8 +409,8 @@ async def test_config_reload_no_config_path(app: web.Application) -> None:
     from aiohttp.test_utils import TestServer, TestClient
 
     # Remove config_path if it exists
-    if "config_path" in app:
-        del app["config_path"]
+    if APP_CONFIG_PATH in app:
+        del app[APP_CONFIG_PATH]
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:

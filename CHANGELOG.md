@@ -8,6 +8,12 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 ## [Unreleased]
 
 ### Přidáno
+- **Stream Cache Optimization**
+  - Cache-aware auto-start logika využívající cached hodnot z `stream_selected` eventu
+  - Konstanty `STREAM_CACHE_FRESH_MS = 5000` (5 sekund) a `STREAM_CACHE_GRACE_MS = 10000` (10 sekund)
+  - Fallback mechanism pro stará cache data (API volání při cache > 5s)
+  - Proměnné pro sledování cache freshness: `last_stream_ready_selected`, `last_stream_selection_check_ts`
+  - Lepší diagnostika díky logování `data_source` a `cache_age_ms` v event logu
 - **Lokalizace (i18n)** - podpora 7 jazyků (CS, EN, DE, FR, SP, PL, HU)
   - Lokalizované texty v HTML dashboardech, event logu, toast notifikacích
   - Konfigurovatelné přes `language` v `config.ini`
@@ -38,6 +44,11 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
   - Ponechán pouze Quick Start, Troubleshooting, odkazy na další dokumenty
 - **STATUS.md** - aktualizován podle aktuálního stavu projektu
 - **TESTING_CHECKLIST.md** - doplněn o nové testy (i18n, YouTube API, session info)
+- **Auto-start logika** (`main.py`)
+  - Nahrazeni 2× API call (`is_broadcast_ready()`, `get_stream_status()`) za cache-aware logiku
+  - Fresh cache (< 5s): použití cached hodnot přímo
+  - Stale cache (5-10s): API fallback pro spolehlivost
+  - Expired cache (> 10s): forced API call
 
 ### Opraveno
 - N/A

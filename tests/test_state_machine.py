@@ -257,8 +257,8 @@ def test_tick_iracing_disconnected(
         new_state = state_machine.tick(initial_state, None, "Idle")
 
         assert new_state.connected_iracing is False
-        assert new_state.target_scene == "Idle"  # Keeps current target
-        assert "iracing_disconnected" in new_state.reason
+        assert new_state.target_scene == "Safe"  # Uses safe scene when disconnected
+        assert new_state.mode == DrivingMode.CONNECTING
 
 
 def test_apply_override(state_machine: StateMachine, initial_state: SwitchState) -> None:

@@ -74,7 +74,9 @@ def mock_reader() -> MagicMock:
     """Create mocked iRacing reader."""
     reader = MagicMock(spec=IRacingReader)
     reader.is_connected.return_value = True
+    reader.is_process_running.return_value = False
     reader.read_mode = AsyncMock(return_value=DrivingMode.IDLE)
+    reader.read_session_info = AsyncMock(return_value=None)
     return reader
 
 
@@ -90,6 +92,8 @@ def mock_obs() -> MagicMock:
     obs.is_broadcast_ready = AsyncMock(return_value=False)
     obs.start_stream = AsyncMock(return_value=True)
     obs.stop_stream = AsyncMock(return_value=True)
+    obs.is_stream_selected = AsyncMock(return_value=(False, False))
+    obs.get_stream_info = AsyncMock(return_value=(None, None))
     return obs
 
 

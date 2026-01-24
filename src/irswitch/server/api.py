@@ -4,11 +4,37 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import secrets
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from aiohttp import web
 from aiohttp.web_ws import WebSocketResponse
+import aiohttp
+
+# Import OAuth manager creator
+from irswitch.oauth import create_oauth_manager, OAuthError
+
+# Application config keys - use AppKey instances to avoid NotAppKeyWarning
+APP_CONFIG = web.AppKey("config")
+APP_CONFIG_PATH = web.AppKey("config_path")
+
+# Mutable container for config to avoid DeprecationWarning when updating at runtime
+# Using a list wrapper allows us to update config without triggering aiohttp's
+# "Changing state of started or joined application is deprecated" warning
+_config_container: list = [None]  # type: ignore[annotation-type-mismatch]
+
+
+def get_app_config() -> "AppConfig | None":
+    """Get config from container (thread-safe for our use case)."""
+    return _config_container[0]
+
+
+def set_app_config(config: "AppConfig") -> None:
+    """Set config in container (thread-safe for our use case)."""
+    _config_container[0] = config
+
 
 if TYPE_CHECKING:
     from irswitch.logic.state_machine import StateMachine
@@ -30,6 +56,7 @@ _obs_client: "ObsClient | None" = None
 _reader: Optional[object] = None  # IRacingReader instance
 _restart_mode_active: bool = False
 _shutdown_event: Optional[asyncio.Event] = None
+_oauth_manager: "OAuthManager | None" = None  # YouTube OAuth manager
 
 
 def reset_state() -> None:
@@ -77,6 +104,17 @@ def set_reader(reader: object) -> None:
     """Set the iRacing reader instance for API handlers."""
     global _reader
     _reader = reader
+
+
+def set_oauth_manager(oauth_manager: "OAuthManager | None") -> None:
+    """Set the OAuth manager instance for API handlers."""
+    global _oauth_manager
+    _oauth_manager = oauth_manager
+
+
+def get_oauth_manager() -> "OAuthManager | None":
+    """Get the OAuth manager instance."""
+    return _oauth_manager
 
 
 async def _broadcast_state_update(state: "SwitchState") -> None:
@@ -152,7 +190,18 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             status["session_num_display"] = str(state.session_num + 1)
     else:
         status["session_num_display"] = None
-    
+
+    # Add OAuth status
+    oauth_manager = get_oauth_manager()
+    if oauth_manager is not None:
+        status["oauth_configured"] = True
+        status["oauth_authenticated"] = oauth_manager.is_authenticated()
+        status["oauth_has_refresh_token"] = oauth_manager.has_refresh_token()
+    else:
+        status["oauth_configured"] = False
+        status["oauth_authenticated"] = False
+        status["oauth_has_refresh_token"] = False
+
     # Add streaming status and OBS profile if OBS client is available
     if _obs_client is not None and state.connected_obs:
         try:
@@ -177,11 +226,10 @@ async def _get_status_dict(state: "SwitchState") -> dict:
                 status["stream_ready_selected"] = False
             
             # Get cached stream title (don't make API calls from API endpoint)
-            stream_title, stream_description, quota_exceeded, api_key_missing = _obs_client.get_cached_stream_info()
+            stream_title, stream_description, quota_exceeded = _obs_client.get_cached_stream_info()
             status["stream_title"] = stream_title
             status["stream_description"] = stream_description
             status["youtube_quota_exceeded"] = quota_exceeded
-            status["youtube_api_key_missing"] = api_key_missing
             
             # Update metrics with streaming status
             from irswitch.server.metrics import get_metrics
@@ -364,19 +412,22 @@ async def handle_metrics(request: web.Request) -> web.Response:
 
 async def handle_config_reload(request: web.Request) -> web.Response:
     """Handle POST /config/reload endpoint."""
+    import warnings
     from irswitch.config import AppConfig
-    
-    config_path = request.app.get("config_path")
+
+    config_path = request.app.get(APP_CONFIG_PATH)
     if not config_path:
         return web.json_response({"error": "Config path not available"}, status=500)
-    
+
     try:
         # Load and validate new config
         new_config = AppConfig.from_file(config_path)
-        
-        # Update global config
-        request.app["config"] = new_config
-        
+
+        # Update global config - suppress DeprecationWarning for intentional runtime update
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            request.app[APP_CONFIG] = new_config
+
         logger.info("Config reloaded successfully")
         return web.json_response({
             "status": "success",
@@ -452,6 +503,7 @@ async def handle_reset(request: web.Request) -> web.Response:
         session_type=None,
         session_name=None,
         session_num=None,
+        stream_extended_info=None,
     )
     
     set_current_state(new_state)
@@ -527,6 +579,173 @@ async def handle_websocket(request: web.Request) -> web.WebSocketResponse:
     return ws
 
 
+# OAuth state storage for CSRF protection
+_oauth_states: dict[str, float] = {}
+
+
+async def handle_oauth_initiate(request: web.Request) -> web.Response:
+    """
+    Handle GET /oauth/initiate endpoint - initiates OAuth flow.
+    
+    Returns authorization URL for user to click and authorize the app.
+    """
+    oauth_manager = create_oauth_manager()
+    
+    if oauth_manager is None:
+        return web.json_response({
+            "error": "OAuth not configured",
+            "message": "Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
+        }, status=503)
+    
+    # Generate random state for CSRF protection
+    state = secrets.token_urlsafe(32)
+    # Store state with timestamp for expiration check (valid for 10 minutes)
+    _oauth_states[state] = time.time()
+    
+    auth_url = oauth_manager.get_authorization_url(state)
+    
+    logger.info("OAuth authorization URL generated")
+    
+    return web.json_response({
+        "authorization_url": auth_url,
+        "state": state,
+        "instructions": "Open the authorization URL in a browser, authorize the app, and copy the code from the redirect URL.",
+    })
+
+
+async def handle_oauth_callback(request: web.Request) -> web.Response:
+    """
+    Handle GET /oauth/callback endpoint - receives OAuth authorization code.
+    
+    Exchanges code for tokens and saves them.
+    """
+    oauth_manager = create_oauth_manager()
+    
+    if oauth_manager is None:
+        return web.json_response({
+            "error": "OAuth not configured",
+            "message": "Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
+        }, status=503)
+    
+    # Get code and state from query parameters
+    code = request.query.get("code")
+    state = request.query.get("state")
+    
+    if not code:
+        return web.json_response({
+            "error": "Missing authorization code",
+            "message": "Authorization code not found in callback URL",
+        }, status=400)
+    
+    if not state:
+        return web.json_response({
+            "error": "Missing state parameter",
+            "message": "State parameter not found in callback URL",
+        }, status=400)
+    
+    # Validate state (CSRF protection)
+    if state not in _oauth_states:
+        return web.json_response({
+            "error": "Invalid state",
+            "message": "State parameter is invalid or expired",
+        }, status=400)
+    
+    # Check state expiration (10 minutes)
+    state_timestamp = _oauth_states.pop(state)
+    if time.time() - state_timestamp > 600:
+        return web.json_response({
+            "error": "State expired",
+            "message": "State parameter has expired. Please restart the OAuth flow.",
+        }, status=400)
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            token = await oauth_manager.exchange_code_for_tokens(code, session)
+            
+            logger.info("OAuth authentication successful")
+            
+            return web.json_response({
+                "status": "authenticated",
+                "message": "OAuth authentication successful! YouTube API is now authorized.",
+                "expires_in_seconds": token.expires_in_seconds(),
+                "has_refresh_token": token.refresh_token is not None,
+            })
+    except OAuthError as e:
+        logger.error(f"OAuth error: {e}")
+        return web.json_response({
+            "error": "OAuth error",
+            "message": str(e),
+        }, status=500)
+    except Exception as e:
+        logger.error(f"OAuth callback error: {e}", exc_info=True)
+        return web.json_response({
+            "error": "Authentication failed",
+            "message": str(e),
+        }, status=500)
+
+
+async def handle_oauth_status(request: web.Request) -> web.Response:
+    """
+    Handle GET /oauth/status endpoint - check OAuth authentication status.
+    """
+    oauth_manager = create_oauth_manager()
+    
+    if oauth_manager is None:
+        return web.json_response({
+            "configured": False,
+            "message": "OAuth not configured - set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET",
+        })
+    
+    authenticated = oauth_manager.is_authenticated()
+    has_refresh = oauth_manager.has_refresh_token()
+    
+    # Try to get token info if authenticated
+    token_info = None
+    if authenticated:
+        # Load token from disk
+        await oauth_manager.load_token()
+        if oauth_manager._token:
+            token = oauth_manager._token
+            token_info = {
+                "expires_in_seconds": token.expires_in_seconds(),
+                "is_expired": token.is_expired(),
+            }
+    
+    return web.json_response({
+        "configured": True,
+        "authenticated": authenticated,
+        "has_refresh_token": has_refresh,
+        "token": token_info,
+    })
+
+
+async def handle_oauth_revoke(request: web.Request) -> web.Response:
+    """
+    Handle POST /oauth/revoke endpoint - revoke OAuth tokens.
+    """
+    oauth_manager = create_oauth_manager()
+    
+    if oauth_manager is None:
+        return web.json_response({
+            "error": "OAuth not configured",
+        }, status=503)
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            await oauth_manager.revoke_token(session)
+        
+        return web.json_response({
+            "status": "revoked",
+            "message": "OAuth tokens have been revoked",
+        })
+    except Exception as e:
+        logger.error(f"OAuth revoke error: {e}")
+        return web.json_response({
+            "error": "Revoke failed",
+            "message": str(e),
+        }, status=500)
+
+
 def create_app() -> web.Application:
     """
     Create aiohttp application with REST and WebSocket endpoints.
@@ -566,5 +785,16 @@ def create_app() -> web.Application:
     app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)
     app.router.add_get("/ws", handle_websocket)
+    app.router.add_get("/oauth/initiate", handle_oauth_initiate)
+    app.router.add_get("/oauth/callback", handle_oauth_callback)
+    app.router.add_get("/oauth/status", handle_oauth_status)
+    app.router.add_post("/oauth/revoke", handle_oauth_revoke)
+
+    # Static asset routes for favicon and app icons
+    # __file__ is in src/irswitch/server/api.py, so go up 4 levels to reach project root
+    assets_path = Path(__file__).resolve().parents[3] / "assets"
+    app.router.add_static("/assets/", assets_path)
+    app.router.add_get("/favicon.ico", lambda r: web.FileResponse(assets_path / "favicon" / "favicon.ico"))
+    app.router.add_get("/apple-touch-icon.png", lambda r: web.FileResponse(assets_path / "favicon" / "apple-touch-icon.png"))
 
     return app

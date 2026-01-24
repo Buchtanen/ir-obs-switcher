@@ -52,7 +52,13 @@ Verze se zobrazuje na následujících místech:
 
 ## Automatické verzování (Git Hook)
 
-Aplikace má automatický mechanismus pro správu verzí pomocí Git commit-msg hooku.
+Aplikace má automatický mechanismus pro správu verzí pomocí Git **prepare-commit-msg** hooku.
+
+### Proč prepare-commit-msg místo commit-msg?
+
+Git hook `commit-msg` běží **po** tom, co git připravil commit, ale **před** jeho uložením. Jakékoli změny v staging area uvnitř `commit-msg` hooku se nedostanou do commitu.
+
+**prepare-commit-msg** hook běží **před** vytvořením commitu, což umožňuje modifikovat staging area tak, aby změny verzí byly zahrnuty ve **stejném commitu**.
 
 ### Instalace hooku
 
@@ -90,9 +96,9 @@ Hook automaticky:
 1. Přečte commit message
 2. Detekuje prefix (`fix:`, `feat:`, `rel:`)
 3. Zvýší verzi v `__init__.py` a `pyproject.toml`
-4. Přidá změny do staging area pro commit
+4. Přidá změny do staging area **před** vytvořením commitu
 
-**Poznámka**: Pokud commit message nezačíná žádným z těchto prefixů, verze se nezmění.
+**Poznámka**: Pokud commit message nezačíná žádným z těchto prefixů, verze se nezmění. Hook se také nespouští při merge, squash nebo template commitech.
 
 ### Ruční změna verze
 

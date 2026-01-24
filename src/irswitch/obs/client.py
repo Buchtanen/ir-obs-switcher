@@ -45,7 +45,8 @@ class ObsClient:
         self._stream_info_cache: Optional[tuple[Optional[str], Optional[str]]] = None
         self._stream_info_cache_broadcast_id: Optional[str] = None
         self._youtube_quota_exceeded: bool = False  # Track if quota exceeded to avoid repeated API calls
-        self._youtube_api_key_missing: bool = False  # Track if API key is missing to avoid repeated warnings
+        # Reference to OAuth manager for YouTube API access
+        self._oauth_manager = None  # Set externally via set_oauth_manager()
 
     async def connect(self, max_retries: int = 5, initial_backoff: float = 1.0) -> None:
         """
@@ -86,9 +87,8 @@ class ObsClient:
                 # Clear stream info cache on reconnect (stream selection may have changed)
                 self._stream_info_cache = None
                 self._stream_info_cache_broadcast_id = None
-                # Reset flags on reconnect (API key might have been set, quota might have reset)
+                # Reset flags on reconnect (quota might have reset)
                 self._youtube_quota_exceeded = False
-                self._youtube_api_key_missing = False
                 logger.info(f"Connected to OBS at {host}:{port}")
                 return
 
@@ -534,28 +534,28 @@ class ObsClient:
             logger.debug(f"Failed to get stream status: {e}")
             return (False, None)
 
-    async def get_stream_info(self, force_refresh: bool = False) -> tuple[Optional[str], Optional[str]]:
+    async def get_stream_info(self, force_refresh: bool = False) -> tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Get current stream title and description from OBS.
-        
-        Uses cache to avoid excessive YouTube API calls. Only fetches when:
+
+        Uses cache to avoid excessive API calls. Only fetches when:
         - force_refresh=True
         - Cache is empty
         - Broadcast ID changed (stream selection changed)
-        
+
         Tries multiple methods:
         1. OBS WebSocket API (GetStreamServiceSettings)
-        2. YouTube Data API (if broadcast_id and YOUTUBE_API_KEY are available)
-        
+        2. YouTube Data API via OAuth (if broadcast_id and OAuth are available)
+
         Returns:
-            Tuple of (title: Optional[str], description: Optional[str])
+            Tuple of (title: Optional[str], description: Optional[str], extended_info: Optional[str])
         """
         if not self.is_connected() or self._client is None:
-            return (None, None)
+            return (None, None, None)
 
         try:
-            # Check cache first (unless force refresh, quota exceeded, or API key missing)
-            if not force_refresh and not self._youtube_quota_exceeded and not self._youtube_api_key_missing:
+            # Check cache first (unless force refresh or quota exceeded)
+            if not force_refresh and not self._youtube_quota_exceeded:
                 # Get current broadcast_id to check if stream selection changed
                 try:
                     def _get_broadcast_id_sync() -> Optional[str]:
@@ -577,16 +577,15 @@ class ObsClient:
                         except:
                             pass
                         return None
-                    
+
                     current_broadcast_id = await asyncio.to_thread(_get_broadcast_id_sync)
-                    
-                    # If broadcast_id changed, reset flags (new stream might have different status)
+
+                    # If broadcast_id changed, reset quota flag (new stream might have different status)
                     if current_broadcast_id != self._stream_info_cache_broadcast_id:
                         self._youtube_quota_exceeded = False
-                        self._youtube_api_key_missing = False
-                    
+
                     # If cache exists and broadcast_id matches, return cached result
-                    if (self._stream_info_cache is not None and 
+                    if (self._stream_info_cache is not None and
                         current_broadcast_id == self._stream_info_cache_broadcast_id):
                         return self._stream_info_cache
                 except:
@@ -814,171 +813,78 @@ class ObsClient:
                 sync_result = await asyncio.to_thread(_get_stream_info_sync)
                 
                 title, description, broadcast_id = sync_result
-                
+
                 # Log what we found in sync part
                 if title:
                     logger.debug(f"Stream title found via OBS API: {title}")
                 else:
                     logger.debug(f"No stream title found via OBS API (broadcast_id: {broadcast_id})")
-            
-                # Now try YouTube Data API if we have broadcast_id (async part)
-                
-                if (title is None or description is None) and broadcast_id:
+
+                # Now try YouTube Data API via OAuth if we have broadcast_id
+                if (title is None or description is None) and broadcast_id and self._oauth_manager:
                     try:
-                        youtube_api_key = os.environ.get("YOUTUBE_API_KEY")
-                        
-                        if not youtube_api_key:
-                            # API key not set - log warning and add event
-                            if not self._youtube_api_key_missing:
-                                self._youtube_api_key_missing = True
-                                logger.warning("YOUTUBE_API_KEY not set - stream title cannot be fetched from YouTube API")
-                                try:
-                                    from irswitch.server.event_log import get_event_log
-                                    event_log = get_event_log()
-                                    await event_log.add_event(
-                                        "youtube_api_key_missing",
-                                        "YouTube API key not configured - stream title unavailable",
-                                        {"broadcast_id": broadcast_id}
-                                    )
-                                except:
-                                    pass
-                        elif youtube_api_key:
-                            # Note: Broadcast ID is NOT the same as video ID
-                            # Broadcast ID is for scheduled streams, video ID is created when stream goes live
-                            # We need to use liveBroadcasts endpoint to get title from broadcast_id
-                            async with aiohttp.ClientSession() as session:
-                                # Approach 1: Try liveBroadcasts endpoint (may require OAuth, but worth trying)
-                                live_broadcasts_url = f"https://www.googleapis.com/youtube/v3/liveBroadcasts"
-                                live_broadcasts_params = {
-                                    "part": "snippet",
-                                    "id": broadcast_id,
-                                    "key": youtube_api_key
-                                }
-                                
-                                async with session.get(live_broadcasts_url, params=live_broadcasts_params) as live_response:
-                                    if live_response.status == 200:
-                                        try:
-                                            live_data = await live_response.json()
-                                            if "items" in live_data and len(live_data["items"]) > 0:
-                                                broadcast = live_data["items"][0]
-                                                if "snippet" in broadcast:
-                                                    snippet = broadcast["snippet"]
-                                                    if title is None and "title" in snippet:
-                                                        title = snippet["title"]
-                                                        logger.debug(f"Stream title found via YouTube liveBroadcasts API: {title}")
-                                                    if description is None and "description" in snippet:
-                                                        description = snippet.get("description")
-                                        except Exception as e:
-                                            logger.debug(f"YouTube liveBroadcasts API error: {e}")
-                                
-                                # Approach 2: Try videos endpoint with broadcast_id (works if stream is live and broadcast_id equals video_id)
-                                if title is None:
-                                    url = f"https://www.googleapis.com/youtube/v3/videos"
-                                    params = {
-                                        "part": "snippet",
-                                        "id": broadcast_id,
-                                        "key": youtube_api_key
-                                    }
-                                    
-                                    async with session.get(url, params=params) as response:
-                                        if response.status == 200:
-                                            try:
-                                                data = await response.json()
-                                                
-                                                if "items" in data and len(data["items"]) > 0:
-                                                    video = data["items"][0]
-                                                    if "snippet" in video:
-                                                        snippet = video["snippet"]
-                                                        
-                                                        if title is None and "title" in snippet:
-                                                            title = snippet["title"]
-                                                            logger.debug(f"Stream title found via YouTube API: {title}")
-                                                        if description is None and "description" in snippet:
-                                                            description = snippet["description"]
-                                                else:
-                                                    logger.debug(f"YouTube API returned no items for broadcast_id: {broadcast_id}")
-                                            except Exception as json_error:
-                                                logger.debug(f"YouTube API JSON error: {json_error}")
-                                        else:
-                                            # Read error response
-                                            try:
-                                                error_data = await response.json()
-                                                # Check for quota exceeded error
-                                                if response.status == 403:
-                                                    error_reason = error_data.get("error", {}).get("errors", [{}])[0].get("reason", "")
-                                                    if error_reason == "quotaExceeded" or "quota" in str(error_data).lower():
-                                                        self._youtube_quota_exceeded = True
-                                                        logger.warning("YouTube Data API quota exceeded - stream title will not be fetched until quota resets (midnight PT)")
-                                                        # Add event log warning
-                                                        try:
-                                                            from irswitch.server.event_log import get_event_log
-                                                            event_log = get_event_log()
-                                                            await event_log.add_event(
-                                                                "youtube_quota_exceeded",
-                                                                "YouTube API quota exceeded - stream title unavailable",
-                                                                {"broadcast_id": broadcast_id}
-                                                            )
-                                                        except:
-                                                            pass
-                                            except:
-                                                error_data = await response.text()
-                                                if response.status == 403:
-                                                    self._youtube_quota_exceeded = True
-                                                    logger.warning("YouTube Data API quota exceeded - stream title will not be fetched until quota resets (midnight PT)")
-                                                    try:
-                                                        from irswitch.server.event_log import get_event_log
-                                                        event_log = get_event_log()
-                                                        await event_log.add_event(
-                                                            "youtube_quota_exceeded",
-                                                            "YouTube API quota exceeded - stream title unavailable",
-                                                            {"broadcast_id": broadcast_id}
-                                                        )
-                                                    except:
-                                                        pass
-                                            logger.debug(f"YouTube API returned status {response.status} for broadcast_id: {broadcast_id}")
-                                
-                                # Check for quota exceeded in liveBroadcasts response too
-                                if live_response.status == 403:
+                        from irswitch.oauth import OAuthError
+                        async with aiohttp.ClientSession() as session:
+                            access_token = await self._oauth_manager.get_valid_access_token(session)
+
+                            # Try liveBroadcasts endpoint to get title/description
+                            live_broadcasts_url = "https://www.googleapis.com/youtube/v3/liveBroadcasts"
+                            params = {
+                                "part": "snippet",
+                                "id": broadcast_id,
+                            }
+
+                            headers = {"Authorization": f"Bearer {access_token}"}
+                            async with session.get(live_broadcasts_url, params=params, headers=headers) as response:
+                                if response.status == 200:
                                     try:
-                                        live_error_data = await live_response.json()
-                                        error_reason = live_error_data.get("error", {}).get("errors", [{}])[0].get("reason", "")
-                                        if error_reason == "quotaExceeded" or "quota" in str(live_error_data).lower():
-                                            self._youtube_quota_exceeded = True
-                                            logger.warning("YouTube Data API quota exceeded - stream title will not be fetched until quota resets (midnight PT)")
-                                            try:
-                                                from irswitch.server.event_log import get_event_log
-                                                event_log = get_event_log()
-                                                await event_log.add_event(
-                                                    "youtube_quota_exceeded",
-                                                    "YouTube API quota exceeded - stream title unavailable",
-                                                    {"broadcast_id": broadcast_id}
-                                                )
-                                            except:
-                                                pass
-                                    except:
-                                        pass
+                                        data = await response.json()
+                                        if "items" in data and len(data["items"]) > 0:
+                                            broadcast = data["items"][0]
+                                            if "snippet" in broadcast:
+                                                snippet = broadcast["snippet"]
+                                                if title is None and "title" in snippet:
+                                                    title = snippet["title"]
+                                                    logger.debug(f"Stream title found via YouTube OAuth API: {title}")
+                                                if description is None and "description" in snippet:
+                                                    description = snippet.get("description")
+                                    except Exception as e:
+                                        logger.debug(f"YouTube OAuth API error: {e}")
+                                elif response.status == 403:
+                                    error_data = await response.json()
+                                    error_reason = error_data.get("error", {}).get("errors", [{}])[0].get("reason", "")
+                                    if error_reason == "quotaExceeded" or "quota" in str(error_data).lower():
+                                        self._youtube_quota_exceeded = True
+                                        logger.warning("YouTube API quota exceeded via OAuth")
+                                elif response.status == 401:
+                                    # Token expired, try to refresh
+                                    try:
+                                        await self._oauth_manager.refresh_access_token(session)
+                                        logger.debug("OAuth token refreshed, will retry on next call")
+                                    except OAuthError:
+                                        logger.warning("OAuth token refresh failed")
                     except Exception as e:
-                        logger.debug(f"Error calling YouTube Data API: {e}")
-                
+                        logger.debug(f"Failed to fetch stream info via OAuth: {e}")
+
                 # Log final result
                 if title:
                     logger.debug(f"Final stream title: {title}")
                 else:
                     logger.debug("No stream title found after all attempts")
-                
+
                 # Update cache
                 self._stream_info_cache = (title, description)
                 self._stream_info_cache_broadcast_id = broadcast_id
-                
-                return (title, description)
-            
+
+                return (title, description, None)
+
             result = await _get_stream_info_async()
-            
+
             return result
 
         except Exception as e:
             logger.warning(f"Failed to get stream info: {e}", exc_info=True)
-            return (None, None)
+            return (None, None, None)
 
     async def get_stream_title(self) -> Optional[str]:
         """
@@ -987,19 +893,23 @@ class ObsClient:
         Returns:
             Stream title string if available, None otherwise
         """
-        title, _ = await self.get_stream_info()
+        title, _, _ = await self.get_stream_info()
         return title
-    
-    def get_cached_stream_info(self) -> tuple[Optional[str], Optional[str], bool, bool]:
+
+    def set_oauth_manager(self, oauth_manager) -> None:
+        """Set the OAuth manager for YouTube API access."""
+        self._oauth_manager = oauth_manager
+
+    def get_cached_stream_info(self) -> tuple[Optional[str], Optional[str], bool]:
         """
         Get cached stream info without making API calls.
-        
+
         Returns:
-            Tuple of (title: Optional[str], description: Optional[str], quota_exceeded: bool, api_key_missing: bool)
+            Tuple of (title: Optional[str], description: Optional[str], quota_exceeded: bool)
         """
         if self._stream_info_cache is not None:
-            return (*self._stream_info_cache, self._youtube_quota_exceeded, self._youtube_api_key_missing)
-        return (None, None, self._youtube_quota_exceeded, self._youtube_api_key_missing)
+            return (*self._stream_info_cache, self._youtube_quota_exceeded)
+        return (None, None, self._youtube_quota_exceeded)
 
     async def is_stream_selected(self) -> tuple[bool, bool]:
         """

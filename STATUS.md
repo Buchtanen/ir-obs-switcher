@@ -24,19 +24,19 @@
 - ✅ **Utilities** (`util/`) - clock, logging (s file rotation)
 
 ### Testy
-- ✅ **79+ unit testů** - všechny prošly
+- ✅ **84+ unit testů** - všechny prošly
   - Extractors (4 testy)
   - Policy (1 test)
   - iRacing Reader (8 testů)
   - OBS Client (11 testů)
   - State Machine (11 testů)
   - API Server (15 testů) - včetně health, metrics, config/reload, shutdown
-  - Main Service (3 testy)
+  - Main Service (8 testů) - včetně 5 nových testů pro stream cache
   - Loading Tracker (9 testů)
   - Event Log (9 testů)
   - E2E Main Loop (7 testů)
-  - Metrics Collector (13 testů) - nové
-  - Logging (8 testů) - nové
+  - Metrics Collector (13 testů)
+  - Logging (8 testů)
 - ✅ **0 warnings** - vše opraveno
 - ✅ **Dokumentace testů** (`tests.md`) - detailní popis všech testů
 - ✅ **Testovací checklist** (`TESTING_CHECKLIST.md`) - přehled testovacího pokrytí
@@ -390,8 +390,8 @@ language = CS  # Jazyk rozhraní (CS, EN, DE, FR, SP, PL, HU)
 ## 📝 Poznámky
 
 - Projekt je **funkčně kompletní** - všechny požadované funkce jsou implementované
-- **79+ testů** pokrývají všechny klíčové komponenty včetně nových funkcí
-- **Nové funkce (leden 2026)**: Health check, Metrics, Config hot reload, Shutdown, File logging, Session info, Lokalizace (i18n), YouTube API integrace
+- **84+ testů** pokrývají všechny klíčové komponenty včetně nových funkcí
+- **Nové funkce (únor 2026)**: Stream cache optimalizace pro auto-start
 - **Testovací pokrytí**: Všechny nové endpointy a funkcionality jsou plně otestované
 - **Dokumentace**: Kompletní dokumentace rozdělena do samostatných dokumentů (CONFIG.md, API.md, LOCALIZATION.md, BUILD_AND_DEPLOY.md, YOUTUBE_API_SETUP.md, VR_SUPPORT.md)
 - Pro vývoj je projekt připravený, pro end-usery je k dispozici kompletní dokumentace
@@ -437,3 +437,17 @@ language = CS  # Jazyk rozhraní (CS, EN, DE, FR, SP, PL, HU)
 - ✅ YouTube API optimalizace - cachování stream info, volání pouze při změně broadcast_id
 - ✅ YouTube API error handling - správné zpracování 403 (quota exceeded) a missing API key
 - ✅ Lokalizované YouTube API zprávy v dashboardu a event logu
+
+### Stream Cache Optimization (únor 2026)
+- ✅ **Cache-aware auto-start logika**
+  - Využití cached hodnot z `stream_selected` eventu pro auto-start rozhodování
+  - Redukce API volání během auto-start fáze o ~50-100%
+  - Konstanty `STREAM_CACHE_FRESH_MS = 5000` (5s) a `STREAM_CACHE_GRACE_MS = 10000` (10s)
+  - Fallback mechanism pro stará cache data
+  - Lepší diagnostika díky logování `data_source` a `cache_age_ms`
+- ✅ **Nové testy pro stream cache** (5 testů v `tests/test_main.py`)
+  - `test_stream_cache_fresh_scenario` - fresh cache použití
+  - `test_stream_cache_stale_scenario` - stale cache fallback
+  - `test_stream_cache_expired_scenario` - expired cache forcing API
+  - `test_stream_no_cache_scenario` - no cache handling
+  - `test_stream_cache_constants` - konstanty validace
