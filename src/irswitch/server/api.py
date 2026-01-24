@@ -226,10 +226,11 @@ async def _get_status_dict(state: "SwitchState") -> dict:
                 status["stream_ready_selected"] = False
             
             # Get cached stream info (don't make API calls from API endpoint)
-            stream_title, stream_description, quota_exceeded = _obs_client.get_cached_stream_info()
+            stream_title, stream_description, quota_exceeded, api_key_missing = _obs_client.get_cached_stream_info()
             status["stream_title"] = stream_title
             status["stream_description"] = stream_description
             status["youtube_quota_exceeded"] = quota_exceeded
+            status["youtube_api_key_missing"] = api_key_missing
             
             # Get full cached stream info for extended fields
             stream_info_full = _obs_client.get_cached_stream_info_full()
@@ -819,7 +820,16 @@ def create_app() -> web.Application:
     # __file__ is in src/irswitch/server/api.py, so go up 4 levels to reach project root
     assets_path = Path(__file__).resolve().parents[3] / "assets"
     app.router.add_static("/assets/", assets_path)
-    app.router.add_get("/favicon.ico", lambda r: web.FileResponse(assets_path / "favicon" / "favicon.ico"))
-    app.router.add_get("/apple-touch-icon.png", lambda r: web.FileResponse(assets_path / "favicon" / "apple-touch-icon.png"))
+    
+    async def handle_favicon(request: web.Request) -> web.FileResponse:
+        """Handle GET /favicon.ico endpoint."""
+        return web.FileResponse(assets_path / "favicon" / "favicon.ico")
+    
+    async def handle_apple_touch_icon(request: web.Request) -> web.FileResponse:
+        """Handle GET /apple-touch-icon.png endpoint."""
+        return web.FileResponse(assets_path / "favicon" / "apple-touch-icon.png")
+    
+    app.router.add_get("/favicon.ico", handle_favicon)
+    app.router.add_get("/apple-touch-icon.png", handle_apple_touch_icon)
 
     return app

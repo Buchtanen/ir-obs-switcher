@@ -428,13 +428,17 @@ async def test_get_stream_info_without_api_key(obs_client: ObsClient) -> None:
 
 @pytest.mark.asyncio
 async def test_get_stream_info_quota_exceeded(obs_client: ObsClient) -> None:
-    """Test get_stream_info when YouTube API quota is exceeded."""
+    """Test get_stream_info when YouTube API quota is exceeded via OAuth."""
     mock_client = MagicMock()
     
     # Mock broadcast_id extraction
     service_settings = MagicMock()
     service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
     mock_client.get_stream_service_settings.return_value = service_settings
+    
+    # Mock OAuth manager
+    mock_oauth = MagicMock()
+    mock_oauth.get_valid_access_token = AsyncMock(return_value="test_token")
     
     # Mock HTTP response with 403 quota exceeded
     mock_response = MagicMock()
@@ -446,13 +450,14 @@ async def test_get_stream_info_quota_exceeded(obs_client: ObsClient) -> None:
     })
     
     with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
-        with patch.dict("os.environ", {"YOUTUBE_API_KEY": "test_key"}):
-            with patch("aiohttp.ClientSession.get") as mock_get:
-                mock_get.return_value.__aenter__.return_value = mock_response
-                mock_get.return_value.__aexit__.return_value = None
-                
-                await obs_client.connect(max_retries=1)
-                title, description = await obs_client.get_stream_info()
+        await obs_client.connect(max_retries=1)
+        obs_client.set_oauth_manager(mock_oauth)
+        
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            mock_get.return_value.__aenter__.return_value = mock_response
+            mock_get.return_value.__aexit__.return_value = None
+            
+            title, description = await obs_client.get_stream_info()
     
     assert obs_client._youtube_quota_exceeded is True
     # Should return None or empty when quota exceeded
@@ -485,15 +490,14 @@ async def test_get_stream_info_cache_reset_on_broadcast_id_change(obs_client: Ob
     service_settings2.stream_service_settings = "{'broadcast_id': 'broadcast2'}"
     mock_client.get_stream_service_settings.return_value = service_settings2
 
-    # Get stream info - should reset cache when broadcast_id changes
-    # Even without API key, the cache should be invalidated
+    # Get stream info - should update cache broadcast_id when broadcast_id changes
+    # Even without OAuth manager, the broadcast_id is extracted and cache is updated
     title, description = await obs_client.get_stream_info()
 
-    # Without API key, title won't be found, so cache won't be updated
-    # The important thing is that it doesn't crash
-    # Cache broadcast_id stays the same because we couldn't fetch new title
-    assert obs_client._stream_info_cache_broadcast_id == "broadcast1"
-    # And title should be None (couldn't fetch from YouTube without API key)
+    # Without OAuth manager, title won't be fetched from YouTube API
+    # But broadcast_id is still extracted and cache is updated with new broadcast_id
+    assert obs_client._stream_info_cache_broadcast_id == "broadcast2"
+    # And title should be None (couldn't fetch from YouTube without OAuth manager)
     assert title is None
 
 
@@ -507,17 +511,17 @@ async def test_get_stream_info_force_refresh(obs_client: ObsClient) -> None:
     mock_client.get_stream_service_settings.return_value = service_settings
     
     with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
-        with patch.dict("os.environ", {"YOUTUBE_API_KEY": "test_key"}):
-            await obs_client.connect(max_retries=1)
-            # Set cache
-            obs_client._stream_info_cache = ("Cached Title", "Cached Desc")
-            obs_client._stream_info_cache_broadcast_id = "test_id"
-            
-            # With force_refresh=True, should bypass cache
-            # (actual API call would happen, but we're just testing the flag)
-            title, description = await obs_client.get_stream_info(force_refresh=True)
+        await obs_client.connect(max_retries=1)
+        # Set cache
+        obs_client._stream_info_cache = ("Cached Title", "Cached Desc")
+        obs_client._stream_info_cache_broadcast_id = "test_id"
+        
+        # With force_refresh=True, should bypass cache
+        # (actual API call would happen if OAuth manager is set, but we're just testing the flag)
+        title, description = await obs_client.get_stream_info(force_refresh=True)
     
     # Cache should be bypassed (result depends on API call, but cache check is skipped)
+    # Without OAuth manager, result will be None, but cache check is still bypassed
     assert obs_client._stream_info_cache is not None  # Cache might be updated
 
 
@@ -548,21 +552,21 @@ async def test_get_stream_info_does_not_call_api_when_quota_exceeded(obs_client:
 
 @pytest.mark.asyncio
 async def test_get_stream_info_does_not_call_api_when_key_missing(obs_client: ObsClient) -> None:
-    """Test that get_stream_info does not call API when API key is missing."""
+    """Test that get_stream_info does not call API when OAuth manager is not set."""
     mock_client = MagicMock()
     
     service_settings = MagicMock()
     service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
     mock_client.get_stream_service_settings.return_value = service_settings
     
-    obs_client._youtube_api_key_missing = True
+    # Ensure OAuth manager is not set
+    obs_client._oauth_manager = None
     
     with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
-        with patch.dict("os.environ", {}, clear=True):
-            await obs_client.connect(max_retries=1)
-            
-            # Should not make API calls when API key missing
-            with patch("aiohttp.ClientSession.get") as mock_get:
-                title, description = await obs_client.get_stream_info()
-                # Should not be called when API key missing
-                mock_get.assert_not_called()
+        await obs_client.connect(max_retries=1)
+        
+        # Should not make API calls when OAuth manager is missing
+        with patch("aiohttp.ClientSession.get") as mock_get:
+            title, description = await obs_client.get_stream_info()
+            # Should not be called when OAuth manager is missing
+            mock_get.assert_not_called()

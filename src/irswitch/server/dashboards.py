@@ -106,7 +106,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 pass
             
             # Get cached stream title (don't make API calls from dashboard)
-            stream_title, stream_description, quota_exceeded = obs_client.get_cached_stream_info()
+            stream_title, stream_description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
             if quota_exceeded:
                 logger.debug("YouTube API quota exceeded - using cached stream title")
             

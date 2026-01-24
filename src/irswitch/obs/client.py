@@ -42,11 +42,11 @@ class ObsClient:
         self._current_profile_cache_ts: Optional[float] = None
         self._profile_cache_ttl_s = 2.0  # Cache profile for 2 seconds
         # Cache for stream info - cached until stream selection changes
-        # Structure: dict with keys: title, description, scheduled_start_time, actual_start_time, 
-        #            concurrent_viewers, status, privacy_status
-        self._stream_info_cache: Optional[dict] = None
+        # Structure: tuple (title, description) for backward compatibility
+        self._stream_info_cache: Optional[tuple[Optional[str], Optional[str]]] = None
         self._stream_info_cache_broadcast_id: Optional[str] = None
         self._youtube_quota_exceeded: bool = False  # Track if quota exceeded to avoid repeated API calls
+        self._youtube_api_key_missing: bool = False  # Track if API key is missing to avoid repeated warnings
         # Reference to OAuth manager for YouTube API access
         self._oauth_manager = None  # Set externally via set_oauth_manager()
 
@@ -536,7 +536,7 @@ class ObsClient:
             logger.debug(f"Failed to get stream status: {e}")
             return (False, None)
 
-    async def get_stream_info(self, force_refresh: bool = False) -> dict:
+    async def get_stream_info(self, force_refresh: bool = False) -> tuple[Optional[str], Optional[str]]:
         """
         Get current stream information from OBS and YouTube API.
 
@@ -550,25 +550,10 @@ class ObsClient:
         2. YouTube Data API via OAuth (if broadcast_id and OAuth are available)
 
         Returns:
-            Dict with keys:
-            - title: Optional[str]
-            - description: Optional[str]
-            - scheduled_start_time: Optional[str] (ISO 8601 format)
-            - actual_start_time: Optional[str] (ISO 8601 format)
-            - concurrent_viewers: Optional[int]
-            - status: Optional[str] (lifeCycleStatus: created, ready, testing, live, complete, revoked)
-            - privacy_status: Optional[str] (private, unlisted, public)
+            Tuple of (title: Optional[str], description: Optional[str])
         """
         if not self.is_connected() or self._client is None:
-            return {
-                "title": None,
-                "description": None,
-                "scheduled_start_time": None,
-                "actual_start_time": None,
-                "concurrent_viewers": None,
-                "status": None,
-                "privacy_status": None,
-            }
+            return (None, None)
 
         try:
             # Check cache first (unless force refresh or quota exceeded)
@@ -604,21 +589,21 @@ class ObsClient:
                     # If cache exists and broadcast_id matches, return cached result
                     if (self._stream_info_cache is not None and
                         current_broadcast_id == self._stream_info_cache_broadcast_id):
-                        return self._stream_info_cache
+                        # Extract title and description from cache (can be dict or tuple)
+                        if isinstance(self._stream_info_cache, dict):
+                            return (self._stream_info_cache.get("title"), self._stream_info_cache.get("description"))
+                        elif isinstance(self._stream_info_cache, tuple):
+                            return (self._stream_info_cache[0] if len(self._stream_info_cache) > 0 else None,
+                                   self._stream_info_cache[1] if len(self._stream_info_cache) > 1 else None)
+                        else:
+                            return (None, None)
                 except:
                     pass  # If cache check fails, continue with normal fetch
 
-            async def _get_stream_info_async() -> dict:
-                # Initialize result dict
-                result = {
-                    "title": None,
-                    "description": None,
-                    "scheduled_start_time": None,
-                    "actual_start_time": None,
-                    "concurrent_viewers": None,
-                    "status": None,
-                    "privacy_status": None,
-                }
+            async def _get_stream_info_async() -> tuple[Optional[str], Optional[str]]:
+                # Initialize result
+                title_result: Optional[str] = None
+                description_result: Optional[str] = None
                 
                 # Run synchronous part in thread
                 def _get_stream_info_sync() -> tuple[Optional[str], Optional[str], Optional[str]]:
@@ -842,9 +827,9 @@ class ObsClient:
                 
                 title, description, broadcast_id = sync_result
 
-                # Update result dict with title and description from sync part
-                result["title"] = title
-                result["description"] = description
+                # Update result with title and description from sync part
+                title_result = title
+                description_result = description
 
                 # Log what we found in sync part
                 if title:
@@ -877,22 +862,10 @@ class ObsClient:
                                             # Get snippet data
                                             if "snippet" in broadcast:
                                                 snippet = broadcast["snippet"]
-                                                if result["title"] is None and "title" in snippet:
-                                                    result["title"] = snippet["title"]
-                                                if result["description"] is None and "description" in snippet:
-                                                    result["description"] = snippet.get("description")
-                                                if "scheduledStartTime" in snippet:
-                                                    result["scheduled_start_time"] = snippet["scheduledStartTime"]
-                                                if "actualStartTime" in snippet:
-                                                    result["actual_start_time"] = snippet["actualStartTime"]
-                                            
-                                            # Get status data
-                                            if "status" in broadcast:
-                                                status_data = broadcast["status"]
-                                                if "lifeCycleStatus" in status_data:
-                                                    result["status"] = status_data["lifeCycleStatus"]
-                                                if "privacyStatus" in status_data:
-                                                    result["privacy_status"] = status_data["privacyStatus"]
+                                                if title_result is None and "title" in snippet:
+                                                    title_result = snippet["title"]
+                                                if description_result is None and "description" in snippet:
+                                                    description_result = snippet.get("description")
                                             
                                     except Exception as e:
                                         logger.debug(f"YouTube OAuth API error: {e}")
@@ -936,10 +909,8 @@ class ObsClient:
                                             videos_data = await videos_response.json()
                                             if "items" in videos_data and len(videos_data["items"]) > 0:
                                                 video = videos_data["items"][0]
-                                                if "liveStreamingDetails" in video:
-                                                    live_details = video["liveStreamingDetails"]
-                                                    if "concurrentViewers" in live_details:
-                                                        result["concurrent_viewers"] = int(live_details["concurrentViewers"])
+                                                # concurrent_viewers not returned in tuple format
+                                                pass
                                         except Exception as e:
                                             logger.debug(f"Failed to get concurrent viewers: {e}")
                                     elif videos_response.status == 404:
@@ -948,11 +919,11 @@ class ObsClient:
                     except Exception as e:
                         logger.debug(f"Failed to fetch extended stream info via OAuth: {e}")
 
-                # Update cache
-                self._stream_info_cache = result
+                # Update cache (store as tuple for backward compatibility)
+                self._stream_info_cache = (title_result, description_result)
                 self._stream_info_cache_broadcast_id = broadcast_id
 
-                return result
+                return (title_result, description_result)
 
             result = await _get_stream_info_async()
 
@@ -960,15 +931,7 @@ class ObsClient:
 
         except Exception as e:
             logger.warning(f"Failed to get stream info: {e}", exc_info=True)
-            return {
-                "title": None,
-                "description": None,
-                "scheduled_start_time": None,
-                "actual_start_time": None,
-                "concurrent_viewers": None,
-                "status": None,
-                "privacy_status": None,
-            }
+            return (None, None)
 
     async def get_stream_title(self) -> Optional[str]:
         """
@@ -977,29 +940,36 @@ class ObsClient:
         Returns:
             Stream title string if available, None otherwise
         """
-        info = await self.get_stream_info()
-        return info.get("title")
+        title, _ = await self.get_stream_info()
+        return title
 
     def set_oauth_manager(self, oauth_manager) -> None:
         """Set the OAuth manager for YouTube API access."""
         self._oauth_manager = oauth_manager
 
-    def get_cached_stream_info(self) -> tuple[Optional[str], Optional[str], bool]:
+    def get_cached_stream_info(self) -> tuple[Optional[str], Optional[str], bool, bool]:
         """
         Get cached stream info without making API calls.
         
         For backward compatibility, returns tuple format.
 
         Returns:
-            Tuple of (title: Optional[str], description: Optional[str], quota_exceeded: bool)
+            Tuple of (title: Optional[str], description: Optional[str], quota_exceeded: bool, api_key_missing: bool)
         """
         if self._stream_info_cache is not None:
-            return (
-                self._stream_info_cache.get("title"),
-                self._stream_info_cache.get("description"),
-                self._youtube_quota_exceeded
-            )
-        return (None, None, self._youtube_quota_exceeded)
+            # Cache is stored as tuple (title, description)
+            if isinstance(self._stream_info_cache, tuple):
+                title = self._stream_info_cache[0] if len(self._stream_info_cache) > 0 else None
+                description = self._stream_info_cache[1] if len(self._stream_info_cache) > 1 else None
+            elif isinstance(self._stream_info_cache, dict):
+                # Backward compatibility with dict format
+                title = self._stream_info_cache.get("title")
+                description = self._stream_info_cache.get("description")
+            else:
+                title = None
+                description = None
+            return (title, description, self._youtube_quota_exceeded, self._youtube_api_key_missing)
+        return (None, None, self._youtube_quota_exceeded, self._youtube_api_key_missing)
     
     def get_cached_stream_info_full(self) -> dict:
         """

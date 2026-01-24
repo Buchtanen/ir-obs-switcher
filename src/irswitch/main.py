@@ -787,7 +787,8 @@ async def main_loop(
                                 # Stream was selected - NOW fetch title (only when needed)
                                 logger.info(f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})")
                                 try:
-                                    stream_title, stream_description, stream_extended = await obs_client.get_stream_info()
+                                    stream_title, stream_description = await obs_client.get_stream_info()
+                                    stream_extended = None  # Extended info not available in tuple format
                                     await event_log.add_event(
                                         "stream_selected",
                                         f"Stream selected in OBS",
