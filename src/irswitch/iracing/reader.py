@@ -26,6 +26,19 @@ def is_iracing_process_running() -> bool:
     """
     try:
         import subprocess
+        import sys
+
+        # On Windows, prevent subprocess from creating a console window
+        # This is important when running as --noconsole EXE
+        startupinfo = None
+        if sys.platform == "win32":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+            # Also use CREATE_NO_WINDOW flag to prevent console window
+            creationflags = subprocess.CREATE_NO_WINDOW
+        else:
+            creationflags = 0
 
         # Use tasklist to check for iRacing process (Windows)
         result = subprocess.run(
@@ -33,6 +46,8 @@ def is_iracing_process_running() -> bool:
             capture_output=True,
             text=True,
             timeout=2,
+            startupinfo=startupinfo,
+            creationflags=creationflags,
         )
         # If process is found, tasklist returns the process info
         # If not found, it returns "INFO: No tasks are running..."

@@ -219,6 +219,8 @@ pyinstaller --onefile `
     --distpath dist `
     --workpath build `
     --clean `
+    --add-data "assets;assets" `
+    --noupx `
     src\irswitch\main.py
 ```
 
@@ -227,9 +229,11 @@ pyinstaller --onefile `
 - `--name irswitchd` - název výstupního souboru
 - `--noconsole` - vytváří silent EXE bez konzole (doporučeno pro background proces)
 - `--collect-all irswitch` - zahrne všechny moduly z balíčku irswitch
+- `--add-data "assets;assets"` - zahrne assets adresář do EXE (favicon, logo, atd.)
 - `--distpath dist` - výstupní adresář
 - `--workpath build` - pracovní adresář pro build
 - `--clean` - vyčistí cache před buildem
+- `--noupx` - zakáže UPX kompresi (může způsobovat problémy s antiviry a runtime extrakcí)
 
 **Poznámka**: `--noconsole` vytváří silent EXE bez konzole (doporučeno pro background proces). Pokud chceš vidět konzoli pro debugging, odstraň tento parametr.
 
@@ -248,6 +252,32 @@ pyinstaller --onefile `
    .\irswitchd.exe --config config\config.ini
    ```
 3. Zkontroluj logy (pokud jsou nastaveny v config)
+
+### Chyba "Failed to extract VC runtime"
+
+**Příznaky**: Při spuštění EXE se zobrazí chybová zpráva "Failed to extract VC runtime" nebo podobná chyba týkající se Visual C++ Runtime.
+
+**Příčina**: PyInstaller se snaží extrahovat Visual C++ Runtime DLL do dočasného adresáře, ale může selhat kvůli konfliktům s systémovými DLL nebo oprávněními.
+
+**Řešení**:
+1. **Instalace Visual C++ Redistributable** (doporučeno):
+   - Stáhni a nainstaluj [Visual C++ Redistributable 2015-2022](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+   - Restartuj počítač po instalaci
+   - Zkus znovu spustit EXE
+
+2. **Spuštění jako administrátor**:
+   - Klikni pravým tlačítkem na `irswitchd.exe` → "Run as administrator"
+   - To může pomoci s oprávněními pro extrakci runtime
+
+3. **Kontrola antiviru**:
+   - Některé antiviry blokují extrakci dočasných souborů
+   - Přidej výjimku pro `irswitchd.exe` nebo celý `dist/` adresář
+
+4. **Použití buildu bez `--noconsole`** (pro debugging):
+   - Uprav `build_exe.ps1` a odstraň `--noconsole` parametr
+   - Znovu builduj a spusť - uvidíš chybové zprávy v konzoli
+
+**Poznámka**: Build skript používá parametr `--noupx`, který může pomoci s problémy extrakce runtime. Hlavní řešení je však instalace Visual C++ Redistributable na cílovém systému. Pokud problém přetrvává i po instalaci VC Redistributable, zkuste spustit EXE jako administrátor nebo zkontrolujte antivir.
 
 ### Služba se nespustí
 

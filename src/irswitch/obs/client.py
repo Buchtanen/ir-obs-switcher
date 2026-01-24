@@ -686,6 +686,9 @@ class ObsClient:
                 # Initialize result
                 title_result: Optional[str] = None
                 description_result: Optional[str] = None
+                stream_status: Optional[str] = None
+                privacy_status: Optional[str] = None
+                scheduled_start_time: Optional[str] = None
 
                 # Run synchronous part in thread
                 def _get_stream_info_sync() -> (
@@ -1027,132 +1030,198 @@ class ObsClient:
 
                 # Now fetch extended info from YouTube API if we have broadcast_id and OAuth
                 if broadcast_id and self._oauth_manager:
-                    try:
-                        from irswitch.oauth import OAuthError
-
-                        async with aiohttp.ClientSession() as session:
-                            access_token = (
-                                await self._oauth_manager.get_valid_access_token(
-                                    session
-                                )
-                            )
-
-                            # Fetch liveBroadcasts with snippet, status, and contentDetails parts
-                            live_broadcasts_url = (
-                                "https://www.googleapis.com/youtube/v3/liveBroadcasts"
-                            )
-                            params = {
-                                "part": "snippet,status,contentDetails",
-                                "id": broadcast_id,
-                            }
-
-                            headers = {"Authorization": f"Bearer {access_token}"}
-                            async with session.get(
-                                live_broadcasts_url, params=params, headers=headers
-                            ) as response:
-                                if response.status == 200:
-                                    try:
-                                        data = await response.json()
-                                        if "items" in data and len(data["items"]) > 0:
-                                            broadcast = data["items"][0]
-
-                                            # Get snippet data
-                                            if "snippet" in broadcast:
-                                                snippet = broadcast["snippet"]
-                                                if (
-                                                    title_result is None
-                                                    and "title" in snippet
-                                                ):
-                                                    title_result = snippet["title"]
-                                                if (
-                                                    description_result is None
-                                                    and "description" in snippet
-                                                ):
-                                                    description_result = snippet.get(
-                                                        "description"
-                                                    )
-
-                                    except Exception as e:
-                                        logger.debug(f"YouTube OAuth API error: {e}")
-                                elif response.status == 403:
-                                    error_data = await response.json()
-                                    error_reason = (
-                                        error_data.get("error", {})
-                                        .get("errors", [{}])[0]
-                                        .get("reason", "")
-                                    )
-                                    if (
-                                        error_reason == "quotaExceeded"
-                                        or "quota" in str(error_data).lower()
-                                    ):
-                                        self._youtube_quota_exceeded = True
-                                        logger.warning(
-                                            "YouTube API quota exceeded via OAuth"
-                                        )
-                                elif response.status == 401:
-                                    # Token expired, try to refresh
-                                    try:
-                                        await self._oauth_manager.refresh_access_token(
-                                            session
-                                        )
-                                        logger.debug(
-                                            "OAuth token refreshed, will retry on next call"
-                                        )
-                                    except OAuthError:
-                                        logger.warning("OAuth token refresh failed")
-
-                            # Try to get concurrent viewers from videos.list API
-                            # For live broadcasts, we need to find the associated video_id
-                            # The broadcast_id might be the video_id when the broadcast is live
-                            # Or we can get video_id from contentDetails.monitorStream.broadcastStreamId
-                            video_id_for_viewers = None
-
-                            # Try to get video_id from broadcast contentDetails
-                            if "contentDetails" in broadcast:
-                                content_details = broadcast["contentDetails"]
-                                # When broadcast is live, there might be a video_id
-                                # For now, try using broadcast_id as video_id
-                                video_id_for_viewers = broadcast_id
-
-                            # Try to get concurrent viewers using video_id
-                            if video_id_for_viewers:
-                                videos_url = (
-                                    "https://www.googleapis.com/youtube/v3/videos"
-                                )
-                                videos_params = {
-                                    "part": "liveStreamingDetails",
-                                    "id": video_id_for_viewers,
-                                }
-                                async with session.get(
-                                    videos_url, params=videos_params, headers=headers
-                                ) as videos_response:
-                                    if videos_response.status == 200:
-                                        try:
-                                            videos_data = await videos_response.json()
-                                            if (
-                                                "items" in videos_data
-                                                and len(videos_data["items"]) > 0
-                                            ):
-                                                video = videos_data["items"][0]
-                                                # concurrent_viewers not returned in tuple format
-                                                pass
-                                        except Exception as e:
-                                            logger.debug(
-                                                f"Failed to get concurrent viewers: {e}"
-                                            )
-                                    elif videos_response.status == 404:
-                                        # broadcast_id is not a video_id, concurrent viewers not available
-                                        logger.debug(
-                                            f"broadcast_id {broadcast_id} is not a video_id, concurrent viewers not available"
-                                        )
-                    except Exception as e:
+                    # Check if OAuth is actually authenticated before making API calls
+                    if not self._oauth_manager.is_authenticated():
                         logger.debug(
-                            f"Failed to fetch extended stream info via OAuth: {e}"
+                            f"OAuth manager exists but not authenticated - skipping YouTube API call"
                         )
+                    else:
+                        try:
+                            from irswitch.oauth import OAuthError
 
-                # Update cache (store as tuple for backward compatibility)
-                self._stream_info_cache = (title_result, description_result)
-                self._stream_info_cache_broadcast_id = broadcast_id
+                            logger.debug(
+                                f"Fetching stream info from YouTube API for broadcast_id: {broadcast_id}"
+                            )
+                            async with aiohttp.ClientSession() as session:
+                                access_token = (
+                                    await self._oauth_manager.get_valid_access_token(
+                                        session
+                                    )
+                                )
+
+                                # Fetch liveBroadcasts with snippet, status, and contentDetails parts
+                                live_broadcasts_url = (
+                                    "https://www.googleapis.com/youtube/v3/liveBroadcasts"
+                                )
+                                params = {
+                                    "part": "snippet,status,contentDetails",
+                                    "id": broadcast_id,
+                                }
+
+                                headers = {"Authorization": f"Bearer {access_token}"}
+                                async with session.get(
+                                    live_broadcasts_url, params=params, headers=headers
+                                ) as response:
+                                    if response.status == 200:
+                                        try:
+                                            data = await response.json()
+                                            if "items" in data and len(data["items"]) > 0:
+                                                broadcast = data["items"][0]
+
+                                                # Get snippet data
+                                                if "snippet" in broadcast:
+                                                    snippet = broadcast["snippet"]
+                                                    if (
+                                                        title_result is None
+                                                        and "title" in snippet
+                                                    ):
+                                                        title_result = snippet["title"]
+                                                    if (
+                                                        description_result is None
+                                                        and "description" in snippet
+                                                    ):
+                                                        description_result = snippet.get(
+                                                            "description"
+                                                        )
+                                                
+                                                # Get status data (lifeCycleStatus, privacyStatus)
+                                                stream_status = None
+                                                privacy_status = None
+                                                if "status" in broadcast:
+                                                    status_obj = broadcast["status"]
+                                                    stream_status = status_obj.get("lifeCycleStatus")
+                                                    privacy_status = status_obj.get("privacyStatus")
+                                                
+                                                # Get scheduled start time from snippet
+                                                scheduled_start_time = None
+                                                if "snippet" in broadcast:
+                                                    snippet = broadcast["snippet"]
+                                                    scheduled_start_time = snippet.get("scheduledStartTime")
+
+                                                # Try to get concurrent viewers from videos.list API
+                                                # For live broadcasts, we need to find the associated video_id
+                                                # The broadcast_id might be the video_id when the broadcast is live
+                                                # Or we can get video_id from contentDetails.monitorStream.broadcastStreamId
+                                                video_id_for_viewers = None
+
+                                                # Try to get video_id from broadcast contentDetails
+                                                if "contentDetails" in broadcast:
+                                                    content_details = broadcast["contentDetails"]
+                                                    # When broadcast is live, there might be a video_id
+                                                    # For now, try using broadcast_id as video_id
+                                                    video_id_for_viewers = broadcast_id
+
+                                                # Try to get concurrent viewers using video_id
+                                                if video_id_for_viewers:
+                                                    videos_url = (
+                                                        "https://www.googleapis.com/youtube/v3/videos"
+                                                    )
+                                                    videos_params = {
+                                                        "part": "liveStreamingDetails",
+                                                        "id": video_id_for_viewers,
+                                                    }
+                                                    async with session.get(
+                                                        videos_url, params=videos_params, headers=headers
+                                                    ) as videos_response:
+                                                        if videos_response.status == 200:
+                                                            try:
+                                                                videos_data = await videos_response.json()
+                                                                if (
+                                                                    "items" in videos_data
+                                                                    and len(videos_data["items"]) > 0
+                                                                ):
+                                                                    video = videos_data["items"][0]
+                                                                    # concurrent_viewers not returned in tuple format
+                                                                    pass
+                                                            except Exception as e:
+                                                                logger.debug(
+                                                                    f"Failed to get concurrent viewers: {e}"
+                                                                )
+                                                        elif videos_response.status == 404:
+                                                            # broadcast_id is not a video_id, concurrent viewers not available
+                                                            logger.debug(
+                                                                f"broadcast_id {broadcast_id} is not a video_id, concurrent viewers not available"
+                                                            )
+                                        except Exception as e:
+                                            logger.debug(f"YouTube OAuth API error: {e}")
+                                    elif response.status == 403:
+                                        error_data = await response.json()
+                                        error_reason = (
+                                            error_data.get("error", {})
+                                            .get("errors", [{}])[0]
+                                            .get("reason", "")
+                                        )
+                                        if (
+                                            error_reason == "quotaExceeded"
+                                            or "quota" in str(error_data).lower()
+                                        ):
+                                            self._youtube_quota_exceeded = True
+                                            logger.warning(
+                                                "YouTube API quota exceeded via OAuth"
+                                            )
+                                    elif response.status == 401:
+                                        # Token expired, try to refresh
+                                        try:
+                                            await self._oauth_manager.refresh_access_token(
+                                                session
+                                            )
+                                            logger.debug(
+                                                "OAuth token refreshed, will retry on next call"
+                                            )
+                                        except OAuthError:
+                                            logger.warning("OAuth token refresh failed")
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to fetch extended stream info via OAuth: {e}", exc_info=True
+                            )
+                else:
+                    if not broadcast_id:
+                        logger.debug("No broadcast_id available - cannot fetch stream info from YouTube API")
+                    elif not self._oauth_manager:
+                        logger.debug("No OAuth manager set - cannot fetch stream info from YouTube API")
+
+                # Update cache (store as dict to include extended info)
+                # Only update cache if we have new data OR broadcast_id changed
+                # Don't overwrite existing cache with None values if broadcast_id is the same
+                cache_dict = {
+                    "title": title_result,
+                    "description": description_result,
+                    "status": stream_status,
+                    "privacy_status": privacy_status,
+                    "scheduled_start_time": scheduled_start_time,
+                }
+                
+                if broadcast_id != self._stream_info_cache_broadcast_id:
+                    # Broadcast ID changed - always update cache (even if None, stream selection changed)
+                    self._stream_info_cache = cache_dict
+                    self._stream_info_cache_broadcast_id = broadcast_id
+                    logger.debug(f"Cache updated: broadcast_id changed to {broadcast_id}, title: {title_result}, status: {stream_status}, privacy: {privacy_status}")
+                elif title_result is not None or description_result is not None or stream_status is not None or privacy_status is not None:
+                    # Same broadcast_id but we have new data - update cache
+                    # Merge with existing cache to preserve any fields that weren't updated
+                    if isinstance(self._stream_info_cache, dict):
+                        cache_dict.update(self._stream_info_cache)
+                    self._stream_info_cache = cache_dict
+                    logger.debug(f"Cache updated: new data for broadcast_id {broadcast_id}, title: {title_result}, status: {stream_status}, privacy: {privacy_status}")
+                else:
+                    # Same broadcast_id, no new data - keep existing cache
+                    if self._stream_info_cache is not None:
+                        logger.debug(f"Cache preserved: no new data for broadcast_id {broadcast_id}, keeping existing cache")
+                        # Return cached values instead of None
+                        if isinstance(self._stream_info_cache, tuple):
+                            title_result = (
+                                self._stream_info_cache[0]
+                                if len(self._stream_info_cache) > 0
+                                else None
+                            )
+                            description_result = (
+                                self._stream_info_cache[1]
+                                if len(self._stream_info_cache) > 1
+                                else None
+                            )
+                        elif isinstance(self._stream_info_cache, dict):
+                            title_result = self._stream_info_cache.get("title")
+                            description_result = self._stream_info_cache.get("description")
 
                 return (title_result, description_result)
 

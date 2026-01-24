@@ -75,8 +75,16 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
     set_current_state(initial_state)
 
     # Mock OBS client for stream status
+    from unittest.mock import MagicMock
+    
     mock_obs = AsyncMock(spec=ObsClient)
     mock_obs.get_stream_status = AsyncMock(return_value=(False, None))
+    mock_obs.get_cached_stream_info = MagicMock(
+        return_value=(None, None, False, False)
+    )
+    mock_obs.get_cached_stream_info_full = MagicMock(return_value=None)
+    mock_obs.is_stream_selected = AsyncMock(return_value=(False, False))
+    mock_obs.get_current_profile = AsyncMock(return_value=None)
     set_obs_client(mock_obs)
 
     return app

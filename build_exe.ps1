@@ -33,15 +33,17 @@ if ($Core -or $All) {
         --name irswitchd `
         --noconsole `
         --collect-all irswitch `
+        --add-data "assets;assets" `
         --distpath dist `
         --workpath build `
         --clean `
+        --noupx `
         src\irswitch\main.py
     
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Core service built: dist\irswitchd.exe" -ForegroundColor Green
+        Write-Host '[OK] Core service built: dist\irswitchd.exe' -ForegroundColor Green
     } else {
-        Write-Host "✗ Failed to build core service" -ForegroundColor Red
+        Write-Host '[ERROR] Failed to build core service' -ForegroundColor Red
         exit 1
     }
 }
@@ -58,9 +60,9 @@ if (Test-Path "config") {
         Remove-Item -Path $configDest -Recurse -Force
     }
     Copy-Item -Path "config" -Destination $configDest -Recurse
-    Write-Host "  ✓ Copied config/ directory" -ForegroundColor Green
+    Write-Host '  [OK] Copied config/ directory' -ForegroundColor Green
 } else {
-    Write-Host "  ⚠ config/ directory not found" -ForegroundColor Yellow
+    Write-Host '  [WARN] config/ directory not found' -ForegroundColor Yellow
 }
 
 # Create README for distribution
@@ -94,19 +96,19 @@ $readmeContent = @"
 
 $readmePath = Join-Path "dist" "README.txt"
 $readmeContent | Out-File -FilePath $readmePath -Encoding UTF8
-Write-Host "  ✓ Created README.txt" -ForegroundColor Green
+Write-Host '  [OK] Created README.txt' -ForegroundColor Green
 
-Write-Host ""
-Write-Host "Build complete! Distribution files are in dist\" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Distribution structure:" -ForegroundColor Yellow
-Write-Host "  dist/"
-Write-Host "    irswitchd.exe"
-Write-Host "    config/"
-Write-Host "      config.example.ini"
-Write-Host "      config.ini"
-Write-Host "    README.txt"
-Write-Host ""
-Write-Host "Usage:" -ForegroundColor Yellow
-Write-Host "  cd dist"
-Write-Host "  .\irswitchd.exe --config config\config.ini"
+Write-Host ''
+Write-Host 'Build complete! Distribution files are in dist/' -ForegroundColor Cyan
+Write-Host ''
+Write-Host 'Distribution structure:' -ForegroundColor Yellow
+Write-Host '  dist/'
+Write-Host '    irswitchd.exe'
+Write-Host '    config/'
+Write-Host '      config.example.ini'
+Write-Host '      config.ini'
+Write-Host '    README.txt'
+Write-Host ''
+Write-Host 'Usage:' -ForegroundColor Yellow
+Write-Host '  cd dist'
+Write-Host '  .\irswitchd.exe --config config\config.ini'

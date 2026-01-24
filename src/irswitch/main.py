@@ -1003,8 +1003,10 @@ async def main_loop(
                                     f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})"
                                 )
                                 try:
+                                    # Use force_refresh=True to ensure we get fresh data from YouTube API
+                                    # This is especially important if OAuth was already authenticated at startup
                                     stream_title, stream_description = (
-                                        await obs_client.get_stream_info()
+                                        await obs_client.get_stream_info(force_refresh=True)
                                     )
                                     stream_extended = None  # Extended info not available in tuple format
                                     await event_log.add_event(
@@ -1053,6 +1055,44 @@ async def main_loop(
                     else:
                         # Same as last reading, reset counter
                         stream_selection_consecutive_readings = 0
+                        last_stream_selected = is_selected
+                        last_stream_ready_selected = is_ready_selected
+                        
+                        # Check if stream is selected and OAuth is ready, but stream info is not loaded
+                        # This handles the case where OAuth becomes ready after stream is already selected
+                        # Only check once per stream selection to avoid infinite loop
+                        if is_selected and is_ready_selected and not last_stream_title:
+                            # Check if OAuth manager is set and authenticated
+                            if obs_client._oauth_manager and obs_client._oauth_manager.is_authenticated():
+                                # Check cached stream info first - if it exists, use it
+                                cached_title, cached_desc, _, _ = obs_client.get_cached_stream_info()
+                                if cached_title:
+                                    logger.info(f"Using cached stream title: {cached_title}")
+                                    last_stream_title = cached_title
+                                else:
+                                    # OAuth is ready and stream is selected - fetch stream info
+                                    logger.info("Stream selected and OAuth ready - fetching stream info from YouTube API")
+                                    try:
+                                        stream_title, stream_description = (
+                                            await obs_client.get_stream_info(force_refresh=True)
+                                        )
+                                        if stream_title:
+                                            logger.info(f"Stream title detected: {stream_title}")
+                                            last_stream_title = stream_title
+                                            await event_log.add_event(
+                                                "stream_info_loaded",
+                                                f"Stream info loaded from YouTube API",
+                                                {"stream_title": stream_title},
+                                            )
+                                        else:
+                                            logger.debug("Stream selected and OAuth ready, but stream title is None after API call")
+                                    except Exception as e:
+                                        logger.warning(f"Failed to get stream info when OAuth ready: {e}", exc_info=True)
+                            else:
+                                logger.debug(
+                                    f"Stream selected but OAuth not ready (manager: {obs_client._oauth_manager is not None}, "
+                                    f"authenticated: {obs_client._oauth_manager.is_authenticated() if obs_client._oauth_manager else False})"
+                                )
                 except Exception as e:
                     logger.debug(f"Failed to check stream selection: {e}")
 
@@ -1189,7 +1229,11 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     set_reader(reader)
 
     # Initialize OAuth manager
-    oauth_manager = create_oauth_manager()
+    # Try config file first, then fall back to environment variables
+    oauth_manager = create_oauth_manager(
+        client_id=config.oauth_client_id,
+        client_secret=config.oauth_client_secret,
+    )
     from irswitch.server.api import set_oauth_manager
 
     set_oauth_manager(oauth_manager)
@@ -1244,6 +1288,24 @@ async def run_service(config: AppConfig, config_path: str) -> None:
             await event_log.add_event(
                 "connection_restored", "OBS connection detected at startup"
             )
+            
+            # If OAuth is already authenticated, check if stream is selected and refresh stream info
+            if oauth_manager and oauth_manager.is_authenticated():
+                logger.info("OAuth authenticated - checking stream selection and refreshing stream info")
+                try:
+                    # Check if stream is selected
+                    is_selected, is_ready_selected = await obs_client.is_stream_selected()
+                    if is_selected and is_ready_selected:
+                        logger.info("Stream selected and OAuth ready - refreshing stream info from YouTube API")
+                        stream_title, stream_description = await obs_client.get_stream_info(force_refresh=True)
+                        if stream_title:
+                            logger.info(f"Stream info refreshed from YouTube API after OBS connection: {stream_title}")
+                        else:
+                            logger.warning("Stream selected and OAuth ready, but stream title is None after refresh")
+                    else:
+                        logger.debug("Stream not selected yet - will refresh when stream is selected")
+                except Exception as e:
+                    logger.warning(f"Failed to check stream selection or refresh stream info: {e}", exc_info=True)
 
             # Validate scene mappings after connection
             available_scenes = await obs_client.get_scene_list()
@@ -1338,6 +1400,11 @@ async def run_service(config: AppConfig, config_path: str) -> None:
         app = create_app()
         app[APP_CONFIG] = config  # Store config in app for dashboard access
         app[APP_CONFIG_PATH] = config_path  # Store config path for hot reload
+        
+        # Also set config in API module's container for backward compatibility
+        from irswitch.server.api import set_app_config
+        set_app_config(config)
+        
         logger.info("API application created successfully")
     except Exception as e:
         logger.error(f"Failed to create API application: {e}", exc_info=True)

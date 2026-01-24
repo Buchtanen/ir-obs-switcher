@@ -70,6 +70,10 @@ class AppConfig:
     dashboard_vr_icons_path: str | None
     dashboard_event_log_size: int
 
+    # [oauth] - Optional OAuth credentials for YouTube API
+    oauth_client_id: str | None
+    oauth_client_secret: str | None
+
     @classmethod
     def from_file(cls, path: Path | str) -> AppConfig:
         """Load configuration from INI file."""
@@ -215,6 +219,23 @@ class AppConfig:
             if dashboard_event_log_size <= 0:
                 raise ValueError("dashboards.dashboard_event_log_size must be > 0")
 
+        # [oauth] - Optional OAuth credentials for YouTube API
+        oauth_client_id = None
+        oauth_client_secret = None
+        if parser.has_section("oauth"):
+            oauth_section = parser["oauth"]
+            oauth_client_id = oauth_section.get("client_id") or None
+            oauth_client_secret = oauth_section.get("client_secret") or None
+            # Strip whitespace if present
+            if oauth_client_id:
+                oauth_client_id = oauth_client_id.strip()
+                if not oauth_client_id:
+                    oauth_client_id = None
+            if oauth_client_secret:
+                oauth_client_secret = oauth_client_secret.strip()
+                if not oauth_client_secret:
+                    oauth_client_secret = None
+
         result = cls(
             http_host=http_host,
             http_port=http_port,
@@ -249,5 +270,7 @@ class AppConfig:
             dashboard_gr_logo_app=dashboard_gr_logo_app,
             dashboard_vr_icons_path=dashboard_vr_icons_path,
             dashboard_event_log_size=dashboard_event_log_size,
+            oauth_client_id=oauth_client_id,
+            oauth_client_secret=oauth_client_secret,
         )
         return result

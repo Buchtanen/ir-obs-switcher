@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -376,9 +377,20 @@ def create_oauth_manager(
 
     if token_dir is None:
         # Default to app config directory
-        token_dir = os.environ.get(
-            "GOOGLE_OAUTH_TOKEN_DIR", str(Path(__file__).parent.parent.parent / "data")
-        )
+        # Handle PyInstaller EXE - use working directory instead of temp _MEIPASS
+        if hasattr(sys, "frozen") and sys.frozen:
+            # Running as PyInstaller EXE - use working directory
+            if hasattr(sys, "_MEIPASS"):
+                # PyInstaller onefile mode - use current working directory
+                token_dir = os.environ.get("GOOGLE_OAUTH_TOKEN_DIR", str(Path.cwd() / "data"))
+            else:
+                # PyInstaller onedir mode - use exe directory
+                token_dir = os.environ.get("GOOGLE_OAUTH_TOKEN_DIR", str(Path(sys.executable).parent / "data"))
+        else:
+            # Normal execution - use relative to source code
+            token_dir = os.environ.get(
+                "GOOGLE_OAUTH_TOKEN_DIR", str(Path(__file__).parent.parent.parent / "data")
+            )
 
     token_path = Path(token_dir) / "youtube_oauth_token.json"
 

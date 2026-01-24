@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import secrets
+import sys
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
     from irswitch.logic.state_machine import StateMachine
     from irswitch.models import SwitchState
     from irswitch.obs.client import ObsClient
+    from irswitch.oauth import OAuthManager
 
 from irswitch import __version__
 from irswitch.server.event_log import get_event_log
@@ -122,6 +124,41 @@ def get_oauth_manager() -> "OAuthManager | None":
     return _oauth_manager
 
 
+def _create_oauth_manager_from_config(request: web.Request | None = None) -> "OAuthManager | None":
+    """
+    Create OAuth manager from config.ini or environment variables.
+    
+    Priority: config.ini > environment variables
+    
+    Args:
+        request: Optional web request to get config from app context
+    """
+    config = None
+    
+    # Try to get config from request.app first (preferred)
+    if request is not None:
+        config = request.app.get(APP_CONFIG)
+    
+    # Fall back to container if no request provided
+    if config is None:
+        config = get_app_config()
+    
+    # Try to get credentials from config first
+    client_id = None
+    client_secret = None
+    
+    if config and config.oauth_client_id and config.oauth_client_secret:
+        client_id = config.oauth_client_id
+        client_secret = config.oauth_client_secret
+        logger.debug("Using OAuth credentials from config.ini")
+    
+    # Fall back to environment variables if not in config
+    return create_oauth_manager(
+        client_id=client_id,
+        client_secret=client_secret,
+    )
+
+
 async def _broadcast_state_update(state: "SwitchState") -> None:
     """Broadcast state update to all WebSocket clients with streaming info."""
     global _websocket_clients
@@ -199,7 +236,17 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         status["session_num_display"] = None
 
     # Add OAuth status
+    # Use global OAuth manager (set in main.py) or try to create from config
     oauth_manager = get_oauth_manager()
+    if oauth_manager is None:
+        # Fallback: try to create from config if global manager not set
+        config = get_app_config()
+        if config:
+            oauth_manager = create_oauth_manager(
+                client_id=config.oauth_client_id,
+                client_secret=config.oauth_client_secret,
+            )
+    
     if oauth_manager is not None:
         status["oauth_configured"] = True
         status["oauth_authenticated"] = oauth_manager.is_authenticated()
@@ -243,7 +290,7 @@ async def _get_status_dict(state: "SwitchState") -> dict:
 
             # Get full cached stream info for extended fields
             stream_info_full = _obs_client.get_cached_stream_info_full()
-            if stream_info_full:
+            if stream_info_full and isinstance(stream_info_full, dict):
                 status["stream_scheduled_start_time"] = stream_info_full.get(
                     "scheduled_start_time"
                 )
@@ -655,13 +702,13 @@ async def handle_oauth_initiate(request: web.Request) -> web.Response:
 
     Returns authorization URL for user to click and authorize the app.
     """
-    oauth_manager = create_oauth_manager()
+    oauth_manager = _create_oauth_manager_from_config(request)
 
     if oauth_manager is None:
         return web.json_response(
             {
                 "error": "OAuth not configured",
-                "message": "Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
+                "message": "Set OAuth credentials in config.ini [oauth] section or GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
             },
             status=503,
         )
@@ -690,13 +737,13 @@ async def handle_oauth_callback(request: web.Request) -> web.Response:
 
     Exchanges code for tokens and saves them.
     """
-    oauth_manager = create_oauth_manager()
+    oauth_manager = _create_oauth_manager_from_config(request)
 
     if oauth_manager is None:
         return web.json_response(
             {
                 "error": "OAuth not configured",
-                "message": "Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
+                "message": "Set OAuth credentials in config.ini [oauth] section or GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
             },
             status=503,
         )
@@ -749,6 +796,26 @@ async def handle_oauth_callback(request: web.Request) -> web.Response:
             token = await oauth_manager.exchange_code_for_tokens(code, session)
 
             logger.info("OAuth authentication successful")
+            
+            # Update OAuth manager in OBS client to enable YouTube API access
+            if _obs_client is not None:
+                _obs_client.set_oauth_manager(oauth_manager)
+                logger.info("OAuth manager updated in OBS client")
+                
+                # Force refresh stream info to get YouTube stream data
+                # Use asyncio.create_task to avoid blocking the callback handler
+                try:
+                    async def refresh_stream_info():
+                        try:
+                            await _obs_client.get_stream_info(force_refresh=True)
+                            logger.info("Stream info refreshed after OAuth authorization")
+                        except Exception as e:
+                            logger.warning(f"Failed to refresh stream info after OAuth: {e}", exc_info=True)
+                    
+                    # Schedule refresh as background task (non-blocking)
+                    asyncio.create_task(refresh_stream_info())
+                except Exception as e:
+                    logger.warning(f"Failed to schedule stream info refresh: {e}", exc_info=True)
 
             return web.json_response(
                 {
@@ -782,13 +849,13 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
     """
     Handle GET /oauth/status endpoint - check OAuth authentication status.
     """
-    oauth_manager = create_oauth_manager()
+    oauth_manager = _create_oauth_manager_from_config(request)
 
     if oauth_manager is None:
         return web.json_response(
             {
                 "configured": False,
-                "message": "OAuth not configured - set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET",
+                "message": "OAuth not configured - set OAuth credentials in config.ini [oauth] section or GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
             }
         )
 
@@ -806,6 +873,26 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
                 "expires_in_seconds": token.expires_in_seconds(),
                 "is_expired": token.is_expired(),
             }
+            
+            # If OAuth is authenticated but OBS client doesn't have the manager, update it
+            if _obs_client is not None and _obs_client._oauth_manager is None:
+                _obs_client.set_oauth_manager(oauth_manager)
+                logger.info("OAuth manager updated in OBS client from status check")
+                
+                # Try to refresh stream info if OAuth was just authenticated
+                # Use asyncio.create_task to avoid blocking the status handler
+                try:
+                    async def refresh_stream_info():
+                        try:
+                            await _obs_client.get_stream_info(force_refresh=True)
+                            logger.info("Stream info refreshed after OAuth status check")
+                        except Exception as e:
+                            logger.debug(f"Failed to refresh stream info: {e}", exc_info=True)
+                    
+                    # Schedule refresh as background task (non-blocking)
+                    asyncio.create_task(refresh_stream_info())
+                except Exception as e:
+                    logger.debug(f"Failed to schedule stream info refresh: {e}", exc_info=True)
 
     return web.json_response(
         {
@@ -821,12 +908,13 @@ async def handle_oauth_revoke(request: web.Request) -> web.Response:
     """
     Handle POST /oauth/revoke endpoint - revoke OAuth tokens.
     """
-    oauth_manager = create_oauth_manager()
+    oauth_manager = _create_oauth_manager_from_config(request)
 
     if oauth_manager is None:
         return web.json_response(
             {
                 "error": "OAuth not configured",
+                "message": "Set OAuth credentials in config.ini [oauth] section or GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET environment variables",
             },
             status=503,
         )
@@ -897,17 +985,35 @@ def create_app() -> web.Application:
     app.router.add_post("/oauth/revoke", handle_oauth_revoke)
 
     # Static asset routes for favicon and app icons
-    # __file__ is in src/irswitch/server/api.py, so go up 4 levels to reach project root
-    assets_path = Path(__file__).resolve().parents[3] / "assets"
-    app.router.add_static("/assets/", assets_path)
+    # Handle both normal execution and PyInstaller bundled EXE
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        # Running as PyInstaller EXE - assets are in the extracted temp directory
+        assets_path = Path(sys._MEIPASS) / "assets"
+    else:
+        # Normal execution - __file__ is in src/irswitch/server/api.py, so go up 4 levels to reach project root
+        assets_path = Path(__file__).resolve().parents[3] / "assets"
+    
+    # Only add static route if assets directory exists
+    if assets_path.exists():
+        app.router.add_static("/assets/", assets_path)
+    else:
+        logger.warning(f"Assets directory not found at {assets_path}, static assets will not be available")
 
-    async def handle_favicon(request: web.Request) -> web.FileResponse:
+    async def handle_favicon(request: web.Request) -> web.Response:
         """Handle GET /favicon.ico endpoint."""
-        return web.FileResponse(assets_path / "favicon" / "favicon.ico")
+        favicon_path = assets_path / "favicon" / "favicon.ico"
+        if favicon_path.exists():
+            return web.FileResponse(favicon_path)
+        else:
+            return web.Response(status=404)
 
-    async def handle_apple_touch_icon(request: web.Request) -> web.FileResponse:
+    async def handle_apple_touch_icon(request: web.Request) -> web.Response:
         """Handle GET /apple-touch-icon.png endpoint."""
-        return web.FileResponse(assets_path / "favicon" / "apple-touch-icon.png")
+        icon_path = assets_path / "favicon" / "apple-touch-icon.png"
+        if icon_path.exists():
+            return web.FileResponse(icon_path)
+        else:
+            return web.Response(status=404)
 
     app.router.add_get("/favicon.ico", handle_favicon)
     app.router.add_get("/apple-touch-icon.png", handle_apple_touch_icon)

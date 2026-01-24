@@ -1216,7 +1216,11 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             );
             
             // Build header with OAuth status and icon
-            headerEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 6px;"><span>📺</span> Stream</span> <span style="font-size: 0.7em; font-weight: normal; color: ${{oauthColor}}; margin-left: 12px; display: inline-flex; align-items: center; gap: 4px;"><span>${{oauthIcon}}</span> YouTube OAuth: ${{oauthStatus}}</span>`;
+            let oauthButton = '';
+            if (data.oauth_configured && !data.oauth_authenticated) {{
+                oauthButton = '<button onclick="initiateOAuth()" style="margin-left: 8px; padding: 4px 12px; font-size: 0.8em; background: rgba(255, 152, 0, 0.2); border: 1px solid rgba(255, 152, 0, 0.4); border-radius: 4px; cursor: pointer;">Authorize</button>';
+            }}
+            headerEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 6px;"><span>📺</span> Stream</span> <span style="font-size: 0.7em; font-weight: normal; color: ${{oauthColor}}; margin-left: 12px; display: inline-flex; align-items: center; gap: 4px;"><span>${{oauthIcon}}</span> YouTube OAuth: ${{oauthStatus}}</span>${{oauthButton}}`;
             
             // Build content based on stream readiness
             if (!data.connected_obs) {{
@@ -1430,8 +1434,36 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         }}
         
         function updateConnectionStatus(type, connected) {{
-            // Combined connection status - no-op since we trigger full update anyway
-            // The text value is rebuilt in updateStatus()
+            // Update connection status indicators
+            const indicators = document.querySelectorAll('.status-indicator');
+            indicators.forEach(indicator => {{
+                const title = indicator.getAttribute('title');
+                if ((type === 'iracing' && title === 'iRacing') || (type === 'obs' && title === 'OBS')) {{
+                    if (connected) {{
+                        indicator.classList.remove('disconnected');
+                    }} else {{
+                        indicator.classList.add('disconnected');
+                    }}
+                }}
+            }});
+            
+            // Also update VR dashboard diodes if present
+            const iracingDiode = document.getElementById('iracing-diode');
+            const obsDiode = document.getElementById('obs-diode');
+            if (type === 'iracing' && iracingDiode) {{
+                if (connected) {{
+                    iracingDiode.classList.remove('disconnected');
+                }} else {{
+                    iracingDiode.classList.add('disconnected');
+                }}
+            }}
+            if (type === 'obs' && obsDiode) {{
+                if (connected) {{
+                    obsDiode.classList.remove('disconnected');
+                }} else {{
+                    obsDiode.classList.add('disconnected');
+                }}
+            }}
         }}
         
         function updateValue(label, value) {{
@@ -1599,6 +1631,55 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }} catch (error) {{
                 console.error('Failed to reload config:', error);
                 showToast('Config Reload Failed', error.message || 'Network error', 'error');
+            }}
+        }}
+        
+        async function initiateOAuth() {{
+            try {{
+                const response = await fetch(`${{API_BASE}}/oauth/initiate`);
+                const data = await response.json();
+                
+                if (response.ok && data.authorization_url) {{
+                    // Open authorization URL in new window
+                    window.open(data.authorization_url, '_blank');
+                    showToast('OAuth Authorization', 'Authorization page opened in new window. Complete the authorization and the page will redirect automatically.', 'info');
+                    
+                    // Poll for OAuth status update after authorization
+                    let pollCount = 0;
+                    const maxPolls = 60; // 60 polls = 30 seconds (poll every 500ms)
+                    const pollInterval = setInterval(async () => {{
+                        pollCount++;
+                        
+                        try {{
+                            // Force status update to check OAuth status
+                            await updateStatus();
+                            
+                            // Check if OAuth is now authenticated
+                            const statusResponse = await fetch(`${{API_BASE}}/oauth/status`);
+                            const statusData = await statusResponse.json();
+                            
+                            if (statusData.authenticated) {{
+                                clearInterval(pollInterval);
+                                showToast('OAuth Authorized', 'YouTube API authorization completed successfully!', 'success');
+                                // Force full status refresh
+                                await updateStatus();
+                            }} else if (pollCount >= maxPolls) {{
+                                clearInterval(pollInterval);
+                                showToast('OAuth Timeout', 'Authorization check timed out. Please refresh the page if authorization completed.', 'warning');
+                            }}
+                        }} catch (error) {{
+                            console.error('OAuth poll error:', error);
+                            if (pollCount >= maxPolls) {{
+                                clearInterval(pollInterval);
+                            }}
+                        }}
+                    }}, 500); // Poll every 500ms
+                }} else {{
+                    showToast('OAuth Initiation Failed', data.error || data.message || 'Unknown error', 'error');
+                }}
+            }} catch (error) {{
+                console.error('Failed to initiate OAuth:', error);
+                showToast('OAuth Initiation Failed', error.message || 'Network error', 'error');
             }}
         }}
         
