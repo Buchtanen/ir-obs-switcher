@@ -122,6 +122,7 @@ def set_current_state(state: "SwitchState") -> None:
 async def _get_status_dict(state: "SwitchState") -> dict:
     """Convert SwitchState to dictionary with streaming info."""
     status = {
+        "version": __version__,
         "connected_iracing": state.connected_iracing,
         "connected_obs": state.connected_obs,
         "autoswitch": state.autoswitch,
@@ -307,8 +308,6 @@ async def handle_restart_mode_reset(request: web.Request) -> web.Response:
 
 async def handle_health(request: web.Request) -> web.Response:
     """Handle GET /health endpoint."""
-    import time
-    
     checks = {}
     overall_status = "healthy"
     
@@ -342,8 +341,9 @@ async def handle_health(request: web.Request) -> web.Response:
     
     return web.json_response({
         "status": overall_status,
+        "version": __version__,
         "checks": checks,
-        "timestamp": int(time.time()),
+        "timestamp": int(time.time() * 1000),
     })
 
 

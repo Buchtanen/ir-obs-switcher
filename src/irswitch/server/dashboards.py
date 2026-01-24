@@ -12,6 +12,7 @@ from aiohttp import web
 from irswitch.config import AppConfig
 from irswitch.i18n import get_translator, t
 from irswitch.server.event_log import get_event_log
+from irswitch import __version__
 
 # Import these lazily to avoid circular import
 def _get_current_state():
@@ -808,7 +809,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
 <body>
     <div class="container">
         <div class="header">
-            <h1>iRacing OBS Switcher</h1>
+            <h1>iRacing OBS Switcher <span style="font-size: 0.5em; color: #888; font-weight: normal;">v{__version__}</span></h1>
             <div class="logo-container">
                 {'<img src="' + logo_app + '" alt="App" class="logo">' if logo_app else ''}
             </div>

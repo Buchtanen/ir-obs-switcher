@@ -39,6 +39,7 @@ Získání aktuálního stavu služby.
 **Response** (200 OK):
 ```json
 {
+  "version": "0.3.0",
   "connected_iracing": true,
   "connected_obs": true,
   "autoswitch": true,
@@ -70,6 +71,7 @@ Získání aktuálního stavu služby.
 ```
 
 **Pole v response**:
+- `version` (string) - verze aplikace ve formátu `major.minor.patch` (např. "0.3.0")
 - `connected_iracing` (boolean) - zda je iRacing připojen
 - `connected_obs` (boolean) - zda je OBS připojen
 - `autoswitch` (boolean) - zda je automatické přepínání zapnuté
@@ -218,10 +220,30 @@ Health check endpoint pro monitoring.
 **Response** (200 OK):
 ```json
 {
-  "status": "ok",
+  "status": "healthy",
+  "version": "0.3.0",
+  "checks": {
+    "iracing": {
+      "status": "connected",
+      "available": true
+    },
+    "obs": {
+      "status": "connected",
+      "available": true
+    },
+    "api": {
+      "status": "running",
+      "available": true
+    }
+  },
   "timestamp": 1704110400000
 }
 ```
+
+**Status hodnoty**:
+- `healthy` - oba připojené (iRacing i OBS)
+- `degraded` - jeden připojený
+- `unhealthy` - žádný připojený
 
 **Použití**: Pro monitoring a health checks (např. Docker, Kubernetes, load balancery).
 
