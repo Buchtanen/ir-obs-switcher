@@ -1,4 +1,5 @@
 """Extraction helpers for iRacing telemetry data."""
+
 from __future__ import annotations
 
 import logging
@@ -22,7 +23,7 @@ def as_bool(value: object) -> bool:
 def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     """
     Extract driving mode from iRacing SDK data.
-    
+
     Priority order: GARAGE > REPLAY > RACE > LOBBY
     Note: SETTINGS detection was removed - iRacing SDK doesn't report it reliably.
     Note: IDLE is deprecated, use LOBBY instead.
@@ -33,8 +34,10 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     cam_car_idx = data.get("CamCarIdx")
     cam_camera_state = data.get("CamCameraState")
     is_on_track = as_bool(data.get("IsOnTrack")) or as_bool(data.get("IsOnTrackCar"))
-    is_in_garage = as_bool(data.get("PlayerCarInGarage")) or as_bool(data.get("IsInGarage"))
-    
+    is_in_garage = as_bool(data.get("PlayerCarInGarage")) or as_bool(
+        data.get("IsInGarage")
+    )
+
     # Determine if player is in car based on CamCameraState
     is_in_car = False
     if cam_camera_state is not None:
@@ -51,7 +54,7 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
             is_in_car = car_idx >= 0
         except (ValueError, TypeError):
             pass
-    
+
     # Check camera mismatch (watching replay of other car)
     cam_mismatch = False
     if cam_car_idx is not None and player_car_idx is not None:
@@ -74,20 +77,20 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
         mode = DrivingMode.REPLAY
     elif is_on_track and is_in_car:
         mode = DrivingMode.RACE
-    
+
     return mode
 
 
 def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
     """
     Extract session type from iRacing SDK data.
-    
+
     Returns:
         Session type string: "Practice", "Qualify", "Race", "Warmup", "Test", or None
     """
     session_type = data.get("SessionType")
     session_name = data.get("SessionName")
-    
+
     # Try SessionType first (numeric: 0=test, 1=practice, 2=qualify, 3=warmup, 4=race)
     if session_type is not None:
         try:
@@ -104,7 +107,7 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
                 return result
         except (ValueError, TypeError):
             pass
-    
+
     # Fallback: try to parse SessionName
     if session_name is not None:
         name = str(session_name).lower()
@@ -120,22 +123,22 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
             result = "Test"
         else:
             result = None
-        
+
         if result:
             return result
-    
+
     # Try WeekendInfo.EventType as fallback
     weekend_info = data.get("WeekendInfo")
     if weekend_info is not None:
         if isinstance(weekend_info, dict):
             event_type = weekend_info.get("EventType")
-        elif hasattr(weekend_info, '__dict__'):
+        elif hasattr(weekend_info, "__dict__"):
             event_type = weekend_info.__dict__.get("EventType")
-        elif hasattr(weekend_info, 'EventType'):
+        elif hasattr(weekend_info, "EventType"):
             event_type = weekend_info.EventType
         else:
             event_type = None
-        
+
         if event_type is not None:
             event_type_str = str(event_type)
             # Map common event types
@@ -151,17 +154,17 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
                 result = "Test"
             else:
                 result = event_type_str  # Return as-is if not recognized
-            
+
             if result:
                 return result
-    
+
     return None
 
 
 def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
     """
     Extract session number from iRacing SDK data.
-    
+
     Returns:
         Session number (0-based) or None
     """
@@ -180,13 +183,13 @@ def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
 def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
     """
     Extract total number of sessions from iRacing SDK data.
-    
+
     Tries to get from WeekendInfo if available, otherwise returns None.
-    
+
     Returns:
         Total number of sessions or None if not available
     """
-    
+
     # Try SessionTotalSessions first (direct field from iRacing)
     if "SessionTotalSessions" in data:
         try:
@@ -194,7 +197,7 @@ def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
             return result
         except (ValueError, TypeError):
             pass
-    
+
     # Try WeekendInfo first (if it's a dict/object with sessions)
     weekend_info = data.get("WeekendInfo")
     if weekend_info is not None:
@@ -214,7 +217,7 @@ def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
                 if isinstance(sessions, (list, tuple)):
                     result = len(sessions)
                     return result
-    
+
     # Try direct fields in data
     for field in ["NumSessions", "SessionCount", "TotalSessions", "n_sessions"]:
         if field in data:

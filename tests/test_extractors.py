@@ -1,4 +1,5 @@
 """Tests for iRacing data extractors."""
+
 from irswitch.iracing.extractors import extract_mode
 from irswitch.models import DrivingMode
 
@@ -69,19 +70,19 @@ def test_extract_session_type_from_numeric() -> None:
     # Practice (1)
     data = {"SessionType": 1}
     assert extract_session_type(data) == "Practice"
-    
+
     # Qualify (2)
     data = {"SessionType": 2}
     assert extract_session_type(data) == "Qualify"
-    
+
     # Race (4)
     data = {"SessionType": 4}
     assert extract_session_type(data) == "Race"
-    
+
     # Warmup (3)
     data = {"SessionType": 3}
     assert extract_session_type(data) == "Warmup"
-    
+
     # Test (0) - returns "Test" but should be filtered out in main.py
     data = {"SessionType": 0}
     assert extract_session_type(data) == "Test"
@@ -91,13 +92,13 @@ def test_extract_session_type_from_session_name() -> None:
     """Test extracting session type from SessionName string."""
     data = {"SessionName": "Practice Session"}
     assert extract_session_type(data) == "Practice"
-    
+
     data = {"SessionName": "Qualifying Session"}
     assert extract_session_type(data) == "Qualify"
-    
+
     data = {"SessionName": "Race Session"}
     assert extract_session_type(data) == "Race"
-    
+
     data = {"SessionName": "Warmup Session"}
     assert extract_session_type(data) == "Warmup"
 
@@ -106,10 +107,10 @@ def test_extract_session_type_from_weekend_info() -> None:
     """Test extracting session type from WeekendInfo.EventType."""
     data = {"WeekendInfo": {"EventType": "Practice"}}
     assert extract_session_type(data) == "Practice"
-    
+
     data = {"WeekendInfo": {"EventType": "Qualify"}}
     assert extract_session_type(data) == "Qualify"
-    
+
     data = {"WeekendInfo": {"EventType": "Race"}}
     assert extract_session_type(data) == "Race"
 
@@ -145,7 +146,7 @@ def test_extract_session_num_valid() -> None:
     """Test extracting valid session number."""
     data = {"SessionNum": 0}
     assert extract_session_num(data) == 0
-    
+
     data = {"SessionNum": 2}
     assert extract_session_num(data) == 2
 
@@ -165,7 +166,7 @@ def test_extract_total_sessions_valid() -> None:
     """Test extracting valid total sessions."""
     data = {"SessionCount": 3}
     assert extract_total_sessions(data) == 3
-    
+
     data = {"SessionCount": 1}
     assert extract_total_sessions(data) == 1
 
@@ -195,8 +196,5 @@ def test_extract_total_sessions_from_session_total_sessions() -> None:
 
 def test_extract_total_sessions_priority() -> None:
     """Test that SessionTotalSessions has priority over WeekendInfo."""
-    data = {
-        "SessionTotalSessions": 3,
-        "WeekendInfo": {"Sessions": 5}
-    }
+    data = {"SessionTotalSessions": 3, "WeekendInfo": {"Sessions": 5}}
     assert extract_total_sessions(data) == 3

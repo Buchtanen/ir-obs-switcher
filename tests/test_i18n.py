@@ -1,4 +1,5 @@
 """Tests for internationalization (i18n) support."""
+
 from __future__ import annotations
 
 import pytest
@@ -33,7 +34,7 @@ class TestTranslator:
         translator1 = Translator("en")
         translator2 = Translator("EN")
         translator3 = Translator("En")
-        
+
         assert translator1.language == "EN"
         assert translator2.language == "EN"
         assert translator3.language == "EN"
@@ -76,12 +77,14 @@ class TestTranslator:
         # Get keys from default language
         default_translator = Translator(DEFAULT_LANGUAGE)
         required_keys = set(default_translator.translations.keys())
-        
+
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             lang_keys = set(translator.translations.keys())
             # All languages should have the same keys
-            assert lang_keys == required_keys, f"Language {lang} is missing keys: {required_keys - lang_keys}"
+            assert (
+                lang_keys == required_keys
+            ), f"Language {lang} is missing keys: {required_keys - lang_keys}"
 
     def test_all_languages_have_common_keys(self) -> None:
         """Test that all languages have common essential keys."""
@@ -93,11 +96,13 @@ class TestTranslator:
             "stream_title",
             "stream_description",
         ]
-        
+
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             for key in essential_keys:
-                assert key in translator.translations, f"Language {lang} missing key: {key}"
+                assert (
+                    key in translator.translations
+                ), f"Language {lang} missing key: {key}"
 
 
 class TestGlobalFunctions:
@@ -153,7 +158,7 @@ class TestGlobalFunctions:
         set_language("EN")
         result_en = t("connected")
         assert result_en == "Connected"
-        
+
         set_language("DE")
         result_de = t("connected")
         assert result_de == "Verbunden"
@@ -168,7 +173,7 @@ class TestLanguageSupport:
         """Test that each supported language works."""
         translator = Translator(lang_code)
         assert translator.language == lang_code
-        
+
         # Test a common key exists
         result = translator.translate("connected")
         assert result is not None
@@ -188,11 +193,13 @@ class TestLanguageSupport:
             "youtube_quota_message",
             "youtube_key_message",
         ]
-        
+
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             for key in youtube_keys:
-                assert key in translator.translations, f"Language {lang} missing YouTube key: {key}"
+                assert (
+                    key in translator.translations
+                ), f"Language {lang} missing YouTube key: {key}"
 
     def test_all_languages_have_event_types(self) -> None:
         """Test that all languages have event type translations."""
@@ -204,11 +211,13 @@ class TestLanguageSupport:
             "stream_started",
             "stream_stopped",
         ]
-        
+
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             for key in event_keys:
-                assert key in translator.translations, f"Language {lang} missing event key: {key}"
+                assert (
+                    key in translator.translations
+                ), f"Language {lang} missing event key: {key}"
 
 
 class TestParameterFormatting:
@@ -227,7 +236,9 @@ class TestParameterFormatting:
             translator = Translator(lang)
             result = translator.translate("youtube_quota_message", time="08:00")
             assert "08:00" in result, f"Language {lang} did not format time parameter"
-            assert "{time}" not in result, f"Language {lang} did not replace {{time}} placeholder"
+            assert (
+                "{time}" not in result
+            ), f"Language {lang} did not replace {{time}} placeholder"
 
     def test_formatting_with_multiple_parameters(self) -> None:
         """Test formatting with multiple parameters (if any exist)."""

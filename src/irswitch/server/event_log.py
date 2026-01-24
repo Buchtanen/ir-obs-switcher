@@ -1,4 +1,5 @@
 """Event log system for dashboard events."""
+
 from __future__ import annotations
 
 import asyncio
@@ -43,7 +44,7 @@ class EventLog:
     ) -> None:
         """
         Add an event to the log (thread-safe).
-        
+
         Automatically rotates (FIFO) - when log is full, oldest events are removed.
 
         Args:
@@ -67,8 +68,10 @@ class EventLog:
 
             # Log event to logger
             logger.info(f"Event: {event_type} - {message}")
-            
-            logger.debug(f"Event logged: {event_type} - {message} (total: {len(self._events)})")
+
+            logger.debug(
+                f"Event logged: {event_type} - {message} (total: {len(self._events)})"
+            )
 
     async def get_recent_events(self, count: int) -> list[Event]:
         """

@@ -1,4 +1,5 @@
 """Shared models for state and events."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,8 +33,14 @@ class SwitchState:
     current_scene: str
     last_switch_ts: Optional[float]  # Monotonic time in milliseconds
     reason: str
-    session_type: Optional[str] = None  # Session type: "Practice", "Qualify", "Race", etc.
+    session_type: Optional[str] = (
+        None  # Session type: "Practice", "Qualify", "Race", etc.
+    )
     session_name: Optional[str] = None  # Session name from iRacing
     session_num: Optional[int] = None  # Session number (0-based)
-    total_sessions: Optional[int] = None  # Total number of sessions (for "x of y" display)
-    stream_extended_info: Optional[dict] = None  # Extended stream info from YouTube API (viewers, status, etc.)
+    total_sessions: Optional[int] = (
+        None  # Total number of sessions (for "x of y" display)
+    )
+    stream_extended_info: Optional[dict] = (
+        None  # Extended stream info from YouTube API (viewers, status, etc.)
+    )

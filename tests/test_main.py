@@ -1,4 +1,5 @@
 """Tests for main service."""
+
 from __future__ import annotations
 
 import asyncio
@@ -15,8 +16,7 @@ from irswitch.main import main, run_service
 def config_path(tmp_path: Path) -> Path:
     """Create temporary config file."""
     config_file = tmp_path / "config.ini"
-    config_file.write_text(
-        """[app]
+    config_file.write_text("""[app]
 http_host = 127.0.0.1
 http_port = 17321
 log_level = INFO
@@ -40,8 +40,7 @@ IDLE = Idle
 GARAGE = Pits
 RACE = Race
 REPLAY = Replay
-"""
-    )
+""")
     return config_file
 
 
@@ -50,11 +49,12 @@ async def test_run_service_initialization(config_path: Path) -> None:
     """Test service initialization."""
     config = AppConfig.from_file(config_path)
 
-    with patch("irswitch.main.IRacingReader") as mock_reader_class, patch(
-        "irswitch.main.ObsClient"
-    ) as mock_obs_class, patch("irswitch.main.web.AppRunner") as mock_runner_class, patch(
-        "irswitch.main.web.TCPSite"
-    ) as mock_site_class:
+    with (
+        patch("irswitch.main.IRacingReader") as mock_reader_class,
+        patch("irswitch.main.ObsClient") as mock_obs_class,
+        patch("irswitch.main.web.AppRunner") as mock_runner_class,
+        patch("irswitch.main.web.TCPSite") as mock_site_class,
+    ):
         # Setup mocks
         mock_reader = MagicMock()
         mock_reader.is_connected.return_value = True
@@ -76,7 +76,7 @@ async def test_run_service_initialization(config_path: Path) -> None:
         mock_runner.setup = AsyncMock()
         mock_runner.cleanup = AsyncMock()
         mock_runner_class.return_value = mock_runner
-        
+
         # Mock TCPSite
         mock_site = MagicMock()
         mock_site.start = AsyncMock()
@@ -110,9 +110,10 @@ def test_main_invalid_config() -> None:
 
 def test_main_valid_config(config_path: Path) -> None:
     """Test main with valid config (will exit quickly)."""
-    with patch("sys.argv", ["irswitchd", "--config", str(config_path)]), patch(
-        "irswitch.main.run_service"
-    ) as mock_run:
+    with (
+        patch("sys.argv", ["irswitchd", "--config", str(config_path)]),
+        patch("irswitch.main.run_service") as mock_run,
+    ):
         mock_run.side_effect = KeyboardInterrupt()
         result = main()
         assert result == 0

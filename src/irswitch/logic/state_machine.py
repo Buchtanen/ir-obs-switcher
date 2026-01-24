@@ -1,4 +1,5 @@
 """State machine for switching decisions."""
+
 from __future__ import annotations
 
 import json
@@ -73,7 +74,12 @@ class StateMachine:
         iracing_quit = iracing_mode == DrivingMode.QUIT
         iracing_restart = iracing_mode == DrivingMode.RESTART
         # iRacing is connected if mode is not None, not QUIT, not RESTART, and not loading
-        connected_iracing = iracing_mode is not None and not iracing_quit and not iracing_restart and not is_loading
+        connected_iracing = (
+            iracing_mode is not None
+            and not iracing_quit
+            and not iracing_restart
+            and not is_loading
+        )
         connected_obs = obs_current_scene is not None
         current_scene = obs_current_scene or current_state.current_scene
 
@@ -90,10 +96,10 @@ class StateMachine:
 
         # Determine mode and target scene based on new state flow
         # Priority: CONNECTING > LOADING > RESTART > QUIT > LOBBY/GARAGE/RACE/REPLAY
-        
+
         # Check if both OBS and iRacing are connected
         both_connected = connected_obs and connected_iracing
-        
+
         if override_scene is not None:
             # Override active - always allow override
             target_scene = override_scene
@@ -102,7 +108,9 @@ class StateMachine:
         elif iracing_restart:
             # RESTART mode - block switching, keep current scene
             mode = DrivingMode.RESTART
-            target_scene = current_state.target_scene  # Keep current scene, don't switch
+            target_scene = (
+                current_state.target_scene
+            )  # Keep current scene, don't switch
             reason = "restart_mode:no_switch"
             # Reset debounce when entering RESTART
             self._pending_mode = None
@@ -116,7 +124,9 @@ class StateMachine:
             # LOADING - iRacing is in loading screen (only if both are connected)
             # This takes priority over CONNECTING when iRacing is connected but loading
             mode = DrivingMode.LOADING
-            target_scene = current_state.target_scene  # Keep current scene, don't switch
+            target_scene = (
+                current_state.target_scene
+            )  # Keep current scene, don't switch
             reason = "loading:no_switch"
             # Reset debounce when entering LOADING
             self._pending_mode = None
@@ -145,15 +155,22 @@ class StateMachine:
                 mode = DrivingMode.LOBBY
             else:
                 mode = iracing_mode or DrivingMode.LOBBY
-            
+
             # Debounce logic: wait for stable state
-            was_disconnected = not current_state.connected_iracing or current_state.mode == DrivingMode.CONNECTING
+            was_disconnected = (
+                not current_state.connected_iracing
+                or current_state.mode == DrivingMode.CONNECTING
+            )
             was_loading = current_state.mode == DrivingMode.LOADING
-            
+
             # Grace period only applies to LOBBY, not to GARAGE/RACE/REPLAY
             # GARAGE/RACE/REPLAY should switch immediately (after debounce)
-            is_game_mode = mode in (DrivingMode.GARAGE, DrivingMode.RACE, DrivingMode.REPLAY)
-            
+            is_game_mode = mode in (
+                DrivingMode.GARAGE,
+                DrivingMode.RACE,
+                DrivingMode.REPLAY,
+            )
+
             if mode != self._pending_mode:
                 # Mode changed, reset debounce timer
                 self._pending_mode = mode
@@ -167,7 +184,7 @@ class StateMachine:
                     # GARAGE/RACE/REPLAY - clear grace period, switch immediately after debounce
                     self._waiting_for_idle = False
                     self._seen_non_idle = False
-                
+
                 if self._waiting_for_idle:
                     # Grace period active - wait for LOBBY after seeing non-LOBBY
                     # OR if LOBBY is stable for 3 seconds (timeout), end grace period
@@ -194,15 +211,21 @@ class StateMachine:
                                 reason = f"grace_period_timeout:LOBBY"
                             else:
                                 # Still waiting for timeout or non-LOBBY
-                                target_scene = current_state.target_scene  # Keep current scene, don't switch
+                                target_scene = (
+                                    current_state.target_scene
+                                )  # Keep current scene, don't switch
                                 reason = f"grace_period_first_lobby"
                         else:
                             # No pending_since yet - keep waiting
-                            target_scene = current_state.target_scene  # Keep current scene, don't switch
+                            target_scene = (
+                                current_state.target_scene
+                            )  # Keep current scene, don't switch
                             reason = f"grace_period_first_lobby"
                 else:
                     # No grace period or game mode - debounce normally
-                    target_scene = current_state.target_scene  # Keep current until debounce expires
+                    target_scene = (
+                        current_state.target_scene
+                    )  # Keep current until debounce expires
                     reason = f"debouncing:{mode.value}"
             elif self._pending_since is not None:
                 # Mode is stable, check if debounce expired
@@ -230,7 +253,9 @@ class StateMachine:
                             reason = f"grace_period_timeout:LOBBY"
                         else:
                             # Still waiting for timeout or non-LOBBY
-                            target_scene = current_state.target_scene  # Keep current scene, don't switch
+                            target_scene = (
+                                current_state.target_scene
+                            )  # Keep current scene, don't switch
                             reason = f"grace_period_first_lobby"
                 elif elapsed < self._debounce_ms:
                     # Still debouncing
@@ -253,8 +278,12 @@ class StateMachine:
         switch_reason = reason
 
         # Modes that block scene switching
-        no_switch_modes = {DrivingMode.CONNECTING, DrivingMode.LOADING, DrivingMode.RESTART}
-        
+        no_switch_modes = {
+            DrivingMode.CONNECTING,
+            DrivingMode.LOADING,
+            DrivingMode.RESTART,
+        }
+
         if target_scene != current_scene:
             # Target differs from current
             if mode in no_switch_modes:
@@ -296,7 +325,9 @@ class StateMachine:
             override_until=override_until,
             mode=mode,
             target_scene=target_scene,
-            current_scene=current_scene if should_switch else current_state.current_scene,
+            current_scene=(
+                current_scene if should_switch else current_state.current_scene
+            ),
             last_switch_ts=last_switch_ts,
             reason=switch_reason,
             session_type=current_state.session_type,
@@ -305,7 +336,9 @@ class StateMachine:
             stream_extended_info=current_state.stream_extended_info,
         )
 
-    def apply_override(self, current_state: SwitchState, scene: str, seconds: int) -> SwitchState:
+    def apply_override(
+        self, current_state: SwitchState, scene: str, seconds: int
+    ) -> SwitchState:
         """
         Apply scene override with time limit.
 

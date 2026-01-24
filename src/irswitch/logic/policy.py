@@ -1,4 +1,5 @@
 """Scene mapping policy."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -10,7 +11,7 @@ class Policy:
     def __init__(self, scenes: Mapping[DrivingMode, str], safe_scene: str) -> None:
         self._scenes = dict(scenes)
         self._safe_scene = safe_scene
-    
+
     @property
     def safe_scene(self) -> str:
         """Get safe scene name."""

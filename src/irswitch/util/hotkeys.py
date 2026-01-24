@@ -1,4 +1,5 @@
 """Global hotkey listener for RESTART mode detection."""
+
 from __future__ import annotations
 
 import logging
@@ -26,7 +27,7 @@ def _normalize_key(key: str) -> str:
 def _parse_hotkey(hotkey_str: str) -> Set[str]:
     """
     Parse hotkey string like "ctrl+shift+r" into set of key names.
-    
+
     Supports: ctrl, shift, alt, and any letter/number key.
     """
     parts = hotkey_str.lower().split("+")
@@ -59,7 +60,7 @@ def _on_press(key) -> None:
             key_name = _normalize_key(key.name)
         else:
             return
-        
+
         with _lock:
             _pressed_keys.add(key_name)
             # Check if all target keys are pressed
@@ -83,7 +84,7 @@ def _on_release(key) -> None:
             key_name = _normalize_key(key.name)
         else:
             return
-        
+
         with _lock:
             _pressed_keys.discard(key_name)
             # Check if hotkey is no longer fully pressed
@@ -97,32 +98,32 @@ def _on_release(key) -> None:
 def start_listener(hotkey_str: str) -> bool:
     """
     Start the global hotkey listener.
-    
+
     Args:
         hotkey_str: Hotkey combination like "ctrl+shift+r"
-        
+
     Returns:
         True if listener started successfully, False otherwise
     """
     global _listener, _target_keys
-    
+
     if not hotkey_str:
         logger.debug("No hotkey configured, listener not started")
         return False
-    
+
     try:
         from pynput import keyboard
     except ImportError:
         logger.warning("pynput not installed, hotkey listener disabled")
         return False
-    
+
     _target_keys = _parse_hotkey(hotkey_str)
     if not _target_keys:
         logger.warning(f"Invalid hotkey string: {hotkey_str}")
         return False
-    
+
     logger.info(f"Starting hotkey listener for: {hotkey_str} (keys: {_target_keys})")
-    
+
     try:
         _listener = keyboard.Listener(on_press=_on_press, on_release=_on_release)
         _listener.start()
@@ -135,7 +136,7 @@ def start_listener(hotkey_str: str) -> bool:
 def stop_listener() -> None:
     """Stop the global hotkey listener."""
     global _listener, _hotkey_active
-    
+
     if _listener is not None:
         try:
             _listener.stop()
@@ -152,7 +153,7 @@ def stop_listener() -> None:
 def is_hotkey_pressed() -> bool:
     """
     Check if the configured hotkey is currently pressed.
-    
+
     Returns:
         True if all keys in the hotkey combination are currently pressed
     """
@@ -162,10 +163,10 @@ def is_hotkey_pressed() -> bool:
 def was_hotkey_pressed_recently() -> bool:
     """
     Check if the hotkey was pressed within the last HOTKEY_WINDOW_SECONDS.
-    
+
     This is useful for detecting hotkey presses that happened shortly before
     an event (like QUIT detection), even if the keys were released.
-    
+
     Returns:
         True if hotkey was pressed within the time window
     """

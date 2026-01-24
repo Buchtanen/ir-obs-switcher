@@ -1,4 +1,5 @@
 """Tests for API server."""
+
 from __future__ import annotations
 
 import json
@@ -10,7 +11,15 @@ from aiohttp.test_utils import make_mocked_request
 from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
-from irswitch.server.api import APP_CONFIG, APP_CONFIG_PATH, create_app, set_current_state, set_state_machine, set_obs_client, reset_state
+from irswitch.server.api import (
+    APP_CONFIG,
+    APP_CONFIG_PATH,
+    create_app,
+    set_current_state,
+    set_state_machine,
+    set_obs_client,
+    reset_state,
+)
 
 
 @pytest.fixture
@@ -59,16 +68,16 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
     """Create test application."""
     from unittest.mock import AsyncMock
     from irswitch.obs.client import ObsClient
-    
+
     app = create_app()
     set_state_machine(state_machine)
     set_current_state(initial_state)
-    
+
     # Mock OBS client for stream status
     mock_obs = AsyncMock(spec=ObsClient)
     mock_obs.get_stream_status = AsyncMock(return_value=(False, None))
     set_obs_client(mock_obs)
-    
+
     return app
 
 
@@ -192,12 +201,12 @@ async def test_health_healthy(app: web.Application) -> None:
             assert data["status"] == "healthy"
             assert "checks" in data
             assert "timestamp" in data
-            
+
             checks = data["checks"]
             assert "iracing" in checks
             assert "obs" in checks
             assert "api" in checks
-            
+
             assert checks["iracing"]["status"] == "connected"
             assert checks["iracing"]["available"] is True
             assert checks["obs"]["status"] == "connected"
@@ -215,7 +224,7 @@ async def test_health_degraded() -> None:
 
     reset_state()
     app = create_app()
-    
+
     # Set state with one disconnected
     state = SwitchState(
         connected_iracing=True,
@@ -251,7 +260,7 @@ async def test_health_unhealthy() -> None:
 
     reset_state()
     app = create_app()
-    
+
     # Set state with both disconnected
     state = SwitchState(
         connected_iracing=False,
@@ -287,7 +296,7 @@ async def test_metrics(app: web.Application, initial_state: SwitchState) -> None
     # Reset metrics for clean test
     reset_metrics()
     metrics = get_metrics()
-    
+
     # Record some test data
     metrics.record_scene_switch(50.0)
     metrics.record_scene_switch(75.0)
@@ -441,7 +450,7 @@ async def test_shutdown_success(app: web.Application) -> None:
             data = await resp.json()
             assert data["status"] == "shutting_down"
             assert "message" in data
-            
+
             # Verify event was set
             assert shutdown_event.is_set()
 

@@ -1,4 +1,5 @@
 """Clock abstraction using monotonic time."""
+
 from __future__ import annotations
 
 import time

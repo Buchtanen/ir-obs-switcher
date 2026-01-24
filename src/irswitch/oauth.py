@@ -1,4 +1,5 @@
 """OAuth 2.0 token management for YouTube API."""
+
 from __future__ import annotations
 
 import json
@@ -32,7 +33,9 @@ class OAuthToken:
 
     def is_expired(self, margin_seconds: int = 60) -> bool:
         """Check if token is expired or will expire soon."""
-        expiry_threshold = datetime.now(timezone.utc) + timedelta(seconds=margin_seconds)
+        expiry_threshold = datetime.now(timezone.utc) + timedelta(
+            seconds=margin_seconds
+        )
         return self.expires_at <= expiry_threshold
 
     def expires_in_seconds(self) -> int:
@@ -155,7 +158,9 @@ class OAuthManager:
         async with http_session.post(GOOGLE_TOKEN_URL, data=data) as response:
             if response.status != 200:
                 error_text = await response.text()
-                raise OAuthError(f"Token exchange failed ({response.status}): {error_text}")
+                raise OAuthError(
+                    f"Token exchange failed ({response.status}): {error_text}"
+                )
 
             token_data = await response.json()
 
@@ -205,7 +210,9 @@ class OAuthManager:
         async with http_session.post(GOOGLE_TOKEN_URL, data=data) as response:
             if response.status != 200:
                 error_text = await response.text()
-                raise OAuthError(f"Token refresh failed ({response.status}): {error_text}")
+                raise OAuthError(
+                    f"Token refresh failed ({response.status}): {error_text}"
+                )
 
             token_data = await response.json()
 
@@ -315,7 +322,9 @@ class OAuthManager:
                 token = OAuthToken.from_json(json_str)
                 if token is not None:
                     self._token = token
-                    logger.debug(f"OAuth token loaded synchronously from {self.token_path}")
+                    logger.debug(
+                        f"OAuth token loaded synchronously from {self.token_path}"
+                    )
             except Exception as e:
                 logger.debug(f"Failed to load OAuth token synchronously: {e}")
         return self._token is not None
@@ -363,9 +372,7 @@ def create_oauth_manager(
         logger.debug("OAuth not configured - missing client ID or secret")
         return None
 
-    oauth_redirect_uri = os.environ.get(
-        "GOOGLE_OAUTH_REDIRECT_URI", redirect_uri
-    )
+    oauth_redirect_uri = os.environ.get("GOOGLE_OAUTH_REDIRECT_URI", redirect_uri)
 
     if token_dir is None:
         # Default to app config directory

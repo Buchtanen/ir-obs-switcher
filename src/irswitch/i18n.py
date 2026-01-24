@@ -1,4 +1,5 @@
 """Internationalization (i18n) support for irswitch."""
+
 from __future__ import annotations
 
 from typing import Dict, Optional
@@ -19,14 +20,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "obs_profile": "OBS Profil",
         "current_scene": "Aktuální Scéna",
         "mode": "Mód",
-
         # OAuth
         "oauth": "OAuth",
         "oauth_active": "Aktivní",
         "oauth_pending": "Čeká na Autorizaci",
         "oauth_expired": "Vypršelo",
         "oauth_not_configured": "Nenastaveno",
-
         # Stream
         "stream": "Stream",
         "current_stream": "Aktuální Stream",
@@ -37,13 +36,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "streaming": "Streamování",
         "yes": "Ano",
         "no": "Ne",
-        
         # YouTube API
         "youtube_api_quota_exceeded": "YouTube API Kvóta Vyčerpána",
         "youtube_api_key_not_configured": "YouTube API Klíč Nenastaven",
         "youtube_quota_message": "Název streamu nedostupný do resetu kvóty ({time})",
         "youtube_key_message": "Nastavte proměnnou prostředí YOUTUBE_API_KEY pro získání názvu streamu",
-        
         # Event types
         "application_started": "Aplikace Spuštěna",
         "connection_lost": "Připojení Ztraceno",
@@ -65,16 +62,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "stream_deselected": "Stream Zrušen",
         "youtube_quota_exceeded": "YouTube API Kvóta Vyčerpána",
         "youtube_api_key_missing": "YouTube API Klíč Chybí",
-        
         # Metrics
         "iracing_connected": "iRacing Připojeno",
         "obs_connected": "OBS Připojeno",
         "cumulative": "Celkem",
         "current": "Aktuální",
-        
         # Common
         "n_a": "N/A",
-        
         # Additional labels
         "stream_duration": "Délka Streamu",
         "session_type": "Typ Sessionu",
@@ -492,11 +486,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
 
 class Translator:
     """Translation helper class."""
-    
+
     def __init__(self, language: str = DEFAULT_LANGUAGE):
         """
         Initialize translator.
-        
+
         Args:
             language: Language code (CS, EN, DE, FR, SP, PL, HU)
         """
@@ -505,15 +499,15 @@ class Translator:
             language = DEFAULT_LANGUAGE
         self.language = language
         self.translations = TRANSLATIONS.get(language, TRANSLATIONS[DEFAULT_LANGUAGE])
-    
+
     def translate(self, key: str, **kwargs) -> str:
         """
         Translate a key to the current language.
-        
+
         Args:
             key: Translation key
             **kwargs: Format arguments for the translation string
-            
+
         Returns:
             Translated string, or key if not found
         """
@@ -524,7 +518,7 @@ class Translator:
             except (KeyError, ValueError):
                 return translation
         return translation
-    
+
     def t(self, key: str, **kwargs) -> str:
         """Short alias for translate."""
         return self.translate(key, **kwargs)

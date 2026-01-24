@@ -1,4 +1,5 @@
 """Tests for state machine."""
+
 from __future__ import annotations
 
 import pytest
@@ -155,7 +156,9 @@ def test_tick_cooldown_prevents_rapid_switches(
         assert state4.target_scene == "Pits"
 
 
-def test_tick_override_active(state_machine: StateMachine, initial_state: SwitchState) -> None:
+def test_tick_override_active(
+    state_machine: StateMachine, initial_state: SwitchState
+) -> None:
     """Test that override takes precedence."""
     from unittest.mock import patch
 
@@ -166,7 +169,9 @@ def test_tick_override_active(state_machine: StateMachine, initial_state: Switch
 
     with patch("irswitch.logic.state_machine.now_ms", side_effect=mock_now_ms):
         # Apply override
-        override_state = state_machine.apply_override(initial_state, "OverrideScene", 120)
+        override_state = state_machine.apply_override(
+            initial_state, "OverrideScene", 120
+        )
         assert override_state.override_scene == "OverrideScene"
         assert override_state.target_scene == "OverrideScene"
 
@@ -176,7 +181,9 @@ def test_tick_override_active(state_machine: StateMachine, initial_state: Switch
         assert "override_active" in new_state.reason
 
 
-def test_tick_override_expires(state_machine: StateMachine, initial_state: SwitchState) -> None:
+def test_tick_override_expires(
+    state_machine: StateMachine, initial_state: SwitchState
+) -> None:
     """Test that override expires after time limit."""
     from unittest.mock import patch
 
@@ -213,7 +220,7 @@ def test_tick_override_expires(state_machine: StateMachine, initial_state: Switc
         assert new_state.override_until is None
         # After override expires, mode change triggers debounce
         assert "debouncing" in new_state.reason or new_state.target_scene == "Race"
-        
+
         # Wait for debounce to expire
         time_ms += 1000
         new_state = state_machine.tick(new_state, DrivingMode.RACE, "Idle")
@@ -261,7 +268,9 @@ def test_tick_iracing_disconnected(
         assert new_state.mode == DrivingMode.CONNECTING
 
 
-def test_apply_override(state_machine: StateMachine, initial_state: SwitchState) -> None:
+def test_apply_override(
+    state_machine: StateMachine, initial_state: SwitchState
+) -> None:
     """Test applying override."""
     override_state = state_machine.apply_override(initial_state, "TestScene", 60)
 
@@ -271,7 +280,9 @@ def test_apply_override(state_machine: StateMachine, initial_state: SwitchState)
     assert "override_applied" in override_state.reason
 
 
-def test_toggle_autoswitch(state_machine: StateMachine, initial_state: SwitchState) -> None:
+def test_toggle_autoswitch(
+    state_machine: StateMachine, initial_state: SwitchState
+) -> None:
     """Test toggling autoswitch."""
     # Toggle off
     off_state = state_machine.toggle_autoswitch(initial_state)
@@ -301,4 +312,6 @@ def test_tick_same_scene_no_switch(
 
         assert new_state.target_scene == "Idle"
         assert new_state.current_scene == "Idle"
-        assert new_state.last_switch_ts == initial_state.last_switch_ts  # No switch occurred
+        assert (
+            new_state.last_switch_ts == initial_state.last_switch_ts
+        )  # No switch occurred

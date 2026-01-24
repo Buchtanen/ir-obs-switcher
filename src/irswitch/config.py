@@ -1,4 +1,5 @@
 """Configuration loading for irswitch."""
+
 from __future__ import annotations
 
 import configparser
@@ -12,8 +13,6 @@ from typing import Mapping
 from irswitch.models import DrivingMode
 
 logger = logging.getLogger(__name__)
-
-
 
 
 @dataclass(frozen=True)
@@ -38,7 +37,9 @@ class AppConfig:
     # [obs]
     obs_ws_url: str
     obs_password: str
-    required_profile: str | None  # Optional: if set, switcher only works when this profile is active
+    required_profile: (
+        str | None
+    )  # Optional: if set, switcher only works when this profile is active
 
     # [switching]
     autoswitch_default: bool
@@ -53,7 +54,9 @@ class AppConfig:
     stop_stream_after_seconds: int
 
     # [hotkeys]
-    restart_hotkey: str | None  # Optional: e.g. "ctrl+shift+r" - when held during QUIT, triggers RESTART mode
+    restart_hotkey: (
+        str | None
+    )  # Optional: e.g. "ctrl+shift+r" - when held during QUIT, triggers RESTART mode
 
     # [scenes]
     scenes: Mapping[DrivingMode, str]
@@ -82,9 +85,13 @@ class AppConfig:
         http_host = app_section.get("http_host", "127.0.0.1")
         http_port = parser.getint("app", "http_port")
         log_level = app_section.get("log_level", "INFO").upper()
-        notifications_enabled = parser.getboolean("app", "notifications_enabled", fallback=True)
+        notifications_enabled = parser.getboolean(
+            "app", "notifications_enabled", fallback=True
+        )
         log_file = app_section.get("log_file") or None
-        log_max_bytes = parser.getint("app", "log_max_bytes", fallback=10 * 1024 * 1024)  # 10 MB default
+        log_max_bytes = parser.getint(
+            "app", "log_max_bytes", fallback=10 * 1024 * 1024
+        )  # 10 MB default
         if log_max_bytes <= 0:
             raise ValueError("app.log_max_bytes must be > 0")
         log_backup_count = parser.getint("app", "log_backup_count", fallback=5)
@@ -93,12 +100,15 @@ class AppConfig:
         log_colors = parser.getboolean("app", "log_colors", fallback=True)
         language = app_section.get("language", "CS").upper()
         from irswitch.i18n import SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
+
         if language not in SUPPORTED_LANGUAGES:
             language = DEFAULT_LANGUAGE
 
         # [iracing]
         poll_hz = parser.getint("iracing", "poll_hz")
-        quit_stall_seconds = parser.getfloat("iracing", "quit_stall_seconds", fallback=0.4)
+        quit_stall_seconds = parser.getfloat(
+            "iracing", "quit_stall_seconds", fallback=0.4
+        )
         if quit_stall_seconds <= 0:
             raise ValueError("iracing.quit_stall_seconds must be > 0")
 
@@ -119,19 +129,31 @@ class AppConfig:
         safe_scene = switching_section.get("safe_scene")
         if not safe_scene:
             raise ValueError("switching.safe_scene is required")
-        
+
         # Auto-start broadcast settings
-        auto_start_broadcast = parser.getboolean("switching", "auto_start_broadcast", fallback=False)
-        auto_start_at_percent = parser.getint("switching", "auto_start_at_percent", fallback=50)
+        auto_start_broadcast = parser.getboolean(
+            "switching", "auto_start_broadcast", fallback=False
+        )
+        auto_start_at_percent = parser.getint(
+            "switching", "auto_start_at_percent", fallback=50
+        )
         if auto_start_at_percent < 0 or auto_start_at_percent > 100:
-            raise ValueError("switching.auto_start_at_percent must be between 0 and 100")
-        default_loading_time_seconds = parser.getfloat("switching", "default_loading_time_seconds", fallback=12.0)
+            raise ValueError(
+                "switching.auto_start_at_percent must be between 0 and 100"
+            )
+        default_loading_time_seconds = parser.getfloat(
+            "switching", "default_loading_time_seconds", fallback=12.0
+        )
         if default_loading_time_seconds <= 0:
             raise ValueError("switching.default_loading_time_seconds must be > 0")
-        
+
         # Auto-stop stream settings
-        auto_stop_stream = parser.getboolean("switching", "auto_stop_stream", fallback=False)
-        stop_stream_after_seconds = parser.getint("switching", "stop_stream_after_seconds", fallback=30)
+        auto_stop_stream = parser.getboolean(
+            "switching", "auto_stop_stream", fallback=False
+        )
+        stop_stream_after_seconds = parser.getint(
+            "switching", "stop_stream_after_seconds", fallback=30
+        )
         if stop_stream_after_seconds <= 0:
             raise ValueError("switching.stop_stream_after_seconds must be > 0")
 
@@ -162,20 +184,34 @@ class AppConfig:
         dashboard_gr_logo_app: str | None = None
         dashboard_vr_icons_path: str | None = None
         dashboard_event_log_size = 50
-        
+
         if parser.has_section("dashboards"):
             dashboards_section = parser["dashboards"]
-            dashboard_update_fps = parser.getint("dashboards", "dashboard_update_fps", fallback=2)
+            dashboard_update_fps = parser.getint(
+                "dashboards", "dashboard_update_fps", fallback=2
+            )
             if dashboard_update_fps <= 0:
                 raise ValueError("dashboards.dashboard_update_fps must be > 0")
-            
-            dashboard_gr_background_image = dashboards_section.get("dashboard_gr_background_image") or None
-            dashboard_gr_logo_obs = dashboards_section.get("dashboard_gr_logo_obs") or None
-            dashboard_gr_logo_iracing = dashboards_section.get("dashboard_gr_logo_iracing") or None
-            dashboard_gr_logo_app = dashboards_section.get("dashboard_gr_logo_app") or None
-            dashboard_vr_icons_path = dashboards_section.get("dashboard_vr_icons_path") or None
-            
-            dashboard_event_log_size = parser.getint("dashboards", "dashboard_event_log_size", fallback=50)
+
+            dashboard_gr_background_image = (
+                dashboards_section.get("dashboard_gr_background_image") or None
+            )
+            dashboard_gr_logo_obs = (
+                dashboards_section.get("dashboard_gr_logo_obs") or None
+            )
+            dashboard_gr_logo_iracing = (
+                dashboards_section.get("dashboard_gr_logo_iracing") or None
+            )
+            dashboard_gr_logo_app = (
+                dashboards_section.get("dashboard_gr_logo_app") or None
+            )
+            dashboard_vr_icons_path = (
+                dashboards_section.get("dashboard_vr_icons_path") or None
+            )
+
+            dashboard_event_log_size = parser.getint(
+                "dashboards", "dashboard_event_log_size", fallback=50
+            )
             if dashboard_event_log_size <= 0:
                 raise ValueError("dashboards.dashboard_event_log_size must be > 0")
 
