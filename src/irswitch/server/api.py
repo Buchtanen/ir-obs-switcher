@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from irswitch.models import SwitchState
     from irswitch.obs.client import ObsClient
 
+from irswitch import __version__
 from irswitch.server.event_log import get_event_log
 from irswitch.server.dashboards import handle_gr_status, handle_vr_status, handle_test_widget
 from irswitch.server.metrics import get_metrics
@@ -223,11 +224,18 @@ async def _get_status_dict(state: "SwitchState") -> dict:
 
 async def handle_get_status(request: web.Request) -> web.Response:
     """Handle GET /status endpoint."""
-    if _current_state is None:
-        return web.json_response({"error": "Service not initialized"}, status=503)
+    try:
+        if _current_state is None:
+            return web.json_response({"error": "Service not initialized"}, status=503)
 
-    status = await _get_status_dict(_current_state)
-    return web.json_response(status)
+        status = await _get_status_dict(_current_state)
+        return web.json_response(status)
+    except Exception as e:
+        logger.error(f"Error in /status endpoint: {e}", exc_info=True)
+        return web.json_response({
+            "error": "Internal server error",
+            "message": str(e)
+        }, status=500)
 
 
 async def handle_override(request: web.Request) -> web.Response:
