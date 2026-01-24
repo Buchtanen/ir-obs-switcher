@@ -57,30 +57,34 @@ if (-not (Test-Path $hookScript)) {
     exit 1
 }
 
-# Vytvořit wrapper batch soubor pro Windows Git
-$hookScriptAbs = (Resolve-Path $hookScript).Path
-$hookContentLines = @(
-    '@echo off'
-    ('powershell.exe -ExecutionPolicy Bypass -File "' + $hookScriptAbs + '" %1')
-)
-$hookContent = $hookContentLines -join "`r`n"
+# Vždy použít bash hook (funguje v Git Bash i Git CMD přes sh.exe)
+$bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'commit-msg-hook.sh'
+
+if (-not (Test-Path $bashHookScript)) {
+    Write-Error "Bash hook script not found: $bashHookScript"
+    exit 1
+}
 
 try {
-    $hookContent | Out-File -FilePath $hookFile -Encoding ASCII -NoNewline -Force
+    # Kopírovat bash hook přímo (Git Bash i Git CMD ho dokáží spustit přes sh.exe)
+    Copy-Item -Path $bashHookScript -Destination $hookFile -Force
     Write-Success "Installed commit-msg hook"
     Write-Info "  Hook file: $hookFile"
-    Write-Info "  Script: $hookScriptAbs"
+    Write-Info "  Script: $bashHookScript"
+    Write-Info "  Note: Works in both Git Bash and Git CMD"
 } catch {
     Write-Error "Failed to install hook: $_"
     exit 1
 }
 
-# Informace o bash hooku
-$bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'commit-msg-hook.sh'
-if (Test-Path $bashHookScript) {
-    Write-Info ''
-    Write-Info ('Note: Bash hook script available at: ' + $bashHookScript)
-    Write-Info '      For Git Bash, manually copy it to .git/hooks/commit-msg'
+# Informace o alternativních hook skriptech
+if (-not $useBashHook) {
+    $bashHookScript = Join-Path -Path $scriptsDir -ChildPath 'commit-msg-hook.sh'
+    if (Test-Path $bashHookScript) {
+        Write-Info ''
+        Write-Info ('Note: Bash hook script available at: ' + $bashHookScript)
+        Write-Info '      If using Git Bash, the hook will use bash script automatically'
+    }
 }
 
 # Výstup s instrukcemi
