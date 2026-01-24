@@ -136,9 +136,20 @@ async def test_main_loop_mode_change_triggers_scene_switch(
 ) -> None:
     """Test that mode change triggers scene switch via OBS."""
     # Setup: Start with IDLE, then change to RACE
+    # Need enough iterations to cover debounce (100ms) + cooldown (200ms) + multiple polls
+    # With poll_hz=10 (100ms per poll), we need at least 5-6 polls for debounce to expire
     mode_sequence = [
         DrivingMode.IDLE,
         DrivingMode.IDLE,
+        DrivingMode.IDLE,  # Extra IDLE to ensure stability
+        DrivingMode.RACE,
+        DrivingMode.RACE,
+        DrivingMode.RACE,
+        DrivingMode.RACE,
+        DrivingMode.RACE,
+        DrivingMode.RACE,
+        DrivingMode.RACE,
+        DrivingMode.RACE,
         DrivingMode.RACE,
         DrivingMode.RACE,
     ]
@@ -154,8 +165,9 @@ async def test_main_loop_mode_change_triggers_scene_switch(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    # Wait for debounce + cooldown to pass
-    await asyncio.sleep(0.5)
+    # Wait for debounce (100ms) + cooldown (200ms) + multiple polls (100ms each)
+    # Need at least 500ms + buffer for debounce/cooldown to expire
+    await asyncio.sleep(0.8)
 
     # Cancel task
     task.cancel()
