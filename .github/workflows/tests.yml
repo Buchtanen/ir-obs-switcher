@@ -115,7 +115,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: irswitch-distribution-${{ env.VERSION }}
-        path: |
-          dist/
-          ${{ env.ARCHIVE_NAME }}
+        path: ${{ env.ARCHIVE_NAME }}
         retention-days: 30
