@@ -165,6 +165,24 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             except Exception:
                 status["obs_profile"] = None
             
+            # Get stream selection status
+            try:
+                is_selected, is_ready_selected = await _obs_client.is_stream_selected()
+                status["stream_selected"] = is_selected
+                status["stream_ready_selected"] = is_ready_selected
+            except Exception:
+                status["stream_selected"] = False
+                status["stream_ready_selected"] = False
+            
+            # Get stream title and description
+            try:
+                stream_title, stream_description = await _obs_client.get_stream_info()
+                status["stream_title"] = stream_title
+                status["stream_description"] = stream_description
+            except Exception:
+                status["stream_title"] = None
+                status["stream_description"] = None
+            
             # Update metrics with streaming status
             from irswitch.server.metrics import get_metrics
             metrics = get_metrics()
@@ -180,6 +198,10 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             status["streaming"] = False
             status["stream_duration_ms"] = None
             status["obs_profile"] = None
+            status["stream_selected"] = False
+            status["stream_ready_selected"] = False
+            status["stream_title"] = None
+            status["stream_description"] = None
             # Update metrics
             from irswitch.server.metrics import get_metrics
             metrics = get_metrics()
@@ -188,6 +210,10 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         status["streaming"] = False
         status["stream_duration_ms"] = None
         status["obs_profile"] = None
+        status["stream_selected"] = False
+        status["stream_ready_selected"] = False
+        status["stream_title"] = None
+        status["stream_description"] = None
         # Update metrics
         from irswitch.server.metrics import get_metrics
         metrics = get_metrics()

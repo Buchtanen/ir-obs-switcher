@@ -1,4 +1,4 @@
-﻿"""Configuration loading for irswitch."""
+"""Configuration loading for irswitch."""
 from __future__ import annotations
 
 import configparser
@@ -28,6 +28,7 @@ class AppConfig:
     log_file: str | None  # Optional: path to log file
     log_max_bytes: int  # Maximum log file size before rotation
     log_backup_count: int  # Number of backup log files to keep
+    log_colors: bool  # Enable colored console output (default: True)
 
     # [iracing]
     poll_hz: int
@@ -88,6 +89,7 @@ class AppConfig:
         log_backup_count = parser.getint("app", "log_backup_count", fallback=5)
         if log_backup_count < 0:
             raise ValueError("app.log_backup_count must be >= 0")
+        log_colors = parser.getboolean("app", "log_colors", fallback=True)
 
         # [iracing]
         poll_hz = parser.getint("iracing", "poll_hz")
@@ -180,6 +182,7 @@ class AppConfig:
             log_file=log_file,
             log_max_bytes=log_max_bytes,
             log_backup_count=log_backup_count,
+            log_colors=log_colors,
             poll_hz=poll_hz,
             quit_stall_seconds=quit_stall_seconds,
             obs_ws_url=obs_ws_url,

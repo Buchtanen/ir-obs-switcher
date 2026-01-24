@@ -71,13 +71,78 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         # Get streaming status
         is_streaming = False
         stream_duration_ms: Optional[int] = None
+        stream_title: Optional[str] = None
+        stream_description: Optional[str] = None
+        is_ready = False
+        is_selected = False
+        is_ready_selected = False
+        stream_status_label = None
+        should_show_stream_row = False
         obs_client = _get_obs_client()
         if obs_client is not None and state.connected_obs:
             try:
                 is_streaming, stream_duration_ms = await obs_client.get_stream_status()
             except Exception:
                 pass
-
+            
+            # Check if stream is ready (configured) and selected
+            try:
+                is_ready = await obs_client.is_broadcast_ready()
+            except Exception:
+                pass
+            
+            # Check if stream is selected (not just defined)
+            is_selected = False
+            is_ready_selected = False
+            try:
+                is_selected, is_ready_selected = await obs_client.is_stream_selected()
+            except Exception:
+                pass
+            
+            # Try to get stream title
+            try:
+                stream_title, stream_description = await obs_client.get_stream_info()
+                if stream_title:
+                    logger.info(f"Stream title retrieved: {stream_title}")
+                    # Log event for stream title detection
+                    try:
+                        event_log = get_event_log()
+                        await event_log.add_event(
+                            "stream_title_detected",
+                            f"Stream title detected: {stream_title}",
+                            {"stream_title": stream_title, "is_streaming": is_streaming}
+                        )
+                    except Exception:
+                        pass
+            except Exception as e:
+                logger.warning(f"Failed to get stream title: {e}", exc_info=True)
+                stream_title = None
+            
+            # Check if stream is "planned" (defined but not selected) vs "current" (selected/ready)
+            # Only show stream row if:
+            # 1. Streaming is active (definitely current)
+            # 2. Stream is selected AND has stream info (key/broadcast_id) - actually selected in Broadcast Manager
+            # 3. Stream has title (may be from previous selection or defined stream)
+            if is_streaming:
+                stream_status_label = "Current"
+                should_show_stream_row = True
+            elif is_selected and is_ready_selected:
+                # Stream is selected AND ready (has key/broadcast_id) - actually selected in Broadcast Manager
+                stream_status_label = "Current"
+                should_show_stream_row = True
+            elif stream_title:
+                # Stream exists but is not selected - it's just defined (planned)
+                stream_status_label = "Planned"
+                should_show_stream_row = True
+            
+            # If stream is selected/ready but title is not available, show "Ready" instead
+            # Only if stream is actually selected (has key/broadcast_id), not just configured
+            if not stream_title and (is_streaming or (is_selected and is_ready_selected)):
+                stream_title = "Stream Ready (Title Not Available)"
+                should_show_stream_row = True
+                if not stream_status_label:
+                    stream_status_label = "Current"
+            
         # Get OBS profile
         obs_profile: Optional[str] = None
         if obs_client is not None and state.connected_obs:
@@ -300,28 +365,144 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         .event-item {{
             padding: 10px;
             margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
             border-left: 3px solid #4caf50;
             font-size: 0.9em;
+            transition: background-color 0.3s ease-out, box-shadow 0.3s ease-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(76, 175, 80, 0.05);
+            position: relative;
+        }}
+        
+        .event-item:hover {{
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(76, 175, 80, 0.08);
+        }}
+        
+        .event-item::before {{
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0.4));
+            border-radius: 4px 0 0 4px;
+        }}
+        
+        .event-item.new-event {{
+            background: rgba(76, 175, 80, 0.15);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.4), inset 0 0 40px rgba(76, 175, 80, 0.1);
+            animation: highlightFade 3s ease-out forwards;
+        }}
+        
+        @keyframes highlightFade {{
+            0% {{
+                background: rgba(76, 175, 80, 0.25);
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.6), inset 0 0 50px rgba(76, 175, 80, 0.15);
+            }}
+            100% {{
+                background: rgba(255, 255, 255, 0.08);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(76, 175, 80, 0.05);
+            }}
         }}
         
         .event-item.connection_lost {{
             border-left-color: #f44336;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(244, 67, 54, 0.05);
+        }}
+        
+        .event-item.connection_lost::before {{
+            background: linear-gradient(to bottom, rgba(244, 67, 54, 0.8), rgba(244, 67, 54, 0.4));
+        }}
+        
+        .event-item.connection_lost:hover {{
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(244, 67, 54, 0.08);
+        }}
+        
+        .event-item.connection_lost.new-event {{
+            background: rgba(244, 67, 54, 0.15);
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.4), inset 0 0 40px rgba(244, 67, 54, 0.1);
+            animation: highlightFadeError 3s ease-out forwards;
+        }}
+        
+        @keyframes highlightFadeError {{
+            0% {{
+                background: rgba(244, 67, 54, 0.25);
+                box-shadow: 0 0 20px rgba(244, 67, 54, 0.6), inset 0 0 50px rgba(244, 67, 54, 0.15);
+            }}
+            100% {{
+                background: rgba(255, 255, 255, 0.08);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(244, 67, 54, 0.05);
+            }}
         }}
         
         .event-item.scene_switch {{
             border-left-color: #2196f3;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(33, 150, 243, 0.05);
+        }}
+        
+        .event-item.scene_switch::before {{
+            background: linear-gradient(to bottom, rgba(33, 150, 243, 0.8), rgba(33, 150, 243, 0.4));
+        }}
+        
+        .event-item.scene_switch:hover {{
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(33, 150, 243, 0.08);
+        }}
+        
+        .event-item.scene_switch.new-event {{
+            background: rgba(33, 150, 243, 0.15);
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.4), inset 0 0 40px rgba(33, 150, 243, 0.1);
+            animation: highlightFadeInfo 3s ease-out forwards;
+        }}
+        
+        @keyframes highlightFadeInfo {{
+            0% {{
+                background: rgba(33, 150, 243, 0.25);
+                box-shadow: 0 0 20px rgba(33, 150, 243, 0.6), inset 0 0 50px rgba(33, 150, 243, 0.15);
+            }}
+            100% {{
+                background: rgba(255, 255, 255, 0.08);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(33, 150, 243, 0.05);
+            }}
         }}
         
         .event-item.override_applied {{
             border-left-color: #ff9800;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 152, 0, 0.05);
+        }}
+        
+        .event-item.override_applied::before {{
+            background: linear-gradient(to bottom, rgba(255, 152, 0, 0.8), rgba(255, 152, 0, 0.4));
+        }}
+        
+        .event-item.override_applied:hover {{
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(255, 152, 0, 0.08);
+        }}
+        
+        .event-item.override_applied.new-event {{
+            background: rgba(255, 152, 0, 0.15);
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.4), inset 0 0 40px rgba(255, 152, 0, 0.1);
+            animation: highlightFadeWarning 3s ease-out forwards;
+        }}
+        
+        @keyframes highlightFadeWarning {{
+            0% {{
+                background: rgba(255, 152, 0, 0.25);
+                box-shadow: 0 0 20px rgba(255, 152, 0, 0.6), inset 0 0 50px rgba(255, 152, 0, 0.15);
+            }}
+            100% {{
+                background: rgba(255, 255, 255, 0.08);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 152, 0, 0.05);
+            }}
         }}
         
         .event-time {{
-            color: #aaa;
+            color: #888;
             font-size: 0.85em;
-            margin-right: 10px;
+            margin-right: 12px;
+            font-weight: 500;
+            opacity: 0.9;
         }}
         
         /* Toast notifications */
@@ -641,6 +822,20 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             </div>
         </div>
         
+        {f'''
+        <div class="status-grid" style="margin-top: 20px;">
+            <div class="status-card" style="grid-column: 1 / -1;">
+                <h3>{stream_status_label or "Current"} Stream</h3>
+                <div class="sublabel">Stream Title</div>
+                <div class="value" style="font-size: 1.1em;">{stream_title or "Not Available"}</div>
+                {f'''
+                <div class="sublabel" style="margin-top: 10px;">Description</div>
+                <div class="value" style="font-size: 0.9em; color: #aaa;">{stream_description}</div>
+                ''' if stream_description and stream_description != "Not Available" else ''}
+            </div>
+        </div>
+        ''' if state.connected_obs and should_show_stream_row else ''}
+        
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
                 <h3>Streaming</h3>
@@ -773,14 +968,31 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             return date.toLocaleTimeString();
         }}
         
-        function renderEvents() {{
+        function formatEventMessage(eventType, message, data) {{
+            // Format message in format: "XXX Detected | Action AAAA Activated | Scene SSSS"
+            const toastInfo = getToastInfo(eventType, message, data);
+            return toastInfo.message;
+        }}
+        
+        function renderEvents(newEventTimestamps = new Set()) {{
             const container = document.getElementById('events-container');
-            container.innerHTML = events.map(e => `
-                <div class="event-item ${{e.type}}">
-                    <span class="event-time">${{formatTime(e.timestamp)}}</span>
-                    <strong>${{e.type}}</strong>: ${{e.message}}
-                </div>
-            `).join('');
+            container.innerHTML = events.map(e => {{
+                const isNew = newEventTimestamps.has(e.timestamp);
+                const formattedMessage = formatEventMessage(e.type, e.message, e.data);
+                return `
+                    <div class="event-item ${{e.type}}${{isNew ? ' new-event' : ''}}" data-timestamp="${{e.timestamp}}">
+                        <span class="event-time">${{formatTime(e.timestamp)}}</span>
+                        ${{formattedMessage}}
+                    </div>
+                `;
+            }}).join('');
+            
+            // Remove 'new-event' class after animation completes (3 seconds)
+            setTimeout(() => {{
+                container.querySelectorAll('.new-event').forEach(el => {{
+                    el.classList.remove('new-event');
+                }});
+            }}, 3000);
         }}
         
         async function updateStatus() {{
@@ -831,13 +1043,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 updateValue('Autoswitch', data.autoswitch ? 'ON' : 'OFF');
                 
                 // Update session info - hide Test sessions
-                // #region agent log
-                console.log('[DEBUG] Session info from API:', JSON.stringify({{
-                    session_type: data.session_type,
-                    session_name: data.session_name,
-                    session_num: data.session_num
-                }}));
-                // #endregion
                 const sessionType = data.session_type === 'Test' || data.session_type === null || data.session_type === undefined ? 'N/A' : data.session_type;
                 const sessionName = data.session_type === 'Test' || data.session_name === null || data.session_name === undefined ? 'N/A' : data.session_name;
                 // session_num can be 0, so check for null/undefined explicitly
@@ -846,25 +1051,10 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     ? 'N/A' 
                     : (data.session_num_display || String(data.session_num + 1));
                 
-                // #region agent log
-                console.log('[DEBUG] Processed session info:', JSON.stringify({{
-                    sessionType: sessionType,
-                    sessionName: sessionName,
-                    sessionNum: sessionNum
-                }}));
-                // #endregion
-                
                 // Update session info directly by ID
                 const sessionTypeEl = document.getElementById('session-type');
                 const sessionNameEl = document.getElementById('session-name');
                 const sessionNumEl = document.getElementById('session-num');
-                // #region agent log
-                console.log('[DEBUG] Session info elements:', JSON.stringify({{
-                    sessionTypeEl: !!sessionTypeEl,
-                    sessionNameEl: !!sessionNameEl,
-                    sessionNumEl: !!sessionNumEl
-                }}));
-                // #endregion
                 if (sessionTypeEl) sessionTypeEl.textContent = sessionType;
                 if (sessionNameEl) sessionNameEl.textContent = sessionName;
                 if (sessionNumEl) sessionNumEl.textContent = sessionNum;
@@ -886,9 +1076,167 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     }}
                 }}
                 
+                // Update stream row visibility and content
+                updateStreamRow(data);
+                
             }} catch (error) {{
                 console.error('Failed to update status:', error);
             }}
+        }}
+        
+        function updateStreamRow(data) {{
+            // Find or create stream row container
+            const statusGrids = document.querySelectorAll('.status-grid');
+            let streamRowContainer = null;
+            
+            // Look for existing stream row
+            for (const grid of statusGrids) {{
+                const streamCard = grid.querySelector('.status-card h3');
+                if (streamCard && (streamCard.textContent.includes('Stream') || streamCard.textContent.includes('Current') || streamCard.textContent.includes('Planned'))) {{
+                    streamRowContainer = grid;
+                    break;
+                }}
+            }}
+            
+            // Determine if we should show stream row
+            const shouldShow = data.connected_obs && (
+                (data.stream_title && data.stream_title !== '') ||
+                data.streaming ||
+                data.stream_selected ||
+                (data.stream_ready_selected !== undefined && data.stream_ready_selected)
+            );
+            
+            // Determine stream status label
+            let streamStatusLabel = 'Current';
+            if (data.streaming) {{
+                streamStatusLabel = 'Current';
+            }} else if (data.stream_selected) {{
+                streamStatusLabel = 'Current';
+            }} else if (data.stream_title) {{
+                streamStatusLabel = 'Planned';
+            }}
+            
+            // Determine stream title and description to display
+            let streamTitle = data.stream_title || 'Not Available';
+            if (!data.stream_title && (data.streaming || data.stream_ready_selected || data.stream_selected)) {{
+                streamTitle = 'Stream Ready (Title Not Available)';
+            }}
+            const streamDescription = data.stream_description || null;
+            
+            if (shouldShow) {{
+                // Create or update stream row
+                if (!streamRowContainer) {{
+                    // Find the grid after the first status-grid (connection statuses)
+                    const firstGrid = document.querySelector('.status-grid');
+                    if (firstGrid && firstGrid.parentElement) {{
+                        streamRowContainer = document.createElement('div');
+                        streamRowContainer.className = 'status-grid';
+                        streamRowContainer.style.marginTop = '20px';
+                        firstGrid.parentElement.insertBefore(streamRowContainer, firstGrid.nextSibling);
+                    }}
+                }}
+                
+                if (streamRowContainer) {{
+                    let descriptionHtml = '';
+                    if (streamDescription && streamDescription !== 'Not Available') {{
+                        descriptionHtml = `
+                            <div class="sublabel" style="margin-top: 10px;">Description</div>
+                            <div class="value" style="font-size: 0.9em; color: #aaa;">${{streamDescription}}</div>
+                        `;
+                    }}
+                    streamRowContainer.innerHTML = `
+                        <div class="status-card" style="grid-column: 1 / -1;">
+                            <h3>${{streamStatusLabel}} Stream</h3>
+                            <div class="sublabel">Stream Title</div>
+                            <div class="value" style="font-size: 1.1em;">${{streamTitle}}</div>
+                            ${{descriptionHtml}}
+                        </div>
+                    `;
+                }}
+            }} else {{
+                // Remove stream row if it exists
+                if (streamRowContainer) {{
+                    streamRowContainer.remove();
+                }}
+            }}
+        }}
+        
+        // Track last event timestamp to detect new events
+        let lastEventTimestamp = events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : 0;
+        
+        // Map event types to toast types and titles
+        function getToastInfo(eventType, message, data) {{
+            const typeMap = {{
+                'connection_lost': {{ type: 'error', title: 'Connection Lost' }},
+                'connection_restored': {{ type: 'success', title: 'Connection Restored' }},
+                'loading_started': {{ type: 'info', title: 'Loading Started' }},
+                'loading_ended': {{ type: 'info', title: 'Loading Completed' }},
+                'game_started': {{ type: 'success', title: 'Game Started' }},
+                'scene_switch': {{ type: 'info', title: 'Scene Switched' }},
+                'stream_started': {{ type: 'success', title: 'Stream Started' }},
+                'stream_stopped': {{ type: 'warning', title: 'Stream Stopped' }},
+                'stream_start_failed': {{ type: 'error', title: 'Stream Start Failed' }},
+                'stream_stop_failed': {{ type: 'error', title: 'Stream Stop Failed' }},
+                'stream_start_skipped': {{ type: 'warning', title: 'Stream Start Skipped' }},
+                'stream_stop_skipped': {{ type: 'warning', title: 'Stream Stop Skipped' }},
+                'override_applied': {{ type: 'info', title: 'Override Applied' }},
+                'autoswitch_toggled': {{ type: 'info', title: 'Autoswitch Toggled' }},
+                'stream_title_detected': {{ type: 'success', title: 'Stream Title Detected' }},
+                'stream_selected': {{ type: 'success', title: 'Stream Selected' }},
+                'stream_deselected': {{ type: 'warning', title: 'Stream Deselected' }}
+            }};
+            
+            const info = typeMap[eventType] || {{ type: 'info', title: eventType.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase()) }};
+            
+            // Format message for toast in format: "XXX Detected | Action AAAA Activated | Scene SSSS"
+            let parts = [];
+            
+            // Detected part
+            let detected = '';
+            if (eventType === 'connection_lost' || eventType === 'connection_restored') {{
+                const component = message.toLowerCase().includes('iracing') ? 'iRacing' : 
+                                 message.toLowerCase().includes('obs') ? 'OBS' : 'Connection';
+                detected = eventType === 'connection_lost' ? `${{component}} Disconnected` : `${{component}} Connected`;
+            }} else if (eventType === 'game_started') {{
+                detected = `${{(data && data.mode ? data.mode.toUpperCase() : 'GAME')}} Detected`;
+            }} else {{
+                detected = info.title.replace(' Started', ' Detected').replace(' Stopped', ' Detected').replace(' Switched', ' Change Detected');
+            }}
+            if (detected) parts.push(detected);
+            
+            // Action part
+            let action = '';
+            if (eventType === 'connection_lost' || eventType === 'connection_restored') {{
+                const component = message.toLowerCase().includes('iracing') ? 'iRacing' : 
+                                 message.toLowerCase().includes('obs') ? 'OBS' : 'Connection';
+                action = eventType === 'connection_lost' ? `${{component}} Connection Lost` : `${{component}} Connection Restored`;
+            }} else if (eventType === 'game_started') {{
+                action = `Game Mode ${{(data && data.mode ? data.mode : 'Unknown')}} Activated`;
+            }} else if (eventType === 'scene_switch') {{
+                action = 'Scene Switch Activated';
+            }} else if (eventType === 'override_applied') {{
+                action = `Override Activated (${{(data && data.seconds ? data.seconds : '?')}}s)`;
+            }} else if (eventType === 'autoswitch_toggled') {{
+                action = `Autoswitch ${{(data && data.autoswitch ? 'Enabled' : 'Disabled')}}`;
+            }} else if (eventType === 'stream_title_detected') {{
+                action = `Stream Title: ${{(data && data.stream_title ? data.stream_title : 'Unknown')}}`;
+            }} else if (eventType === 'stream_selected') {{
+                action = 'Stream Selected Activated';
+            }} else if (eventType === 'stream_deselected') {{
+                action = 'Stream Deselected Activated';
+            }} else {{
+                action = info.title + (eventType.includes('started') ? ' Activated' : eventType.includes('stopped') ? ' Activated' : '');
+            }}
+            if (action) parts.push(action);
+            
+            // Scene part
+            if (data && data.scene) {{
+                parts.push(`Scene ${{data.scene}}`);
+            }}
+            
+            const toastMessage = parts.join(' | ') || message;
+            
+            return {{ type: info.type, title: info.title, message: toastMessage }};
         }}
         
         async function updateEvents() {{
@@ -900,12 +1248,30 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 }}
                 const data = await response.json();
                 if (data && data.events && Array.isArray(data.events)) {{
+                    // Detect new events
+                    const newEvents = data.events.filter(e => e.timestamp > lastEventTimestamp);
+                    
+                    // Collect timestamps of new events for highlighting
+                    const newEventTimestamps = new Set(newEvents.map(e => e.timestamp));
+                    
+                    // Show toast alerts for new events
+                    newEvents.forEach(event => {{
+                        const toastInfo = getToastInfo(event.type, event.message, event.data);
+                        showToast(toastInfo.title, toastInfo.message, toastInfo.type);
+                    }});
+                    
+                    // Update last event timestamp
+                    if (data.events.length > 0) {{
+                        lastEventTimestamp = Math.max(...data.events.map(e => e.timestamp));
+                    }}
+                    
                     // Only update if events actually changed
                     const eventsJson = JSON.stringify(events);
                     const newEventsJson = JSON.stringify(data.events);
                     if (eventsJson !== newEventsJson) {{
                         events = data.events;
-                        renderEvents();
+                        // Render with highlighting for new events
+                        renderEvents(newEventTimestamps);
                     }}
                 }}
             }} catch (error) {{
@@ -1001,6 +1367,12 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             `;
             
             container.appendChild(toast);
+            
+            // Highlight toast for 3 seconds, then fade out
+            setTimeout(() => {{
+                toast.style.opacity = '0.7';
+                toast.style.transition = 'opacity 0.5s ease-out';
+            }}, 3000);
             
             // Auto-remove after 5 seconds
             setTimeout(() => {{
@@ -1233,8 +1605,8 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }}
         }}
         
-        // Initial render
-        renderEvents();
+        // Initial render (no new events on initial load)
+        renderEvents(new Set());
         
         // Auto-update
         setInterval(updateStatus, UPDATE_INTERVAL);

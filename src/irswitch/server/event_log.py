@@ -65,6 +65,9 @@ class EventLog:
                 self._events = self._events[-self.max_size :]
                 logger.debug(f"Event log rotated: kept last {self.max_size} events")
 
+            # Log event to logger
+            logger.info(f"Event: {event_type} - {message}")
+            
             logger.debug(f"Event logged: {event_type} - {message} (total: {len(self._events)})")
 
     async def get_recent_events(self, count: int) -> list[Event]:

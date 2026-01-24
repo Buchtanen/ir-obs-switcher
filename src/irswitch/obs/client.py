@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import asyncio
+import ast
 import json
 import logging
 import os
+import re
 from typing import Optional
 
+import aiohttp
 from obsws_python import ReqClient
 
 logger = logging.getLogger(__name__)
+
 
 
 
@@ -450,6 +454,486 @@ class ObsClient:
         except Exception as e:
             logger.debug(f"Failed to get stream status: {e}")
             return (False, None)
+
+    async def get_stream_info(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Get current stream title and description from OBS.
+        
+        Tries multiple methods:
+        1. OBS WebSocket API (GetStreamServiceSettings)
+        2. YouTube Data API (if broadcast_id and YOUTUBE_API_KEY are available)
+        
+        Returns:
+            Tuple of (title: Optional[str], description: Optional[str])
+        """
+        if not self.is_connected() or self._client is None:
+            return (None, None)
+
+        try:
+            async def _get_stream_info_async() -> tuple[Optional[str], Optional[str]]:
+                # Run synchronous part in thread
+                def _get_stream_info_sync() -> tuple[Optional[str], Optional[str], Optional[str]]:
+                    
+                    # Log all available methods on the client
+                    
+                    # Try GetStreamServiceSettings and log full response
+                    service_settings_full = None
+                    try:
+                        if hasattr(self._client, 'get_stream_service_settings'):
+                            service_settings_full = self._client.get_stream_service_settings()
+                    except Exception as e:
+                        pass
+                    
+                    # Try call() method with GetStreamServiceSettings
+                    call_response = None
+                    try:
+                        if hasattr(self._client, 'call'):
+                            call_response = self._client.call("GetStreamServiceSettings")
+                    except Exception as e:
+                        pass
+                    
+                    # Try GetBroadcastStatus if available
+                    broadcast_status = None
+                    try:
+                        if hasattr(self._client, 'get_broadcast_status'):
+                            broadcast_status = self._client.get_broadcast_status()
+                        elif hasattr(self._client, 'call'):
+                            try:
+                                broadcast_status = self._client.call("GetBroadcastStatus")
+                            except Exception:
+                                pass
+                    except Exception as e:
+                        pass
+                    
+                    # Parse stream_service_settings string to dict
+                    stream_settings_dict = None
+                    try:
+                        if service_settings_full and hasattr(service_settings_full, 'stream_service_settings'):
+                            stream_settings_str = service_settings_full.stream_service_settings
+                            if isinstance(stream_settings_str, str):
+                                # Try to parse as Python dict string representation
+                                try:
+                                    stream_settings_dict = ast.literal_eval(stream_settings_str)
+                                except Exception:
+                                    # If ast.literal_eval fails, try regex extraction
+                                    pass
+                            elif isinstance(stream_settings_str, dict):
+                                stream_settings_dict = stream_settings_str
+                    except Exception as e:
+                        logger.debug(f"Error parsing stream_service_settings: {e}")
+                    
+                    # First, try to get broadcast_id to identify the selected stream
+                    broadcast_id = None
+                    stream_key = None
+                    try:
+                        if stream_settings_dict and isinstance(stream_settings_dict, dict):
+                            broadcast_id = stream_settings_dict.get("broadcast_id") or stream_settings_dict.get("broadcastId")
+                            stream_key = stream_settings_dict.get("key") or stream_settings_dict.get("stream_key")
+                        elif service_settings_full:
+                            if hasattr(service_settings_full, 'stream_service_settings'):
+                                stream_settings = service_settings_full.stream_service_settings
+                                if isinstance(stream_settings, str):
+                                    # Try regex to extract broadcast_id and stream_key
+                                    broadcast_match = re.search(r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]", stream_settings)
+                                    if broadcast_match:
+                                        broadcast_id = broadcast_match.group(1)
+                                    key_match = re.search(r"['\"]key['\"]:\s*['\"]([^'\"]+)['\"]", stream_settings)
+                                    if key_match:
+                                        stream_key = key_match.group(1)
+                            elif hasattr(service_settings_full, 'datain') and isinstance(service_settings_full.datain, dict):
+                                data = service_settings_full.datain
+                                if "streamServiceSettings" in data:
+                                    sss = data["streamServiceSettings"]
+                                    if isinstance(sss, dict):
+                                        broadcast_id = sss.get("broadcast_id") or sss.get("broadcastId")
+                                        stream_key = sss.get("key") or sss.get("stream_key")
+                                    elif isinstance(sss, str):
+                                        broadcast_match = re.search(r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]", sss)
+                                        if broadcast_match:
+                                            broadcast_id = broadcast_match.group(1)
+                                        key_match = re.search(r"['\"]key['\"]:\s*['\"]([^'\"]+)['\"]", sss)
+                                        if key_match:
+                                            stream_key = key_match.group(1)
+                    except Exception as e:
+                        logger.debug(f"Error extracting broadcast_id: {e}")
+                    
+                    # Try multiple methods to get stream title
+                    title = None
+                    
+                    # Method 1: Try to get from stream service settings (using already fetched service_settings_full)
+                    try:
+                        service_settings = service_settings_full
+                        if service_settings is None:
+                            if hasattr(self._client, 'get_stream_service_settings'):
+                                service_settings = self._client.get_stream_service_settings()
+                            elif hasattr(self._client, 'get_stream_service'):
+                                service_settings = self._client.get_stream_service()
+                        
+                        if service_settings is not None:
+                            
+                            # Check direct attributes
+                            if hasattr(service_settings, 'stream_title'):
+                                title = service_settings.stream_title
+                                logger.debug(f"Found title in stream_title: {title}")
+                            elif hasattr(service_settings, 'streamTitle'):
+                                title = service_settings.streamTitle
+                                logger.debug(f"Found title in streamTitle: {title}")
+                            elif hasattr(service_settings, 'title'):
+                                title = service_settings.title
+                                logger.debug(f"Found title in title: {title}")
+                            
+                            # Check settings dict
+                            if title is None and hasattr(service_settings, 'settings') and isinstance(service_settings.settings, dict):
+                                title = service_settings.settings.get('streamTitle') or service_settings.settings.get('title')
+                                if title:
+                                    logger.debug(f"Found title in settings dict: {title}")
+                            
+                            # Check datain dict format
+                            if title is None and hasattr(service_settings, 'datain') and isinstance(service_settings.datain, dict):
+                                data = service_settings.datain
+                                logger.debug(f"datain keys: {list(data.keys())}")
+                                title = data.get("streamTitle") or data.get("title")
+                                # Also check nested settings
+                                if title is None and "settings" in data and isinstance(data["settings"], dict):
+                                    logger.debug(f"settings keys: {list(data['settings'].keys())}")
+                                    title = data["settings"].get("streamTitle") or data["settings"].get("title")
+                                # Check streamServiceSettings nested
+                                if title is None and "streamServiceSettings" in data:
+                                    sss = data["streamServiceSettings"]
+                                    if isinstance(sss, dict):
+                                        title = sss.get("title") or sss.get("streamTitle")
+                                    elif isinstance(sss, str):
+                                        # Try regex to extract title
+                                        title_match = re.search(r"['\"]title['\"]:\s*['\"]([^'\"]+)['\"]", sss)
+                                        if title_match:
+                                            title = title_match.group(1)
+                                if title:
+                                    logger.debug(f"Found title in datain: {title}")
+                    except Exception as e:
+                        logger.debug(f"Error getting service settings: {e}", exc_info=True)
+                    
+                    # Method 2: Try to get from output settings (some OBS versions store title here)
+                    if title is None:
+                        try:
+                            if hasattr(self._client, 'get_output_settings'):
+                                output_settings = self._client.get_output_settings()
+                                if output_settings:
+                                    if hasattr(output_settings, 'stream_title'):
+                                        title = output_settings.stream_title
+                                    elif hasattr(output_settings, 'streamTitle'):
+                                        title = output_settings.streamTitle
+                                    elif hasattr(output_settings, 'datain') and isinstance(output_settings.datain, dict):
+                                        title = output_settings.datain.get("streamTitle") or output_settings.datain.get("title")
+                        except Exception:
+                            pass
+                    
+                    # Method 3: Try to get from stream metadata (if available)
+                    if title is None:
+                        try:
+                            if hasattr(self._client, 'get_stream_metadata'):
+                                metadata = self._client.get_stream_metadata()
+                                if metadata:
+                                    logger.debug(f"Stream metadata type: {type(metadata)}")
+                                    if hasattr(metadata, 'title'):
+                                        title = metadata.title
+                                        logger.debug(f"Found title in metadata.title: {title}")
+                                    elif hasattr(metadata, 'datain') and isinstance(metadata.datain, dict):
+                                        logger.debug(f"Metadata datain keys: {list(metadata.datain.keys())}")
+                                        title = metadata.datain.get("title")
+                                        if title:
+                                            logger.debug(f"Found title in metadata.datain: {title}")
+                        except Exception as e:
+                            logger.debug(f"Error getting stream metadata: {e}")
+                    
+                    # Method 4: Try to call GetStreamServiceSettings with specific request (using already fetched call_response)
+                    if title is None:
+                        try:
+                            response = call_response
+                            if response:
+                                logger.debug(f"GetStreamServiceSettings response type: {type(response)}")
+                                if hasattr(response, 'datain') and isinstance(response.datain, dict):
+                                    data = response.datain
+                                    logger.debug(f"Response datain keys: {list(data.keys())}")
+                                    # Check for title in various places
+                                    title = data.get("streamTitle") or data.get("title")
+                                    if title is None and "settings" in data and isinstance(data["settings"], dict):
+                                        logger.debug(f"Response settings keys: {list(data['settings'].keys())}")
+                                        title = data["settings"].get("streamTitle") or data["settings"].get("title")
+                                    # Check streamServiceSettings nested
+                                    if title is None and "streamServiceSettings" in data:
+                                        sss = data["streamServiceSettings"]
+                                        if isinstance(sss, dict):
+                                            title = sss.get("title") or sss.get("streamTitle")
+                                        elif isinstance(sss, str):
+                                            title_match = re.search(r"['\"]title['\"]:\s*['\"]([^'\"]+)['\"]", sss)
+                                            if title_match:
+                                                title = title_match.group(1)
+                                    if title:
+                                        logger.debug(f"Found title via GetStreamServiceSettings: {title}")
+                        except Exception as e:
+                            logger.debug(f"Error calling GetStreamServiceSettings: {e}")
+                    
+                    # Try to get title and description from parsed stream_settings_dict
+                    # Note: OBS WebSocket API doesn't directly provide YouTube broadcast title/description
+                    # These are stored in YouTube Broadcast Manager, not in OBS stream settings
+                    # We can only get them if they're somehow stored in stream_service_settings
+                    description = None
+                    try:
+                        if stream_settings_dict and isinstance(stream_settings_dict, dict):
+                            # Try to get title if not already found
+                            if title is None:
+                                title = stream_settings_dict.get("title") or stream_settings_dict.get("streamTitle")
+                            description = stream_settings_dict.get("description") or stream_settings_dict.get("streamDescription")
+                    except Exception as e:
+                        logger.debug(f"Error getting title/description from parsed dict: {e}")
+                    
+                    # Note: Vendor requests removed - they don't work (all fail with code 600 "No vendor found")
+                    # YouTube Data API fallback is used instead (see async part below)
+                    
+                    # Return title and description if found
+                    final_title = None
+                    if title and isinstance(title, str) and title.strip():
+                        final_title = title.strip()
+                    
+                    final_description = None
+                    if description and isinstance(description, str) and description.strip():
+                        final_description = description.strip()
+                    
+                    return (final_title, final_description, broadcast_id)
+                
+                # Run synchronous part
+                sync_result = await asyncio.to_thread(_get_stream_info_sync)
+                title, description, broadcast_id = sync_result
+            
+                # Now try YouTube Data API if we have broadcast_id (async part)
+                
+                if (title is None or description is None) and broadcast_id:
+                    try:
+                        youtube_api_key = os.environ.get("YOUTUBE_API_KEY")
+                        
+                        if youtube_api_key:
+                            # Try videos endpoint first (supports API key for public videos)
+                            # Broadcast ID might work as video ID if stream is active
+                            # Note: Broadcast ID is NOT the same as video ID - broadcast ID is for scheduled streams,
+                            # video ID is created when stream goes live. We'll try both approaches.
+                            async with aiohttp.ClientSession() as session:
+                                # Approach 1: Try broadcast_id as video_id (works if stream is live)
+                                url = f"https://www.googleapis.com/youtube/v3/videos"
+                                params = {
+                                    "part": "snippet",
+                                    "id": broadcast_id,
+                                    "key": youtube_api_key
+                                }
+                                
+                                async with session.get(url, params=params) as response:
+                                    if response.status == 200:
+                                        try:
+                                            data = await response.json()
+                                            
+                                            if "items" in data and len(data["items"]) > 0:
+                                                video = data["items"][0]
+                                                if "snippet" in video:
+                                                    snippet = video["snippet"]
+                                                    
+                                                    if title is None and "title" in snippet:
+                                                        title = snippet["title"]
+                                                    if description is None and "description" in snippet:
+                                                        description = snippet["description"]
+                                            else:
+                                                pass
+                                        except Exception as json_error:
+                                            pass
+                                    else:
+                                        pass
+                                
+                                # Approach 2: If videos endpoint didn't work, try search endpoint
+                                # This might find the video if it's live or scheduled
+                                if title is None and description is None:
+                                    
+                                    # Note: Search endpoint requires OAuth2 for live broadcasts, so this likely won't work either
+                                    # But we'll try it anyway for completeness
+                                    search_url = f"https://www.googleapis.com/youtube/v3/search"
+                                    search_params = {
+                                        "part": "snippet",
+                                        "q": broadcast_id,
+                                        "type": "video",
+                                        "eventType": "live",
+                                        "key": youtube_api_key
+                                    }
+                                    
+                                    async with session.get(search_url, params=search_params) as search_response:
+                                        if search_response.status == 200:
+                                            search_data = await search_response.json()
+                                            
+                                            if "items" in search_data and len(search_data["items"]) > 0:
+                                                # Check if any item matches our broadcast_id
+                                                for item in search_data["items"]:
+                                                    if item.get("id", {}).get("videoId") == broadcast_id or item.get("id", {}).get("videoId") == broadcast_id:
+                                                        snippet = item.get("snippet", {})
+                                                        if title is None and "title" in snippet:
+                                                            title = snippet["title"]
+                                                        if description is None and "description" in snippet:
+                                                            description = snippet["description"]
+                                                        break
+                    except Exception as e:
+                        logger.debug(f"Error calling YouTube Data API: {e}")
+                
+                return (title, description)
+            
+            return await _get_stream_info_async()
+
+        except Exception as e:
+            logger.warning(f"Failed to get stream info: {e}", exc_info=True)
+            return (None, None)
+
+    async def get_stream_title(self) -> Optional[str]:
+        """
+        Get current stream title from OBS.
+        
+        Returns:
+            Stream title string if available, None otherwise
+        """
+        title, _ = await self.get_stream_info()
+        return title
+
+    async def is_stream_selected(self) -> tuple[bool, bool]:
+        """
+        Check if stream is selected/active (not just defined) in OBS Broadcast Manager.
+        
+        Returns:
+            Tuple of (is_selected: bool, is_ready: bool)
+            - is_selected: True if stream is selected/active (not just defined)
+            - is_ready: True if stream is ready to stream (selected and configured)
+        """
+        if not self.is_connected() or self._client is None:
+            return (False, False)
+
+        try:
+            def _check_selected() -> tuple[bool, bool]:
+                
+                # Step 1: Check if already streaming
+                is_streaming = False
+                stream_status = None
+                try:
+                    if hasattr(self._client, 'get_stream_status'):
+                        stream_status = self._client.get_stream_status()
+                        if stream_status is not None:
+                            if hasattr(stream_status, 'output_active'):
+                                is_streaming = bool(stream_status.output_active)
+                            elif hasattr(stream_status, 'outputActive'):
+                                is_streaming = bool(stream_status.outputActive)
+                            elif hasattr(stream_status, 'datain') and isinstance(stream_status.datain, dict):
+                                is_streaming = bool(stream_status.datain.get("outputActive", False))
+                except Exception as e:
+                    pass
+
+                # If streaming, stream is definitely selected
+                if is_streaming:
+                    return (True, True)
+
+                # Step 2: Check stream service settings to see if stream is selected
+                service_settings = None
+                try:
+                    if hasattr(self._client, 'get_stream_service_settings'):
+                        service_settings = self._client.get_stream_service_settings()
+                    elif hasattr(self._client, 'get_stream_service'):
+                        service_settings = self._client.get_stream_service()
+                except Exception as e:
+                    pass
+
+                if service_settings is None:
+                    return (False, False)
+
+                # Check if service type is set (configured)
+                service_type = None
+                if hasattr(service_settings, 'stream_service_type'):
+                    service_type = service_settings.stream_service_type
+                elif hasattr(service_settings, 'streamServiceType'):
+                    service_type = service_settings.streamServiceType
+                elif hasattr(service_settings, 'datain') and isinstance(service_settings.datain, dict):
+                    service_type = service_settings.datain.get("streamServiceType")
+
+                # Check for stream key or other indicators that stream is actually selected/active
+                # A stream that is only "defined" won't have stream key set
+                stream_key = None
+                broadcast_id = None
+                
+                # Try to get stream_service_settings dict
+                stream_service_settings_dict = None
+                if hasattr(service_settings, 'stream_service_settings'):
+                    stream_service_settings_dict = service_settings.stream_service_settings
+                elif hasattr(service_settings, 'streamServiceSettings'):
+                    stream_service_settings_dict = service_settings.streamServiceSettings
+                elif hasattr(service_settings, 'datain') and isinstance(service_settings.datain, dict):
+                    stream_service_settings_dict = service_settings.datain.get("streamServiceSettings") or service_settings.datain.get("stream_service_settings")
+                
+                # Extract key and broadcast_id from stream_service_settings
+                if stream_service_settings_dict:
+                    if isinstance(stream_service_settings_dict, dict):
+                        stream_key = stream_service_settings_dict.get("key") or stream_service_settings_dict.get("streamKey")
+                        broadcast_id = stream_service_settings_dict.get("broadcast_id") or stream_service_settings_dict.get("broadcastId")
+                    elif isinstance(stream_service_settings_dict, str):
+                        # Try to parse if it's a string representation
+                        # The string might be like "{'broadcast_id': 'Ew3yOcL0e5s', 'key': 'yc5y-3hfq-msah-c2fx-f2jj', ...}"
+                        try:
+                            import ast
+                            # Replace single quotes with double quotes for JSON-like parsing, or use ast.literal_eval
+                            parsed = ast.literal_eval(stream_service_settings_dict)
+                            if isinstance(parsed, dict):
+                                stream_key = parsed.get("key") or parsed.get("streamKey")
+                                broadcast_id = parsed.get("broadcast_id") or parsed.get("broadcastId")
+                        except Exception as e:
+                            # If ast.literal_eval fails, try regex to extract key and broadcast_id
+                            # Extract key: 'key': 'value' or "key": "value"
+                            key_match = re.search(r"['\"]key['\"]:\s*['\"]([^'\"]+)['\"]", stream_service_settings_dict)
+                            if key_match:
+                                stream_key = key_match.group(1)
+                            # Extract broadcast_id: 'broadcast_id': 'value' or "broadcast_id": "value"
+                            broadcast_match = re.search(r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]", stream_service_settings_dict)
+                            if broadcast_match:
+                                broadcast_id = broadcast_match.group(1)
+                
+                # Fallback: try direct attributes
+                if not stream_key:
+                    if hasattr(service_settings, 'stream_key'):
+                        stream_key = service_settings.stream_key
+                    elif hasattr(service_settings, 'streamKey'):
+                        stream_key = service_settings.streamKey
+                    elif hasattr(service_settings, 'key'):
+                        stream_key = service_settings.key
+                
+                # Fallback: try datain
+                if not stream_key and hasattr(service_settings, 'datain') and isinstance(service_settings.datain, dict):
+                    stream_key = service_settings.datain.get("streamKey") or service_settings.datain.get("key")
+                    broadcast_id = service_settings.datain.get("broadcast_id") or service_settings.datain.get("broadcastId")
+                    # Also check nested settings
+                    if not stream_key and "settings" in service_settings.datain and isinstance(service_settings.datain["settings"], dict):
+                        stream_key = service_settings.datain["settings"].get("streamKey") or service_settings.datain["settings"].get("key")
+                        broadcast_id = service_settings.datain["settings"].get("broadcast_id") or service_settings.datain["settings"].get("broadcastId")
+
+                # Stream is selected/active ONLY if:
+                # 1. Streaming is active (definitely selected)
+                # OR
+                # 2. Service type is set AND (stream key OR broadcast_id is set) - indicates stream is actually selected
+                # 
+                # NOTE: We cannot rely on just YouTube RTMPS service being configured, as that only means
+                # the service type is set, not that a specific stream is selected in Broadcast Manager.
+                # OBS WebSocket API does not provide broadcast_id/key until stream is actually selected/ready.
+                has_stream_info = (stream_key is not None and stream_key != "") or (broadcast_id is not None and broadcast_id != "")
+                
+                # Stream is selected ONLY if streaming OR has actual stream info (key/broadcast_id)
+                is_selected = is_streaming or (
+                    (service_type is not None and service_type != "") and has_stream_info
+                )
+                is_ready = is_selected and not is_streaming
+                
+                return (is_selected, is_ready)
+
+            return await asyncio.to_thread(_check_selected)
+
+        except Exception as e:
+            logger.warning(f"Failed to check if stream is selected: {e}", exc_info=True)
+            return (False, False)
 
     async def is_broadcast_ready(self) -> bool:
         """

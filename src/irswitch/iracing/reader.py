@@ -8,7 +8,7 @@ from typing import Iterable, Optional
 
 import irsdk
 
-from irswitch.iracing.extractors import extract_mode
+from irswitch.iracing.extractors import extract_mode, as_bool
 from irswitch.models import DrivingMode
 
 logger = logging.getLogger(__name__)
@@ -38,16 +38,6 @@ def is_iracing_process_running() -> bool:
     except Exception as e:
         logger.debug(f"Failed to check iRacing process: {e}")
         return False
-
-
-def _as_bool(value: object) -> bool:
-    if value is None:
-        return False
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return value != 0
-    return str(value).lower() in {"1", "true", "yes", "on"}
 
 
 class IRacingReader:
@@ -320,7 +310,7 @@ class IRacingReader:
                         # CRITICAL: Don't detect QUIT if session_state is 4 (active session)
                         # In LOBBY, SessionTime can be constant but session_state is still 4
                         session_state_active = session_state is not None and int(session_state) == 4
-                        if is_session_screen and not _as_bool(data.get("IsOnTrack")) and not session_state_active:
+                        if is_session_screen and not as_bool(data.get("IsOnTrack")) and not session_state_active:
                             logger.debug(f"QUIT detected: SessionTime stalled for {stall_for:.1f}s")
                             return DrivingMode.QUIT
 
@@ -338,8 +328,8 @@ class IRacingReader:
                 (session_time is None or (isinstance(session_time, (int, float)) and abs(float(session_time)) < 0.001)) and
                 (session_state_num is None or session_state_num == 0) and
                 (cam_camera_state is None or cam_camera_state == 0) and
-                not _as_bool(data.get("IsOnTrack")) and
-                not _as_bool(data.get("IsOnTrackCar"))
+                not as_bool(data.get("IsOnTrack")) and
+                not as_bool(data.get("IsOnTrackCar"))
             )
             # If SessionState is 0, this is loading screen, not QUIT
             # Return None to indicate loading screen

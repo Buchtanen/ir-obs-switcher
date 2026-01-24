@@ -9,7 +9,7 @@ from irswitch.models import DrivingMode
 logger = logging.getLogger(__name__)
 
 
-def _as_bool(value: object) -> bool:
+def as_bool(value: object) -> bool:
     if value is None:
         return False
     if isinstance(value, bool):
@@ -27,12 +27,12 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     Note: SETTINGS detection was removed - iRacing SDK doesn't report it reliably.
     """
     # Get all relevant variables
-    is_replay = _as_bool(data.get("IsReplay"))
+    is_replay = as_bool(data.get("IsReplay"))
     player_car_idx = data.get("PlayerCarIdx")
     cam_car_idx = data.get("CamCarIdx")
     cam_camera_state = data.get("CamCameraState")
-    is_on_track = _as_bool(data.get("IsOnTrack")) or _as_bool(data.get("IsOnTrackCar"))
-    is_in_garage = _as_bool(data.get("PlayerCarInGarage")) or _as_bool(data.get("IsInGarage"))
+    is_on_track = as_bool(data.get("IsOnTrack")) or as_bool(data.get("IsOnTrackCar"))
+    is_in_garage = as_bool(data.get("PlayerCarInGarage")) or as_bool(data.get("IsInGarage"))
     
     # Determine if player is in car based on CamCameraState
     is_in_car = False
@@ -168,10 +168,9 @@ def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
     if session_num is not None:
         try:
             result = int(session_num)
-            # Convert from 0-based to 1-based for display (0 -> 1, 1 -> 2, etc.)
-            # iRacing SDK uses 0-based indexing, but users expect 1-based
-            result_1based = result + 1
-            return result_1based
+            # Return 0-based value (iRacing SDK uses 0-based indexing)
+            # Conversion to 1-based for display happens in main.py
+            return result
         except (ValueError, TypeError):
             pass
     return None
