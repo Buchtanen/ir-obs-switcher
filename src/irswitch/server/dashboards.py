@@ -10,6 +10,7 @@ from typing import Optional
 from aiohttp import web
 
 from irswitch.config import AppConfig
+from irswitch.i18n import get_translator, t
 from irswitch.server.event_log import get_event_log
 
 # Import these lazily to avoid circular import
@@ -63,6 +64,9 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         if config is None:
             return web.Response(text="Configuration not available", status=500)
 
+        # Get translator for current language
+        translator = get_translator()
+
         # Get current state
         state = _get_current_state()
         if state is None:
@@ -99,24 +103,12 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             except Exception:
                 pass
             
-            # Try to get stream title
-            try:
-                stream_title, stream_description = await obs_client.get_stream_info()
-                if stream_title:
-                    logger.info(f"Stream title retrieved: {stream_title}")
-                    # Log event for stream title detection
-                    try:
-                        event_log = get_event_log()
-                        await event_log.add_event(
-                            "stream_title_detected",
-                            f"Stream title detected: {stream_title}",
-                            {"stream_title": stream_title, "is_streaming": is_streaming}
-                        )
-                    except Exception:
-                        pass
-            except Exception as e:
-                logger.warning(f"Failed to get stream title: {e}", exc_info=True)
-                stream_title = None
+            # Get cached stream title (don't make API calls from dashboard)
+            stream_title, stream_description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
+            if quota_exceeded:
+                logger.debug("YouTube API quota exceeded - using cached stream title")
+            if api_key_missing:
+                logger.debug("YouTube API key missing - stream title unavailable")
             
             # Check if stream is "planned" (defined but not selected) vs "current" (selected/ready)
             # Only show stream row if:
@@ -486,6 +478,44 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             animation: highlightFadeWarning 3s ease-out forwards;
         }}
         
+        .event-item.youtube_quota_exceeded {{
+            border-left: 3px solid #ff9800;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 152, 0, 0.05);
+        }}
+        
+        .event-item.youtube_quota_exceeded::before {{
+            background: linear-gradient(to bottom, rgba(255, 152, 0, 0.8), rgba(255, 152, 0, 0.4));
+        }}
+        
+        .event-item.youtube_quota_exceeded:hover {{
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(255, 152, 0, 0.08);
+        }}
+        
+        .event-item.youtube_quota_exceeded.new-event {{
+            background: rgba(255, 152, 0, 0.15);
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.4), inset 0 0 40px rgba(255, 152, 0, 0.1);
+            animation: highlightFadeWarning 3s ease-out forwards;
+        }}
+        
+        .event-item.youtube_api_key_missing {{
+            border-left: 3px solid #ff9800;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 152, 0, 0.05);
+        }}
+        
+        .event-item.youtube_api_key_missing::before {{
+            background: linear-gradient(to bottom, rgba(255, 152, 0, 0.8), rgba(255, 152, 0, 0.4));
+        }}
+        
+        .event-item.youtube_api_key_missing:hover {{
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(255, 152, 0, 0.08);
+        }}
+        
+        .event-item.youtube_api_key_missing.new-event {{
+            background: rgba(255, 152, 0, 0.15);
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.4), inset 0 0 40px rgba(255, 152, 0, 0.1);
+            animation: highlightFadeWarning 3s ease-out forwards;
+        }}
+        
         @keyframes highlightFadeWarning {{
             0% {{
                 background: rgba(255, 152, 0, 0.25);
@@ -786,37 +816,37 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         
         <div class="status-grid">
             <div class="status-card">
-                <h3>iRacing Connection</h3>
+                <h3>{translator.t('iracing_connection')}</h3>
                 <div class="sublabel"></div>
                 <div class="connection-status">
                     <div class="status-indicator {'disconnected' if not state.connected_iracing else ''}"></div>
-                    <span class="value">{'Connected' if state.connected_iracing else 'Disconnected'}</span>
+                    <span class="value">{translator.t('connected') if state.connected_iracing else translator.t('disconnected')}</span>
                 </div>
             </div>
             
             <div class="status-card">
-                <h3>OBS Connection</h3>
+                <h3>{translator.t('obs_connection')}</h3>
                 <div class="sublabel"></div>
                 <div class="connection-status">
                     <div class="status-indicator {'disconnected' if not state.connected_obs else ''}"></div>
-                    <span class="value">{'Connected' if state.connected_obs else 'Disconnected'}</span>
+                    <span class="value">{translator.t('connected') if state.connected_obs else translator.t('disconnected')}</span>
                 </div>
             </div>
             
             <div class="status-card">
-                <h3>OBS Profile</h3>
+                <h3>{translator.t('obs_profile')}</h3>
                 <div class="sublabel"></div>
-                <div class="value">{obs_profile or 'N/A'}</div>
+                <div class="value">{obs_profile or translator.t('n_a')}</div>
             </div>
             
             <div class="status-card">
-                <h3>Current Scene</h3>
+                <h3>{translator.t('current_scene')}</h3>
                 <div class="sublabel"></div>
                 <div class="value">{state.current_scene}</div>
             </div>
             
             <div class="status-card">
-                <h3>Mode</h3>
+                <h3>{translator.t('mode')}</h3>
                 <div class="sublabel"></div>
                 <div class="value">{state.mode.value}</div>
             </div>
@@ -825,20 +855,20 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         {f'''
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card" style="grid-column: 1 / -1;">
-                <h3>{stream_status_label or "Current"} Stream</h3>
-                <div class="sublabel">Stream Title</div>
-                <div class="value" style="font-size: 1.1em;">{stream_title or "Not Available"}</div>
+                <h3>{stream_status_label or translator.t('current_stream')}</h3>
+                <div class="sublabel">{translator.t('stream_title')}</div>
+                <div class="value" style="font-size: 1.1em;">{stream_title or translator.t('not_available')}</div>
                 {f'''
-                <div class="sublabel" style="margin-top: 10px;">Description</div>
+                <div class="sublabel" style="margin-top: 10px;">{translator.t('stream_description')}</div>
                 <div class="value" style="font-size: 0.9em; color: #aaa;">{stream_description}</div>
-                ''' if stream_description and stream_description != "Not Available" else ''}
+                ''' if stream_description and stream_description != translator.t('not_available') else ''}
             </div>
         </div>
         ''' if state.connected_obs and should_show_stream_row else ''}
         
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
-                <h3>Streaming</h3>
+                <h3>{translator.t('streaming')}</h3>
                 <div class="sublabel"></div>
                 <div class="streaming-indicator">
                     <div class="rec-dot"></div>
@@ -847,97 +877,97 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             </div>
             
             <div class="status-card">
-                <h3>Stream Duration</h3>
+                <h3>{translator.t('stream_duration')}</h3>
                 <div class="sublabel">
-                    <span id="stream-duration-label">Cumulative</span>
-                    {f' | <span>Current</span>' if stream_duration_ms is not None else ''}
+                    <span id="stream-duration-label">{translator.t('cumulative')}</span>
+                    {f' | <span>{translator.t("current")}</span>' if stream_duration_ms is not None else ''}
                 </div>
                 <div class="value" id="stream-duration-display">
-                    <span>{format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else 'N/A'}</span>
+                    <span>{format_duration(metrics_dict.get("stream_duration_seconds")) if metrics_dict.get("stream_duration_seconds") is not None else translator.t('n_a')}</span>
                     {f' <span style="font-size: 0.75em; color: #aaa;">| {format_stream_duration(stream_duration_ms)}</span>' if stream_duration_ms is not None else ''}
                 </div>
             </div>
             
             <div class="status-card">
-                <h3>Autoswitch</h3>
+                <h3>{translator.t('autoswitch')}</h3>
                 <div class="sublabel"></div>
-                <div class="value">{'ON' if state.autoswitch else 'OFF'}</div>
+                <div class="value">{translator.t('on') if state.autoswitch else translator.t('off')}</div>
             </div>
         </div>
         
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
-                <h3>Session Type</h3>
+                <h3>{translator.t('session_type')}</h3>
                 <div class="sublabel"></div>
-                <div class="value" id="session-type">{'N/A' if state.session_type == 'Test' or state.session_type is None else state.session_type}</div>
+                <div class="value" id="session-type">{translator.t('n_a') if state.session_type == 'Test' or state.session_type is None else state.session_type}</div>
             </div>
             
             <div class="status-card">
-                <h3>Session Name</h3>
+                <h3>{translator.t('session_name')}</h3>
                 <div class="sublabel"></div>
-                <div class="value" style="font-size: 1.2em;" id="session-name">{'N/A' if state.session_type == 'Test' or state.session_name is None else state.session_name}</div>
+                <div class="value" style="font-size: 1.2em;" id="session-name">{translator.t('n_a') if state.session_type == 'Test' or state.session_name is None else state.session_name}</div>
             </div>
             
             <div class="status-card">
-                <h3>Session Num</h3>
+                <h3>{translator.t('session_num')}</h3>
                 <div class="sublabel"></div>
-                <div class="value" id="session-num">{'N/A' if state.session_type == 'Test' or state.session_num is None else (state.session_num_display if hasattr(state, 'session_num_display') and state.session_num_display else (state.session_num + 1 if state.session_num is not None else 'N/A'))}</div>
+                <div class="value" id="session-num">{translator.t('n_a') if state.session_type == 'Test' or state.session_num is None else (state.session_num_display if hasattr(state, 'session_num_display') and state.session_num_display else (state.session_num + 1 if state.session_num is not None else translator.t('n_a')))}</div>
             </div>
         </div>
         
         <div class="status-grid" style="margin-top: 20px;">
             <div class="status-card">
-                <h3>Scene Switches</h3>
+                <h3>{translator.t('scene_switches')}</h3>
                 <div class="sublabel"></div>
                 <div class="value" id="metrics-switches">{metrics_dict.get('scene_switches_total', 0)}</div>
             </div>
             
             <div class="status-card">
-                <h3>Avg Latency</h3>
+                <h3>{translator.t('avg_latency')}</h3>
                 <div class="sublabel"></div>
                 <div class="value" id="metrics-latency">
-                    {f"{metrics_dict.get('scene_switch_latency_avg_ms', 0):.4f} ms" if metrics_dict.get('scene_switch_latency_avg_ms') is not None else 'N/A'}
+                    {f"{metrics_dict.get('scene_switch_latency_avg_ms', 0):.4f} ms" if metrics_dict.get('scene_switch_latency_avg_ms') is not None else translator.t('n_a')}
                 </div>
             </div>
             
             <div class="status-card">
-                <h3>Uptime</h3>
+                <h3>{translator.t('uptime')}</h3>
                 <div class="sublabel"></div>
                 <div class="value" id="metrics-uptime">{format_duration(metrics_dict.get('uptime_seconds', 0))}</div>
             </div>
             
             <div class="status-card">
-                <h3>iRacing Connected</h3>
+                <h3>{translator.t('iracing_connected')}</h3>
                 <div class="sublabel">
-                    <span id="metrics-iracing-label">Cumulative</span>
-                    {f' | <span>Current</span>' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
+                    <span id="metrics-iracing-label">{translator.t('cumulative')}</span>
+                    {f' | <span>{translator.t("current")}</span>' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
                 <div class="value" id="metrics-iracing-time">
-                    <span>{format_duration(metrics_dict.get('iracing_connected_duration_seconds')) if metrics_dict.get('iracing_connected_duration_seconds') is not None else 'N/A'}</span>
+                    <span>{format_duration(metrics_dict.get('iracing_connected_duration_seconds')) if metrics_dict.get('iracing_connected_duration_seconds') is not None else translator.t('n_a')}</span>
                     {f' <span style="font-size: 0.75em; color: #aaa;">| {format_duration(metrics_dict.get("iracing_connected_duration_current_session_seconds"))}</span>' if metrics_dict.get('iracing_connected_duration_current_session_seconds') is not None and metrics_dict.get('iracing_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
             </div>
             
             <div class="status-card">
-                <h3>OBS Connected</h3>
+                <h3>{translator.t('obs_connected')}</h3>
                 <div class="sublabel">
-                    <span id="metrics-obs-label">Cumulative</span>
-                    {f' | <span>Current</span>' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
+                    <span id="metrics-obs-label">{translator.t('cumulative')}</span>
+                    {f' | <span>{translator.t("current")}</span>' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
                 <div class="value" id="metrics-obs-time">
-                    <span>{format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else 'N/A'}</span>
+                    <span>{format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else translator.t('n_a')}</span>
                     {f' <span style="font-size: 0.75em; color: #aaa;">| {format_duration(metrics_dict.get("obs_connected_duration_current_session_seconds"))}</span>' if metrics_dict.get('obs_connected_duration_current_session_seconds') is not None and metrics_dict.get('obs_connected_duration_current_session_seconds') > 0 else ''}
                 </div>
             </div>
         </div>
         
         <div class="status-card" style="margin-bottom: 30px;">
-            <h3>Scene Switch Reason</h3>
+            <h3>{translator.t('scene_switch_reason')}</h3>
             <div class="value" style="font-size: 1.2em;">{state.reason}</div>
         </div>
         
         <div class="controls">
-            <button onclick="toggleAutoswitch()">Toggle Autoswitch</button>
+            <button onclick="toggleAutoswitch()">{translator.t('toggle_autoswitch')}</button>
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
             <button onclick="reloadConfig()">Reload Config</button>
             <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
@@ -960,11 +990,83 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             dashboard_event_log_size: {config.dashboard_event_log_size}
         }};
         
+        // Translations
+        const translations = {json.dumps(translator.translations)};
+        function t(key, params = {{}}) {{
+            let text = translations[key] || key;
+            if (Object.keys(params).length > 0) {{
+                for (const [k, v] of Object.entries(params)) {{
+                    const placeholder = '{{' + k + '}}';
+                    text = text.replace(placeholder, v);
+                }}
+            }}
+            return text;
+        }}
+        
         let events = {json.dumps(events)};
         
         function formatTime(timestamp) {{
             const date = new Date(timestamp);
             return date.toLocaleTimeString();
+        }}
+        
+        function getQuotaResetTimeLocal() {{
+            // YouTube API quota resets at midnight Pacific Time (PT)
+            // Calculate next midnight PT and convert to local time
+            
+            const now = new Date();
+            
+            // Get current time in PT
+            const ptFormatter = new Intl.DateTimeFormat('en-US', {{
+                timeZone: 'America/Los_Angeles',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: false
+            }});
+            
+            const ptParts = ptFormatter.formatToParts(now);
+            const ptYear = parseInt(ptParts.find(p => p.type === 'year').value);
+            const ptMonth = parseInt(ptParts.find(p => p.type === 'month').value) - 1;
+            const ptDay = parseInt(ptParts.find(p => p.type === 'day').value);
+            const ptHour = parseInt(ptParts.find(p => p.type === 'hour').value);
+            const ptMinute = parseInt(ptParts.find(p => p.type === 'minute').value);
+            
+            // Calculate next midnight PT (add 1 day if not already midnight)
+            const nextDay = ptHour > 0 || ptMinute > 0 ? ptDay + 1 : ptDay;
+            
+            // Find UTC time that corresponds to PT midnight
+            // Try different UTC times until we find one that is midnight PT
+            let utcMidnight = null;
+            // PT midnight is typically UTC 08:00 (PST) or 07:00 (PDT) next day
+            for (let utcHour = 7; utcHour <= 8; utcHour++) {{
+                const candidate = new Date(Date.UTC(ptYear, ptMonth, nextDay, utcHour, 0, 0));
+                const ptCheck = new Intl.DateTimeFormat('en-US', {{
+                    timeZone: 'America/Los_Angeles',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: false
+                }}).formatToParts(candidate);
+                const checkHour = parseInt(ptCheck.find(p => p.type === 'hour').value);
+                const checkMinute = parseInt(ptCheck.find(p => p.type === 'minute').value);
+                if (checkHour === 0 && checkMinute === 0) {{
+                    utcMidnight = candidate;
+                    break;
+                }}
+            }}
+            
+            // Fallback: use UTC 08:00 (PST)
+            if (!utcMidnight) {{
+                utcMidnight = new Date(Date.UTC(ptYear, ptMonth, nextDay, 8, 0, 0));
+            }}
+            
+            // Format in local time (Czech locale)
+            const options = {{}};
+            options.hour = '2-digit';
+            options.minute = '2-digit';
+            return utcMidnight.toLocaleTimeString('cs-CZ', options);
         }}
         
         function formatEventMessage(eventType, message, data) {{
@@ -1039,7 +1141,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 updateValue('Mode', data.mode);
                 
                 // Update autoswitch
-                updateValue('Autoswitch', data.autoswitch ? 'ON' : 'OFF');
+                updateValue(t('autoswitch'), data.autoswitch ? t('on') : t('off'));
                 
                 // Update session info - hide Test sessions
                 const sessionType = data.session_type === 'Test' || data.session_type === null || data.session_type === undefined ? 'N/A' : data.session_type;
@@ -1106,21 +1208,23 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             );
             
             // Determine stream status label
-            let streamStatusLabel = 'Current';
+            let streamStatusLabel = t('current_stream');
             if (data.streaming) {{
-                streamStatusLabel = 'Current';
+                streamStatusLabel = t('current_stream');
             }} else if (data.stream_selected) {{
-                streamStatusLabel = 'Current';
+                streamStatusLabel = t('current_stream');
             }} else if (data.stream_title) {{
-                streamStatusLabel = 'Planned';
+                streamStatusLabel = t('planned_stream');
             }}
             
             // Determine stream title and description to display
-            let streamTitle = data.stream_title || 'Not Available';
+            let streamTitle = data.stream_title || t('not_available');
             if (!data.stream_title && (data.streaming || data.stream_ready_selected || data.stream_selected)) {{
-                streamTitle = 'Stream Ready (Title Not Available)';
+                streamTitle = t('not_available');
             }}
             const streamDescription = data.stream_description || null;
+            const quotaExceeded = data.youtube_quota_exceeded || false;
+            const apiKeyMissing = data.youtube_api_key_missing || false;
             
             if (shouldShow) {{
                 // Create or update stream row
@@ -1137,18 +1241,33 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 
                 if (streamRowContainer) {{
                     let descriptionHtml = '';
-                    if (streamDescription && streamDescription !== 'Not Available') {{
+                    if (streamDescription && streamDescription !== t('not_available')) {{
                         descriptionHtml = `
-                            <div class="sublabel" style="margin-top: 10px;">Description</div>
+                            <div class="sublabel" style="margin-top: 10px;">${{t('stream_description')}}</div>
                             <div class="value" style="font-size: 0.9em; color: #aaa;">${{streamDescription}}</div>
+                        `;
+                    }}
+                    let warningHtml = '';
+                    if (quotaExceeded) {{
+                        const resetTime = getQuotaResetTimeLocal();
+                        const params = {{}};
+                        params.time = resetTime;
+                        const quotaMsg = t('youtube_quota_message', params);
+                        warningHtml = `
+                            <div class="value" style="margin-top: 10px; font-size: 0.85em; color: #ff9800; font-weight: 400;">${{t('youtube_api_quota_exceeded')}} - ${{quotaMsg}}</div>
+                        `;
+                    }} else if (apiKeyMissing) {{
+                        warningHtml = `
+                            <div class="value" style="margin-top: 10px; font-size: 0.85em; color: #ff9800; font-weight: 400;">${{t('youtube_api_key_not_configured')}} - ${{t('youtube_key_message')}}</div>
                         `;
                     }}
                     streamRowContainer.innerHTML = `
                         <div class="status-card" style="grid-column: 1 / -1;">
-                            <h3>${{streamStatusLabel}} Stream</h3>
-                            <div class="sublabel">Stream Title</div>
+                            <h3>${{streamStatusLabel}} ${{t('stream')}}</h3>
+                            <div class="sublabel">${{t('stream_title')}}</div>
                             <div class="value" style="font-size: 1.1em;">${{streamTitle}}</div>
                             ${{descriptionHtml}}
+                            ${{warningHtml}}
                         </div>
                     `;
                 }}
@@ -1166,23 +1285,26 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         // Map event types to toast types and titles
         function getToastInfo(eventType, message, data) {{
             const typeMap = {{
-                'connection_lost': {{ type: 'error', title: 'Connection Lost' }},
-                'connection_restored': {{ type: 'success', title: 'Connection Restored' }},
-                'loading_started': {{ type: 'info', title: 'Loading Started' }},
-                'loading_ended': {{ type: 'info', title: 'Loading Completed' }},
-                'game_started': {{ type: 'success', title: 'Game Started' }},
-                'scene_switch': {{ type: 'info', title: 'Scene Switched' }},
-                'stream_started': {{ type: 'success', title: 'Stream Started' }},
-                'stream_stopped': {{ type: 'warning', title: 'Stream Stopped' }},
-                'stream_start_failed': {{ type: 'error', title: 'Stream Start Failed' }},
-                'stream_stop_failed': {{ type: 'error', title: 'Stream Stop Failed' }},
-                'stream_start_skipped': {{ type: 'warning', title: 'Stream Start Skipped' }},
-                'stream_stop_skipped': {{ type: 'warning', title: 'Stream Stop Skipped' }},
-                'override_applied': {{ type: 'info', title: 'Override Applied' }},
-                'autoswitch_toggled': {{ type: 'info', title: 'Autoswitch Toggled' }},
-                'stream_title_detected': {{ type: 'success', title: 'Stream Title Detected' }},
-                'stream_selected': {{ type: 'success', title: 'Stream Selected' }},
-                'stream_deselected': {{ type: 'warning', title: 'Stream Deselected' }}
+                'application_started': {{ type: 'info', title: t('application_started') }},
+                'connection_lost': {{ type: 'error', title: t('connection_lost') }},
+                'connection_restored': {{ type: 'success', title: t('connection_restored') }},
+                'loading_started': {{ type: 'info', title: t('loading_started') }},
+                'loading_ended': {{ type: 'info', title: t('loading_completed') }},
+                'game_started': {{ type: 'success', title: t('game_started') }},
+                'scene_switch': {{ type: 'info', title: t('scene_switched') }},
+                'stream_started': {{ type: 'success', title: t('stream_started') }},
+                'stream_stopped': {{ type: 'warning', title: t('stream_stopped') }},
+                'stream_start_failed': {{ type: 'error', title: t('stream_start_failed') }},
+                'stream_stop_failed': {{ type: 'error', title: t('stream_stop_failed') }},
+                'stream_start_skipped': {{ type: 'warning', title: t('stream_start_skipped') }},
+                'stream_stop_skipped': {{ type: 'warning', title: t('stream_stop_skipped') }},
+                'override_applied': {{ type: 'info', title: t('override_applied') }},
+                'autoswitch_toggled': {{ type: 'info', title: t('autoswitch_toggled') }},
+                'stream_title_detected': {{ type: 'success', title: t('stream_title_detected') }},
+                'stream_selected': {{ type: 'success', title: t('stream_selected') }},
+                'stream_deselected': {{ type: 'warning', title: t('stream_deselected') }},
+                'youtube_quota_exceeded': {{ type: 'warning', title: t('youtube_quota_exceeded') }},
+                'youtube_api_key_missing': {{ type: 'warning', title: t('youtube_api_key_missing') }}
             }};
             
             const info = typeMap[eventType] || {{ type: 'info', title: eventType.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase()) }};
@@ -1310,7 +1432,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 // Update text value
                 const valueEl = targetCard.querySelector('.connection-status .value');
                 if (valueEl) {{
-                    valueEl.textContent = connected ? 'Connected' : 'Disconnected';
+                    valueEl.textContent = connected ? t('connected') : t('disconnected');
                 }}
             }}
         }}
@@ -1545,10 +1667,10 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 const data = await response.json();
                 
                 // Update metrics
-                updateValue('Scene Switches', data.scene_switches_total || 0);
+                updateValue(t('scene_switches'), data.scene_switches_total || 0);
                 const latency = data.scene_switch_latency_avg_ms;
-                updateValue('Avg Latency', latency !== null && latency !== undefined ? latency.toFixed(4) + ' ms' : 'N/A');
-                updateValue('Uptime', formatDuration(data.uptime_seconds));
+                updateValue(t('avg_latency'), latency !== null && latency !== undefined ? latency.toFixed(4) + ' ms' : t('n_a'));
+                updateValue(t('uptime'), formatDuration(data.uptime_seconds));
                 
                 // iRacing Connected - show cumulative | current
                 const iracingCumulative = data.iracing_connected_duration_seconds;

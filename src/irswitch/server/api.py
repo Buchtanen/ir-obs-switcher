@@ -174,14 +174,12 @@ async def _get_status_dict(state: "SwitchState") -> dict:
                 status["stream_selected"] = False
                 status["stream_ready_selected"] = False
             
-            # Get stream title and description
-            try:
-                stream_title, stream_description = await _obs_client.get_stream_info()
-                status["stream_title"] = stream_title
-                status["stream_description"] = stream_description
-            except Exception:
-                status["stream_title"] = None
-                status["stream_description"] = None
+            # Get cached stream title (don't make API calls from API endpoint)
+            stream_title, stream_description, quota_exceeded, api_key_missing = _obs_client.get_cached_stream_info()
+            status["stream_title"] = stream_title
+            status["stream_description"] = stream_description
+            status["youtube_quota_exceeded"] = quota_exceeded
+            status["youtube_api_key_missing"] = api_key_missing
             
             # Update metrics with streaming status
             from irswitch.server.metrics import get_metrics

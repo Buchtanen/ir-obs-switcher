@@ -11,6 +11,7 @@ from typing import Optional
 from aiohttp import web
 
 from irswitch.config import AppConfig
+from irswitch.i18n import set_language
 from irswitch.iracing.reader import IRacingReader
 from irswitch.iracing.extractors import extract_session_type, extract_session_num, extract_total_sessions
 from irswitch.logic.policy import Policy
@@ -98,8 +99,6 @@ async def main_loop(
 
     # Stream title tracking
     last_stream_title: Optional[str] = None
-    stream_title_check_interval_s = 5.0  # Check stream title every 5 seconds
-    last_stream_title_check_ts: float = 0.0
     last_stream_selected: bool = False  # Track if stream was selected
 
     logger.info("Starting main loop")
@@ -722,63 +721,45 @@ async def main_loop(
             # State machine already ticked above (with session info updated if needed)
             set_current_state(new_state)
 
-            # Periodically check stream title when OBS is connected
+            # Check stream selection status (without periodic title fetching)
             if connected_obs and obs_client.is_connected():
-                current_time = now_ms() / 1000.0  # Convert to seconds
-                if current_time - last_stream_title_check_ts >= stream_title_check_interval_s:
-                    last_stream_title_check_ts = current_time
-                    try:
-                        stream_title, stream_description = await obs_client.get_stream_info()
-                        is_streaming, _ = await obs_client.get_stream_status()
-                        is_selected, is_ready_selected = await obs_client.is_stream_selected()
-                        is_ready = await obs_client.is_broadcast_ready()
-                        
-                        # Check if stream selection changed
-                        if is_selected != last_stream_selected:
-                            if is_selected:
-                                logger.info(f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})")
+                try:
+                    is_streaming, _ = await obs_client.get_stream_status()
+                    is_selected, is_ready_selected = await obs_client.is_stream_selected()
+                    
+                    # Check if stream selection changed
+                    if is_selected != last_stream_selected:
+                        if is_selected:
+                            # Stream was selected - NOW fetch title (only when needed)
+                            logger.info(f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})")
+                            try:
+                                stream_title, stream_description = await obs_client.get_stream_info()
                                 await event_log.add_event(
                                     "stream_selected",
                                     f"Stream selected in OBS",
                                     {"is_streaming": is_streaming, "is_ready": is_ready_selected, "stream_title": stream_title}
                                 )
-                            else:
-                                logger.info("Stream deselected in OBS")
+                                if stream_title:
+                                    logger.info(f"Stream title detected: {stream_title}")
+                                    last_stream_title = stream_title
+                            except Exception as e:
+                                logger.warning(f"Failed to get stream info when stream selected: {e}")
                                 await event_log.add_event(
-                                    "stream_deselected",
-                                    "Stream deselected in OBS",
-                                    {}
+                                    "stream_selected",
+                                    f"Stream selected in OBS",
+                                    {"is_streaming": is_streaming, "is_ready": is_ready_selected, "stream_title": None}
                                 )
-                            last_stream_selected = is_selected
-                        
-                        # Check if stream title changed or appeared
-                        if stream_title and stream_title != last_stream_title:
-                            if last_stream_title is None:
-                                # New stream title detected
-                                logger.info(f"Stream title detected: {stream_title} (streaming: {is_streaming}, selected: {is_selected}, ready: {is_ready_selected})")
-                                await event_log.add_event(
-                                    "stream_title_detected",
-                                    f"Stream title detected: {stream_title}",
-                                    {"stream_title": stream_title, "is_streaming": is_streaming, "is_selected": is_selected, "is_ready": is_ready_selected}
-                                )
-                            else:
-                                # Stream title changed
-                                logger.info(f"Stream title changed: {last_stream_title} -> {stream_title} (streaming: {is_streaming}, selected: {is_selected}, ready: {is_ready_selected})")
-                                await event_log.add_event(
-                                    "stream_title_detected",
-                                    f"Stream title changed: {stream_title}",
-                                    {"stream_title": stream_title, "previous_title": last_stream_title, "is_streaming": is_streaming, "is_selected": is_selected, "is_ready": is_ready_selected}
-                                )
-                            last_stream_title = stream_title
-                        elif not stream_title and last_stream_title is not None:
-                            # Stream title disappeared
-                            logger.info(f"Stream title disappeared: {last_stream_title}")
+                        else:
+                            logger.info("Stream deselected in OBS")
+                            await event_log.add_event(
+                                "stream_deselected",
+                                "Stream deselected in OBS",
+                                {}
+                            )
                             last_stream_title = None
-                        elif not stream_title and (is_streaming or is_ready_selected) and last_stream_title is None:
-                            # Stream is ready/streaming but no title available yet
-                            logger.debug(f"Stream ready/streaming but title not available (streaming: {is_streaming}, selected: {is_selected}, ready: {is_ready_selected})")
-                    except Exception as e:
-                        logger.debug(f"Failed to check stream title: {e}")
+                        last_stream_selected = is_selected
+                except Exception as e:
+                    logger.debug(f"Failed to check stream selection: {e}")
 
             # Check if scene switch is needed
             if new_state.target_scene != new_state.current_scene:
@@ -789,7 +770,7 @@ async def main_loop(
 
                 # Check if required OBS profile is active (if configured)
                 if should_switch and config.required_profile:
-                    current_profile = await obs_client.get_current_profile()
+                    current_profile = await obs_client.get_current_profile(use_cache=True)
                     if current_profile != config.required_profile:
                         should_switch = False
                         logger.debug(
@@ -867,6 +848,10 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     # Set global notifications flag
     set_notifications_enabled(config.notifications_enabled)
     logger.info(f"Notifications enabled: {config.notifications_enabled}")
+    
+    # Initialize i18n with configured language
+    set_language(config.language)
+    logger.info(f"Language set to: {config.language}")
 
     logger.info("Starting iRacing OBS switcher service")
 
@@ -903,6 +888,13 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     # Initialize event log
     event_log = EventLog(max_size=config.dashboard_event_log_size)
     set_event_log(event_log)
+    
+    # Add application started event
+    await event_log.add_event(
+        "application_started",
+        "Application started",
+        {"config_path": config_path}
+    )
     
     # Initialize metrics (will be used in main loop)
     metrics = get_metrics()

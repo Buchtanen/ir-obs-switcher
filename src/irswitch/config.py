@@ -29,6 +29,7 @@ class AppConfig:
     log_max_bytes: int  # Maximum log file size before rotation
     log_backup_count: int  # Number of backup log files to keep
     log_colors: bool  # Enable colored console output (default: True)
+    language: str  # Language code (CS, EN, DE, FR, SP, PL, HU) - default: CS
 
     # [iracing]
     poll_hz: int
@@ -90,6 +91,10 @@ class AppConfig:
         if log_backup_count < 0:
             raise ValueError("app.log_backup_count must be >= 0")
         log_colors = parser.getboolean("app", "log_colors", fallback=True)
+        language = app_section.get("language", "CS").upper()
+        from irswitch.i18n import SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
+        if language not in SUPPORTED_LANGUAGES:
+            language = DEFAULT_LANGUAGE
 
         # [iracing]
         poll_hz = parser.getint("iracing", "poll_hz")
@@ -183,6 +188,7 @@ class AppConfig:
             log_max_bytes=log_max_bytes,
             log_backup_count=log_backup_count,
             log_colors=log_colors,
+            language=language,
             poll_hz=poll_hz,
             quit_stall_seconds=quit_stall_seconds,
             obs_ws_url=obs_ws_url,

@@ -7,6 +7,10 @@
 - ✅ **iRacing Reader** (`iracing/reader.py`) - async wrapper pro pyirsdk
 - ✅ **Extractors** (`iracing/extractors.py`) - extrakce módu s prioritou
 - ✅ **OBS Client** (`obs/client.py`) - async WebSocket klient s retry logikou
+  - ✅ YouTube Data API v3 integrace pro získávání stream title/description
+  - ✅ Cachování stream info pro snížení API volání
+  - ✅ YouTube API quota handling (403 error detection)
+  - ✅ YouTube API key missing detection
 - ✅ **State Machine** (`logic/state_machine.py`) - debounce, cooldown, override
 - ✅ **Policy** (`logic/policy.py`) - mapování módu na scény
 - ✅ **API Server** (`server/api.py`) - REST + WebSocket endpointy
@@ -16,6 +20,7 @@
   - ✅ Shutdown endpoint (`POST /shutdown`)
 - ✅ **Main Loop** (`main.py`) - koordinace všech komponent
 - ✅ **Metrics Collector** (`server/metrics.py`) - sběr metrik (scene switches, latence, connection times, stream duration)
+- ✅ **Internationalization** (`i18n.py`) - lokalizace podporující 7 jazyků (CS, EN, DE, FR, SP, PL, HU)
 - ✅ **Utilities** (`util/`) - clock, logging (s file rotation)
 
 ### Testy
@@ -37,10 +42,16 @@
 - ✅ **Testovací checklist** (`TESTING_CHECKLIST.md`) - přehled testovacího pokrytí
 
 ### Dokumentace
-- ✅ **README.md** - základní dokumentace projektu
+- ✅ **README.md** - základní dokumentace projektu (reorganizováno - pouze Quick Start, Troubleshooting, odkazy na další dokumenty)
+- ✅ **CONFIG.md** - kompletní popis všech konfiguračních parametrů
+- ✅ **API.md** - dokumentace REST API a WebSocket endpointů
+- ✅ **LOCALIZATION.md** - popis lokalizace a podporovaných jazyků
+- ✅ **BUILD_AND_DEPLOY.md** - návod pro vytvoření EXE a nastavení jako služby
+- ✅ **YOUTUBE_API_SETUP.md** - postup nastavení YouTube API tokenu v Google Console
+- ✅ **VR_SUPPORT.md** - VR support - příslib, záměr a popis problému
+- ✅ **RACELAB_VR_SETUP.md** - návod pro nastavení VR dashboardu v RaceLab VR
 - ✅ **tests.md** - dokumentace testů
 - ✅ **config.example.ini** - příklad konfigurace
-- ✅ **RACELAB_VR_SETUP.md** - návod pro nastavení VR dashboardu v RaceLab VR
 - ✅ **CHANGELOG.md** - historie změn projektu
 
 ### Build & Scripts
@@ -71,40 +82,18 @@
 
 ### Důležité (pro produkční použití)
 
-#### 4. API dokumentace
-**Priorita**: Střední  
-**Důvod**: 
-- Popis REST endpointů (parametry, response formáty)
-- WebSocket message formáty
-- Možnost: OpenAPI/Swagger spec
-
-**Co by mělo obsahovat**:
-- `GET /status` - response schema
-- `POST /override` - request/response schema
-- `POST /autoswitch/toggle` - response schema
-- `WS /ws` - message formáty
+#### 4. API dokumentace ✅
+**Status**: Hotovo  
+**Dokumentace**: [API.md](API.md) - kompletní dokumentace všech REST a WebSocket endpointů
 
 
-#### 6. Troubleshooting sekce v README
-**Priorita**: Střední  
-**Důvod**: Pomoc při běžných problémech
+#### 6. Troubleshooting sekce v README ✅
+**Status**: Hotovo  
+**Dokumentace**: [README.md](README.md) - sekce Troubleshooting obsahuje řešení běžných problémů
 
-**Co by mělo obsahovat**:
-- OBS se nepřipojuje → zkontroluj password, port
-- iRacing není detekován → zkontroluj jestli běží
-- Scény se nepřepínají → zkontroluj autoswitch, cooldown
-- Jak zkontrolovat logy
-
-#### 7. Quick Start Guide
-**Priorita**: Střední  
-**Důvod**: Rychlý start pro nové uživatele
-
-**Co by mělo obsahovat**:
-1. Instalace závislostí
-2. Vytvoření config.ini z example
-3. Nastavení OBS WebSocket
-4. Spuštění služby
-6. Testování
+#### 7. Quick Start Guide ✅
+**Status**: Hotovo  
+**Dokumentace**: [README.md](README.md) - sekce Quick Start obsahuje kompletní návod
 
 ---
 
@@ -348,6 +337,9 @@
 - **Cumulative | Current formát** - pro connection times a stream duration
 - **Sublabels** - popisky hodnot s potlačenou barvou
 - **Vertikální zarovnání** - konzistentní spacing napříč řádky
+- **Stream Info sekce** - zobrazení stream title a description z YouTube API
+- **YouTube API varování** - zobrazení varování při quota exceeded nebo missing API key
+- **Lokalizované texty** - všechny texty v dashboardu jsou lokalizovány podle nastaveného jazyka
 
 ### Konfigurační změny
 
@@ -386,6 +378,7 @@ notifications_enabled = true  # Globální zapnutí/vypnutí notifikací
 log_file = logs/irswitch.log  # Volitelné: cesta k log souboru
 log_max_bytes = 10485760  # 10 MB default
 log_backup_count = 5  # Počet backup souborů
+language = CS  # Jazyk rozhraní (CS, EN, DE, FR, SP, PL, HU)
 ```
 
 ### Odstraněné funkce
@@ -398,8 +391,9 @@ log_backup_count = 5  # Počet backup souborů
 
 - Projekt je **funkčně kompletní** - všechny požadované funkce jsou implementované
 - **79+ testů** pokrývají všechny klíčové komponenty včetně nových funkcí
-- **Nové funkce (leden 2026)**: Health check, Metrics, Config hot reload, Shutdown, File logging, Session info
+- **Nové funkce (leden 2026)**: Health check, Metrics, Config hot reload, Shutdown, File logging, Session info, Lokalizace (i18n), YouTube API integrace
 - **Testovací pokrytí**: Všechny nové endpointy a funkcionality jsou plně otestované
+- **Dokumentace**: Kompletní dokumentace rozdělena do samostatných dokumentů (CONFIG.md, API.md, LOCALIZATION.md, BUILD_AND_DEPLOY.md, YOUTUBE_API_SETUP.md, VR_SUPPORT.md)
 - Pro vývoj je projekt připravený, pro end-usery je k dispozici kompletní dokumentace
 
 ## 🆕 Poslední aktualizace (leden 2026)
@@ -412,6 +406,19 @@ log_backup_count = 5  # Počet backup souborů
 - ✅ File logging s rotací (console vždy, file volitelně)
 - ✅ Session info v API a GR Dashboard
 - ✅ GR Dashboard vylepšení (metrics, session info, tlačítka)
+- ✅ **Lokalizace (i18n)** - podpora 7 jazyků (CS, EN, DE, FR, SP, PL, HU)
+  - Lokalizované texty v HTML dashboardech, event logu, toast notifikacích
+  - Konfigurovatelné přes `language` v `config.ini`
+  - Automatické použití při startu aplikace
+- ✅ **YouTube Data API v3 integrace**
+  - Získávání stream title a description z YouTube
+  - Cachování pro snížení API volání
+  - Quota exceeded detection a varování
+  - API key missing detection
+  - Lokalizované zprávy o kvótě a API klíči
+- ✅ **Reorganizace dokumentace**
+  - Nové dokumenty: CONFIG.md, API.md, LOCALIZATION.md, BUILD_AND_DEPLOY.md, YOUTUBE_API_SETUP.md, VR_SUPPORT.md
+  - README.md zjednodušen - pouze Quick Start, Troubleshooting, odkazy na další dokumenty
 
 ### Nové testy (29 testů)
 - ✅ 9 testů pro nové API endpointy (`tests/test_api.py`)
@@ -427,3 +434,6 @@ log_backup_count = 5  # Počet backup souborů
 - ✅ Odstraněn testovací kód z VR Dashboard (testy location a xhr)
 - ✅ Odstraněn VR status wrapper endpoint (`/vr-status-wrapper`) s iframe
 - ✅ VR Dashboard nyní zobrazuje pouze čisté jméno scény bez testovacích informací
+- ✅ YouTube API optimalizace - cachování stream info, volání pouze při změně broadcast_id
+- ✅ YouTube API error handling - správné zpracování 403 (quota exceeded) a missing API key
+- ✅ Lokalizované YouTube API zprávy v dashboardu a event logu

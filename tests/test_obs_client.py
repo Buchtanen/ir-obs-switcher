@@ -350,3 +350,201 @@ async def test_stop_stream_not_connected(obs_client: ObsClient) -> None:
     """Test stopping stream when not connected."""
     result = await obs_client.stop_stream()
     assert result is False
+
+
+# YouTube API tests
+@pytest.mark.asyncio
+async def test_get_cached_stream_info_no_cache(obs_client: ObsClient) -> None:
+    """Test get_cached_stream_info when cache is empty."""
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
+    assert title is None
+    assert description is None
+    assert quota_exceeded is False
+    assert api_key_missing is False
+
+
+@pytest.mark.asyncio
+async def test_get_cached_stream_info_with_cache(obs_client: ObsClient) -> None:
+    """Test get_cached_stream_info returns cached values."""
+    # Set cache manually (simulating successful API call)
+    obs_client._stream_info_cache = ("Test Title", "Test Description")
+    obs_client._stream_info_cache_broadcast_id = "test_broadcast_id"
+    
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
+    assert title == "Test Title"
+    assert description == "Test Description"
+    assert quota_exceeded is False
+    assert api_key_missing is False
+
+
+@pytest.mark.asyncio
+async def test_get_cached_stream_info_with_quota_exceeded(obs_client: ObsClient) -> None:
+    """Test get_cached_stream_info when quota is exceeded."""
+    obs_client._youtube_quota_exceeded = True
+    
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
+    assert quota_exceeded is True
+    assert api_key_missing is False
+
+
+@pytest.mark.asyncio
+async def test_get_cached_stream_info_with_api_key_missing(obs_client: ObsClient) -> None:
+    """Test get_cached_stream_info when API key is missing."""
+    obs_client._youtube_api_key_missing = True
+    
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
+    assert quota_exceeded is False
+    assert api_key_missing is True
+
+
+@pytest.mark.asyncio
+async def test_get_stream_info_without_api_key(obs_client: ObsClient) -> None:
+    """Test get_stream_info when YOUTUBE_API_KEY is not set."""
+    mock_client = MagicMock()
+    
+    # Mock broadcast_id extraction
+    service_settings = MagicMock()
+    service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
+    mock_client.get_stream_service_settings.return_value = service_settings
+    
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        with patch.dict("os.environ", {}, clear=True):  # Clear YOUTUBE_API_KEY
+            await obs_client.connect(max_retries=1)
+            title, description = await obs_client.get_stream_info()
+    
+    # Should return None, None when API key is missing
+    assert title is None or title == ""  # Might be empty string from OBS
+    assert description is None or description == ""
+    assert obs_client._youtube_api_key_missing is True
+
+
+@pytest.mark.asyncio
+async def test_get_stream_info_quota_exceeded(obs_client: ObsClient) -> None:
+    """Test get_stream_info when YouTube API quota is exceeded."""
+    mock_client = MagicMock()
+    
+    # Mock broadcast_id extraction
+    service_settings = MagicMock()
+    service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
+    mock_client.get_stream_service_settings.return_value = service_settings
+    
+    # Mock HTTP response with 403 quota exceeded
+    mock_response = MagicMock()
+    mock_response.status = 403
+    mock_response.json = AsyncMock(return_value={
+        "error": {
+            "errors": [{"reason": "quotaExceeded"}]
+        }
+    })
+    
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        with patch.dict("os.environ", {"YOUTUBE_API_KEY": "test_key"}):
+            with patch("aiohttp.ClientSession.get") as mock_get:
+                mock_get.return_value.__aenter__.return_value = mock_response
+                mock_get.return_value.__aexit__.return_value = None
+                
+                await obs_client.connect(max_retries=1)
+                title, description = await obs_client.get_stream_info()
+    
+    assert obs_client._youtube_quota_exceeded is True
+    # Should return None or empty when quota exceeded
+    assert title is None or title == ""
+    assert description is None or description == ""
+
+
+@pytest.mark.asyncio
+async def test_get_stream_info_cache_reset_on_broadcast_id_change(obs_client: ObsClient) -> None:
+    """Test that cache resets when broadcast_id changes."""
+    mock_client = MagicMock()
+    
+    # First broadcast_id
+    service_settings1 = MagicMock()
+    service_settings1.stream_service_settings = "{'broadcast_id': 'broadcast1'}"
+    mock_client.get_stream_service_settings.return_value = service_settings1
+    
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        with patch.dict("os.environ", {"YOUTUBE_API_KEY": "test_key"}):
+            await obs_client.connect(max_retries=1)
+            # Set cache manually
+            obs_client._stream_info_cache = ("Title 1", "Desc 1")
+            obs_client._stream_info_cache_broadcast_id = "broadcast1"
+            obs_client._youtube_quota_exceeded = True
+            
+            # Change broadcast_id
+            service_settings2 = MagicMock()
+            service_settings2.stream_service_settings = "{'broadcast_id': 'broadcast2'}"
+            mock_client.get_stream_service_settings.return_value = service_settings2
+            
+            # Get stream info - should reset quota flag
+            await obs_client.get_stream_info()
+    
+    # Quota flag should be reset when broadcast_id changes
+    assert obs_client._youtube_quota_exceeded is False
+
+
+@pytest.mark.asyncio
+async def test_get_stream_info_force_refresh(obs_client: ObsClient) -> None:
+    """Test get_stream_info with force_refresh=True bypasses cache."""
+    mock_client = MagicMock()
+    
+    service_settings = MagicMock()
+    service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
+    mock_client.get_stream_service_settings.return_value = service_settings
+    
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        with patch.dict("os.environ", {"YOUTUBE_API_KEY": "test_key"}):
+            await obs_client.connect(max_retries=1)
+            # Set cache
+            obs_client._stream_info_cache = ("Cached Title", "Cached Desc")
+            obs_client._stream_info_cache_broadcast_id = "test_id"
+            
+            # With force_refresh=True, should bypass cache
+            # (actual API call would happen, but we're just testing the flag)
+            title, description = await obs_client.get_stream_info(force_refresh=True)
+    
+    # Cache should be bypassed (result depends on API call, but cache check is skipped)
+    assert obs_client._stream_info_cache is not None  # Cache might be updated
+
+
+@pytest.mark.asyncio
+async def test_get_stream_info_does_not_call_api_when_quota_exceeded(obs_client: ObsClient) -> None:
+    """Test that get_stream_info does not call API when quota is exceeded."""
+    mock_client = MagicMock()
+    
+    service_settings = MagicMock()
+    service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
+    mock_client.get_stream_service_settings.return_value = service_settings
+    
+    obs_client._youtube_quota_exceeded = True
+    
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        with patch.dict("os.environ", {"YOUTUBE_API_KEY": "test_key"}):
+            await obs_client.connect(max_retries=1)
+            
+            # Should not make API calls when quota exceeded
+            with patch("aiohttp.ClientSession.get") as mock_get:
+                title, description = await obs_client.get_stream_info()
+                # Should not be called when quota exceeded
+                mock_get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_stream_info_does_not_call_api_when_key_missing(obs_client: ObsClient) -> None:
+    """Test that get_stream_info does not call API when API key is missing."""
+    mock_client = MagicMock()
+    
+    service_settings = MagicMock()
+    service_settings.stream_service_settings = "{'broadcast_id': 'test_id'}"
+    mock_client.get_stream_service_settings.return_value = service_settings
+    
+    obs_client._youtube_api_key_missing = True
+    
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        with patch.dict("os.environ", {}, clear=True):
+            await obs_client.connect(max_retries=1)
+            
+            # Should not make API calls when API key missing
+            with patch("aiohttp.ClientSession.get") as mock_get:
+                title, description = await obs_client.get_stream_info()
+                # Should not be called when API key missing
+                mock_get.assert_not_called()

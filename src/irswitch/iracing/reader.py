@@ -59,6 +59,10 @@ class IRacingReader:
         self._last_mode: DrivingMode | None = None
         self._last_session_state: int | None = None
         self._last_session_time_value: float | None = None
+        # Cache for process detection (check only once per second to reduce system load)
+        self._process_running_cache: bool | None = None
+        self._process_running_cache_ts: float | None = None
+        self._process_check_interval_s = 1.0  # Check process status max once per second
 
     def startup(self) -> None:
         """Startup the SDK (synchronous, called once)."""
@@ -69,11 +73,25 @@ class IRacingReader:
         Check if iRacing process is running.
         
         This detects iRacing even during loading screen when SDK is not connected.
+        Uses caching to reduce system load - checks max once per second.
         
         Returns:
             True if iRacing process is running, False otherwise
         """
-        return is_iracing_process_running()
+        import time
+        now = time.monotonic()
+        
+        # Use cache if it's still valid (less than 1 second old)
+        if (self._process_running_cache is not None and 
+            self._process_running_cache_ts is not None and 
+            now - self._process_running_cache_ts < self._process_check_interval_s):
+            return self._process_running_cache
+        
+        # Cache expired or not set - check process
+        result = is_iracing_process_running()
+        self._process_running_cache = result
+        self._process_running_cache_ts = now
+        return result
 
     def is_connected(self) -> bool:
         """Check if iRacing is connected."""
