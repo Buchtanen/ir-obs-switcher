@@ -23,8 +23,9 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     """
     Extract driving mode from iRacing SDK data.
     
-    Priority order: GARAGE > REPLAY > RACE > IDLE
+    Priority order: GARAGE > REPLAY > RACE > LOBBY
     Note: SETTINGS detection was removed - iRacing SDK doesn't report it reliably.
+    Note: IDLE is deprecated, use LOBBY instead.
     """
     # Get all relevant variables
     is_replay = as_bool(data.get("IsReplay"))
@@ -61,8 +62,8 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
         except (ValueError, TypeError):
             pass
 
-    # Decide mode - Priority order: GARAGE > REPLAY > RACE > IDLE
-    mode = DrivingMode.IDLE
+    # Decide mode - Priority order: GARAGE > REPLAY > RACE > LOBBY
+    mode = DrivingMode.LOBBY
     if is_in_garage:
         mode = DrivingMode.GARAGE
     elif is_replay:

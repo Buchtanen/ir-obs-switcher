@@ -6,6 +6,7 @@ import asyncio
 import logging
 import signal
 import sys
+from typing import Optional
 
 from aiohttp import web
 
@@ -485,7 +486,7 @@ async def main_loop(
             # Use actual_iracing_mode (before quit_reset_active modification) to check if we're in LOBBY/RACE/GARAGE
             # This ensures session info is read even when quit_reset_active forces CONNECTING state
             actual_mode_for_session = actual_iracing_mode
-            if actual_mode_for_session == DrivingMode.IDLE:
+            if actual_mode_for_session == DrivingMode.LOBBY or actual_mode_for_session == DrivingMode.IDLE:
                 actual_mode_for_session = DrivingMode.LOBBY
             is_actual_race_garage_lobby = actual_mode_for_session in (DrivingMode.RACE, DrivingMode.GARAGE, DrivingMode.LOBBY)
             
@@ -932,6 +933,10 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     try:
         await obs_client.connect(max_retries=1, initial_backoff=0.5)
         if obs_client.is_connected():
+            # Log and event for successful OBS connection at startup
+            log_connection_restored(logger, "OBS")
+            await event_log.add_event("connection_restored", "OBS connection detected at startup")
+            
             # Validate scene mappings after connection
             available_scenes = await obs_client.get_scene_list()
             if available_scenes:
@@ -1087,7 +1092,10 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                     try:
                         await obs_client.connect(max_retries=1, initial_backoff=5.0)
                         if obs_client.is_connected():
-                            logger.info("OBS connected via background task")
+                            log_connection_restored(logger, "OBS")
+                            event_log_instance = get_event_log()
+                            await event_log_instance.add_event("connection_restored", "OBS connection restored via background task")
+                            metrics.set_obs_connected(True)
                             # Update state to reflect OBS connection
                             current = get_current_state()
                             if current:

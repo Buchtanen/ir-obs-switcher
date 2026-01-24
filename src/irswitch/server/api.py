@@ -521,47 +521,6 @@ async def handle_websocket(request: web.Request) -> web.WebSocketResponse:
     return ws
 
 
-async def handle_sdk_snapshot(request: web.Request) -> web.Response:
-    """
-    Capture and return a snapshot of all iRacing SDK variables.
-    
-    Also logs the snapshot to debug.log for analysis.
-    """
-    global _reader
-    
-    if _reader is None:
-        return web.json_response({
-            "error": "iRacing reader not available"
-        }, status=503)
-    
-    try:
-        # Get current state for context
-        current_state = get_current_state()
-        state_mode = current_state.mode.value if current_state and current_state.mode else None
-        
-        # Capture snapshot
-        snapshot = await asyncio.to_thread(_reader.get_all_vars)
-        
-        # Get connection status
-        is_connected = _reader.is_connected()
-        
-        # Prepare response
-        response_data = {
-            "timestamp": int(time.time() * 1000),
-            "is_connected": is_connected,
-            "current_mode": state_mode,
-            "snapshot": snapshot,
-            "snapshot_size": len(snapshot),
-        }
-        
-        return web.json_response(response_data)
-    except Exception as e:
-        logger.error(f"Failed to capture SDK snapshot: {e}", exc_info=True)
-        return web.json_response({
-            "error": str(e)
-        }, status=500)
-
-
 def create_app() -> web.Application:
     """
     Create aiohttp application with REST and WebSocket endpoints.
@@ -597,7 +556,6 @@ def create_app() -> web.Application:
     app.router.add_post("/config/reload", handle_config_reload)
     app.router.add_post("/shutdown", handle_shutdown)
     app.router.add_post("/reset", handle_reset)
-    app.router.add_get("/api/sdk-snapshot", handle_sdk_snapshot)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)

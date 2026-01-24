@@ -941,7 +941,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
             <button onclick="reloadConfig()">Reload Config</button>
             <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
-            <button onclick="captureSdkSnapshot()" style="background: rgba(33, 150, 243, 0.2); border-color: rgba(33, 150, 243, 0.4);">Capture SDK Snapshot</button>
             <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
         </div>
         
@@ -1511,24 +1510,6 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }} catch (error) {{
                 console.error('Failed to reset service:', error);
                 showToast('Reset Failed', error.message || 'Network error', 'error');
-            }}
-        }}
-        
-        async function captureSdkSnapshot() {{
-            try {{
-                showToast('Capturing SDK Snapshot', 'Please wait...', 'info');
-                const response = await fetch(`${{API_BASE}}/api/sdk-snapshot`, {{ method: 'GET' }});
-                const data = await response.json();
-                
-                if (response.ok) {{
-                    showToast('SDK Snapshot Captured', `Captured ${{data.snapshot_size}} variables. Check debug.log for details.`, 'success');
-                    console.log('SDK Snapshot:', data);
-                }} else {{
-                    showToast('Snapshot Failed', data.error || 'Unknown error', 'error');
-                }}
-            }} catch (error) {{
-                console.error('Failed to capture SDK snapshot:', error);
-                showToast('Snapshot Failed', error.message || 'Network error', 'error');
             }}
         }}
         
