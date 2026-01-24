@@ -56,3 +56,5 @@ jobs:
       run: |
         pip install black
         black --check src/ tests/ || true
+      env:
+        NO_COLOR: 1
