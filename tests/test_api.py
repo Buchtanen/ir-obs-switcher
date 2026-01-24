@@ -306,7 +306,7 @@ async def test_metrics(app: web.Application, initial_state: SwitchState) -> None
     metrics.set_obs_connected(True)
 
     # Wait a bit so connection durations are > 0
-    time.sleep(0.01)  # 10ms should be enough for durations to be > 0
+    time.sleep(0.05)  # 50ms should be enough for durations to be > 0
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
