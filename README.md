@@ -1,5 +1,12 @@
 # iRacing → OBS Auto Scene Switcher (Python)
 
+[![Tests](https://github.com/Buchtanen/richa/workflows/Tests/badge.svg)](https://github.com/Buchtanen/richa/actions)
+[![CodeQL](https://github.com/Buchtanen/richa/workflows/CodeQL%20Security%20Analysis/badge.svg)](https://github.com/Buchtanen/richa/actions)
+[![Security](https://github.com/Buchtanen/richa/workflows/Security%20Checks/badge.svg)](https://github.com/Buchtanen/richa/actions)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ## Účel projektu
 
 Tento projekt vznikl z praktické potřeby: **když jezdíš ve VR, nevidíš monitor** a nemůžeš ručně ovládat OBS stream. 
