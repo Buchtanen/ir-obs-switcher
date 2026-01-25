@@ -6,43 +6,40 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
-env:
-  PYTHON_DEFAULT_VERSION: "3.11"
-
 jobs:
   lint:
     name: Lint (ruff)
     uses: ./.github/workflows/lint.yml
     with:
-      python_version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      python_version: "3.11"
       kind: ruff
 
   format:
     name: Format (black)
     uses: ./.github/workflows/lint.yml
     with:
-      python_version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      python_version: "3.11"
       kind: black
 
   type-check:
     name: Type Check (mypy)
     uses: ./.github/workflows/lint.yml
     with:
-      python_version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      python_version: "3.11"
       kind: mypy
 
   security-bandit:
     name: Security (Bandit)
     uses: ./.github/workflows/security.yml
     with:
-      python_version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      python_version: "3.11"
       kind: bandit
 
   security-safety:
     name: Security (Safety)
     uses: ./.github/workflows/security.yml
     with:
-      python_version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      python_version: "3.11"
       kind: safety
     secrets:
       SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
@@ -58,5 +55,5 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     uses: ./.github/workflows/build.yml
     with:
-      python_version: ${{ env.PYTHON_DEFAULT_VERSION }}
+      python_version: "3.11"
       mode: verify
