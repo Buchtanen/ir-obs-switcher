@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ master ]
 
 jobs:
   lint:
@@ -57,7 +57,7 @@ jobs:
   build-verify:
     name: Build Verification
     needs: [test, security-bandit, security-safety]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/master')
     uses: ./.github/workflows/build.yml
     with:
       python_version: "3.11"
