@@ -15,10 +15,10 @@ on:
     outputs:
       archive_name:
         description: "Name of the distribution archive"
-        value: ${{ jobs.export.outputs.archive_name }}
+        value: ${{ inputs.mode == 'distribution' && jobs.export-distribution.outputs.archive_name || '' }}
       version:
         description: "Version of the build"
-        value: ${{ jobs.export.outputs.version }}
+        value: ${{ inputs.mode == 'distribution' && jobs.export-distribution.outputs.version || '' }}
   workflow_dispatch:
     inputs:
       python_version:
@@ -148,18 +148,27 @@ jobs:
           path: ${{ steps.archive.outputs.name }}
           retention-days: 30
 
-  export:
-    name: Export outputs
-    needs: [verify, distribution]
-    if: ${{ always() }}
+  export-verify:
+    name: Export outputs (verify)
+    if: inputs.mode == 'verify'
     runs-on: ubuntu-latest
     outputs:
-      archive_name: >-
-        ${{ needs.distribution.result == 'success' && needs.distribution.outputs.archive_name || '' }}
-      version: >-
-        ${{ needs.distribution.result == 'success' && needs.distribution.outputs.version || '' }}
+      archive_name: ""
+      version: ""
     steps:
       - name: Export outputs (noop)
         run: |
-          echo "archive_name=${{ needs.distribution.outputs.archive_name }}"
-          echo "version=${{ needs.distribution.outputs.version }}"
+          echo "verify mode: no distribution artifact"
+
+  export-distribution:
+    name: Export outputs (distribution)
+    needs: [distribution]
+    if: inputs.mode == 'distribution'
+    runs-on: ubuntu-latest
+    outputs:
+      archive_name: ${{ needs.distribution.outputs.archive_name }}
+      version: ${{ needs.distribution.outputs.version }}
+    steps:
+      - name: Export outputs (noop)
+        run: |
+          echo "distribution mode: exporting outputs"
