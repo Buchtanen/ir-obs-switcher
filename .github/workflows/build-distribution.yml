@@ -75,7 +75,7 @@ jobs:
         Write-Host "Created archive: $archiveName"
 
     - name: Upload distribution artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: irswitch-distribution-${{ steps.version.outputs.version }}
         path: ${{ steps.archive.outputs.name }}
