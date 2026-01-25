@@ -18,7 +18,7 @@ jobs:
     name: Lint (ruff)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
       uses: actions/setup-python@v5
@@ -39,7 +39,7 @@ jobs:
     name: Format (black)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
       uses: actions/setup-python@v5
@@ -60,7 +60,7 @@ jobs:
     name: Type Check (mypy)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
       uses: actions/setup-python@v5
@@ -90,7 +90,7 @@ jobs:
     name: Security (Bandit)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
       uses: actions/setup-python@v5
@@ -120,7 +120,7 @@ jobs:
     name: Security (Safety)
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
       uses: actions/setup-python@v5
@@ -155,7 +155,7 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -212,7 +212,7 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
       uses: actions/setup-python@v5
