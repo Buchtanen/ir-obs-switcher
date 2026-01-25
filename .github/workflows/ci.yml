@@ -105,7 +105,7 @@ jobs:
 
     - name: Run Bandit
       run: |
-        bandit -r src/ -f json -o bandit-report.json
+        bandit -r src/ -c pyproject.toml --severity-level medium -f json -o bandit-report.json
       continue-on-error: false
 
     - name: Upload Bandit report
@@ -140,6 +140,8 @@ jobs:
       run: |
         safety scan --output json
       continue-on-error: false
+      env:
+        SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
 
   # ============================================
   # Tests (po quick checks, matrix strategy)

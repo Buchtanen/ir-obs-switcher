@@ -15,12 +15,10 @@ import aiohttp
 from aiohttp import web
 from aiohttp.web_ws import WebSocketResponse
 
-# Local imports
 from irswitch import __version__
 from irswitch.config import AppConfig
-
-# Import OAuth manager creator
 from irswitch.oauth import OAuthError, create_oauth_manager
+from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
 from irswitch.server.dashboards import (
     handle_gr_status,
     handle_test_widget,
@@ -28,7 +26,6 @@ from irswitch.server.dashboards import (
 )
 from irswitch.server.event_log import get_event_log
 from irswitch.server.metrics import get_metrics
-from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
 
 # Mutable container for config to avoid DeprecationWarning when updating at runtime
 # Using a list wrapper allows us to update config without triggering aiohttp's
