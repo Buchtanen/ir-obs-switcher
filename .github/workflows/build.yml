@@ -15,10 +15,10 @@ on:
     outputs:
       archive_name:
         description: "Name of the distribution archive"
-        value: ${{ jobs.distribution.outputs.archive_name }}
+        value: ${{ jobs.export.outputs.archive_name }}
       version:
         description: "Version of the build"
-        value: ${{ jobs.distribution.outputs.version }}
+        value: ${{ jobs.export.outputs.version }}
   workflow_dispatch:
     inputs:
       python_version:
@@ -147,3 +147,19 @@ jobs:
           name: irswitch-distribution-${{ steps.version.outputs.version }}
           path: ${{ steps.archive.outputs.name }}
           retention-days: 30
+
+  export:
+    name: Export outputs
+    needs: [verify, distribution]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    outputs:
+      archive_name: >-
+        ${{ needs.distribution.result == 'success' && needs.distribution.outputs.archive_name || '' }}
+      version: >-
+        ${{ needs.distribution.result == 'success' && needs.distribution.outputs.version || '' }}
+    steps:
+      - name: Export outputs (noop)
+        run: |
+          echo "archive_name=${{ needs.distribution.outputs.archive_name }}"
+          echo "version=${{ needs.distribution.outputs.version }}"

@@ -48,6 +48,11 @@ jobs:
     name: Tests
     needs: [lint, format, type-check]
     uses: ./.github/workflows/tests.yml
+    with:
+      # Explicit inputs to avoid accidental changes when defaults in tests.yml evolve.
+      python_versions_json: "[\"3.11\",\"3.12\",\"3.13\"]"
+      run_coverage: true
+      coverage_python: "3.11"
 
   build-verify:
     name: Build Verification
