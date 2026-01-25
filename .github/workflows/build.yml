@@ -15,10 +15,10 @@ on:
     outputs:
       archive_name:
         description: "Name of the distribution archive"
-        value: ${{ inputs.mode == 'distribution' && jobs.export-distribution.outputs.archive_name || '' }}
+        value: ${{ jobs.export.outputs.archive_name }}
       version:
         description: "Version of the build"
-        value: ${{ inputs.mode == 'distribution' && jobs.export-distribution.outputs.version || '' }}
+        value: ${{ jobs.export.outputs.version }}
   workflow_dispatch:
     inputs:
       python_version:
@@ -148,27 +148,27 @@ jobs:
           path: ${{ steps.archive.outputs.name }}
           retention-days: 30
 
-  export-verify:
-    name: Export outputs (verify)
-    if: inputs.mode == 'verify'
+  export:
+    name: Export outputs
+    needs: [verify, distribution]
+    if: always()
     runs-on: ubuntu-latest
     outputs:
-      archive_name: ""
-      version: ""
+      archive_name: ${{ steps.out.outputs.archive_name }}
+      version: ${{ steps.out.outputs.version }}
     steps:
-      - name: Export outputs (noop)
+      - name: Export outputs
+        id: out
+        env:
+          MODE: ${{ inputs.mode }}
+          DIST_RESULT: ${{ needs.distribution.result }}
+          ARCHIVE_NAME: ${{ needs.distribution.outputs.archive_name }}
+          VERSION: ${{ needs.distribution.outputs.version }}
         run: |
-          echo "verify mode: no distribution artifact"
-
-  export-distribution:
-    name: Export outputs (distribution)
-    needs: [distribution]
-    if: inputs.mode == 'distribution'
-    runs-on: ubuntu-latest
-    outputs:
-      archive_name: ${{ needs.distribution.outputs.archive_name }}
-      version: ${{ needs.distribution.outputs.version }}
-    steps:
-      - name: Export outputs (noop)
-        run: |
-          echo "distribution mode: exporting outputs"
+          if [ "${MODE}" = "distribution" ] && [ "${DIST_RESULT}" = "success" ]; then
+            echo "archive_name=${ARCHIVE_NAME}" >> "${GITHUB_OUTPUT}"
+            echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "archive_name=" >> "${GITHUB_OUTPUT}"
+            echo "version=" >> "${GITHUB_OUTPUT}"
+          fi
