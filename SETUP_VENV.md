@@ -13,6 +13,9 @@ python -m venv .venv
 # Aktivace virtuálního prostředí
 .venv\Scripts\Activate.ps1
 
+# Upgrade build tooling (fix Safety findings for old setuptools)
+python -m pip install -U "pip" "setuptools>=78.1.1" "wheel"
+
 # Instalace závislostí z pyproject.toml
 pip install -e .
 ```
@@ -27,6 +30,9 @@ python3 -m venv .venv
 
 # Aktivace virtuálního prostředí
 source .venv/bin/activate
+
+# Upgrade build tooling (fix Safety findings for old setuptools)
+python -m pip install -U "pip" "setuptools>=78.1.1" "wheel"
 
 # Instalace závislostí z pyproject.toml
 pip install -e .
