@@ -1,0 +1,380 @@
+﻿2026-01-25T03:17:54.7973598Z Current runner version: '2.331.0'
+2026-01-25T03:17:54.8006678Z ##[group]Runner Image Provisioner
+2026-01-25T03:17:54.8007759Z Hosted Compute Agent
+2026-01-25T03:17:54.8008644Z Version: 20260115.477
+2026-01-25T03:17:54.8009661Z Commit: 4b342d620503cbe250a3154040964899ea7c9b00
+2026-01-25T03:17:54.8010725Z Build Date: 2026-01-15T22:32:41Z
+2026-01-25T03:17:54.8011708Z Worker ID: {6b6ca537-76a4-406f-9af0-5ee125fa63f7}
+2026-01-25T03:17:54.8012889Z Azure Region: northcentralus
+2026-01-25T03:17:54.8013816Z ##[endgroup]
+2026-01-25T03:17:54.8015729Z ##[group]Operating System
+2026-01-25T03:17:54.8016801Z Microsoft Windows Server 2025
+2026-01-25T03:17:54.8017679Z 10.0.26100
+2026-01-25T03:17:54.8018410Z Datacenter
+2026-01-25T03:17:54.8019850Z ##[endgroup]
+2026-01-25T03:17:54.8021054Z ##[group]Runner Image
+2026-01-25T03:17:54.8021892Z Image: windows-2025
+2026-01-25T03:17:54.8022661Z Version: 20260119.4.1
+2026-01-25T03:17:54.8024859Z Included Software: https://github.com/actions/runner-images/blob/win25/20260119.4/images/windows/Windows2025-Readme.md
+2026-01-25T03:17:54.8027415Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260119.4
+2026-01-25T03:17:54.8028915Z ##[endgroup]
+2026-01-25T03:17:54.8033545Z ##[group]GITHUB_TOKEN Permissions
+2026-01-25T03:17:54.8036271Z Actions: write
+2026-01-25T03:17:54.8037031Z ArtifactMetadata: write
+2026-01-25T03:17:54.8038001Z Attestations: write
+2026-01-25T03:17:54.8038790Z Checks: write
+2026-01-25T03:17:54.8040011Z Contents: write
+2026-01-25T03:17:54.8040809Z Deployments: write
+2026-01-25T03:17:54.8041645Z Discussions: write
+2026-01-25T03:17:54.8042373Z Issues: write
+2026-01-25T03:17:54.8043103Z Metadata: read
+2026-01-25T03:17:54.8043859Z Models: read
+2026-01-25T03:17:54.8044550Z Packages: write
+2026-01-25T03:17:54.8045339Z Pages: write
+2026-01-25T03:17:54.8046160Z PullRequests: write
+2026-01-25T03:17:54.8047029Z RepositoryProjects: write
+2026-01-25T03:17:54.8047895Z SecurityEvents: write
+2026-01-25T03:17:54.8048781Z Statuses: write
+2026-01-25T03:17:54.8049521Z ##[endgroup]
+2026-01-25T03:17:54.8051954Z Secret source: Actions
+2026-01-25T03:17:54.8053052Z Prepare workflow directory
+2026-01-25T03:17:54.8489004Z Prepare all required actions
+2026-01-25T03:17:54.8526919Z Getting action download info
+2026-01-25T03:17:55.0789896Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-25T03:17:55.2043548Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-01-25T03:17:55.4673450Z Complete job name: Security (Safety)
+2026-01-25T03:17:55.6153856Z ##[group]Run actions/checkout@v4
+2026-01-25T03:17:55.6154910Z with:
+2026-01-25T03:17:55.6155279Z   repository: Buchtanen/ir-obs-switcher
+2026-01-25T03:17:55.6155912Z   token: ***
+2026-01-25T03:17:55.6156250Z   ssh-strict: true
+2026-01-25T03:17:55.6156604Z   ssh-user: git
+2026-01-25T03:17:55.6156960Z   persist-credentials: true
+2026-01-25T03:17:55.6157350Z   clean: true
+2026-01-25T03:17:55.6157730Z   sparse-checkout-cone-mode: true
+2026-01-25T03:17:55.6158152Z   fetch-depth: 1
+2026-01-25T03:17:55.6158491Z   fetch-tags: false
+2026-01-25T03:17:55.6158845Z   show-progress: true
+2026-01-25T03:17:55.6159200Z   lfs: false
+2026-01-25T03:17:55.6159518Z   submodules: false
+2026-01-25T03:17:55.6159877Z   set-safe-directory: true
+2026-01-25T03:17:55.6160446Z env:
+2026-01-25T03:17:55.6160786Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:17:55.6161195Z ##[endgroup]
+2026-01-25T03:17:55.7818115Z Syncing repository: Buchtanen/ir-obs-switcher
+2026-01-25T03:17:55.7820184Z ##[group]Getting Git version info
+2026-01-25T03:17:55.7821850Z Working directory is 'D:\a\ir-obs-switcher\ir-obs-switcher'
+2026-01-25T03:17:55.9141298Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-01-25T03:17:56.3083228Z git version 2.52.0.windows.1
+2026-01-25T03:17:56.3148113Z ##[endgroup]
+2026-01-25T03:17:56.3173215Z Temporarily overriding HOME='D:\a\_temp\8572547d-013a-4ef8-b04e-47efee949e7e' before making global git config changes
+2026-01-25T03:17:56.3178057Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-25T03:17:56.3187831Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:17:56.3835603Z Deleting the contents of 'D:\a\ir-obs-switcher\ir-obs-switcher'
+2026-01-25T03:17:56.3842395Z ##[group]Initializing the repository
+2026-01-25T03:17:56.3852236Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:17:56.4910794Z Initialized empty Git repository in D:/a/ir-obs-switcher/ir-obs-switcher/.git/
+2026-01-25T03:17:56.4953406Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Buchtanen/ir-obs-switcher
+2026-01-25T03:17:56.5491650Z ##[endgroup]
+2026-01-25T03:17:56.5492711Z ##[group]Disabling automatic garbage collection
+2026-01-25T03:17:56.5493869Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-01-25T03:17:56.5772598Z ##[endgroup]
+2026-01-25T03:17:56.5773645Z ##[group]Setting up auth
+2026-01-25T03:17:56.5791263Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-01-25T03:17:56.6080038Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-01-25T03:17:58.1513016Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-25T03:17:58.1809856Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-01-25T03:17:58.7157702Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-25T03:17:58.7455860Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-25T03:17:59.2723055Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-01-25T03:17:59.3035896Z ##[endgroup]
+2026-01-25T03:17:59.3037417Z ##[group]Fetching the repository
+2026-01-25T03:17:59.3053650Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ca3883770c9a7a15a7ff65e341c4dc45c097b404:refs/remotes/origin/master
+2026-01-25T03:18:00.3960655Z From https://github.com/Buchtanen/ir-obs-switcher
+2026-01-25T03:18:00.3961293Z  * [new ref]         ca3883770c9a7a15a7ff65e341c4dc45c097b404 -> origin/master
+2026-01-25T03:18:00.4233734Z ##[endgroup]
+2026-01-25T03:18:00.4234232Z ##[group]Determining the checkout info
+2026-01-25T03:18:00.4237529Z ##[endgroup]
+2026-01-25T03:18:00.4253820Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-01-25T03:18:00.4689244Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-01-25T03:18:00.4981790Z ##[group]Checking out the ref
+2026-01-25T03:18:00.4991460Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B master refs/remotes/origin/master
+2026-01-25T03:18:00.6131106Z branch 'master' set up to track 'origin/master'.
+2026-01-25T03:18:00.6141616Z Reset branch 'master'
+2026-01-25T03:18:00.6184771Z ##[endgroup]
+2026-01-25T03:18:00.6645409Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-01-25T03:18:00.6917530Z ca3883770c9a7a15a7ff65e341c4dc45c097b404
+2026-01-25T03:18:00.7341836Z ##[group]Run actions/setup-python@v5
+2026-01-25T03:18:00.7342165Z with:
+2026-01-25T03:18:00.7342336Z   python-version: 3.11
+2026-01-25T03:18:00.7342542Z   cache: pip
+2026-01-25T03:18:00.7342704Z   check-latest: false
+2026-01-25T03:18:00.7343753Z   token: ***
+2026-01-25T03:18:00.7343937Z   update-environment: true
+2026-01-25T03:18:00.7344160Z   allow-prereleases: false
+2026-01-25T03:18:00.7344366Z   freethreaded: false
+2026-01-25T03:18:00.7344542Z env:
+2026-01-25T03:18:00.7344700Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:00.7344896Z ##[endgroup]
+2026-01-25T03:18:00.9561715Z ##[group]Installed versions
+2026-01-25T03:18:00.9827098Z Successfully set up CPython (3.11.9)
+2026-01-25T03:18:00.9827864Z ##[endgroup]
+2026-01-25T03:18:04.1183784Z Cache hit for: setup-python-Windows-x64-python-3.11.9-pip-6298c4c1c6fe7274613782d7d074812f017bad7b5e4aead8ed01966840f9b471
+2026-01-25T03:18:04.5970539Z Received 19248942 of 19248942 (100.0%), 50.2 MBs/sec
+2026-01-25T03:18:04.5973684Z Cache Size: ~18 MB (19248942 B)
+2026-01-25T03:18:04.6044736Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/bf10d93c-0e12-4d68-9d82-b5ac0fcd3e2f/cache.tzst -P -C D:/a/ir-obs-switcher/ir-obs-switcher --force-local --use-compress-program "zstd -d"
+2026-01-25T03:18:05.1952089Z Cache restored successfully
+2026-01-25T03:18:05.1975130Z Cache restored from key: setup-python-Windows-x64-python-3.11.9-pip-63d7fc55c5d66312bd981840dfd4119e9d8520464e8b2345bfec07467a6c04a4
+2026-01-25T03:18:05.2283575Z ##[group]Run python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+2026-01-25T03:18:05.2284268Z [36;1mpython -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"[0m
+2026-01-25T03:18:05.2284671Z [36;1mpip install safety[0m
+2026-01-25T03:18:05.2284902Z [36;1mpip install -e .[0m
+2026-01-25T03:18:05.3019036Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-01-25T03:18:05.3020075Z env:
+2026-01-25T03:18:05.3020293Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:05.3020675Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:05.3021241Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-01-25T03:18:05.3021782Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:05.3022295Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:05.3022769Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:05.3023257Z   PYTHONPATH: D:\a\ir-obs-switcher\ir-obs-switcher/src
+2026-01-25T03:18:05.3023597Z ##[endgroup]
+2026-01-25T03:18:13.1621944Z Requirement already satisfied: pip in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (25.3)
+2026-01-25T03:18:13.7018088Z Collecting setuptools>=78.1.1
+2026-01-25T03:18:13.7048722Z   Using cached setuptools-80.10.1-py3-none-any.whl.metadata (6.7 kB)
+2026-01-25T03:18:13.7802151Z Collecting wheel
+2026-01-25T03:18:14.0641384Z   Downloading wheel-0.46.3-py3-none-any.whl.metadata (2.4 kB)
+2026-01-25T03:18:14.1429831Z Collecting packaging>=24.0 (from wheel)
+2026-01-25T03:18:14.1656509Z   Downloading packaging-26.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-25T03:18:14.1905434Z Using cached setuptools-80.10.1-py3-none-any.whl (1.1 MB)
+2026-01-25T03:18:14.2119248Z Downloading wheel-0.46.3-py3-none-any.whl (30 kB)
+2026-01-25T03:18:14.2980203Z Downloading packaging-26.0-py3-none-any.whl (74 kB)
+2026-01-25T03:18:14.4251933Z Installing collected packages: setuptools, packaging, wheel
+2026-01-25T03:18:14.4258667Z   Attempting uninstall: setuptools
+2026-01-25T03:18:14.4282089Z     Found existing installation: setuptools 65.5.0
+2026-01-25T03:18:14.8549016Z     Uninstalling setuptools-65.5.0:
+2026-01-25T03:18:14.9271510Z       Successfully uninstalled setuptools-65.5.0
+2026-01-25T03:18:16.8752921Z 
+2026-01-25T03:18:16.8764371Z Successfully installed packaging-26.0 setuptools-80.10.1 wheel-0.46.3
+2026-01-25T03:18:18.4471024Z Collecting safety
+2026-01-25T03:18:18.7139578Z   Downloading safety-3.7.0-py3-none-any.whl.metadata (11 kB)
+2026-01-25T03:18:18.8142380Z Collecting authlib>=1.2.0 (from safety)
+2026-01-25T03:18:18.8301946Z   Downloading authlib-1.6.6-py2.py3-none-any.whl.metadata (9.8 kB)
+2026-01-25T03:18:18.8947294Z Collecting click>=8.0.2 (from safety)
+2026-01-25T03:18:18.9101650Z   Downloading click-8.3.1-py3-none-any.whl.metadata (2.6 kB)
+2026-01-25T03:18:18.9642712Z Collecting dparse>=0.6.4 (from safety)
+2026-01-25T03:18:18.9800881Z   Downloading dparse-0.6.4-py3-none-any.whl.metadata (5.5 kB)
+2026-01-25T03:18:19.0408055Z Collecting filelock<4.0,>=3.16.1 (from safety)
+2026-01-25T03:18:19.0581625Z   Downloading filelock-3.20.3-py3-none-any.whl.metadata (2.1 kB)
+2026-01-25T03:18:19.1152371Z Collecting httpx (from safety)
+2026-01-25T03:18:19.1303287Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2026-01-25T03:18:19.1873587Z Collecting jinja2>=3.1.0 (from safety)
+2026-01-25T03:18:19.2042282Z   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+2026-01-25T03:18:19.3270154Z Collecting marshmallow>=3.15.0 (from safety)
+2026-01-25T03:18:19.3429345Z   Downloading marshmallow-4.2.1-py3-none-any.whl.metadata (7.4 kB)
+2026-01-25T03:18:19.3973501Z Collecting nltk>=3.9 (from safety)
+2026-01-25T03:18:19.4134526Z   Downloading nltk-3.9.2-py3-none-any.whl.metadata (3.2 kB)
+2026-01-25T03:18:19.4422291Z Requirement already satisfied: packaging>=21.0 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from safety) (26.0)
+2026-01-25T03:18:19.5636898Z Collecting pydantic>=2.6.0 (from safety)
+2026-01-25T03:18:19.5684232Z   Using cached pydantic-2.12.5-py3-none-any.whl.metadata (90 kB)
+2026-01-25T03:18:19.6171642Z Collecting requests (from safety)
+2026-01-25T03:18:19.6326097Z   Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+2026-01-25T03:18:19.8018328Z Collecting ruamel-yaml>=0.17.21 (from safety)
+2026-01-25T03:18:19.8177580Z   Downloading ruamel_yaml-0.19.1-py3-none-any.whl.metadata (16 kB)
+2026-01-25T03:18:19.8685562Z Collecting safety-schemas==0.0.16 (from safety)
+2026-01-25T03:18:19.8842521Z   Downloading safety_schemas-0.0.16-py3-none-any.whl.metadata (1.1 kB)
+2026-01-25T03:18:19.9386969Z Collecting tenacity>=8.1.0 (from safety)
+2026-01-25T03:18:19.9577193Z   Downloading tenacity-9.1.2-py3-none-any.whl.metadata (1.2 kB)
+2026-01-25T03:18:20.0089008Z Collecting tomlkit (from safety)
+2026-01-25T03:18:20.0244195Z   Downloading tomlkit-0.14.0-py3-none-any.whl.metadata (2.8 kB)
+2026-01-25T03:18:20.0845569Z Collecting typer>=0.16.0 (from safety)
+2026-01-25T03:18:20.0997632Z   Downloading typer-0.21.1-py3-none-any.whl.metadata (16 kB)
+2026-01-25T03:18:20.1523434Z Collecting typing-extensions>=4.7.1 (from safety)
+2026-01-25T03:18:20.1546822Z   Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-25T03:18:20.3664971Z Collecting cryptography (from authlib>=1.2.0->safety)
+2026-01-25T03:18:20.3845176Z   Downloading cryptography-46.0.3-cp311-abi3-win_amd64.whl.metadata (5.7 kB)
+2026-01-25T03:18:20.4342470Z Collecting colorama (from click>=8.0.2->safety)
+2026-01-25T03:18:20.4654489Z   Using cached colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2026-01-25T03:18:20.5472546Z Collecting MarkupSafe>=2.0 (from jinja2>=3.1.0->safety)
+2026-01-25T03:18:20.5684059Z   Downloading markupsafe-3.0.3-cp311-cp311-win_amd64.whl.metadata (2.8 kB)
+2026-01-25T03:18:20.6680226Z Collecting joblib (from nltk>=3.9->safety)
+2026-01-25T03:18:20.6833774Z   Downloading joblib-1.5.3-py3-none-any.whl.metadata (5.5 kB)
+2026-01-25T03:18:21.0986382Z Collecting regex>=2021.8.3 (from nltk>=3.9->safety)
+2026-01-25T03:18:21.1146531Z   Downloading regex-2026.1.15-cp311-cp311-win_amd64.whl.metadata (41 kB)
+2026-01-25T03:18:21.2011123Z Collecting tqdm (from nltk>=3.9->safety)
+2026-01-25T03:18:21.2166765Z   Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+2026-01-25T03:18:21.2682155Z Collecting annotated-types>=0.6.0 (from pydantic>=2.6.0->safety)
+2026-01-25T03:18:21.2704717Z   Using cached annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+2026-01-25T03:18:21.9401832Z Collecting pydantic-core==2.41.5 (from pydantic>=2.6.0->safety)
+2026-01-25T03:18:21.9428686Z   Using cached pydantic_core-2.41.5-cp311-cp311-win_amd64.whl.metadata (7.4 kB)
+2026-01-25T03:18:21.9784814Z Collecting typing-inspection>=0.4.2 (from pydantic>=2.6.0->safety)
+2026-01-25T03:18:21.9807583Z   Using cached typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+2026-01-25T03:18:22.0237821Z Collecting shellingham>=1.3.0 (from typer>=0.16.0->safety)
+2026-01-25T03:18:22.0388994Z   Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+2026-01-25T03:18:22.1187498Z Collecting rich>=10.11.0 (from typer>=0.16.0->safety)
+2026-01-25T03:18:22.1341678Z   Downloading rich-14.3.1-py3-none-any.whl.metadata (18 kB)
+2026-01-25T03:18:22.1927168Z Collecting markdown-it-py>=2.2.0 (from rich>=10.11.0->typer>=0.16.0->safety)
+2026-01-25T03:18:22.2077915Z   Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+2026-01-25T03:18:22.2703456Z Collecting pygments<3.0.0,>=2.13.0 (from rich>=10.11.0->typer>=0.16.0->safety)
+2026-01-25T03:18:22.2854691Z   Downloading pygments-2.19.2-py3-none-any.whl.metadata (2.5 kB)
+2026-01-25T03:18:22.3357692Z Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=10.11.0->typer>=0.16.0->safety)
+2026-01-25T03:18:22.3507454Z   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+2026-01-25T03:18:22.5343663Z Collecting cffi>=2.0.0 (from cryptography->authlib>=1.2.0->safety)
+2026-01-25T03:18:22.5497418Z   Downloading cffi-2.0.0-cp311-cp311-win_amd64.whl.metadata (2.6 kB)
+2026-01-25T03:18:22.6024521Z Collecting pycparser (from cffi>=2.0.0->cryptography->authlib>=1.2.0->safety)
+2026-01-25T03:18:22.6121200Z   Downloading pycparser-3.0-py3-none-any.whl.metadata (8.2 kB)
+2026-01-25T03:18:22.6813050Z Collecting anyio (from httpx->safety)
+2026-01-25T03:18:22.7000795Z   Downloading anyio-4.12.1-py3-none-any.whl.metadata (4.3 kB)
+2026-01-25T03:18:22.7554364Z Collecting certifi (from httpx->safety)
+2026-01-25T03:18:22.7708389Z   Downloading certifi-2026.1.4-py3-none-any.whl.metadata (2.5 kB)
+2026-01-25T03:18:22.8238087Z Collecting httpcore==1.* (from httpx->safety)
+2026-01-25T03:18:22.8392498Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2026-01-25T03:18:22.8874953Z Collecting idna (from httpx->safety)
+2026-01-25T03:18:22.8898037Z   Using cached idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+2026-01-25T03:18:22.9241181Z Collecting h11>=0.16 (from httpcore==1.*->httpx->safety)
+2026-01-25T03:18:22.9391791Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-01-25T03:18:23.0754252Z Collecting charset_normalizer<4,>=2 (from requests->safety)
+2026-01-25T03:18:23.0912123Z   Downloading charset_normalizer-3.4.4-cp311-cp311-win_amd64.whl.metadata (38 kB)
+2026-01-25T03:18:23.1666160Z Collecting urllib3<3,>=1.21.1 (from requests->safety)
+2026-01-25T03:18:23.1822136Z   Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+2026-01-25T03:18:23.2309055Z Downloading safety-3.7.0-py3-none-any.whl (312 kB)
+2026-01-25T03:18:23.2909643Z Downloading safety_schemas-0.0.16-py3-none-any.whl (39 kB)
+2026-01-25T03:18:23.3507907Z Downloading filelock-3.20.3-py3-none-any.whl (16 kB)
+2026-01-25T03:18:23.3861459Z Downloading authlib-1.6.6-py2.py3-none-any.whl (244 kB)
+2026-01-25T03:18:23.4245341Z Downloading click-8.3.1-py3-none-any.whl (108 kB)
+2026-01-25T03:18:23.4581133Z Downloading dparse-0.6.4-py3-none-any.whl (11 kB)
+2026-01-25T03:18:23.4937953Z Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-01-25T03:18:23.5284999Z Downloading markupsafe-3.0.3-cp311-cp311-win_amd64.whl (15 kB)
+2026-01-25T03:18:23.5591446Z Downloading marshmallow-4.2.1-py3-none-any.whl (48 kB)
+2026-01-25T03:18:23.5955343Z Downloading nltk-3.9.2-py3-none-any.whl (1.5 MB)
+2026-01-25T03:18:23.6464217Z    ---------------------------------------- 1.5/1.5 MB 26.6 MB/s  0:00:00
+2026-01-25T03:18:23.6484875Z Using cached pydantic-2.12.5-py3-none-any.whl (463 kB)
+2026-01-25T03:18:23.6508071Z Using cached pydantic_core-2.41.5-cp311-cp311-win_amd64.whl (2.0 MB)
+2026-01-25T03:18:23.6538752Z Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+2026-01-25T03:18:23.6697951Z Downloading regex-2026.1.15-cp311-cp311-win_amd64.whl (277 kB)
+2026-01-25T03:18:23.7100225Z Downloading ruamel_yaml-0.19.1-py3-none-any.whl (118 kB)
+2026-01-25T03:18:23.7460862Z Downloading tenacity-9.1.2-py3-none-any.whl (28 kB)
+2026-01-25T03:18:23.7844857Z Downloading typer-0.21.1-py3-none-any.whl (47 kB)
+2026-01-25T03:18:23.8218074Z Downloading rich-14.3.1-py3-none-any.whl (309 kB)
+2026-01-25T03:18:23.8651291Z Downloading pygments-2.19.2-py3-none-any.whl (1.2 MB)
+2026-01-25T03:18:23.9011431Z    ---------------------------------------- 1.2/1.2 MB 20.5 MB/s  0:00:00
+2026-01-25T03:18:23.9164387Z Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+2026-01-25T03:18:23.9487472Z Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+2026-01-25T03:18:23.9828427Z Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+2026-01-25T03:18:24.0005227Z Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+2026-01-25T03:18:24.0044819Z Using cached typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+2026-01-25T03:18:24.0065501Z Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2026-01-25T03:18:24.0241645Z Downloading cryptography-46.0.3-cp311-abi3-win_amd64.whl (3.5 MB)
+2026-01-25T03:18:24.0781546Z    ---------------------------------------- 3.5/3.5 MB 69.2 MB/s  0:00:00
+2026-01-25T03:18:24.0933991Z Downloading cffi-2.0.0-cp311-cp311-win_amd64.whl (182 kB)
+2026-01-25T03:18:24.1251070Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+2026-01-25T03:18:24.1577778Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+2026-01-25T03:18:24.1899579Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-01-25T03:18:24.2272534Z Downloading anyio-4.12.1-py3-none-any.whl (113 kB)
+2026-01-25T03:18:24.2512250Z Using cached idna-3.11-py3-none-any.whl (71 kB)
+2026-01-25T03:18:24.2670798Z Downloading certifi-2026.1.4-py3-none-any.whl (152 kB)
+2026-01-25T03:18:24.3035638Z Downloading joblib-1.5.3-py3-none-any.whl (309 kB)
+2026-01-25T03:18:24.3531918Z Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+2026-01-25T03:18:24.3843534Z Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+2026-01-25T03:18:24.4213529Z Downloading charset_normalizer-3.4.4-cp311-cp311-win_amd64.whl (106 kB)
+2026-01-25T03:18:24.4528666Z Downloading urllib3-2.6.3-py3-none-any.whl (131 kB)
+2026-01-25T03:18:24.4849780Z Downloading tomlkit-0.14.0-py3-none-any.whl (39 kB)
+2026-01-25T03:18:24.5187572Z Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+2026-01-25T03:18:24.7333462Z Installing collected packages: urllib3, typing-extensions, tomlkit, tenacity, shellingham, ruamel-yaml, regex, pygments, pycparser, mdurl, marshmallow, MarkupSafe, joblib, idna, h11, filelock, dparse, colorama, charset_normalizer, certifi, annotated-types, typing-inspection, tqdm, requests, pydantic-core, markdown-it-py, jinja2, httpcore, click, cffi, anyio, rich, pydantic, nltk, httpx, cryptography, typer, safety-schemas, authlib, safety
+2026-01-25T03:18:38.2653224Z 
+2026-01-25T03:18:38.2685641Z Successfully installed MarkupSafe-3.0.3 annotated-types-0.7.0 anyio-4.12.1 authlib-1.6.6 certifi-2026.1.4 cffi-2.0.0 charset_normalizer-3.4.4 click-8.3.1 colorama-0.4.6 cryptography-46.0.3 dparse-0.6.4 filelock-3.20.3 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.11 jinja2-3.1.6 joblib-1.5.3 markdown-it-py-4.0.0 marshmallow-4.2.1 mdurl-0.1.2 nltk-3.9.2 pycparser-3.0 pydantic-2.12.5 pydantic-core-2.41.5 pygments-2.19.2 regex-2026.1.15 requests-2.32.5 rich-14.3.1 ruamel-yaml-0.19.1 safety-3.7.0 safety-schemas-0.0.16 shellingham-1.5.4 tenacity-9.1.2 tomlkit-0.14.0 tqdm-4.67.1 typer-0.21.1 typing-extensions-4.15.0 typing-inspection-0.4.2 urllib3-2.6.3
+2026-01-25T03:18:39.7190939Z Obtaining file:///D:/a/ir-obs-switcher/ir-obs-switcher
+2026-01-25T03:18:39.7226238Z   Installing build dependencies: started
+2026-01-25T03:18:41.8259110Z   Installing build dependencies: finished with status 'done'
+2026-01-25T03:18:41.8274457Z   Checking if build backend supports build_editable: started
+2026-01-25T03:18:42.2750035Z   Checking if build backend supports build_editable: finished with status 'done'
+2026-01-25T03:18:42.2773295Z   Getting requirements to build editable: started
+2026-01-25T03:18:42.8582820Z   Getting requirements to build editable: finished with status 'done'
+2026-01-25T03:18:42.8611777Z   Preparing editable metadata (pyproject.toml): started
+2026-01-25T03:18:43.2000208Z   Preparing editable metadata (pyproject.toml): finished with status 'done'
+2026-01-25T03:18:44.2046331Z Collecting aiohttp>=3.9 (from irswitch==0.7.0)
+2026-01-25T03:18:44.2072424Z   Using cached aiohttp-3.13.3-cp311-cp311-win_amd64.whl.metadata (8.4 kB)
+2026-01-25T03:18:44.2330894Z Collecting obsws-python>=1.6 (from irswitch==0.7.0)
+2026-01-25T03:18:44.2354245Z   Using cached obsws_python-1.8.0-py3-none-any.whl.metadata (5.6 kB)
+2026-01-25T03:18:44.2389439Z Requirement already satisfied: pydantic>=2.6 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from irswitch==0.7.0) (2.12.5)
+2026-01-25T03:18:44.2620067Z Collecting pyirsdk>=1.3 (from irswitch==0.7.0)
+2026-01-25T03:18:44.2643879Z   Using cached pyirsdk-1.3.5-py3-none-any.whl.metadata (565 bytes)
+2026-01-25T03:18:44.2945297Z Collecting pynput>=1.7 (from irswitch==0.7.0)
+2026-01-25T03:18:44.2969183Z   Using cached pynput-1.8.1-py2.py3-none-any.whl.metadata (32 kB)
+2026-01-25T03:18:44.3028576Z Requirement already satisfied: colorama>=0.4.6 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from irswitch==0.7.0) (0.4.6)
+2026-01-25T03:18:44.3260714Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:44.3283461Z   Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+2026-01-25T03:18:44.3512838Z Collecting aiosignal>=1.4.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:44.3536101Z   Using cached aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+2026-01-25T03:18:44.3806226Z Collecting attrs>=17.3.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:44.3829237Z   Using cached attrs-25.4.0-py3-none-any.whl.metadata (10 kB)
+2026-01-25T03:18:44.4633285Z Collecting frozenlist>=1.1.1 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:44.4658389Z   Using cached frozenlist-1.8.0-cp311-cp311-win_amd64.whl.metadata (21 kB)
+2026-01-25T03:18:44.7103388Z Collecting multidict<7.0,>=4.5 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:44.7161631Z   Using cached multidict-6.7.0-cp311-cp311-win_amd64.whl.metadata (5.5 kB)
+2026-01-25T03:18:44.8516543Z Collecting propcache>=0.2.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:44.8570235Z   Using cached propcache-0.4.1-cp311-cp311-win_amd64.whl.metadata (14 kB)
+2026-01-25T03:18:45.1732222Z Collecting yarl<2.0,>=1.17.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:45.1757823Z   Using cached yarl-1.22.0-cp311-cp311-win_amd64.whl.metadata (77 kB)
+2026-01-25T03:18:45.1873662Z Requirement already satisfied: idna>=2.0 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from yarl<2.0,>=1.17.0->aiohttp>=3.9->irswitch==0.7.0) (3.11)
+2026-01-25T03:18:45.2009701Z Requirement already satisfied: typing-extensions>=4.2 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from aiosignal>=1.4.0->aiohttp>=3.9->irswitch==0.7.0) (4.15.0)
+2026-01-25T03:18:45.2315046Z Collecting websocket-client (from obsws-python>=1.6->irswitch==0.7.0)
+2026-01-25T03:18:45.2338643Z   Using cached websocket_client-1.9.0-py3-none-any.whl.metadata (8.3 kB)
+2026-01-25T03:18:45.2399796Z Requirement already satisfied: annotated-types>=0.6.0 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from pydantic>=2.6->irswitch==0.7.0) (0.7.0)
+2026-01-25T03:18:45.2404503Z Requirement already satisfied: pydantic-core==2.41.5 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from pydantic>=2.6->irswitch==0.7.0) (2.41.5)
+2026-01-25T03:18:45.2411775Z Requirement already satisfied: typing-inspection>=0.4.2 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from pydantic>=2.6->irswitch==0.7.0) (0.4.2)
+2026-01-25T03:18:45.2873413Z Collecting PyYAML>=5.3 (from pyirsdk>=1.3->irswitch==0.7.0)
+2026-01-25T03:18:45.2896162Z   Using cached pyyaml-6.0.3-cp311-cp311-win_amd64.whl.metadata (2.4 kB)
+2026-01-25T03:18:45.3148224Z Collecting six (from pynput>=1.7->irswitch==0.7.0)
+2026-01-25T03:18:45.3171152Z   Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2026-01-25T03:18:45.3264294Z Using cached aiohttp-3.13.3-cp311-cp311-win_amd64.whl (457 kB)
+2026-01-25T03:18:45.3309300Z Using cached multidict-6.7.0-cp311-cp311-win_amd64.whl (46 kB)
+2026-01-25T03:18:45.3330151Z Using cached yarl-1.22.0-cp311-cp311-win_amd64.whl (86 kB)
+2026-01-25T03:18:45.3351259Z Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+2026-01-25T03:18:45.3372260Z Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+2026-01-25T03:18:45.3393037Z Using cached attrs-25.4.0-py3-none-any.whl (67 kB)
+2026-01-25T03:18:45.3414209Z Using cached frozenlist-1.8.0-cp311-cp311-win_amd64.whl (44 kB)
+2026-01-25T03:18:45.3435526Z Using cached obsws_python-1.8.0-py3-none-any.whl (30 kB)
+2026-01-25T03:18:45.3485957Z Using cached propcache-0.4.1-cp311-cp311-win_amd64.whl (41 kB)
+2026-01-25T03:18:45.3507352Z Using cached pyirsdk-1.3.5-py3-none-any.whl (10 kB)
+2026-01-25T03:18:45.3528134Z Using cached pynput-1.8.1-py2.py3-none-any.whl (91 kB)
+2026-01-25T03:18:45.3550413Z Using cached pyyaml-6.0.3-cp311-cp311-win_amd64.whl (158 kB)
+2026-01-25T03:18:45.3571681Z Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-01-25T03:18:45.3592802Z Using cached websocket_client-1.9.0-py3-none-any.whl (82 kB)
+2026-01-25T03:18:45.3978810Z Building wheels for collected packages: irswitch
+2026-01-25T03:18:45.4006096Z   Building editable for irswitch (pyproject.toml): started
+2026-01-25T03:18:45.7531495Z   Building editable for irswitch (pyproject.toml): finished with status 'done'
+2026-01-25T03:18:45.7572791Z   Created wheel for irswitch: filename=irswitch-0.7.0-0.editable-py3-none-any.whl size=6072 sha256=1448230fff1cb31508e4980144f24b8537de839c0ba1e601879411bb30772609
+2026-01-25T03:18:45.7574886Z   Stored in directory: C:\Users\runneradmin\AppData\Local\Temp\pip-ephem-wheel-cache-vsu3iwtc\wheels\73\71\d8\e7a1f2a19d3cf9408d571c8e7057ec8ec8f712f33489245f0b
+2026-01-25T03:18:45.7605581Z Successfully built irswitch
+2026-01-25T03:18:45.8326100Z Installing collected packages: websocket-client, six, PyYAML, propcache, multidict, frozenlist, attrs, aiohappyeyeballs, yarl, pynput, pyirsdk, obsws-python, aiosignal, aiohttp, irswitch
+2026-01-25T03:18:47.1479519Z 
+2026-01-25T03:18:47.1514798Z Successfully installed PyYAML-6.0.3 aiohappyeyeballs-2.6.1 aiohttp-3.13.3 aiosignal-1.4.0 attrs-25.4.0 frozenlist-1.8.0 irswitch-0.7.0 multidict-6.7.0 obsws-python-1.8.0 propcache-0.4.1 pyirsdk-1.3.5 pynput-1.8.1 six-1.17.0 websocket-client-1.9.0 yarl-1.22.0
+2026-01-25T03:18:48.2028040Z ##[group]Run safety scan --output json
+2026-01-25T03:18:48.2028402Z [36;1msafety scan --output json[0m
+2026-01-25T03:18:48.2094719Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-01-25T03:18:48.2095051Z env:
+2026-01-25T03:18:48.2095231Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:48.2095546Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:48.2095975Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-01-25T03:18:48.2096397Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:48.2096781Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:48.2097607Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:48.2097919Z ##[endgroup]
+2026-01-25T03:18:50.4146034Z Unhandled exception happened: EOF when reading a line
+2026-01-25T03:18:50.6382613Z ##[error]Process completed with exit code 1.
+2026-01-25T03:18:50.6618000Z Post job cleanup.
+2026-01-25T03:18:50.8973846Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-01-25T03:18:50.9254818Z git version 2.52.0.windows.1
+2026-01-25T03:18:50.9327783Z Temporarily overriding HOME='D:\a\_temp\3e43d678-73db-40c5-88c6-5de050b6435f' before making global git config changes
+2026-01-25T03:18:50.9328757Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-25T03:18:50.9339414Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:18:50.9642388Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-01-25T03:18:50.9936930Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-01-25T03:18:51.5629614Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-25T03:18:51.5887659Z http.https://github.com/.extraheader
+2026-01-25T03:18:51.5928240Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-01-25T03:18:51.6222309Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-01-25T03:18:52.1330716Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-25T03:18:52.1621398Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-25T03:18:52.6895629Z Cleaning up orphan processes

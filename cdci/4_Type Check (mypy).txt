@@ -1,0 +1,287 @@
+﻿2026-01-25T03:17:55.0121278Z Current runner version: '2.331.0'
+2026-01-25T03:17:55.0147086Z ##[group]Runner Image Provisioner
+2026-01-25T03:17:55.0147828Z Hosted Compute Agent
+2026-01-25T03:17:55.0148372Z Version: 20260115.477
+2026-01-25T03:17:55.0148923Z Commit: 4b342d620503cbe250a3154040964899ea7c9b00
+2026-01-25T03:17:55.0149578Z Build Date: 2026-01-15T22:32:41Z
+2026-01-25T03:17:55.0150180Z Worker ID: {2b1f7e67-e81e-41c7-a7e3-e747d7cac6d6}
+2026-01-25T03:17:55.0150850Z Azure Region: westus
+2026-01-25T03:17:55.0151340Z ##[endgroup]
+2026-01-25T03:17:55.0152596Z ##[group]Operating System
+2026-01-25T03:17:55.0153191Z Microsoft Windows Server 2025
+2026-01-25T03:17:55.0153695Z 10.0.26100
+2026-01-25T03:17:55.0154114Z Datacenter
+2026-01-25T03:17:55.0154499Z ##[endgroup]
+2026-01-25T03:17:55.0154953Z ##[group]Runner Image
+2026-01-25T03:17:55.0155444Z Image: windows-2025
+2026-01-25T03:17:55.0155906Z Version: 20260119.4.1
+2026-01-25T03:17:55.0157263Z Included Software: https://github.com/actions/runner-images/blob/win25/20260119.4/images/windows/Windows2025-Readme.md
+2026-01-25T03:17:55.0158970Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260119.4
+2026-01-25T03:17:55.0159778Z ##[endgroup]
+2026-01-25T03:17:55.0162599Z ##[group]GITHUB_TOKEN Permissions
+2026-01-25T03:17:55.0164586Z Actions: write
+2026-01-25T03:17:55.0165158Z ArtifactMetadata: write
+2026-01-25T03:17:55.0165629Z Attestations: write
+2026-01-25T03:17:55.0166165Z Checks: write
+2026-01-25T03:17:55.0166658Z Contents: write
+2026-01-25T03:17:55.0167069Z Deployments: write
+2026-01-25T03:17:55.0167590Z Discussions: write
+2026-01-25T03:17:55.0168069Z Issues: write
+2026-01-25T03:17:55.0168536Z Metadata: read
+2026-01-25T03:17:55.0168961Z Models: read
+2026-01-25T03:17:55.0169441Z Packages: write
+2026-01-25T03:17:55.0169850Z Pages: write
+2026-01-25T03:17:55.0170379Z PullRequests: write
+2026-01-25T03:17:55.0170852Z RepositoryProjects: write
+2026-01-25T03:17:55.0171327Z SecurityEvents: write
+2026-01-25T03:17:55.0171828Z Statuses: write
+2026-01-25T03:17:55.0172242Z ##[endgroup]
+2026-01-25T03:17:55.0174297Z Secret source: Actions
+2026-01-25T03:17:55.0174922Z Prepare workflow directory
+2026-01-25T03:17:55.0670111Z Prepare all required actions
+2026-01-25T03:17:55.0730666Z Getting action download info
+2026-01-25T03:17:55.4305301Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-25T03:17:55.5520683Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-01-25T03:17:55.8164798Z Complete job name: Type Check (mypy)
+2026-01-25T03:17:55.9992416Z ##[group]Run actions/checkout@v4
+2026-01-25T03:17:55.9993408Z with:
+2026-01-25T03:17:55.9993804Z   repository: Buchtanen/ir-obs-switcher
+2026-01-25T03:17:55.9994552Z   token: ***
+2026-01-25T03:17:55.9994918Z   ssh-strict: true
+2026-01-25T03:17:55.9995299Z   ssh-user: git
+2026-01-25T03:17:55.9995687Z   persist-credentials: true
+2026-01-25T03:17:55.9996122Z   clean: true
+2026-01-25T03:17:55.9996534Z   sparse-checkout-cone-mode: true
+2026-01-25T03:17:55.9997000Z   fetch-depth: 1
+2026-01-25T03:17:55.9997371Z   fetch-tags: false
+2026-01-25T03:17:55.9997745Z   show-progress: true
+2026-01-25T03:17:55.9998135Z   lfs: false
+2026-01-25T03:17:55.9998478Z   submodules: false
+2026-01-25T03:17:55.9998869Z   set-safe-directory: true
+2026-01-25T03:17:55.9999585Z env:
+2026-01-25T03:17:55.9999962Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:17:56.0000405Z ##[endgroup]
+2026-01-25T03:17:56.1757511Z Syncing repository: Buchtanen/ir-obs-switcher
+2026-01-25T03:17:56.1759446Z ##[group]Getting Git version info
+2026-01-25T03:17:56.1760097Z Working directory is 'D:\a\ir-obs-switcher\ir-obs-switcher'
+2026-01-25T03:17:56.2964889Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-01-25T03:17:56.6192490Z git version 2.52.0.windows.1
+2026-01-25T03:17:56.6255186Z ##[endgroup]
+2026-01-25T03:17:56.6277630Z Temporarily overriding HOME='D:\a\_temp\949563aa-deb1-48d0-a6d0-f61f4588a221' before making global git config changes
+2026-01-25T03:17:56.6282116Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-25T03:17:56.6290144Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:17:56.6906235Z Deleting the contents of 'D:\a\ir-obs-switcher\ir-obs-switcher'
+2026-01-25T03:17:56.6913532Z ##[group]Initializing the repository
+2026-01-25T03:17:56.6924486Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:17:56.7800661Z Initialized empty Git repository in D:/a/ir-obs-switcher/ir-obs-switcher/.git/
+2026-01-25T03:17:56.7851212Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Buchtanen/ir-obs-switcher
+2026-01-25T03:17:56.8484029Z ##[endgroup]
+2026-01-25T03:17:56.8486039Z ##[group]Disabling automatic garbage collection
+2026-01-25T03:17:56.8495053Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-01-25T03:17:56.8840646Z ##[endgroup]
+2026-01-25T03:17:56.8841813Z ##[group]Setting up auth
+2026-01-25T03:17:56.8860527Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-01-25T03:17:56.9182927Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-01-25T03:17:58.3314930Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-25T03:17:58.3645472Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-01-25T03:17:58.9167228Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-25T03:17:58.9486979Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-25T03:17:59.4980090Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-01-25T03:17:59.5318508Z ##[endgroup]
+2026-01-25T03:17:59.5319407Z ##[group]Fetching the repository
+2026-01-25T03:17:59.5336368Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ca3883770c9a7a15a7ff65e341c4dc45c097b404:refs/remotes/origin/master
+2026-01-25T03:18:00.6233031Z From https://github.com/Buchtanen/ir-obs-switcher
+2026-01-25T03:18:00.6233872Z  * [new ref]         ca3883770c9a7a15a7ff65e341c4dc45c097b404 -> origin/master
+2026-01-25T03:18:00.6496186Z ##[endgroup]
+2026-01-25T03:18:00.6496789Z ##[group]Determining the checkout info
+2026-01-25T03:18:00.6500074Z ##[endgroup]
+2026-01-25T03:18:00.6511804Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-01-25T03:18:00.6975146Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-01-25T03:18:00.7311246Z ##[group]Checking out the ref
+2026-01-25T03:18:00.7322759Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B master refs/remotes/origin/master
+2026-01-25T03:18:00.8439397Z branch 'master' set up to track 'origin/master'.
+2026-01-25T03:18:00.8448927Z Reset branch 'master'
+2026-01-25T03:18:00.8490444Z ##[endgroup]
+2026-01-25T03:18:00.8916609Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-01-25T03:18:00.9221684Z ca3883770c9a7a15a7ff65e341c4dc45c097b404
+2026-01-25T03:18:00.9683431Z ##[group]Run actions/setup-python@v5
+2026-01-25T03:18:00.9683775Z with:
+2026-01-25T03:18:00.9683944Z   python-version: 3.11
+2026-01-25T03:18:00.9684145Z   cache: pip
+2026-01-25T03:18:00.9684302Z   check-latest: false
+2026-01-25T03:18:00.9685404Z   token: ***
+2026-01-25T03:18:00.9685582Z   update-environment: true
+2026-01-25T03:18:00.9685789Z   allow-prereleases: false
+2026-01-25T03:18:00.9686002Z   freethreaded: false
+2026-01-25T03:18:00.9686169Z env:
+2026-01-25T03:18:00.9686320Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:00.9686511Z ##[endgroup]
+2026-01-25T03:18:01.2036384Z ##[group]Installed versions
+2026-01-25T03:18:01.2305616Z Successfully set up CPython (3.11.9)
+2026-01-25T03:18:01.2306908Z ##[endgroup]
+2026-01-25T03:18:04.0362617Z Cache hit for: setup-python-Windows-x64-python-3.11.9-pip-6298c4c1c6fe7274613782d7d074812f017bad7b5e4aead8ed01966840f9b471
+2026-01-25T03:18:05.3748636Z Received 6666030 of 19248942 (34.6%), 6.3 MBs/sec
+2026-01-25T03:18:05.6067850Z Received 19248942 of 19248942 (100.0%), 14.8 MBs/sec
+2026-01-25T03:18:05.6071096Z Cache Size: ~18 MB (19248942 B)
+2026-01-25T03:18:05.6136635Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/cee8a0a1-5dfd-4273-93e4-f990c99d58b0/cache.tzst -P -C D:/a/ir-obs-switcher/ir-obs-switcher --force-local --use-compress-program "zstd -d"
+2026-01-25T03:18:06.1901524Z Cache restored successfully
+2026-01-25T03:18:06.1927786Z Cache restored from key: setup-python-Windows-x64-python-3.11.9-pip-63d7fc55c5d66312bd981840dfd4119e9d8520464e8b2345bfec07467a6c04a4
+2026-01-25T03:18:06.2282394Z ##[group]Run python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+2026-01-25T03:18:06.2283593Z [36;1mpython -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"[0m
+2026-01-25T03:18:06.2284025Z [36;1mpip install mypy[0m
+2026-01-25T03:18:06.2284246Z [36;1mpip install -e .[0m
+2026-01-25T03:18:06.3014735Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-01-25T03:18:06.3015120Z env:
+2026-01-25T03:18:06.3015310Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:06.3015639Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:06.3016148Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-01-25T03:18:06.3016652Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:06.3017088Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:06.3017528Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:06.3018382Z   PYTHONPATH: D:\a\ir-obs-switcher\ir-obs-switcher/src
+2026-01-25T03:18:06.3018734Z ##[endgroup]
+2026-01-25T03:18:12.6260671Z Requirement already satisfied: pip in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (25.3)
+2026-01-25T03:18:13.2066280Z Collecting setuptools>=78.1.1
+2026-01-25T03:18:13.2096619Z   Using cached setuptools-80.10.1-py3-none-any.whl.metadata (6.7 kB)
+2026-01-25T03:18:13.2962738Z Collecting wheel
+2026-01-25T03:18:13.5385341Z   Downloading wheel-0.46.3-py3-none-any.whl.metadata (2.4 kB)
+2026-01-25T03:18:13.6090090Z Collecting packaging>=24.0 (from wheel)
+2026-01-25T03:18:13.6197178Z   Downloading packaging-26.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-25T03:18:13.6396114Z Using cached setuptools-80.10.1-py3-none-any.whl (1.1 MB)
+2026-01-25T03:18:13.6469082Z Downloading wheel-0.46.3-py3-none-any.whl (30 kB)
+2026-01-25T03:18:13.7233513Z Downloading packaging-26.0-py3-none-any.whl (74 kB)
+2026-01-25T03:18:13.8588173Z Installing collected packages: setuptools, packaging, wheel
+2026-01-25T03:18:13.8597225Z   Attempting uninstall: setuptools
+2026-01-25T03:18:13.8622999Z     Found existing installation: setuptools 65.5.0
+2026-01-25T03:18:14.1793421Z     Uninstalling setuptools-65.5.0:
+2026-01-25T03:18:14.2511238Z       Successfully uninstalled setuptools-65.5.0
+2026-01-25T03:18:16.1245104Z 
+2026-01-25T03:18:16.1257441Z Successfully installed packaging-26.0 setuptools-80.10.1 wheel-0.46.3
+2026-01-25T03:18:17.7340873Z Collecting mypy
+2026-01-25T03:18:17.7370118Z   Using cached mypy-1.19.1-cp311-cp311-win_amd64.whl.metadata (2.3 kB)
+2026-01-25T03:18:17.7646002Z Collecting typing_extensions>=4.6.0 (from mypy)
+2026-01-25T03:18:17.7671921Z   Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-25T03:18:17.7872740Z Collecting mypy_extensions>=1.0.0 (from mypy)
+2026-01-25T03:18:17.7897457Z   Using cached mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+2026-01-25T03:18:17.8105284Z Collecting pathspec>=0.9.0 (from mypy)
+2026-01-25T03:18:17.8132054Z   Using cached pathspec-1.0.3-py3-none-any.whl.metadata (13 kB)
+2026-01-25T03:18:17.9134185Z Collecting librt>=0.6.2 (from mypy)
+2026-01-25T03:18:17.9183910Z   Using cached librt-0.7.8-cp311-cp311-win_amd64.whl.metadata (1.4 kB)
+2026-01-25T03:18:17.9257686Z Using cached mypy-1.19.1-cp311-cp311-win_amd64.whl (10.1 MB)
+2026-01-25T03:18:17.9330334Z Using cached librt-0.7.8-cp311-cp311-win_amd64.whl (50 kB)
+2026-01-25T03:18:17.9365221Z Using cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+2026-01-25T03:18:17.9387269Z Using cached pathspec-1.0.3-py3-none-any.whl (55 kB)
+2026-01-25T03:18:17.9412076Z Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+2026-01-25T03:18:18.0065084Z Installing collected packages: typing_extensions, pathspec, mypy_extensions, librt, mypy
+2026-01-25T03:18:21.4655810Z 
+2026-01-25T03:18:21.4671287Z Successfully installed librt-0.7.8 mypy-1.19.1 mypy_extensions-1.1.0 pathspec-1.0.3 typing_extensions-4.15.0
+2026-01-25T03:18:22.7421139Z Obtaining file:///D:/a/ir-obs-switcher/ir-obs-switcher
+2026-01-25T03:18:22.7456756Z   Installing build dependencies: started
+2026-01-25T03:18:25.0072541Z   Installing build dependencies: finished with status 'done'
+2026-01-25T03:18:25.0088741Z   Checking if build backend supports build_editable: started
+2026-01-25T03:18:25.7937837Z   Checking if build backend supports build_editable: finished with status 'done'
+2026-01-25T03:18:25.7963237Z   Getting requirements to build editable: started
+2026-01-25T03:18:26.4707344Z   Getting requirements to build editable: finished with status 'done'
+2026-01-25T03:18:26.4740145Z   Preparing editable metadata (pyproject.toml): started
+2026-01-25T03:18:26.8648789Z   Preparing editable metadata (pyproject.toml): finished with status 'done'
+2026-01-25T03:18:27.7032565Z Collecting aiohttp>=3.9 (from irswitch==0.7.0)
+2026-01-25T03:18:27.7061051Z   Using cached aiohttp-3.13.3-cp311-cp311-win_amd64.whl.metadata (8.4 kB)
+2026-01-25T03:18:27.7881651Z Collecting obsws-python>=1.6 (from irswitch==0.7.0)
+2026-01-25T03:18:27.7907904Z   Using cached obsws_python-1.8.0-py3-none-any.whl.metadata (5.6 kB)
+2026-01-25T03:18:27.9654930Z Collecting pydantic>=2.6 (from irswitch==0.7.0)
+2026-01-25T03:18:27.9683826Z   Using cached pydantic-2.12.5-py3-none-any.whl.metadata (90 kB)
+2026-01-25T03:18:28.1101081Z Collecting pyirsdk>=1.3 (from irswitch==0.7.0)
+2026-01-25T03:18:28.1128169Z   Using cached pyirsdk-1.3.5-py3-none-any.whl.metadata (565 bytes)
+2026-01-25T03:18:28.2189229Z Collecting pynput>=1.7 (from irswitch==0.7.0)
+2026-01-25T03:18:28.2214799Z   Using cached pynput-1.8.1-py2.py3-none-any.whl.metadata (32 kB)
+2026-01-25T03:18:28.3252928Z Collecting colorama>=0.4.6 (from irswitch==0.7.0)
+2026-01-25T03:18:28.3278652Z   Using cached colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2026-01-25T03:18:28.4068627Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:28.4096155Z   Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+2026-01-25T03:18:28.4838820Z Collecting aiosignal>=1.4.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:28.4867594Z   Using cached aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+2026-01-25T03:18:28.5763820Z Collecting attrs>=17.3.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:28.5827385Z   Using cached attrs-25.4.0-py3-none-any.whl.metadata (10 kB)
+2026-01-25T03:18:28.7237619Z Collecting frozenlist>=1.1.1 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:28.7267680Z   Using cached frozenlist-1.8.0-cp311-cp311-win_amd64.whl.metadata (21 kB)
+2026-01-25T03:18:29.0817590Z Collecting multidict<7.0,>=4.5 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:29.0845692Z   Using cached multidict-6.7.0-cp311-cp311-win_amd64.whl.metadata (5.5 kB)
+2026-01-25T03:18:29.2597866Z Collecting propcache>=0.2.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:29.2654367Z   Using cached propcache-0.4.1-cp311-cp311-win_amd64.whl.metadata (14 kB)
+2026-01-25T03:18:29.6738811Z Collecting yarl<2.0,>=1.17.0 (from aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:29.6769821Z   Using cached yarl-1.22.0-cp311-cp311-win_amd64.whl.metadata (77 kB)
+2026-01-25T03:18:29.7885339Z Collecting idna>=2.0 (from yarl<2.0,>=1.17.0->aiohttp>=3.9->irswitch==0.7.0)
+2026-01-25T03:18:29.7909652Z   Using cached idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+2026-01-25T03:18:29.8086852Z Requirement already satisfied: typing-extensions>=4.2 in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (from aiosignal>=1.4.0->aiohttp>=3.9->irswitch==0.7.0) (4.15.0)
+2026-01-25T03:18:29.9103945Z Collecting websocket-client (from obsws-python>=1.6->irswitch==0.7.0)
+2026-01-25T03:18:29.9128974Z   Using cached websocket_client-1.9.0-py3-none-any.whl.metadata (8.3 kB)
+2026-01-25T03:18:29.9807167Z Collecting annotated-types>=0.6.0 (from pydantic>=2.6->irswitch==0.7.0)
+2026-01-25T03:18:29.9832257Z   Using cached annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+2026-01-25T03:18:30.7668345Z Collecting pydantic-core==2.41.5 (from pydantic>=2.6->irswitch==0.7.0)
+2026-01-25T03:18:30.7695381Z   Using cached pydantic_core-2.41.5-cp311-cp311-win_amd64.whl.metadata (7.4 kB)
+2026-01-25T03:18:30.7983140Z Collecting typing-inspection>=0.4.2 (from pydantic>=2.6->irswitch==0.7.0)
+2026-01-25T03:18:30.8103320Z   Using cached typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+2026-01-25T03:18:30.8723114Z Collecting PyYAML>=5.3 (from pyirsdk>=1.3->irswitch==0.7.0)
+2026-01-25T03:18:30.8806456Z   Using cached pyyaml-6.0.3-cp311-cp311-win_amd64.whl.metadata (2.4 kB)
+2026-01-25T03:18:30.9267013Z Collecting six (from pynput>=1.7->irswitch==0.7.0)
+2026-01-25T03:18:30.9292217Z   Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2026-01-25T03:18:30.9400663Z Using cached aiohttp-3.13.3-cp311-cp311-win_amd64.whl (457 kB)
+2026-01-25T03:18:30.9479010Z Using cached multidict-6.7.0-cp311-cp311-win_amd64.whl (46 kB)
+2026-01-25T03:18:30.9500670Z Using cached yarl-1.22.0-cp311-cp311-win_amd64.whl (86 kB)
+2026-01-25T03:18:30.9523008Z Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+2026-01-25T03:18:30.9544925Z Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+2026-01-25T03:18:30.9565894Z Using cached attrs-25.4.0-py3-none-any.whl (67 kB)
+2026-01-25T03:18:30.9587225Z Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2026-01-25T03:18:30.9609153Z Using cached frozenlist-1.8.0-cp311-cp311-win_amd64.whl (44 kB)
+2026-01-25T03:18:30.9630830Z Using cached idna-3.11-py3-none-any.whl (71 kB)
+2026-01-25T03:18:30.9652421Z Using cached obsws_python-1.8.0-py3-none-any.whl (30 kB)
+2026-01-25T03:18:30.9673829Z Using cached propcache-0.4.1-cp311-cp311-win_amd64.whl (41 kB)
+2026-01-25T03:18:30.9695414Z Using cached pydantic-2.12.5-py3-none-any.whl (463 kB)
+2026-01-25T03:18:30.9719824Z Using cached pydantic_core-2.41.5-cp311-cp311-win_amd64.whl (2.0 MB)
+2026-01-25T03:18:30.9752040Z Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+2026-01-25T03:18:30.9818086Z Using cached pyirsdk-1.3.5-py3-none-any.whl (10 kB)
+2026-01-25T03:18:30.9839719Z Using cached pynput-1.8.1-py2.py3-none-any.whl (91 kB)
+2026-01-25T03:18:30.9861521Z Using cached pyyaml-6.0.3-cp311-cp311-win_amd64.whl (158 kB)
+2026-01-25T03:18:30.9883897Z Using cached typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+2026-01-25T03:18:30.9905404Z Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-01-25T03:18:30.9927340Z Using cached websocket_client-1.9.0-py3-none-any.whl (82 kB)
+2026-01-25T03:18:31.0419266Z Building wheels for collected packages: irswitch
+2026-01-25T03:18:31.0447388Z   Building editable for irswitch (pyproject.toml): started
+2026-01-25T03:18:31.4364597Z   Building editable for irswitch (pyproject.toml): finished with status 'done'
+2026-01-25T03:18:31.4424026Z   Created wheel for irswitch: filename=irswitch-0.7.0-0.editable-py3-none-any.whl size=6072 sha256=16b49e22109fb4d11f172ab5b3b2ec7babac9f55bbc1b3cc3f2c486fcff6ba7c
+2026-01-25T03:18:31.4426699Z   Stored in directory: C:\Users\runneradmin\AppData\Local\Temp\pip-ephem-wheel-cache-zpko2kz6\wheels\73\71\d8\e7a1f2a19d3cf9408d571c8e7057ec8ec8f712f33489245f0b
+2026-01-25T03:18:31.4460636Z Successfully built irswitch
+2026-01-25T03:18:31.4972961Z Installing collected packages: websocket-client, typing-inspection, six, PyYAML, pydantic-core, propcache, multidict, idna, frozenlist, colorama, attrs, annotated-types, aiohappyeyeballs, yarl, pynput, pyirsdk, pydantic, obsws-python, aiosignal, aiohttp, irswitch
+2026-01-25T03:18:34.9918181Z 
+2026-01-25T03:18:34.9943887Z Successfully installed PyYAML-6.0.3 aiohappyeyeballs-2.6.1 aiohttp-3.13.3 aiosignal-1.4.0 annotated-types-0.7.0 attrs-25.4.0 colorama-0.4.6 frozenlist-1.8.0 idna-3.11 irswitch-0.7.0 multidict-6.7.0 obsws-python-1.8.0 propcache-0.4.1 pydantic-2.12.5 pydantic-core-2.41.5 pyirsdk-1.3.5 pynput-1.8.1 six-1.17.0 typing-inspection-0.4.2 websocket-client-1.9.0 yarl-1.22.0
+2026-01-25T03:18:36.1832135Z ##[group]Run mypy src/
+2026-01-25T03:18:36.1832435Z [36;1mmypy src/[0m
+2026-01-25T03:18:36.1905588Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-01-25T03:18:36.1905952Z env:
+2026-01-25T03:18:36.1906140Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:36.1906454Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:36.1906889Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-01-25T03:18:36.1907351Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:36.1907749Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:36.1908162Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:36.1908528Z   PYTHONPATH: D:\a\ir-obs-switcher\ir-obs-switcher/src
+2026-01-25T03:18:36.1908831Z ##[endgroup]
+2026-01-25T03:18:41.2070647Z Success: no issues found in 26 source files
+2026-01-25T03:18:41.3682249Z Post job cleanup.
+2026-01-25T03:18:41.7458633Z [command]"C:\Program Files\Git\usr\bin\tar.exe" --posix -cf cache.tzst --exclude cache.tzst -P -C D:/a/ir-obs-switcher/ir-obs-switcher --files-from manifest.txt --force-local --use-compress-program "zstd -T0"
+2026-01-25T03:18:42.2374650Z Failed to save: Unable to reserve cache with key setup-python-Windows-x64-python-3.11.9-pip-6298c4c1c6fe7274613782d7d074812f017bad7b5e4aead8ed01966840f9b471, another job may be creating this cache.
+2026-01-25T03:18:42.2675186Z Post job cleanup.
+2026-01-25T03:18:42.5017426Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-01-25T03:18:42.5316087Z git version 2.52.0.windows.1
+2026-01-25T03:18:42.5393978Z Temporarily overriding HOME='D:\a\_temp\3fe2574a-d8d1-4c96-9751-7b2307b428d7' before making global git config changes
+2026-01-25T03:18:42.5395407Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-25T03:18:42.5406637Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:18:42.5752026Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-01-25T03:18:42.6133982Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-01-25T03:18:43.1666545Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-25T03:18:43.1949858Z http.https://github.com/.extraheader
+2026-01-25T03:18:43.1997171Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-01-25T03:18:43.2328272Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-01-25T03:18:43.8185987Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-25T03:18:43.8529591Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-25T03:18:44.4204260Z Cleaning up orphan processes

@@ -1,0 +1,231 @@
+﻿2026-01-25T03:17:56.2780873Z Current runner version: '2.331.0'
+2026-01-25T03:17:56.2968033Z ##[group]Runner Image Provisioner
+2026-01-25T03:17:56.2968732Z Hosted Compute Agent
+2026-01-25T03:17:56.2969269Z Version: 20260115.477
+2026-01-25T03:17:56.2969777Z Commit: 4b342d620503cbe250a3154040964899ea7c9b00
+2026-01-25T03:17:56.2970400Z Build Date: 2026-01-15T22:32:41Z
+2026-01-25T03:17:56.2971025Z Worker ID: {ae7d794c-fb2c-4339-b2b4-82a311f28fe0}
+2026-01-25T03:17:56.2971676Z Azure Region: centralus
+2026-01-25T03:17:56.2972177Z ##[endgroup]
+2026-01-25T03:17:56.2973433Z ##[group]Operating System
+2026-01-25T03:17:56.2974001Z Microsoft Windows Server 2025
+2026-01-25T03:17:56.2974496Z 10.0.26100
+2026-01-25T03:17:56.2974930Z Datacenter
+2026-01-25T03:17:56.2975329Z ##[endgroup]
+2026-01-25T03:17:56.2975775Z ##[group]Runner Image
+2026-01-25T03:17:56.2976766Z Image: windows-2025
+2026-01-25T03:17:56.2977524Z Version: 20260119.4.1
+2026-01-25T03:17:56.2979953Z Included Software: https://github.com/actions/runner-images/blob/win25/20260119.4/images/windows/Windows2025-Readme.md
+2026-01-25T03:17:56.2982932Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260119.4
+2026-01-25T03:17:56.2983835Z ##[endgroup]
+2026-01-25T03:17:56.2986630Z ##[group]GITHUB_TOKEN Permissions
+2026-01-25T03:17:56.2988721Z Actions: write
+2026-01-25T03:17:56.2989248Z ArtifactMetadata: write
+2026-01-25T03:17:56.2989789Z Attestations: write
+2026-01-25T03:17:56.2990210Z Checks: write
+2026-01-25T03:17:56.2990649Z Contents: write
+2026-01-25T03:17:56.2991076Z Deployments: write
+2026-01-25T03:17:56.2991526Z Discussions: write
+2026-01-25T03:17:56.2991944Z Issues: write
+2026-01-25T03:17:56.2992393Z Metadata: read
+2026-01-25T03:17:56.2992802Z Models: read
+2026-01-25T03:17:56.2993232Z Packages: write
+2026-01-25T03:17:56.2993669Z Pages: write
+2026-01-25T03:17:56.2994159Z PullRequests: write
+2026-01-25T03:17:56.2994621Z RepositoryProjects: write
+2026-01-25T03:17:56.2995131Z SecurityEvents: write
+2026-01-25T03:17:56.2995624Z Statuses: write
+2026-01-25T03:17:56.2996042Z ##[endgroup]
+2026-01-25T03:17:56.2998028Z Secret source: Actions
+2026-01-25T03:17:56.2998629Z Prepare workflow directory
+2026-01-25T03:17:56.3930905Z Prepare all required actions
+2026-01-25T03:17:56.3971227Z Getting action download info
+2026-01-25T03:17:56.6585582Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-25T03:17:56.8881398Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-01-25T03:17:57.4980703Z Complete job name: Lint (ruff)
+2026-01-25T03:17:58.0590872Z ##[group]Run actions/checkout@v4
+2026-01-25T03:17:58.0592158Z with:
+2026-01-25T03:17:58.0592593Z   repository: Buchtanen/ir-obs-switcher
+2026-01-25T03:17:58.0593394Z   token: ***
+2026-01-25T03:17:58.0593775Z   ssh-strict: true
+2026-01-25T03:17:58.0594165Z   ssh-user: git
+2026-01-25T03:17:58.0594561Z   persist-credentials: true
+2026-01-25T03:17:58.0595015Z   clean: true
+2026-01-25T03:17:58.0595440Z   sparse-checkout-cone-mode: true
+2026-01-25T03:17:58.0595918Z   fetch-depth: 1
+2026-01-25T03:17:58.0596301Z   fetch-tags: false
+2026-01-25T03:17:58.0596704Z   show-progress: true
+2026-01-25T03:17:58.0597100Z   lfs: false
+2026-01-25T03:17:58.0597462Z   submodules: false
+2026-01-25T03:17:58.0597879Z   set-safe-directory: true
+2026-01-25T03:17:58.0598505Z env:
+2026-01-25T03:17:58.0599424Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:17:58.0599925Z ##[endgroup]
+2026-01-25T03:17:58.2712190Z Syncing repository: Buchtanen/ir-obs-switcher
+2026-01-25T03:17:58.2718580Z ##[group]Getting Git version info
+2026-01-25T03:17:58.2720663Z Working directory is 'D:\a\ir-obs-switcher\ir-obs-switcher'
+2026-01-25T03:17:58.3861645Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-01-25T03:17:58.7069197Z git version 2.52.0.windows.1
+2026-01-25T03:17:58.7126683Z ##[endgroup]
+2026-01-25T03:17:58.7183669Z Temporarily overriding HOME='D:\a\_temp\d7c8a782-d354-48d3-8e80-c566b5ed657c' before making global git config changes
+2026-01-25T03:17:58.7232004Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-25T03:17:58.7233154Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:17:58.7724537Z Deleting the contents of 'D:\a\ir-obs-switcher\ir-obs-switcher'
+2026-01-25T03:17:58.7731261Z ##[group]Initializing the repository
+2026-01-25T03:17:58.7741643Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:17:58.8581969Z Initialized empty Git repository in D:/a/ir-obs-switcher/ir-obs-switcher/.git/
+2026-01-25T03:17:58.8630652Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Buchtanen/ir-obs-switcher
+2026-01-25T03:17:58.9142599Z ##[endgroup]
+2026-01-25T03:17:58.9143346Z ##[group]Disabling automatic garbage collection
+2026-01-25T03:17:58.9152539Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-01-25T03:17:58.9487471Z ##[endgroup]
+2026-01-25T03:17:58.9488560Z ##[group]Setting up auth
+2026-01-25T03:17:58.9507557Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-01-25T03:17:58.9847653Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-01-25T03:18:00.2685971Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-25T03:18:00.3006112Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-01-25T03:18:00.8430655Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-25T03:18:00.8741417Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-25T03:18:01.4027681Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-01-25T03:18:01.4351747Z ##[endgroup]
+2026-01-25T03:18:01.4352247Z ##[group]Fetching the repository
+2026-01-25T03:18:01.4373712Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ca3883770c9a7a15a7ff65e341c4dc45c097b404:refs/remotes/origin/master
+2026-01-25T03:18:02.5073887Z From https://github.com/Buchtanen/ir-obs-switcher
+2026-01-25T03:18:02.5074731Z  * [new ref]         ca3883770c9a7a15a7ff65e341c4dc45c097b404 -> origin/master
+2026-01-25T03:18:02.5338277Z ##[endgroup]
+2026-01-25T03:18:02.5338647Z ##[group]Determining the checkout info
+2026-01-25T03:18:02.5342218Z ##[endgroup]
+2026-01-25T03:18:02.5358452Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-01-25T03:18:02.5784864Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-01-25T03:18:02.6108739Z ##[group]Checking out the ref
+2026-01-25T03:18:02.6119489Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B master refs/remotes/origin/master
+2026-01-25T03:18:02.7184239Z branch 'master' set up to track 'origin/master'.
+2026-01-25T03:18:02.7193677Z Reset branch 'master'
+2026-01-25T03:18:02.7637498Z ##[endgroup]
+2026-01-25T03:18:02.7646175Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-01-25T03:18:02.7923346Z ca3883770c9a7a15a7ff65e341c4dc45c097b404
+2026-01-25T03:18:02.8370807Z ##[group]Run actions/setup-python@v5
+2026-01-25T03:18:02.8371138Z with:
+2026-01-25T03:18:02.8371314Z   python-version: 3.11
+2026-01-25T03:18:02.8371500Z   cache: pip
+2026-01-25T03:18:02.8371670Z   check-latest: false
+2026-01-25T03:18:02.8372958Z   token: ***
+2026-01-25T03:18:02.8373144Z   update-environment: true
+2026-01-25T03:18:02.8373376Z   allow-prereleases: false
+2026-01-25T03:18:02.8373603Z   freethreaded: false
+2026-01-25T03:18:02.8373771Z env:
+2026-01-25T03:18:02.8373921Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:02.8374117Z ##[endgroup]
+2026-01-25T03:18:03.0611791Z ##[group]Installed versions
+2026-01-25T03:18:03.0978747Z Successfully set up CPython (3.11.9)
+2026-01-25T03:18:03.0979509Z ##[endgroup]
+2026-01-25T03:18:10.0334751Z Cache hit for: setup-python-Windows-x64-python-3.11.9-pip-6298c4c1c6fe7274613782d7d074812f017bad7b5e4aead8ed01966840f9b471
+2026-01-25T03:18:10.6675053Z Received 19248942 of 19248942 (100.0%), 36.2 MBs/sec
+2026-01-25T03:18:10.6677956Z Cache Size: ~18 MB (19248942 B)
+2026-01-25T03:18:10.6838700Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/881aa3ca-7a50-40cb-a1cd-231f5fafefcc/cache.tzst -P -C D:/a/ir-obs-switcher/ir-obs-switcher --force-local --use-compress-program "zstd -d"
+2026-01-25T03:18:11.3263515Z Cache restored successfully
+2026-01-25T03:18:11.3288359Z Cache restored from key: setup-python-Windows-x64-python-3.11.9-pip-63d7fc55c5d66312bd981840dfd4119e9d8520464e8b2345bfec07467a6c04a4
+2026-01-25T03:18:11.3582820Z ##[group]Run python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+2026-01-25T03:18:11.3583460Z [36;1mpython -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"[0m
+2026-01-25T03:18:11.3583829Z [36;1mpip install ruff[0m
+2026-01-25T03:18:11.4379968Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-01-25T03:18:11.4380401Z env:
+2026-01-25T03:18:11.4380600Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:11.4380972Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:11.4381504Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-01-25T03:18:11.4382014Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:11.4382490Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:11.4382945Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:11.4383807Z ##[endgroup]
+2026-01-25T03:18:19.0597028Z Requirement already satisfied: pip in c:\hostedtoolcache\windows\python\3.11.9\x64\lib\site-packages (25.3)
+2026-01-25T03:18:19.7089916Z Collecting setuptools>=78.1.1
+2026-01-25T03:18:19.7117115Z   Using cached setuptools-80.10.1-py3-none-any.whl.metadata (6.7 kB)
+2026-01-25T03:18:19.7949327Z Collecting wheel
+2026-01-25T03:18:20.1197622Z   Downloading wheel-0.46.3-py3-none-any.whl.metadata (2.4 kB)
+2026-01-25T03:18:20.2238880Z Collecting packaging>=24.0 (from wheel)
+2026-01-25T03:18:20.2557537Z   Downloading packaging-26.0-py3-none-any.whl.metadata (3.3 kB)
+2026-01-25T03:18:20.2767720Z Using cached setuptools-80.10.1-py3-none-any.whl (1.1 MB)
+2026-01-25T03:18:20.3083186Z Downloading wheel-0.46.3-py3-none-any.whl (30 kB)
+2026-01-25T03:18:20.4225919Z Downloading packaging-26.0-py3-none-any.whl (74 kB)
+2026-01-25T03:18:20.5661702Z Installing collected packages: setuptools, packaging, wheel
+2026-01-25T03:18:20.5669517Z   Attempting uninstall: setuptools
+2026-01-25T03:18:20.5694384Z     Found existing installation: setuptools 65.5.0
+2026-01-25T03:18:21.3442129Z     Uninstalling setuptools-65.5.0:
+2026-01-25T03:18:21.4481933Z       Successfully uninstalled setuptools-65.5.0
+2026-01-25T03:18:23.5132132Z 
+2026-01-25T03:18:23.5144463Z Successfully installed packaging-26.0 setuptools-80.10.1 wheel-0.46.3
+2026-01-25T03:18:25.4953046Z Collecting ruff
+2026-01-25T03:18:25.8226287Z   Downloading ruff-0.14.14-py3-none-win_amd64.whl.metadata (26 kB)
+2026-01-25T03:18:25.9163181Z Downloading ruff-0.14.14-py3-none-win_amd64.whl (11.6 MB)
+2026-01-25T03:18:26.1892887Z    ---------------------------------------- 11.6/11.6 MB 55.7 MB/s  0:00:00
+2026-01-25T03:18:26.2347231Z Installing collected packages: ruff
+2026-01-25T03:18:26.4262108Z Successfully installed ruff-0.14.14
+2026-01-25T03:18:27.0742055Z ##[group]Run ruff check src/ tests/
+2026-01-25T03:18:27.0742375Z [36;1mruff check src/ tests/[0m
+2026-01-25T03:18:27.0809939Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-01-25T03:18:27.0810253Z env:
+2026-01-25T03:18:27.0865689Z   PYTHON_DEFAULT_VERSION: 3.11
+2026-01-25T03:18:27.0866067Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:27.0866557Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-01-25T03:18:27.0866981Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:27.0867356Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:27.0867727Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-01-25T03:18:27.0868020Z ##[endgroup]
+2026-01-25T03:18:27.5296899Z I001 [*] Import block is un-sorted or un-formatted
+2026-01-25T03:18:27.5298073Z   --> src\irswitch\server\api.py:3:1
+2026-01-25T03:18:27.5298608Z    |
+2026-01-25T03:18:27.5298911Z  1 |   """API server entry points."""
+2026-01-25T03:18:27.5299283Z  2 |
+2026-01-25T03:18:27.5299553Z  3 | / from __future__ import annotations
+2026-01-25T03:18:27.5299954Z  4 | |
+2026-01-25T03:18:27.5300201Z  5 | | import asyncio
+2026-01-25T03:18:27.5300496Z  6 | | import json
+2026-01-25T03:18:27.5300784Z  7 | | import logging
+2026-01-25T03:18:27.5301121Z  8 | | import secrets
+2026-01-25T03:18:27.5302010Z  9 | | import sys
+2026-01-25T03:18:27.5302320Z 10 | | import time
+2026-01-25T03:18:27.5302625Z 11 | | from pathlib import Path
+2026-01-25T03:18:27.5303031Z 12 | | from typing import TYPE_CHECKING
+2026-01-25T03:18:27.5303434Z 13 | |
+2026-01-25T03:18:27.5303684Z 14 | | import aiohttp
+2026-01-25T03:18:27.5304021Z 15 | | from aiohttp import web
+2026-01-25T03:18:27.5304469Z 16 | | from aiohttp.web_ws import WebSocketResponse
+2026-01-25T03:18:27.5304925Z 17 | |
+2026-01-25T03:18:27.5305184Z 18 | | # Local imports
+2026-01-25T03:18:27.5305539Z 19 | | from irswitch import __version__
+2026-01-25T03:18:27.5306009Z 20 | | from irswitch.config import AppConfig
+2026-01-25T03:18:27.5306422Z 21 | |
+2026-01-25T03:18:27.5306700Z 22 | | # Import OAuth manager creator
+2026-01-25T03:18:27.5307255Z 23 | | from irswitch.oauth import OAuthError, create_oauth_manager
+2026-01-25T03:18:27.5307891Z 24 | | from irswitch.server.dashboards import (
+2026-01-25T03:18:27.5308362Z 25 | |     handle_gr_status,
+2026-01-25T03:18:27.5308716Z 26 | |     handle_test_widget,
+2026-01-25T03:18:27.5309065Z 27 | |     handle_vr_status,
+2026-01-25T03:18:27.5309398Z 28 | | )
+2026-01-25T03:18:27.5309768Z 29 | | from irswitch.server.event_log import get_event_log
+2026-01-25T03:18:27.5310365Z 30 | | from irswitch.server.metrics import get_metrics
+2026-01-25T03:18:27.5311051Z 31 | | from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
+2026-01-25T03:18:27.5311741Z    | |________________________________________________________________^
+2026-01-25T03:18:27.5312208Z 32 |
+2026-01-25T03:18:27.5312769Z 33 |   # Mutable container for config to avoid DeprecationWarning when updating at runtime
+2026-01-25T03:18:27.5313441Z    |
+2026-01-25T03:18:27.5313692Z help: Organize imports
+2026-01-25T03:18:27.5313903Z 
+2026-01-25T03:18:27.5314004Z Found 1 error.
+2026-01-25T03:18:27.5314340Z [*] 1 fixable with the `--fix` option.
+2026-01-25T03:18:27.6382187Z ##[error]Process completed with exit code 1.
+2026-01-25T03:18:27.6605607Z Post job cleanup.
+2026-01-25T03:18:27.8955478Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-01-25T03:18:27.9250945Z git version 2.52.0.windows.1
+2026-01-25T03:18:27.9330190Z Temporarily overriding HOME='D:\a\_temp\383d2aff-125c-474e-8222-19c7dba4bd61' before making global git config changes
+2026-01-25T03:18:27.9331574Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-25T03:18:27.9342647Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\ir-obs-switcher\ir-obs-switcher
+2026-01-25T03:18:27.9659093Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-01-25T03:18:27.9963339Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-01-25T03:18:28.5649925Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-25T03:18:28.5919767Z http.https://github.com/.extraheader
+2026-01-25T03:18:28.5966538Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-01-25T03:18:28.6272566Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-01-25T03:18:29.1503043Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-25T03:18:29.1812378Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-25T03:18:29.7278786Z Cleaning up orphan processes

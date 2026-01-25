@@ -1,70 +1,127 @@
-name: Security Checks
+name: Security Module
 
 on:
-  push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master, develop ]
+  workflow_call:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: string
+      kind:
+        description: "Which security check to run: bandit | safety"
+        required: true
+        type: string
+    secrets:
+      SAFETY_API_KEY:
+        required: false
   schedule:
     # Run weekly on Monday at 10:00 UTC
-    - cron: '0 10 * * 1'
+    - cron: "0 10 * * 1"
   workflow_dispatch:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: string
+      kind:
+        description: "Which security check to run"
+        required: true
+        type: choice
+        options:
+          - bandit
+          - safety
 
 jobs:
-  safety:
-    name: Safety - Dependency Vulnerability Check
+  run:
+    name: ${{ inputs.kind }}
+    if: github.event_name != 'schedule'
     runs-on: windows-latest
-    
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.11"
+      - name: Set up Python ${{ inputs.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: "pip"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
-        pip install safety
+      - name: Install base tooling
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
 
-    - name: Install project dependencies
-      run: |
-        pip install -e .
-      env:
-        PYTHONPATH: ${{ github.workspace }}/src
+      - name: Install and run Bandit
+        if: inputs.kind == 'bandit'
+        run: |
+          pip install bandit[toml]
+          bandit -r src/ -c pyproject.toml --severity-level medium -f json -o bandit-report.json
+        continue-on-error: false
 
-    - name: Run Safety scan
-      run: |
-        safety scan --output json
-      continue-on-error: true
+      - name: Upload Bandit report
+        if: inputs.kind == 'bandit'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 7
 
-  bandit:
-    name: Bandit - Python Security Linter
+      - name: Install and run Safety
+        if: inputs.kind == 'safety'
+        run: |
+          pip install safety
+          pip install -e .
+          safety scan --output json
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+        continue-on-error: false
+
+  scheduled-bandit:
+    name: bandit (scheduled)
+    if: github.event_name == 'schedule'
     runs-on: windows-latest
-    
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.11"
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
 
-    - name: Install Bandit
-      run: |
-        python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
-        pip install bandit[toml]
+      - name: Install and run Bandit
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+          pip install bandit[toml]
+          bandit -r src/ -c pyproject.toml --severity-level medium -f json -o bandit-report.json
 
-    - name: Run Bandit
-      run: |
-        bandit -r src/ -f json -o bandit-report.json || bandit -r src/
-      continue-on-error: true
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 7
 
-    - name: Upload Bandit report
-      uses: actions/upload-artifact@v6
-      if: always()
-      with:
-        name: bandit-report
-        path: bandit-report.json
-        retention-days: 7
+  scheduled-safety:
+    name: safety (scheduled)
+    if: github.event_name == 'schedule'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install and run Safety
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+          pip install safety
+          pip install -e .
+          safety scan --output json
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}

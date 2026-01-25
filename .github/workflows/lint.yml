@@ -1,0 +1,77 @@
+name: Lint Module
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: string
+      kind:
+        description: "Which lint check to run: ruff | black | mypy"
+        required: true
+        type: string
+      src_path:
+        description: "Source directory path"
+        required: false
+        default: "src/"
+        type: string
+      tests_path:
+        description: "Tests directory path"
+        required: false
+        default: "tests/"
+        type: string
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: string
+      kind:
+        description: "Which lint check to run: ruff | black | mypy"
+        required: true
+        type: choice
+        options:
+          - ruff
+          - black
+          - mypy
+
+jobs:
+  run:
+    name: ${{ inputs.kind }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ inputs.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: "pip"
+
+      - name: Install base tooling
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+
+      - name: Install and run ruff
+        if: inputs.kind == 'ruff'
+        run: |
+          pip install ruff
+          ruff check "${{ inputs.src_path }}" "${{ inputs.tests_path }}"
+
+      - name: Install and run black
+        if: inputs.kind == 'black'
+        run: |
+          pip install black
+          black --check "${{ inputs.src_path }}" "${{ inputs.tests_path }}"
+
+      - name: Install and run mypy
+        if: inputs.kind == 'mypy'
+        run: |
+          pip install mypy
+          pip install -e .
+          mypy "${{ inputs.src_path }}"
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
