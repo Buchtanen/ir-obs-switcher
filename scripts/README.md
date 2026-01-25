@@ -8,7 +8,9 @@ Tento adresář obsahuje pomocné skripty pro správu projektu.
 
 Python skript pro automatické zvýšení verze podle commit message prefixu.
 
-**Použití**:
+**Status**: deprecated (verzování je řízené přes Release PR / CD pipeline).
+
+**Použití** (jen ručně, pokud to někdy budeš potřebovat):
 ```bash
 python scripts/bump_version.py "fix: oprava bugu"
 ```
@@ -18,20 +20,14 @@ python scripts/bump_version.py "fix: oprava bugu"
 - `feat:` → zvýší MINOR (0.3.0 → 0.4.0)
 - `rel:` → zvýší MAJOR (0.3.0 → 1.0.0)
 
-### Git Hooks
+### Git Hooks (lokální lint/format)
 
-#### `commit-msg-hook.sh` / `commit-msg-hook.ps1`
+Repo používá **PR-driven release** (Release PR model). Lokální hooky proto řeší jen to,
+co dává smysl před commitem/pushem: **format + lint + (volitelně) type-check**.
 
-Git commit-msg hook pro automatické zvýšení verze při commitu.
-
-- **Bash verze** (`commit-msg-hook.sh`) - pro Linux/Mac/Git Bash
-- **PowerShell verze** (`commit-msg-hook.ps1`) - pro Windows
-
-Hook automaticky:
-1. Přečte commit message
-2. Detekuje prefix (`fix:`, `feat:`, `rel:`)
-3. Zavolá `bump_version.py` pro zvýšení verze
-4. Přidá změněné soubory do staging area
+#### Co se instaluje
+- **`pre-commit`**: `ruff check --fix` + `black` na staged `.py` souborech + znovu je nastageuje
+- **`pre-push`**: `mypy src/` pokud je nainstalované (jinak jen varování)
 
 #### Instalační skripty
 
@@ -50,37 +46,19 @@ chmod +x scripts/install_hooks.sh
 
 Po instalaci se hook automaticky spustí při každém commitu a zvýší verzi podle prefixu commit message.
 
-## Použití
+> Pozn.: tohle už neplatí — bump verze se lokálně nedělá, verzování řeší Release PR.
 
-1. **Instalujte hook** (jednou):
-   ```powershell
-   .\scripts\install_hooks.ps1
-   ```
-
-2. **Commitujte s prefixem**:
-   ```bash
-   git commit -m "fix: oprava bugu"      # → 0.3.0 → 0.3.1
-   git commit -m "feat: nova funkce"     # → 0.3.0 → 0.4.0
-   git commit -m "rel: major release"    # → 0.3.0 → 1.0.0
-   ```
-
-3. **Verze se automaticky zvýší** v:
-   - `src/irswitch/__init__.py`
-   - `pyproject.toml`
-
-4. **Změny jsou automaticky přidány** do staging area pro commit.
-
-## Odinstalace
-
-Pro odstranění hooku:
-
+## Doporučené závislosti
 ```bash
-# Linux/Mac/Git Bash
-rm .git/hooks/commit-msg
-
-# Windows PowerShell
-Remove-Item .git\hooks\commit-msg
+pip install -e ".[lint]"
 ```
+
+## Odinstalace / reset hooků
+Nejjednodušší je znovu spustit `install_hooks.*` (přepíše hooky). Ručně můžeš smazat:
+
+- `.git/hooks/pre-commit`
+- `.git/hooks/pre-push`
+- (historicky) `.git/hooks/prepare-commit-msg`, `.git/hooks/post-commit`
 
 ## Více informací
 

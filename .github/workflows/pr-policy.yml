@@ -1,0 +1,74 @@
+name: PR Policy (semver labels)
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, labeled, unlabeled, reopened]
+    branches: [ master ]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  semver-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce semver label policy
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = (pr.labels || []).map(l => l.name);
+
+            // Exempt Release Please PRs
+            if (labels.includes('autorelease: pending')) {
+              core.info('Release PR detected (autorelease: pending). Skipping semver label enforcement.');
+              return;
+            }
+
+            const semverLabels = labels.filter(l => l.startsWith('semver:'));
+            const allowed = new Set(['semver:major', 'semver:minor', 'semver:patch', 'semver:none']);
+
+            const unknown = semverLabels.filter(l => !allowed.has(l));
+            if (unknown.length) {
+              core.setFailed(`Unknown semver label(s): ${unknown.join(', ')}. Allowed: ${Array.from(allowed).join(', ')}`);
+              return;
+            }
+
+            if (semverLabels.length !== 1) {
+              core.setFailed(
+                `PR must have exactly one semver label. Found: ${semverLabels.length} (${semverLabels.join(', ') || 'none'}).`
+              );
+              return;
+            }
+
+            const semver = semverLabels[0];
+            const title = (pr.title || '').trim();
+            const body = (pr.body || '').trim();
+
+            // Basic conventional-ish checks to avoid contradictory intent
+            const isBreaking = /!:/u.test(title) || /BREAKING CHANGE:/u.test(body);
+            const isFeat = /^feat(\([^)]+\))?!?:/iu.test(title);
+            const isFix = /^fix(\([^)]+\))?!?:/iu.test(title);
+
+            if (semver === 'semver:major' && !isBreaking) {
+              core.setFailed(
+                "semver:major requires explicit breaking change marker: use '!: ' in title or add 'BREAKING CHANGE:' in PR body."
+              );
+              return;
+            }
+
+            if (semver === 'semver:none' && (isFeat || isFix || isBreaking)) {
+              core.setFailed(
+                "semver:none conflicts with a feat/fix/breaking PR title/body. Use semver:patch/minor/major or adjust the PR title/body."
+              );
+              return;
+            }
+
+            // Optional: hinting (not failing) when title doesn't match label
+            if (semver === 'semver:minor' && !isFeat && !isBreaking) {
+              core.warning("semver:minor is set, but PR title doesn't look like 'feat:'. This is allowed, but consider aligning for better changelog.");
+            }
+            if (semver === 'semver:patch' && !isFix && !isBreaking) {
+              core.warning("semver:patch is set, but PR title doesn't look like 'fix:'. This is allowed, but consider aligning for better changelog.");
+            }
+
