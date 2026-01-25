@@ -56,6 +56,17 @@ pip install -U pip
 pip install -e .
 ```
 
+### Distribuce (EXE)
+
+Pokud používáš buildnutou distribuci z `dist/`, doporučený postup je:
+
+```powershell
+cd dist
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard
+```
+
+Tím se vygeneruje `config/config.ini`, nastaví autostart (Task Scheduler) a vytvoří se zkratky včetně **Open Dashboard**.
+
 ### 2. Konfigurace
 
 Zkopíruj `config/config.example.ini` na `config/config.ini` a uprav:
