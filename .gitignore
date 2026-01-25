@@ -32,7 +32,9 @@ env/
 *.swp
 *.swo
 *~
-.cursor/debug.log
+.cursor/
+!.cursorignore
+!.cursorrules
 
 # Testing
 .pytest_cache/
