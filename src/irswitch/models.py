@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class DrivingMode(str, Enum):
@@ -26,21 +25,17 @@ class SwitchState:
     connected_iracing: bool
     connected_obs: bool
     autoswitch: bool
-    override_scene: Optional[str]
-    override_until: Optional[float]  # Monotonic time in milliseconds
+    override_scene: str | None
+    override_until: float | None  # Monotonic time in milliseconds
     mode: DrivingMode
     target_scene: str
     current_scene: str
-    last_switch_ts: Optional[float]  # Monotonic time in milliseconds
+    last_switch_ts: float | None  # Monotonic time in milliseconds
     reason: str
-    session_type: Optional[str] = (
-        None  # Session type: "Practice", "Qualify", "Race", etc.
-    )
-    session_name: Optional[str] = None  # Session name from iRacing
-    session_num: Optional[int] = None  # Session number (0-based)
-    total_sessions: Optional[int] = (
-        None  # Total number of sessions (for "x of y" display)
-    )
-    stream_extended_info: Optional[dict] = (
+    session_type: str | None = None  # Session type: "Practice", "Qualify", "Race", etc.
+    session_name: str | None = None  # Session name from iRacing
+    session_num: int | None = None  # Session number (0-based)
+    total_sessions: int | None = None  # Total number of sessions (for "x of y" display)
+    stream_extended_info: dict | None = (
         None  # Extended stream info from YouTube API (viewers, status, etc.)
     )

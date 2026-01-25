@@ -5,15 +5,15 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from typing import Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Track currently pressed keys
-_pressed_keys: Set[str] = set()
+_pressed_keys: set[str] = set()
 _lock = threading.Lock()
-_listener: Optional[object] = None
-_target_keys: Set[str] = set()
+_listener: Any | None = None
+_target_keys: set[str] = set()
 _hotkey_active = False
 _last_hotkey_activation_ts: float = 0  # Timestamp of last hotkey activation
 _HOTKEY_WINDOW_SECONDS = 10.0  # Window to detect hotkey before QUIT
@@ -24,7 +24,7 @@ def _normalize_key(key: str) -> str:
     return key.lower().replace("_l", "").replace("_r", "")
 
 
-def _parse_hotkey(hotkey_str: str) -> Set[str]:
+def _parse_hotkey(hotkey_str: str) -> set[str]:
     """
     Parse hotkey string like "ctrl+shift+r" into set of key names.
 

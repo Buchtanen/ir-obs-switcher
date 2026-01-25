@@ -1,0 +1,249 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+env:
+  PYTHON_DEFAULT_VERSION: "3.11"
+
+jobs:
+  # ============================================
+  # Quick Checks (paralelně, rychlé)
+  # ============================================
+  
+  lint:
+    name: Lint (ruff)
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff
+
+    - name: Run ruff
+      run: |
+        ruff check src/ tests/
+
+  format:
+    name: Format (black)
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black
+
+    - name: Check formatting
+      run: |
+        black --check src/ tests/
+
+  type-check:
+    name: Type Check (mypy)
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mypy
+        pip install -e .
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+    - name: Run mypy
+      run: |
+        mypy src/
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+  # ============================================
+  # Security Checks (paralelně)
+  # ============================================
+
+  security-bandit:
+    name: Security (Bandit)
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+        cache: 'pip'
+
+    - name: Install Bandit
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit[toml]
+
+    - name: Run Bandit
+      run: |
+        bandit -r src/ -f json -o bandit-report.json
+      continue-on-error: false
+
+    - name: Upload Bandit report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: bandit-report
+        path: bandit-report.json
+        retention-days: 7
+
+  security-safety:
+    name: Security (Safety)
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety
+        pip install -e .
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+    - name: Run Safety check
+      run: |
+        safety check --json || safety check
+      continue-on-error: false
+
+  # ============================================
+  # Tests (po quick checks, matrix strategy)
+  # ============================================
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: windows-latest
+    needs: [lint, format, type-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip setuptools wheel build
+
+    - name: Install package
+      run: |
+        pip install -e .
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+    - name: Install test dependencies
+      run: |
+        pip install pytest pytest-asyncio pytest-cov freezegun
+
+    - name: Run tests with coverage
+      run: |
+        pytest -v --tb=short --cov=src/irswitch --cov-report=xml --cov-report=html
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.11'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Upload coverage HTML
+      uses: actions/upload-artifact@v4
+      if: matrix.python-version == '3.11'
+      with:
+        name: coverage-html
+        path: htmlcov/
+        retention-days: 7
+
+  # ============================================
+  # Build Verification (jen ověření, že build funguje)
+  # Skutečný build + release se spouští při push tagu (release.yml)
+  # ============================================
+
+  build-verify:
+    name: Build Verification
+    needs: [test, security-bandit, security-safety]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_DEFAULT_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_DEFAULT_VERSION }}
+        cache: 'pip'
+
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip setuptools wheel build
+
+    - name: Install package
+      run: |
+        pip install -e .
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+    - name: Install PyInstaller
+      run: |
+        pip install pyinstaller
+
+    - name: Verify build (no artifact upload)
+      run: |
+        .\build_exe.ps1 --all
+      shell: pwsh
+      
+    - name: Verify distribution files exist
+      run: |
+        if (-not (Test-Path "dist\irswitchd.exe")) {
+          Write-Error "Build failed: irswitchd.exe not found"
+          exit 1
+        }
+        Write-Host "✓ Build verification successful"
+      shell: pwsh

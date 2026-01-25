@@ -5,16 +5,14 @@ from __future__ import annotations
 import json
 import logging
 import time
-from pathlib import Path
-from typing import Optional
 
 from aiohttp import web
 
-from irswitch.config import AppConfig
-from irswitch.i18n import get_translator, t
-from irswitch.server.api import APP_CONFIG
-from irswitch.server.event_log import get_event_log
 from irswitch import __version__
+from irswitch.config import AppConfig
+from irswitch.i18n import get_translator
+from irswitch.server.app_keys import APP_CONFIG
+from irswitch.server.event_log import get_event_log
 
 
 # Import these lazily to avoid circular import
@@ -33,7 +31,7 @@ def _get_obs_client():
 logger = logging.getLogger(__name__)
 
 
-def format_stream_duration(ms: Optional[int]) -> str:
+def format_stream_duration(ms: int | None) -> str:
     """Format stream duration in MM:SS or HH:MM:SS format."""
     if ms is None:
         return "00:00"
@@ -49,7 +47,7 @@ def format_stream_duration(ms: Optional[int]) -> str:
         return f"{minutes:02d}:{seconds:02d}"
 
 
-def format_duration(seconds: Optional[float]) -> str:
+def format_duration(seconds: float | None) -> str:
     """Format duration in seconds to HH:MM:SS or MM:SS format."""
     if seconds is None:
         return "N/A"
@@ -68,7 +66,7 @@ def format_duration(seconds: Optional[float]) -> str:
 async def handle_gr_status(request: web.Request) -> web.Response:
     """Handle GET /gr-status - large dashboard."""
     try:
-        config: Optional[AppConfig] = request.app.get(APP_CONFIG)
+        config: AppConfig | None = request.app.get(APP_CONFIG)
         if config is None:
             return web.Response(text="Configuration not available", status=500)
 
@@ -82,24 +80,15 @@ async def handle_gr_status(request: web.Request) -> web.Response:
 
         # Get streaming status
         is_streaming = False
-        stream_duration_ms: Optional[int] = None
-        stream_title: Optional[str] = None
-        stream_description: Optional[str] = None
-        is_ready = False
+        stream_duration_ms: int | None = None
+        stream_title: str | None = None
+        stream_description: str | None = None
         is_selected = False
         is_ready_selected = False
-        stream_status_label = None
-        should_show_stream_row = False
         obs_client = _get_obs_client()
         if obs_client is not None and state.connected_obs:
             try:
                 is_streaming, stream_duration_ms = await obs_client.get_stream_status()
-            except Exception:
-                pass
-
-            # Check if stream is ready (configured) and selected
-            try:
-                is_ready = await obs_client.is_broadcast_ready()
             except Exception:
                 pass
 
@@ -123,30 +112,13 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             # 1. Streaming is active (definitely current)
             # 2. Stream is selected AND has stream info (key/broadcast_id) - actually selected in Broadcast Manager
             # 3. Stream has title (may be from previous selection or defined stream)
-            if is_streaming:
-                stream_status_label = "Current"
-                should_show_stream_row = True
-            elif is_selected and is_ready_selected:
-                # Stream is selected AND ready (has key/broadcast_id) - actually selected in Broadcast Manager
-                stream_status_label = "Current"
-                should_show_stream_row = True
-            elif stream_title:
-                # Stream exists but is not selected - it's just defined (planned)
-                stream_status_label = "Planned"
-                should_show_stream_row = True
-
             # If stream is selected/ready but title is not available, show "Ready" instead
             # Only if stream is actually selected (has key/broadcast_id), not just configured
-            if not stream_title and (
-                is_streaming or (is_selected and is_ready_selected)
-            ):
+            if not stream_title and (is_streaming or (is_selected and is_ready_selected)):
                 stream_title = "Stream Ready (Title Not Available)"
-                should_show_stream_row = True
-                if not stream_status_label:
-                    stream_status_label = "Current"
 
         # Get OBS profile
-        obs_profile: Optional[str] = None
+        obs_profile: str | None = None
         if obs_client is not None and state.connected_obs:
             try:
                 obs_profile = await obs_client.get_current_profile()
@@ -162,9 +134,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         events = []
         try:
             event_log = get_event_log()
-            events_data = await event_log.get_recent_events(
-                config.dashboard_event_log_size
-            )
+            events_data = await event_log.get_recent_events(config.dashboard_event_log_size)
             events = [
                 {
                     "timestamp": e.timestamp,
@@ -191,11 +161,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
 
         # Build image paths
         bg_image = config.dashboard_gr_background_image or ""
-        logo_obs = config.dashboard_gr_logo_obs or ""
-        logo_iracing = config.dashboard_gr_logo_iracing or ""
-        logo_app = (
-            config.dashboard_gr_logo_app or "/assets/favicon/favicon-96x96.png"
-        )  # Default to app icon from assets
+        logo_app = config.dashboard_gr_logo_app or "/assets/favicon/favicon-96x96.png"
 
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1849,7 +1815,7 @@ async def handle_vr_status(request: web.Request) -> web.Response:
 
     # Get streaming status
     is_streaming = False
-    stream_duration_ms: Optional[int] = None
+    stream_duration_ms: int | None = None
     obs_client = _get_obs_client()
     if obs_client is not None and state.connected_obs:
         try:
@@ -1857,14 +1823,9 @@ async def handle_vr_status(request: web.Request) -> web.Response:
         except Exception:
             pass
 
-    config: Optional[AppConfig] = request.app.get(APP_CONFIG)
+    config: AppConfig | None = request.app.get(APP_CONFIG)
     update_interval_ms = int(1000 / (config.dashboard_update_fps if config else 2))
-    refresh_seconds = max(
-        1, update_interval_ms // 1000
-    )  # Convert to seconds, minimum 1 second
-
-    # Get icon paths
-    icons_path = config.dashboard_vr_icons_path if config else None
+    refresh_seconds = max(1, update_interval_ms // 1000)  # Convert to seconds, minimum 1 second
 
     import time
 
@@ -2068,15 +2029,11 @@ async def handle_vr_status(request: web.Request) -> web.Response:
 
     response = web.Response(text=html, content_type="text/html")
     # Strong cache control headers for RaceLab VR
-    response.headers["Cache-Control"] = (
-        "no-cache, no-store, must-revalidate, max-age=0, private"
-    )
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0, private"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     response.headers["X-Accel-Expires"] = "0"  # For nginx proxy
-    response.headers["Last-Modified"] = time.strftime(
-        "%a, %d %b %Y %H:%M:%S GMT", time.gmtime()
-    )
+    response.headers["Last-Modified"] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
     response.headers["ETag"] = f'"{cache_bust}"'  # Unique ETag for each request
     return response
 

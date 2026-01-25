@@ -20,48 +20,44 @@ fi
 
 # Získat cestu k projektu (parent adresář .git)
 PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-INIT_FILE="$PROJECT_ROOT/src/irswitch/__init__.py"
 PYPROJECT_FILE="$PROJECT_ROOT/pyproject.toml"
 
-# Zkontrolovat, zda soubory existují
-if [ ! -f "$INIT_FILE" ] || [ ! -f "$PYPROJECT_FILE" ]; then
+# Zkontrolovat, zda soubor existuje
+if [ ! -f "$PYPROJECT_FILE" ]; then
     exit 0
 fi
 
-# Spočítat hash obsahu souborů
-INIT_HASH=$(sha256sum "$INIT_FILE" 2>/dev/null | cut -d' ' -f1)
+# Spočítat hash obsahu souboru (pyproject.toml je single source of truth)
 PYPROJECT_HASH=$(sha256sum "$PYPROJECT_FILE" 2>/dev/null | cut -d' ' -f1)
 
 # Pokud je uložený hash z před-commit stavu, porovnat
-PRE_COMMIT_INIT_HASH_FILE="$PROJECT_ROOT/.git/.version_init_hash"
 PRE_COMMIT_PYPROJECT_HASH_FILE="$PROJECT_ROOT/.git/.version_pyproject_hash"
 
-if [ -f "$PRE_COMMIT_INIT_HASH_FILE" ] && [ -f "$PRE_COMMIT_PYPROJECT_HASH_FILE" ]; then
-    PRE_INIT_HASH=$(cat "$PRE_COMMIT_INIT_HASH_FILE")
+if [ -f "$PRE_COMMIT_PYPROJECT_HASH_FILE" ]; then
     PRE_PYPROJECT_HASH=$(cat "$PRE_COMMIT_PYPROJECT_HASH_FILE")
 
-    # Porovnat hashe - pokud se liší, verze byla změněna
-    if [ "$INIT_HASH" != "$PRE_INIT_HASH" ] || [ "$PYPROJECT_HASH" != "$PRE_PYPROJECT_HASH" ]; then
+    # Porovnat hash - pokud se liší, verze byla změněna
+    if [ "$PYPROJECT_HASH" != "$PRE_PYPROJECT_HASH" ]; then
         # Změna detekována - přidat do staging
-        if ! git add "$INIT_FILE" "$PYPROJECT_FILE" 2>/dev/null; then
-            echo "Warning: Failed to stage version files" >&2
-            rm -f "$PRE_COMMIT_INIT_HASH_FILE" "$PRE_COMMIT_PYPROJECT_HASH_FILE"
+        if ! git add "$PYPROJECT_FILE" 2>/dev/null; then
+            echo "Warning: Failed to stage version file" >&2
+            rm -f "$PRE_COMMIT_PYPROJECT_HASH_FILE"
             exit 0
         fi
         
         # Amendnout commit s environment variable pro ochranu proti rekurzi
         # --no-verify přeskočí všechny hooky (včetně tohoto)
         if GIT_VERSION_AMENDING=1 git commit --amend --no-edit --no-verify 2>/dev/null; then
-            echo "Version files amended to commit"
+            echo "Version file (pyproject.toml) amended to commit"
         else
-            echo "Warning: Failed to amend commit with version files" >&2
-            # Unstage files pokud amend selhal
-            git reset HEAD "$INIT_FILE" "$PYPROJECT_FILE" 2>/dev/null || true
+            echo "Warning: Failed to amend commit with version file" >&2
+            # Unstage file pokud amend selhal
+            git reset HEAD "$PYPROJECT_FILE" 2>/dev/null || true
         fi
     fi
 
-    # Smazat dočasné soubory
-    rm -f "$PRE_COMMIT_INIT_HASH_FILE" "$PRE_COMMIT_PYPROJECT_HASH_FILE"
+    # Smazat dočasný soubor
+    rm -f "$PRE_COMMIT_PYPROJECT_HASH_FILE"
 fi
 
 exit 0

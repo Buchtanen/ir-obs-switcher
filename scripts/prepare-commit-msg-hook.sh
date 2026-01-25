@@ -23,7 +23,6 @@ COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
 # Získat cestu k projektu (parent adresář .git)
 PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BUMP_SCRIPT="$PROJECT_ROOT/scripts/bump_version.py"
-INIT_FILE="$PROJECT_ROOT/src/irswitch/__init__.py"
 PYPROJECT_FILE="$PROJECT_ROOT/pyproject.toml"
 
 # Kontrolovat, že nepouštíme při merge squash atd.
@@ -32,14 +31,11 @@ if [ "$COMMIT_SOURCE" != "message" ] && [ "$COMMIT_SOURCE" != "" ]; then
     exit 0
 fi
 
-# Uložit hashe verzí souborů PŘED jakoukoli změnou
-# Tyto hashe použije post-commit hook pro detekci změn
-PRE_COMMIT_INIT_HASH_FILE="$PROJECT_ROOT/.git/.version_init_hash"
+# Uložit hash verze souboru PŘED jakoukoli změnou
+# pyproject.toml je single source of truth
+# Tento hash použije post-commit hook pro detekci změn
 PRE_COMMIT_PYPROJECT_HASH_FILE="$PROJECT_ROOT/.git/.version_pyproject_hash"
 
-if [ -f "$INIT_FILE" ]; then
-    sha256sum "$INIT_FILE" | cut -d' ' -f1 > "$PRE_COMMIT_INIT_HASH_FILE"
-fi
 if [ -f "$PYPROJECT_FILE" ]; then
     sha256sum "$PYPROJECT_FILE" | cut -d' ' -f1 > "$PRE_COMMIT_PYPROJECT_HASH_FILE"
 fi

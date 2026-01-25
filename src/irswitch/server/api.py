@@ -9,31 +9,39 @@ import secrets
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
+import aiohttp
 from aiohttp import web
 from aiohttp.web_ws import WebSocketResponse
-import aiohttp
+
+# Local imports
+from irswitch import __version__
+from irswitch.config import AppConfig
 
 # Import OAuth manager creator
-from irswitch.oauth import create_oauth_manager, OAuthError
-
-# Application config keys - use AppKey instances to avoid NotAppKeyWarning
-APP_CONFIG = web.AppKey("config")
-APP_CONFIG_PATH = web.AppKey("config_path")
+from irswitch.oauth import OAuthError, create_oauth_manager
+from irswitch.server.dashboards import (
+    handle_gr_status,
+    handle_test_widget,
+    handle_vr_status,
+)
+from irswitch.server.event_log import get_event_log
+from irswitch.server.metrics import get_metrics
+from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
 
 # Mutable container for config to avoid DeprecationWarning when updating at runtime
 # Using a list wrapper allows us to update config without triggering aiohttp's
 # "Changing state of started or joined application is deprecated" warning
-_config_container: list = [None]  # type: ignore[annotation-type-mismatch]
+_config_container: list[AppConfig | None] = [None]
 
 
-def get_app_config() -> "AppConfig | None":
+def get_app_config() -> AppConfig | None:
     """Get config from container (thread-safe for our use case)."""
     return _config_container[0]
 
 
-def set_app_config(config: "AppConfig") -> None:
+def set_app_config(config: AppConfig) -> None:
     """Set config in container (thread-safe for our use case)."""
     _config_container[0] = config
 
@@ -41,29 +49,20 @@ def set_app_config(config: "AppConfig") -> None:
 if TYPE_CHECKING:
     from irswitch.logic.state_machine import StateMachine
     from irswitch.models import SwitchState
-    from irswitch.obs.client import ObsClient
     from irswitch.oauth import OAuthManager
-
-from irswitch import __version__
-from irswitch.server.event_log import get_event_log
-from irswitch.server.dashboards import (
-    handle_gr_status,
-    handle_vr_status,
-    handle_test_widget,
-)
-from irswitch.server.metrics import get_metrics
+    from irswitch.obs.client import ObsClient
 
 logger = logging.getLogger(__name__)
 
 # Global state for WebSocket broadcasting
 _websocket_clients: set[web.WebSocketResponse] = set()
-_current_state: "SwitchState | None" = None
-_state_machine: "StateMachine | None" = None
-_obs_client: "ObsClient | None" = None
-_reader: Optional[object] = None  # IRacingReader instance
+_current_state: SwitchState | None = None
+_state_machine: StateMachine | None = None
+_obs_client: ObsClient | None = None
+_reader: object | None = None  # IRacingReader instance
 _restart_mode_active: bool = False
-_shutdown_event: Optional[asyncio.Event] = None
-_oauth_manager: "OAuthManager | None" = None  # YouTube OAuth manager
+_shutdown_event: asyncio.Event | None = None
+_oauth_manager: OAuthManager | None = None  # YouTube OAuth manager
 
 
 def reset_state() -> None:
@@ -95,13 +94,13 @@ def get_restart_mode() -> bool:
     return _restart_mode_active
 
 
-def set_state_machine(state_machine: "StateMachine") -> None:
+def set_state_machine(state_machine: StateMachine) -> None:
     """Set the state machine instance for API handlers."""
     global _state_machine
     _state_machine = state_machine
 
 
-def set_obs_client(obs_client: "ObsClient") -> None:
+def set_obs_client(obs_client: ObsClient) -> None:
     """Set the OBS client instance for API handlers."""
     global _obs_client
     _obs_client = obs_client
@@ -113,45 +112,45 @@ def set_reader(reader: object) -> None:
     _reader = reader
 
 
-def set_oauth_manager(oauth_manager: "OAuthManager | None") -> None:
+def set_oauth_manager(oauth_manager: OAuthManager | None) -> None:
     """Set the OAuth manager instance for API handlers."""
     global _oauth_manager
     _oauth_manager = oauth_manager
 
 
-def get_oauth_manager() -> "OAuthManager | None":
+def get_oauth_manager() -> OAuthManager | None:
     """Get the OAuth manager instance."""
     return _oauth_manager
 
 
-def _create_oauth_manager_from_config(request: web.Request | None = None) -> "OAuthManager | None":
+def _create_oauth_manager_from_config(request: web.Request | None = None) -> OAuthManager | None:
     """
     Create OAuth manager from config.ini or environment variables.
-    
+
     Priority: config.ini > environment variables
-    
+
     Args:
         request: Optional web request to get config from app context
     """
     config = None
-    
+
     # Try to get config from request.app first (preferred)
     if request is not None:
         config = request.app.get(APP_CONFIG)
-    
+
     # Fall back to container if no request provided
     if config is None:
         config = get_app_config()
-    
+
     # Try to get credentials from config first
     client_id = None
     client_secret = None
-    
+
     if config and config.oauth_client_id and config.oauth_client_secret:
         client_id = config.oauth_client_id
         client_secret = config.oauth_client_secret
         logger.debug("Using OAuth credentials from config.ini")
-    
+
     # Fall back to environment variables if not in config
     return create_oauth_manager(
         client_id=client_id,
@@ -159,7 +158,7 @@ def _create_oauth_manager_from_config(request: web.Request | None = None) -> "OA
     )
 
 
-async def _broadcast_state_update(state: "SwitchState") -> None:
+async def _broadcast_state_update(state: SwitchState) -> None:
     """Broadcast state update to all WebSocket clients with streaming info."""
     global _websocket_clients
 
@@ -185,12 +184,12 @@ async def _broadcast_state_update(state: "SwitchState") -> None:
     _websocket_clients -= disconnected
 
 
-def get_current_state() -> "SwitchState | None":
+def get_current_state() -> SwitchState | None:
     """Get current switch state."""
     return _current_state
 
 
-def set_current_state(state: "SwitchState") -> None:
+def set_current_state(state: SwitchState) -> None:
     """Update current state and broadcast to WebSocket clients."""
     global _current_state, _websocket_clients
     _current_state = state
@@ -200,7 +199,7 @@ def set_current_state(state: "SwitchState") -> None:
         asyncio.create_task(_broadcast_state_update(state))
 
 
-async def _get_status_dict(state: "SwitchState") -> dict:
+async def _get_status_dict(state: SwitchState) -> dict:
     """Convert SwitchState to dictionary with streaming info."""
     status = {
         "version": __version__,
@@ -218,9 +217,7 @@ async def _get_status_dict(state: "SwitchState") -> dict:
         "session_type": state.session_type,
         "session_name": state.session_name,
         "session_num": state.session_num,
-        "total_sessions": (
-            state.total_sessions if hasattr(state, "total_sessions") else None
-        ),
+        "total_sessions": (state.total_sessions if hasattr(state, "total_sessions") else None),
     }
 
     # Format session_num as "x of y" if total_sessions is available
@@ -246,7 +243,7 @@ async def _get_status_dict(state: "SwitchState") -> dict:
                 client_id=config.oauth_client_id,
                 client_secret=config.oauth_client_secret,
             )
-    
+
     if oauth_manager is not None:
         status["oauth_configured"] = True
         status["oauth_authenticated"] = oauth_manager.is_authenticated()
@@ -291,15 +288,9 @@ async def _get_status_dict(state: "SwitchState") -> dict:
             # Get full cached stream info for extended fields
             stream_info_full = _obs_client.get_cached_stream_info_full()
             if stream_info_full and isinstance(stream_info_full, dict):
-                status["stream_scheduled_start_time"] = stream_info_full.get(
-                    "scheduled_start_time"
-                )
-                status["stream_actual_start_time"] = stream_info_full.get(
-                    "actual_start_time"
-                )
-                status["stream_concurrent_viewers"] = stream_info_full.get(
-                    "concurrent_viewers"
-                )
+                status["stream_scheduled_start_time"] = stream_info_full.get("scheduled_start_time")
+                status["stream_actual_start_time"] = stream_info_full.get("actual_start_time")
+                status["stream_concurrent_viewers"] = stream_info_full.get("concurrent_viewers")
                 status["stream_status"] = stream_info_full.get("status")
                 status["stream_privacy_status"] = stream_info_full.get("privacy_status")
             else:
@@ -371,9 +362,7 @@ async def handle_get_status(request: web.Request) -> web.Response:
         return web.json_response(status)
     except Exception as e:
         logger.error(f"Error in /status endpoint: {e}", exc_info=True)
-        return web.json_response(
-            {"error": "Internal server error", "message": str(e)}, status=500
-        )
+        return web.json_response({"error": "Internal server error", "message": str(e)}, status=500)
 
 
 async def handle_override(request: web.Request) -> web.Response:
@@ -390,9 +379,7 @@ async def handle_override(request: web.Request) -> web.Response:
             return web.json_response({"error": "scene is required"}, status=400)
 
         if not isinstance(seconds, int) or seconds <= 0:
-            return web.json_response(
-                {"error": "seconds must be a positive integer"}, status=400
-            )
+            return web.json_response({"error": "seconds must be a positive integer"}, status=400)
 
         new_state = _state_machine.apply_override(_current_state, scene, seconds)
         set_current_state(new_state)
@@ -461,9 +448,7 @@ async def handle_health(request: web.Request) -> web.Response:
 
     # Check iRacing connection
     iracing_connected = (
-        _current_state is not None and _current_state.connected_iracing
-        if _current_state
-        else False
+        _current_state is not None and _current_state.connected_iracing if _current_state else False
     )
     checks["iracing"] = {
         "status": "connected" if iracing_connected else "disconnected",
@@ -474,9 +459,7 @@ async def handle_health(request: web.Request) -> web.Response:
 
     # Check OBS connection
     obs_connected = (
-        _current_state is not None and _current_state.connected_obs
-        if _current_state
-        else False
+        _current_state is not None and _current_state.connected_obs if _current_state else False
     )
     checks["obs"] = {
         "status": "connected" if obs_connected else "disconnected",
@@ -515,6 +498,7 @@ async def handle_metrics(request: web.Request) -> web.Response:
 async def handle_config_reload(request: web.Request) -> web.Response:
     """Handle POST /config/reload endpoint."""
     import warnings
+
     from irswitch.config import AppConfig
 
     config_path = request.app.get(APP_CONFIG_PATH)
@@ -563,9 +547,7 @@ async def handle_shutdown(request: web.Request) -> web.Response:
 
     logger.info("Shutdown requested via API")
     _shutdown_event.set()
-    return web.json_response(
-        {"status": "shutting_down", "message": "Service shutdown initiated"}
-    )
+    return web.json_response({"status": "shutting_down", "message": "Service shutdown initiated"})
 
 
 async def handle_reset(request: web.Request) -> web.Response:
@@ -581,9 +563,7 @@ async def handle_reset(request: web.Request) -> web.Response:
     safe_scene = _state_machine._policy.safe_scene
 
     # Get current connection states before reset
-    was_iracing_connected = (
-        _current_state.connected_iracing if _current_state else False
-    )
+    was_iracing_connected = _current_state.connected_iracing if _current_state else False
     was_obs_connected = _current_state.connected_obs if _current_state else False
 
     # Reset metrics
@@ -796,22 +776,25 @@ async def handle_oauth_callback(request: web.Request) -> web.Response:
             token = await oauth_manager.exchange_code_for_tokens(code, session)
 
             logger.info("OAuth authentication successful")
-            
+
             # Update OAuth manager in OBS client to enable YouTube API access
             if _obs_client is not None:
                 _obs_client.set_oauth_manager(oauth_manager)
                 logger.info("OAuth manager updated in OBS client")
-                
+
                 # Force refresh stream info to get YouTube stream data
                 # Use asyncio.create_task to avoid blocking the callback handler
                 try:
+
                     async def refresh_stream_info():
                         try:
                             await _obs_client.get_stream_info(force_refresh=True)
                             logger.info("Stream info refreshed after OAuth authorization")
                         except Exception as e:
-                            logger.warning(f"Failed to refresh stream info after OAuth: {e}", exc_info=True)
-                    
+                            logger.warning(
+                                f"Failed to refresh stream info after OAuth: {e}", exc_info=True
+                            )
+
                     # Schedule refresh as background task (non-blocking)
                     asyncio.create_task(refresh_stream_info())
                 except Exception as e:
@@ -873,22 +856,23 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
                 "expires_in_seconds": token.expires_in_seconds(),
                 "is_expired": token.is_expired(),
             }
-            
+
             # If OAuth is authenticated but OBS client doesn't have the manager, update it
             if _obs_client is not None and _obs_client._oauth_manager is None:
                 _obs_client.set_oauth_manager(oauth_manager)
                 logger.info("OAuth manager updated in OBS client from status check")
-                
+
                 # Try to refresh stream info if OAuth was just authenticated
                 # Use asyncio.create_task to avoid blocking the status handler
                 try:
+
                     async def refresh_stream_info():
                         try:
                             await _obs_client.get_stream_info(force_refresh=True)
                             logger.info("Stream info refreshed after OAuth status check")
                         except Exception as e:
                             logger.debug(f"Failed to refresh stream info: {e}", exc_info=True)
-                    
+
                     # Schedule refresh as background task (non-blocking)
                     asyncio.create_task(refresh_stream_info())
                 except Exception as e:
@@ -992,14 +976,16 @@ def create_app() -> web.Application:
     else:
         # Normal execution - __file__ is in src/irswitch/server/api.py, so go up 4 levels to reach project root
         assets_path = Path(__file__).resolve().parents[3] / "assets"
-    
+
     # Only add static route if assets directory exists
     if assets_path.exists():
         app.router.add_static("/assets/", assets_path)
     else:
-        logger.warning(f"Assets directory not found at {assets_path}, static assets will not be available")
+        logger.warning(
+            f"Assets directory not found at {assets_path}, static assets will not be available"
+        )
 
-    async def handle_favicon(request: web.Request) -> web.Response:
+    async def handle_favicon(request: web.Request) -> web.StreamResponse:
         """Handle GET /favicon.ico endpoint."""
         favicon_path = assets_path / "favicon" / "favicon.ico"
         if favicon_path.exists():
@@ -1007,7 +993,7 @@ def create_app() -> web.Application:
         else:
             return web.Response(status=404)
 
-    async def handle_apple_touch_icon(request: web.Request) -> web.Response:
+    async def handle_apple_touch_icon(request: web.Request) -> web.StreamResponse:
         """Handle GET /apple-touch-icon.png endpoint."""
         icon_path = assets_path / "favicon" / "apple-touch-icon.png"
         if icon_path.exists():

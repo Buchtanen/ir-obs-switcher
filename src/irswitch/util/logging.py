@@ -6,7 +6,7 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -59,9 +59,7 @@ except ImportError:
                 if handle and handle != -1:  # Valid handle
                     current_mode = wintypes.DWORD()
                     if kernel32.GetConsoleMode(handle, ctypes.byref(current_mode)):
-                        new_mode = (
-                            current_mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING
-                        )
+                        new_mode = current_mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING
                         if kernel32.SetConsoleMode(handle, new_mode):
                             _ansi_enabled = True
                             break  # If at least one works, enable colors
@@ -96,7 +94,6 @@ class ColoredFormatter(logging.Formatter):
 
         # Build colored output manually to avoid formatting issues
         colored_timestamp = f"{_GRAY}{timestamp}{_RESET}"
-        colored_levelname = f"{level_color}{record.levelname}{_RESET}"
         colored_name = f"{_CYAN}{record.name}{_RESET}"
 
         # Format: timestamp | level | component | message
@@ -109,7 +106,7 @@ class ColoredFormatter(logging.Formatter):
 
 def setup_logging(
     level: str | LogLevel = "INFO",
-    log_file: Optional[str | Path] = None,
+    log_file: str | Path | None = None,
     max_bytes: int = 10 * 1024 * 1024,  # 10 MB
     backup_count: int = 5,
     use_colors: bool = True,
@@ -131,6 +128,7 @@ def setup_logging(
     log_level = getattr(logging, level.upper(), logging.INFO)
 
     # Use colored formatter for console, plain for file
+    console_formatter: logging.Formatter
     if use_colors and _ansi_enabled:
         console_formatter = ColoredFormatter(
             fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -186,9 +184,7 @@ def setup_logging(
         def filter(self, record: logging.LogRecord) -> bool:
             # Suppress messages containing vendor request errors
             msg = record.getMessage()
-            if "CallVendorRequest" in msg and (
-                "code 600" in msg or "No vendor was found" in msg
-            ):
+            if "CallVendorRequest" in msg and ("code 600" in msg or "No vendor was found" in msg):
                 return False
             if "OBSSDKRequestError" in msg and "code 600" in msg:
                 return False
@@ -205,9 +201,7 @@ def setup_logging(
     ]
     for obsws_logger in obsws_loggers:
         obsws_logger.setLevel(logging.CRITICAL)  # Suppress all except CRITICAL errors
-        obsws_logger.addFilter(
-            vendor_filter
-        )  # Add filter to suppress vendor request errors
+        obsws_logger.addFilter(vendor_filter)  # Add filter to suppress vendor request errors
         # Also disable propagation to prevent parent logger from showing these
         obsws_logger.propagate = False
 

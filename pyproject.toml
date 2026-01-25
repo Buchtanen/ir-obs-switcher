@@ -1,6 +1,6 @@
 [project]
 name = "irswitch"
-version = "0.3.0"
+version = "0.7.0"
 description = "iRacing to OBS auto scene switcher"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -19,7 +19,17 @@ dependencies = [
 test = [
   "pytest>=7.4",
   "pytest-asyncio>=0.23",
+  "pytest-cov>=4.1",
   "freezegun>=1.4",
+]
+lint = [
+  "ruff>=0.1.0",
+  "black>=23.0",
+  "mypy>=1.5",
+]
+security = [
+  "bandit[toml]>=1.7",
+  "safety>=2.3",
 ]
 
 [project.scripts]
@@ -41,3 +51,74 @@ include = ["irswitch*"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "UP",  # pyupgrade
+]
+ignore = [
+  "E501",  # line too long (black handles this)
+  "B008",  # function calls in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "S101"]
+"src/irswitch/server/dashboards.py" = ["W291", "W293"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+  "pyirsdk.*",
+  "irsdk",
+  "obsws.*",
+  "obsws_python",
+  "pynput.*",
+  "colorama",
+  "colorama.*",
+]
+ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".git", "build", "dist"]
+skips = ["B101", "B608"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

@@ -4,25 +4,28 @@ Aplikace používá [Semantic Versioning](https://semver.org/lang/cs/) ve formá
 
 ## Kde je verze evidována
 
-Verze aplikace je evidována na třech místech:
+Verze aplikace je evidována na dvou místech:
 
-1. **`src/irswitch/__init__.py`**
-   ```python
-   __version__ = "0.3.0"
-   ```
-   - Primární zdroj verze pro Python kód
-   - Importovatelné jako `from irswitch import __version__`
-
-2. **`pyproject.toml`**
+1. **`pyproject.toml`** (single source of truth)
    ```toml
    [project]
-   version = "0.3.0"
+   version = "0.7.0"
    ```
-   - Verze pro Python balíček
+   - **Primární zdroj verze** - jediné místo, kde se verze mění
    - Používá se při buildu a distribuci
+   - Git hooky mění verzi pouze zde
+
+2. **`src/irswitch/__init__.py`**
+   ```python
+   # Načítá verzi dynamicky z pyproject.toml
+   from irswitch import __version__
+   ```
+   - Načítá verzi automaticky z `pyproject.toml` při importu
+   - **Není potřeba ručně aktualizovat** - verze se načte automaticky
+   - Importovatelné jako `from irswitch import __version__`
 
 3. **`CHANGELOG.md`**
-   - Verze v hlavičce sekcí (např. `## [0.3.0] - 2026-01-24`)
+   - Verze v hlavičce sekcí (např. `## [0.7.0] - 2026-01-24`)
    - Historický záznam změn
 
 ## Zobrazení verze
@@ -61,8 +64,8 @@ Aplikace má automatický mechanismus pro správu verzí pomocí dvou Git hooků
 Git commit je atomická operace - jakmile začne, nelze změnit staging area.
 Proto používáme dvoufázový přístup:
 
-1. **prepare-commit-msg**: Uloží hashe verzí souborů PŘED commitem
-2. **post-commit**: Porovná hashe, pokud se liší, provede `git commit --amend`
+1. **prepare-commit-msg**: Uloží hash `pyproject.toml` PŘED commitem a zvýší verzi
+2. **post-commit**: Porovná hash, pokud se liší, provede `git commit --amend`
 
 ### Instalace hooků
 
@@ -97,27 +100,28 @@ Po instalaci hooků se verze automaticky zvýší podle prefixu commit message:
   ```
 
 Workflow:
-1. prepare-commit-msg detekuje prefix a zvýší verzi
-2. Commit se vytvoří (bez verzí)
-3. post-commit detekuje změnu a provede amend
-4. Výsledek: Jeden commit včetně změn verzí
+1. prepare-commit-msg detekuje prefix a zvýší verzi v `pyproject.toml`
+2. Commit se vytvoří (bez změny verze)
+3. post-commit detekuje změnu v `pyproject.toml` a provede amend
+4. Výsledek: Jeden commit včetně změny verze
 
-**Poznámka**: Pokud commit message nezačíná žádným z těchto prefixů, verze se nezmění. Hooky se také nespouští při merge, squash nebo template commitech.
+**Poznámka**: 
+- Hooky mění pouze `pyproject.toml` (single source of truth)
+- `__init__.py` načítá verzi dynamicky z `pyproject.toml`, takže není potřeba ho měnit
+- Pokud commit message nezačíná žádným z těchto prefixů, verze se nezmění
+- Hooky se také nespouští při merge, squash nebo template commitech
 
 ### Ruční změna verze
 
 Pokud potřebujete změnit verzi ručně (bez commitu nebo s jiným prefixem):
 
-**`src/irswitch/__init__.py`**:
-```python
-__version__ = "0.4.0"  # Nová verze
-```
-
-**`pyproject.toml`**:
+**`pyproject.toml`** (single source of truth):
 ```toml
 [project]
-version = "0.4.0"  # Nová verze
+version = "0.8.0"  # Nová verze
 ```
+
+**Poznámka**: `__init__.py` načítá verzi automaticky z `pyproject.toml`, takže není potřeba ho měnit ručně.
 
 ### Aktualizace CHANGELOG.md
 

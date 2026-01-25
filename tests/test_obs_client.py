@@ -41,9 +41,7 @@ async def test_connect_retry_on_failure(obs_client: ObsClient) -> None:
 @pytest.mark.asyncio
 async def test_connect_max_retries_exceeded(obs_client: ObsClient) -> None:
     """Test connection failure after max retries."""
-    with patch(
-        "irswitch.obs.client.ReqClient", side_effect=Exception("Connection failed")
-    ):
+    with patch("irswitch.obs.client.ReqClient", side_effect=Exception("Connection failed")):
         with pytest.raises(ConnectionError):
             await obs_client.connect(max_retries=2, initial_backoff=0.01)
 
@@ -368,9 +366,7 @@ async def test_stop_stream_not_connected(obs_client: ObsClient) -> None:
 @pytest.mark.asyncio
 async def test_get_cached_stream_info_no_cache(obs_client: ObsClient) -> None:
     """Test get_cached_stream_info when cache is empty."""
-    title, description, quota_exceeded, api_key_missing = (
-        obs_client.get_cached_stream_info()
-    )
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
     assert title is None
     assert description is None
     assert quota_exceeded is False
@@ -384,9 +380,7 @@ async def test_get_cached_stream_info_with_cache(obs_client: ObsClient) -> None:
     obs_client._stream_info_cache = ("Test Title", "Test Description")
     obs_client._stream_info_cache_broadcast_id = "test_broadcast_id"
 
-    title, description, quota_exceeded, api_key_missing = (
-        obs_client.get_cached_stream_info()
-    )
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
     assert title == "Test Title"
     assert description == "Test Description"
     assert quota_exceeded is False
@@ -400,9 +394,7 @@ async def test_get_cached_stream_info_with_quota_exceeded(
     """Test get_cached_stream_info when quota is exceeded."""
     obs_client._youtube_quota_exceeded = True
 
-    title, description, quota_exceeded, api_key_missing = (
-        obs_client.get_cached_stream_info()
-    )
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
     assert quota_exceeded is True
     assert api_key_missing is False
 
@@ -414,9 +406,7 @@ async def test_get_cached_stream_info_with_api_key_missing(
     """Test get_cached_stream_info when API key is missing."""
     obs_client._youtube_api_key_missing = True
 
-    title, description, quota_exceeded, api_key_missing = (
-        obs_client.get_cached_stream_info()
-    )
+    title, description, quota_exceeded, api_key_missing = obs_client.get_cached_stream_info()
     assert quota_exceeded is False
     assert api_key_missing is True
 

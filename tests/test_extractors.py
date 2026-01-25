@@ -1,6 +1,11 @@
 """Tests for iRacing data extractors."""
 
-from irswitch.iracing.extractors import extract_mode
+from irswitch.iracing.extractors import (
+    extract_mode,
+    extract_session_num,
+    extract_session_type,
+    extract_total_sessions,
+)
 from irswitch.models import DrivingMode
 
 
@@ -55,14 +60,6 @@ def test_extract_mode_not_on_track_is_lobby() -> None:
     """Test LOBBY when not on track."""
     data = {"IsOnTrack": 0}
     assert extract_mode(data) == DrivingMode.LOBBY
-
-
-# Session info extraction tests
-from irswitch.iracing.extractors import (
-    extract_session_type,
-    extract_session_num,
-    extract_total_sessions,
-)
 
 
 def test_extract_session_type_from_numeric() -> None:

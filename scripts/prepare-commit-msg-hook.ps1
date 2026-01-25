@@ -67,16 +67,16 @@ try {
     }
 
     # Pokud byla verze zvýšena, přidat změny do staging area
+    # pyproject.toml je single source of truth
     if ($newVersion) {
-        $initFile = Join-Path $projectRoot "src" "irswitch" "__init__.py"
         $pyprojectFile = Join-Path $projectRoot "pyproject.toml"
 
-        # Zkontrolovat, zda soubory skutečně existují a byly změněny
-        if ((Test-Path $initFile) -and (Test-Path $pyprojectFile)) {
-            git add $initFile $pyprojectFile 2>$null
-            Write-Host "Version bumped to $newVersion - files staged for commit"
+        # Zkontrolovat, zda soubor skutečně existuje a byl změněn
+        if (Test-Path $pyprojectFile) {
+            git add $pyprojectFile 2>$null
+            Write-Host "Version bumped to $newVersion - pyproject.toml staged for commit"
         } else {
-            Write-Warning "Version files not found or not modified"
+            Write-Warning "pyproject.toml not found or not modified"
         }
     }
 

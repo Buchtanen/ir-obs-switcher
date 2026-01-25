@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Mapping, Optional
+from collections.abc import Mapping
 
 from irswitch.models import DrivingMode
 
@@ -20,6 +20,22 @@ def as_bool(value: object) -> bool:
     return str(value).lower() in {"1", "true", "yes", "on"}
 
 
+def as_int(value: object) -> int | None:
+    """Best-effort conversion of SDK values to int."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    try:
+        return int(str(value))
+    except ValueError:
+        return None
+
+
 def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     """
     Extract driving mode from iRacing SDK data.
@@ -34,36 +50,27 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     cam_car_idx = data.get("CamCarIdx")
     cam_camera_state = data.get("CamCameraState")
     is_on_track = as_bool(data.get("IsOnTrack")) or as_bool(data.get("IsOnTrackCar"))
-    is_in_garage = as_bool(data.get("PlayerCarInGarage")) or as_bool(
-        data.get("IsInGarage")
-    )
+    is_in_garage = as_bool(data.get("PlayerCarInGarage")) or as_bool(data.get("IsInGarage"))
 
     # Determine if player is in car based on CamCameraState
     is_in_car = False
-    if cam_camera_state is not None:
-        try:
-            cam_state = int(cam_camera_state)
-            # Bit 0: session screen (menu/UI) - if set, not in car
-            is_session_screen = (cam_state & 0x01) != 0
-            is_in_car = not is_session_screen
-        except (ValueError, TypeError):
-            pass
-    elif player_car_idx is not None:
-        try:
-            car_idx = int(player_car_idx)
+    cam_state = as_int(cam_camera_state)
+    if cam_state is not None:
+        # Bit 0: session screen (menu/UI) - if set, not in car
+        is_session_screen = (cam_state & 0x01) != 0
+        is_in_car = not is_session_screen
+    else:
+        car_idx = as_int(player_car_idx)
+        if car_idx is not None:
             is_in_car = car_idx >= 0
-        except (ValueError, TypeError):
-            pass
 
     # Check camera mismatch (watching replay of other car)
     cam_mismatch = False
     if cam_car_idx is not None and player_car_idx is not None:
-        try:
-            cam_idx = int(cam_car_idx)
-            player_idx = int(player_car_idx)
+        cam_idx = as_int(cam_car_idx)
+        player_idx = as_int(player_car_idx)
+        if cam_idx is not None and player_idx is not None:
             cam_mismatch = cam_idx != player_idx
-        except (ValueError, TypeError):
-            pass
 
     # Decide mode - Priority order: GARAGE > REPLAY > RACE > LOBBY
     mode = DrivingMode.LOBBY
@@ -81,7 +88,7 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     return mode
 
 
-def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
+def extract_session_type(data: Mapping[str, object]) -> str | None:
     """
     Extract session type from iRacing SDK data.
 
@@ -90,11 +97,12 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
     """
     session_type = data.get("SessionType")
     session_name = data.get("SessionName")
+    result: str | None = None
 
     # Try SessionType first (numeric: 0=test, 1=practice, 2=qualify, 3=warmup, 4=race)
     if session_type is not None:
-        try:
-            st = int(session_type)
+        st = as_int(session_type)
+        if st is not None:
             type_map = {
                 0: "Test",
                 1: "Practice",
@@ -103,10 +111,7 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
                 4: "Race",
             }
             if st in type_map:
-                result = type_map[st]
-                return result
-        except (ValueError, TypeError):
-            pass
+                return type_map[st]
 
     # Fallback: try to parse SessionName
     if session_name is not None:
@@ -161,7 +166,7 @@ def extract_session_type(data: Mapping[str, object]) -> Optional[str]:
     return None
 
 
-def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
+def extract_session_num(data: Mapping[str, object]) -> int | None:
     """
     Extract session number from iRacing SDK data.
 
@@ -170,17 +175,15 @@ def extract_session_num(data: Mapping[str, object]) -> Optional[int]:
     """
     session_num = data.get("SessionNum")
     if session_num is not None:
-        try:
-            result = int(session_num)
+        value = as_int(session_num)
+        if value is not None:
             # Return 0-based value (iRacing SDK uses 0-based indexing)
             # Conversion to 1-based for display happens in main.py
-            return result
-        except (ValueError, TypeError):
-            pass
+            return value
     return None
 
 
-def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
+def extract_total_sessions(data: Mapping[str, object]) -> int | None:
     """
     Extract total number of sessions from iRacing SDK data.
 
@@ -192,11 +195,9 @@ def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
 
     # Try SessionTotalSessions first (direct field from iRacing)
     if "SessionTotalSessions" in data:
-        try:
-            result = int(data["SessionTotalSessions"])
-            return result
-        except (ValueError, TypeError):
-            pass
+        value = as_int(data.get("SessionTotalSessions"))
+        if value is not None:
+            return value
 
     # Try WeekendInfo first (if it's a dict/object with sessions)
     weekend_info = data.get("WeekendInfo")
@@ -206,11 +207,9 @@ def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
             # Try common field names
             for field in ["NumSessions", "SessionCount", "TotalSessions", "n_sessions"]:
                 if field in weekend_info:
-                    try:
-                        result = int(weekend_info[field])
-                        return result
-                    except (ValueError, TypeError):
-                        pass
+                    value = as_int(weekend_info.get(field))
+                    if value is not None:
+                        return value
             # Try to get length of sessions array if it exists
             if "Sessions" in weekend_info:
                 sessions = weekend_info["Sessions"]
@@ -221,9 +220,7 @@ def extract_total_sessions(data: Mapping[str, object]) -> Optional[int]:
     # Try direct fields in data
     for field in ["NumSessions", "SessionCount", "TotalSessions", "n_sessions"]:
         if field in data:
-            try:
-                result = int(data[field])
-                return result
-            except (ValueError, TypeError):
-                pass
+            value = as_int(data.get(field))
+            if value is not None:
+                return value
     return None

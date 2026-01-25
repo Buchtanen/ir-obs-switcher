@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from irswitch.server.event_log import Event, EventLog, get_event_log, set_event_log
+from irswitch.server.event_log import EventLog, get_event_log, set_event_log
 
 
 @pytest.fixture

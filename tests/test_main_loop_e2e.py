@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -179,9 +179,7 @@ async def test_main_loop_mode_change_triggers_scene_switch(
     # Verify that set_scene was called (after debounce)
     set_scene_calls = [call for call in mock_obs.set_scene.call_args_list if call]
     # Should have been called at least once to switch to Race scene
-    assert (
-        len(set_scene_calls) > 0
-    ), "set_scene should be called when mode changes to RACE"
+    assert len(set_scene_calls) > 0, "set_scene should be called when mode changes to RACE"
 
     # Verify it was called with "Race" scene
     race_calls = [call for call in set_scene_calls if call[0][0] == "Race"]
@@ -212,9 +210,7 @@ async def test_main_loop_debounce_delays_switch(
     await asyncio.sleep(0.05)
 
     # set_scene should NOT be called yet (still debouncing)
-    assert (
-        mock_obs.set_scene.call_count == 0
-    ), "set_scene should not be called during debounce"
+    assert mock_obs.set_scene.call_count == 0, "set_scene should not be called during debounce"
 
     # Wait for debounce to expire
     await asyncio.sleep(0.2)
@@ -226,9 +222,7 @@ async def test_main_loop_debounce_delays_switch(
         pass
 
     # Now set_scene should have been called
-    assert (
-        mock_obs.set_scene.call_count > 0
-    ), "set_scene should be called after debounce expires"
+    assert mock_obs.set_scene.call_count > 0, "set_scene should be called after debounce expires"
 
 
 @pytest.mark.asyncio
@@ -249,9 +243,7 @@ async def test_main_loop_cooldown_prevents_rapid_switches(
         DrivingMode.GARAGE,
     ]
     mock_reader.read_mode = AsyncMock(side_effect=mode_sequence)
-    mock_obs.get_current_scene = AsyncMock(
-        side_effect=["Idle", "Idle", "Race", "Race", "Race"]
-    )
+    mock_obs.get_current_scene = AsyncMock(side_effect=["Idle", "Idle", "Race", "Race", "Race"])
 
     event_log = EventLog(max_size=50)
     set_event_log(event_log)
@@ -379,9 +371,7 @@ async def test_main_loop_connection_state_tracking(
     """Test that connection state changes are tracked."""
     # Start connected, then disconnect iRacing
     mock_reader.is_connected.return_value = True
-    mock_reader.read_mode = AsyncMock(
-        side_effect=[DrivingMode.IDLE, None, None]
-    )  # Disconnect
+    mock_reader.read_mode = AsyncMock(side_effect=[DrivingMode.IDLE, None, None])  # Disconnect
 
     event_log = EventLog(max_size=50)
     set_event_log(event_log)
@@ -400,11 +390,10 @@ async def test_main_loop_connection_state_tracking(
 
     # Verify events were logged
     events = await event_log.get_all_events()
-    connection_events = [
-        e for e in events if e.type in ("connection_lost", "connection_restored")
-    ]
+    connection_events = [e for e in events if e.type in ("connection_lost", "connection_restored")]
     # Should have at least one connection event if iRacing disconnected
     # (Note: might not fire if timing is off, but structure should be there)
+    assert all(e.type in ("connection_lost", "connection_restored") for e in connection_events)
 
 
 @pytest.mark.asyncio
@@ -440,6 +429,4 @@ async def test_main_loop_scene_switch_logs_event(
     scene_switch_events = [e for e in events if e.type == "scene_switch"]
     # Should have at least one scene switch event if switch occurred
     if mock_obs.set_scene.call_count > 0:
-        assert (
-            len(scene_switch_events) > 0
-        ), "Scene switch should be logged to event log"
+        assert len(scene_switch_events) > 0, "Scene switch should be logged to event log"

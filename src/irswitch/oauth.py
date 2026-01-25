@@ -7,9 +7,8 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import aiohttp
 
@@ -34,14 +33,12 @@ class OAuthToken:
 
     def is_expired(self, margin_seconds: int = 60) -> bool:
         """Check if token is expired or will expire soon."""
-        expiry_threshold = datetime.now(timezone.utc) + timedelta(
-            seconds=margin_seconds
-        )
+        expiry_threshold = datetime.now(UTC) + timedelta(seconds=margin_seconds)
         return self.expires_at <= expiry_threshold
 
     def expires_in_seconds(self) -> int:
         """Return seconds until token expiration."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if self.expires_at <= now:
             return 0
         return int((self.expires_at - now).total_seconds())
@@ -159,14 +156,12 @@ class OAuthManager:
         async with http_session.post(GOOGLE_TOKEN_URL, data=data) as response:
             if response.status != 200:
                 error_text = await response.text()
-                raise OAuthError(
-                    f"Token exchange failed ({response.status}): {error_text}"
-                )
+                raise OAuthError(f"Token exchange failed ({response.status}): {error_text}")
 
             token_data = await response.json()
 
             expires_in = int(token_data.get("expires_in", 3600))
-            expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+            expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
 
             token = OAuthToken(
                 access_token=token_data["access_token"],
@@ -211,14 +206,12 @@ class OAuthManager:
         async with http_session.post(GOOGLE_TOKEN_URL, data=data) as response:
             if response.status != 200:
                 error_text = await response.text()
-                raise OAuthError(
-                    f"Token refresh failed ({response.status}): {error_text}"
-                )
+                raise OAuthError(f"Token refresh failed ({response.status}): {error_text}")
 
             token_data = await response.json()
 
             expires_in = int(token_data.get("expires_in", 3600))
-            expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+            expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
 
             token = OAuthToken(
                 access_token=token_data["access_token"],
@@ -323,9 +316,7 @@ class OAuthManager:
                 token = OAuthToken.from_json(json_str)
                 if token is not None:
                     self._token = token
-                    logger.debug(
-                        f"OAuth token loaded synchronously from {self.token_path}"
-                    )
+                    logger.debug(f"OAuth token loaded synchronously from {self.token_path}")
             except Exception as e:
                 logger.debug(f"Failed to load OAuth token synchronously: {e}")
         return self._token is not None
@@ -385,7 +376,9 @@ def create_oauth_manager(
                 token_dir = os.environ.get("GOOGLE_OAUTH_TOKEN_DIR", str(Path.cwd() / "data"))
             else:
                 # PyInstaller onedir mode - use exe directory
-                token_dir = os.environ.get("GOOGLE_OAUTH_TOKEN_DIR", str(Path(sys.executable).parent / "data"))
+                token_dir = os.environ.get(
+                    "GOOGLE_OAUTH_TOKEN_DIR", str(Path(sys.executable).parent / "data")
+                )
         else:
             # Normal execution - use relative to source code
             token_dir = os.environ.get(

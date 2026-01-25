@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import logging.handlers
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -40,7 +39,6 @@ def test_setup_logging_console_only() -> None:
 
 def test_setup_logging_with_file(tmp_path: Path) -> None:
     """Test that logging works to both console and file."""
-    import sys
 
     log_file = tmp_path / "test.log"
 
@@ -80,7 +78,6 @@ def test_setup_logging_with_file(tmp_path: Path) -> None:
 
 def test_setup_logging_creates_directory(tmp_path: Path) -> None:
     """Test that logging creates log directory if it doesn't exist."""
-    import sys
 
     log_dir = tmp_path / "logs"
     log_file = log_dir / "test.log"
@@ -116,7 +113,6 @@ def test_setup_logging_creates_directory(tmp_path: Path) -> None:
 
 def test_setup_logging_rotation(tmp_path: Path) -> None:
     """Test that log rotation works when max_bytes is reached."""
-    import sys
 
     log_file = tmp_path / "test.log"
     max_bytes = 1024  # 1 KB
@@ -160,7 +156,6 @@ def test_setup_logging_rotation(tmp_path: Path) -> None:
 
 def test_setup_logging_utf8_encoding(tmp_path: Path) -> None:
     """Test that log file uses UTF-8 encoding."""
-    import sys
 
     log_file = tmp_path / "test.log"
 
@@ -189,12 +184,8 @@ def test_setup_logging_utf8_encoding(tmp_path: Path) -> None:
         root_logger.handlers.extend(original_handlers)
 
 
-def test_setup_logging_relative_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_setup_logging_relative_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that logging works with relative paths."""
-    import sys
-    import os
 
     # Change to temp directory
     monkeypatch.chdir(tmp_path)
@@ -226,7 +217,6 @@ def test_setup_logging_relative_path(
 
 def test_setup_logging_absolute_path(tmp_path: Path) -> None:
     """Test that logging works with absolute paths."""
-    import sys
 
     log_file = tmp_path / "absolute_test.log"
     absolute_path = log_file.resolve()
@@ -255,7 +245,6 @@ def test_setup_logging_absolute_path(tmp_path: Path) -> None:
 
 def test_setup_logging_formatter(tmp_path: Path) -> None:
     """Test that log formatter is correct."""
-    import sys
 
     log_file = tmp_path / "test.log"
 

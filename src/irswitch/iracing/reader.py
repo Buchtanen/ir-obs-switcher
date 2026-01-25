@@ -5,14 +5,30 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 import irsdk
 
-from irswitch.iracing.extractors import extract_mode, as_bool
+from irswitch.iracing.extractors import as_bool, extract_mode
 from irswitch.models import DrivingMode
 
 logger = logging.getLogger(__name__)
+
+
+def _as_int(value: object) -> int | None:
+    """Best-effort conversion of SDK values to int."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    try:
+        return int(str(value))
+    except ValueError:
+        return None
 
 
 def is_iracing_process_running() -> bool:
@@ -170,7 +186,7 @@ class IRacingReader:
             # Try common approaches
             if hasattr(self._sdk, "var_dict"):
                 # Some SDK versions expose var_dict
-                for name, var in self._sdk.var_dict.items():
+                for name, _var in self._sdk.var_dict.items():
                     try:
                         result[name] = self._sdk[name]
                     except (KeyError, AttributeError):
@@ -216,7 +232,7 @@ class IRacingReader:
 
         return result
 
-    async def read_session_info(self) -> Optional[dict[str, object]]:
+    async def read_session_info(self) -> dict[str, object] | None:
         """
         Read session information from iRacing (async).
 
@@ -247,7 +263,7 @@ class IRacingReader:
             logger.debug(f"Failed to read session info: {e}")
             return None
 
-    async def read_mode(self) -> Optional[DrivingMode]:
+    async def read_mode(self) -> DrivingMode | None:
         """
         Read and extract driving mode from iRacing (async).
 
@@ -288,6 +304,7 @@ class IRacingReader:
             session_time = data.get("SessionTime")
             cam_camera_state = data.get("CamCameraState")
             session_state = data.get("SessionState")
+            session_state_int = _as_int(session_state)
 
             # Detect loading screen using multiple indicators (based on iRacing SDK documentation):
             # 1. SessionTime is None or empty list (legacy check) - telemetry not available yet
@@ -302,13 +319,12 @@ class IRacingReader:
                 isinstance(session_time, list) and len(session_time) == 0
             )
             is_loading_by_state = (
-                session_state is not None and int(session_state) == 0
+                session_state_int == 0 if session_state_int is not None else False
             )  # irsdk_StateInvalid = loading/lobby
             is_loading_by_initial = (
                 isinstance(session_time, (int, float))
                 and abs(float(session_time)) < 0.001
-                and session_state is not None
-                and int(session_state) == 0
+                and session_state_int == 0
             )
             is_loading_by_sdk_unavailable = (
                 not self.is_connected()
@@ -317,14 +333,10 @@ class IRacingReader:
             # Detect transition to loading: SessionState changed from non-0 to 0
             # Also detect if we're transitioning from a running session (state 4) to loading (state 0)
             is_loading_by_state_transition = False
-            if session_state is not None:
-                session_state_int = int(session_state)
+            if session_state_int is not None:
                 if session_state_int == 0:
                     # Loading state detected - check if we transitioned from a non-loading state
-                    if (
-                        self._last_session_state is not None
-                        and self._last_session_state != 0
-                    ):
+                    if self._last_session_state is not None and self._last_session_state != 0:
                         is_loading_by_state_transition = True
                 # Always update last_session_state (even if None, to track first connection)
                 self._last_session_state = session_state_int
@@ -366,16 +378,15 @@ class IRacingReader:
                 is_session_screen = False
                 if cam_camera_state is not None:
                     try:
-                        cam_state = int(cam_camera_state)
+                        cam_state_int = _as_int(cam_camera_state)
+                        if cam_state_int is None:
+                            raise ValueError("CamCameraState not int-like")
                         # Bit 0: session screen (menu/UI)
-                        is_session_screen = (cam_state & 0x01) != 0
+                        is_session_screen = (cam_state_int & 0x01) != 0
                     except (ValueError, TypeError):
                         pass
 
-                if (
-                    self._last_session_time is None
-                    or session_time != self._last_session_time
-                ):
+                if self._last_session_time is None or session_time != self._last_session_time:
                     self._last_session_time = float(session_time)
                     self._last_session_change_ts = now_ts
                 else:
@@ -386,17 +397,13 @@ class IRacingReader:
                         # IsOnTrackCar may stay true (cached) after game exit, so only check IsOnTrack
                         # CRITICAL: Don't detect QUIT if session_state is 4 (active session)
                         # In LOBBY, SessionTime can be constant but session_state is still 4
-                        session_state_active = (
-                            session_state is not None and int(session_state) == 4
-                        )
+                        session_state_active = session_state_int == 4
                         if (
                             is_session_screen
                             and not as_bool(data.get("IsOnTrack"))
                             and not session_state_active
                         ):
-                            logger.debug(
-                                f"QUIT detected: SessionTime stalled for {stall_for:.1f}s"
-                            )
+                            logger.debug(f"QUIT detected: SessionTime stalled for {stall_for:.1f}s")
                             return DrivingMode.QUIT
 
             # Check if we can actually read meaningful data
@@ -412,10 +419,7 @@ class IRacingReader:
             no_session = (
                 (
                     session_time is None
-                    or (
-                        isinstance(session_time, (int, float))
-                        and abs(float(session_time)) < 0.001
-                    )
+                    or (isinstance(session_time, (int, float)) and abs(float(session_time)) < 0.001)
                 )
                 and (session_state_num is None or session_state_num == 0)
                 and (cam_camera_state is None or cam_camera_state == 0)
@@ -430,7 +434,9 @@ class IRacingReader:
             # If session state is 0 (invalid) and SessionTime is None, likely disconnected
             if session_state_num is not None:
                 try:
-                    state_num = int(session_state_num)
+                    state_num = _as_int(session_state_num)
+                    if state_num is None:
+                        raise ValueError("SessionStateNum not int-like")
                     if state_num == 0 and session_time is None:
                         return None
                 except (ValueError, TypeError):
@@ -439,10 +445,8 @@ class IRacingReader:
             mode = extract_mode(data)
             self._last_mode = mode
             return mode
-        except asyncio.TimeoutError:
-            logger.warning(
-                "read_mode() - timeout reading iRacing data, treating as disconnected"
-            )
+        except TimeoutError:
+            logger.warning("read_mode() - timeout reading iRacing data, treating as disconnected")
             return None
         except Exception as e:
             logger.debug(f"read_mode() - exception: {e}", exc_info=True)

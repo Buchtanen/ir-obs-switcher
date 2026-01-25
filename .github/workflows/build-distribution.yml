@@ -1,0 +1,82 @@
+name: Build Distribution
+
+on:
+  workflow_call:
+    outputs:
+      archive_name:
+        description: "Name of the distribution archive"
+        value: ${{ jobs.build.outputs.archive_name }}
+      version:
+        description: "Version of the build"
+        value: ${{ jobs.build.outputs.version }}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      archive_name: ${{ steps.archive.outputs.name }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip setuptools wheel build
+
+    - name: Install package
+      run: |
+        pip install -e .
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
+
+    - name: Install PyInstaller
+      run: |
+        pip install pyinstaller
+
+    - name: Build distribution
+      run: |
+        .\build_exe.ps1 --all
+      shell: pwsh
+
+    - name: Extract version
+      id: version
+      run: |
+        $version = python -c "import irswitch; print(irswitch.__version__)"
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "VERSION=$version" >> $env:GITHUB_ENV
+        echo "Version: $version"
+
+    - name: Create distribution archive
+      id: archive
+      run: |
+        $version = "${{ steps.version.outputs.version }}"
+        $commitHash = "${{ github.sha }}".Substring(0, 7)
+        $buildDate = Get-Date -Format "yyyy-MM-dd"
+        $archiveName = "irswitch-v$version-windows.zip"
+        
+        # Create build info file
+        $buildInfo = "iRacing OBS Switcher - Build Information`n"
+        $buildInfo += "=========================================`n"
+        $buildInfo += "Version: $version`n"
+        $buildInfo += "Commit: $commitHash`n"
+        $buildInfo += "Build Date: $buildDate`n"
+        $buildInfo += "Ref: ${{ github.ref_name }}`n"
+        $buildInfo | Out-File -FilePath "dist\BUILD_INFO.txt" -Encoding UTF8
+        
+        Compress-Archive -Path dist\* -DestinationPath $archiveName -Force
+        echo "name=$archiveName" >> $env:GITHUB_OUTPUT
+        echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+        Write-Host "Created archive: $archiveName"
+
+    - name: Upload distribution artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: irswitch-distribution-${{ steps.version.outputs.version }}
+        path: ${{ steps.archive.outputs.name }}
+        retention-days: 30

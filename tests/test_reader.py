@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from irswitch.iracing.reader import IRacingReader
-from irswitch.models import DrivingMode
 
 
 @pytest.fixture
@@ -44,9 +43,7 @@ def test_is_connected(reader: IRacingReader) -> None:
 def test_read_vars(reader: IRacingReader) -> None:
     """Test reading variables."""
     mock_sdk = MagicMock()
-    mock_sdk.__getitem__ = MagicMock(
-        side_effect=lambda key: {"var1": 1, "var2": 2}.get(key, None)
-    )
+    mock_sdk.__getitem__ = MagicMock(side_effect=lambda key: {"var1": 1, "var2": 2}.get(key, None))
     reader._sdk = mock_sdk
 
     result = reader.read_vars(["var1", "var2", "var3"])

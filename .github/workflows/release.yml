@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Spustí se při push tagu začínajícího na 'v' (např. v0.7.0)
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-distribution.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Potřebujeme celou historii pro CHANGELOG
+
+    - name: Extract version from tag
+      id: version
+      run: |
+        tag="${{ github.ref_name }}"
+        version="${tag#v}"  # Odstraní 'v' prefix
+        echo "VERSION=$version" >> $GITHUB_ENV
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "Tag: $tag -> Version: $version"
+
+    - name: Extract changelog for version
+      id: changelog
+      run: |
+        version="${{ env.VERSION }}"
+        changelog_file="CHANGELOG.md"
+        
+        if [ -f "$changelog_file" ]; then
+          # Najde sekci pro danou verzi (např. ## [0.7.0])
+          # Použijeme awk pro extrakci sekce
+          changelog=$(awk -v version="$version" '
+            /^## \[/ { 
+              in_section = ($0 ~ "\\[" version "\\]")
+              if (in_section) next
+            }
+            in_section {
+              if (/^## \[/) exit
+              print
+            }
+          ' "$changelog_file" | sed 's/^/  /')
+          
+          if [ -n "$changelog" ]; then
+            {
+              echo "changelog<<EOF"
+              echo "$changelog"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+            echo "Found changelog for version $version"
+          else
+            echo "No changelog found for version $version, using default"
+            {
+              echo "changelog<<EOF"
+              echo "Release version $version"
+              echo ""
+              echo "See CHANGELOG.md for details."
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "CHANGELOG.md not found, using default"
+          {
+            echo "changelog<<EOF"
+            echo "Release version $version"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+        fi
+
+    - name: Download distribution artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: irswitch-distribution-${{ needs.build.outputs.version }}
+        path: ./
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ needs.build.outputs.archive_name }}
+        name: Release ${{ env.VERSION }}
+        body: |
+          ## Release ${{ env.VERSION }}
+          
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ---
+          
+          ### Downloads
+          
+          - **Windows**: `${{ needs.build.outputs.archive_name }}`
+          
+          ### Installation
+          
+          1. Extract the ZIP file
+          2. Edit `config/config.ini` with your settings
+          3. Run `irswitchd.exe --config config\config.ini`
+          
+          See [README.md](README.md) for more details.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -100,9 +100,7 @@ class TestTranslator:
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             for key in essential_keys:
-                assert (
-                    key in translator.translations
-                ), f"Language {lang} missing key: {key}"
+                assert key in translator.translations, f"Language {lang} missing key: {key}"
 
 
 class TestGlobalFunctions:
@@ -197,9 +195,7 @@ class TestLanguageSupport:
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             for key in youtube_keys:
-                assert (
-                    key in translator.translations
-                ), f"Language {lang} missing YouTube key: {key}"
+                assert key in translator.translations, f"Language {lang} missing YouTube key: {key}"
 
     def test_all_languages_have_event_types(self) -> None:
         """Test that all languages have event type translations."""
@@ -215,9 +211,7 @@ class TestLanguageSupport:
         for lang in SUPPORTED_LANGUAGES:
             translator = Translator(lang)
             for key in event_keys:
-                assert (
-                    key in translator.translations
-                ), f"Language {lang} missing event key: {key}"
+                assert key in translator.translations, f"Language {lang} missing event key: {key}"
 
 
 class TestParameterFormatting:
@@ -236,9 +230,7 @@ class TestParameterFormatting:
             translator = Translator(lang)
             result = translator.translate("youtube_quota_message", time="08:00")
             assert "08:00" in result, f"Language {lang} did not format time parameter"
-            assert (
-                "{time}" not in result
-            ), f"Language {lang} did not replace {{time}} placeholder"
+            assert "{time}" not in result, f"Language {lang} did not replace {{time}} placeholder"
 
     def test_formatting_with_multiple_parameters(self) -> None:
         """Test formatting with multiple parameters (if any exist)."""

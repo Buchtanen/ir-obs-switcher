@@ -152,6 +152,7 @@ async def test_stream_cache_stale_scenario() -> None:
     cache_age_ms = current_ts - last_stream_selection_check_ts
     assert 5000 < cache_age_ms <= 10000  # Within grace period
     assert last_stream_selected is True
+    assert last_stream_ready_selected is True
 
 
 @pytest.mark.asyncio
@@ -169,12 +170,12 @@ async def test_stream_cache_expired_scenario() -> None:
     cache_age_ms = current_ts - last_stream_selection_check_ts
     assert cache_age_ms > 10000  # Beyond grace period
     assert last_stream_selected is True
+    assert last_stream_ready_selected is True
 
 
 @pytest.mark.asyncio
 async def test_stream_no_cache_scenario() -> None:
     """Test that no cache forces API call."""
-    from irswitch.util.clock import now_ms
 
     # Simulate no cache (never selected)
     last_stream_selected = False
@@ -184,6 +185,7 @@ async def test_stream_no_cache_scenario() -> None:
     # Verify no cache scenario
     assert last_stream_selected is False
     assert last_stream_ready_selected is False
+    assert last_stream_selection_check_ts == 0.0
 
 
 def test_stream_cache_constants() -> None:

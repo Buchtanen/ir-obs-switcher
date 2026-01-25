@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
 import ast
-import json
+import asyncio
 import logging
-import os
 import re
-from typing import Optional
+from typing import Any
 
 import aiohttp
 from obsws_python import ReqClient
@@ -29,20 +27,20 @@ class ObsClient:
         """
         self.ws_url = ws_url
         self.password = password
-        self._client: Optional[ReqClient] = None
+        # obsws_python is untyped; keep client as Any for mypy sanity.
+        self._client: Any = None
         self._connected = False
         # Cache for current scene (updated only when needed)
-        self._current_scene_cache: Optional[str] = None
-        self._current_scene_cache_ts: Optional[float] = None
+        self._current_scene_cache: str | None = None
+        self._current_scene_cache_ts: float | None = None
         self._scene_cache_ttl_s = 0.5  # Cache scene for 500ms
         # Cache for current profile (updated only when needed)
-        self._current_profile_cache: Optional[str] = None
-        self._current_profile_cache_ts: Optional[float] = None
+        self._current_profile_cache: str | None = None
+        self._current_profile_cache_ts: float | None = None
         self._profile_cache_ttl_s = 2.0  # Cache profile for 2 seconds
         # Cache for stream info - cached until stream selection changes
-        # Structure: tuple (title, description) for backward compatibility
-        self._stream_info_cache: Optional[tuple[Optional[str], Optional[str]]] = None
-        self._stream_info_cache_broadcast_id: Optional[str] = None
+        self._stream_info_cache: dict[str, str | None] | tuple[str | None, str | None] | None = None
+        self._stream_info_cache_broadcast_id: str | None = None
         self._youtube_quota_exceeded: bool = (
             False  # Track if quota exceeded to avoid repeated API calls
         )
@@ -50,7 +48,7 @@ class ObsClient:
             False  # Track if API key is missing to avoid repeated warnings
         )
         # Reference to OAuth manager for YouTube API access
-        self._oauth_manager = None  # Set externally via set_oauth_manager()
+        self._oauth_manager: Any = None  # Set externally via set_oauth_manager()
 
     async def connect(self, max_retries: int = 5, initial_backoff: float = 1.0) -> None:
         """
@@ -73,7 +71,7 @@ class ObsClient:
             port = 4455  # Default OBS WebSocket port
 
         backoff = initial_backoff
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for attempt in range(max_retries):
             try:
@@ -106,9 +104,7 @@ class ObsClient:
                     await asyncio.sleep(backoff)
                     backoff *= 2  # Exponential backoff
                 else:
-                    logger.error(
-                        f"Failed to connect to OBS after {max_retries} attempts: {e}"
-                    )
+                    logger.error(f"Failed to connect to OBS after {max_retries} attempts: {e}")
 
         raise ConnectionError(f"Could not connect to OBS: {last_error}") from last_error
 
@@ -132,7 +128,7 @@ class ObsClient:
         """Check if client is connected to OBS."""
         return self._connected and self._client is not None
 
-    async def get_current_scene(self, use_cache: bool = True) -> Optional[str]:
+    async def get_current_scene(self, use_cache: bool = True) -> str | None:
         """
         Get current scene name from OBS.
 
@@ -162,19 +158,20 @@ class ObsClient:
 
         try:
 
-            def _get_scene() -> Optional[str]:
+            def _get_scene() -> str | None:
                 response = self._client.get_current_program_scene()
                 if not response:
                     return None
 
                 # Response is a dataclass with attributes like current_program_scene_name or scene_name
                 if hasattr(response, "current_program_scene_name"):
-                    return response.current_program_scene_name
+                    return str(response.current_program_scene_name)
                 elif hasattr(response, "scene_name"):
-                    return response.scene_name
+                    return str(response.scene_name)
                 # Fallback for older versions that might use datain dict
                 elif hasattr(response, "datain") and isinstance(response.datain, dict):
-                    return response.datain.get("currentProgramSceneName")
+                    value = response.datain.get("currentProgramSceneName")
+                    return str(value) if value else None
 
                 return None
 
@@ -285,7 +282,7 @@ class ObsClient:
             self._current_scene_cache = None
             return False
 
-    async def get_current_profile(self, use_cache: bool = True) -> Optional[str]:
+    async def get_current_profile(self, use_cache: bool = True) -> str | None:
         """
         Get current OBS profile name.
 
@@ -315,16 +312,14 @@ class ObsClient:
 
         try:
 
-            def _get_profile() -> Optional[str]:
+            def _get_profile() -> str | None:
                 profile_name = None
 
                 # Method 1: Try GetProfileList first (most reliable - returns currentProfileName)
                 try:
                     if hasattr(self._client, "get_profile_list"):
                         response = self._client.get_profile_list()
-                        logger.debug(
-                            f"GetProfileList response: {type(response)}, {response}"
-                        )
+                        logger.debug(f"GetProfileList response: {type(response)}, {response}")
 
                         # Try to extract currentProfileName from response
                         if response:
@@ -499,7 +494,7 @@ class ObsClient:
             self._current_profile_cache = None
             return None
 
-    async def get_stream_status(self) -> tuple[bool, Optional[int]]:
+    async def get_stream_status(self) -> tuple[bool, int | None]:
         """
         Get streaming status from OBS.
 
@@ -512,7 +507,7 @@ class ObsClient:
 
         try:
 
-            def _get_stream_status() -> tuple[bool, Optional[int]]:
+            def _get_stream_status() -> tuple[bool, int | None]:
                 # Try different methods to get stream status
                 response = None
 
@@ -536,7 +531,7 @@ class ObsClient:
 
                 # Extract streaming state and duration
                 is_streaming = False
-                duration_ms: Optional[int] = None
+                duration_ms: int | None = None
 
                 # Try different response formats
                 if hasattr(response, "output_active"):
@@ -569,9 +564,7 @@ class ObsClient:
                         data.get("outputActive", False) or data.get("streaming", False)
                     )
                     if is_streaming:
-                        duration_sec = data.get("outputDuration") or data.get(
-                            "duration"
-                        )
+                        duration_sec = data.get("outputDuration") or data.get("duration")
                         if duration_sec:
                             duration_ms = int(float(duration_sec) * 1000)
 
@@ -583,9 +576,7 @@ class ObsClient:
             logger.debug(f"Failed to get stream status: {e}")
             return (False, None)
 
-    async def get_stream_info(
-        self, force_refresh: bool = False
-    ) -> tuple[Optional[str], Optional[str]]:
+    async def get_stream_info(self, force_refresh: bool = False) -> tuple[str | None, str | None]:
         """
         Get current stream information from OBS and YouTube API.
 
@@ -610,18 +601,14 @@ class ObsClient:
                 # Get current broadcast_id to check if stream selection changed
                 try:
 
-                    def _get_broadcast_id_sync() -> Optional[str]:
+                    def _get_broadcast_id_sync() -> str | None:
                         try:
                             if hasattr(self._client, "get_stream_service_settings"):
-                                service_settings = (
-                                    self._client.get_stream_service_settings()
-                                )
+                                service_settings = self._client.get_stream_service_settings()
                                 if service_settings and hasattr(
                                     service_settings, "stream_service_settings"
                                 ):
-                                    stream_settings_str = (
-                                        service_settings.stream_service_settings
-                                    )
+                                    stream_settings_str = service_settings.stream_service_settings
                                     if isinstance(stream_settings_str, str):
                                         try:
                                             stream_settings_dict = ast.literal_eval(
@@ -630,10 +617,8 @@ class ObsClient:
                                             if isinstance(stream_settings_dict, dict):
                                                 return stream_settings_dict.get(
                                                     "broadcast_id"
-                                                ) or stream_settings_dict.get(
-                                                    "broadcastId"
-                                                )
-                                        except:
+                                                ) or stream_settings_dict.get("broadcastId")
+                                        except Exception:
                                             # Try regex
                                             broadcast_match = re.search(
                                                 r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]",
@@ -641,13 +626,11 @@ class ObsClient:
                                             )
                                             if broadcast_match:
                                                 return broadcast_match.group(1)
-                        except:
+                        except Exception:
                             pass
                         return None
 
-                    current_broadcast_id = await asyncio.to_thread(
-                        _get_broadcast_id_sync
-                    )
+                    current_broadcast_id = await asyncio.to_thread(_get_broadcast_id_sync)
 
                     # If broadcast_id changed, reset quota flag (new stream might have different status)
                     if current_broadcast_id != self._stream_info_cache_broadcast_id:
@@ -679,21 +662,19 @@ class ObsClient:
                             )
                         else:
                             return (None, None)
-                except:
+                except Exception:
                     pass  # If cache check fails, continue with normal fetch
 
-            async def _get_stream_info_async() -> tuple[Optional[str], Optional[str]]:
+            async def _get_stream_info_async() -> tuple[str | None, str | None]:
                 # Initialize result
-                title_result: Optional[str] = None
-                description_result: Optional[str] = None
-                stream_status: Optional[str] = None
-                privacy_status: Optional[str] = None
-                scheduled_start_time: Optional[str] = None
+                title_result: str | None = None
+                description_result: str | None = None
+                stream_status: str | None = None
+                privacy_status: str | None = None
+                scheduled_start_time: str | None = None
 
                 # Run synchronous part in thread
-                def _get_stream_info_sync() -> (
-                    tuple[Optional[str], Optional[str], Optional[str]]
-                ):
+                def _get_stream_info_sync() -> tuple[str | None, str | None, str | None]:
 
                     # Log all available methods on the client
 
@@ -701,32 +682,24 @@ class ObsClient:
                     service_settings_full = None
                     try:
                         if hasattr(self._client, "get_stream_service_settings"):
-                            service_settings_full = (
-                                self._client.get_stream_service_settings()
-                            )
-                    except Exception as e:
+                            service_settings_full = self._client.get_stream_service_settings()
+                    except Exception:
                         pass
 
                     # Try call() method with GetStreamServiceSettings
-                    call_response = None
                     try:
                         if hasattr(self._client, "call"):
-                            call_response = self._client.call(
-                                "GetStreamServiceSettings"
-                            )
-                    except Exception as e:
+                            self._client.call("GetStreamServiceSettings")
+                    except Exception:
                         pass
 
                     # Try GetBroadcastStatus if available
-                    broadcast_status = None
                     try:
                         if hasattr(self._client, "get_broadcast_status"):
-                            broadcast_status = self._client.get_broadcast_status()
+                            self._client.get_broadcast_status()
                         elif hasattr(self._client, "call"):
                             try:
-                                broadcast_status = self._client.call(
-                                    "GetBroadcastStatus"
-                                )
+                                self._client.call("GetBroadcastStatus")
                             except Exception:
                                 pass
                     except Exception as e:
@@ -739,16 +712,12 @@ class ObsClient:
                         if service_settings_full and hasattr(
                             service_settings_full, "stream_service_settings"
                         ):
-                            stream_settings_str = (
-                                service_settings_full.stream_service_settings
-                            )
+                            stream_settings_str = service_settings_full.stream_service_settings
                             if isinstance(stream_settings_str, str):
                                 # Try to parse as Python dict string representation
                                 try:
-                                    stream_settings_dict = ast.literal_eval(
-                                        stream_settings_str
-                                    )
-                                except Exception as parse_error:
+                                    stream_settings_dict = ast.literal_eval(stream_settings_str)
+                                except Exception:
                                     # If ast.literal_eval fails, try regex extraction
                                     pass
                             elif isinstance(stream_settings_str, dict):
@@ -758,50 +727,31 @@ class ObsClient:
 
                     # First, try to get broadcast_id to identify the selected stream
                     broadcast_id = None
-                    stream_key = None
                     try:
-                        if stream_settings_dict and isinstance(
-                            stream_settings_dict, dict
-                        ):
+                        if stream_settings_dict and isinstance(stream_settings_dict, dict):
                             broadcast_id = stream_settings_dict.get(
                                 "broadcast_id"
                             ) or stream_settings_dict.get("broadcastId")
-                            stream_key = stream_settings_dict.get(
-                                "key"
-                            ) or stream_settings_dict.get("stream_key")
                         elif service_settings_full:
-                            if hasattr(
-                                service_settings_full, "stream_service_settings"
-                            ):
-                                stream_settings = (
-                                    service_settings_full.stream_service_settings
-                                )
+                            if hasattr(service_settings_full, "stream_service_settings"):
+                                stream_settings = service_settings_full.stream_service_settings
                                 if isinstance(stream_settings, str):
-                                    # Try regex to extract broadcast_id and stream_key
+                                    # Try regex to extract broadcast_id
                                     broadcast_match = re.search(
                                         r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]",
                                         stream_settings,
                                     )
                                     if broadcast_match:
                                         broadcast_id = broadcast_match.group(1)
-                                    key_match = re.search(
-                                        r"['\"]key['\"]:\s*['\"]([^'\"]+)['\"]",
-                                        stream_settings,
-                                    )
-                                    if key_match:
-                                        stream_key = key_match.group(1)
-                            elif hasattr(
-                                service_settings_full, "datain"
-                            ) and isinstance(service_settings_full.datain, dict):
+                            elif hasattr(service_settings_full, "datain") and isinstance(
+                                service_settings_full.datain, dict
+                            ):
                                 data = service_settings_full.datain
                                 if "streamServiceSettings" in data:
                                     sss = data["streamServiceSettings"]
                                     if isinstance(sss, dict):
-                                        broadcast_id = sss.get(
-                                            "broadcast_id"
-                                        ) or sss.get("broadcastId")
-                                        stream_key = sss.get("key") or sss.get(
-                                            "stream_key"
+                                        broadcast_id = sss.get("broadcast_id") or sss.get(
+                                            "broadcastId"
                                         )
                                     elif isinstance(sss, str):
                                         broadcast_match = re.search(
@@ -810,11 +760,6 @@ class ObsClient:
                                         )
                                         if broadcast_match:
                                             broadcast_id = broadcast_match.group(1)
-                                        key_match = re.search(
-                                            r"['\"]key['\"]:\s*['\"]([^'\"]+)['\"]", sss
-                                        )
-                                        if key_match:
-                                            stream_key = key_match.group(1)
                     except Exception as e:
                         logger.debug(f"Error extracting broadcast_id: {e}")
 
@@ -826,9 +771,7 @@ class ObsClient:
                         service_settings = service_settings_full
                         if service_settings is None:
                             if hasattr(self._client, "get_stream_service_settings"):
-                                service_settings = (
-                                    self._client.get_stream_service_settings()
-                                )
+                                service_settings = self._client.get_stream_service_settings()
                             elif hasattr(self._client, "get_stream_service"):
                                 service_settings = self._client.get_stream_service()
 
@@ -855,9 +798,7 @@ class ObsClient:
                                     "streamTitle"
                                 ) or service_settings.settings.get("title")
                                 if title:
-                                    logger.debug(
-                                        f"Found title in settings dict: {title}"
-                                    )
+                                    logger.debug(f"Found title in settings dict: {title}")
 
                             # Check datain dict format
                             if (
@@ -874,9 +815,7 @@ class ObsClient:
                                     and "settings" in data
                                     and isinstance(data["settings"], dict)
                                 ):
-                                    logger.debug(
-                                        f"settings keys: {list(data['settings'].keys())}"
-                                    )
+                                    logger.debug(f"settings keys: {list(data['settings'].keys())}")
                                     title = data["settings"].get("streamTitle") or data[
                                         "settings"
                                     ].get("title")
@@ -884,9 +823,7 @@ class ObsClient:
                                 if title is None and "streamServiceSettings" in data:
                                     sss = data["streamServiceSettings"]
                                     if isinstance(sss, dict):
-                                        title = sss.get("title") or sss.get(
-                                            "streamTitle"
-                                        )
+                                        title = sss.get("title") or sss.get("streamTitle")
                                     elif isinstance(sss, str):
                                         # Try regex to extract title
                                         title_match = re.search(
@@ -898,9 +835,7 @@ class ObsClient:
                                 if title:
                                     logger.debug(f"Found title in datain: {title}")
                     except Exception as e:
-                        logger.debug(
-                            f"Error getting service settings: {e}", exc_info=True
-                        )
+                        logger.debug(f"Error getting service settings: {e}", exc_info=True)
 
                     # Method 2: Try to get from output settings (some OBS versions store title here)
                     if title is None:
@@ -912,9 +847,9 @@ class ObsClient:
                                         title = output_settings.stream_title
                                     elif hasattr(output_settings, "streamTitle"):
                                         title = output_settings.streamTitle
-                                    elif hasattr(
-                                        output_settings, "datain"
-                                    ) and isinstance(output_settings.datain, dict):
+                                    elif hasattr(output_settings, "datain") and isinstance(
+                                        output_settings.datain, dict
+                                    ):
                                         title = output_settings.datain.get(
                                             "streamTitle"
                                         ) or output_settings.datain.get("title")
@@ -927,14 +862,10 @@ class ObsClient:
                             if hasattr(self._client, "get_stream_metadata"):
                                 metadata = self._client.get_stream_metadata()
                                 if metadata:
-                                    logger.debug(
-                                        f"Stream metadata type: {type(metadata)}"
-                                    )
+                                    logger.debug(f"Stream metadata type: {type(metadata)}")
                                     if hasattr(metadata, "title"):
                                         title = metadata.title
-                                        logger.debug(
-                                            f"Found title in metadata.title: {title}"
-                                        )
+                                        logger.debug(f"Found title in metadata.title: {title}")
                                     elif hasattr(metadata, "datain") and isinstance(
                                         metadata.datain, dict
                                     ):
@@ -943,9 +874,7 @@ class ObsClient:
                                         )
                                         title = metadata.datain.get("title")
                                         if title:
-                                            logger.debug(
-                                                f"Found title in metadata.datain: {title}"
-                                            )
+                                            logger.debug(f"Found title in metadata.datain: {title}")
                         except Exception as e:
                             logger.debug(f"Error getting stream metadata: {e}")
 
@@ -954,17 +883,13 @@ class ObsClient:
                     # but we check here in case it's somehow present
                     if title is None:
                         try:
-                            if stream_settings_dict and isinstance(
-                                stream_settings_dict, dict
-                            ):
+                            if stream_settings_dict and isinstance(stream_settings_dict, dict):
                                 # Check for title in stream_settings_dict (unlikely but possible)
                                 title = stream_settings_dict.get(
                                     "title"
                                 ) or stream_settings_dict.get("streamTitle")
                                 if title:
-                                    logger.debug(
-                                        f"Found title in stream_settings_dict: {title}"
-                                    )
+                                    logger.debug(f"Found title in stream_settings_dict: {title}")
                         except Exception as e:
                             logger.debug(
                                 f"Error getting title from stream_settings_dict in Method 4: {e}"
@@ -976,9 +901,7 @@ class ObsClient:
                     # We can only get them if they're somehow stored in stream_service_settings
                     description = None
                     try:
-                        if stream_settings_dict and isinstance(
-                            stream_settings_dict, dict
-                        ):
+                        if stream_settings_dict and isinstance(stream_settings_dict, dict):
                             # Try to get title if not already found
                             if title is None:
                                 title = stream_settings_dict.get(
@@ -988,9 +911,7 @@ class ObsClient:
                                 "description"
                             ) or stream_settings_dict.get("streamDescription")
                     except Exception as e:
-                        logger.debug(
-                            f"Error getting title/description from parsed dict: {e}"
-                        )
+                        logger.debug(f"Error getting title/description from parsed dict: {e}")
 
                     # Note: Vendor requests removed - they don't work (all fail with code 600 "No vendor found")
                     # YouTube Data API fallback is used instead (see async part below)
@@ -1002,11 +923,7 @@ class ObsClient:
                         final_title = title.strip()
 
                     final_description = None
-                    if (
-                        description
-                        and isinstance(description, str)
-                        and description.strip()
-                    ):
+                    if description and isinstance(description, str) and description.strip():
                         final_description = description.strip()
 
                     return (final_title, final_description, broadcast_id)
@@ -1033,7 +950,7 @@ class ObsClient:
                     # Check if OAuth is actually authenticated before making API calls
                     if not self._oauth_manager.is_authenticated():
                         logger.debug(
-                            f"OAuth manager exists but not authenticated - skipping YouTube API call"
+                            "OAuth manager exists but not authenticated - skipping YouTube API call"
                         )
                     else:
                         try:
@@ -1043,10 +960,8 @@ class ObsClient:
                                 f"Fetching stream info from YouTube API for broadcast_id: {broadcast_id}"
                             )
                             async with aiohttp.ClientSession() as session:
-                                access_token = (
-                                    await self._oauth_manager.get_valid_access_token(
-                                        session
-                                    )
+                                access_token = await self._oauth_manager.get_valid_access_token(
+                                    session
                                 )
 
                                 # Fetch liveBroadcasts with snippet, status, and contentDetails parts
@@ -1071,10 +986,7 @@ class ObsClient:
                                                 # Get snippet data
                                                 if "snippet" in broadcast:
                                                     snippet = broadcast["snippet"]
-                                                    if (
-                                                        title_result is None
-                                                        and "title" in snippet
-                                                    ):
+                                                    if title_result is None and "title" in snippet:
                                                         title_result = snippet["title"]
                                                     if (
                                                         description_result is None
@@ -1083,20 +995,24 @@ class ObsClient:
                                                         description_result = snippet.get(
                                                             "description"
                                                         )
-                                                
+
                                                 # Get status data (lifeCycleStatus, privacyStatus)
                                                 stream_status = None
                                                 privacy_status = None
                                                 if "status" in broadcast:
                                                     status_obj = broadcast["status"]
-                                                    stream_status = status_obj.get("lifeCycleStatus")
+                                                    stream_status = status_obj.get(
+                                                        "lifeCycleStatus"
+                                                    )
                                                     privacy_status = status_obj.get("privacyStatus")
-                                                
+
                                                 # Get scheduled start time from snippet
                                                 scheduled_start_time = None
                                                 if "snippet" in broadcast:
                                                     snippet = broadcast["snippet"]
-                                                    scheduled_start_time = snippet.get("scheduledStartTime")
+                                                    scheduled_start_time = snippet.get(
+                                                        "scheduledStartTime"
+                                                    )
 
                                                 # Try to get concurrent viewers from videos.list API
                                                 # For live broadcasts, we need to find the associated video_id
@@ -1106,31 +1022,32 @@ class ObsClient:
 
                                                 # Try to get video_id from broadcast contentDetails
                                                 if "contentDetails" in broadcast:
-                                                    content_details = broadcast["contentDetails"]
                                                     # When broadcast is live, there might be a video_id
                                                     # For now, try using broadcast_id as video_id
                                                     video_id_for_viewers = broadcast_id
 
                                                 # Try to get concurrent viewers using video_id
                                                 if video_id_for_viewers:
-                                                    videos_url = (
-                                                        "https://www.googleapis.com/youtube/v3/videos"
-                                                    )
+                                                    videos_url = "https://www.googleapis.com/youtube/v3/videos"
                                                     videos_params = {
                                                         "part": "liveStreamingDetails",
                                                         "id": video_id_for_viewers,
                                                     }
                                                     async with session.get(
-                                                        videos_url, params=videos_params, headers=headers
+                                                        videos_url,
+                                                        params=videos_params,
+                                                        headers=headers,
                                                     ) as videos_response:
                                                         if videos_response.status == 200:
                                                             try:
-                                                                videos_data = await videos_response.json()
+                                                                videos_data = (
+                                                                    await videos_response.json()
+                                                                )
                                                                 if (
                                                                     "items" in videos_data
-                                                                    and len(videos_data["items"]) > 0
+                                                                    and len(videos_data["items"])
+                                                                    > 0
                                                                 ):
-                                                                    video = videos_data["items"][0]
                                                                     # concurrent_viewers not returned in tuple format
                                                                     pass
                                                             except Exception as e:
@@ -1156,15 +1073,11 @@ class ObsClient:
                                             or "quota" in str(error_data).lower()
                                         ):
                                             self._youtube_quota_exceeded = True
-                                            logger.warning(
-                                                "YouTube API quota exceeded via OAuth"
-                                            )
+                                            logger.warning("YouTube API quota exceeded via OAuth")
                                     elif response.status == 401:
                                         # Token expired, try to refresh
                                         try:
-                                            await self._oauth_manager.refresh_access_token(
-                                                session
-                                            )
+                                            await self._oauth_manager.refresh_access_token(session)
                                             logger.debug(
                                                 "OAuth token refreshed, will retry on next call"
                                             )
@@ -1172,13 +1085,18 @@ class ObsClient:
                                             logger.warning("OAuth token refresh failed")
                         except Exception as e:
                             logger.warning(
-                                f"Failed to fetch extended stream info via OAuth: {e}", exc_info=True
+                                f"Failed to fetch extended stream info via OAuth: {e}",
+                                exc_info=True,
                             )
                 else:
                     if not broadcast_id:
-                        logger.debug("No broadcast_id available - cannot fetch stream info from YouTube API")
+                        logger.debug(
+                            "No broadcast_id available - cannot fetch stream info from YouTube API"
+                        )
                     elif not self._oauth_manager:
-                        logger.debug("No OAuth manager set - cannot fetch stream info from YouTube API")
+                        logger.debug(
+                            "No OAuth manager set - cannot fetch stream info from YouTube API"
+                        )
 
                 # Update cache (store as dict to include extended info)
                 # Only update cache if we have new data OR broadcast_id changed
@@ -1190,23 +1108,34 @@ class ObsClient:
                     "privacy_status": privacy_status,
                     "scheduled_start_time": scheduled_start_time,
                 }
-                
+
                 if broadcast_id != self._stream_info_cache_broadcast_id:
                     # Broadcast ID changed - always update cache (even if None, stream selection changed)
                     self._stream_info_cache = cache_dict
                     self._stream_info_cache_broadcast_id = broadcast_id
-                    logger.debug(f"Cache updated: broadcast_id changed to {broadcast_id}, title: {title_result}, status: {stream_status}, privacy: {privacy_status}")
-                elif title_result is not None or description_result is not None or stream_status is not None or privacy_status is not None:
+                    logger.debug(
+                        f"Cache updated: broadcast_id changed to {broadcast_id}, title: {title_result}, status: {stream_status}, privacy: {privacy_status}"
+                    )
+                elif (
+                    title_result is not None
+                    or description_result is not None
+                    or stream_status is not None
+                    or privacy_status is not None
+                ):
                     # Same broadcast_id but we have new data - update cache
                     # Merge with existing cache to preserve any fields that weren't updated
                     if isinstance(self._stream_info_cache, dict):
                         cache_dict.update(self._stream_info_cache)
                     self._stream_info_cache = cache_dict
-                    logger.debug(f"Cache updated: new data for broadcast_id {broadcast_id}, title: {title_result}, status: {stream_status}, privacy: {privacy_status}")
+                    logger.debug(
+                        f"Cache updated: new data for broadcast_id {broadcast_id}, title: {title_result}, status: {stream_status}, privacy: {privacy_status}"
+                    )
                 else:
                     # Same broadcast_id, no new data - keep existing cache
                     if self._stream_info_cache is not None:
-                        logger.debug(f"Cache preserved: no new data for broadcast_id {broadcast_id}, keeping existing cache")
+                        logger.debug(
+                            f"Cache preserved: no new data for broadcast_id {broadcast_id}, keeping existing cache"
+                        )
                         # Return cached values instead of None
                         if isinstance(self._stream_info_cache, tuple):
                             title_result = (
@@ -1233,7 +1162,7 @@ class ObsClient:
             logger.warning(f"Failed to get stream info: {e}", exc_info=True)
             return (None, None)
 
-    async def get_stream_title(self) -> Optional[str]:
+    async def get_stream_title(self) -> str | None:
         """
         Get current stream title from OBS.
 
@@ -1247,7 +1176,7 @@ class ObsClient:
         """Set the OAuth manager for YouTube API access."""
         self._oauth_manager = oauth_manager
 
-    def get_cached_stream_info(self) -> tuple[Optional[str], Optional[str], bool, bool]:
+    def get_cached_stream_info(self) -> tuple[str | None, str | None, bool, bool]:
         """
         Get cached stream info without making API calls.
 
@@ -1259,15 +1188,9 @@ class ObsClient:
         if self._stream_info_cache is not None:
             # Cache is stored as tuple (title, description)
             if isinstance(self._stream_info_cache, tuple):
-                title = (
-                    self._stream_info_cache[0]
-                    if len(self._stream_info_cache) > 0
-                    else None
-                )
+                title = self._stream_info_cache[0] if len(self._stream_info_cache) > 0 else None
                 description = (
-                    self._stream_info_cache[1]
-                    if len(self._stream_info_cache) > 1
-                    else None
+                    self._stream_info_cache[1] if len(self._stream_info_cache) > 1 else None
                 )
             elif isinstance(self._stream_info_cache, dict):
                 # Backward compatibility with dict format
@@ -1284,14 +1207,20 @@ class ObsClient:
             )
         return (None, None, self._youtube_quota_exceeded, self._youtube_api_key_missing)
 
-    def get_cached_stream_info_full(self) -> dict:
+    def get_cached_stream_info_full(self) -> dict[str, str | None] | None:
         """
         Get full cached stream info without making API calls.
 
         Returns:
             Dict with all stream info fields or None if not cached
         """
-        return self._stream_info_cache
+        if isinstance(self._stream_info_cache, dict):
+            return self._stream_info_cache
+        if isinstance(self._stream_info_cache, tuple):
+            title = self._stream_info_cache[0] if len(self._stream_info_cache) > 0 else None
+            description = self._stream_info_cache[1] if len(self._stream_info_cache) > 1 else None
+            return {"title": title, "description": description}
+        return None
 
     async def is_stream_selected(self) -> tuple[bool, bool]:
         """
@@ -1323,10 +1252,8 @@ class ObsClient:
                             elif hasattr(stream_status, "datain") and isinstance(
                                 stream_status.datain, dict
                             ):
-                                is_streaming = bool(
-                                    stream_status.datain.get("outputActive", False)
-                                )
-                except Exception as e:
+                                is_streaming = bool(stream_status.datain.get("outputActive", False))
+                except Exception:
                     pass
 
                 # If streaming, stream is definitely selected
@@ -1340,7 +1267,7 @@ class ObsClient:
                         service_settings = self._client.get_stream_service_settings()
                     elif hasattr(self._client, "get_stream_service"):
                         service_settings = self._client.get_stream_service()
-                except Exception as e:
+                except Exception:
                     pass
 
                 if service_settings is None:
@@ -1365,13 +1292,9 @@ class ObsClient:
                 # Try to get stream_service_settings dict
                 stream_service_settings_dict = None
                 if hasattr(service_settings, "stream_service_settings"):
-                    stream_service_settings_dict = (
-                        service_settings.stream_service_settings
-                    )
+                    stream_service_settings_dict = service_settings.stream_service_settings
                 elif hasattr(service_settings, "streamServiceSettings"):
-                    stream_service_settings_dict = (
-                        service_settings.streamServiceSettings
-                    )
+                    stream_service_settings_dict = service_settings.streamServiceSettings
                 elif hasattr(service_settings, "datain") and isinstance(
                     service_settings.datain, dict
                 ):
@@ -1397,13 +1320,11 @@ class ObsClient:
                             # Replace single quotes with double quotes for JSON-like parsing, or use ast.literal_eval
                             parsed = ast.literal_eval(stream_service_settings_dict)
                             if isinstance(parsed, dict):
-                                stream_key = parsed.get("key") or parsed.get(
-                                    "streamKey"
-                                )
+                                stream_key = parsed.get("key") or parsed.get("streamKey")
                                 broadcast_id = parsed.get("broadcast_id") or parsed.get(
                                     "broadcastId"
                                 )
-                        except Exception as e:
+                        except Exception:
                             # If ast.literal_eval fails, try regex to extract key and broadcast_id
                             # Extract key: 'key': 'value' or "key": "value"
                             key_match = re.search(
@@ -1468,8 +1389,7 @@ class ObsClient:
 
                 # Stream is selected ONLY if streaming OR has actual stream info (key/broadcast_id)
                 is_selected = is_streaming or (
-                    (service_type is not None and service_type != "")
-                    and has_stream_info
+                    (service_type is not None and service_type != "") and has_stream_info
                 )
                 is_ready = is_selected and not is_streaming
 
@@ -1512,10 +1432,8 @@ class ObsClient:
                             elif hasattr(stream_status, "datain") and isinstance(
                                 stream_status.datain, dict
                             ):
-                                is_streaming = bool(
-                                    stream_status.datain.get("outputActive", False)
-                                )
-                except Exception as e:
+                                is_streaming = bool(stream_status.datain.get("outputActive", False))
+                except Exception:
                     pass
 
                 # If already streaming, broadcast is not "ready to start"
@@ -1529,7 +1447,7 @@ class ObsClient:
                         service_settings = self._client.get_stream_service_settings()
                     elif hasattr(self._client, "get_stream_service"):
                         service_settings = self._client.get_stream_service()
-                except Exception as e:
+                except Exception:
                     pass
 
                 if service_settings is None:
@@ -1572,10 +1490,10 @@ class ObsClient:
             def _start() -> bool:
                 try:
                     if hasattr(self._client, "start_stream"):
-                        response = self._client.start_stream()
+                        self._client.start_stream()
                     else:
                         # Fallback: try direct call
-                        response = self._client.start_stream()
+                        self._client.start_stream()
                     # OBS WebSocket v5: StartStream returns None/empty on success
                     # If no exception was raised, the command was successful
                     return True

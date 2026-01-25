@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import configparser
-import json
 import logging
-import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
 
 from irswitch.models import DrivingMode
 
@@ -89,9 +87,7 @@ class AppConfig:
         http_host = app_section.get("http_host", "127.0.0.1")
         http_port = parser.getint("app", "http_port")
         log_level = app_section.get("log_level", "INFO").upper()
-        notifications_enabled = parser.getboolean(
-            "app", "notifications_enabled", fallback=True
-        )
+        notifications_enabled = parser.getboolean("app", "notifications_enabled", fallback=True)
         log_file = app_section.get("log_file") or None
         log_max_bytes = parser.getint(
             "app", "log_max_bytes", fallback=10 * 1024 * 1024
@@ -103,16 +99,14 @@ class AppConfig:
             raise ValueError("app.log_backup_count must be >= 0")
         log_colors = parser.getboolean("app", "log_colors", fallback=True)
         language = app_section.get("language", "CS").upper()
-        from irswitch.i18n import SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
+        from irswitch.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
 
         if language not in SUPPORTED_LANGUAGES:
             language = DEFAULT_LANGUAGE
 
         # [iracing]
         poll_hz = parser.getint("iracing", "poll_hz")
-        quit_stall_seconds = parser.getfloat(
-            "iracing", "quit_stall_seconds", fallback=0.4
-        )
+        quit_stall_seconds = parser.getfloat("iracing", "quit_stall_seconds", fallback=0.4)
         if quit_stall_seconds <= 0:
             raise ValueError("iracing.quit_stall_seconds must be > 0")
 
@@ -138,13 +132,9 @@ class AppConfig:
         auto_start_broadcast = parser.getboolean(
             "switching", "auto_start_broadcast", fallback=False
         )
-        auto_start_at_percent = parser.getint(
-            "switching", "auto_start_at_percent", fallback=50
-        )
+        auto_start_at_percent = parser.getint("switching", "auto_start_at_percent", fallback=50)
         if auto_start_at_percent < 0 or auto_start_at_percent > 100:
-            raise ValueError(
-                "switching.auto_start_at_percent must be between 0 and 100"
-            )
+            raise ValueError("switching.auto_start_at_percent must be between 0 and 100")
         default_loading_time_seconds = parser.getfloat(
             "switching", "default_loading_time_seconds", fallback=12.0
         )
@@ -152,9 +142,7 @@ class AppConfig:
             raise ValueError("switching.default_loading_time_seconds must be > 0")
 
         # Auto-stop stream settings
-        auto_stop_stream = parser.getboolean(
-            "switching", "auto_stop_stream", fallback=False
-        )
+        auto_stop_stream = parser.getboolean("switching", "auto_stop_stream", fallback=False)
         stop_stream_after_seconds = parser.getint(
             "switching", "stop_stream_after_seconds", fallback=30
         )
@@ -177,8 +165,8 @@ class AppConfig:
             try:
                 mode = DrivingMode[mode_name.upper()]
                 scenes[mode] = scene_name
-            except KeyError:
-                raise ValueError(f"Unknown driving mode in config: {mode_name}")
+            except KeyError as err:
+                raise ValueError(f"Unknown driving mode in config: {mode_name}") from err
 
         # [dashboards] (optional section)
         dashboard_update_fps = 2
@@ -191,27 +179,17 @@ class AppConfig:
 
         if parser.has_section("dashboards"):
             dashboards_section = parser["dashboards"]
-            dashboard_update_fps = parser.getint(
-                "dashboards", "dashboard_update_fps", fallback=2
-            )
+            dashboard_update_fps = parser.getint("dashboards", "dashboard_update_fps", fallback=2)
             if dashboard_update_fps <= 0:
                 raise ValueError("dashboards.dashboard_update_fps must be > 0")
 
             dashboard_gr_background_image = (
                 dashboards_section.get("dashboard_gr_background_image") or None
             )
-            dashboard_gr_logo_obs = (
-                dashboards_section.get("dashboard_gr_logo_obs") or None
-            )
-            dashboard_gr_logo_iracing = (
-                dashboards_section.get("dashboard_gr_logo_iracing") or None
-            )
-            dashboard_gr_logo_app = (
-                dashboards_section.get("dashboard_gr_logo_app") or None
-            )
-            dashboard_vr_icons_path = (
-                dashboards_section.get("dashboard_vr_icons_path") or None
-            )
+            dashboard_gr_logo_obs = dashboards_section.get("dashboard_gr_logo_obs") or None
+            dashboard_gr_logo_iracing = dashboards_section.get("dashboard_gr_logo_iracing") or None
+            dashboard_gr_logo_app = dashboards_section.get("dashboard_gr_logo_app") or None
+            dashboard_vr_icons_path = dashboards_section.get("dashboard_vr_icons_path") or None
 
             dashboard_event_log_size = parser.getint(
                 "dashboards", "dashboard_event_log_size", fallback=50

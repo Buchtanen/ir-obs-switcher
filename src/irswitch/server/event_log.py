@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 from irswitch.util.clock import now_ms
 
@@ -40,7 +39,7 @@ class EventLog:
         self,
         event_type: str,
         message: str,
-        data: Optional[dict] = None,
+        data: dict | None = None,
     ) -> None:
         """
         Add an event to the log (thread-safe).
@@ -69,9 +68,7 @@ class EventLog:
             # Log event to logger
             logger.info(f"Event: {event_type} - {message}")
 
-            logger.debug(
-                f"Event logged: {event_type} - {message} (total: {len(self._events)})"
-            )
+            logger.debug(f"Event logged: {event_type} - {message} (total: {len(self._events)})")
 
     async def get_recent_events(self, count: int) -> list[Event]:
         """
@@ -102,7 +99,7 @@ class EventLog:
 
 
 # Global event log instance
-_event_log: Optional[EventLog] = None
+_event_log: EventLog | None = None
 
 
 def get_event_log() -> EventLog:

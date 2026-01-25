@@ -48,35 +48,22 @@ def bump_version(version_str: str, bump_type: str) -> str:
 
 
 def get_current_version() -> str:
-    """Get current version from __init__.py."""
-    content = INIT_FILE.read_text(encoding="utf-8")
-    match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+    """Get current version from pyproject.toml (single source of truth)."""
+    content = PYPROJECT_FILE.read_text(encoding="utf-8")
+    # Match version = "..." or version="..." (with or without spaces)
+    match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
     if not match:
-        raise ValueError(f"Could not find __version__ in {INIT_FILE}")
+        raise ValueError(f"Could not find version in {PYPROJECT_FILE}")
     return match.group(1)
 
 
 def update_version_files(new_version: str) -> None:
-    """Update version in both __init__.py and pyproject.toml."""
-    # Update __init__.py
-    try:
-        content = INIT_FILE.read_text(encoding="utf-8")
-        old_content = content
-        content = re.sub(
-            r'__version__\s*=\s*["\'][^"\']+["\']',
-            f'__version__ = "{new_version}"',
-            content
-        )
-        if content != old_content:
-            INIT_FILE.write_text(content, encoding="utf-8")
-            print(f"✓ Updated {INIT_FILE.name}: {new_version}")
-        else:
-            print(f"⚠ Warning: {INIT_FILE.name} was not modified")
-    except Exception as e:
-        print(f"✗ Error updating {INIT_FILE}: {e}", file=sys.stderr)
-        raise
+    """Update version in pyproject.toml (single source of truth).
     
-    # Update pyproject.toml
+    __init__.py načítá verzi dynamicky z pyproject.toml, takže není potřeba
+    ho aktualizovat ručně.
+    """
+    # Update pyproject.toml (single source of truth)
     try:
         content = PYPROJECT_FILE.read_text(encoding="utf-8")
         old_content = content
@@ -96,6 +83,7 @@ def update_version_files(new_version: str) -> None:
         raise
     
     print(f"✓ Version bumped to {new_version}")
+    print(f"  Note: __init__.py reads version dynamically from pyproject.toml")
 
 
 def detect_bump_type(commit_message: str) -> str | None:

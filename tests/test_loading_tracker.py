@@ -27,16 +27,12 @@ def tracker_with_history(temp_history_file: Path) -> LoadingTimeTracker:
     with open(temp_history_file, "w") as f:
         json.dump(history_data, f)
 
-    return LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    return LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
 
 def test_load_empty_history(temp_history_file: Path) -> None:
     """Test loading tracker with empty history."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
     assert len(tracker.history) == 0
     assert tracker.get_average_loading_time() == 12.0
@@ -52,9 +48,7 @@ def test_load_existing_history(tracker_with_history: LoadingTimeTracker) -> None
 
 def test_start_loading(temp_history_file: Path) -> None:
     """Test starting loading tracking."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
     assert not tracker.is_loading()
     tracker.start_loading()
@@ -63,9 +57,7 @@ def test_start_loading(temp_history_file: Path) -> None:
 
 def test_end_loading_without_start(temp_history_file: Path) -> None:
     """Test ending loading without starting."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
     result = tracker.end_loading()
     assert result is None
@@ -74,13 +66,9 @@ def test_end_loading_without_start(temp_history_file: Path) -> None:
 
 def test_start_end_loading(temp_history_file: Path) -> None:
     """Test complete loading cycle."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
-    with patch(
-        "irswitch.util.loading_tracker.now_ms", side_effect=[1000, 11500]
-    ):  # 10.5 seconds
+    with patch("irswitch.util.loading_tracker.now_ms", side_effect=[1000, 11500]):  # 10.5 seconds
         tracker.start_loading()
         assert tracker.is_loading()
 
@@ -93,9 +81,7 @@ def test_start_end_loading(temp_history_file: Path) -> None:
 
 def test_history_limit(temp_history_file: Path) -> None:
     """Test that history is limited to MAX_HISTORY_SIZE."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
     # Add more than MAX_HISTORY_SIZE (50) entries
     for i in range(60):
@@ -119,9 +105,7 @@ def test_get_average_with_history(tracker_with_history: LoadingTimeTracker) -> N
 
 def test_get_average_without_history(temp_history_file: Path) -> None:
     """Test getting average without history (uses default)."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=15.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=15.0)
 
     avg = tracker.get_average_loading_time()
     assert avg == 15.0
@@ -129,9 +113,7 @@ def test_get_average_without_history(temp_history_file: Path) -> None:
 
 def test_save_history(temp_history_file: Path) -> None:
     """Test that history is saved to file."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
     with patch("irswitch.util.loading_tracker.now_ms", side_effect=[1000, 2000]):
         tracker.start_loading()
@@ -147,9 +129,7 @@ def test_save_history(temp_history_file: Path) -> None:
 
 def test_duplicate_start_loading(temp_history_file: Path) -> None:
     """Test that duplicate start_loading calls are ignored."""
-    tracker = LoadingTimeTracker(
-        history_file=temp_history_file, default_loading_time_seconds=12.0
-    )
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
 
     with patch("irswitch.util.loading_tracker.now_ms", side_effect=[1000, 2000]):
         tracker.start_loading()

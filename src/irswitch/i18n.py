@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 # Supported languages
 SUPPORTED_LANGUAGES = ["CS", "EN", "DE", "FR", "SP", "PL", "HU"]
 DEFAULT_LANGUAGE = "CS"
 
 
 # Translation dictionaries
-TRANSLATIONS: Dict[str, Dict[str, str]] = {
+TRANSLATIONS: dict[str, dict[str, str]] = {
     "CS": {
         # Connection status
         "connected": "Připojeno",
@@ -525,7 +523,7 @@ class Translator:
 
 
 # Global translator instance (will be initialized with config language)
-_translator: Optional[Translator] = None
+_translator: Translator | None = None
 
 
 def set_language(language: str) -> None:

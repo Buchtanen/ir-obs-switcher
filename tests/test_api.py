@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import time
 
 import pytest
 from aiohttp import web
-from aiohttp.test_utils import make_mocked_request
 
 from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
@@ -16,10 +14,10 @@ from irswitch.server.api import (
     APP_CONFIG,
     APP_CONFIG_PATH,
     create_app,
-    set_current_state,
-    set_state_machine,
-    set_obs_client,
     reset_state,
+    set_current_state,
+    set_obs_client,
+    set_state_machine,
 )
 
 
@@ -68,6 +66,7 @@ def initial_state() -> SwitchState:
 def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Application:
     """Create test application."""
     from unittest.mock import AsyncMock
+
     from irswitch.obs.client import ObsClient
 
     app = create_app()
@@ -76,12 +75,10 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
 
     # Mock OBS client for stream status
     from unittest.mock import MagicMock
-    
+
     mock_obs = AsyncMock(spec=ObsClient)
     mock_obs.get_stream_status = AsyncMock(return_value=(False, None))
-    mock_obs.get_cached_stream_info = MagicMock(
-        return_value=(None, None, False, False)
-    )
+    mock_obs.get_cached_stream_info = MagicMock(return_value=(None, None, False, False))
     mock_obs.get_cached_stream_info_full = MagicMock(return_value=None)
     mock_obs.is_stream_selected = AsyncMock(return_value=(False, False))
     mock_obs.get_current_profile = AsyncMock(return_value=None)
@@ -93,7 +90,7 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
 @pytest.mark.asyncio
 async def test_get_status(app: web.Application, initial_state: SwitchState) -> None:
     """Test GET /status endpoint."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -111,7 +108,7 @@ async def test_get_status(app: web.Application, initial_state: SwitchState) -> N
 @pytest.mark.asyncio
 async def test_get_status_not_initialized() -> None:
     """Test GET /status when service not initialized."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     reset_state()  # Clear any state from previous tests
     app = create_app()
@@ -127,7 +124,7 @@ async def test_get_status_not_initialized() -> None:
 @pytest.mark.asyncio
 async def test_override(app: web.Application) -> None:
     """Test POST /override endpoint."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -146,7 +143,7 @@ async def test_override(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_override_missing_scene(app: web.Application) -> None:
     """Test POST /override with missing scene."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -160,7 +157,7 @@ async def test_override_missing_scene(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_override_invalid_seconds(app: web.Application) -> None:
     """Test POST /override with invalid seconds."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -177,7 +174,7 @@ async def test_override_invalid_seconds(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_toggle_autoswitch(app: web.Application) -> None:
     """Test POST /autoswitch/toggle endpoint."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -199,7 +196,7 @@ async def test_toggle_autoswitch(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_health_healthy(app: web.Application) -> None:
     """Test GET /health endpoint when both services are connected."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -227,9 +224,10 @@ async def test_health_healthy(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_health_degraded() -> None:
     """Test GET /health endpoint when one service is disconnected."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
+
     from irswitch.models import DrivingMode, SwitchState
-    from irswitch.server.api import create_app, set_current_state, reset_state
+    from irswitch.server.api import create_app, reset_state, set_current_state
 
     reset_state()
     app = create_app()
@@ -263,9 +261,10 @@ async def test_health_degraded() -> None:
 @pytest.mark.asyncio
 async def test_health_unhealthy() -> None:
     """Test GET /health endpoint when both services are disconnected."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
+
     from irswitch.models import DrivingMode, SwitchState
-    from irswitch.server.api import create_app, set_current_state, reset_state
+    from irswitch.server.api import create_app, reset_state, set_current_state
 
     reset_state()
     app = create_app()
@@ -299,7 +298,8 @@ async def test_health_unhealthy() -> None:
 @pytest.mark.asyncio
 async def test_metrics(app: web.Application, initial_state: SwitchState) -> None:
     """Test GET /metrics endpoint."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
+
     from irswitch.server.metrics import get_metrics, reset_metrics
 
     # Reset metrics for clean test
@@ -338,8 +338,8 @@ async def test_metrics(app: web.Application, initial_state: SwitchState) -> None
 @pytest.mark.asyncio
 async def test_config_reload_success(app: web.Application, tmp_path) -> None:
     """Test POST /config/reload endpoint with valid config."""
-    from aiohttp.test_utils import TestServer, TestClient
-    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
 
     # Create a temporary config file
     config_file = tmp_path / "test_config.ini"
@@ -348,7 +348,7 @@ http_host = 127.0.0.1
 http_port = 8080
 log_level = INFO
 notifications_enabled = true
-log_file = 
+log_file =
 log_max_bytes = 10485760
 log_backup_count = 5
 
@@ -359,7 +359,7 @@ quit_stall_seconds = 0.4
 [obs]
 ws_url = ws://127.0.0.1:4455
 password = test_password
-required_profile = 
+required_profile =
 
 [switching]
 autoswitch_default = true
@@ -374,7 +374,7 @@ auto_stop_stream = false
 stop_stream_after_seconds = 30
 
 [hotkeys]
-restart_hotkey = 
+restart_hotkey =
 
 [scenes]
 IDLE = Idle
@@ -386,11 +386,11 @@ RESTART = Restart
 
 [dashboards]
 dashboard_update_fps = 2
-dashboard_gr_background_image = 
-dashboard_gr_logo_obs = 
-dashboard_gr_logo_iracing = 
-dashboard_gr_logo_app = 
-dashboard_vr_icons_path = 
+dashboard_gr_background_image =
+dashboard_gr_logo_obs =
+dashboard_gr_logo_iracing =
+dashboard_gr_logo_app =
+dashboard_vr_icons_path =
 dashboard_event_log_size = 50
 """)
 
@@ -410,7 +410,7 @@ dashboard_event_log_size = 50
 @pytest.mark.asyncio
 async def test_config_reload_file_not_found(app: web.Application) -> None:
     """Test POST /config/reload endpoint with non-existent config file."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     app[APP_CONFIG_PATH] = "/nonexistent/config.ini"
 
@@ -427,7 +427,7 @@ async def test_config_reload_file_not_found(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_config_reload_no_config_path(app: web.Application) -> None:
     """Test POST /config/reload endpoint when config_path is not set."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
 
     # Remove config_path if it exists
     if APP_CONFIG_PATH in app:
@@ -446,8 +446,10 @@ async def test_config_reload_no_config_path(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_shutdown_success(app: web.Application) -> None:
     """Test POST /shutdown endpoint."""
-    from aiohttp.test_utils import TestServer, TestClient
     import asyncio
+
+    from aiohttp.test_utils import TestClient, TestServer
+
     from irswitch.server.api import set_shutdown_event
 
     # Set up shutdown event
@@ -470,7 +472,8 @@ async def test_shutdown_success(app: web.Application) -> None:
 @pytest.mark.asyncio
 async def test_shutdown_not_available(app: web.Application) -> None:
     """Test POST /shutdown endpoint when shutdown is not available."""
-    from aiohttp.test_utils import TestServer, TestClient
+    from aiohttp.test_utils import TestClient, TestServer
+
     from irswitch.server.api import set_shutdown_event
 
     # Clear shutdown event

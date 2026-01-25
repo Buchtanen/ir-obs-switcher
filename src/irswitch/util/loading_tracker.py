@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 from irswitch.util.clock import now_ms
 
@@ -33,14 +32,10 @@ class LoadingTimeTracker:
         """
         # Resolve to absolute path and log it
         self.history_file = Path(history_file).resolve()  # Resolve to absolute path
-        logger.info(
-            f"LoadingTimeTracker initialized, history file: {self.history_file}"
-        )
+        logger.info(f"LoadingTimeTracker initialized, history file: {self.history_file}")
         self.default_loading_time_seconds = default_loading_time_seconds
         self.history: list[float] = []
-        self._loading_start_ts: Optional[int] = (
-            None  # Changed to int to match now_ms() return type
-        )
+        self._loading_start_ts: int | None = None  # Changed to int to match now_ms() return type
         self._load_history()
 
     def _load_history(self) -> None:
@@ -52,7 +47,7 @@ class LoadingTimeTracker:
             return
 
         try:
-            with open(self.history_file, "r", encoding="utf-8") as f:
+            with open(self.history_file, encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, list):
                     # Ensure all values are floats and limit to MAX_HISTORY_SIZE
@@ -80,9 +75,7 @@ class LoadingTimeTracker:
 
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump(self.history, f, indent=2)
-            logger.info(
-                f"Saved {len(self.history)} loading time records to {self.history_file}"
-            )
+            logger.info(f"Saved {len(self.history)} loading time records to {self.history_file}")
         except Exception as e:
             logger.error(
                 f"Failed to save loading history to {self.history_file}: {e}",
@@ -93,15 +86,13 @@ class LoadingTimeTracker:
         """Mark the start of a loading screen."""
         if self._loading_start_ts is not None:
             # Already tracking a loading, ignore duplicate start
-            logger.debug(
-                "Loading already started, ignoring duplicate start_loading() call"
-            )
+            logger.debug("Loading already started, ignoring duplicate start_loading() call")
             return
 
         self._loading_start_ts = now_ms()
         logger.debug("Loading screen started")
 
-    def end_loading(self) -> Optional[float]:
+    def end_loading(self) -> float | None:
         """
         Mark the end of a loading screen and save the duration.
 
@@ -126,9 +117,7 @@ class LoadingTimeTracker:
             f"About to save history: {len(self.history)} records, file: {self.history_file}"
         )
         self._save_history()
-        logger.debug(
-            f"History save completed, file exists: {self.history_file.exists()}"
-        )
+        logger.debug(f"History save completed, file exists: {self.history_file.exists()}")
 
         logger.info(f"Loading screen ended, duration: {duration_seconds:.2f}s")
         return duration_seconds
@@ -147,9 +136,7 @@ class LoadingTimeTracker:
             return self.default_loading_time_seconds
 
         average = sum(self.history) / len(self.history)
-        logger.debug(
-            f"Average loading time: {average:.2f}s (from {len(self.history)} records)"
-        )
+        logger.debug(f"Average loading time: {average:.2f}s (from {len(self.history)} records)")
         return average
 
     def is_loading(self) -> bool:

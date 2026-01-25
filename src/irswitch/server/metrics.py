@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional
 
 logger = None  # Lazy import to avoid circular dependency
 
@@ -16,9 +15,7 @@ class MetricsCollector:
 
     # Counters
     scene_switches_total: int = 0
-    errors_total: defaultdict[str, int] = field(
-        default_factory=lambda: defaultdict(int)
-    )
+    errors_total: defaultdict[str, int] = field(default_factory=lambda: defaultdict(int))
 
     # Latency tracking
     scene_switch_latencies_ms: list[float] = field(default_factory=list)
@@ -26,11 +23,11 @@ class MetricsCollector:
 
     # Timestamps
     start_time: float = field(default_factory=time.monotonic)
-    iracing_connected_ts: Optional[float] = None
+    iracing_connected_ts: float | None = None
     iracing_total_connected_time: float = 0.0  # Cumulative connected time in seconds
-    obs_connected_ts: Optional[float] = None
+    obs_connected_ts: float | None = None
     obs_total_connected_time: float = 0.0  # Cumulative connected time in seconds
-    stream_started_ts: Optional[float] = None
+    stream_started_ts: float | None = None
     stream_total_time: float = 0.0  # Cumulative stream time in seconds
 
     def record_scene_switch(self, latency_ms: float) -> None:
@@ -75,7 +72,7 @@ class MetricsCollector:
 
     def get_iracing_connected_duration_seconds(
         self,
-    ) -> tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """
         Get iRacing connection duration in seconds.
 
@@ -98,7 +95,7 @@ class MetricsCollector:
 
     def get_obs_connected_duration_seconds(
         self,
-    ) -> tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """
         Get OBS connection duration in seconds.
 
@@ -131,7 +128,7 @@ class MetricsCollector:
             self.stream_total_time += elapsed
             self.stream_started_ts = None
 
-    def get_stream_duration_seconds(self) -> tuple[Optional[float], Optional[float]]:
+    def get_stream_duration_seconds(self) -> tuple[float | None, float | None]:
         """
         Get stream duration in seconds.
 
@@ -152,13 +149,13 @@ class MetricsCollector:
         else:
             return (None, None)
 
-    def get_scene_switch_latency_avg_ms(self) -> Optional[float]:
+    def get_scene_switch_latency_avg_ms(self) -> float | None:
         """Get average scene switch latency in milliseconds."""
         if not self.scene_switch_latencies_ms:
             return None
         return sum(self.scene_switch_latencies_ms) / len(self.scene_switch_latencies_ms)
 
-    def to_dict(self, current_state: Optional[object] = None) -> dict:
+    def to_dict(self, current_state: object | None = None) -> dict:
         """
         Convert metrics to dictionary.
 
@@ -177,14 +174,10 @@ class MetricsCollector:
             result["scene_switch_latency_avg_ms"] = avg_latency
 
         # Connection durations (cumulative and current session)
-        iracing_cumulative, iracing_current = (
-            self.get_iracing_connected_duration_seconds()
-        )
+        iracing_cumulative, iracing_current = self.get_iracing_connected_duration_seconds()
         if iracing_cumulative is not None:
             result["iracing_connected_duration_seconds"] = iracing_cumulative
-            result["iracing_connected_duration_current_session_seconds"] = (
-                iracing_current
-            )
+            result["iracing_connected_duration_current_session_seconds"] = iracing_current
 
         obs_cumulative, obs_current = self.get_obs_connected_duration_seconds()
         if obs_cumulative is not None:
@@ -201,20 +194,14 @@ class MetricsCollector:
         if current_state is not None:
             try:
                 result["current_state"] = {
-                    "mode": (
-                        current_state.mode.value
-                        if hasattr(current_state, "mode")
-                        else None
-                    ),
+                    "mode": (current_state.mode.value if hasattr(current_state, "mode") else None),
                     "scene": (
                         current_state.current_scene
                         if hasattr(current_state, "current_scene")
                         else None
                     ),
                     "autoswitch": (
-                        current_state.autoswitch
-                        if hasattr(current_state, "autoswitch")
-                        else None
+                        current_state.autoswitch if hasattr(current_state, "autoswitch") else None
                     ),
                 }
             except Exception:
@@ -224,7 +211,7 @@ class MetricsCollector:
 
 
 # Global metrics instance
-_metrics: Optional[MetricsCollector] = None
+_metrics: MetricsCollector | None = None
 
 
 def get_metrics() -> MetricsCollector:

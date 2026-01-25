@@ -1,0 +1,62 @@
+name: Create Release Tag
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches: [main, master]
+  workflow_dispatch:  # Manuální spuštění z GitHub Actions UI
+
+jobs:
+  create-tag:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    
+    - name: Get current version from pyproject.toml
+      id: version
+      run: |
+        python -c "import tomllib; f=open('pyproject.toml','rb'); d=tomllib.load(f); print(d['project']['version'])" > version.txt
+        version=$(cat version.txt)
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "Current version: $version"
+    
+    - name: Check if tag exists
+      id: check-tag
+      run: |
+        version="${{ steps.version.outputs.version }}"
+        if git rev-parse "v$version" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Tag v$version already exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Tag v$version does not exist - will create"
+        fi
+    
+    - name: Create and push tag
+      if: steps.check-tag.outputs.exists == 'false'
+      run: |
+        version="${{ steps.version.outputs.version }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a "v$version" -m "Release version $version"
+        git push origin "v$version"
+        echo "✓ Created and pushed tag v$version"
+    
+    - name: Tag already exists
+      if: steps.check-tag.outputs.exists == 'true'
+      run: |
+        echo "⚠ Tag v${{ steps.version.outputs.version }} already exists - skipping"
