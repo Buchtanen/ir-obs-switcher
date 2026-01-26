@@ -1,0 +1,25 @@
+name: Security (scheduled)
+
+on:
+  # Run weekly on Monday at 10:00 UTC
+  schedule:
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+
+jobs:
+  bandit:
+    name: bandit (scheduled)
+    uses: ./.github/workflows/security.yml
+    with:
+      python_version: "3.11"
+      kind: bandit
+
+  safety:
+    name: safety (scheduled)
+    uses: ./.github/workflows/security.yml
+    with:
+      python_version: "3.11"
+      kind: safety
+    secrets:
+      SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+

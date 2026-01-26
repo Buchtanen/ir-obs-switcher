@@ -15,9 +15,6 @@ on:
     secrets:
       SAFETY_API_KEY:
         required: false
-  schedule:
-    # Run weekly on Monday at 10:00 UTC
-    - cron: "0 10 * * 1"
   workflow_dispatch:
     inputs:
       python_version:
@@ -36,7 +33,6 @@ on:
 jobs:
   run:
     name: ${{ inputs.kind }}
-    if: github.event_name != 'schedule'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,52 +72,3 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/src
           SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
         continue-on-error: false
-
-  scheduled-bandit:
-    name: bandit (scheduled)
-    if: github.event_name == 'schedule'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install and run Bandit
-        run: |
-          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
-          pip install bandit[toml]
-          bandit -r src/ -c pyproject.toml --severity-level medium -f json -o bandit-report.json
-
-      - name: Upload Bandit report
-        uses: actions/upload-artifact@v4
-        with:
-          name: bandit-report
-          path: bandit-report.json
-          retention-days: 7
-
-  scheduled-safety:
-    name: safety (scheduled)
-    if: github.event_name == 'schedule'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install and run Safety
-        run: |
-          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
-          pip install safety
-          pip install -e .
-          safety scan --output json
-        env:
-          PYTHONPATH: ${{ github.workspace }}/src
-          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
