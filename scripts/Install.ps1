@@ -30,7 +30,10 @@ param(
     [switch]$InstallTask,
     [switch]$UninstallTask,
     [switch]$CreateShortcuts,
+    [switch]$UninstallShortcuts,
     [switch]$SetOAuthEnv,
+    [switch]$UnsetOAuthEnv,
+    [switch]$Uninstall,
     [switch]$StartNow
 )
 
@@ -184,6 +187,37 @@ function Ensure-OAuthEnvUser {
     [Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET", $secret, "User")
 
     Write-Ok "OAuth env vars saved to User scope."
+}
+
+function Unset-OAuthEnvUser {
+    param(
+        [switch]$Interactive
+    )
+
+    $id = [Environment]::GetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_ID", "User")
+    $secret = [Environment]::GetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET", "User")
+
+    if ([string]::IsNullOrWhiteSpace($id) -and [string]::IsNullOrWhiteSpace($secret)) {
+        Write-Ok "OAuth env vars not set in User scope (nothing to remove)."
+        return
+    }
+
+    if (-not $Interactive) {
+        Write-Warn "OAuth env vars present, but skipping removal (non-interactive)."
+        return
+    }
+
+    Write-Info "YouTube OAuth env vars detected in User scope."
+    $want = (Read-Host "Remove GOOGLE_OAUTH_CLIENT_ID/SECRET from User env vars? (y/N)").Trim()
+    if ($want.ToLower() -ne "y") {
+        Write-Info "Keeping OAuth env vars."
+        return
+    }
+
+    [Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_ID", $null, "User")
+    [Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET", $null, "User")
+
+    Write-Ok "OAuth env vars removed from User scope."
 }
 
 function Run-Wizard {
@@ -347,6 +381,26 @@ function Create-DesktopShortcuts {
     Write-Ok "Desktop shortcuts created."
 }
 
+function Remove-DesktopShortcuts {
+    $desktop = [Environment]::GetFolderPath("Desktop")
+
+    $startLnk = Join-Path $desktop "iRacing OBS Switcher.lnk"
+    $dashLnk = Join-Path $desktop "iRacing OBS Switcher - Dashboard.lnk"
+
+    foreach ($p in @($startLnk, $dashLnk)) {
+        try {
+            if (Test-Path -LiteralPath $p) {
+                Remove-Item -LiteralPath $p -Force -ErrorAction Stop
+                Write-Ok "Removed shortcut: $p"
+            } else {
+                Write-Warn "Shortcut not present: $p"
+            }
+        } catch {
+            Write-Warn "Failed to remove shortcut: $p"
+        }
+    }
+}
+
 function Start-AppNow {
     param(
         [Parameter(Mandatory=$true)][string]$DistRoot,
@@ -363,14 +417,16 @@ try {
     $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
     Set-Location $scriptRoot
 
-    # Validate dist layout (must contain irswitchd.exe)
-    $exe = Join-Path $scriptRoot "irswitchd.exe"
-    if (-not (Test-Path -LiteralPath $exe)) {
-        throw "irswitchd.exe not found at '$exe'. Run this installer from the distribution folder (dist/)."
-    }
-
     $distRoot = $scriptRoot
-    $configAbs = Resolve-PathRelativeToRoot -Root $distRoot -PathMaybeRelative $ConfigPath
+
+    # Convenience uninstall: remove autostart + shortcuts; offer OAuth cleanup (interactive).
+    if ($Uninstall) {
+        $UninstallTask = $true
+        $UninstallShortcuts = $true
+        if (-not $PSBoundParameters.ContainsKey("UnsetOAuthEnv")) {
+            $UnsetOAuthEnv = $true
+        }
+    }
 
     # Defaults: wizard implies installing task + shortcuts and setting OAuth env
     if ($Wizard) {
@@ -385,7 +441,28 @@ try {
         Uninstall-AutostartTask
     }
 
+    if ($UninstallShortcuts) {
+        Remove-DesktopShortcuts
+    }
+
+    if ($UnsetOAuthEnv) {
+        Unset-OAuthEnvUser -Interactive
+    }
+
+    $needsDistLayout = ($Wizard -or $InstallTask -or $CreateShortcuts -or $StartNow)
+    if ($needsDistLayout) {
+        # Validate dist layout (must contain irswitchd.exe)
+        $exe = Join-Path $scriptRoot "irswitchd.exe"
+        if (-not (Test-Path -LiteralPath $exe)) {
+            throw "irswitchd.exe not found at '$exe'. Run this installer from the distribution folder (dist/)."
+        }
+    } else {
+        # Keep variable for later branches; not required in uninstall-only runs.
+        $exe = Join-Path $scriptRoot "irswitchd.exe"
+    }
+
     if ($Wizard) {
+        $configAbs = Resolve-PathRelativeToRoot -Root $distRoot -PathMaybeRelative $ConfigPath
         Run-Wizard -DistRoot $distRoot -ConfigPathResolved $configAbs
     } else {
         if ($SetOAuthEnv) {
@@ -395,6 +472,7 @@ try {
     }
 
     if ($InstallTask) {
+        $configAbs = Resolve-PathRelativeToRoot -Root $distRoot -PathMaybeRelative $ConfigPath
         if (-not (Test-Path -LiteralPath $configAbs)) {
             throw "Config not found: $configAbs (run with -Wizard or provide an existing config)."
         }
@@ -402,6 +480,7 @@ try {
     }
 
     if ($CreateShortcuts) {
+        $configAbs = Resolve-PathRelativeToRoot -Root $distRoot -PathMaybeRelative $ConfigPath
         if (-not (Test-Path -LiteralPath $configAbs)) {
             throw "Config not found: $configAbs (run with -Wizard or provide an existing config)."
         }
@@ -409,6 +488,7 @@ try {
     }
 
     if ($StartNow) {
+        $configAbs = Resolve-PathRelativeToRoot -Root $distRoot -PathMaybeRelative $ConfigPath
         if (-not (Test-Path -LiteralPath $configAbs)) {
             throw "Config not found: $configAbs (run with -Wizard or provide an existing config)."
         }

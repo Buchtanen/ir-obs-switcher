@@ -1,79 +1,16 @@
-# Cursor Rules — iracing-obs-switcher (Python 3.11+)
+# Cursor Rules — irswitch (index)
 
-## Project context
-This is a long-running Python service + external TUI.
-It integrates:
-- iRacing via pyirsdk (shared memory, polling)
-- OBS via obs-websocket v5 (network IO)
-- async HTTP + WebSocket API (aiohttp)
-- Textual-based TUI (separate process)
+This file is intentionally short to avoid duplicating the canonical rules.
 
-Stability > elegance.
-Determinism > cleverness.
+## Source of truth
+Authoritative rules live in:
+- `.cursor/rules/*.mdc`
 
-## Python baseline
-- Python >= 3.11
-- Async-first mindset (aiohttp, async state machine)
-- No blocking calls in async loops
-- Explicit typing for all public functions and state objects
-
-## Architectural rules
-- iracing/ = pure data extraction, NO business logic
-- obs/ = thin client wrapper, no policy
-- logic/ = state machine + decision rules ONLY
-- server/ = API glue, never drives logic directly
-- tui/ = read-only client, no authority
-
-Never mix responsibilities across these layers.
-
-## State machine rules
-- State transitions must be explicit and testable.
-- No hidden side effects inside getters.
-- All scene switches go through ONE decision path.
-- Cooldowns / debounce must be time-based, not frame-based.
-
-## Error handling
-- iRacing disconnected is a NORMAL state, not an error.
-- OBS disconnect should retry with backoff.
-- Never crash the main loop on external failure.
-- Log reasoned decisions (why a scene switched).
-
-## Async rules
-- No asyncio.create_task without ownership.
-- Background tasks must be cancellable.
-- Use monotonic time for cooldown logic.
-- Never sleep blindly; always explain why a sleep exists.
-
-## Logging
-- Use structured, intent-based logs:
-  - state_changed
-  - scene_switch
-  - override_applied
-  - connection_lost / connection_restored
-- Avoid noisy per-frame logs.
-
-## Tests
-- pytest only
-- Freezegun for time-based logic
-- Mock pyirsdk and obs client, never real connections
-- Test state machine independently of IO
-
-## Dependencies
-- Do NOT introduce new dependencies unless explicitly requested.
-- Prefer stdlib over helper libs.
-
-## Style
-- Be concise.
-- Prefer readable over clever.
-- No speculative refactors.
-- Minimal diff unless refactor is explicitly requested.
-
-## Deliverables
-When implementing:
-- code
-- tests (or explicit reason why not)
-- short explanation of behavior
-
-When refactoring:
-- preserve observable behavior
-- explain invariants
+## Core expectations (summary)
+- Stability > elegance; determinism > cleverness.
+- External systems (iRacing/OBS/network) are unreliable: **never crash the main loop**.
+- Respect layer boundaries: `iracing/` extraction only, `obs/` thin client, `logic/` decisions+state machine, `server/` glue only.
+- Async-first: no blocking in async loops; background tasks must be owned/cancellable; cooldowns are time-based (monotonic).
+- Evidence required for behavior changes: tests or explicit TDD-exception + verification plan.
+- Docs/config are part of the contract; update relevant docs when behavior changes.
+- No new dependencies unless explicitly requested + reviewed.

@@ -70,6 +70,19 @@ Wizard se ptá jen na nutný základ (hlavně OBS WebSocket heslo) a volitelně 
 - logování do souboru
 - nastavení YouTube OAuth přes **User env vars** (pokud chceš)
 
+### Odinstalace (EXE)
+
+Odinstalace odstraní jen:
+- autostart (`Scheduled Task`)
+- desktop zkratky
+
+`config/` a `logs/` nechává (můžeš smazat ručně celý `dist/` adresář).
+
+```powershell
+cd dist
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Uninstall
+```
+
 **Více informací**: Viz [CONFIG.md](CONFIG.md) pro detailní popis konfigurace.
 
 ### 2. Ruční konfigurace (pokud nechceš wizard)
