@@ -56,6 +56,26 @@ pip install -U pip
 pip install -e .
 ```
 
+### Distribuce (EXE)
+
+Pokud používáš buildnutou distribuci z `dist/`, doporučený postup je:
+
+```powershell
+cd dist
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard
+```
+
+Tím se vygeneruje `config/config.ini`, nastaví autostart (Task Scheduler) a vytvoří se zkratky včetně **Open Dashboard**.
+
+#### Odinstalace (EXE)
+
+Odinstalace smaže jen autostart (Scheduled Task) a desktop zkratky. `config/` a `logs/` nechává.
+
+```powershell
+cd dist
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Uninstall
+```
+
 ### 2. Konfigurace
 
 Zkopíruj `config/config.example.ini` na `config/config.ini` a uprav:
@@ -120,7 +140,7 @@ Aplikace poskytuje dva HTML dashboardy:
 - **URL**: `http://127.0.0.1:17321/gr-status`
 - **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics
 - **Konfigurovatelné**: Obrázky pozadí a loga
-- **Screenshot**: [GR Dashboard](img/rg-status-screen.png)
+- **Screenshot**: [GR Dashboard](assets/rg-status-screen.png)
 
 ### VR Dashboard (pro VR)
 

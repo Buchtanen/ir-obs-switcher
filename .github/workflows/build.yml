@@ -1,0 +1,121 @@
+name: Build Module
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: string
+      mode:
+        description: "verify | distribution"
+        required: true
+        type: string
+    outputs:
+      archive_name:
+        description: "Name of the distribution archive"
+        value: ${{ jobs.build.outputs.archive_name }}
+      version:
+        description: "Version of the build"
+        value: ${{ jobs.build.outputs.version }}
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.11"
+        type: string
+      mode:
+        description: "Build mode"
+        required: true
+        type: choice
+        options:
+          - verify
+          - distribution
+
+jobs:
+  build:
+    name: Build (${{ inputs.mode }})
+    runs-on: windows-latest
+    outputs:
+      archive_name: ${{ steps.out.outputs.archive_name }}
+      version: ${{ steps.out.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ inputs.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: "pip"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel" "build"
+
+      - name: Install package
+        run: |
+          pip install -e .
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+
+      - name: Install PyInstaller
+        run: |
+          pip install pyinstaller
+
+      - name: Build (verify/distribution)
+        run: |
+          .\build_exe.ps1 --all
+        shell: pwsh
+
+      - name: Verify distribution files exist
+        run: |
+          if (-not (Test-Path "dist\irswitchd.exe")) {
+            Write-Error "Build failed: irswitchd.exe not found"
+            exit 1
+          }
+          Write-Host "✓ Build verification successful"
+        shell: pwsh
+
+      - name: Compute outputs / package archive (distribution only)
+        id: out
+        env:
+          MODE: ${{ inputs.mode }}
+        shell: pwsh
+        run: |
+          if ($env:MODE -ne "distribution") {
+            # verify mode: outputs exist but are empty
+            "archive_name=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            "version=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            Write-Host "verify mode: no distribution artifact"
+            exit 0
+          }
+
+          $version = python -c "import irswitch; print(irswitch.__version__)"
+          $commitHash = "${{ github.sha }}".Substring(0, 7)
+          $buildDate = Get-Date -Format "yyyy-MM-dd"
+          $archiveName = "irswitch-v$version-windows.zip"
+
+          # Create build info file
+          $buildInfo = "iRacing OBS Switcher - Build Information`n"
+          $buildInfo += "=========================================`n"
+          $buildInfo += "Version: $version`n"
+          $buildInfo += "Commit: $commitHash`n"
+          $buildInfo += "Build Date: $buildDate`n"
+          $buildInfo += "Ref: ${{ github.ref_name }}`n"
+          $buildInfo | Out-File -FilePath "dist\BUILD_INFO.txt" -Encoding UTF8
+
+          Compress-Archive -Path dist\* -DestinationPath $archiveName -Force
+
+          "archive_name=$archiveName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Created archive: $archiveName"
+
+      - name: Upload distribution artifact
+        if: inputs.mode == 'distribution'
+        uses: actions/upload-artifact@v4
+        with:
+          name: irswitch-distribution-${{ steps.out.outputs.version }}
+          path: ${{ steps.out.outputs.archive_name }}
+          retention-days: 30

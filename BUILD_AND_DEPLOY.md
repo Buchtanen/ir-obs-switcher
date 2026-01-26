@@ -43,9 +43,11 @@ Po buildu najdeš v `dist/` adresáři kompletní distribuci:
 ```
 dist/
   ├── irswitchd.exe          # Hlavní aplikace (silent, bez konzole)
+  ├── Install.ps1            # Installer (wizard + autostart + shortcuts)
+  ├── Open-Dashboard.ps1     # Otevře dashboard podle config.ini
   ├── config/
   │   ├── config.example.ini  # Příklad konfigurace
-  │   └── config.ini         # Tvá konfigurace (uprav si)
+  │   └── config.ini         # Startovní config (safe template) / tvoje konfigurace
   └── README.txt             # Instrukce k použití
 ```
 
@@ -55,18 +57,43 @@ dist/
 
 ## Instalace a provoz
 
-### 1. Příprava konfigurace
+### 1. Instalace (doporučeno: wizard)
 
-1. Zkopíruj `dist/config/config.example.ini` na `dist/config/config.ini`
-2. Uprav `config.ini` podle svých potřeb:
-   - Nastav OBS WebSocket heslo
-   - Uprav názvy scén podle OBS
-   - Nastav cesty k obrázkům (pokud používáš)
-   - Nastav jazyk (pokud chceš jiný než čeština)
+Z adresáře `dist/` spusť instalátor (vytvoří/aktualizuje `config/config.ini`, nastaví autostart přes Task Scheduler a udělá zkratky):
+
+```powershell
+cd dist
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard
+```
+
+Wizard se ptá jen na nutný základ (hlavně OBS WebSocket heslo) a volitelně nabídne:
+- logování do souboru
+- nastavení YouTube OAuth přes **User env vars** (pokud chceš)
+
+### Odinstalace (EXE)
+
+Odinstalace odstraní jen:
+- autostart (`Scheduled Task`)
+- desktop zkratky
+
+`config/` a `logs/` nechává (můžeš smazat ručně celý `dist/` adresář).
+
+```powershell
+cd dist
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Uninstall
+```
 
 **Více informací**: Viz [CONFIG.md](CONFIG.md) pro detailní popis konfigurace.
 
-### 2. Spuštění aplikace
+### 2. Ruční konfigurace (pokud nechceš wizard)
+
+Uprav `dist/config/config.ini` podle svých potřeb:
+- Nastav OBS WebSocket heslo
+- Uprav názvy scén podle OBS
+- Nastav cesty k obrázkům (pokud používáš)
+- Nastav jazyk (pokud chceš jiný než čeština)
+
+### 3. Spuštění aplikace
 
 **Z adresáře `dist/`**:
 ```powershell
@@ -98,9 +125,11 @@ Aplikace běží **silent na pozadí** (bez konzole). Pro zastavení:
 
 ### Možnost A: Windows Task Scheduler (doporučeno pro EXE)
 
+**Doporučený postup**: použij `Install.ps1 -Wizard` – nastaví autostart automaticky (trigger: **At log on**, aby app běžela ve stejném user kontextu jako OBS).
+
 1. Otevři Task Scheduler (`taskschd.msc`)
 2. Vytvoř nový task:
-   - **Trigger**: "At startup"
+   - **Trigger**: "At log on"
    - **Action**: Start a program
    - **Program**: `C:\path\to\dist\irswitchd.exe`
    - **Arguments**: `--config C:\path\to\dist\config\config.ini`

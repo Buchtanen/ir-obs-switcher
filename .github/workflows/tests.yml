@@ -1,66 +1,100 @@
-name: Tests
+name: Tests Module
 
 on:
-  push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master, develop ]
+  workflow_call:
+    inputs:
+      python_versions_json:
+        description: "JSON list of Python versions, e.g. [\"3.11\",\"3.12\"]"
+        required: false
+        default: "[\"3.11\",\"3.12\",\"3.13\"]"
+        type: string
+      run_coverage:
+        description: "Generate coverage artifacts on the first matrix item"
+        required: false
+        default: true
+        type: boolean
+      coverage_python:
+        description: "Which Python version should run coverage uploads"
+        required: false
+        default: "3.11"
+        type: string
+  workflow_dispatch:
+    inputs:
+      python_versions_json:
+        description: "JSON list of Python versions, e.g. [\"3.11\",\"3.12\"]"
+        required: false
+        default: "[\"3.11\",\"3.12\",\"3.13\"]"
+        type: string
+      run_coverage:
+        description: "Generate coverage artifacts on the first matrix item"
+        required: false
+        default: true
+        type: boolean
+      coverage_python:
+        description: "Which Python version should run coverage uploads"
+        required: false
+        default: "3.11"
+        type: string
 
 jobs:
   test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ${{ fromJSON(inputs.python_versions_json) }}
 
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
 
-    - name: Install build tools
-      run: |
-        python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel" "build"
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel" "build"
 
-    - name: Install package in editable mode
-      run: |
-        pip install -e .
-      env:
-        PYTHONPATH: ${{ github.workspace }}/src
+      - name: Install package
+        run: |
+          pip install -e .
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
 
-    - name: Install test dependencies
-      run: |
-        pip install pytest pytest-asyncio freezegun
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-asyncio pytest-cov freezegun
 
-    - name: Verify installation
-      run: |
-        python -c "import sys; print('Python path:', sys.path)"
-        python -c "import irswitch; print(f'OK: irswitch version: {irswitch.__version__}')"
-        python -c "from irswitch.obs.client import ObsClient; print('OK: OBS client import')"
-        python -c "from irswitch.iracing.reader import IRacingReader; print('OK: iRacing reader import')"
-        python -c "from irswitch.logic.state_machine import StateMachine; print('OK: State machine import')"
-        python -c "from irswitch.server.metrics import MetricsCollector; print('OK: Metrics import')"
-      env:
-        PYTHONPATH: ${{ github.workspace }}/src
+      - name: Run tests
+        if: ${{ !(inputs.run_coverage && matrix.python-version == inputs.coverage_python) }}
+        run: |
+          pytest -v --tb=short
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
 
-    - name: Run tests
-      run: |
-        pytest -v --tb=short
-      env:
-        PYTHONPATH: ${{ github.workspace }}/src
+      - name: Run tests with coverage
+        if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
+        run: |
+          pytest -v --tb=short --cov=src/irswitch --cov-report=xml --cov-report=html
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
 
-    - name: Check code formatting (optional)
-      run: |
-        python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
-        pip install black
-        black --check src/ tests/ || true
-      env:
-        NO_COLOR: 1
+      - name: Upload coverage to Codecov
+        if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
-  build:
-    needs: test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    uses: ./.github/workflows/build-distribution.yml
+      - name: Upload coverage HTML
+        if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 7

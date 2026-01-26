@@ -53,16 +53,38 @@ if ($Core -or $All) {
 Write-Host ""
 Write-Host "Copying necessary files to dist..." -ForegroundColor Cyan
 
-# Copy config directory
-if (Test-Path "config") {
-    $configDest = Join-Path "dist" "config"
-    if (Test-Path $configDest) {
-        Remove-Item -Path $configDest -Recurse -Force
-    }
-    Copy-Item -Path "config" -Destination $configDest -Recurse
-    Write-Host '  [OK] Copied config/ directory' -ForegroundColor Green
+# Copy config template (avoid leaking local config/config.ini)
+$configDest = Join-Path "dist" "config"
+if (-not (Test-Path $configDest)) {
+    New-Item -ItemType Directory -Path $configDest | Out-Null
+}
+
+$exampleIni = Join-Path "config" "config.example.ini"
+if (Test-Path $exampleIni) {
+    Copy-Item -Path $exampleIni -Destination (Join-Path $configDest "config.example.ini") -Force
+    # Provide initial config.ini as a copy of the template (safe placeholders)
+    Copy-Item -Path $exampleIni -Destination (Join-Path $configDest "config.ini") -Force
+    Write-Host '  [OK] Copied config template (config.example.ini + config.ini)' -ForegroundColor Green
 } else {
-    Write-Host '  [WARN] config/ directory not found' -ForegroundColor Yellow
+    Write-Host '  [WARN] config/config.example.ini not found' -ForegroundColor Yellow
+}
+
+# Copy installer scripts
+$installScript = Join-Path "scripts" "Install.ps1"
+$openDashScript = Join-Path "scripts" "Open-Dashboard.ps1"
+
+if (Test-Path $installScript) {
+    Copy-Item -Path $installScript -Destination (Join-Path "dist" "Install.ps1") -Force
+    Write-Host '  [OK] Copied Install.ps1' -ForegroundColor Green
+} else {
+    Write-Host '  [WARN] scripts/Install.ps1 not found' -ForegroundColor Yellow
+}
+
+if (Test-Path $openDashScript) {
+    Copy-Item -Path $openDashScript -Destination (Join-Path "dist" "Open-Dashboard.ps1") -Force
+    Write-Host '  [OK] Copied Open-Dashboard.ps1' -ForegroundColor Green
+} else {
+    Write-Host '  [WARN] scripts/Open-Dashboard.ps1 not found' -ForegroundColor Yellow
 }
 
 # Create README for distribution
@@ -74,10 +96,18 @@ $readmeContent = @"
 - `irswitchd.exe` - Main application (silent background process)
 - `config/` - Configuration directory
   - `config.example.ini` - Example configuration
-  - `config.ini` - Your configuration (edit this file)
+- `Install.ps1` - Installer (wizard + autostart + shortcuts)
+- `Open-Dashboard.ps1` - Opens dashboard URL from config
 
 ## Usage
 
+Recommended:
+1. Run installer wizard: `powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard`
+2. Use created desktop shortcuts:
+   - iRacing OBS Switcher
+   - iRacing OBS Switcher - Dashboard
+
+Manual:
 1. Edit `config/config.ini` with your settings (OBS password, scenes, etc.)
 2. Run: `irswitchd.exe --config config\config.ini`
 
@@ -107,8 +137,10 @@ Write-Host '    irswitchd.exe'
 Write-Host '    config/'
 Write-Host '      config.example.ini'
 Write-Host '      config.ini'
+Write-Host '    Install.ps1'
+Write-Host '    Open-Dashboard.ps1'
 Write-Host '    README.txt'
 Write-Host ''
 Write-Host 'Usage:' -ForegroundColor Yellow
 Write-Host '  cd dist'
-Write-Host '  .\irswitchd.exe --config config\config.ini'
+Write-Host '  powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard'
