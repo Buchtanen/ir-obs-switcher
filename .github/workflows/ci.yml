@@ -3,8 +3,6 @@ name: CI
 on:
   push:
     branches: [ master, "feat/**", "feature/**", "fix/**" ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   lint:
@@ -58,15 +56,12 @@ jobs:
     name: Build Verification
     needs: [test, security-bandit, security-safety]
     if: >
-      github.event_name == 'pull_request' ||
+      github.event_name == 'push' &&
       (
-        github.event_name == 'push' &&
-        (
-          github.ref == 'refs/heads/master' ||
-          startsWith(github.ref, 'refs/heads/feat/') ||
-          startsWith(github.ref, 'refs/heads/feature/') ||
-          startsWith(github.ref, 'refs/heads/fix/')
-        )
+        github.ref == 'refs/heads/master' ||
+        startsWith(github.ref, 'refs/heads/feat/') ||
+        startsWith(github.ref, 'refs/heads/feature/') ||
+        startsWith(github.ref, 'refs/heads/fix/')
       )
     uses: ./.github/workflows/build.yml
     with:
