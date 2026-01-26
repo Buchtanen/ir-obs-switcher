@@ -64,10 +64,13 @@ function Resolve-PathRelativeToRoot([string]$Root, [string]$PathMaybeRelative) {
         throw "Empty path"
     }
     if ([System.IO.Path]::IsPathRooted($PathMaybeRelative)) {
-        return (Resolve-Path -Path $PathMaybeRelative).Path
+        # NOTE: Don't use Resolve-Path here. It requires the target to exist, which breaks
+        # wizard mode when user passes an absolute path to a config file that will be created.
+        $expanded = [Environment]::ExpandEnvironmentVariables($PathMaybeRelative)
+        return [System.IO.Path]::GetFullPath($expanded)
     }
     $combined = Join-Path -Path $Root -ChildPath $PathMaybeRelative
-    return $combined
+    return [System.IO.Path]::GetFullPath($combined)
 }
 
 function Ensure-Directory([string]$DirPath) {
