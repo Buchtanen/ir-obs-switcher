@@ -23,7 +23,7 @@ test = [
   "freezegun>=1.4",
 ]
 lint = [
-  "ruff>=0.1.0",
+  "ruff>=0.15.10",
   "black>=23.0",
   "mypy>=1.5",
 ]
