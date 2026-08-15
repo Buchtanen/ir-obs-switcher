@@ -93,6 +93,11 @@ def mock_obs() -> MagicMock:
     obs.stop_stream = AsyncMock(return_value=True)
     obs.is_stream_selected = AsyncMock(return_value=(False, False))
     obs.get_stream_info = AsyncMock(return_value=(None, None))
+    obs.get_current_broadcast_id = AsyncMock(return_value=None)
+    obs.get_cached_broadcast_id = MagicMock(return_value=None)
+    obs.clear_stream_info_cache = MagicMock()
+    obs.get_cached_stream_info = MagicMock(return_value=(None, None, False, False))
+    obs._oauth_manager = None
     return obs
 
 
@@ -430,3 +435,96 @@ async def test_main_loop_scene_switch_logs_event(
     # Should have at least one scene switch event if switch occurred
     if mock_obs.set_scene.call_count > 0:
         assert len(scene_switch_events) > 0, "Scene switch should be logged to event log"
+
+
+@pytest.mark.asyncio
+async def test_main_loop_broadcast_id_change_force_refreshes_stream_info(
+    config: AppConfig,
+    mock_reader: MagicMock,
+    mock_obs: MagicMock,
+    state_machine: StateMachine,
+    initial_state: SwitchState,
+) -> None:
+    """While stream stays selected, broadcast_id A→B clears cache and force-refreshes."""
+    mock_reader.read_mode = AsyncMock(return_value=DrivingMode.IDLE)
+    mock_obs.is_stream_selected = AsyncMock(return_value=(True, True))
+    mock_obs.get_stream_info = AsyncMock(side_effect=[("Title A", "Desc A"), ("Title B", "Desc B")])
+
+    cached_ids = iter(["broadcastA", "broadcastB"])
+
+    def _cached_broadcast_id() -> str:
+        try:
+            return next(cached_ids)
+        except StopIteration:
+            return "broadcastB"
+
+    mock_obs.get_cached_broadcast_id = MagicMock(side_effect=_cached_broadcast_id)
+
+    # After hysteresis confirms selection, peek stays A then flips to B
+    peek_values = ["broadcastA"] * 8 + ["broadcastB"] * 20
+    mock_obs.get_current_broadcast_id = AsyncMock(side_effect=peek_values)
+
+    event_log = EventLog(max_size=50)
+    set_event_log(event_log)
+
+    task = asyncio.create_task(
+        main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
+    )
+    # Hysteresis (~3 polls) + stable peeks + change detection
+    await asyncio.sleep(1.2)
+
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+    mock_obs.clear_stream_info_cache.assert_called_once()
+    force_refresh_calls = [
+        c
+        for c in mock_obs.get_stream_info.await_args_list
+        if c.kwargs.get("force_refresh") is True or (c.args and c.args[0] is True)
+    ]
+    assert len(force_refresh_calls) >= 2, "select + broadcast change should each force_refresh"
+
+    events = await event_log.get_all_events()
+    changed = [e for e in events if e.type == "stream_broadcast_changed"]
+    assert len(changed) >= 1
+    assert changed[0].data.get("previous_broadcast_id") == "broadcastA"
+    assert changed[0].data.get("broadcast_id") == "broadcastB"
+
+
+@pytest.mark.asyncio
+async def test_main_loop_same_broadcast_id_does_not_refresh(
+    config: AppConfig,
+    mock_reader: MagicMock,
+    mock_obs: MagicMock,
+    state_machine: StateMachine,
+    initial_state: SwitchState,
+) -> None:
+    """Same broadcast_id while selected must not clear cache or re-fetch."""
+    mock_reader.read_mode = AsyncMock(return_value=DrivingMode.IDLE)
+    mock_obs.is_stream_selected = AsyncMock(return_value=(True, True))
+    mock_obs.get_stream_info = AsyncMock(return_value=("Title A", "Desc A"))
+    mock_obs.get_cached_broadcast_id = MagicMock(return_value="broadcastA")
+    mock_obs.get_current_broadcast_id = AsyncMock(return_value="broadcastA")
+
+    event_log = EventLog(max_size=50)
+    set_event_log(event_log)
+
+    task = asyncio.create_task(
+        main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
+    )
+    await asyncio.sleep(1.0)
+
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+    mock_obs.clear_stream_info_cache.assert_not_called()
+    assert mock_obs.get_stream_info.await_count == 1, "only initial select refresh"
+
+    events = await event_log.get_all_events()
+    assert not any(e.type == "stream_broadcast_changed" for e in events)
