@@ -99,6 +99,7 @@ class ObsClient:
                 self._stream_info_cache_broadcast_id = None
                 # Reset flags on reconnect (quota might have reset)
                 self._youtube_quota_exceeded = False
+                self._youtube_api_key_missing = False
                 logger.info(f"Connected to OBS at {host}:{port}")
                 return
 
@@ -1196,6 +1197,12 @@ class ObsClient:
         """Set the OAuth manager for YouTube API access."""
         self._oauth_manager = oauth_manager
 
+    def clear_stream_info_cache(self) -> None:
+        """Clear cached stream title/description so the next fetch hits OBS/YouTube."""
+        self._stream_info_cache = None
+        self._stream_info_cache_broadcast_id = None
+        logger.debug("Stream info cache cleared")
+
     def get_cached_stream_info(self) -> tuple[str | None, str | None, bool, bool]:
         """
         Get cached stream info without making API calls.
@@ -1241,6 +1248,10 @@ class ObsClient:
             description = self._stream_info_cache[1] if len(self._stream_info_cache) > 1 else None
             return {"title": title, "description": description}
         return None
+
+    def get_cached_broadcast_id(self) -> str | None:
+        """Return last known OBS/YouTube broadcast_id from stream info cache."""
+        return self._stream_info_cache_broadcast_id
 
     async def is_stream_selected(self) -> tuple[bool, bool]:
         """

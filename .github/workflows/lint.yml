@@ -58,7 +58,7 @@ jobs:
       - name: Install and run ruff
         if: inputs.kind == 'ruff'
         run: |
-          pip install ruff
+          pip install "ruff>=0.1.0,<1"
           ruff check "${{ inputs.src_path }}" "${{ inputs.tests_path }}"
 
       - name: Install and run black

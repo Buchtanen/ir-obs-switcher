@@ -333,6 +333,40 @@ Reset všech metrik a stavu aplikace.
 
 ---
 
+### POST /stream/reinit
+
+Vyčistí cache stream info a znovu načte data z OBS (+ YouTube API pokud je OAuth).
+
+**Kdy použít**: Po výběru / založení jiného broadcastu v OBS Manage Broadcast — dashboard jinak může držet starý title.
+
+**URL**: `http://127.0.0.1:17321/stream/reinit`
+
+**Method**: `POST`
+
+**Response** (200 OK):
+```json
+{
+  "status": "ok",
+  "message": "Stream info refreshed",
+  "stream_title": "My Race Stream",
+  "stream_description": "...",
+  "connected_obs": true,
+  "stream_selected": true
+}
+```
+
+**Error Response** (503 Service Unavailable) — OBS není připojené:
+```json
+{
+  "error": "OBS not connected",
+  "message": "Connect OBS before reinitializing stream info"
+}
+```
+
+**Poznámka**: Nemění výběr broadcastu v OBS a nespouští/nestopuje stream. Jen refresh app cache + YouTube metadata.
+
+---
+
 ### POST /shutdown
 
 Graceful shutdown aplikace.
@@ -473,7 +507,7 @@ Velký dashboard pro monitor (GR Dashboard).
 - Konfigurovatelné obrázky a loga
 - Real-time aktualizace přes JavaScript
 
-**Screenshot**: Viz `img/rg-status-screen.png`
+**Screenshot**: Viz `assets/rg-status-screen.png`
 
 ---
 
