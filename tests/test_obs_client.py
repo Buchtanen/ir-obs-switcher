@@ -47,6 +47,54 @@ async def test_connect_max_retries_exceeded(obs_client: ObsClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_connect_final_fail_log_rate_limited(
+    obs_client: ObsClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """First exhausted connect is ERROR; later ones DEBUG until success resets."""
+    import logging
+
+    with caplog.at_level(logging.DEBUG, logger="irswitch.obs.client"):
+        with patch("irswitch.obs.client.ReqClient", side_effect=Exception("Connection failed")):
+            for _ in range(3):
+                with pytest.raises(ConnectionError):
+                    await obs_client.connect(max_retries=1)
+
+        final_fail_records = [
+            r
+            for r in caplog.records
+            if "Failed to connect to OBS after" in r.message and r.name == "irswitch.obs.client"
+        ]
+        assert len(final_fail_records) == 3
+        assert final_fail_records[0].levelno == logging.ERROR
+        assert final_fail_records[1].levelno == logging.DEBUG
+        assert final_fail_records[2].levelno == logging.DEBUG
+
+        caplog.clear()
+        mock_client = MagicMock()
+        with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+            await obs_client.connect(max_retries=1)
+        assert obs_client.is_connected() is True
+        assert any(
+            r.levelno == logging.INFO and "Connected to OBS" in r.message for r in caplog.records
+        )
+
+        # Simulate disconnect then fail again — should be loud once more
+        await obs_client.disconnect()
+        caplog.clear()
+        with patch("irswitch.obs.client.ReqClient", side_effect=Exception("Connection failed")):
+            with pytest.raises(ConnectionError):
+                await obs_client.connect(max_retries=1)
+
+        loud_again = [
+            r
+            for r in caplog.records
+            if "Failed to connect to OBS after" in r.message and r.name == "irswitch.obs.client"
+        ]
+        assert len(loud_again) == 1
+        assert loud_again[0].levelno == logging.ERROR
+
+
+@pytest.mark.asyncio
 async def test_connect_timeout(obs_client: ObsClient) -> None:
     """OBS connect timeout is surfaced as ConnectionError (no hang)."""
 
