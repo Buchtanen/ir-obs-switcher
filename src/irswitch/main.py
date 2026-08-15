@@ -962,10 +962,12 @@ async def main_loop(
                                     f"Stream selected in OBS (streaming: {is_streaming}, ready: {is_ready_selected})"
                                 )
                                 try:
-                                    # Use force_refresh=True to ensure we get fresh data from YouTube API
-                                    # This is especially important if OAuth was already authenticated at startup
+                                    # Force refresh so we get fresh data from YouTube API
+                                    # (important if OAuth was already authenticated at startup)
                                     stream_title, stream_description = (
-                                        await obs_client.get_stream_info(force_refresh=True)
+                                        await obs_client.refresh_stream_info(
+                                            "stream_selected", force=True
+                                        )
                                     )
                                     last_broadcast_id = obs_client.get_cached_broadcast_id()
                                     await event_log.add_event(
@@ -1026,9 +1028,10 @@ async def main_loop(
                                     logger.info(
                                         f"OBS broadcast_id changed: {previous_broadcast_id} → {current_broadcast_id}"
                                     )
-                                    obs_client.clear_stream_info_cache()
                                     stream_title, stream_description = (
-                                        await obs_client.get_stream_info(force_refresh=True)
+                                        await obs_client.refresh_stream_info(
+                                            "broadcast_id_changed", force=True
+                                        )
                                     )
                                     last_broadcast_id = (
                                         obs_client.get_cached_broadcast_id() or current_broadcast_id
@@ -1072,7 +1075,9 @@ async def main_loop(
                                     )
                                     try:
                                         stream_title, stream_description = (
-                                            await obs_client.get_stream_info(force_refresh=True)
+                                            await obs_client.refresh_stream_info(
+                                                "oauth_ready", force=True
+                                            )
                                         )
                                         last_broadcast_id = obs_client.get_cached_broadcast_id()
                                         if stream_title:
