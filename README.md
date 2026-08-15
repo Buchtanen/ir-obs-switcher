@@ -263,6 +263,8 @@ Preferuj graceful shutdown (GR Dashboard **Shutdown Service** nebo `POST /shutdo
 - **[API.md](API.md)** - Dokumentace REST API a WebSocket endpointů
 - **[LOCALIZATION.md](LOCALIZATION.md)** - Popis lokalizace a podporovaných jazyků
 - **[BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)** - Návod pro vytvoření EXE a nastavení jako služby
+- **[RELEASE_POLICY.md](RELEASE_POLICY.md)** - Release PR model, semver labely na PR
+- **[VERSIONING.md](VERSIONING.md)** - Kde žije verze aplikace a jak se zobrazuje
 - **[YOUTUBE_API_SETUP.md](YOUTUBE_API_SETUP.md)** - Postup nastavení YouTube API tokenu v Google Console
 - **[VR_SUPPORT.md](VR_SUPPORT.md)** - VR support - příslib, záměr a popis problému
 - **[RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md)** - Návod pro nastavení VR dashboardu v RaceLab VR

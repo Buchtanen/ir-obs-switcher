@@ -2,6 +2,8 @@
 
 Návod pro vytvoření EXE souboru a nastavení aplikace jako Windows služby.
 
+Oficiální releasy (tag `vX.Y.Z`, GitHub Release artefakty) řídí **Release PR** — viz [RELEASE_POLICY.md](RELEASE_POLICY.md) a [VERSIONING.md](VERSIONING.md).
+
 ## Obsah
 
 - [Vytvoření EXE souboru](#vytvoření-exe-souboru)
