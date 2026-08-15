@@ -3,9 +3,30 @@
 #        .\start_app.ps1 -Config "config\config.ini"
 #        .\start_app.ps1 --config "config\config.ini"
 
+$ErrorActionPreference = "Stop"
+
 # Get script directory first
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
+
+# Broken SSLKEYLOGFILE (e.g. inaccessible Volume GUID path) makes Python 3.14
+# fail inside ssl.create_default_context() during `import aiohttp`.
+if ($env:SSLKEYLOGFILE) {
+    $keylog = $env:SSLKEYLOGFILE
+    $usable = $false
+    try {
+        $parent = Split-Path -Parent $keylog
+        if ($parent -and (Test-Path -LiteralPath $parent)) {
+            $usable = $true
+        }
+    } catch {
+        $usable = $false
+    }
+    if (-not $usable) {
+        Write-Host "Clearing unusable SSLKEYLOGFILE: $keylog" -ForegroundColor Yellow
+        Remove-Item Env:SSLKEYLOGFILE -ErrorAction SilentlyContinue
+    }
+}
 
 # Parse arguments manually to support both -Config and --config formats
 $Config = "config\config.ini"
@@ -37,25 +58,69 @@ if (-not (Test-Path $Config)) {
 Write-Host "Using config: $Config" -ForegroundColor Green
 Write-Host ""
 
-# Check if Python is available
-try {
-    $pythonVersion = python --version 2>&1
-    Write-Host "Python: $pythonVersion" -ForegroundColor Green
-} catch {
-    Write-Host "Error: Python not found in PATH" -ForegroundColor Red
-    Write-Host "Please install Python 3.11+ and add it to PATH" -ForegroundColor Yellow
+# Prefer project .venv over global PATH Python / irswitchd
+$VenvPython = Join-Path $ScriptDir ".venv\Scripts\python.exe"
+$VenvIrswitchd = Join-Path $ScriptDir ".venv\Scripts\irswitchd.exe"
+$PythonExe = $null
+$IrswitchdExe = $null
+
+if (Test-Path $VenvPython) {
+    $PythonExe = $VenvPython
+    Write-Host "Using venv Python: $PythonExe" -ForegroundColor Green
+} else {
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) {
+        $PythonExe = $cmd.Source
+        Write-Host "Warning: .venv not found; using PATH Python: $PythonExe" -ForegroundColor Yellow
+        Write-Host "Recommended: python -m venv .venv; .\.venv\Scripts\pip install -e ." -ForegroundColor Yellow
+    }
+}
+
+if (-not $PythonExe) {
+    Write-Host "Error: Python not found (.venv or PATH)" -ForegroundColor Red
+    Write-Host "Please install Python 3.11+ and create .venv (see README Quick Start)" -ForegroundColor Yellow
     exit 1
 }
 
-# Check if package is installed
-try {
-    python -c "import irswitch" 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Installing package in development mode..." -ForegroundColor Yellow
-        pip install -e .
+$versionOutput = & $PythonExe --version 2>&1
+Write-Host "Python: $versionOutput" -ForegroundColor Green
+
+# Soft warn on very new Python (CI targets 3.11-3.13)
+if ($versionOutput -match "Python (\d+)\.(\d+)") {
+    $major = [int]$Matches[1]
+    $minor = [int]$Matches[2]
+    if ($major -gt 3 -or ($major -eq 3 -and $minor -ge 14)) {
+        Write-Host "Warning: Python $major.$minor is newer than CI matrix (3.11-3.13). Prefer 3.12/3.13 if deps fail." -ForegroundColor Yellow
     }
-} catch {
-    Write-Host "Warning: Could not verify package installation" -ForegroundColor Yellow
+    if ($major -lt 3 -or ($major -eq 3 -and $minor -lt 11)) {
+        Write-Host "Error: Python 3.11+ required (found $major.$minor)" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# Fail-fast: package must import from the chosen interpreter
+& $PythonExe -c "import irswitch" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Package 'irswitch' not installed for this Python. Installing editable..." -ForegroundColor Yellow
+    & $PythonExe -m pip install -e .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: pip install -e . failed" -ForegroundColor Red
+        exit 1
+    }
+    & $PythonExe -c "import irswitch"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: irswitch still not importable after install" -ForegroundColor Red
+        exit 1
+    }
+}
+
+if (Test-Path $VenvIrswitchd) {
+    $IrswitchdExe = $VenvIrswitchd
+} else {
+    $cmd = Get-Command irswitchd -ErrorAction SilentlyContinue
+    if ($cmd) {
+        $IrswitchdExe = $cmd.Source
+    }
 }
 
 Write-Host ""
@@ -63,9 +128,13 @@ Write-Host "Starting service..." -ForegroundColor Cyan
 Write-Host "Press Ctrl+C to stop" -ForegroundColor Yellow
 Write-Host ""
 
-# Start the application
 try {
-    irswitchd --config $Config
+    if ($IrswitchdExe) {
+        & $IrswitchdExe --config $Config
+    } else {
+        & $PythonExe -m irswitch.main --config $Config
+    }
+    exit $LASTEXITCODE
 } catch {
     Write-Host ""
     Write-Host "Error starting application: $_" -ForegroundColor Red

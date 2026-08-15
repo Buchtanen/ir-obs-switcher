@@ -222,7 +222,8 @@ async def main_loop(
             # Loading screen detection and tracking
             # NEW: Use process detection for more accurate loading screen detection
             # Loading screen = iRacing process is running but SDK is not connected
-            iracing_process_running = reader.is_process_running()
+            # Process check uses subprocess (tasklist); keep it off the event loop
+            iracing_process_running = await asyncio.to_thread(reader.is_process_running)
             sdk_connected = reader.is_connected()
 
             # Loading screen: process running but SDK not connected
@@ -893,19 +894,8 @@ async def main_loop(
                     # Reset stream title tracking when OBS disconnects
                     last_stream_title = None
                     last_stream_selected = False
-                    # Try to reconnect OBS
-                    if not obs_client.is_connected():
-                        try:
-                            await obs_client.connect(max_retries=1, initial_backoff=1.0)
-                        except Exception as e:
-                            logger.debug(f"OBS reconnection attempt failed: {e}")
-            elif not connected_obs and not obs_client.is_connected():
-                # OBS is not connected and state hasn't changed (still trying to connect)
-                # Try to reconnect periodically
-                try:
-                    await obs_client.connect(max_retries=1, initial_backoff=1.0)
-                except Exception as e:
-                    logger.debug(f"OBS periodic reconnection attempt failed: {e}")
+                    # Reconnect is owned solely by background_obs_connect task
+            # When OBS is down, background_obs_connect owns reconnect (avoid dual connect races)
 
             # State machine already ticked above (with session info updated if needed)
             set_current_state(new_state)
@@ -1432,10 +1422,10 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                                 set_current_state(new_state)
                     except Exception as e:
                         logger.debug(f"Background OBS connection attempt failed: {e}")
-                    await asyncio.sleep(10.0)  # Wait 10 seconds before next attempt
+                    await asyncio.sleep(5.0)  # Backoff between reconnect attempts
                 else:
-                    # Already connected, check periodically if still connected
-                    await asyncio.sleep(30.0)
+                    # Connected: short poll so disconnect is noticed without dual main-loop reconnect
+                    await asyncio.sleep(5.0)
             except asyncio.CancelledError:
                 break
             except Exception as e:
