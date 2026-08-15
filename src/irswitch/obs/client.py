@@ -49,6 +49,8 @@ class ObsClient:
         )
         # Reference to OAuth manager for YouTube API access
         self._oauth_manager: Any = None  # Set externally via set_oauth_manager()
+        # Rate-limit final-fail connect ERROR logs while OBS stays down
+        self._connect_fail_streak: int = 0
 
     async def connect(self, max_retries: int = 5, initial_backoff: float = 1.0) -> None:
         """
@@ -100,6 +102,7 @@ class ObsClient:
                 # Reset flags on reconnect (quota might have reset)
                 self._youtube_quota_exceeded = False
                 self._youtube_api_key_missing = False
+                self._connect_fail_streak = 0
                 logger.info(f"Connected to OBS at {host}:{port}")
                 return
 
@@ -113,7 +116,14 @@ class ObsClient:
                     await asyncio.sleep(backoff)
                     backoff *= 2  # Exponential backoff
                 else:
-                    logger.error(f"Failed to connect to OBS after {max_retries} attempts: {e}")
+                    msg = f"Failed to connect to OBS after {max_retries} attempts: {e}"
+                    # First final-fail after success (or cold start) stays loud;
+                    # subsequent exhausted-retry cycles while OBS is down are DEBUG.
+                    if self._connect_fail_streak == 0:
+                        logger.error(msg)
+                    else:
+                        logger.debug(msg)
+                    self._connect_fail_streak += 1
 
         raise ConnectionError(f"Could not connect to OBS: {last_error}") from last_error
 
