@@ -296,20 +296,19 @@ Přenačtení konfigurace ze souboru.
 **Response** (200 OK):
 ```json
 {
-  "success": true,
-  "message": "Configuration reloaded"
+  "status": "success",
+  "message": "Config reloaded successfully"
 }
 ```
 
-**Error Response** (500 Internal Server Error):
+**Error Response** (400/500):
 ```json
 {
-  "error": "Failed to reload configuration",
-  "details": "Error message"
+  "error": "Failed to reload config: ..."
 }
 ```
 
-**Poznámka**: Po přenačtení konfigurace se aplikace restartuje s novými nastaveními.
+**Poznámka**: Hot-reload aktualizuje sdílený runtime config + switching (scenes, debounce/cooldown, auto-start/stop, `poll_hz`). **Nepřestartuje** HTTP server ani OBS/OAuth spojení — detaily viz `CONFIG.md` sekce Hot-reload.
 
 ---
 

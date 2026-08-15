@@ -597,3 +597,26 @@ dashboard_vr_icons_path = assets/vr_icons/
   ```
 
 **Tip**: Pro distribuci doporučujeme používat relativní cesty - aplikace pak funguje bez úprav, i když ji přesuneš do jiného adresáře.
+
+---
+
+## Hot-reload (`POST /config/reload`)
+
+Po změně `config.ini` můžeš zavolat `POST /config/reload` (nebo tlačítko v dashboardu, pokud je). Aplikace **nepřepisuje** celý proces — živě se přenačte sdílený runtime config.
+
+### Platí ihned (bez restartu)
+
+- `[scenes]` mapování + `switching.safe_scene`
+- `switching.debounce_ms`, `cooldown_ms`, `override_seconds`, `autoswitch_default`
+- `iracing.poll_hz`
+- `switching.auto_start_broadcast`, `auto_start_at_percent`, `default_loading_time_seconds`
+- `switching.auto_stop_stream`, `stop_stream_after_seconds`
+- většina `[dashboards]` klíčů čtených při requestu
+
+### Vyžaduje restart procesu
+
+- `app.http_host`, `app.http_port`
+- `app.log_file` / rotace logů / `log_level` (handler už běží)
+- `obs.ws_url`, `obs.password`, `obs.required_profile`
+- OAuth / YouTube credentials (env / config)
+- `hotkeys.restart_hotkey`

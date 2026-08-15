@@ -30,6 +30,7 @@ from irswitch.server.api import (
     APP_CONFIG,
     APP_CONFIG_PATH,
     create_app,
+    get_app_config,
     get_current_state,
     get_restart_mode,
     set_current_state,
@@ -236,6 +237,13 @@ async def main_loop(
 
     while True:
         try:
+            # Pick up config hot-reloaded via POST /config/reload
+            runtime_config = get_app_config()
+            if runtime_config is not None:
+                config = runtime_config
+            poll_interval = 1.0 / config.poll_hz
+            loading_tracker.default_loading_time_seconds = config.default_loading_time_seconds
+
             # Poll iRacing
             iracing_mode = await reader.read_mode()
             # Store actual iRacing mode before it might be modified by quit_reset_active

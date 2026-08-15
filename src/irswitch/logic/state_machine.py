@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from irswitch.logic.policy import Policy
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.util.clock import now_ms
@@ -45,6 +47,34 @@ class StateMachine:
         self._pending_since: int | None = None
         self._waiting_for_idle = False  # Grace period: wait until IDLE after reconnect
         self._seen_non_idle = False  # Track if we saw non-IDLE mode during grace period
+
+    def apply_runtime_config(
+        self,
+        *,
+        scenes: Mapping[DrivingMode, str] | None = None,
+        safe_scene: str | None = None,
+        debounce_ms: int | None = None,
+        cooldown_ms: int | None = None,
+        override_seconds: int | None = None,
+        autoswitch_default: bool | None = None,
+    ) -> None:
+        """
+        Apply hot-reloadable switching settings without resetting debounce state.
+
+        Used by POST /config/reload so main_loop / Policy stay in sync with disk config.
+        """
+        if scenes is not None or safe_scene is not None:
+            new_scenes = scenes if scenes is not None else self._policy.scenes
+            new_safe = safe_scene if safe_scene is not None else self._policy.safe_scene
+            self._policy.apply_scenes(new_scenes, new_safe)
+        if debounce_ms is not None:
+            self._debounce_ms = debounce_ms
+        if cooldown_ms is not None:
+            self._cooldown_ms = cooldown_ms
+        if override_seconds is not None:
+            self._override_seconds = override_seconds
+        if autoswitch_default is not None:
+            self._autoswitch_default = autoswitch_default
 
     def tick(
         self,
