@@ -892,6 +892,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <div class="controls">
             <button onclick="toggleAutoswitch()">{translator.t('toggle_autoswitch')}</button>
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
+            <button onclick="reinitStream()">{translator.t('reinit_stream')}</button>
             <button onclick="reloadConfig()">Reload Config</button>
             <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
             <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
@@ -1301,6 +1302,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 'override_applied': {{ type: 'info', title: t('override_applied') }},
                 'autoswitch_toggled': {{ type: 'info', title: t('autoswitch_toggled') }},
                 'stream_title_detected': {{ type: 'success', title: t('stream_title_detected') }},
+                'stream_info_refreshed': {{ type: 'success', title: t('stream_info_refreshed') }},
                 'stream_selected': {{ type: 'success', title: t('stream_selected') }},
                 'stream_deselected': {{ type: 'warning', title: t('stream_deselected') }},
                 'youtube_quota_exceeded': {{ type: 'warning', title: t('youtube_quota_exceeded') }}
@@ -1597,6 +1599,25 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }} catch (error) {{
                 console.error('Failed to reload config:', error);
                 showToast('Config Reload Failed', error.message || 'Network error', 'error');
+            }}
+        }}
+        
+        async function reinitStream() {{
+            try {{
+                const response = await fetch(`${{API_BASE}}/stream/reinit`, {{ method: 'POST' }});
+                const data = await response.json();
+                
+                if (response.ok) {{
+                    const title = data.stream_title || t('not_available');
+                    showToast(t('reinit_stream'), `${{t('stream_title')}}: ${{title}}`, 'success');
+                    await updateStatus();
+                    await updateEvents();
+                }} else {{
+                    showToast(t('reinit_stream'), data.error || data.message || 'Unknown error', 'error');
+                }}
+            }} catch (error) {{
+                console.error('Failed to reinit stream:', error);
+                showToast(t('reinit_stream'), error.message || 'Network error', 'error');
             }}
         }}
         

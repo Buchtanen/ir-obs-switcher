@@ -487,3 +487,77 @@ async def test_shutdown_not_available(app: web.Application) -> None:
             data = await resp.json()
             assert "error" in data
             assert "not available" in data["error"].lower()
+
+
+@pytest.mark.asyncio
+async def test_stream_reinit_obs_not_connected(app: web.Application) -> None:
+    """POST /stream/reinit returns 503 when OBS is unavailable."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.server.api import set_obs_client
+
+    set_obs_client(None)
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/stream/reinit")
+            assert resp.status == 503
+            data = await resp.json()
+            assert "OBS not connected" in data["error"]
+
+
+@pytest.mark.asyncio
+async def test_stream_reinit_success(app: web.Application, initial_state: SwitchState) -> None:
+    """POST /stream/reinit clears cache and force-refreshes stream info."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.models import SwitchState
+    from irswitch.server.api import set_current_state, set_obs_client
+    from irswitch.server.event_log import EventLog, set_event_log
+
+    set_event_log(EventLog(max_size=10))
+
+    obs = MagicMock()
+    obs.is_connected.return_value = True
+    obs.clear_stream_info_cache = MagicMock()
+    obs.get_stream_info = AsyncMock(return_value=("Race Night", "desc"))
+    obs.get_cached_stream_info_full.return_value = {
+        "title": "Race Night",
+        "description": "desc",
+    }
+    obs.get_cached_broadcast_id.return_value = "broadcast123"
+    obs.get_stream_status = AsyncMock(return_value=(False, None))
+    obs.get_current_profile = AsyncMock(return_value="Racing")
+    obs.is_stream_selected = AsyncMock(return_value=(True, True))
+    obs.get_cached_stream_info.return_value = ("Race Night", "desc", False, False)
+    set_obs_client(obs)
+
+    connected = SwitchState(
+        connected_iracing=initial_state.connected_iracing,
+        connected_obs=True,
+        autoswitch=initial_state.autoswitch,
+        override_scene=None,
+        override_until=None,
+        mode=initial_state.mode,
+        target_scene=initial_state.target_scene,
+        current_scene=initial_state.current_scene,
+        last_switch_ts=None,
+        reason=initial_state.reason,
+        session_type=None,
+        session_name=None,
+        session_num=None,
+        stream_extended_info=None,
+    )
+    set_current_state(connected)
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/stream/reinit")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["status"] == "ok"
+            assert data["stream_title"] == "Race Night"
+            obs.clear_stream_info_cache.assert_called_once()
+            obs.get_stream_info.assert_awaited_once_with(force_refresh=True)

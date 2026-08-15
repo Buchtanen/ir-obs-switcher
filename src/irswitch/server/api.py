@@ -607,6 +607,94 @@ async def handle_reset(request: web.Request) -> web.Response:
     )
 
 
+async def handle_stream_reinit(request: web.Request) -> web.Response:
+    """
+    Handle POST /stream/reinit — clear stream-info cache and force-refresh from OBS/YouTube.
+
+    Use when the user selected or created a different broadcast in OBS Manage Broadcast.
+    Does not change OBS broadcast selection and does not start/stop streaming.
+    """
+    global _current_state
+
+    if _obs_client is None or not _obs_client.is_connected():
+        return web.json_response(
+            {
+                "error": "OBS not connected",
+                "message": "Connect OBS before reinitializing stream info",
+            },
+            status=503,
+        )
+
+    try:
+        _obs_client.clear_stream_info_cache()
+        title, description = await _obs_client.get_stream_info(force_refresh=True)
+        stream_info_full = _obs_client.get_cached_stream_info_full()
+
+        # Propagate extended info into current SwitchState for WS/status consumers
+        if _current_state is not None:
+            from irswitch.models import SwitchState
+
+            new_state = SwitchState(
+                connected_iracing=_current_state.connected_iracing,
+                connected_obs=_current_state.connected_obs,
+                autoswitch=_current_state.autoswitch,
+                override_scene=_current_state.override_scene,
+                override_until=_current_state.override_until,
+                mode=_current_state.mode,
+                target_scene=_current_state.target_scene,
+                current_scene=_current_state.current_scene,
+                last_switch_ts=_current_state.last_switch_ts,
+                reason=_current_state.reason,
+                session_type=_current_state.session_type,
+                session_name=_current_state.session_name,
+                session_num=_current_state.session_num,
+                stream_extended_info=stream_info_full,
+            )
+            set_current_state(new_state)
+            state_for_status = new_state
+        else:
+            state_for_status = _current_state
+
+        event_log = get_event_log()
+        await event_log.add_event(
+            "stream_info_refreshed",
+            "Stream info reinitialized from OBS/YouTube",
+            {
+                "stream_title": title,
+                "has_description": bool(description),
+                "broadcast_id": _obs_client.get_cached_broadcast_id(),
+            },
+        )
+
+        logger.info(
+            "Stream info reinitialized via API (title=%s)",
+            title or "(none)",
+        )
+
+        status: dict = {}
+        if state_for_status is not None:
+            status = await _get_status_dict(state_for_status)
+
+        return web.json_response(
+            {
+                "status": "ok",
+                "message": "Stream info refreshed",
+                "stream_title": title,
+                "stream_description": description,
+                **status,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to reinit stream info: {e}", exc_info=True)
+        return web.json_response(
+            {
+                "error": "Failed to reinitialize stream info",
+                "details": str(e),
+            },
+            status=500,
+        )
+
+
 async def handle_get_events(request: web.Request) -> web.Response:
     """
     Handle GET /api/events endpoint.
@@ -956,6 +1044,7 @@ def create_app() -> web.Application:
     app.router.add_post("/config/reload", handle_config_reload)
     app.router.add_post("/shutdown", handle_shutdown)
     app.router.add_post("/reset", handle_reset)
+    app.router.add_post("/stream/reinit", handle_stream_reinit)
     app.router.add_get("/gr-status", handle_gr_status)
     app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)
