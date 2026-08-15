@@ -7,6 +7,7 @@ Návod pro vytvoření EXE souboru a nastavení aplikace jako Windows služby.
 - [Vytvoření EXE souboru](#vytvoření-exe-souboru)
 - [Výstup build procesu](#výstup-build-procesu)
 - [Instalace a provoz](#instalace-a-provoz)
+- [Zastavení služby (Stopping the service)](#zastavení-služby-stopping-the-service)
 - [Automatické spuštění při startu systému](#automatické-spuštění-při-startu-systému)
 - [Cesty v konfiguraci](#cesty-v-konfiguraci)
 - [Ruční build (PyInstaller)](#ruční-build-pyinstaller)
@@ -101,9 +102,7 @@ cd dist
 .\irswitchd.exe --config config\config.ini
 ```
 
-Aplikace běží **silent na pozadí** (bez konzole). Pro zastavení:
-- Použij GR Dashboard (`http://127.0.0.1:17321/gr-status`) a klikni "Shutdown Service"
-- Nebo použij Task Manager a ukonči proces `irswitchd.exe`
+Aplikace běží **silent na pozadí** (bez konzole). Jak ji bezpečně zastavit: viz [Zastavení služby](#zastavení-služby-stopping-the-service).
 
 ### 3. Logování
 
@@ -118,6 +117,76 @@ Aplikace běží **silent na pozadí** (bez konzole). Pro zastavení:
   Log soubory se automaticky rotují při dosažení maximální velikosti.
 
 **Poznámka**: Cesty k log souborům jsou relativní k working directory (adresáři, ze kterého spouštíš aplikaci).
+
+---
+
+## Zastavení služby (Stopping the service)
+
+`irswitchd` běží jako silent proces (bez konzole). Preferuj **graceful** shutdown; kill až jako poslední možnost.
+
+### 1. Graceful: Dashboard / `POST /shutdown` (doporučeno)
+
+Ukončí main loop čistě (dokončí běžící operace, pak exit).
+
+- **GR Dashboard**: otevři `http://127.0.0.1:17321/gr-status` → **Shutdown Service**
+- **API** (stejný efekt):
+
+```powershell
+Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:17321/shutdown"
+```
+
+Detail API: [API.md – POST /shutdown](API.md#post-shutdown).
+
+Pokud dashboard/API neodpovídá (proces hangne, port nedostupný), pokračuj níže.
+
+### 2. Task Scheduler – End běžící instance
+
+Když je app nainstalovaná přes `Install.ps1` (Scheduled Task **iRacing OBS Switcher**):
+
+1. Otevři Task Scheduler (`taskschd.msc`)
+2. Najdi task **iRacing OBS Switcher**
+3. Pravý klik → **End** (ukončí běžící instanci)
+
+To zastaví aktuální běh. Autostart při příštím přihlášení zůstane, dokud task neodinstaluješ.
+
+### 3. `Install.ps1 -Uninstall` / `-UninstallTask`
+
+Z `dist/` (ověřeno v `scripts/Install.ps1`):
+
+| Flag | Co dělá |
+|------|---------|
+| `-UninstallTask` | Odstraní jen Scheduled Task **iRacing OBS Switcher** |
+| `-Uninstall` | Odstraní task + desktop zkratky (+ nabídne cleanup OAuth User env vars) |
+
+```powershell
+cd dist
+# Jen autostart task:
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -UninstallTask
+
+# Kompletní odinstalace autostartu + zkratek:
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Uninstall
+```
+
+**Důležité**: tyto flagy **neukončí** už běžící `irswitchd.exe`. Nejdřív graceful shutdown (nebo End v Task Scheduler / Task Manager), pak teprve `-Uninstall` / `-UninstallTask`, pokud chceš zrušit autostart.
+
+`config/` a `logs/` se nemažou.
+
+### 4. Task Manager (last resort)
+
+1. Task Manager (`Ctrl+Shift+Esc`)
+2. Najdi `irswitchd.exe` → **End task**
+
+Použij jen když graceful shutdown ani Task Scheduler End nefungují.
+
+### Graceful vs kill
+
+| | Graceful (`POST /shutdown` / Dashboard) | Kill (Task Manager End / násilné ukončení) |
+|--|----------------------------------------|--------------------------------------------|
+| Jak | API nastaví shutdown event → main loop se ukončí | OS proces zabije okamžitě |
+| Stav / I/O | Čisté dokončení běžících kroků | Možné přerušení zápisu (logy, dočasný stav) |
+| Kdy | Běžný provoz | Hang, neodpovídající API, nouze |
+
+Dev konzole (ne EXE): `Ctrl+C` je také graceful (SIGINT), pokud běžíš s viditelnou konzolí.
 
 ---
 

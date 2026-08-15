@@ -218,6 +218,10 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 4. Zkontroluj, že port 17321 není obsazený jinou aplikací
 5. Podívej se na error message - často obsahuje konkrétní problém
 
+### Jak zastavit službu (Windows / EXE)
+
+Preferuj graceful shutdown (GR Dashboard **Shutdown Service** nebo `POST /shutdown`). Pro Task Scheduler End, `Install.ps1 -Uninstall` / `-UninstallTask` a rozdíl graceful vs kill viz [BUILD_AND_DEPLOY.md – Zastavení služby](BUILD_AND_DEPLOY.md#zastavení-služby-stopping-the-service).
+
 ### `PermissionError` / pád při `import aiohttp` (SSLKEYLOGFILE)
 
 **Příznaky**: Traceback končí na `ssl.create_default_context()` / `PermissionError` s cestou typu `\\?\Volume{...}\virtual_file.log`
