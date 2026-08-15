@@ -60,14 +60,15 @@ function Read-Secret([string]$Prompt) {
 }
 
 function Resolve-PathRelativeToRoot([string]$Root, [string]$PathMaybeRelative) {
+    # Absolute path that does NOT require the target to exist (wizard may create config.ini).
+    # Prefer over Resolve-Path, which throws when the path is missing.
     if ([string]::IsNullOrWhiteSpace($PathMaybeRelative)) {
         throw "Empty path"
     }
-    if ([System.IO.Path]::IsPathRooted($PathMaybeRelative)) {
-        return (Resolve-Path -Path $PathMaybeRelative).Path
+    if (-not [System.IO.Path]::IsPathRooted($PathMaybeRelative)) {
+        $PathMaybeRelative = Join-Path -Path $Root -ChildPath $PathMaybeRelative
     }
-    $combined = Join-Path -Path $Root -ChildPath $PathMaybeRelative
-    return $combined
+    return [System.IO.Path]::GetFullPath($PathMaybeRelative)
 }
 
 function Ensure-Directory([string]$DirPath) {
@@ -414,10 +415,14 @@ function Start-AppNow {
 }
 
 try {
-    $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-    Set-Location $scriptRoot
-
-    $distRoot = $scriptRoot
+    # Prefer $PSScriptRoot (stable when invoked via -File); fall back for unusual hosts.
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        $scriptRoot = $PSScriptRoot
+    } else {
+        $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+    }
+    $distRoot = [System.IO.Path]::GetFullPath($scriptRoot)
+    Set-Location -LiteralPath $distRoot
 
     # Convenience uninstall: remove autostart + shortcuts; offer OAuth cleanup (interactive).
     if ($Uninstall) {
@@ -452,13 +457,13 @@ try {
     $needsDistLayout = ($Wizard -or $InstallTask -or $CreateShortcuts -or $StartNow)
     if ($needsDistLayout) {
         # Validate dist layout (must contain irswitchd.exe)
-        $exe = Join-Path $scriptRoot "irswitchd.exe"
+        $exe = Join-Path $distRoot "irswitchd.exe"
         if (-not (Test-Path -LiteralPath $exe)) {
             throw "irswitchd.exe not found at '$exe'. Run this installer from the distribution folder (dist/)."
         }
     } else {
         # Keep variable for later branches; not required in uninstall-only runs.
-        $exe = Join-Path $scriptRoot "irswitchd.exe"
+        $exe = Join-Path $distRoot "irswitchd.exe"
     }
 
     if ($Wizard) {

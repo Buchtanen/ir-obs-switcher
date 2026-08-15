@@ -69,6 +69,12 @@ cd dist
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard
 ```
 
+**Cesty (path hardening):**
+- `Install.ps1` / `Open-Dashboard.ps1` berou root z `$PSScriptRoot` (adresář skriptu = `dist/`), ne z aktuálního CWD volajícího.
+- Relativní `-ConfigPath` (default `config\config.ini`) se vždy resolvuje na **absolutní** cestu vůči tomu rootu; chybějící soubor při wizardu **nespadne** na `Resolve-Path` (wizard config teprve vytváří).
+- Scheduled Task i desktop zkratky dostanou `WorkingDirectory = dist/` a `--config` s **absolutní** cestou k `config.ini`.
+- Dashboard zkratka volá `Open-Dashboard.ps1` se stejným absolutním `-ConfigPath`.
+
 Wizard se ptá jen na nutný základ (hlavně OBS WebSocket heslo) a volitelně nabídne:
 - logování do souboru
 - nastavení YouTube OAuth přes **User env vars** (pokud chceš)
@@ -196,14 +202,14 @@ Dev konzole (ne EXE): `Ctrl+C` je také graceful (SIGINT), pokud běžíš s vid
 
 ### Možnost A: Windows Task Scheduler (doporučeno pro EXE)
 
-**Doporučený postup**: použij `Install.ps1 -Wizard` – nastaví autostart automaticky (trigger: **At log on**, aby app běžela ve stejném user kontextu jako OBS).
+**Doporučený postup**: použij `Install.ps1 -Wizard` – nastaví autostart automaticky (trigger: **At log on**, aby app běžela ve stejném user kontextu jako OBS). Task Action používá absolutní `--config` a **Start in** = `dist/` (`WorkingDirectory`).
 
 1. Otevři Task Scheduler (`taskschd.msc`)
 2. Vytvoř nový task:
    - **Trigger**: "At log on"
    - **Action**: Start a program
    - **Program**: `C:\path\to\dist\irswitchd.exe`
-   - **Arguments**: `--config C:\path\to\dist\config\config.ini`
+   - **Arguments**: `--config "C:\path\to\dist\config\config.ini"` (absolutní cesta)
    - **Start in**: `C:\path\to\dist`
    - **Run whether user is logged on or not**: ✓ (volitelné)
 
