@@ -595,6 +595,52 @@ class ObsClient:
             logger.debug(f"Failed to get stream status: {e}")
             return (False, None)
 
+    @staticmethod
+    def _extract_broadcast_id_from_settings_value(
+        stream_settings: Any,
+    ) -> str | None:
+        """Extract broadcast_id from GetStreamServiceSettings payload (dict or str)."""
+        if isinstance(stream_settings, dict):
+            return stream_settings.get("broadcast_id") or stream_settings.get("broadcastId")
+        if isinstance(stream_settings, str):
+            try:
+                stream_settings_dict = ast.literal_eval(stream_settings)
+                if isinstance(stream_settings_dict, dict):
+                    return stream_settings_dict.get("broadcast_id") or stream_settings_dict.get(
+                        "broadcastId"
+                    )
+            except Exception:
+                broadcast_match = re.search(
+                    r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]",
+                    stream_settings,
+                )
+                if broadcast_match:
+                    return broadcast_match.group(1)
+        return None
+
+    def _peek_broadcast_id_sync(self) -> str | None:
+        """Sync peek of current broadcast_id from OBS GetStreamServiceSettings."""
+        try:
+            if self._client is None or not hasattr(self._client, "get_stream_service_settings"):
+                return None
+            service_settings = self._client.get_stream_service_settings()
+            if not service_settings or not hasattr(service_settings, "stream_service_settings"):
+                return None
+            return self._extract_broadcast_id_from_settings_value(
+                service_settings.stream_service_settings
+            )
+        except Exception:
+            return None
+
+    async def get_current_broadcast_id(self) -> str | None:
+        """Cheap peek of current OBS broadcast_id (no YouTube API)."""
+        if not self.is_connected() or self._client is None:
+            return None
+        try:
+            return await asyncio.to_thread(self._peek_broadcast_id_sync)
+        except Exception:
+            return None
+
     async def get_stream_info(self, force_refresh: bool = False) -> tuple[str | None, str | None]:
         """
         Get current stream information from OBS and YouTube API.
@@ -619,37 +665,7 @@ class ObsClient:
             if not force_refresh and not self._youtube_quota_exceeded:
                 # Get current broadcast_id to check if stream selection changed
                 try:
-
-                    def _get_broadcast_id_sync() -> str | None:
-                        try:
-                            if hasattr(self._client, "get_stream_service_settings"):
-                                service_settings = self._client.get_stream_service_settings()
-                                if service_settings and hasattr(
-                                    service_settings, "stream_service_settings"
-                                ):
-                                    stream_settings_str = service_settings.stream_service_settings
-                                    if isinstance(stream_settings_str, str):
-                                        try:
-                                            stream_settings_dict = ast.literal_eval(
-                                                stream_settings_str
-                                            )
-                                            if isinstance(stream_settings_dict, dict):
-                                                return stream_settings_dict.get(
-                                                    "broadcast_id"
-                                                ) or stream_settings_dict.get("broadcastId")
-                                        except Exception:
-                                            # Try regex
-                                            broadcast_match = re.search(
-                                                r"['\"]broadcast_id['\"]:\s*['\"]([^'\"]+)['\"]",
-                                                stream_settings_str,
-                                            )
-                                            if broadcast_match:
-                                                return broadcast_match.group(1)
-                        except Exception:
-                            pass
-                        return None
-
-                    current_broadcast_id = await asyncio.to_thread(_get_broadcast_id_sync)
+                    current_broadcast_id = await asyncio.to_thread(self._peek_broadcast_id_sync)
 
                     # If broadcast_id changed, reset quota flag (new stream might have different status)
                     if current_broadcast_id != self._stream_info_cache_broadcast_id:

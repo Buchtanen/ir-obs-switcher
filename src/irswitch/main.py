@@ -222,6 +222,7 @@ async def main_loop(
 
     # Stream title tracking
     last_stream_title: str | None = None
+    last_broadcast_id: str | None = None
     last_stream_selected: bool = False  # Track if stream was selected
     last_stream_ready_selected: bool = False  # Track if stream is ready (selected and configured)
     last_stream_selection_check_ts: float = 0.0  # Timestamp of last stream selection check
@@ -914,6 +915,7 @@ async def main_loop(
                     await event_log.add_event("connection_lost", "OBS connection lost")
                     # Reset stream title tracking when OBS disconnects
                     last_stream_title = None
+                    last_broadcast_id = None
                     last_stream_selected = False
                     # Reconnect is owned solely by background_obs_connect task
             # When OBS is down, background_obs_connect owns reconnect (avoid dual connect races)
@@ -953,6 +955,7 @@ async def main_loop(
                                     stream_title, stream_description = (
                                         await obs_client.get_stream_info(force_refresh=True)
                                     )
+                                    last_broadcast_id = obs_client.get_cached_broadcast_id()
                                     await event_log.add_event(
                                         "stream_selected",
                                         "Stream selected in OBS",
@@ -984,6 +987,7 @@ async def main_loop(
                                     "stream_deselected", "Stream deselected in OBS", {}
                                 )
                                 last_stream_title = None
+                                last_broadcast_id = None
                             last_stream_selected = is_selected
                             last_stream_ready_selected = is_ready_selected
                         else:
@@ -996,6 +1000,40 @@ async def main_loop(
                         stream_selection_consecutive_readings = 0
                         last_stream_selected = is_selected
                         last_stream_ready_selected = is_ready_selected
+
+                        # While selected, detect OBS broadcast_id A→B without a deselect edge
+                        if is_selected:
+                            try:
+                                current_broadcast_id = await obs_client.get_current_broadcast_id()
+                                if (
+                                    last_broadcast_id
+                                    and current_broadcast_id
+                                    and current_broadcast_id != last_broadcast_id
+                                ):
+                                    previous_broadcast_id = last_broadcast_id
+                                    logger.info(
+                                        f"OBS broadcast_id changed: {previous_broadcast_id} → {current_broadcast_id}"
+                                    )
+                                    obs_client.clear_stream_info_cache()
+                                    stream_title, stream_description = (
+                                        await obs_client.get_stream_info(force_refresh=True)
+                                    )
+                                    last_broadcast_id = (
+                                        obs_client.get_cached_broadcast_id() or current_broadcast_id
+                                    )
+                                    if stream_title:
+                                        last_stream_title = stream_title
+                                    await event_log.add_event(
+                                        "stream_broadcast_changed",
+                                        "Stream broadcast_id changed in OBS",
+                                        {
+                                            "previous_broadcast_id": previous_broadcast_id,
+                                            "broadcast_id": current_broadcast_id,
+                                            "stream_title": stream_title,
+                                        },
+                                    )
+                            except Exception as e:
+                                logger.debug(f"Failed to check broadcast_id change: {e}")
 
                         # Check if stream is selected and OAuth is ready, but stream info is not loaded
                         # This handles the case where OAuth becomes ready after stream is already selected
@@ -1013,6 +1051,8 @@ async def main_loop(
                                 if cached_title:
                                     logger.info(f"Using cached stream title: {cached_title}")
                                     last_stream_title = cached_title
+                                    if last_broadcast_id is None:
+                                        last_broadcast_id = obs_client.get_cached_broadcast_id()
                                 else:
                                     # OAuth is ready and stream is selected - fetch stream info
                                     logger.info(
@@ -1022,6 +1062,7 @@ async def main_loop(
                                         stream_title, stream_description = (
                                             await obs_client.get_stream_info(force_refresh=True)
                                         )
+                                        last_broadcast_id = obs_client.get_cached_broadcast_id()
                                         if stream_title:
                                             logger.info(f"Stream title detected: {stream_title}")
                                             last_stream_title = stream_title

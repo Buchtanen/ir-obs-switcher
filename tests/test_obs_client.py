@@ -475,6 +475,28 @@ async def test_get_cached_stream_info_with_api_key_missing(
 
 
 @pytest.mark.asyncio
+async def test_get_current_broadcast_id_from_service_settings(obs_client: ObsClient) -> None:
+    """get_current_broadcast_id peeks broadcast_id without YouTube API."""
+    mock_client = MagicMock()
+    service_settings = MagicMock()
+    service_settings.stream_service_settings = "{'broadcast_id': 'peek_id_123'}"
+    mock_client.get_stream_service_settings.return_value = service_settings
+
+    obs_client._client = mock_client
+    obs_client._connected = True
+
+    assert await obs_client.get_current_broadcast_id() == "peek_id_123"
+
+
+@pytest.mark.asyncio
+async def test_get_current_broadcast_id_when_disconnected(obs_client: ObsClient) -> None:
+    """get_current_broadcast_id returns None when OBS is disconnected."""
+    obs_client._client = None
+    obs_client._connected = False
+    assert await obs_client.get_current_broadcast_id() is None
+
+
+@pytest.mark.asyncio
 async def test_get_stream_info_without_api_key(obs_client: ObsClient) -> None:
     """Test get_stream_info when neither OAuth nor API key is configured."""
     mock_client = MagicMock()
