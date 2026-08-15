@@ -26,6 +26,7 @@ from irswitch.server.dashboards import (
 )
 from irswitch.server.event_log import get_event_log
 from irswitch.server.metrics import get_metrics
+from irswitch.server.task_registry import TaskRegistry
 
 # Mutable container for config to avoid DeprecationWarning when updating at runtime
 # Using a list wrapper allows us to update config without triggering aiohttp's
@@ -60,11 +61,12 @@ _reader: object | None = None  # IRacingReader instance
 _restart_mode_active: bool = False
 _shutdown_event: asyncio.Event | None = None
 _oauth_manager: OAuthManager | None = None  # YouTube OAuth manager
+_task_registry = TaskRegistry()
 
 
 def reset_state() -> None:
     """Reset global state (for testing)."""
-    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event
+    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry
     _current_state = None
     _state_machine = None
     _websocket_clients = set()
@@ -72,6 +74,7 @@ def reset_state() -> None:
     _reader = None
     _restart_mode_active = False
     _shutdown_event = None
+    _task_registry = TaskRegistry()
 
 
 def set_shutdown_event(event: asyncio.Event) -> None:
@@ -191,9 +194,9 @@ def set_current_state(state: SwitchState) -> None:
     global _current_state, _websocket_clients
     _current_state = state
 
-    # Broadcast to all WebSocket clients (async task for stream status)
+    # Broadcast to all WebSocket clients (tracked task; replace avoids pile-up)
     if _websocket_clients:
-        asyncio.create_task(_broadcast_state_update(state))
+        _task_registry.spawn("ws_broadcast", _broadcast_state_update(state), replace=True)
 
 
 async def _get_status_dict(state: SwitchState) -> dict:
@@ -543,6 +546,7 @@ async def handle_shutdown(request: web.Request) -> web.Response:
         return web.json_response({"error": "Shutdown not available"}, status=503)
 
     logger.info("Shutdown requested via API")
+    await _task_registry.cancel_all()
     _shutdown_event.set()
     return web.json_response({"status": "shutting_down", "message": "Service shutdown initiated"})
 
@@ -868,8 +872,7 @@ async def handle_oauth_callback(request: web.Request) -> web.Response:
                 _obs_client.set_oauth_manager(oauth_manager)
                 logger.info("OAuth manager updated in OBS client")
 
-                # Force refresh stream info to get YouTube stream data
-                # Use asyncio.create_task to avoid blocking the callback handler
+                # Force refresh stream info to get YouTube stream data (non-blocking)
                 try:
 
                     async def refresh_stream_info():
@@ -881,8 +884,9 @@ async def handle_oauth_callback(request: web.Request) -> web.Response:
                                 f"Failed to refresh stream info after OAuth: {e}", exc_info=True
                             )
 
-                    # Schedule refresh as background task (non-blocking)
-                    asyncio.create_task(refresh_stream_info())
+                    _task_registry.spawn(
+                        "oauth_refresh_stream", refresh_stream_info(), replace=True
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to schedule stream info refresh: {e}", exc_info=True)
 
@@ -948,8 +952,7 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
                 _obs_client.set_oauth_manager(oauth_manager)
                 logger.info("OAuth manager updated in OBS client from status check")
 
-                # Try to refresh stream info if OAuth was just authenticated
-                # Use asyncio.create_task to avoid blocking the status handler
+                # Try to refresh stream info if OAuth was just authenticated (non-blocking)
                 try:
 
                     async def refresh_stream_info():
@@ -959,8 +962,9 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
                         except Exception as e:
                             logger.debug(f"Failed to refresh stream info: {e}", exc_info=True)
 
-                    # Schedule refresh as background task (non-blocking)
-                    asyncio.create_task(refresh_stream_info())
+                    _task_registry.spawn(
+                        "oauth_refresh_stream", refresh_stream_info(), replace=True
+                    )
                 except Exception as e:
                     logger.debug(f"Failed to schedule stream info refresh: {e}", exc_info=True)
 
@@ -1090,5 +1094,11 @@ def create_app() -> web.Application:
 
     app.router.add_get("/favicon.ico", handle_favicon)
     app.router.add_get("/apple-touch-icon.png", handle_apple_touch_icon)
+
+    async def _cancel_tracked_tasks(app: web.Application) -> None:
+        """Cancel API background tasks on app cleanup."""
+        await _task_registry.cancel_all()
+
+    app.on_cleanup.append(_cancel_tracked_tasks)
 
     return app
