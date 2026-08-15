@@ -35,6 +35,8 @@ http_host = 0.0.0.0
 
 Port pro HTTP server a WebSocket.
 
+**Validace**: musí být v rozsahu **1–65535** (jinak startup selže s `ValueError`).
+
 **Kdy použít**: Změň pokud je port obsazený jinou aplikací.
 
 **Příklad**: 
@@ -158,6 +160,8 @@ language = EN
 
 Frekvence čtení dat z iRacing SDK (polling rate).
 
+**Validace**: musí být **>= 1** (jinak startup selže s `ValueError`; `0` by způsobilo dělení nulou v main loopu).
+
 **Kdy použít**: 
 - Nižší hodnoty (3-5 Hz) = menší zátěž CPU, pomalejší reakce
 - Vyšší hodnoty (10-20 Hz) = rychlejší reakce, větší zátěž
@@ -245,6 +249,8 @@ autoswitch_default = true
 
 Čekací doba před přepnutím scény po změně módu (v milisekundách).
 
+**Validace**: musí být **>= 0**.
+
 **Kdy použít**: 
 - Vyšší hodnoty (1000-2000ms) = stabilnější, ale pomalejší reakce
 - Nižší hodnoty (500-900ms) = rychlejší reakce, ale může dojít k flappingu
@@ -262,6 +268,8 @@ debounce_ms = 900
 
 Minimální interval mezi přepnutími scén (v milisekundách).
 
+**Validace**: musí být **>= 0**.
+
 **Kdy použít**: 
 - Vyšší hodnoty (1500-2000ms) = zabraňuje příliš rychlému přepínání
 - Nižší hodnoty (500-1000ms) = umožňuje rychlejší přepínání
@@ -278,6 +286,8 @@ cooldown_ms = 1000
 ### `override_seconds` (povinné)
 
 Délka trvání manuálního override scény (v sekundách).
+
+**Validace**: musí být **>= 0**.
 
 **Kdy použít**: 
 - Vyšší hodnoty (180-300s) = override trvá déle

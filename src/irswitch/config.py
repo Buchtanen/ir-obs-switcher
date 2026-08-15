@@ -86,6 +86,8 @@ class AppConfig:
         app_section = parser["app"]
         http_host = app_section.get("http_host", "127.0.0.1")
         http_port = parser.getint("app", "http_port")
+        if http_port < 1 or http_port > 65535:
+            raise ValueError("app.http_port must be between 1 and 65535")
         log_level = app_section.get("log_level", "INFO").upper()
         notifications_enabled = parser.getboolean("app", "notifications_enabled", fallback=True)
         log_file = app_section.get("log_file") or None
@@ -106,6 +108,8 @@ class AppConfig:
 
         # [iracing]
         poll_hz = parser.getint("iracing", "poll_hz")
+        if poll_hz < 1:
+            raise ValueError("iracing.poll_hz must be >= 1")
         quit_stall_seconds = parser.getfloat("iracing", "quit_stall_seconds", fallback=0.4)
         if quit_stall_seconds <= 0:
             raise ValueError("iracing.quit_stall_seconds must be > 0")
@@ -124,6 +128,12 @@ class AppConfig:
         debounce_ms = parser.getint("switching", "debounce_ms")
         cooldown_ms = parser.getint("switching", "cooldown_ms")
         override_seconds = parser.getint("switching", "override_seconds")
+        if debounce_ms < 0:
+            raise ValueError("switching.debounce_ms must be >= 0")
+        if cooldown_ms < 0:
+            raise ValueError("switching.cooldown_ms must be >= 0")
+        if override_seconds < 0:
+            raise ValueError("switching.override_seconds must be >= 0")
         safe_scene = switching_section.get("safe_scene")
         if not safe_scene:
             raise ValueError("switching.safe_scene is required")

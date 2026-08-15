@@ -24,7 +24,7 @@ from irswitch.iracing.reader import IRacingReader
 from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
-from irswitch.oauth import create_oauth_manager
+from irswitch.oauth import OAuthManager, create_oauth_manager
 from irswitch.obs.client import ObsClient
 from irswitch.server.api import (
     APP_CONFIG,
@@ -63,52 +63,40 @@ STREAM_CACHE_FRESH_MS = 5000  # 5 seconds - fresh cache, use directly
 STREAM_CACHE_GRACE_MS = 10000  # 10 seconds - stale cache, use API fallback
 
 
-async def handle_oauth_flow(config: AppConfig) -> None:
+async def run_browser_oauth_flow(
+    config: AppConfig,
+    oauth_manager: OAuthManager,
+    *,
+    max_wait_seconds: float = 300.0,
+    poll_interval: float = 2.0,
+) -> bool:
     """
-    Automated OAuth flow at startup.
+    Open browser for OAuth consent via /oauth/initiate and wait for callback token.
 
-    If OAuth credentials are configured but not yet authorized:
-    1. Calls /oauth/initiate to get authorization URL with valid state
-    2. Opens browser for user authorization
-    3. Waits for OAuth callback to complete
-    4. Only then proceeds with main functionality
+    Returns:
+        True if authentication completed, False on timeout/failure.
     """
-    oauth_manager = create_oauth_manager()
-
-    if oauth_manager is None:
-        logger.debug("OAuth not configured - skipping OAuth flow")
-        return
-
-    # Check if already authenticated
-    if oauth_manager.is_authenticated():
-        logger.info("OAuth already authenticated")
-        return
-
-    logger.info("OAuth not authenticated - initiating automated OAuth flow")
-
-    # Call /oauth/initiate to get authorization URL with valid state
-    # This ensures state is stored in _oauth_states for callback validation
     api_url = f"http://127.0.0.1:{config.http_port}/oauth/initiate"
 
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(api_url) as response:
                 if response.status != 200:
-                    logger.error(f"Failed to initiate OAuth: {response.status}")
-                    return
+                    body = await response.text()
+                    logger.error(f"Failed to initiate OAuth: {response.status} {body}")
+                    return False
 
                 data = await response.json()
                 auth_url = data["authorization_url"]
-                # State is now stored in _oauth_states by handle_oauth_initiate
     except Exception as e:
         logger.error(f"Failed to call /oauth/initiate: {e}")
-        return
+        return False
 
     logger.info("Opening browser for OAuth authorization...")
     logger.info(f"Authorization URL: {auth_url[:80]}...")
+    logger.info(f"Redirect URI (must match Google Console): {oauth_manager.redirect_uri}")
 
-    # Open browser in new thread (non-blocking)
-    def open_browser():
+    def open_browser() -> None:
         try:
             webbrowser.open(auth_url)
         except Exception as e:
@@ -116,32 +104,65 @@ async def handle_oauth_flow(config: AppConfig) -> None:
 
     threading.Thread(target=open_browser, daemon=True).start()
 
-    # Wait for user to complete authorization
     logger.info("Waiting for OAuth authorization... (complete in browser)")
-
-    # Poll for authentication status
-    max_wait_seconds = 300  # 5 minutes timeout
-    poll_interval = 2.0
-    waited: float = 0.0
-
+    waited = 0.0
     while waited < max_wait_seconds:
         await asyncio.sleep(poll_interval)
         waited += poll_interval
 
-        # Reload token from disk to check if it was saved
         loaded = await oauth_manager.load_token()
-        is_auth = oauth_manager.is_authenticated()
-        logger.debug(f"OAuth poll: loaded={loaded}, is_authenticated={is_auth}")
-
-        if is_auth:
+        if loaded and oauth_manager.is_authenticated():
             logger.info("OAuth authorization completed successfully!")
-            return
+            return True
 
-        # Show progress
         remaining = max_wait_seconds - waited
-        logger.info(f"Waiting for OAuth... ({remaining}s remaining)")
+        if int(waited) % 20 < poll_interval:
+            logger.info(f"Waiting for OAuth... ({remaining:.0f}s remaining)")
 
     logger.warning("OAuth authorization timed out - continuing without YouTube API access")
+    return False
+
+
+async def handle_oauth_flow(config: AppConfig, oauth_manager: OAuthManager | None) -> None:
+    """
+    Automated OAuth at startup.
+
+    - Missing token → open browser and wait for consent
+    - Existing token → probe refresh; on invalid_grant clear + open browser
+    """
+    if oauth_manager is None:
+        logger.debug("OAuth not configured - skipping OAuth flow")
+        return
+
+    # Probe existing token (refresh if expired)
+    async with aiohttp.ClientSession() as session:
+        usable = await oauth_manager.ensure_refreshable(session)
+
+    if usable:
+        logger.info("OAuth already authenticated (token usable)")
+        return
+
+    logger.info("OAuth not usable - initiating automated browser authorization")
+    await run_browser_oauth_flow(config, oauth_manager)
+
+
+async def oauth_reauth_watchdog(
+    config: AppConfig,
+    oauth_manager: OAuthManager,
+    reauth_event: asyncio.Event,
+) -> None:
+    """Background task: on revoked token, open browser and wait for reauth."""
+    while True:
+        try:
+            await reauth_event.wait()
+            reauth_event.clear()
+            logger.warning("OAuth reauth watchdog: starting browser authorization flow")
+            await run_browser_oauth_flow(config, oauth_manager, max_wait_seconds=300.0)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"OAuth reauth watchdog error: {e}", exc_info=True)
+            await asyncio.sleep(5.0)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -222,7 +243,8 @@ async def main_loop(
             # Loading screen detection and tracking
             # NEW: Use process detection for more accurate loading screen detection
             # Loading screen = iRacing process is running but SDK is not connected
-            iracing_process_running = reader.is_process_running()
+            # Process check uses subprocess (tasklist); keep it off the event loop
+            iracing_process_running = await asyncio.to_thread(reader.is_process_running)
             sdk_connected = reader.is_connected()
 
             # Loading screen: process running but SDK not connected
@@ -893,19 +915,8 @@ async def main_loop(
                     # Reset stream title tracking when OBS disconnects
                     last_stream_title = None
                     last_stream_selected = False
-                    # Try to reconnect OBS
-                    if not obs_client.is_connected():
-                        try:
-                            await obs_client.connect(max_retries=1, initial_backoff=1.0)
-                        except Exception as e:
-                            logger.debug(f"OBS reconnection attempt failed: {e}")
-            elif not connected_obs and not obs_client.is_connected():
-                # OBS is not connected and state hasn't changed (still trying to connect)
-                # Try to reconnect periodically
-                try:
-                    await obs_client.connect(max_retries=1, initial_backoff=1.0)
-                except Exception as e:
-                    logger.debug(f"OBS periodic reconnection attempt failed: {e}")
+                    # Reconnect is owned solely by background_obs_connect task
+            # When OBS is down, background_obs_connect owns reconnect (avoid dual connect races)
 
             # State machine already ticked above (with session info updated if needed)
             set_current_state(new_state)
@@ -1169,7 +1180,11 @@ async def run_service(config: AppConfig, config_path: str) -> None:
     oauth_manager = create_oauth_manager(
         client_id=config.oauth_client_id,
         client_secret=config.oauth_client_secret,
+        redirect_uri=f"http://localhost:{config.http_port}/oauth/callback",
     )
+    oauth_reauth_event = asyncio.Event()
+    if oauth_manager:
+        oauth_manager.bind_reauth_event(oauth_reauth_event)
     from irswitch.server.api import set_oauth_manager
 
     set_oauth_manager(oauth_manager)
@@ -1387,9 +1402,16 @@ async def run_service(config: AppConfig, config_path: str) -> None:
         logger.error(f"Failed to start API server: {e}", exc_info=True)
         raise
 
-    # --- Automatic OAuth Flow ---
-    await handle_oauth_flow(config)
+    # --- Automatic OAuth Flow (uses same manager as OBS/YouTube) ---
+    await handle_oauth_flow(config, oauth_manager)
     # --------------------------
+
+    oauth_reauth_task: asyncio.Task[None] | None = None
+    if oauth_manager is not None:
+        oauth_reauth_task = asyncio.create_task(
+            oauth_reauth_watchdog(config, oauth_manager, oauth_reauth_event)
+        )
+        logger.info("OAuth reauth watchdog started")
 
     # Start background task to continue trying to connect to OBS if not connected yet
     async def background_obs_connect():
@@ -1432,10 +1454,10 @@ async def run_service(config: AppConfig, config_path: str) -> None:
                                 set_current_state(new_state)
                     except Exception as e:
                         logger.debug(f"Background OBS connection attempt failed: {e}")
-                    await asyncio.sleep(10.0)  # Wait 10 seconds before next attempt
+                    await asyncio.sleep(5.0)  # Backoff between reconnect attempts
                 else:
-                    # Already connected, check periodically if still connected
-                    await asyncio.sleep(30.0)
+                    # Connected: short poll so disconnect is noticed without dual main-loop reconnect
+                    await asyncio.sleep(5.0)
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -1482,6 +1504,13 @@ async def run_service(config: AppConfig, config_path: str) -> None:
             await obs_connect_task
         except asyncio.CancelledError:
             pass
+
+        if oauth_reauth_task is not None:
+            oauth_reauth_task.cancel()
+            try:
+                await oauth_reauth_task
+            except asyncio.CancelledError:
+                pass
 
         # Cancel main loop
         main_task.cancel()

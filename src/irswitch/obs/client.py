@@ -75,11 +75,19 @@ class ObsClient:
 
         for attempt in range(max_retries):
             try:
-                # obsws-python ReqClient is synchronous, run in thread
+                # obsws-python ReqClient is synchronous, run in thread with timeout
                 def _connect() -> ReqClient:
                     return ReqClient(host=host, port=port, password=self.password)
 
-                self._client = await asyncio.to_thread(_connect)
+                connect_timeout_s = 5.0
+                try:
+                    self._client = await asyncio.wait_for(
+                        asyncio.to_thread(_connect), timeout=connect_timeout_s
+                    )
+                except TimeoutError as e:
+                    raise ConnectionError(
+                        f"OBS connect timed out after {connect_timeout_s:.0f}s"
+                    ) from e
                 self._connected = True
                 # Clear caches on new connection (profile/scene may have changed)
                 self._current_scene_cache = None
@@ -954,7 +962,7 @@ class ObsClient:
                         )
                     else:
                         try:
-                            from irswitch.oauth import OAuthError
+                            from irswitch.oauth import OAuthError, OAuthReauthRequired
 
                             logger.debug(
                                 f"Fetching stream info from YouTube API for broadcast_id: {broadcast_id}"
@@ -1081,8 +1089,20 @@ class ObsClient:
                                             logger.debug(
                                                 "OAuth token refreshed, will retry on next call"
                                             )
+                                        except OAuthReauthRequired as e:
+                                            logger.warning(
+                                                "OAuth reauth required after 401 refresh: %s", e
+                                            )
+                                            self._oauth_manager.request_interactive_reauth(
+                                                "youtube_api_401_invalid_grant"
+                                            )
                                         except OAuthError:
                                             logger.warning("OAuth token refresh failed")
+                        except OAuthReauthRequired as e:
+                            # Interactive reauth already requested inside get_valid_access_token
+                            logger.warning(
+                                "Skipping YouTube stream info until OAuth reauth completes: %s", e
+                            )
                         except Exception as e:
                             logger.warning(
                                 f"Failed to fetch extended stream info via OAuth: {e}",

@@ -227,6 +227,21 @@ Po nastaveni OAuth nebo API klice restartuj aplikaci a zkontroluj:
 Invoke-RestMethod -Uri "http://127.0.0.1:17321/oauth/status"
 ```
 
+### Automaticka autorizace / reauth
+
+Aplikace OAuth resi sama:
+
+1. **Pri startu**: pokud chybi token, nebo refresh selze (`invalid_grant` / revoked),
+   otevre prohlizec na Google consent (`/oauth/initiate`) a pocka na callback
+   `http://localhost:<http_port>/oauth/callback`.
+2. **Za behu**: pri revoked refresh tokenu smaze lokalni `data/youtube_oauth_token.json`,
+   znovu otevre prohlizec (max 1x za 5 minut, aby nebyl spam) a po uspesnem loginu
+   znovu tahá stream info.
+3. Redirect URI v Google Console musi sedet: `http://localhost:17321/oauth/callback`
+   (port = `app.http_port` v configu).
+
+Manualni trigger: `http://127.0.0.1:17321/oauth/initiate` nebo `POST /oauth/revoke` + restart.
+
 ---
 
 ## Kvoty a limity

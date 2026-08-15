@@ -211,9 +211,22 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 
 **Řešení**:
 1. Zkontroluj, že config soubor existuje a je validní
-2. Ověř, že všechny závislosti jsou nainstalované: `pip install -e .`
-3. Zkontroluj, že port 17321 není obsazený jinou aplikací
-4. Podívej se na error message - často obsahuje konkrétní problém
+2. Spouštěj přes `.\start_app.ps1` (preferuje `.venv`) nebo přímo `.\.venv\Scripts\irswitchd.exe --config config\config.ini`
+3. Ověř, že závislosti jsou v **tom samém** interpreteru: `.\.venv\Scripts\pip install -e .`
+4. Zkontroluj, že port 17321 není obsazený jinou aplikací
+5. Podívej se na error message - často obsahuje konkrétní problém
+
+### `PermissionError` / pád při `import aiohttp` (SSLKEYLOGFILE)
+
+**Příznaky**: Traceback končí na `ssl.create_default_context()` / `PermissionError` s cestou typu `\\?\Volume{...}\virtual_file.log`
+
+**Příčina**: Env `SSLKEYLOGFILE` ukazuje na nepřístupný soubor (časté u některých proxy/antivirus/IDE nástrojů). Python 3.14 pak při importu SSL kontextu spadne.
+
+**Řešení**:
+1. V aktuálním shellu: `Remove-Item Env:SSLKEYLOGFILE`
+2. Nebo smaž User/System proměnnou `SSLKEYLOGFILE` v Windows (pokud ji nepotřebuješ)
+3. `.\start_app.ps1` nepoužitelnou hodnotu vyčistí automaticky
+4. Doporučený Python pro vývoj: **3.11–3.13** (CI); 3.14 může být nestabilní u závislostí
 
 ### Jak zkontrolovat logy
 

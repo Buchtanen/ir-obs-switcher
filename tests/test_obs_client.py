@@ -47,6 +47,21 @@ async def test_connect_max_retries_exceeded(obs_client: ObsClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_connect_timeout(obs_client: ObsClient) -> None:
+    """OBS connect timeout is surfaced as ConnectionError (no hang)."""
+
+    async def _timeout(awaitable, timeout=None):  # noqa: ANN001, ARG001
+        # Close the coroutine created by to_thread to avoid "never awaited"
+        if hasattr(awaitable, "close"):
+            awaitable.close()
+        raise TimeoutError()
+
+    with patch("irswitch.obs.client.asyncio.wait_for", side_effect=_timeout):
+        with pytest.raises(ConnectionError):
+            await obs_client.connect(max_retries=1)
+
+
+@pytest.mark.asyncio
 async def test_disconnect(obs_client: ObsClient) -> None:
     """Test graceful disconnect."""
     mock_client = MagicMock()
