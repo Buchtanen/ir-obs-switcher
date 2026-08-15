@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class DrivingMode(str, Enum):
+class DrivingMode(StrEnum):
     CONNECTING = "CONNECTING"  # Waiting for OBS and iRacing connection
     LOADING = "LOADING"  # After connecting, waiting for iRacing lobby
     LOBBY = "LOBBY"  # iRacing lobby (replaces IDLE for active game)
