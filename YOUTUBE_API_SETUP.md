@@ -131,6 +131,15 @@ Pro zvyseni bezpecnosti muzes omezit API klic:
 6. Na TEST USERS klikni **Add Users** a pridej tvuj Gmail ucet
 7. Klikni na **Save and Continue**
 
+### Publishing status: Testing (dulezite)
+
+Dokud je OAuth consent screen ve stavu **Publishing status: Testing**:
+
+- **Refresh tokeny vyprsi asi po 7 dnech**. Pak Google vraci `invalid_grant` a lokalni token prestane fungovat.
+- Ucet, kterym autorizujes, **musi zustat v Test Users** — jinak consent/refresh selze.
+- Aplikace umi **auto-reauth** (otevre consent pri startu / pri revoked refresh), ale **uzivatel musi dokonciti souhlas v prohlizeci**.
+- Manualne: otevri `http://127.0.0.1:17321/oauth/initiate` (nebo port z configu) a projdi Google consent znovu.
+
 ### 3. Extrakce credentials z JSON
 
 Stazeny JSON soubor ma tento format:
@@ -284,6 +293,20 @@ Reseni:
 1. Zkontroluj, ze `GOOGLE_OAUTH_CLIENT_ID` a `GOOGLE_OAUTH_CLIENT_SECRET` jsou spravne nastaveny
 2. Over, ze OAuth consent screen je nastaven a Test Users jsou pridany
 3. Zkus iniciovat OAuth flow znovu na `/oauth/initiate`
+
+
+### OAuth: `invalid_grant` / opakovany reauth
+
+**Priznaky**: Refresh selze s `invalid_grant`, YouTube API nefunguje, aplikace znovu otevira consent, nebo `/oauth/status` hlasi chybu.
+
+**Typicka pricina (Testing mode)**: refresh token vyprsel (~7 dni) nebo ucet neni (uz) v Test Users.
+
+Reseni:
+1. Over v Google Cloud Console, ze **Publishing status** je Testing a tvuj Gmail je v **Test Users**
+2. Dokonciti consent v prohlizeci, pokud auto-reauth otevrel Google prihlaseni
+3. Manualne spust OAuth: `http://127.0.0.1:17321/oauth/initiate`
+4. Po uspesnem callbacku over `/oauth/status`
+5. Pokud se problem opakuje kazdych ~7 dni, je to ocekavane chovani Testing mode (ne bug aplikace) — bud znovu autorizuj, nebo zvaz Production / verification (pokud je to pro tebe relevantni)
 
 ### OAuth: Token vyprsel
 
