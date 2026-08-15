@@ -75,6 +75,7 @@ def reset_state() -> None:
     _restart_mode_active = False
     _shutdown_event = None
     _task_registry = TaskRegistry()
+    _config_container[0] = None
 
 
 def set_shutdown_event(event: asyncio.Event) -> None:
@@ -509,12 +510,29 @@ async def handle_config_reload(request: web.Request) -> web.Response:
         # Load and validate new config
         new_config = AppConfig.from_file(config_path)
 
-        # Update global config - suppress DeprecationWarning for intentional runtime update
+        # Shared runtime holder used by main_loop + API
+        set_app_config(new_config)
+
+        # Update aiohttp app config - suppress DeprecationWarning for intentional runtime update
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             request.app[APP_CONFIG] = new_config
 
-        logger.info("Config reloaded successfully")
+        # Apply live switching settings into the running state machine / policy
+        if _state_machine is not None:
+            _state_machine.apply_runtime_config(
+                scenes=new_config.scenes,
+                safe_scene=new_config.safe_scene,
+                debounce_ms=new_config.debounce_ms,
+                cooldown_ms=new_config.cooldown_ms,
+                override_seconds=new_config.override_seconds,
+                autoswitch_default=new_config.autoswitch_default,
+            )
+
+        logger.info(
+            "Config reloaded successfully (hot-reload applied to switching; "
+            "http/OBS/OAuth/log_file still require restart)"
+        )
         return web.json_response(
             {
                 "status": "success",

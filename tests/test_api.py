@@ -405,6 +405,92 @@ dashboard_event_log_size = 50
             assert data["status"] == "success"
             assert "message" in data
             assert APP_CONFIG in app
+            from irswitch.logic.policy import Policy
+            from irswitch.logic.state_machine import StateMachine
+            from irswitch.models import DrivingMode
+            from irswitch.server.api import get_app_config, set_state_machine
+
+            # Shared holder must mirror reloaded app config
+            shared = get_app_config()
+            assert shared is not None
+            assert shared.poll_hz == 10
+            assert shared.debounce_ms == 500
+
+            # With SM wired, reload must push switching knobs into Policy/SM
+            policy = Policy(
+                scenes={DrivingMode.IDLE: "IdleOld"},
+                safe_scene="SafeOld",
+            )
+            sm = StateMachine(
+                policy=policy,
+                debounce_ms=1,
+                cooldown_ms=1,
+                override_seconds=1,
+                autoswitch_default=False,
+            )
+            set_state_machine(sm)
+
+            config_file.write_text("""[app]
+http_host = 127.0.0.1
+http_port = 8080
+log_level = INFO
+notifications_enabled = true
+log_file =
+log_max_bytes = 10485760
+log_backup_count = 5
+
+[iracing]
+poll_hz = 20
+quit_stall_seconds = 0.4
+
+[obs]
+ws_url = ws://127.0.0.1:4455
+password = test_password
+required_profile =
+
+[switching]
+autoswitch_default = true
+debounce_ms = 777
+cooldown_ms = 888
+override_seconds = 99
+safe_scene = SafeNew
+auto_start_broadcast = false
+auto_start_at_percent = 50
+default_loading_time_seconds = 12.0
+auto_stop_stream = false
+stop_stream_after_seconds = 30
+
+[hotkeys]
+restart_hotkey =
+
+[scenes]
+IDLE = IdleNew
+GARAGE = Pits
+RACE = Race
+REPLAY = Replay
+QUIT = End
+RESTART = Restart
+
+[dashboards]
+dashboard_update_fps = 2
+dashboard_gr_background_image =
+dashboard_gr_logo_obs =
+dashboard_gr_logo_iracing =
+dashboard_gr_logo_app =
+dashboard_vr_icons_path =
+dashboard_event_log_size = 50
+""")
+            resp2 = await client.post("/config/reload")
+            assert resp2.status == 200
+            shared2 = get_app_config()
+            assert shared2 is not None
+            assert shared2.poll_hz == 20
+            assert shared2.debounce_ms == 777
+            assert sm._debounce_ms == 777
+            assert sm._cooldown_ms == 888
+            assert sm._override_seconds == 99
+            assert sm._policy.safe_scene == "SafeNew"
+            assert sm._policy.scenes[DrivingMode.IDLE] == "IdleNew"
 
 
 @pytest.mark.asyncio
