@@ -631,9 +631,10 @@ async def handle_stream_reinit(request: web.Request) -> web.Response:
         stream_info_full = _obs_client.get_cached_stream_info_full()
 
         # Propagate extended info into current SwitchState for WS/status consumers
-        if _current_state is not None:
-            from irswitch.models import SwitchState
+        from irswitch.models import SwitchState
 
+        state_for_status: SwitchState | None
+        if _current_state is not None:
             new_state = SwitchState(
                 connected_iracing=_current_state.connected_iracing,
                 connected_obs=_current_state.connected_obs,
@@ -653,7 +654,7 @@ async def handle_stream_reinit(request: web.Request) -> web.Response:
             set_current_state(new_state)
             state_for_status = new_state
         else:
-            state_for_status = _current_state
+            state_for_status = None
 
         event_log = get_event_log()
         await event_log.add_event(
