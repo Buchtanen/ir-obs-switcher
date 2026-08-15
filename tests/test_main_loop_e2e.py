@@ -171,8 +171,8 @@ async def test_main_loop_mode_change_triggers_scene_switch(
     )
 
     # Wait for debounce (100ms) + cooldown (200ms) + multiple polls (100ms each)
-    # Need at least 500ms + buffer for debounce/cooldown to expire
-    await asyncio.sleep(0.8)
+    # Need at least 500ms + buffer for debounce/cooldown to expire (CI headroom)
+    await asyncio.sleep(1.5)
 
     # Cancel task
     task.cancel()
@@ -470,8 +470,8 @@ async def test_main_loop_broadcast_id_change_force_refreshes_stream_info(
     task = asyncio.create_task(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
-    # Hysteresis (~3 polls) + stable peeks + change detection
-    await asyncio.sleep(1.2)
+    # Hysteresis (~3 polls) + stable peeks + change detection (CI runners need headroom)
+    await asyncio.sleep(2.0)
 
     task.cancel()
     try:

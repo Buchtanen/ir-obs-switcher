@@ -33,6 +33,7 @@ from irswitch.server.api import (
     get_app_config,
     get_current_state,
     get_restart_mode,
+    set_app_config,
     set_current_state,
     set_obs_client,
     set_reader,
@@ -233,6 +234,9 @@ async def main_loop(
     )
 
     event_log = get_event_log()
+    # Seed shared runtime holder so tests/hot-reload cannot pick up a stale config
+    # from a previous test or leave the loop on a closed-over outdated object.
+    set_app_config(config)
     logger.info("Starting main loop")
 
     while True:
@@ -1409,8 +1413,6 @@ async def run_service(config: AppConfig, config_path: str) -> None:
         app[APP_CONFIG_PATH] = config_path  # type: ignore[misc]  # Store config path for hot reload
 
         # Also set config in API module's container for backward compatibility
-        from irswitch.server.api import set_app_config
-
         set_app_config(config)
 
         logger.info("API application created successfully")

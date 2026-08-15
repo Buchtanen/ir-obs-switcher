@@ -75,6 +75,7 @@ def reset_state() -> None:
     _restart_mode_active = False
     _shutdown_event = None
     _task_registry = TaskRegistry()
+    _config_container[0] = None
 
 
 def set_shutdown_event(event: asyncio.Event) -> None:
