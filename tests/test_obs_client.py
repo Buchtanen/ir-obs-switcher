@@ -667,3 +667,23 @@ async def test_get_stream_info_does_not_call_api_when_key_missing(
             title, description = await obs_client.get_stream_info()
             # Should not be called when OAuth manager is missing
             mock_get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_stream_info_clears_cache_and_force_fetches(
+    obs_client: ObsClient,
+) -> None:
+    """refresh_stream_info owns clear + force get_stream_info."""
+    obs_client._stream_info_cache = ("Old", "OldDesc")
+    obs_client._stream_info_cache_broadcast_id = "old_id"
+
+    with patch.object(
+        obs_client, "get_stream_info", new_callable=AsyncMock, return_value=("New", "NewDesc")
+    ) as mock_get:
+        title, description = await obs_client.refresh_stream_info("unit_test", force=True)
+
+    assert title == "New"
+    assert description == "NewDesc"
+    assert obs_client._stream_info_cache is None
+    assert obs_client._stream_info_cache_broadcast_id is None
+    mock_get.assert_awaited_once_with(force_refresh=True)

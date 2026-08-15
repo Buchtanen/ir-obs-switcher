@@ -96,6 +96,13 @@ def mock_obs() -> MagicMock:
     obs.get_current_broadcast_id = AsyncMock(return_value=None)
     obs.get_cached_broadcast_id = MagicMock(return_value=None)
     obs.clear_stream_info_cache = MagicMock()
+
+    async def _refresh_stream_info(reason: str = "", *, force: bool = True):
+        if force:
+            obs.clear_stream_info_cache()
+        return await obs.get_stream_info(force_refresh=force)
+
+    obs.refresh_stream_info = AsyncMock(side_effect=_refresh_stream_info)
     obs.get_cached_stream_info = MagicMock(return_value=(None, None, False, False))
     obs._oauth_manager = None
     return obs
@@ -479,13 +486,16 @@ async def test_main_loop_broadcast_id_change_force_refreshes_stream_info(
     except asyncio.CancelledError:
         pass
 
-    mock_obs.clear_stream_info_cache.assert_called_once()
+    mock_obs.clear_stream_info_cache.assert_called()
+    assert mock_obs.clear_stream_info_cache.call_count >= 2
     force_refresh_calls = [
         c
         for c in mock_obs.get_stream_info.await_args_list
         if c.kwargs.get("force_refresh") is True or (c.args and c.args[0] is True)
     ]
     assert len(force_refresh_calls) >= 2, "select + broadcast change should each force_refresh"
+    refresh_reasons = [c.args[0] for c in mock_obs.refresh_stream_info.await_args_list if c.args]
+    assert "broadcast_id_changed" in refresh_reasons
 
     events = await event_log.get_all_events()
     changed = [e for e in events if e.type == "stream_broadcast_changed"]
@@ -523,7 +533,9 @@ async def test_main_loop_same_broadcast_id_does_not_refresh(
     except asyncio.CancelledError:
         pass
 
-    mock_obs.clear_stream_info_cache.assert_not_called()
+    # Select path clears once via refresh_stream_info; stable same-id must not refresh again
+    assert mock_obs.clear_stream_info_cache.call_count == 1
+    assert mock_obs.refresh_stream_info.await_count == 1, "only initial select refresh"
     assert mock_obs.get_stream_info.await_count == 1, "only initial select refresh"
 
     events = await event_log.get_all_events()

@@ -609,6 +609,7 @@ async def test_stream_reinit_success(app: web.Application, initial_state: Switch
     obs.is_connected.return_value = True
     obs.clear_stream_info_cache = MagicMock()
     obs.get_stream_info = AsyncMock(return_value=("Race Night", "desc"))
+    obs.refresh_stream_info = AsyncMock(return_value=("Race Night", "desc"))
     obs.get_cached_stream_info_full.return_value = {
         "title": "Race Night",
         "description": "desc",
@@ -645,5 +646,4 @@ async def test_stream_reinit_success(app: web.Application, initial_state: Switch
             data = await resp.json()
             assert data["status"] == "ok"
             assert data["stream_title"] == "Race Night"
-            obs.clear_stream_info_cache.assert_called_once()
-            obs.get_stream_info.assert_awaited_once_with(force_refresh=True)
+            obs.refresh_stream_info.assert_awaited_once_with("api_reinit", force=True)

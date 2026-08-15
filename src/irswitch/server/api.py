@@ -648,8 +648,7 @@ async def handle_stream_reinit(request: web.Request) -> web.Response:
         )
 
     try:
-        _obs_client.clear_stream_info_cache()
-        title, description = await _obs_client.get_stream_info(force_refresh=True)
+        title, description = await _obs_client.refresh_stream_info("api_reinit", force=True)
         stream_info_full = _obs_client.get_cached_stream_info_full()
 
         # Propagate extended info into current SwitchState for WS/status consumers
@@ -895,7 +894,7 @@ async def handle_oauth_callback(request: web.Request) -> web.Response:
 
                     async def refresh_stream_info():
                         try:
-                            await _obs_client.get_stream_info(force_refresh=True)
+                            await _obs_client.refresh_stream_info("oauth_callback", force=True)
                             logger.info("Stream info refreshed after OAuth authorization")
                         except Exception as e:
                             logger.warning(
@@ -975,7 +974,7 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
 
                     async def refresh_stream_info():
                         try:
-                            await _obs_client.get_stream_info(force_refresh=True)
+                            await _obs_client.refresh_stream_info("oauth_status", force=True)
                             logger.info("Stream info refreshed after OAuth status check")
                         except Exception as e:
                             logger.debug(f"Failed to refresh stream info: {e}", exc_info=True)

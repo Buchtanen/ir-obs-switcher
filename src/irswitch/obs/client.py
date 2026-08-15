@@ -49,6 +49,7 @@ class ObsClient:
         )
         # Reference to OAuth manager for YouTube API access
         self._oauth_manager: Any = None  # Set externally via set_oauth_manager()
+        self._stream_info_refresh_lock = asyncio.Lock()
         # Rate-limit final-fail connect ERROR logs while OBS stays down
         self._connect_fail_streak: int = 0
 
@@ -1228,6 +1229,23 @@ class ObsClient:
         self._stream_info_cache = None
         self._stream_info_cache_broadcast_id = None
         logger.debug("Stream info cache cleared")
+
+    async def refresh_stream_info(
+        self, reason: str = "", *, force: bool = True
+    ) -> tuple[str | None, str | None]:
+        """
+        Single ownership path for stream-info refresh (main loop, API, OAuth).
+
+        Serializes concurrent callers with a lock so clear+fetch cannot interleave.
+        """
+        async with self._stream_info_refresh_lock:
+            if reason:
+                logger.info("Refreshing stream info (%s)", reason)
+            else:
+                logger.debug("Refreshing stream info")
+            if force:
+                self.clear_stream_info_cache()
+            return await self.get_stream_info(force_refresh=force)
 
     def get_cached_stream_info(self) -> tuple[str | None, str | None, bool, bool]:
         """
