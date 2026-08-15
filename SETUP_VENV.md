@@ -2,6 +2,8 @@
 
 ## Vytvoření nového .venv
 
+Preferovaná verze Pythonu: **3.11–3.13** (stejně jako CI).
+
 ### Windows (PowerShell)
 
 ```powershell

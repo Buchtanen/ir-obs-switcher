@@ -46,6 +46,8 @@ Představ si situaci:
 
 ### 1. Instalace
 
+Doporučená verze Pythonu pro vývoj: **3.11–3.13** (CI matrix). Python **3.14+** může fungovat, ale u závislostí bývá nestabilnější — `start_app.ps1` na to soft-warnuje.
+
 ```powershell
 # Vytvoření virtual environment
 python -m venv .venv
