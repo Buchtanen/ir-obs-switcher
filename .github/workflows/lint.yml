@@ -55,6 +55,7 @@ jobs:
         run: |
           python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
 
+      # Keep pins in sync with [project.optional-dependencies].lint in pyproject.toml
       - name: Install and run ruff
         if: inputs.kind == 'ruff'
         run: |
@@ -64,13 +65,13 @@ jobs:
       - name: Install and run black
         if: inputs.kind == 'black'
         run: |
-          pip install black
+          pip install "black>=26.3.1,<27"
           black --check "${{ inputs.src_path }}" "${{ inputs.tests_path }}"
 
       - name: Install and run mypy
         if: inputs.kind == 'mypy'
         run: |
-          pip install mypy
+          pip install "mypy>=1.5,<2"
           pip install -e .
           mypy "${{ inputs.src_path }}"
         env:
