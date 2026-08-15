@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import sys
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlencode
 
 import aiohttp
 
@@ -19,6 +22,15 @@ logger = logging.getLogger(__name__)
 GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
+
+# Default cooldown between interactive reauth attempts (browser open)
+DEFAULT_REAUTH_COOLDOWN_S = 300.0
+
+
+def _is_invalid_grant(error_text: str) -> bool:
+    """Return True if Google token error indicates revoked/expired refresh token."""
+    lowered = error_text.lower()
+    return "invalid_grant" in lowered
 
 
 @dataclass
@@ -104,6 +116,54 @@ class OAuthManager:
 
         self._token: OAuthToken | None = None
         self._loaded_from_disk = False
+        self._reauth_event: asyncio.Event | None = None
+        self._reauth_cooldown_until: float = 0.0
+        self._reauth_cooldown_s = DEFAULT_REAUTH_COOLDOWN_S
+
+    def bind_reauth_event(self, event: asyncio.Event) -> None:
+        """Bind an asyncio.Event used to wake the interactive reauth watchdog."""
+        self._reauth_event = event
+
+    def clear_local_token(self) -> None:
+        """Delete persisted token and clear in-memory state (no Google revoke call)."""
+        if self.token_path.exists():
+            try:
+                self.token_path.unlink()
+            except OSError as e:
+                logger.warning(f"Failed to delete OAuth token file: {e}")
+        self._token = None
+        self._loaded_from_disk = True  # avoid reloading deleted/corrupt file blindly
+        logger.info("Local OAuth token cleared")
+
+    def request_interactive_reauth(self, reason: str = "reauth_required") -> bool:
+        """
+        Request browser-based reauthorization (rate-limited).
+
+        Returns:
+            True if a new reauth was scheduled, False if skipped (cooldown / no event).
+        """
+        now = time.monotonic()
+        if now < self._reauth_cooldown_until:
+            logger.debug(
+                "OAuth interactive reauth skipped (cooldown %.0fs remaining): %s",
+                self._reauth_cooldown_until - now,
+                reason,
+            )
+            return False
+
+        self.clear_local_token()
+        self._reauth_cooldown_until = now + self._reauth_cooldown_s
+
+        if self._reauth_event is None:
+            logger.warning(
+                "OAuth reauth required (%s) but no reauth event bound; open /oauth/initiate manually",
+                reason,
+            )
+            return False
+
+        self._reauth_event.set()
+        logger.warning("OAuth interactive reauth requested: %s", reason)
+        return True
 
     def get_authorization_url(self, state: str) -> str:
         """
@@ -124,8 +184,7 @@ class OAuthManager:
             "prompt": "consent",  # Force consent to get refresh token
             "state": state,
         }
-        query_string = "&".join(f"{k}={v}" for k, v in params.items())
-        return f"{GOOGLE_OAUTH_URL}?{query_string}"
+        return f"{GOOGLE_OAUTH_URL}?{urlencode(params)}"
 
     async def exchange_code_for_tokens(
         self,
@@ -206,6 +265,11 @@ class OAuthManager:
         async with http_session.post(GOOGLE_TOKEN_URL, data=data) as response:
             if response.status != 200:
                 error_text = await response.text()
+                if _is_invalid_grant(error_text):
+                    self.clear_local_token()
+                    raise OAuthReauthRequired(
+                        f"Token refresh failed ({response.status}): {error_text}"
+                    )
                 raise OAuthError(f"Token refresh failed ({response.status}): {error_text}")
 
             token_data = await response.json()
@@ -213,9 +277,12 @@ class OAuthManager:
             expires_in = int(token_data.get("expires_in", 3600))
             expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
 
+            # Prefer new refresh_token if Google rotated it
+            refresh_token = token_data.get("refresh_token") or self._token.refresh_token
+
             token = OAuthToken(
                 access_token=token_data["access_token"],
-                refresh_token=self._token.refresh_token,  # Keep same refresh token
+                refresh_token=refresh_token,
                 expires_at=expires_at,
                 token_type=token_data.get("token_type", "Bearer"),
                 scope=token_data.get("scope"),
@@ -230,17 +297,21 @@ class OAuthManager:
     async def get_valid_access_token(
         self,
         http_session: aiohttp.ClientSession,
+        *,
+        request_reauth: bool = True,
     ) -> str:
         """
         Get a valid access token, refreshing if necessary.
 
         Args:
             http_session: aiohttp session for HTTP requests
+            request_reauth: If True, schedule interactive browser reauth on revoked token
 
         Returns:
             Valid access token string
 
         Raises:
+            OAuthReauthRequired: Refresh token revoked — interactive reauth needed
             OAuthError: If no token available or refresh fails
         """
         # Load token from disk if not loaded
@@ -249,14 +320,46 @@ class OAuthManager:
             self._loaded_from_disk = True
 
         if self._token is None:
-            raise OAuthError("No OAuth token available. Please authenticate first.")
+            if request_reauth:
+                self.request_interactive_reauth("missing_token")
+            raise OAuthReauthRequired("No OAuth token available. Please authenticate first.")
 
         # Refresh if expired or expiring soon
         if self._token.is_expired(margin_seconds=120):
             logger.debug("OAuth token expired or expiring soon, refreshing...")
-            await self.refresh_access_token(http_session)
+            try:
+                await self.refresh_access_token(http_session)
+            except OAuthReauthRequired:
+                if request_reauth:
+                    self.request_interactive_reauth("invalid_grant_or_missing_token")
+                raise
+
+        if self._token is None:
+            if request_reauth:
+                self.request_interactive_reauth("token_unavailable_after_refresh")
+            raise OAuthReauthRequired("OAuth token unavailable after refresh")
 
         return self._token.access_token
+
+    async def ensure_refreshable(
+        self,
+        http_session: aiohttp.ClientSession,
+    ) -> bool:
+        """
+        Probe that we have a usable token (refresh if expired).
+
+        Returns:
+            True if access token is usable, False if interactive reauth is required.
+        """
+        try:
+            await self.get_valid_access_token(http_session, request_reauth=False)
+            return True
+        except OAuthReauthRequired as e:
+            logger.warning("OAuth token not usable: %s", e)
+            return False
+        except OAuthError as e:
+            logger.warning("OAuth token check failed: %s", e)
+            return False
 
     async def revoke_token(self, http_session: aiohttp.ClientSession) -> None:
         """
@@ -278,22 +381,23 @@ class OAuthManager:
             pass  # Ignore response - revocation may fail but we continue
 
         # Delete local token file
-        if self.token_path.exists():
-            self.token_path.unlink()
-
-        self._token = None
+        self.clear_local_token()
         logger.info("OAuth token revoked")
 
     async def save_token(self, token: OAuthToken) -> None:
         """Save token to disk."""
         self.token_path.parent.mkdir(parents=True, exist_ok=True)
         self.token_path.write_text(token.to_json(), encoding="utf-8")
+        self._token = token
+        self._loaded_from_disk = True
         logger.debug(f"OAuth token saved to {self.token_path}")
 
     async def load_token(self) -> bool:
         """Load token from disk."""
         if not self.token_path.exists():
             logger.debug(f"OAuth token file not found: {self.token_path}")
+            self._token = None
+            self._loaded_from_disk = True
             return False
 
         json_str = self.token_path.read_text(encoding="utf-8")
@@ -301,9 +405,12 @@ class OAuthManager:
 
         if token is None:
             logger.warning(f"Invalid OAuth token file: {self.token_path}")
+            self._token = None
+            self._loaded_from_disk = True
             return False
 
         self._token = token
+        self._loaded_from_disk = True
         logger.debug(f"OAuth token loaded from {self.token_path}")
         return True
 
@@ -316,6 +423,7 @@ class OAuthManager:
                 token = OAuthToken.from_json(json_str)
                 if token is not None:
                     self._token = token
+                    self._loaded_from_disk = True
                     logger.debug(f"OAuth token loaded synchronously from {self.token_path}")
             except Exception as e:
                 logger.debug(f"Failed to load OAuth token synchronously: {e}")
@@ -328,6 +436,12 @@ class OAuthManager:
 
 class OAuthError(Exception):
     """OAuth-related error."""
+
+    pass
+
+
+class OAuthReauthRequired(OAuthError):
+    """Refresh token missing/revoked — interactive browser authorization required."""
 
     pass
 
