@@ -24,7 +24,7 @@ function Read-IniAppHostPort {
     param([string]$Path)
 
     $section = ""
-    $host = "127.0.0.1"
+    $httpHost = "127.0.0.1"
     $port = 17321
 
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
@@ -37,7 +37,7 @@ function Read-IniAppHostPort {
         if ($section -ne "app") { continue }
 
         if ($t -match '^\s*http_host\s*=\s*(.+)\s*$') {
-            $host = $Matches[1].Trim()
+            $httpHost = $Matches[1].Trim()
             continue
         }
         if ($t -match '^\s*http_port\s*=\s*(\d+)\s*$') {
@@ -46,14 +46,28 @@ function Read-IniAppHostPort {
         }
     }
 
-    return @{ Host = $host; Port = $port }
+    return @{ Host = $httpHost; Port = $port }
 }
 
-$cfg = Resolve-Path -Path $ConfigPath -ErrorAction Stop
-$app = Read-IniAppHostPort -Path $cfg.Path
+if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+    $scriptRoot = $PSScriptRoot
+} else {
+    $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+$scriptRoot = [System.IO.Path]::GetFullPath($scriptRoot)
+
+# Relative -ConfigPath is resolved against the script directory (dist/), not the caller's CWD.
+if (-not [System.IO.Path]::IsPathRooted($ConfigPath)) {
+    $ConfigPath = Join-Path -Path $scriptRoot -ChildPath $ConfigPath
+}
+$cfgAbs = [System.IO.Path]::GetFullPath($ConfigPath)
+if (-not (Test-Path -LiteralPath $cfgAbs)) {
+    throw "Config not found: $cfgAbs"
+}
+
+$app = Read-IniAppHostPort -Path $cfgAbs
 
 $path = if ($Vr) { "/vr-status" } else { "/gr-status" }
 $url = "http://{0}:{1}{2}" -f $app.Host, $app.Port, $path
 
 Start-Process $url | Out-Null
-
