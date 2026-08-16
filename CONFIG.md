@@ -59,6 +59,8 @@ http_port = 17321
 log_level = DEBUG
 ```
 
+**Runtime toggle (nepersistuje)**: `POST /logging/level` s `{"level":"DEBUG"}` nebo `{"level":"INFO"}` změní úroveň jen pro běžící proces (GR badge/tlačítko). Po restartu se znovu použije `app.log_level` z INI. Změna `log_level` v INI + hot-reload **neaplikuje** logging handlers — viz Hot-reload / needs restart.
+
 ### `notifications_enabled` (výchozí: `true`)
 
 Zapne/vypne Windows notifikace při změně připojení.

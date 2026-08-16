@@ -14,6 +14,8 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /health](#get-health)
   - [GET /metrics](#get-metrics)
   - [POST /config/reload](#post-configreload)
+  - [GET /logging/level](#get-logginglevel)
+  - [POST /logging/level](#post-logginglevel)
   - [POST /reset](#post-reset)
   - [POST /shutdown](#post-shutdown)
   - [POST /restart](#post-restart)
@@ -319,6 +321,62 @@ Prázdné seznamy = žádný tracked klíč se nezměnil, nebo nebylo s čím po
 ```
 
 **Poznámka**: Hot-reload aktualizuje sdílený runtime config + switching (scenes, debounce/cooldown, auto-start/stop, `poll_hz`). **Nepřestartuje** HTTP server ani OBS/OAuth spojení — detaily a whitelist klíčů viz `CONFIG.md` sekce Hot-reload. GR dashboard po reloadu ukáže toast + panel se seznamy `applied_live` / `needs_restart`.
+
+---
+
+### GET /logging/level
+
+Aktuální runtime log level procesu (nepersistuje do `config.ini`).
+
+**URL**: `http://127.0.0.1:17321/logging/level`
+
+**Method**: `GET`
+
+**Response** (200 OK):
+```json
+{
+  "level": "INFO",
+  "persistent": false
+}
+```
+
+---
+
+### POST /logging/level
+
+Dočasná změna log levelu běžícího procesu. Nepíše do `config.ini`; po restartu procesu platí znovu `app.log_level`.
+
+**URL**: `http://127.0.0.1:17321/logging/level`
+
+**Method**: `POST`
+
+**Body**:
+```json
+{
+  "level": "DEBUG"
+}
+```
+
+Povolené hodnoty: `DEBUG`, `INFO` (case-insensitive).
+
+**Response** (200 OK):
+```json
+{
+  "status": "success",
+  "level": "DEBUG",
+  "persistent": false,
+  "message": "Log level updated for this process only; resets on restart"
+}
+```
+
+**Error Response** (400):
+```json
+{
+  "error": "level must be DEBUG or INFO"
+}
+```
+
+**Poznámka**: GR dashboard má badge + „Toggle Debug Logging“. Pro trvalou změnu uprav `app.log_level` v INI a restartuj proces.
 
 ---
 

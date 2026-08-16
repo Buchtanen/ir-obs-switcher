@@ -542,6 +542,48 @@ async def test_config_reload_no_config_path(app: web.Application) -> None:
 
 
 @pytest.mark.asyncio
+async def test_logging_level_get_and_set(app: web.Application) -> None:
+    """Test GET/POST /logging/level runtime toggle (non-persistent)."""
+    import logging
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.util.logging import set_runtime_log_level
+
+    set_runtime_log_level("INFO")
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/logging/level")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["level"] == "INFO"
+            assert data["persistent"] is False
+
+            resp_dbg = await client.post("/logging/level", json={"level": "DEBUG"})
+            assert resp_dbg.status == 200
+            dbg = await resp_dbg.json()
+            assert dbg["status"] == "success"
+            assert dbg["level"] == "DEBUG"
+            assert dbg["persistent"] is False
+            assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
+
+            resp_info = await client.post("/logging/level", json={"level": "info"})
+            assert resp_info.status == 200
+            info = await resp_info.json()
+            assert info["level"] == "INFO"
+            assert logging.getLogger().getEffectiveLevel() == logging.INFO
+
+            resp_bad = await client.post("/logging/level", json={"level": "WARNING"})
+            assert resp_bad.status == 400
+            bad = await resp_bad.json()
+            assert "error" in bad
+
+            resp_missing = await client.post("/logging/level", json={})
+            assert resp_missing.status == 400
+
+
+@pytest.mark.asyncio
 async def test_shutdown_success(app: web.Application) -> None:
     """Test POST /shutdown endpoint."""
     import asyncio
