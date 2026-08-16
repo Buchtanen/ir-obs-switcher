@@ -9,6 +9,7 @@ Oficiální releasy (tag `vX.Y.Z`, GitHub Release artefakty) řídí **Release P
 - [Vytvoření EXE souboru](#vytvoření-exe-souboru)
 - [Výstup build procesu](#výstup-build-procesu)
 - [Instalace a provoz](#instalace-a-provoz)
+- [Manual smoke (real dist)](#manual-smoke-real-dist)
 - [Zastavení služby (Stopping the service)](#zastavení-služby-stopping-the-service)
 - [Automatické spuštění při startu systému](#automatické-spuštění-při-startu-systému)
 - [Cesty v konfiguraci](#cesty-v-konfiguraci)
@@ -93,6 +94,37 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Uninstall
 ```
 
 **Více informací**: Viz [CONFIG.md](CONFIG.md) pro detailní popis konfigurace.
+
+### Manual smoke (real dist)
+
+Po buildu / stažení release artefaktu ověř na **reálném** `dist/` (ne jen unit testy). Wizard je interaktivní — tenhle checklist je ruční.
+
+**Předpoklady**
+- Adresář `dist/` obsahuje: `irswitchd.exe`, `Install.ps1`, `Open-Dashboard.ps1`, `config/config.example.ini`
+- Volitelně non-interactive layout assert (bez wizardu):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-dist.ps1 -DistRoot .\dist
+```
+
+**Checklist**
+
+- [ ] **Layout**: z `dist/` (ne jiného CWD) existují exe + skripty + `config.example.ini` (nebo projde `smoke-dist.ps1`)
+- [ ] **Wizard**: `powershell -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Wizard` → vznikne `config\config.ini`, Scheduled Task **iRacing OBS Switcher**, desktop zkratky Start + Dashboard
+- [ ] **Start**: `-StartNow` nebo Start zkratka → běží `irswitchd.exe`; `GET http://127.0.0.1:17321/gr-status` (nebo host/port z configu) odpovídá
+- [ ] **Dashboard**: zkratka / `Open-Dashboard.ps1` otevře URL odvozenou z `config.ini` (ne hardcodovaný port mimo config)
+- [ ] **Graceful stop**: `POST /shutdown` (nebo GR Dashboard **Shutdown Service**) → proces skončí; teprve potom uninstall
+- [ ] **Uninstall**: `Install.ps1 -Uninstall` (nebo `-UninstallTask` + zkratky) → task + desktop zkratky pryč; `config/` a `logs/` zůstanou
+- [ ] **Poznámka**: `-Uninstall` **neukončí** běžící proces (už dokumentováno výše) — nejdřív shutdown
+
+Volitelně po instalaci / odinstalaci:
+
+```powershell
+# Po wizardu:
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-dist.ps1 -DistRoot .\dist -AssertInstalled
+# Po -Uninstall:
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\smoke-dist.ps1 -DistRoot .\dist -AssertUninstalled
+```
 
 ### 2. Ruční konfigurace (pokud nechceš wizard)
 
