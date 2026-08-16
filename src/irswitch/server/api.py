@@ -501,14 +501,20 @@ async def handle_config_reload(request: web.Request) -> web.Response:
     import warnings
 
     from irswitch.config import AppConfig
+    from irswitch.config_reload import classify_reload_diff
 
     config_path = request.app.get(APP_CONFIG_PATH)
     if not config_path:
         return web.json_response({"error": "Config path not available"}, status=500)
 
     try:
+        old_config = get_app_config()
+        if old_config is None:
+            old_config = request.app.get(APP_CONFIG)
+
         # Load and validate new config
         new_config = AppConfig.from_file(config_path)
+        applied_live, needs_restart = classify_reload_diff(old_config, new_config)
 
         # Shared runtime holder used by main_loop + API
         set_app_config(new_config)
@@ -530,13 +536,16 @@ async def handle_config_reload(request: web.Request) -> web.Response:
             )
 
         logger.info(
-            "Config reloaded successfully (hot-reload applied to switching; "
-            "http/OBS/OAuth/log_file still require restart)"
+            "Config reloaded successfully (applied_live=%s needs_restart=%s)",
+            applied_live,
+            needs_restart,
         )
         return web.json_response(
             {
                 "status": "success",
                 "message": "Config reloaded successfully",
+                "applied_live": applied_live,
+                "needs_restart": needs_restart,
             }
         )
     except FileNotFoundError as e:

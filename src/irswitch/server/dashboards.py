@@ -315,6 +315,41 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             flex-wrap: wrap;
         }}
 
+        .config-reload-panel {{
+            display: none;
+            margin-bottom: 12px;
+            padding: 12px 14px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            font-size: 0.85em;
+            line-height: 1.45;
+        }}
+
+        .config-reload-panel.visible {{
+            display: block;
+        }}
+
+        .config-reload-panel.needs-restart {{
+            border-color: rgba(255, 152, 0, 0.5);
+            background: rgba(255, 152, 0, 0.12);
+        }}
+
+        .config-reload-panel h4 {{
+            margin: 0 0 8px 0;
+            font-size: 0.95em;
+            font-weight: 600;
+        }}
+
+        .config-reload-panel .reload-keys {{
+            font-family: ui-monospace, Consolas, monospace;
+            word-break: break-word;
+        }}
+
+        .config-reload-panel .reload-section + .reload-section {{
+            margin-top: 8px;
+        }}
+
         button {{
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -897,6 +932,8 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
             <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
         </div>
+
+        <div id="config-reload-panel" class="config-reload-panel" aria-live="polite"></div>
         
         <div class="event-log">
             <h3>Event Log</h3>
@@ -1586,13 +1623,58 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }}
         }}
         
+        function formatReloadKeys(keys) {{
+            if (!keys || keys.length === 0) {{
+                return '(none)';
+            }}
+            return keys.join(', ');
+        }}
+
+        function updateConfigReloadPanel(appliedLive, needsRestart) {{
+            const panel = document.getElementById('config-reload-panel');
+            if (!panel) return;
+
+            const live = Array.isArray(appliedLive) ? appliedLive : [];
+            const restart = Array.isArray(needsRestart) ? needsRestart : [];
+            panel.classList.add('visible');
+            panel.classList.toggle('needs-restart', restart.length > 0);
+            panel.innerHTML = `
+                <h4>Config reload result</h4>
+                <div class="reload-section">
+                    <strong>Applied live:</strong>
+                    <div class="reload-keys">${{formatReloadKeys(live)}}</div>
+                </div>
+                <div class="reload-section">
+                    <strong>Needs restart:</strong>
+                    <div class="reload-keys">${{formatReloadKeys(restart)}}</div>
+                </div>
+            `;
+        }}
+
         async function reloadConfig() {{
             try {{
                 const response = await fetch(`${{API_BASE}}/config/reload`, {{ method: 'POST' }});
                 const data = await response.json();
                 
                 if (response.ok) {{
-                    showToast('Config Reloaded', 'Configuration reloaded successfully', 'success');
+                    const live = data.applied_live || [];
+                    const restart = data.needs_restart || [];
+                    updateConfigReloadPanel(live, restart);
+                    if (restart.length > 0) {{
+                        showToast(
+                            'Config Reloaded — Restart Needed',
+                            `Restart for: ${{formatReloadKeys(restart)}}`,
+                            'warning'
+                        );
+                    }} else if (live.length > 0) {{
+                        showToast(
+                            'Config Reloaded',
+                            `Applied live: ${{formatReloadKeys(live)}}`,
+                            'success'
+                        );
+                    }} else {{
+                        showToast('Config Reloaded', 'No tracked keys changed', 'success');
+                    }}
                 }} else {{
                     showToast('Config Reload Failed', data.error || 'Unknown error', 'error');
                 }}

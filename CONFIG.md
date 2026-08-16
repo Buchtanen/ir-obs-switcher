@@ -604,6 +604,13 @@ dashboard_vr_icons_path = assets/vr_icons/
 
 Po změně `config.ini` můžeš zavolat `POST /config/reload` (nebo tlačítko v dashboardu, pokud je). Aplikace **nepřepisuje** celý proces — živě se přenačte sdílený runtime config.
 
+Response obsahuje diff vůči předchozímu runtime configu:
+
+- `applied_live` — změněné klíče ze seznamu níže (platí ihned)
+- `needs_restart` — změněné klíče ze restart whitelistu (stále vyžadují restart procesu)
+
+GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
+
 ### Platí ihned (bez restartu)
 
 - `[scenes]` mapování + `switching.safe_scene`
