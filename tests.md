@@ -55,11 +55,26 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 - **Proč**: Základní funkcionalita - když `IsOnTrack` je True, musí být detekován RACE mód
 - **Očekávaný výsledek**: `DrivingMode.RACE`
 
-#### `test_extract_mode_garage_when_in_garage`
-- **Co testuje**: Detekce GARAGE módu když je hráč v garáži
+#### `test_extract_mode_garage_when_garage_visible`
+- **Co testuje**: Detekce GARAGE módu když je vidět garage screen (`IsGarageVisible`)
 - **Proč**: Správná detekce garáže je důležitá pro přepnutí na správnou scénu
 - **Očekávaný výsledek**: `DrivingMode.GARAGE`
 - **Poznámka**: Testuje i string hodnoty ("true") pro robustnost
+
+#### `test_extract_mode_in_garage_physics_without_screen_is_lobby`
+- **Co testuje**: `IsInGarage` bez `IsGarageVisible` není GARAGE
+- **Proč**: Po loadu je auto ve stání i v lobby; to nesmí přepnout na Back
+- **Očekávaný výsledek**: `DrivingMode.LOBBY`
+
+#### `test_extract_mode_session_screen_with_stall_physics_is_lobby`
+- **Co testuje**: Session screen + stall physics = LOBBY
+- **Proč**: GetInCar lobby po joinu session
+- **Očekávaný výsledek**: `DrivingMode.LOBBY`
+
+#### `test_extract_mode_garage_fallback_without_visible_flag`
+- **Co testuje**: Fallback když `IsGarageVisible` v snapshotu chybí
+- **Proč**: Starší/částečná telemetrie
+- **Očekávaný výsledek**: `DrivingMode.GARAGE`
 
 #### `test_extract_mode_idle_by_default`
 - **Co testuje**: Výchozí mód když nejsou žádná data
@@ -262,6 +277,21 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 - **Co testuje**: Optimalizace - nepřepínat když je target stejný jako current
 - **Proč**: Zbytečné přepínání na stejnou scénu je neefektivní
 - **Očekávaný výsledek**: `last_switch_ts` se neaktualizuje, žádné přepnutí
+
+#### `test_post_load_garage_flicker_does_not_switch_to_garage`
+- **Co testuje**: První GARAGE po CONNECTING nesmí přepnout scénu
+- **Proč**: Po loadu SDK hlásí stall physics (falešný GARAGE) ještě v lobby
+- **Očekávaný výsledek**: ignore GARAGE, po přechodu na LOBBY target lobby scéna
+
+#### `test_post_load_stable_garage_switches_after_grace`
+- **Co testuje**: Stabilní GARAGE 3 s po loadu přepne na garage scénu
+- **Proč**: Skutečná garáž (load přímo do garage UI) se nesmí zaseknout
+- **Očekávaný výsledek**: `grace_period_timeout:GARAGE`
+
+#### `test_post_load_race_still_switches_after_debounce`
+- **Co testuje**: RACE po CONNECTING jde hned po debounce
+- **Proč**: Grace period se netýká RACE/REPLAY
+- **Očekávaný výsledek**: po debounce target race/VR scéna
 
 ---
 
