@@ -49,6 +49,36 @@ Pokud dáš `semver:major`, PR musí mít jasně označený breaking change:
   - vznikne tag `vX.Y.Z`
   - proběhne build distribuce a vytvoří se GitHub Release s artefakty
 
+### Repo setting (povinné pro Actions)
+
+Release Please běží s výchozím `GITHUB_TOKEN`. Ten **nesmí vytvářet ani schvalovat PR**, dokud admin v repo settings nezapne:
+
+**Settings → Actions → General → Workflow permissions →**  
+**Allow GitHub Actions to create and approve pull requests** = ON
+
+Toto **nelze opravit jen commitem** — bez tohoto checkboxu workflow selže s chybou typu:
+
+```text
+GitHub Actions is not permitted to create or approve pull requests.
+```
+
+### Symptom: orphan Release Please větev
+
+Když Actions smí pushnout větev, ale **nesmí vytvořit PR**, typicky vznikne (nebo zůstane) větev ve stylu:
+
+`release-please--branches--master--components--irswitch`
+
+…ale **žádný open Release PR** (label `autorelease: pending`). To je symptom chybějícího permissions checkboxu výše (ne „rozbitého“ release-please configu).
+
+### Recovery po burst mergeích / failed Release Please
+
+1. Ověř, že je zapnuté **Allow GitHub Actions to create and approve pull requests**.
+2. Po sérii rychlých merge do `master` (nebo po failed runu) **re-run** workflow **Release Please** na aktuálním `master` (Actions → Release Please → Re-run), nebo pushni prázdný/no-op commit jen pokud re-run nestačí.
+3. Ověř výsledek: existuje open Release PR s labelem `autorelease: pending`.
+4. Pokud zůstala orphan větev bez PR a po permissions + re-run pořád nic: smaž orphan větev `release-please--branches--…` a znovu spusť Release Please (vytvoří větev + PR znovu).
+
+Workflow má `concurrency` group `release-please-master` (`cancel-in-progress: false`), aby paralelní runy po burst mergeích nesoupeřily o stejný ref.
+
 ## Tagy a verze
 
 - Tagy jsou ve formátu **`vX.Y.Z`**.
