@@ -92,6 +92,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Vypnuto",
         "on": "ZAP",
         "off": "VYP",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Provoz v degradovaném stavu",
+        "health_banner_title_unhealthy": "Služba není zdravá",
+        "health_banner_tip_iracing": (
+            "Spusťte iRacing (nebo počkejte, až poběží simulace). "
+            "Přepínání scén potřebuje telemetrii."
+        ),
+        "health_banner_tip_obs": (
+            "Spusťte OBS a zapněte WebSocket (Nástroje → Nastavení WebSocket serveru). "
+            "Zkontrolujte host/port/heslo v config.ini."
+        ),
     },
     "EN": {
         "connected": "Connected",
@@ -168,6 +179,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Disabled",
         "on": "ON",
         "off": "OFF",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Running in a degraded state",
+        "health_banner_title_unhealthy": "Service is unhealthy",
+        "health_banner_tip_iracing": (
+            "Start iRacing (or wait until the sim is running). " "Scene switching needs telemetry."
+        ),
+        "health_banner_tip_obs": (
+            "Start OBS and enable WebSocket (Tools → WebSocket Server Settings). "
+            "Check host/port/password in config.ini."
+        ),
     },
     "DE": {
         "connected": "Verbunden",
@@ -244,6 +265,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Deaktiviert",
         "on": "EIN",
         "off": "AUS",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Betrieb im eingeschränkten Zustand",
+        "health_banner_title_unhealthy": "Dienst ist nicht gesund",
+        "health_banner_tip_iracing": (
+            "Starten Sie iRacing (oder warten Sie, bis die Simulation läuft). "
+            "Szenenwechsel benötigt Telemetrie."
+        ),
+        "health_banner_tip_obs": (
+            "Starten Sie OBS und aktivieren Sie WebSocket (Extras → WebSocket-Server-Einstellungen). "
+            "Prüfen Sie Host/Port/Passwort in config.ini."
+        ),
     },
     "FR": {
         "connected": "Connecté",
@@ -320,6 +352,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Désactivé",
         "on": "ON",
         "off": "OFF",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Fonctionnement en état dégradé",
+        "health_banner_title_unhealthy": "Le service n'est pas sain",
+        "health_banner_tip_iracing": (
+            "Démarrez iRacing (ou attendez que le simulateur tourne). "
+            "Le changement de scène nécessite la télémétrie."
+        ),
+        "health_banner_tip_obs": (
+            "Démarrez OBS et activez WebSocket (Outils → Paramètres du serveur WebSocket). "
+            "Vérifiez host/port/mot de passe dans config.ini."
+        ),
     },
     "SP": {
         "connected": "Conectado",
@@ -396,6 +439,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Deshabilitado",
         "on": "ON",
         "off": "OFF",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Funcionando en estado degradado",
+        "health_banner_title_unhealthy": "El servicio no está saludable",
+        "health_banner_tip_iracing": (
+            "Inicia iRacing (o espera a que el simulador esté en ejecución). "
+            "El cambio de escenas necesita telemetría."
+        ),
+        "health_banner_tip_obs": (
+            "Inicia OBS y activa WebSocket (Herramientas → Ajustes del servidor WebSocket). "
+            "Comprueba host/puerto/contraseña en config.ini."
+        ),
     },
     "PL": {
         "connected": "Połączono",
@@ -472,6 +526,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Wyłączone",
         "on": "WŁ",
         "off": "WYŁ",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Praca w stanie zdegradowanym",
+        "health_banner_title_unhealthy": "Usługa jest niezdrowa",
+        "health_banner_tip_iracing": (
+            "Uruchom iRacing (lub poczekaj, aż symulator będzie działał). "
+            "Przełączanie scen wymaga telemetrii."
+        ),
+        "health_banner_tip_obs": (
+            "Uruchom OBS i włącz WebSocket (Narzędzia → Ustawienia serwera WebSocket). "
+            "Sprawdź host/port/hasło w config.ini."
+        ),
     },
     "HU": {
         "connected": "Csatlakozva",
@@ -548,6 +613,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "disabled": "Letiltva",
         "on": "BE",
         "off": "KI",
+        # Health banner (GR)
+        "health_banner_title_degraded": "Korlátozott állapotban fut",
+        "health_banner_title_unhealthy": "A szolgáltatás nem egészséges",
+        "health_banner_tip_iracing": (
+            "Indítsd az iRacinget (vagy várj, amíg a szimulátor fut). "
+            "A jelenetváltáshoz telemetria kell."
+        ),
+        "health_banner_tip_obs": (
+            "Indítsd az OBS-t és kapcsold be a WebSocketet (Eszközök → WebSocket szerver beállítások). "
+            "Ellenőrizd a host/port/jelszót a config.ini-ben."
+        ),
     },
 }
 
