@@ -566,6 +566,46 @@ async def handle_config_reload(request: web.Request) -> web.Response:
         )
 
 
+async def handle_get_logging_level(request: web.Request) -> web.Response:
+    """Handle GET /logging/level — current runtime log level (non-persistent)."""
+    from irswitch.util.logging import get_runtime_log_level
+
+    return web.json_response(
+        {
+            "level": get_runtime_log_level(),
+            "persistent": False,
+        }
+    )
+
+
+async def handle_set_logging_level(request: web.Request) -> web.Response:
+    """Handle POST /logging/level — set runtime DEBUG/INFO without writing config.ini."""
+    from irswitch.util.logging import set_runtime_log_level
+
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"error": "Invalid JSON"}, status=400)
+
+    if not isinstance(data, dict) or "level" not in data:
+        return web.json_response({"error": "level is required"}, status=400)
+
+    try:
+        applied = set_runtime_log_level(str(data["level"]))
+    except ValueError as e:
+        return web.json_response({"error": str(e)}, status=400)
+
+    logger.info("Runtime log level set to %s (not persisted to config.ini)", applied)
+    return web.json_response(
+        {
+            "status": "success",
+            "level": applied,
+            "persistent": False,
+            "message": "Log level updated for this process only; resets on restart",
+        }
+    )
+
+
 async def handle_shutdown(request: web.Request) -> web.Response:
     """Handle POST /shutdown endpoint."""
     global _shutdown_event
@@ -1106,6 +1146,8 @@ def create_app() -> web.Application:
     app.router.add_get("/health", handle_health)
     app.router.add_get("/metrics", handle_metrics)
     app.router.add_post("/config/reload", handle_config_reload)
+    app.router.add_get("/logging/level", handle_get_logging_level)
+    app.router.add_post("/logging/level", handle_set_logging_level)
     app.router.add_post("/shutdown", handle_shutdown)
     app.router.add_post("/restart", handle_restart)
     app.router.add_post("/reset", handle_reset)

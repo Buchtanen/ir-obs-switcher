@@ -214,6 +214,39 @@ def setup_logging(
     warnings.filterwarnings("ignore", category=UserWarning, module="obsws_python")
 
 
+RUNTIME_LOG_LEVELS: frozenset[str] = frozenset({"DEBUG", "INFO"})
+
+
+def get_runtime_log_level() -> str:
+    """Return the current root logger level name (e.g. DEBUG, INFO)."""
+    return logging.getLevelName(logging.getLogger().getEffectiveLevel())
+
+
+def set_runtime_log_level(level: str) -> str:
+    """
+    Change root logger level at runtime (does not persist to config.ini).
+
+    Args:
+        level: DEBUG or INFO (case-insensitive)
+
+    Returns:
+        Normalized level name that was applied.
+
+    Raises:
+        ValueError: if level is not DEBUG or INFO
+    """
+    normalized = (level or "").strip().upper()
+    if normalized not in RUNTIME_LOG_LEVELS:
+        raise ValueError("level must be DEBUG or INFO")
+
+    log_level = getattr(logging, normalized)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    for handler in root_logger.handlers:
+        handler.setLevel(log_level)
+    return normalized
+
+
 def log_state_changed(logger: logging.Logger, old_state: str, new_state: str) -> None:
     """Log state change event."""
     logger.info(f"state_changed: {old_state} -> {new_state}")

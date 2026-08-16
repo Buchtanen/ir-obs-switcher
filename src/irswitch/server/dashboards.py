@@ -173,6 +173,10 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 f"<li>{translator.t(key)}</li>" for key in health_banner.tip_keys
             )
 
+        from irswitch.util.logging import get_runtime_log_level
+
+        runtime_log_level = get_runtime_log_level()
+
         # Calculate update interval from FPS
         update_interval_ms = int(1000 / config.dashboard_update_fps)
 
@@ -370,6 +374,25 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             gap: 8px;
             margin-bottom: 12px;
             flex-wrap: wrap;
+            align-items: center;
+        }}
+
+        .log-level-badge {{
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.08);
+            font-size: 0.8em;
+            font-family: ui-monospace, Consolas, monospace;
+            letter-spacing: 0.04em;
+        }}
+
+        .log-level-badge.debug {{
+            border-color: rgba(33, 150, 243, 0.55);
+            background: rgba(33, 150, 243, 0.18);
+            color: #90caf9;
         }}
 
         .config-reload-panel {{
@@ -995,6 +1018,8 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         </div>
         
         <div class="controls">
+            <span id="log-level-badge" class="log-level-badge{' debug' if runtime_log_level == 'DEBUG' else ''}" title="Runtime only — resets on process restart">LOG: {runtime_log_level}</span>
+            <button onclick="toggleDebugLogging()">Toggle Debug Logging</button>
             <button onclick="toggleAutoswitch()">{translator.t('toggle_autoswitch')}</button>
             <button onclick="resetRestartMode()">Reset RESTART Mode</button>
             <button onclick="reinitStream()">{translator.t('reinit_stream')}</button>
@@ -1717,6 +1742,52 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 console.error('Failed to toggle autoswitch:', error);
             }}
         }}
+
+        function updateLogLevelBadge(level) {{
+            const badge = document.getElementById('log-level-badge');
+            if (!badge) return;
+            const normalized = (level || 'INFO').toUpperCase();
+            badge.textContent = `LOG: ${{normalized}}`;
+            badge.classList.toggle('debug', normalized === 'DEBUG');
+        }}
+
+        async function refreshLogLevelBadge() {{
+            try {{
+                const response = await fetch(`${{API_BASE}}/logging/level`);
+                if (!response.ok) return;
+                const data = await response.json();
+                updateLogLevelBadge(data.level);
+            }} catch (error) {{
+                console.error('Failed to fetch log level:', error);
+            }}
+        }}
+
+        async function toggleDebugLogging() {{
+            try {{
+                const currentResp = await fetch(`${{API_BASE}}/logging/level`);
+                const current = currentResp.ok ? await currentResp.json() : {{ level: 'INFO' }};
+                const next = (current.level || 'INFO').toUpperCase() === 'DEBUG' ? 'INFO' : 'DEBUG';
+                const response = await fetch(`${{API_BASE}}/logging/level`, {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ level: next }})
+                }});
+                const data = await response.json();
+                if (response.ok) {{
+                    updateLogLevelBadge(data.level);
+                    showToast(
+                        'Log Level Updated',
+                        `${{data.level}} (runtime only — resets on restart)`,
+                        data.level === 'DEBUG' ? 'info' : 'success'
+                    );
+                }} else {{
+                    showToast('Log Level Failed', data.error || 'Unknown error', 'error');
+                }}
+            }} catch (error) {{
+                console.error('Failed to toggle debug logging:', error);
+                showToast('Log Level Failed', error.message || 'Network error', 'error');
+            }}
+        }}
         
         async function resetRestartMode() {{
             try {{
@@ -2012,6 +2083,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         updateStatus();
         updateEvents();
         updateMetrics();
+        refreshLogLevelBadge();
     </script>
 </body>
 </html>
