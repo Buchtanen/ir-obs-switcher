@@ -140,7 +140,7 @@ Aplikace poskytuje dva HTML dashboardy:
 ### GR Dashboard (velký monitor)
 
 - **URL**: `http://127.0.0.1:17321/gr-status`
-- **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics
+- **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics (včetně `errors_total`)
 - **Konfigurovatelné**: Obrázky pozadí a loga
 - **Screenshot**: [GR Dashboard](assets/rg-status-screen.png)
 
