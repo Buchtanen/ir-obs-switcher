@@ -84,16 +84,16 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v6
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
 
       - name: Upload coverage HTML
         if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-html
           path: htmlcov/
