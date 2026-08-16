@@ -395,6 +395,17 @@ pyinstaller --onefile `
 3. Zkontroluj, že config soubor existuje a je validní
 4. Zkontroluj oprávnění - služba musí mít přístup k souborům
 
+### Druhá instance / HTTP port už obsazený
+
+**Příznaky**: EXE/zkratka/`start_app.ps1` skončí hned po startu; zpráva o „already in use“ / „Another irswitch instance“; exit code **2**.
+
+**Příčina**: Single-instance guard zjistí, že `app.http_host`:`app.http_port` už někdo poslouchá (typicky předchozí irswitch z druhé zkratky nebo Task Scheduler).
+
+**Řešení**:
+1. Zastav běžící instanci (graceful shutdown přes dashboard / `POST /shutdown`, případně ukonči proces)
+2. Nebo změň `app.http_port` v `config.ini`
+3. U naplánované úlohy ověř, že neběží souběžně se zkratkou na ploše
+
 ### Aplikace běží, ale nepřipojuje se k OBS
 
 **Příznaky**: Aplikace běží, ale v logu vidíš "Failed to connect to OBS".
