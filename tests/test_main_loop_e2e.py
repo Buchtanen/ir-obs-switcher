@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,6 +17,30 @@ from irswitch.main import main_loop
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.obs.client import ObsClient
 from irswitch.server.event_log import EventLog, set_event_log
+
+
+async def wait_until(
+    pred: Callable[[], bool],
+    timeout: float = 2.0,
+    interval: float = 0.05,
+) -> None:
+    """Poll until pred() is true; raise TimeoutError on deadline."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    while True:
+        if pred():
+            return
+        if loop.time() >= deadline:
+            raise TimeoutError(f"condition not met within {timeout}s")
+        await asyncio.sleep(interval)
+
+
+async def _cancel_task(task: asyncio.Task) -> None:
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 @pytest.fixture
@@ -172,28 +197,20 @@ async def test_main_loop_mode_change_triggers_scene_switch(
     event_log = EventLog(max_size=50)
     set_event_log(event_log)
 
-    # Run main loop for a few iterations
     task = asyncio.create_task(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    # Wait for debounce (100ms) + cooldown (200ms) + multiple polls (100ms each)
-    # Need at least 500ms + buffer for debounce/cooldown to expire (CI headroom)
-    await asyncio.sleep(1.5)
-
-    # Cancel task
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        await wait_until(
+            lambda: any(c and c[0][0] == "Race" for c in mock_obs.set_scene.call_args_list),
+            timeout=2.0,
+        )
+    finally:
+        await _cancel_task(task)
 
-    # Verify that set_scene was called (after debounce)
     set_scene_calls = [call for call in mock_obs.set_scene.call_args_list if call]
-    # Should have been called at least once to switch to Race scene
     assert len(set_scene_calls) > 0, "set_scene should be called when mode changes to RACE"
-
-    # Verify it was called with "Race" scene
     race_calls = [call for call in set_scene_calls if call[0][0] == "Race"]
     assert len(race_calls) > 0, "set_scene should be called with 'Race' scene"
 
@@ -207,7 +224,6 @@ async def test_main_loop_debounce_delays_switch(
     initial_state: SwitchState,
 ) -> None:
     """Test that debounce delays scene switch."""
-    # Change mode immediately
     mock_reader.read_mode = AsyncMock(return_value=DrivingMode.RACE)
     mock_obs.get_current_scene = AsyncMock(return_value="Idle")
 
@@ -218,22 +234,15 @@ async def test_main_loop_debounce_delays_switch(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    # Wait less than debounce time (100ms)
-    await asyncio.sleep(0.05)
-
-    # set_scene should NOT be called yet (still debouncing)
-    assert mock_obs.set_scene.call_count == 0, "set_scene should not be called during debounce"
-
-    # Wait for debounce to expire
-    await asyncio.sleep(0.2)
-
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        # Negative window: still inside debounce (100ms) — fixed short sleep is intentional
+        await asyncio.sleep(0.05)
+        assert mock_obs.set_scene.call_count == 0, "set_scene should not be called during debounce"
 
-    # Now set_scene should have been called
+        await wait_until(lambda: mock_obs.set_scene.call_count > 0, timeout=1.0)
+    finally:
+        await _cancel_task(task)
+
     assert mock_obs.set_scene.call_count > 0, "set_scene should be called after debounce expires"
 
 
@@ -246,7 +255,6 @@ async def test_main_loop_cooldown_prevents_rapid_switches(
     initial_state: SwitchState,
 ) -> None:
     """Test that cooldown prevents rapid scene switches."""
-    # Sequence: IDLE -> RACE -> GARAGE (rapid changes)
     mode_sequence = [
         DrivingMode.IDLE,
         DrivingMode.RACE,
@@ -264,26 +272,17 @@ async def test_main_loop_cooldown_prevents_rapid_switches(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    # Wait for first switch (RACE)
-    await asyncio.sleep(0.3)
-
-    # Count calls after first switch
-    calls_after_first = mock_obs.set_scene.call_count
-
-    # Wait a bit more (but less than cooldown)
-    await asyncio.sleep(0.1)
-
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        await wait_until(lambda: mock_obs.set_scene.call_count >= 1, timeout=1.5)
+        calls_after_first = mock_obs.set_scene.call_count
 
-    # Should not have switched again immediately (cooldown active)
-    # But might have switched once more after cooldown
-    assert (
-        mock_obs.set_scene.call_count <= calls_after_first + 1
-    ), "Cooldown should prevent rapid switches"
+        # Negative window: still inside cooldown (200ms) — fixed short sleep is intentional
+        await asyncio.sleep(0.1)
+        assert (
+            mock_obs.set_scene.call_count <= calls_after_first + 1
+        ), "Cooldown should prevent rapid switches"
+    finally:
+        await _cancel_task(task)
 
 
 @pytest.mark.asyncio
@@ -294,7 +293,6 @@ async def test_main_loop_autoswitch_disabled_no_switch(
     state_machine: StateMachine,
 ) -> None:
     """Test that autoswitch disabled prevents scene switching."""
-    # Start with autoswitch disabled
     initial_state = SwitchState(
         connected_iracing=True,
         connected_obs=True,
@@ -318,19 +316,14 @@ async def test_main_loop_autoswitch_disabled_no_switch(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    # Wait for debounce
-    await asyncio.sleep(0.3)
-
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
-
-    # set_scene should NOT be called (autoswitch disabled)
-    assert (
-        mock_obs.set_scene.call_count == 0
-    ), "set_scene should not be called when autoswitch is disabled"
+        # Negative: wait past debounce; must still not switch
+        await asyncio.sleep(0.3)
+        assert (
+            mock_obs.set_scene.call_count == 0
+        ), "set_scene should not be called when autoswitch is disabled"
+    finally:
+        await _cancel_task(task)
 
 
 @pytest.mark.asyncio
@@ -342,7 +335,6 @@ async def test_main_loop_override_takes_precedence(
     initial_state: SwitchState,
 ) -> None:
     """Test that override takes precedence over mode-based switching."""
-    # Apply override first
     override_state = state_machine.apply_override(initial_state, "OverrideScene", 120)
 
     mock_reader.read_mode = AsyncMock(return_value=DrivingMode.RACE)
@@ -355,21 +347,18 @@ async def test_main_loop_override_takes_precedence(
         main_loop(config, mock_reader, mock_obs, state_machine, override_state)
     )
 
-    # Wait for debounce
-    await asyncio.sleep(0.3)
-
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        await wait_until(
+            lambda: any(
+                c and c[0][0] == "OverrideScene" for c in mock_obs.set_scene.call_args_list
+            ),
+            timeout=1.5,
+        )
+    finally:
+        await _cancel_task(task)
 
-    # Verify set_scene was called with override scene, not RACE scene
     set_scene_calls = [call[0][0] for call in mock_obs.set_scene.call_args_list if call]
-    if set_scene_calls:
-        assert (
-            "OverrideScene" in set_scene_calls
-        ), "Override scene should be used, not mode-based scene"
+    assert "OverrideScene" in set_scene_calls, "Override scene should be used, not mode-based scene"
 
 
 @pytest.mark.asyncio
@@ -381,7 +370,6 @@ async def test_main_loop_connection_state_tracking(
     initial_state: SwitchState,
 ) -> None:
     """Test that connection state changes are tracked."""
-    # Start connected, then disconnect iRacing
     mock_reader.is_connected.return_value = True
     mock_reader.read_mode = AsyncMock(side_effect=[DrivingMode.IDLE, None, None])  # Disconnect
 
@@ -392,19 +380,14 @@ async def test_main_loop_connection_state_tracking(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    await asyncio.sleep(0.3)
-
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        # Allow a few polls; connection events are best-effort under timing
+        await asyncio.sleep(0.3)
+    finally:
+        await _cancel_task(task)
 
-    # Verify events were logged
     events = await event_log.get_all_events()
     connection_events = [e for e in events if e.type in ("connection_lost", "connection_restored")]
-    # Should have at least one connection event if iRacing disconnected
-    # (Note: might not fire if timing is off, but structure should be there)
     assert all(e.type in ("connection_lost", "connection_restored") for e in connection_events)
 
 
@@ -427,21 +410,14 @@ async def test_main_loop_scene_switch_logs_event(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
 
-    # Wait for debounce and switch
-    await asyncio.sleep(0.3)
-
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        await wait_until(lambda: mock_obs.set_scene.call_count > 0, timeout=1.5)
+    finally:
+        await _cancel_task(task)
 
-    # Verify scene_switch event was logged
     events = await event_log.get_all_events()
     scene_switch_events = [e for e in events if e.type == "scene_switch"]
-    # Should have at least one scene switch event if switch occurred
-    if mock_obs.set_scene.call_count > 0:
-        assert len(scene_switch_events) > 0, "Scene switch should be logged to event log"
+    assert len(scene_switch_events) > 0, "Scene switch should be logged to event log"
 
 
 @pytest.mark.asyncio
@@ -477,14 +453,17 @@ async def test_main_loop_broadcast_id_change_force_refreshes_stream_info(
     task = asyncio.create_task(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
-    # Hysteresis (~3 polls) + stable peeks + change detection (CI runners need headroom)
-    await asyncio.sleep(2.0)
 
-    task.cancel()
+    def _broadcast_changed() -> bool:
+        refresh_reasons = [
+            c.args[0] for c in mock_obs.refresh_stream_info.await_args_list if c.args
+        ]
+        return "broadcast_id_changed" in refresh_reasons
+
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        await wait_until(_broadcast_changed, timeout=3.0)
+    finally:
+        await _cancel_task(task)
 
     mock_obs.clear_stream_info_cache.assert_called()
     assert mock_obs.clear_stream_info_cache.call_count >= 2
@@ -525,13 +504,13 @@ async def test_main_loop_same_broadcast_id_does_not_refresh(
     task = asyncio.create_task(
         main_loop(config, mock_reader, mock_obs, state_machine, initial_state)
     )
-    await asyncio.sleep(1.0)
 
-    task.cancel()
     try:
-        await task
-    except asyncio.CancelledError:
-        pass
+        # Wait until initial select refresh happened, then hold for stability window
+        await wait_until(lambda: mock_obs.refresh_stream_info.await_count >= 1, timeout=2.0)
+        await asyncio.sleep(0.5)
+    finally:
+        await _cancel_task(task)
 
     # Select path clears once via refresh_stream_info; stable same-id must not refresh again
     assert mock_obs.clear_stream_info_cache.call_count == 1
