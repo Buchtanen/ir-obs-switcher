@@ -72,6 +72,7 @@ Lokalizovány jsou všechny texty v:
 
 - **GR Dashboard** (`/gr-status`):
   - Status texty (Connected/Disconnected)
+  - Health banner při offline iRacing/OBS (actionable tipy; skrytý když jsou oba připojení)
   - Názvy sekcí (iRacing Connection, OBS Connection, Stream Title, atd.)
   - Stream informace
   - Metriky (Scene Switches, Avg Latency, Uptime, atd.)

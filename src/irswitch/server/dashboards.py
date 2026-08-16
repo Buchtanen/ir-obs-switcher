@@ -13,6 +13,7 @@ from irswitch.config import AppConfig
 from irswitch.i18n import get_translator
 from irswitch.server.app_keys import APP_CONFIG
 from irswitch.server.event_log import get_event_log
+from irswitch.server.health_banner import resolve_health_banner
 from irswitch.server.metrics_display import summarize_errors_total
 
 
@@ -157,6 +158,21 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             metrics_dict.get("errors_total")
         )
 
+        health_banner = resolve_health_banner(
+            connected_iracing=state.connected_iracing,
+            connected_obs=state.connected_obs,
+        )
+        if health_banner is None:
+            health_banner_class = "health-banner hidden"
+            health_banner_title = ""
+            health_banner_tips_html = ""
+        else:
+            health_banner_class = f"health-banner {health_banner.severity}"
+            health_banner_title = translator.t(health_banner.title_key)
+            health_banner_tips_html = "".join(
+                f"<li>{translator.t(key)}</li>" for key in health_banner.tip_keys
+            )
+
         # Calculate update interval from FPS
         update_interval_ms = int(1000 / config.dashboard_update_fps)
 
@@ -291,6 +307,43 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         .status-indicator.disconnected {{
             background: #f44336;
             box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+        }}
+
+        .health-banner {{
+            margin-bottom: 12px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 152, 0, 0.45);
+            background: rgba(255, 152, 0, 0.12);
+        }}
+
+        .health-banner.unhealthy {{
+            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.12);
+        }}
+
+        .health-banner.hidden {{
+            display: none;
+        }}
+
+        .health-banner h3 {{
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #ffb74d;
+            margin-bottom: 6px;
+        }}
+
+        .health-banner.unhealthy h3 {{
+            color: #ef9a9a;
+        }}
+
+        .health-banner ul {{
+            margin: 0;
+            padding-left: 18px;
+            color: #ddd;
+            font-size: 0.9em;
+            line-height: 1.45;
         }}
         
         .streaming-indicator {{
@@ -827,6 +880,11 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 {'<img src="' + logo_app + '" alt="App" class="logo">' if logo_app else ''}
             </div>
         </div>
+
+        <div id="health-banner" class="{health_banner_class}" role="status" aria-live="polite">
+            <h3 id="health-banner-title">{health_banner_title}</h3>
+            <ul id="health-banner-tips">{health_banner_tips_html}</ul>
+        </div>
         
         <div class="status-grid compact-row">
             <div class="status-card">
@@ -1078,6 +1136,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 // Update connection statuses
                 updateConnectionStatus('iracing', data.connected_iracing);
                 updateConnectionStatus('obs', data.connected_obs);
+                updateHealthBanner(data.connected_iracing, data.connected_obs);
                 
                 // Update scene
                 updateValue('Current Scene', data.current_scene);
@@ -1482,6 +1541,38 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                     obsDiode.classList.add('disconnected');
                 }}
             }}
+        }}
+
+        function updateHealthBanner(connectedIracing, connectedObs) {{
+            const banner = document.getElementById('health-banner');
+            const titleEl = document.getElementById('health-banner-title');
+            const tipsEl = document.getElementById('health-banner-tips');
+            if (!banner || !titleEl || !tipsEl) {{
+                return;
+            }}
+
+            const bothConnected = !!connectedIracing && !!connectedObs;
+            if (bothConnected) {{
+                banner.className = 'health-banner hidden';
+                titleEl.textContent = '';
+                tipsEl.innerHTML = '';
+                return;
+            }}
+
+            const tips = [];
+            if (!connectedIracing) {{
+                tips.push(t('health_banner_tip_iracing'));
+            }}
+            if (!connectedObs) {{
+                tips.push(t('health_banner_tip_obs'));
+            }}
+
+            const unhealthy = !connectedIracing && !connectedObs;
+            banner.className = 'health-banner ' + (unhealthy ? 'unhealthy' : 'degraded');
+            titleEl.textContent = t(
+                unhealthy ? 'health_banner_title_unhealthy' : 'health_banner_title_degraded'
+            );
+            tipsEl.innerHTML = tips.map(tip => '<li>' + tip + '</li>').join('');
         }}
         
         function updateValue(label, value) {{
