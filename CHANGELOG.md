@@ -5,6 +5,71 @@ Všechny významné změny v projektu budou zdokumentovány v tomto souboru.
 Formát je založen na [Keep a Changelog](https://keepachangelog.com/cs/1.0.0/),
 a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 
+## [1.0.0](https://github.com/Buchtanen/ir-obs-switcher/compare/v0.7.0...v1.0.0) (2026-08-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* public surface moves from 0.x to 1.0.0; treat config/API as stable going forward.
+
+### Features
+
+* add dashboard Restart Service (POST /restart) ([66f5275](https://github.com/Buchtanen/ir-obs-switcher/commit/66f52756608abfe8477268131d1439a0a9410490))
+* add GR dashboard button to reinit OBS stream info ([7ff1310](https://github.com/Buchtanen/ir-obs-switcher/commit/7ff1310b89647c364b2c4443ad20ae785a5c3494))
+* add runtime DEBUG/INFO logging toggle ([4aa067f](https://github.com/Buchtanen/ir-obs-switcher/commit/4aa067f99d23b02c02bd22ff7e46b00f823b86d4))
+* apply config hot-reload into main loop and state machine ([dd6c060](https://github.com/Buchtanen/ir-obs-switcher/commit/dd6c060acdb0f39cb7b669c3613e8301f30f597b))
+* auto OAuth reauth + startup robustness ([b788f2d](https://github.com/Buchtanen/ir-obs-switcher/commit/b788f2de5c3a83f693f78e3a9b3b47d378e5f4ec))
+* auto-reauth YouTube OAuth on revoked token ([03f6f49](https://github.com/Buchtanen/ir-obs-switcher/commit/03f6f49fdcaa23b1c5983278de30650f66aed177))
+* config reload response lists live vs restart keys ([458e793](https://github.com/Buchtanen/ir-obs-switcher/commit/458e793372970426b7143def1d2fe080a0a43e18))
+* dashboard Restart Service (POST /restart) ([9d6cb72](https://github.com/Buchtanen/ir-obs-switcher/commit/9d6cb720bf9c30a3c2cb346c4a7151c2ec1f250e))
+* GR dashboard button to reinit OBS stream info ([dedc494](https://github.com/Buchtanen/ir-obs-switcher/commit/dedc4943e8132577f9128ab8bb07c47767c1dbf3))
+* GR dashboard health banner for degraded state ([58d309b](https://github.com/Buchtanen/ir-obs-switcher/commit/58d309bb08c19d5a642ef38df21fa402dc1c33b4))
+* real config hot-reload into main loop and state machine ([e7c42e1](https://github.com/Buchtanen/ir-obs-switcher/commit/e7c42e1230aff033d5c3d0f12a307d92e42f3ba1))
+* refuse second instance when http_port is already in use ([67fd8d4](https://github.com/Buchtanen/ir-obs-switcher/commit/67fd8d42a14300a1d01c919c56cfaa9df77932d9))
+* report live vs restart keys on config reload ([ca8c09f](https://github.com/Buchtanen/ir-obs-switcher/commit/ca8c09fbc2a5ba96500f904d97ee4a675fc9e423))
+* runtime debug logging toggle from GR ([ebaf7ae](https://github.com/Buchtanen/ir-obs-switcher/commit/ebaf7ae939e943de4b6bbe5021006f4968dea6dc))
+* show errors_total on GR metrics section ([0df9631](https://github.com/Buchtanen/ir-obs-switcher/commit/0df96310e08931a40fe5881d945216f68349fdc7))
+* show errors_total on GR metrics section ([fd95941](https://github.com/Buchtanen/ir-obs-switcher/commit/fd959414d43cda4b4bab6499587491314b84b5ae)), closes [#54](https://github.com/Buchtanen/ir-obs-switcher/issues/54)
+* show GR health banner when iRacing/OBS offline ([d948580](https://github.com/Buchtanen/ir-obs-switcher/commit/d948580731ca20bd3156e823adb0fe077a363337)), closes [#51](https://github.com/Buchtanen/ir-obs-switcher/issues/51)
+* single-instance guard on http_port ([116e740](https://github.com/Buchtanen/ir-obs-switcher/commit/116e740535376338f683f06a3c98a51771721840))
+
+
+### Bug Fixes
+
+* auto-refresh stream info when OBS broadcast_id changes ([1bac349](https://github.com/Buchtanen/ir-obs-switcher/commit/1bac34918a61b778e35ec70d1e5aa1c47c8c403b))
+* ci: run CI on push (no PR duplicates) and scope CodeQL to PRs ([6ab742b](https://github.com/Buchtanen/ir-obs-switcher/commit/6ab742b9fab89296829dd18be4146e64f555293f))
+* harden Install.ps1 / Open-Dashboard path resolution ([2d20935](https://github.com/Buchtanen/ir-obs-switcher/commit/2d2093514b09183b789936a64110b2745dcc9a8c))
+* harden Install.ps1 / Open-Dashboard path resolution ([4cee4d2](https://github.com/Buchtanen/ir-obs-switcher/commit/4cee4d2d6c47bb66790ad28a5b37f8de790ef2b3))
+* harden startup and OBS reconnect path ([36668e3](https://github.com/Buchtanen/ir-obs-switcher/commit/36668e31bed75354c413e3389c3e1ad702f81b3a))
+* make POST /restart work with Windows irswitchd shim ([373d9a6](https://github.com/Buchtanen/ir-obs-switcher/commit/373d9a6f477e65c1541b4083f6c6f40c0b2d2cfc))
+* make POST /restart work with Windows irswitchd shim ([2000718](https://github.com/Buchtanen/ir-obs-switcher/commit/200071861bf4db8f43beafe13688af7b503fc199))
+* rate-limit OBS reconnect ERROR logs ([3b953e7](https://github.com/Buchtanen/ir-obs-switcher/commit/3b953e7e495da686d5b62acf6dfad6f92702fde1))
+* rate-limit OBS reconnect final-fail ERROR logs ([979cb94](https://github.com/Buchtanen/ir-obs-switcher/commit/979cb947e4173e3f6b1aa6c717e479e60d3d41c8)), closes [#27](https://github.com/Buchtanen/ir-obs-switcher/issues/27)
+* refresh stream info when OBS broadcast_id changes ([60304cd](https://github.com/Buchtanen/ir-obs-switcher/commit/60304cd378ffb9ec46e5c60b163dfd47473ecaff))
+* resolve mypy SwitchState|None in stream reinit handler ([acc6789](https://github.com/Buchtanen/ir-obs-switcher/commit/acc6789e567f81b6fc80d57b76ce2308073f0c2d))
+* resolve ruff UP042 by using StrEnum for DrivingMode ([2a8dc1c](https://github.com/Buchtanen/ir-obs-switcher/commit/2a8dc1cda1d5ea8861909470a087dccb87fe911a))
+* seed runtime config in main_loop to avoid test pollution ([cb1b4f2](https://github.com/Buchtanen/ir-obs-switcher/commit/cb1b4f27fdfc495c62be6fb76dde4b00e0c005a0))
+* silence bandit B104 on single-instance probe addresses ([a65d6af](https://github.com/Buchtanen/ir-obs-switcher/commit/a65d6af5b4b855cff37c3cab0c103e9081f6f1a1))
+
+
+### Documentation
+
+* add Install.ps1 real-dist smoke checklist ([3f8fe5c](https://github.com/Buchtanen/ir-obs-switcher/commit/3f8fe5c2eeca850941d4bbb89e15490e6b35de4d))
+* align VERSIONING.md with Release PR model ([70e8531](https://github.com/Buchtanen/ir-obs-switcher/commit/70e8531abe07607db41396d1ce8b456e2dc9c40c))
+* align VERSIONING.md with Release PR model ([406106d](https://github.com/Buchtanen/ir-obs-switcher/commit/406106d76df8d7eff5a7eb0b64508d109edf8fe8))
+* clarify Windows service stop and uninstall ([acb615d](https://github.com/Buchtanen/ir-obs-switcher/commit/acb615d8e3dc874c123e8fb08eb78f8583c5cfe0))
+* clarify Windows service stop and uninstall paths ([da0e9fc](https://github.com/Buchtanen/ir-obs-switcher/commit/da0e9fc25252ceb2264b8fa4998a25e773cb59e4))
+* document OAuth Testing-mode refresh token expiry ([333d38f](https://github.com/Buchtanen/ir-obs-switcher/commit/333d38f2a50efda284803f8469e71c7e251b7306))
+* document OAuth Testing-mode refresh token expiry ([5d42bd9](https://github.com/Buchtanen/ir-obs-switcher/commit/5d42bd9881efa473fb6dcae854b75b131e741811))
+* Install.ps1 real-dist smoke checklist ([5bce7af](https://github.com/Buchtanen/ir-obs-switcher/commit/5bce7af13b01231e2df69515e68e466f65a6f5a5))
+* recommend Python 3.11-3.13 for development ([41820ba](https://github.com/Buchtanen/ir-obs-switcher/commit/41820ba4f219bb6c0d6e995aecd51edee04b35dd))
+* recommend Python 3.11–3.13 for development ([3dc5d89](https://github.com/Buchtanen/ir-obs-switcher/commit/3dc5d89c576fcaed57a67824d2fb271fb48e2b20))
+
+
+### Miscellaneous Chores
+
+* bump Actions to Node 24 and release as 1.0.0 ([c796754](https://github.com/Buchtanen/ir-obs-switcher/commit/c7967543c79e53eea55cb04ff30de823e9bc0a74)), closes [#68](https://github.com/Buchtanen/ir-obs-switcher/issues/68)
+
 ## [Unreleased]
 
 ### Přidáno
