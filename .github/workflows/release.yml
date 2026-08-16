@@ -76,7 +76,7 @@ jobs:
         fi
 
     - name: Download distribution artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         name: irswitch-distribution-${{ needs.build.outputs.version }}
         path: ./
