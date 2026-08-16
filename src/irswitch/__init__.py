@@ -10,10 +10,12 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
+def _is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False) or getattr(sys, "_MEIPASS", None))
+
+
 def _read_version_from_package_metadata() -> str | None:
-    """
-    Prefer installed package metadata (correct for venv/pip install, CI, etc.).
-    """
+    """Installed package metadata (wheel / last pip install)."""
     try:
         return metadata.version("irswitch")
     except metadata.PackageNotFoundError:
@@ -55,7 +57,7 @@ def _read_version_from_build_info() -> str | None:
 
 
 def _read_version_from_pyproject() -> str | None:
-    """Dev fallback: read version from pyproject.toml in repo checkout."""
+    """Read version from pyproject.toml when running from a source checkout."""
     pyproject = _PROJECT_ROOT / "pyproject.toml"
     try:
         with open(pyproject, "rb") as f:
@@ -69,13 +71,24 @@ def _read_version_from_pyproject() -> str | None:
         return None
 
 
+def resolve_version() -> str:
+    """
+    Resolve runtime version.
+
+    Source checkout / editable install: pyproject.toml (stale dist-info is ignored).
+    Frozen EXE: BUILD_INFO.txt, then package metadata.
+    Installed wheel without checkout: package metadata.
+    """
+    if _is_frozen():
+        return _read_version_from_build_info() or _read_version_from_package_metadata() or "0.0.0"
+    pyproject = _read_version_from_pyproject()
+    if pyproject:
+        return pyproject
+    return _read_version_from_package_metadata() or _read_version_from_build_info() or "0.0.0"
+
+
 try:
-    __version__ = (
-        _read_version_from_package_metadata()
-        or _read_version_from_build_info()
-        or _read_version_from_pyproject()
-        or "0.0.0"
-    )
+    __version__ = resolve_version()
 except Exception:
     # Ultra-safe fallback: never crash import due to version probing.
-    __version__ = "1.0.0"
+    __version__ = "0.0.0"

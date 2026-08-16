@@ -11,6 +11,7 @@ Projekt obsahuje **84+ unit testů** pokrývající všechny klíčové komponen
 - **iRacing Reader** (8 testů) - čtení dat z iRacing SDK
 - **OBS Client** (11 testů) - komunikace s OBS WebSocket
 - **State Machine** (11 testů) - logika přepínání scén
+- **Version** (`tests/test_version.py`) - `resolve_version()` (pyproject vs metadata vs EXE)
 - **API Server** (6 testů) - REST a WebSocket API
 - **Main Service** (8 testů) - včetně 5 nových testů pro stream cache
 - **Loading Tracker** (9 testů) - sledování doby loadingu

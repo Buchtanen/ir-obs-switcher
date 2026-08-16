@@ -19,7 +19,7 @@ Tento dokument popisuje, **kde žije verze** a jak se **zobrazuje** v aplikaci. 
    - Používá se při buildu a distribuci.
 
 2. **`src/irswitch/__init__.py`**
-   - Načítá verzi dynamicky (package metadata / fallback).
+   - Načítá verzi dynamicky (`resolve_version()`).
    - **Není potřeba ručně aktualizovat.**
 
 3. **`CHANGELOG.md`**
@@ -58,7 +58,11 @@ Verze se zobrazuje např.:
 2. **API** `GET /status` – pole `version`
 3. **Health** `GET /health` – pole `version`
 
-Runtime čte verzi primárně z package metadata; u EXE distribuce může být fallback `BUILD_INFO.txt` (viz RELEASE_POLICY).
+Runtime pořadí (`resolve_version()`):
+
+1. **Frozen EXE** → `BUILD_INFO.txt`, pak package metadata
+2. **Source checkout / editable install** (existuje `pyproject.toml` u kořene) → `project.version` z pyproject.toml — ignoruje zastaralé dist-info po release bumpu
+3. **Nainstalovaný wheel** bez checkoutu → package metadata
 
 ---
 
