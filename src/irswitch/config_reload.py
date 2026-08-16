@@ -1,0 +1,112 @@
+"""Classify config reload diffs into live-applied vs restart-required keys.
+
+Canonical lists mirror CONFIG.md § Hot-reload. Only whitelisted keys appear in
+API responses; other AppConfig fields are ignored for classification.
+"""
+
+from __future__ import annotations
+
+from irswitch.config import AppConfig
+from irswitch.models import DrivingMode
+
+# Keys that take effect after POST /config/reload without process restart.
+LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
+    {
+        "switching.safe_scene",
+        "switching.debounce_ms",
+        "switching.cooldown_ms",
+        "switching.override_seconds",
+        "switching.autoswitch_default",
+        "switching.auto_start_broadcast",
+        "switching.auto_start_at_percent",
+        "switching.default_loading_time_seconds",
+        "switching.auto_stop_stream",
+        "switching.stop_stream_after_seconds",
+        "iracing.poll_hz",
+        "dashboards.dashboard_update_fps",
+        "dashboards.dashboard_gr_background_image",
+        "dashboards.dashboard_gr_logo_obs",
+        "dashboards.dashboard_gr_logo_iracing",
+        "dashboards.dashboard_gr_logo_app",
+        "dashboards.dashboard_vr_icons_path",
+        "dashboards.dashboard_event_log_size",
+        *(f"scenes.{mode.name}" for mode in DrivingMode),
+    }
+)
+
+# Keys that are stored on reload but require a process restart to fully apply.
+RESTART_CONFIG_KEYS: frozenset[str] = frozenset(
+    {
+        "app.http_host",
+        "app.http_port",
+        "app.log_level",
+        "app.log_file",
+        "app.log_max_bytes",
+        "app.log_backup_count",
+        "obs.ws_url",
+        "obs.password",
+        "obs.required_profile",
+        "oauth.client_id",
+        "oauth.client_secret",
+        "hotkeys.restart_hotkey",
+    }
+)
+
+
+def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
+    """Map CONFIG.md-style keys to comparable values for diffing."""
+    values: dict[str, object] = {
+        "app.http_host": config.http_host,
+        "app.http_port": config.http_port,
+        "app.log_level": config.log_level,
+        "app.log_file": config.log_file,
+        "app.log_max_bytes": config.log_max_bytes,
+        "app.log_backup_count": config.log_backup_count,
+        "iracing.poll_hz": config.poll_hz,
+        "obs.ws_url": config.obs_ws_url,
+        "obs.password": config.obs_password,
+        "obs.required_profile": config.required_profile,
+        "switching.safe_scene": config.safe_scene,
+        "switching.debounce_ms": config.debounce_ms,
+        "switching.cooldown_ms": config.cooldown_ms,
+        "switching.override_seconds": config.override_seconds,
+        "switching.autoswitch_default": config.autoswitch_default,
+        "switching.auto_start_broadcast": config.auto_start_broadcast,
+        "switching.auto_start_at_percent": config.auto_start_at_percent,
+        "switching.default_loading_time_seconds": config.default_loading_time_seconds,
+        "switching.auto_stop_stream": config.auto_stop_stream,
+        "switching.stop_stream_after_seconds": config.stop_stream_after_seconds,
+        "hotkeys.restart_hotkey": config.restart_hotkey,
+        "dashboards.dashboard_update_fps": config.dashboard_update_fps,
+        "dashboards.dashboard_gr_background_image": config.dashboard_gr_background_image,
+        "dashboards.dashboard_gr_logo_obs": config.dashboard_gr_logo_obs,
+        "dashboards.dashboard_gr_logo_iracing": config.dashboard_gr_logo_iracing,
+        "dashboards.dashboard_gr_logo_app": config.dashboard_gr_logo_app,
+        "dashboards.dashboard_vr_icons_path": config.dashboard_vr_icons_path,
+        "dashboards.dashboard_event_log_size": config.dashboard_event_log_size,
+        "oauth.client_id": config.oauth_client_id,
+        "oauth.client_secret": config.oauth_client_secret,
+    }
+    for mode in DrivingMode:
+        values[f"scenes.{mode.name}"] = config.scenes.get(mode)
+    return values
+
+
+def classify_reload_diff(old: AppConfig | None, new: AppConfig) -> tuple[list[str], list[str]]:
+    """
+    Diff old vs new config and classify changed whitelisted keys.
+
+    Returns:
+        (applied_live, needs_restart) — sorted lists of dotted config keys.
+        If ``old`` is None, both lists are empty (no baseline to compare).
+    """
+    if old is None:
+        return [], []
+
+    old_vals = snapshot_tracked_keys(old)
+    new_vals = snapshot_tracked_keys(new)
+    changed = sorted(k for k in new_vals if old_vals.get(k) != new_vals.get(k))
+
+    applied_live = [k for k in changed if k in LIVE_CONFIG_KEYS]
+    needs_restart = [k for k in changed if k in RESTART_CONFIG_KEYS]
+    return applied_live, needs_restart

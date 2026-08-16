@@ -298,9 +298,18 @@ Přenačtení konfigurace ze souboru.
 ```json
 {
   "status": "success",
-  "message": "Config reloaded successfully"
+  "message": "Config reloaded successfully",
+  "applied_live": ["switching.debounce_ms", "iracing.poll_hz"],
+  "needs_restart": ["app.http_port"]
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `applied_live` | `string[]` | Changed keys that apply without process restart (diff old vs new; whitelist from `CONFIG.md`) |
+| `needs_restart` | `string[]` | Changed keys that still require a process restart |
+
+Prázdné seznamy = žádný tracked klíč se nezměnil, nebo nebylo s čím porovnat (chybí předchozí runtime config).
 
 **Error Response** (400/500):
 ```json
@@ -309,7 +318,7 @@ Přenačtení konfigurace ze souboru.
 }
 ```
 
-**Poznámka**: Hot-reload aktualizuje sdílený runtime config + switching (scenes, debounce/cooldown, auto-start/stop, `poll_hz`). **Nepřestartuje** HTTP server ani OBS/OAuth spojení — detaily viz `CONFIG.md` sekce Hot-reload.
+**Poznámka**: Hot-reload aktualizuje sdílený runtime config + switching (scenes, debounce/cooldown, auto-start/stop, `poll_hz`). **Nepřestartuje** HTTP server ani OBS/OAuth spojení — detaily a whitelist klíčů viz `CONFIG.md` sekce Hot-reload. GR dashboard po reloadu ukáže toast + panel se seznamy `applied_live` / `needs_restart`.
 
 ---
 

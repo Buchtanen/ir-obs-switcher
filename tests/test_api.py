@@ -404,17 +404,24 @@ dashboard_event_log_size = 50
             data = await resp.json()
             assert data["status"] == "success"
             assert "message" in data
+            assert "applied_live" in data
+            assert "needs_restart" in data
+            assert isinstance(data["applied_live"], list)
+            assert isinstance(data["needs_restart"], list)
             assert APP_CONFIG in app
             from irswitch.logic.policy import Policy
             from irswitch.logic.state_machine import StateMachine
             from irswitch.models import DrivingMode
-            from irswitch.server.api import get_app_config, set_state_machine
+            from irswitch.server.api import get_app_config, set_app_config, set_state_machine
 
             # Shared holder must mirror reloaded app config
             shared = get_app_config()
             assert shared is not None
             assert shared.poll_hz == 10
             assert shared.debounce_ms == 500
+
+            # Seed baseline so the next reload can produce a meaningful diff
+            set_app_config(shared)
 
             # With SM wired, reload must push switching knobs into Policy/SM
             policy = Policy(
@@ -432,7 +439,7 @@ dashboard_event_log_size = 50
 
             config_file.write_text("""[app]
 http_host = 127.0.0.1
-http_port = 8080
+http_port = 9090
 log_level = INFO
 notifications_enabled = true
 log_file =
@@ -482,6 +489,11 @@ dashboard_event_log_size = 50
 """)
             resp2 = await client.post("/config/reload")
             assert resp2.status == 200
+            data2 = await resp2.json()
+            assert "switching.debounce_ms" in data2["applied_live"]
+            assert "iracing.poll_hz" in data2["applied_live"]
+            assert "scenes.IDLE" in data2["applied_live"]
+            assert "app.http_port" in data2["needs_restart"]
             shared2 = get_app_config()
             assert shared2 is not None
             assert shared2.poll_hz == 20
