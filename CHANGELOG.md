@@ -5,6 +5,18 @@ Všechny významné změny v projektu budou zdokumentovány v tomto souboru.
 Formát je založen na [Keep a Changelog](https://keepachangelog.com/cs/1.0.0/),
 a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 
+## [1.0.1](https://github.com/Buchtanen/ir-obs-switcher/compare/v1.0.0...v1.0.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* ignore false GARAGE after session load ([f1d2d63](https://github.com/Buchtanen/ir-obs-switcher/commit/f1d2d631f2b1775600664074e0c496044c951bf3))
+* ignore false GARAGE after session load ([737aa22](https://github.com/Buchtanen/ir-obs-switcher/commit/737aa220d69fcfe1bbf088aec107bb8855e3ead8)), closes [#75](https://github.com/Buchtanen/ir-obs-switcher/issues/75)
+* ignore false GARAGE after session load ([#76](https://github.com/Buchtanen/ir-obs-switcher/issues/76)) ([f1d2d63](https://github.com/Buchtanen/ir-obs-switcher/commit/f1d2d631f2b1775600664074e0c496044c951bf3))
+* read checkout version from pyproject.toml ([8d92124](https://github.com/Buchtanen/ir-obs-switcher/commit/8d9212487470219332c411128f3fe10f02a0e526))
+* read checkout version from pyproject.toml ([f8827b5](https://github.com/Buchtanen/ir-obs-switcher/commit/f8827b564075e84274ef5c110e0583441cd4bb01)), closes [#77](https://github.com/Buchtanen/ir-obs-switcher/issues/77)
+* read checkout version from pyproject.toml ([#78](https://github.com/Buchtanen/ir-obs-switcher/issues/78)) ([8d92124](https://github.com/Buchtanen/ir-obs-switcher/commit/8d9212487470219332c411128f3fe10f02a0e526))
+
 ## [1.0.0](https://github.com/Buchtanen/ir-obs-switcher/compare/v0.7.0...v1.0.0) (2026-08-16)
 
 

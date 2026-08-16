@@ -1,6 +1,6 @@
 [project]
 name = "irswitch"
-version = "1.0.0"
+version = "1.0.1"
 description = "iRacing to OBS auto scene switcher"
 requires-python = ">=3.11"
 readme = "README.md"

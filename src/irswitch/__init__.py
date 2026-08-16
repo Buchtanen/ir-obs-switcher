@@ -91,4 +91,4 @@ try:
     __version__ = resolve_version()
 except Exception:
     # Ultra-safe fallback: never crash import due to version probing.
-    __version__ = "0.0.0"
+    __version__ = "1.0.1"
