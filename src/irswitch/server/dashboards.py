@@ -13,6 +13,7 @@ from irswitch.config import AppConfig
 from irswitch.i18n import get_translator
 from irswitch.server.app_keys import APP_CONFIG
 from irswitch.server.event_log import get_event_log
+from irswitch.server.metrics_display import summarize_errors_total
 
 
 # Import these lazily to avoid circular import
@@ -152,6 +153,9 @@ async def handle_gr_status(request: web.Request) -> web.Response:
 
         metrics = get_metrics()
         metrics_dict = metrics.to_dict(state)
+        errors_total_count, errors_breakdown = summarize_errors_total(
+            metrics_dict.get("errors_total")
+        )
 
         # Calculate update interval from FPS
         update_interval_ms = int(1000 / config.dashboard_update_fps)
@@ -880,6 +884,14 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 <h3>{translator.t('obs_connected')}</h3>
                 <div class="value" id="metrics-obs-time">
                     {format_duration(metrics_dict.get('obs_connected_duration_seconds')) if metrics_dict.get('obs_connected_duration_seconds') is not None else translator.t('n_a')}
+                </div>
+            </div>
+
+            <div class="status-card">
+                <h3>{translator.t('errors_total')}</h3>
+                <div class="value" id="metrics-errors">{errors_total_count}</div>
+                <div class="sublabel" id="metrics-errors-breakdown">
+                    {errors_breakdown if errors_breakdown else translator.t('n_a')}
                 </div>
             </div>
         </div>
@@ -1794,6 +1806,21 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 }}
                 if (obsLabelEl) {{
                     obsLabelEl.parentElement.innerHTML = 'Cumulative' + (obsCurrent !== null && obsCurrent !== undefined && obsCurrent > 0 ? ' | <span>Current</span>' : '');
+                }}
+
+                const errors = data.errors_total || {{}};
+                const errorsEl = document.getElementById('metrics-errors');
+                const errorsBreakdownEl = document.getElementById('metrics-errors-breakdown');
+                if (errorsEl) {{
+                    const total = Object.values(errors).reduce((sum, n) => sum + (Number(n) || 0), 0);
+                    errorsEl.textContent = total;
+                }}
+                if (errorsBreakdownEl) {{
+                    const parts = Object.entries(errors)
+                        .filter(([, n]) => (Number(n) || 0) > 0)
+                        .sort((a, b) => (Number(b[1]) - Number(a[1])) || a[0].localeCompare(b[0]))
+                        .map(([key, n]) => key + ': ' + n);
+                    errorsBreakdownEl.textContent = parts.length ? parts.join(' · ') : t('n_a');
                 }}
             }} catch (error) {{
                 console.error('Failed to update metrics:', error);
