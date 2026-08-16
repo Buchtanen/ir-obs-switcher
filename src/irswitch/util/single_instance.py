@@ -11,7 +11,8 @@ class InstanceAlreadyRunningError(RuntimeError):
 
 def _probe_host(host: str) -> str:
     """Map wildcard bind addresses to a loopback probe target."""
-    if host in ("0.0.0.0", "", "::", "[::]"):
+    # Compare against INADDR_ANY / IPv6 any — not opening a public listener here.
+    if host in ("0.0.0.0", "", "::", "[::]"):  # nosec B104
         return "127.0.0.1"
     return host
 
@@ -34,7 +35,8 @@ def _can_bind_exclusively(host: str, port: int) -> bool:
 
     Returns True if the address is free (bind succeeded), False if occupied.
     """
-    bind_host = "0.0.0.0" if host in ("",) else host
+    # Empty host → same as INADDR_ANY for the temporary exclusivity probe only.
+    bind_host = host if host else "0.0.0.0"  # nosec B104
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         # Prefer exclusive ownership where supported (Windows).
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
