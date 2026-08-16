@@ -198,6 +198,34 @@ Dev konzole (ne EXE): `Ctrl+C` je také graceful (SIGINT), pokud běžíš s vid
 
 ---
 
+## Restart služby (Restarting the service)
+
+Po **Shutdown** / graceful exit se Scheduled Task **sám nespustí** (trigger je jen **At log on**, `MultipleInstances=IgnoreNew`). Pro návrat procesu bez ručního startu použij **Restart Service**.
+
+### GR Dashboard / `POST /restart` (doporučeno)
+
+1. Spawne detached successor se stejným exe a `--config`
+2. Až pak provede graceful shutdown (jako `/shutdown`)
+3. Při selhání spawnu vrátí **500** a **neukončí** běžící službu (fail-closed)
+
+- **GR Dashboard**: `http://127.0.0.1:17321/gr-status` → **Restart Service** (confirm dialog)
+- **API**:
+
+```powershell
+Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:17321/restart"
+```
+
+Detail: [API.md – POST /restart](API.md#post-restart).
+
+| Režim | Co restart dělá | Při selhání spawn |
+|--------|------------------|-------------------|
+| Dist / Task Scheduler | Re-exec `irswitchd.exe` se stejným `--config` (ne trigger tasku) | Služba zůstane běžet |
+| Dev `start_app.ps1` | Re-exec interpreter + script/`irswitchd` se stejným `--config`; původní PS session skončí s child procesem | Stejně fail-closed; konzoli znovu přes `start_app.ps1` |
+
+Krátký backoff před startem child procesu snižuje race na `http_port`. Bez single-instance guard (#48 / PR #58) může krátce existovat overlap — preferuj mít single-instance merged.
+
+---
+
 ## Automatické spuštění při startu systému
 
 ### Možnost A: Windows Task Scheduler (doporučeno pro EXE)

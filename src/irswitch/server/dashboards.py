@@ -895,6 +895,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <button onclick="reinitStream()">{translator.t('reinit_stream')}</button>
             <button onclick="reloadConfig()">Reload Config</button>
             <button onclick="resetService()" style="background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">Reset Service</button>
+            <button onclick="restartService()" style="background: rgba(255, 152, 0, 0.25); border-color: rgba(255, 152, 0, 0.5);">{translator.t('restart_service')}</button>
             <button onclick="shutdownService()" style="background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.4);">Shutdown Service</button>
         </div>
         
@@ -1697,6 +1698,32 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             }} catch (error) {{
                 console.error('Failed to reset service:', error);
                 showToast('Reset Failed', error.message || 'Network error', 'error');
+            }}
+        }}
+        
+        async function restartService() {{
+            const confirmed = await showConfirm(
+                t('restart_service'),
+                t('restart_service_confirm'),
+                t('restart'),
+                t('cancel'),
+                true
+            );
+            if (!confirmed) {{
+                return;
+            }}
+            try {{
+                const response = await fetch(`${{API_BASE}}/restart`, {{ method: 'POST' }});
+                const data = await response.json();
+                
+                if (response.ok) {{
+                    showToast(t('restart_initiated'), t('restart_initiated_detail'), 'warning');
+                }} else {{
+                    showToast(t('restart_failed'), data.error || 'Unknown error', 'error');
+                }}
+            }} catch (error) {{
+                console.error('Failed to restart service:', error);
+                showToast(t('restart_failed'), error.message || 'Network error', 'error');
             }}
         }}
         

@@ -16,6 +16,7 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [POST /config/reload](#post-configreload)
   - [POST /reset](#post-reset)
   - [POST /shutdown](#post-shutdown)
+  - [POST /restart](#post-restart)
   - [GET /api/events](#get-apievents)
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
@@ -377,12 +378,51 @@ Graceful shutdown aplikace.
 **Response** (200 OK):
 ```json
 {
-  "success": true,
-  "message": "Shutdown initiated"
+  "status": "shutting_down",
+  "message": "Service shutdown initiated"
 }
 ```
 
 **Poznámka**: Aplikace se ukončí po dokončení aktuálních operací.
+
+---
+
+### POST /restart
+
+Detached respawn stejného procesu (`irswitchd` / aktuální interpreter + `--config`), pak stejný graceful shutdown jako `/shutdown`.
+
+**URL**: `http://127.0.0.1:17321/restart`
+
+**Method**: `POST`
+
+**Response** (200 OK) — spawn OK, shutdown zahájen:
+```json
+{
+  "status": "restarting",
+  "message": "Service restart initiated"
+}
+```
+
+**Response** (500) — spawn selhal (**fail-closed**: služba **zůstane běžet**):
+```json
+{
+  "error": "Failed to spawn restart process: ..."
+}
+```
+
+**Response** (503) — shutdown/restart wiring není k dispozici:
+```json
+{
+  "error": "Restart not available"
+}
+```
+
+**Chování**:
+1. Nejdřív se pokusí spustit nový detached proces se stejným exe a `--config`.
+2. Až když spawn uspěje, provede graceful shutdown (jako `/shutdown`).
+3. Při selhání spawnu vrátí 500 a **neukončí** běžící službu.
+
+Krátký backoff před startem child procesu uvolní `http_port`. Task Scheduler po graceful exitu **sám nespouští** app znovu — restart jde přes re-exec, ne přes task trigger. Detail: [BUILD_AND_DEPLOY.md – Restart služby](BUILD_AND_DEPLOY.md#restart-služby-restarting-the-service).
 
 ---
 
