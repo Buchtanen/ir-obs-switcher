@@ -163,6 +163,7 @@ GR Dashboard poskytuje webové rozhraní pro ovládání aplikace:
 - **Reset RESTART Mode** - deaktivuje RESTART mód
 - **Reload Config** - přenačte konfiguraci ze souboru
 - **Reset** - resetuje metriky a stav aplikace
+- **Restart Service** - detached respawn + graceful stop (fail-closed při selhání spawnu)
 - **Shutdown Service** - ukončí aplikaci
 
 ### API
@@ -232,6 +233,8 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 ### Jak zastavit službu (Windows / EXE)
 
 Preferuj graceful shutdown (GR Dashboard **Shutdown Service** nebo `POST /shutdown`). Pro Task Scheduler End, `Install.ps1 -Uninstall` / `-UninstallTask` a rozdíl graceful vs kill viz [BUILD_AND_DEPLOY.md – Zastavení služby](BUILD_AND_DEPLOY.md#zastavení-služby-stopping-the-service).
+
+Pro **restart bez ručního startu** použij GR **Restart Service** / `POST /restart` (viz [BUILD_AND_DEPLOY.md – Restart služby](BUILD_AND_DEPLOY.md#restart-služby-restarting-the-service)).
 
 ### `PermissionError` / pád při `import aiohttp` (SSLKEYLOGFILE)
 

@@ -569,6 +569,39 @@ async def handle_shutdown(request: web.Request) -> web.Response:
     return web.json_response({"status": "shutting_down", "message": "Service shutdown initiated"})
 
 
+async def handle_restart(request: web.Request) -> web.Response:
+    """Handle POST /restart: spawn detached successor, then graceful shutdown.
+
+    Fail-closed: if spawn fails, return 500 and do **not** shut down.
+    """
+    global _shutdown_event
+    if _shutdown_event is None:
+        return web.json_response({"error": "Restart not available"}, status=503)
+
+    config_path = request.app.get(APP_CONFIG_PATH)
+    if not config_path:
+        return web.json_response(
+            {"error": "Config path not available; cannot restart"},
+            status=500,
+        )
+
+    from irswitch.util.process_restart import spawn_detached_restart
+
+    try:
+        spawn_detached_restart(config_path=config_path, cwd=Path.cwd())
+    except Exception as e:
+        logger.error("Failed to spawn restart process: %s", e, exc_info=True)
+        return web.json_response(
+            {"error": f"Failed to spawn restart process: {e}"},
+            status=500,
+        )
+
+    logger.info("Restart requested via API; successor spawned, initiating shutdown")
+    await _task_registry.cancel_all()
+    _shutdown_event.set()
+    return web.json_response({"status": "restarting", "message": "Service restart initiated"})
+
+
 async def handle_reset(request: web.Request) -> web.Response:
     """Handle POST /reset endpoint - reset state and metrics to CONNECTING."""
     global _current_state, _state_machine
@@ -1065,6 +1098,7 @@ def create_app() -> web.Application:
     app.router.add_get("/metrics", handle_metrics)
     app.router.add_post("/config/reload", handle_config_reload)
     app.router.add_post("/shutdown", handle_shutdown)
+    app.router.add_post("/restart", handle_restart)
     app.router.add_post("/reset", handle_reset)
     app.router.add_post("/stream/reinit", handle_stream_reinit)
     app.router.add_get("/gr-status", handle_gr_status)

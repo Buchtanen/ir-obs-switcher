@@ -576,6 +576,89 @@ async def test_shutdown_not_available(app: web.Application) -> None:
 
 
 @pytest.mark.asyncio
+async def test_restart_success(app: web.Application, tmp_path) -> None:
+    """POST /restart spawns first, then shuts down (fail-closed contract)."""
+    import asyncio
+    from unittest.mock import patch
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.server.api import APP_CONFIG_PATH, set_shutdown_event
+
+    shutdown_event = asyncio.Event()
+    set_shutdown_event(shutdown_event)
+    config_path = tmp_path / "config.ini"
+    config_path.write_text("[app]\nhttp_port = 17321\n", encoding="utf-8")
+    app[APP_CONFIG_PATH] = config_path
+
+    with patch("irswitch.util.process_restart.spawn_detached_restart") as spawn:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.post("/restart")
+                assert resp.status == 200
+
+                data = await resp.json()
+                assert data["status"] == "restarting"
+                assert "message" in data
+
+                spawn.assert_called_once()
+                assert spawn.call_args.kwargs["config_path"] == config_path
+                assert shutdown_event.is_set()
+
+
+@pytest.mark.asyncio
+async def test_restart_spawn_fail_does_not_shutdown(app: web.Application, tmp_path) -> None:
+    """POST /restart must not shut down when spawn fails (fail-closed)."""
+    import asyncio
+    from unittest.mock import patch
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.server.api import APP_CONFIG_PATH, set_shutdown_event
+
+    shutdown_event = asyncio.Event()
+    set_shutdown_event(shutdown_event)
+    config_path = tmp_path / "config.ini"
+    config_path.write_text("[app]\nhttp_port = 17321\n", encoding="utf-8")
+    app[APP_CONFIG_PATH] = config_path
+
+    with patch(
+        "irswitch.util.process_restart.spawn_detached_restart",
+        side_effect=OSError("spawn denied"),
+    ) as spawn:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.post("/restart")
+                assert resp.status == 500
+
+                data = await resp.json()
+                assert "error" in data
+                assert "spawn" in data["error"].lower()
+
+                spawn.assert_called_once()
+                assert not shutdown_event.is_set()
+
+
+@pytest.mark.asyncio
+async def test_restart_not_available(app: web.Application) -> None:
+    """POST /restart returns 503 when shutdown event is not wired."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.server.api import set_shutdown_event
+
+    set_shutdown_event(None)
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/restart")
+            assert resp.status == 503
+
+            data = await resp.json()
+            assert "error" in data
+            assert "not available" in data["error"].lower()
+
+
+@pytest.mark.asyncio
 async def test_stream_reinit_obs_not_connected(app: web.Application) -> None:
     """POST /stream/reinit returns 503 when OBS is unavailable."""
     from aiohttp.test_utils import TestClient, TestServer
