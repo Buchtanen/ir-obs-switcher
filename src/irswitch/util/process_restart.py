@@ -15,8 +15,14 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Short delay so the parent can release http_port before the child binds.
-DEFAULT_PORT_BACKOFF_SECONDS = 1.5
+# Child sees this and may retry single-instance briefly while the parent exits.
+# Primary handoff mechanism on Windows (sleep+execv launchers are fragile with
+# console_scripts .exe shims + CREATE_NO_WINDOW).
+RESTART_ENV_FLAG = "IRSWITCH_RESTARTING"
+
+# Kept for API compatibility / optional posix delayed exec; Windows ignores delay
+# and relies on IRSWITCH_RESTARTING port retry instead.
+DEFAULT_PORT_BACKOFF_SECONDS = 0.0
 
 
 def _extract_config_from_argv(argv: list[str]) -> str | None:
@@ -34,7 +40,9 @@ def build_restart_command(*, config_path: str | Path | None = None) -> list[str]
     Build argv to respawn the current process with --config.
 
     Frozen (PyInstaller): ``irswitchd.exe --config <path>``
-    Dev / console_scripts: ``python <script> --config <path>``
+    pip console_scripts shim: ``irswitchd.exe --config <path>`` (do **not**
+    pass the ``.exe`` as a script to ``python.exe`` — that fails on Windows)
+    Dev module run: ``python -m irswitch.main --config <path>`` / ``python script.py``
     """
     cfg: str | None
     if config_path is not None:
@@ -52,6 +60,16 @@ def build_restart_command(*, config_path: str | Path | None = None) -> list[str]
     if not script:
         raise ValueError("Cannot build restart command: sys.argv[0] is empty")
 
+    script_path = Path(script)
+    # setuptools/pip Windows console_scripts launcher:
+    # argv[0] is often ``...\Scripts\irswitchd`` (no suffix) or ``...\irswitchd.exe``.
+    # Never pass that path as a script to python.exe — it is a PE shim, not .py.
+    exe_candidate = (
+        script_path if script_path.suffix.lower() == ".exe" else script_path.with_suffix(".exe")
+    )
+    if exe_candidate.is_file():
+        return [str(exe_candidate.resolve()), "--config", cfg]
+
     return [sys.executable, script, "--config", cfg]
 
 
@@ -64,8 +82,8 @@ def spawn_detached_restart(
     """
     Spawn a detached successor process with the same exe/argv style and --config.
 
-    On Windows, optionally delays start (``backoff_seconds``) so the parent can
-    release ``http_port`` before the child listens.
+    Sets ``IRSWITCH_RESTARTING=1`` so the child can retry claiming ``http_port``
+    while the parent shuts down.
 
     Raises OSError / ValueError on spawn failure. Does not wait for the child
     to become healthy — only that the OS accepted the new process.
@@ -86,13 +104,26 @@ def spawn_detached_restart(
         _spawn_posix(command, cwd=work_dir, backoff_seconds=backoff_seconds)
 
 
+def _child_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env[RESTART_ENV_FLAG] = "1"
+    # Broken SSLKEYLOGFILE (inaccessible Volume GUID) crashes ssl on Python 3.14+.
+    keylog = env.get("SSLKEYLOGFILE")
+    if keylog:
+        parent = os.path.dirname(keylog)
+        if not parent or not os.path.isdir(parent):
+            env.pop("SSLKEYLOGFILE", None)
+    return env
+
+
 def _spawn_windows(
     command: list[str],
     *,
     cwd: str | None,
     backoff_seconds: float,
 ) -> None:
-    """Detached Windows spawn; optional ``timeout`` delay before re-exec."""
+    """Detached Windows spawn of the real command (handoff via port retry)."""
+    del backoff_seconds  # handoff uses IRSWITCH_RESTARTING retry, not sleep launcher
     creationflags = (
         subprocess.CREATE_NEW_PROCESS_GROUP
         | subprocess.DETACHED_PROCESS
@@ -102,18 +133,10 @@ def _spawn_windows(
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     startupinfo.wShowWindow = subprocess.SW_HIDE
 
-    delay = max(0, int(round(backoff_seconds)))
-    if delay > 0:
-        # Parent still holds the port; delay child start until after shutdown.
-        quoted = subprocess.list2cmdline(command)
-        shell_cmd = f"timeout /t {delay} /nobreak >nul & {quoted}"
-        popen_args: list[str] = ["cmd.exe", "/c", shell_cmd]
-    else:
-        popen_args = command
-
     subprocess.Popen(  # noqa: S603 — intentional re-exec of our own process
-        popen_args,
+        command,
         cwd=cwd,
+        env=_child_env(),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -129,10 +152,9 @@ def _spawn_posix(
     cwd: str | None,
     backoff_seconds: float,
 ) -> None:
-    """Detached POSIX spawn (tests / non-Windows); optional sleep then exec."""
+    """Detached POSIX spawn; optional sleep then exec, plus restart env flag."""
     delay = max(0.0, float(backoff_seconds))
     if delay > 0:
-        # Small launcher: sleep then exec — avoids holding the parent on sleep.
         launcher = (
             "import os, sys, time;" f"time.sleep({delay!r});" "os.execv(sys.argv[1], sys.argv[1:])"
         )
@@ -148,5 +170,5 @@ def _spawn_posix(
         stderr=subprocess.DEVNULL,
         start_new_session=True,
         close_fds=True,
-        env=os.environ.copy(),
+        env=_child_env(),
     )

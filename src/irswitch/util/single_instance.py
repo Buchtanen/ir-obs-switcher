@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
+import logging
+import os
 import socket
+import time
+
+logger = logging.getLogger(__name__)
+
+# When respawning via POST /restart, parent may still hold the port briefly.
+_RESTART_ENV_FLAG = "IRSWITCH_RESTARTING"
+_RESTART_RETRY_SECONDS = 15.0
+_RESTART_RETRY_INTERVAL = 0.2
 
 
 class InstanceAlreadyRunningError(RuntimeError):
@@ -50,22 +60,53 @@ def _can_bind_exclusively(host: str, port: int) -> bool:
     return True
 
 
+def _address_occupied(host: str, port: int) -> bool:
+    occupied = _port_accepts_tcp(host, port)
+    if not occupied:
+        occupied = not _can_bind_exclusively(host, port)
+    return occupied
+
+
 def ensure_single_instance(host: str, port: int) -> None:
     """
     Ensure no other irswitch (or conflicting listener) holds http_host:http_port.
 
     Checks whether the address already accepts TCP; if not conclusive, attempts
     an exclusive bind. Raises InstanceAlreadyRunningError with a clear message.
-    """
-    occupied = _port_accepts_tcp(host, port)
-    if not occupied:
-        # Nothing answering yet — still verify we can claim the port.
-        occupied = not _can_bind_exclusively(host, port)
 
-    if occupied:
-        raise InstanceAlreadyRunningError(
-            f"Another irswitch instance appears to be running "
-            f"(address {host}:{port} is already in use). "
-            f"Stop the existing process or change app.http_port in config.ini. "
-            f"Exit code 2."
+    When ``IRSWITCH_RESTARTING=1`` (set by POST /restart spawn), only probes for
+    an active listener (not exclusive bind). After the parent closes its socket,
+    Windows ``TIME_WAIT`` + ``SO_EXCLUSIVEADDRUSE`` would otherwise look occupied
+    and abort the handoff.
+    """
+    restarting = os.environ.get(_RESTART_ENV_FLAG) == "1"
+    deadline = time.monotonic()
+    if restarting:
+        deadline += _RESTART_RETRY_SECONDS
+        logger.info(
+            "Restart handoff: waiting up to %.1fs for %s:%s listener to go away",
+            _RESTART_RETRY_SECONDS,
+            host,
+            port,
         )
+
+    while True:
+        if restarting:
+            occupied = _port_accepts_tcp(host, port)
+        else:
+            occupied = _address_occupied(host, port)
+
+        if not occupied:
+            # Drop handoff flag so later logic does not keep retrying forever.
+            os.environ.pop(_RESTART_ENV_FLAG, None)
+            return
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(_RESTART_RETRY_INTERVAL)
+
+    raise InstanceAlreadyRunningError(
+        f"Another irswitch instance appears to be running "
+        f"(address {host}:{port} is already in use). "
+        f"Stop the existing process or change app.http_port in config.ini. "
+        f"Exit code 2."
+    )

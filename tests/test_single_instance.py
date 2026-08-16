@@ -79,3 +79,38 @@ def test_ensure_single_instance_uses_bind_fallback_when_connect_misses() -> None
     ):
         with pytest.raises(InstanceAlreadyRunningError):
             ensure_single_instance("127.0.0.1", 17321)
+
+
+def test_ensure_single_instance_retries_when_restarting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """During restart handoff, wait only for the active listener to go away."""
+    monkeypatch.setenv("IRSWITCH_RESTARTING", "1")
+    calls = {"n": 0}
+
+    def accepts(_host: str, _port: int, *, timeout: float = 0.5) -> bool:
+        del timeout
+        calls["n"] += 1
+        return calls["n"] < 3
+
+    with patch("irswitch.util.single_instance._port_accepts_tcp", side_effect=accepts):
+        with patch("irswitch.util.single_instance._can_bind_exclusively") as bind:
+            with patch("irswitch.util.single_instance.time.sleep") as sleep:
+                ensure_single_instance("127.0.0.1", 17321)
+
+    assert calls["n"] == 3
+    assert sleep.call_count >= 2
+    bind.assert_not_called()
+    assert "IRSWITCH_RESTARTING" not in __import__("os").environ
+
+
+def test_ensure_single_instance_restart_retry_eventually_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("IRSWITCH_RESTARTING", "1")
+    monkeypatch.setattr("irswitch.util.single_instance._RESTART_RETRY_SECONDS", 0.05)
+    monkeypatch.setattr("irswitch.util.single_instance._RESTART_RETRY_INTERVAL", 0.01)
+
+    with patch("irswitch.util.single_instance._port_accepts_tcp", return_value=True):
+        with pytest.raises(InstanceAlreadyRunningError):
+            ensure_single_instance("127.0.0.1", 17321)
