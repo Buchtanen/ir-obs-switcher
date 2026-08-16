@@ -426,7 +426,7 @@ IDLE = Idle
 
 Název OBS scény pro GARAGE mód (garáž ve hře).
 
-**Kdy nastává**: Když je hráč v garáži během session.
+**Kdy nastává**: Když je vidět iRacing garage screen (`IsGarageVisible`). Samotné `IsInGarage` / `PlayerCarInGarage` nestačí — ty znamenají jen fyziku auta ve stání, což je true i v lobby hned po loadu.
 
 **Příklad**: 
 ```ini

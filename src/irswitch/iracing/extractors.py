@@ -36,6 +36,16 @@ def as_int(value: object) -> int | None:
         return None
 
 
+def optional_bool(data: Mapping[str, object], key: str) -> bool | None:
+    """Return bool flag when the key is present; None if missing."""
+    if key not in data:
+        return None
+    value = data.get(key)
+    if value is None:
+        return None
+    return as_bool(value)
+
+
 def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     """
     Extract driving mode from iRacing SDK data.
@@ -43,6 +53,10 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     Priority order: GARAGE > REPLAY > RACE > LOBBY
     Note: SETTINGS detection was removed - iRacing SDK doesn't report it reliably.
     Note: IDLE is deprecated, use LOBBY instead.
+
+    GARAGE uses IsGarageVisible (garage UI). IsInGarage / PlayerCarInGarage only
+    mean car physics are running in the stall — that is also true in the lobby
+    after loading, so they are not sufficient on their own.
     """
     # Get all relevant variables
     is_replay = as_bool(data.get("IsReplay"))
@@ -50,10 +64,11 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     cam_car_idx = data.get("CamCarIdx")
     cam_camera_state = data.get("CamCameraState")
     is_on_track = as_bool(data.get("IsOnTrack")) or as_bool(data.get("IsOnTrackCar"))
-    is_in_garage = as_bool(data.get("PlayerCarInGarage")) or as_bool(data.get("IsInGarage"))
+    garage_visible = optional_bool(data, "IsGarageVisible")
 
     # Determine if player is in car based on CamCameraState
     is_in_car = False
+    is_session_screen = False
     cam_state = as_int(cam_camera_state)
     if cam_state is not None:
         # Bit 0: session screen (menu/UI) - if set, not in car
@@ -63,6 +78,15 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
         car_idx = as_int(player_car_idx)
         if car_idx is not None:
             is_in_car = car_idx >= 0
+
+    if garage_visible is True:
+        is_in_garage = True
+    elif garage_visible is False:
+        is_in_garage = False
+    else:
+        # Older/partial snapshots: stall physics plus not on session screen
+        car_in_stall = as_bool(data.get("PlayerCarInGarage")) or as_bool(data.get("IsInGarage"))
+        is_in_garage = car_in_stall and not is_session_screen
 
     # Check camera mismatch (watching replay of other car)
     cam_mismatch = False

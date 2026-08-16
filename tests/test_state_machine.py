@@ -296,3 +296,126 @@ def test_tick_same_scene_no_switch(state_machine: StateMachine, initial_state: S
         assert new_state.target_scene == "Idle"
         assert new_state.current_scene == "Idle"
         assert new_state.last_switch_ts == initial_state.last_switch_ts  # No switch occurred
+
+
+def _post_load_policy() -> Policy:
+    return Policy(
+        scenes={
+            DrivingMode.LOBBY: "VR",
+            DrivingMode.GARAGE: "Back",
+            DrivingMode.RACE: "VR",
+            DrivingMode.REPLAY: "VR",
+        },
+        safe_scene="Practice",
+    )
+
+
+def _post_load_machine() -> StateMachine:
+    return StateMachine(
+        policy=_post_load_policy(),
+        debounce_ms=900,
+        cooldown_ms=1000,
+        override_seconds=120,
+        autoswitch_default=True,
+    )
+
+
+def _connected_idle_state() -> SwitchState:
+    return SwitchState(
+        connected_iracing=True,
+        connected_obs=True,
+        autoswitch=True,
+        override_scene=None,
+        override_until=None,
+        mode=DrivingMode.IDLE,
+        target_scene="Practice",
+        current_scene="Practice",
+        last_switch_ts=None,
+        reason="initial",
+    )
+
+
+def test_post_load_garage_flicker_does_not_switch_to_garage() -> None:
+    """First GARAGE after CONNECTING must not switch; LOBBY afterwards should."""
+    from unittest.mock import patch
+
+    time_ms = 1000000
+    sm = _post_load_machine()
+    state = _connected_idle_state()
+
+    def mock_now_ms() -> int:
+        return time_ms
+
+    with patch("irswitch.logic.state_machine.now_ms", side_effect=mock_now_ms):
+        state = sm.tick(state, None, "Practice")
+        assert state.mode == DrivingMode.CONNECTING
+
+        time_ms += 200
+        state = sm.tick(state, DrivingMode.GARAGE, "Practice")
+        assert "grace_period_ignore:GARAGE" in state.reason
+        assert state.current_scene == "Practice"
+
+        time_ms += 1000
+        state = sm.tick(state, DrivingMode.GARAGE, "Practice")
+        assert state.current_scene == "Practice"
+        assert state.target_scene != "Back"
+
+        time_ms += 200
+        state = sm.tick(state, DrivingMode.LOBBY, "Practice")
+        assert "grace_period_ended:LOBBY" in state.reason
+        assert state.target_scene == "VR"
+
+
+def test_post_load_stable_garage_switches_after_grace() -> None:
+    """Real garage after load: GARAGE stable for grace period switches."""
+    from unittest.mock import patch
+
+    from irswitch.logic.state_machine import GRACE_PERIOD_MS
+
+    time_ms = 1000000
+    sm = _post_load_machine()
+    state = _connected_idle_state()
+
+    def mock_now_ms() -> int:
+        return time_ms
+
+    with patch("irswitch.logic.state_machine.now_ms", side_effect=mock_now_ms):
+        state = sm.tick(state, None, "Practice")
+
+        time_ms += 200
+        state = sm.tick(state, DrivingMode.GARAGE, "Practice")
+        assert "grace_period_ignore:GARAGE" in state.reason
+
+        time_ms += GRACE_PERIOD_MS - 1
+        state = sm.tick(state, DrivingMode.GARAGE, "Practice")
+        assert state.target_scene != "Back"
+
+        time_ms += 1
+        state = sm.tick(state, DrivingMode.GARAGE, "Practice")
+        assert "grace_period_timeout:GARAGE" in state.reason
+        assert state.target_scene == "Back"
+
+
+def test_post_load_race_still_switches_after_debounce() -> None:
+    """RACE after CONNECTING is trusted and switches after debounce."""
+    from unittest.mock import patch
+
+    time_ms = 1000000
+    sm = _post_load_machine()
+    state = _connected_idle_state()
+
+    def mock_now_ms() -> int:
+        return time_ms
+
+    with patch("irswitch.logic.state_machine.now_ms", side_effect=mock_now_ms):
+        state = sm.tick(state, None, "Practice")
+
+        time_ms += 200
+        state = sm.tick(state, DrivingMode.RACE, "Practice")
+        assert "debouncing" in state.reason
+        assert state.current_scene == "Practice"
+
+        time_ms += 900
+        state = sm.tick(state, DrivingMode.RACE, "Practice")
+        assert state.target_scene == "VR"
+        assert "debounced" in state.reason or "mode:RACE" in state.reason

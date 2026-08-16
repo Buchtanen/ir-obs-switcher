@@ -14,7 +14,7 @@ def test_extract_mode_prioritizes_replay() -> None:
     data = {
         "IsReplay": True,
         "IsOnTrack": True,
-        "PlayerCarInGarage": True,
+        "IsGarageVisible": True,
     }
     # GARAGE has highest priority, overrides REPLAY
     assert extract_mode(data) == DrivingMode.GARAGE
@@ -27,8 +27,34 @@ def test_extract_mode_race_when_on_track() -> None:
     assert extract_mode(data) == DrivingMode.RACE
 
 
-def test_extract_mode_garage_when_in_garage() -> None:
-    """Test GARAGE mode when in garage."""
+def test_extract_mode_garage_when_garage_visible() -> None:
+    """Test GARAGE mode when garage screen is visible."""
+    data = {"IsGarageVisible": "true"}
+    assert extract_mode(data) == DrivingMode.GARAGE
+
+
+def test_extract_mode_in_garage_physics_without_screen_is_lobby() -> None:
+    """Car-in-stall physics is not garage when the garage UI is hidden."""
+    data = {
+        "IsInGarage": True,
+        "PlayerCarInGarage": True,
+        "IsGarageVisible": False,
+    }
+    assert extract_mode(data) == DrivingMode.LOBBY
+
+
+def test_extract_mode_session_screen_with_stall_physics_is_lobby() -> None:
+    """GetInCar/lobby: stall physics plus session screen must stay LOBBY."""
+    data = {
+        "IsInGarage": True,
+        "PlayerCarInGarage": True,
+        "CamCameraState": 1,  # bit 0 = session screen
+    }
+    assert extract_mode(data) == DrivingMode.LOBBY
+
+
+def test_extract_mode_garage_fallback_without_visible_flag() -> None:
+    """When IsGarageVisible is absent, stall physics without session screen is GARAGE."""
     data = {"PlayerCarInGarage": "true"}
     assert extract_mode(data) == DrivingMode.GARAGE
 
@@ -46,7 +72,7 @@ def test_extract_mode_replay_overrides_race() -> None:
 
 def test_extract_mode_garage_overrides_replay() -> None:
     """Test that GARAGE overrides REPLAY."""
-    data = {"IsReplay": True, "PlayerCarInGarage": True}
+    data = {"IsReplay": True, "IsGarageVisible": True}
     assert extract_mode(data) == DrivingMode.GARAGE
 
 
