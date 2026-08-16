@@ -57,6 +57,10 @@ from irswitch.util.logging import (
     setup_logging,
 )
 from irswitch.util.notifications import set_notifications_enabled
+from irswitch.util.single_instance import (
+    InstanceAlreadyRunningError,
+    ensure_single_instance,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1193,6 +1197,15 @@ async def run_service(config: AppConfig, config_path: str) -> None:
         use_colors=config.log_colors,
     )
 
+    # Fail fast if another instance already owns the HTTP listen address
+    # (before OBS / iRacing / AppRunner heavy init).
+    try:
+        ensure_single_instance(config.http_host, config.http_port)
+    except InstanceAlreadyRunningError as e:
+        logger.error("%s", e)
+        print(str(e), file=sys.stderr)
+        raise
+
     # Set global notifications flag
     set_notifications_enabled(config.notifications_enabled)
     logger.info(f"Notifications enabled: {config.notifications_enabled}")
@@ -1596,6 +1609,9 @@ def main() -> int:
     try:
         asyncio.run(run_service(config, args.config))
         return 0
+    except InstanceAlreadyRunningError:
+        # Already logged + printed in run_service.
+        return 2
     except KeyboardInterrupt:
         return 0
     except Exception as e:

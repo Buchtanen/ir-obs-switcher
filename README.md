@@ -218,6 +218,17 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 4. Zkontroluj, že port 17321 není obsazený jinou aplikací
 5. Podívej se na error message - často obsahuje konkrétní problém
 
+### Druhá instance / port už obsazený
+
+**Příznaky**: Druhý start (zkratka, `start_app.ps1`, EXE) hned skončí; stderr/log obsahuje „already in use“ / „Another irswitch instance“; exit code **2**.
+
+**Příčina**: Na `app.http_host`:`app.http_port` už naslouchá běžící irswitch (nebo jiná aplikace). Guard to detekuje **před** těžkou inicializací OBS/HTTP.
+
+**Řešení**:
+1. Zastav existující instanci (GR Dashboard **Shutdown Service**, `POST /shutdown`, nebo Task Manager)
+2. Nebo změň `app.http_port` v `config.ini` a restartuj
+3. Ověř, že neběží dvě zkratky / naplánované úlohy najednou
+
 ### Jak zastavit službu (Windows / EXE)
 
 Preferuj graceful shutdown (GR Dashboard **Shutdown Service** nebo `POST /shutdown`). Pro Task Scheduler End, `Install.ps1 -Uninstall` / `-UninstallTask` a rozdíl graceful vs kill viz [BUILD_AND_DEPLOY.md – Zastavení služby](BUILD_AND_DEPLOY.md#zastavení-služby-stopping-the-service).

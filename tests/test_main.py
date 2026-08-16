@@ -119,6 +119,21 @@ def test_main_valid_config(config_path: Path) -> None:
         assert result == 0
 
 
+def test_main_instance_already_running_exits_2(config_path: Path) -> None:
+    """Second instance conflict must exit with code 2."""
+    from irswitch.util.single_instance import InstanceAlreadyRunningError
+
+    with (
+        patch("sys.argv", ["irswitchd", "--config", str(config_path)]),
+        patch(
+            "irswitch.main.run_service",
+            side_effect=InstanceAlreadyRunningError("port in use"),
+        ),
+    ):
+        result = main()
+        assert result == 2
+
+
 @pytest.mark.asyncio
 async def test_stream_cache_fresh_scenario() -> None:
     """Test that fresh cache is used directly for auto-start decision."""
