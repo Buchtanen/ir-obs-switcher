@@ -82,7 +82,7 @@ jobs:
         path: ./
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ needs.build.outputs.archive_name }}
         name: Release ${{ env.VERSION }}
