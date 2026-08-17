@@ -42,7 +42,7 @@ jobs:
       archive_name: ${{ steps.out.outputs.archive_name }}
       version: ${{ steps.out.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python ${{ inputs.python_version }}
         uses: actions/setup-python@v6
