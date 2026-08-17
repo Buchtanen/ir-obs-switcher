@@ -84,7 +84,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests
