@@ -33,7 +33,9 @@ def _read_psutil() -> tuple[CPUState, MemoryState]:
         import psutil
     except ImportError:
         if not _PSUTIL_UNAVAILABLE_LOGGED:
-            logger.info("System info: psutil not installed; CPU/RAM limited")
+            logger.warning(
+                "System info: psutil not installed; CPU/RAM empty. Reinstall: pip install -e ."
+            )
             _PSUTIL_UNAVAILABLE_LOGGED = True
         return cpu, memory
     try:

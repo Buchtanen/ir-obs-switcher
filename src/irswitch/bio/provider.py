@@ -1,4 +1,4 @@
-"""BLE heart-rate provider. Optional ``bleak`` extra. Fail-soft, never blocks the loop."""
+"""BLE heart-rate provider. Fail-soft, never blocks the loop."""
 
 from __future__ import annotations
 
@@ -120,7 +120,9 @@ class BleHeartRateProvider:
         try:
             import bleak  # noqa: F401
         except ImportError:
-            logger.warning("BLE heart-rate skipped: bleak is not installed")
+            logger.warning(
+                "BLE heart-rate skipped: bleak is not installed. Reinstall: pip install -e ."
+            )
             self.set_status("disconnected")
             await self._stop.wait()
             return

@@ -382,6 +382,9 @@ pyinstaller --onefile `
     --name irswitchd `
     --noconsole `
     --collect-all irswitch `
+    --collect-all bleak `
+    --collect-all psutil `
+    --hidden-import pynvml `
     --distpath dist `
     --workpath build `
     --clean `

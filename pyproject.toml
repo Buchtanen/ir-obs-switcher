@@ -13,6 +13,9 @@ dependencies = [
   "pyirsdk>=1.3",
   "pynput>=1.8.1",
   "colorama>=0.4.6",
+  "bleak>=0.22",
+  "psutil>=5.9",
+  "nvidia-ml-py>=12.535",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +34,7 @@ security = [
   "bandit[toml]>=1.7",
   "safety>=2.3",
 ]
+# Overlay backends are core deps; extras kept as install aliases.
 ble = [
   "bleak>=0.22",
 ]

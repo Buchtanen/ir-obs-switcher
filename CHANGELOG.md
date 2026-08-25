@@ -10,7 +10,7 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 ### Features
 
 * race overlay pipeline: telemetry extract, race context, event manager, HTML OBS overlay
-* optional BLE heart-rate (`bleak` extra) and system info (`psutil` / NVML extras)
+* overlay BLE heart-rate (`bleak`) and system info (`psutil` / NVML) as core deps; LHM stays extra
 * overlay WebSocket `/ws/overlay`, debug inject, schema-driven `/config` page
 * per-component sampling Hz (global default + override, bio push by default)
 * mock (`--mock`) and JSONL replay (`--replay`) without iRacing

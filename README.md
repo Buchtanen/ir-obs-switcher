@@ -161,7 +161,7 @@ irswitchd --config config\config.ini --mock
 irswitchd --config config\config.ini --replay recordings\battle.jsonl
 ```
 
-Optional extras: `pip install .[ble]` (heart rate), `pip install .[sysinfo]` (psutil/NVML). LibreHardwareMonitor DLL se do gitu nedává.
+Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. LibreHardwareMonitor zůstává extra: `pip install .[sysinfo-lhm]` (DLL se do gitu nedává).
 
 ### VR Dashboard (pro VR)
 

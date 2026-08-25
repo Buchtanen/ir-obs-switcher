@@ -42,6 +42,9 @@ if [ "$CORE" = true ] || [ "$ALL" = true ]; then
     pyinstaller --onefile \
         --name irswitchd \
         --collect-all irswitch \
+        --collect-all bleak \
+        --collect-all psutil \
+        --hidden-import pynvml \
         --distpath dist \
         --workpath build \
         --clean \
