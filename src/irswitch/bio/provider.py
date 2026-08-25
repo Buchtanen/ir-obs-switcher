@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import sys
 import time
 from collections.abc import Callable
 from typing import Any
@@ -121,7 +122,10 @@ class BleHeartRateProvider:
             import bleak  # noqa: F401
         except ImportError:
             logger.warning(
-                "BLE heart-rate skipped: bleak is not installed. Reinstall: pip install -e ."
+                "BLE heart-rate skipped: bleak is not installed for %s. "
+                'Install with that interpreter: "%s" -m pip install -e .',
+                sys.executable,
+                sys.executable,
             )
             self.set_status("disconnected")
             await self._stop.wait()

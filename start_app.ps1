@@ -60,9 +60,7 @@ Write-Host ""
 
 # Prefer project .venv over global PATH Python / irswitchd
 $VenvPython = Join-Path $ScriptDir ".venv\Scripts\python.exe"
-$VenvIrswitchd = Join-Path $ScriptDir ".venv\Scripts\irswitchd.exe"
 $PythonExe = $null
-$IrswitchdExe = $null
 
 if (Test-Path $VenvPython) {
     $PythonExe = $VenvPython
@@ -98,28 +96,22 @@ if ($versionOutput -match "Python (\d+)\.(\d+)") {
     }
 }
 
-# Fail-fast: package must import from the chosen interpreter
-& $PythonExe -c "import irswitch" 2>$null
+# Fail-fast: package + overlay backends must import from the chosen interpreter.
+# Old editable installs still import `irswitch`, so we also require bleak/psutil.
+& $PythonExe -c "import irswitch, bleak, psutil" 2>$null
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Package 'irswitch' not installed for this Python. Installing editable..." -ForegroundColor Yellow
+    Write-Host "Installing/updating editable irswitch (bleak, psutil, NVML) into:" -ForegroundColor Yellow
+    Write-Host "  $PythonExe" -ForegroundColor Yellow
     & $PythonExe -m pip install -e .
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Error: pip install -e . failed" -ForegroundColor Red
         exit 1
     }
-    & $PythonExe -c "import irswitch"
+    & $PythonExe -c "import irswitch, bleak, psutil"
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: irswitch still not importable after install" -ForegroundColor Red
+        Write-Host "Error: irswitch/bleak/psutil still not importable after install" -ForegroundColor Red
+        Write-Host "Run: `"$PythonExe`" -m pip install -e ." -ForegroundColor Yellow
         exit 1
-    }
-}
-
-if (Test-Path $VenvIrswitchd) {
-    $IrswitchdExe = $VenvIrswitchd
-} else {
-    $cmd = Get-Command irswitchd -ErrorAction SilentlyContinue
-    if ($cmd) {
-        $IrswitchdExe = $cmd.Source
     }
 }
 
@@ -129,11 +121,8 @@ Write-Host "Press Ctrl+C to stop" -ForegroundColor Yellow
 Write-Host ""
 
 try {
-    if ($IrswitchdExe) {
-        & $IrswitchdExe --config $Config
-    } else {
-        & $PythonExe -m irswitch.main --config $Config
-    }
+    # Same interpreter as the pip install above (avoid PATH irswitchd mismatch).
+    & $PythonExe -m irswitch.main --config $Config
     exit $LASTEXITCODE
 } catch {
     Write-Host ""

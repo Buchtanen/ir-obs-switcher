@@ -233,8 +233,8 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 
 **Řešení**:
 1. Zkontroluj, že config soubor existuje a je validní
-2. Spouštěj přes `.\start_app.ps1` (preferuje `.venv`) nebo přímo `.\.venv\Scripts\irswitchd.exe --config config\config.ini`
-3. Ověř, že závislosti jsou v **tom samém** interpreteru: `.\.venv\Scripts\pip install -e .`
+2. Spouštěj přes `.\start_app.ps1` (preferuje `.venv`, doinstaluje bleak/psutil, spouští `python -m irswitch.main`)
+3. Ověř závislosti **tím samým** interpreterem: `.\.venv\Scripts\python.exe -m pip install -e .`
 4. Zkontroluj, že port 17321 není obsazený jinou aplikací
 5. Podívej se na error message - často obsahuje konkrétní problém
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
 from collections.abc import Callable
 
@@ -34,7 +35,10 @@ def _read_psutil() -> tuple[CPUState, MemoryState]:
     except ImportError:
         if not _PSUTIL_UNAVAILABLE_LOGGED:
             logger.warning(
-                "System info: psutil not installed; CPU/RAM empty. Reinstall: pip install -e ."
+                "System info: psutil not installed for %s; CPU/RAM empty. "
+                'Install with that interpreter: "%s" -m pip install -e .',
+                sys.executable,
+                sys.executable,
             )
             _PSUTIL_UNAVAILABLE_LOGGED = True
         return cpu, memory
