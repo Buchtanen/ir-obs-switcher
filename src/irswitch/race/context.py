@@ -35,10 +35,10 @@ class RaceContextAnalyzer:
         self._last_behind_idx = None
 
     def analyze(self, snap: TelemetrySnapshot) -> RaceState:
-        if not snap.connected or snap.player_car_idx is None:
+        player_idx = snap.player_car_idx
+        if not snap.connected or player_idx is None:
             self.reset()
             return RaceState(connected=False)
-
         ahead_idx, behind_idx = relevant_ahead_behind(snap)
         if ahead_idx != self._last_ahead_idx:
             self._ahead_history.clear()
@@ -48,19 +48,11 @@ class RaceContextAnalyzer:
             self._last_behind_idx = behind_idx
 
         gap_ahead = (
-            estimated_gap_seconds(snap, snap.player_car_idx, ahead_idx)
-            if ahead_idx is not None
-            else None
+            estimated_gap_seconds(snap, player_idx, ahead_idx) if ahead_idx is not None else None
         )
-        gap_behind = (
-            -estimated_gap_seconds(snap, snap.player_car_idx, behind_idx)
-            if behind_idx is not None
-            and estimated_gap_seconds(snap, snap.player_car_idx, behind_idx) is not None
-            else None
-        )
-        # estimated_gap for behind is negative; store positive seconds behind.
+        gap_behind = None
         if behind_idx is not None:
-            raw = estimated_gap_seconds(snap, snap.player_car_idx, behind_idx)
+            raw = estimated_gap_seconds(snap, player_idx, behind_idx)
             gap_behind = -raw if raw is not None else None
 
         self._ahead_history.add(snap.timestamp, gap_ahead)

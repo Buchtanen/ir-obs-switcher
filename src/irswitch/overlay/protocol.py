@@ -65,9 +65,9 @@ def snapshot_envelope(
     def _dump(value: RaceState | BioState | SystemState | dict[str, Any] | None) -> dict[str, Any]:
         if value is None:
             return {}
-        if hasattr(value, "to_dict"):
-            return value.to_dict()  # type: ignore[no-any-return]
-        return dict(value)
+        if isinstance(value, dict):
+            return dict(value)
+        return value.to_dict()
 
     return {
         "type": "snapshot",

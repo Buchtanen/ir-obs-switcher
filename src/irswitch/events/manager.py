@@ -32,9 +32,9 @@ class EventManager:
             remaining: list[RaceEvent] = []
             exited: RaceEvent | None = None
             for event in self._active:
-                match = event.name == candidate.name and event.data.get("state") == candidate.data.get(
+                match = event.name == candidate.name and event.data.get(
                     "state"
-                )
+                ) == candidate.data.get("state")
                 if match:
                     event.phase = "exit"
                     event.timestamp = now
@@ -156,14 +156,26 @@ _DEBUG_CATALOG: dict[str, dict] = {
         "channel": "battle",
         "priority": 20,
         "phase": "enter",
-        "data": {"state": "hunting", "targetCarIdx": 17, "targetPosition": 6, "gap": 2.81, "closingRate": 0.34},
+        "data": {
+            "state": "hunting",
+            "targetCarIdx": 17,
+            "targetPosition": 6,
+            "gap": 2.81,
+            "closingRate": 0.34,
+        },
     },
     "hunted": {
         "name": "battle",
         "channel": "battle",
         "priority": 20,
         "phase": "enter",
-        "data": {"state": "hunted", "targetCarIdx": 23, "targetPosition": 8, "gap": 1.42, "closingRate": 0.21},
+        "data": {
+            "state": "hunted",
+            "targetCarIdx": 23,
+            "targetPosition": 8,
+            "gap": 1.42,
+            "closingRate": 0.21,
+        },
     },
     "lap_complete": {
         "name": "lap_complete",
@@ -171,7 +183,13 @@ _DEBUG_CATALOG: dict[str, dict] = {
         "priority": 40,
         "phase": "trigger",
         "duration": 4.0,
-        "data": {"lap": 12, "lapTime": 94.372, "bestLap": 94.690, "deltaToBest": -0.318, "personalBest": False},
+        "data": {
+            "lap": 12,
+            "lapTime": 94.372,
+            "bestLap": 94.690,
+            "deltaToBest": -0.318,
+            "personalBest": False,
+        },
     },
     "personal_best": {
         "name": "personal_best",
@@ -179,7 +197,13 @@ _DEBUG_CATALOG: dict[str, dict] = {
         "priority": 60,
         "phase": "trigger",
         "duration": 4.0,
-        "data": {"lap": 12, "lapTime": 94.372, "bestLap": 94.372, "deltaToBest": 0.0, "personalBest": True},
+        "data": {
+            "lap": 12,
+            "lapTime": 94.372,
+            "bestLap": 94.372,
+            "deltaToBest": 0.0,
+            "personalBest": True,
+        },
     },
     "position_gain": {
         "name": "position_change",

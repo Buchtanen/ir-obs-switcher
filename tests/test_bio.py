@@ -33,9 +33,7 @@ def test_classify_and_baseline() -> None:
 
 def test_provider_ingest_updates_state() -> None:
     seen = []
-    provider = BleHeartRateProvider(
-        HeartRateSettings(), SamplingSettings(), on_state=seen.append
-    )
+    provider = BleHeartRateProvider(HeartRateSettings(), SamplingSettings(), on_state=seen.append)
     state = provider.ingest_measurement(bytes([0x00, 140]), now=1.0)
     assert state.connected is True
     assert state.bpm == 140

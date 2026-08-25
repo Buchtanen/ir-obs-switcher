@@ -82,6 +82,8 @@ def test_svg_geometry_and_no_baked_copy() -> None:
 def test_presentation_payload_default_theme() -> None:
     payload = presentation_payload()
     assert payload["theme"] == "cyber_racing"
-    assert payload["assets"]["battle_background"] == "themes/cyber_racing/assets/battle_background.svg"
+    assert (
+        payload["assets"]["battle_background"] == "themes/cyber_racing/assets/battle_background.svg"
+    )
     assert payload["assets"]["battle_glow"] == "themes/cyber_racing/assets/battle_glow.png"
     assert all(payload["assets"][slot] for slot in ASSET_SLOTS)

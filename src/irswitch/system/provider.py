@@ -121,7 +121,7 @@ def _read_lhm(dll_path: str | None) -> dict[str, float | None]:
     if not dll_path:
         return {}
     try:
-        import clr  # type: ignore[import-not-found]
+        import clr
     except ImportError:
         if not _LHM_UNAVAILABLE_LOGGED:
             logger.info("System info: pythonnet not installed; LHM skipped")

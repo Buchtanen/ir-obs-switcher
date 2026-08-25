@@ -65,7 +65,9 @@ theme = stealth_graphite
 
 def test_put_roundtrip_and_backup(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
-    applied = apply_overlay_values(path, {"sampling.default_hz": 6.5, "overlay.theme": "night_attack"})
+    applied = apply_overlay_values(
+        path, {"sampling.default_hz": 6.5, "overlay.theme": "night_attack"}
+    )
     assert "sampling.default_hz" in applied
     assert path.with_suffix(".ini.bak").exists() or (path.parent / "config.ini.bak").exists()
     cfg = AppConfig.from_file(path)

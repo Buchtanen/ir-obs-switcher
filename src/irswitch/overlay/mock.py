@@ -54,7 +54,9 @@ def mock_bio_state(elapsed: float) -> BioState:
     bpm = int(118 + 25 * (0.5 + 0.5 * math.sin(elapsed / 8.0)))
     baseline = 118.0
     delta = bpm - baseline
-    state = "high" if delta >= 25 else "pushing" if delta >= 15 else "focused" if delta >= 5 else "calm"
+    state = (
+        "high" if delta >= 25 else "pushing" if delta >= 15 else "focused" if delta >= 5 else "calm"
+    )
     return BioState(
         connected=True,
         status="connected",

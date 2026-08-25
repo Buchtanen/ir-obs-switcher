@@ -348,7 +348,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         raise ValueError("system_info.lhm_dll_path must not contain path traversal")
 
     pri = EventPrioritySettings(
-        hunting=_get_int(parser, "events.priorities", "hunting", defaults.events.priorities.hunting),
+        hunting=_get_int(
+            parser, "events.priorities", "hunting", defaults.events.priorities.hunting
+        ),
         hunted=_get_int(parser, "events.priorities", "hunted", defaults.events.priorities.hunted),
         battle_start=_get_int(
             parser, "events.priorities", "battle_start", defaults.events.priorities.battle_start
@@ -365,10 +367,16 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             "position_change",
             defaults.events.priorities.position_change,
         ),
-        overtake=_get_int(parser, "events.priorities", "overtake", defaults.events.priorities.overtake),
-        incident=_get_int(parser, "events.priorities", "incident", defaults.events.priorities.incident),
+        overtake=_get_int(
+            parser, "events.priorities", "overtake", defaults.events.priorities.overtake
+        ),
+        incident=_get_int(
+            parser, "events.priorities", "incident", defaults.events.priorities.incident
+        ),
         pit=_get_int(parser, "events.priorities", "pit", defaults.events.priorities.pit),
-        final_lap=_get_int(parser, "events.priorities", "final_lap", defaults.events.priorities.final_lap),
+        final_lap=_get_int(
+            parser, "events.priorities", "final_lap", defaults.events.priorities.final_lap
+        ),
         finish=_get_int(parser, "events.priorities", "finish", defaults.events.priorities.finish),
         bio=_get_int(parser, "events.priorities", "bio", defaults.events.priorities.bio),
         system=_get_int(parser, "events.priorities", "system", defaults.events.priorities.system),
@@ -399,7 +407,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             baseline_window=_get_float(
                 parser, "heart_rate", "baseline_window", defaults.heart_rate.baseline_window
             ),
-            calm_delta=_get_float(parser, "heart_rate", "calm_delta", defaults.heart_rate.calm_delta),
+            calm_delta=_get_float(
+                parser, "heart_rate", "calm_delta", defaults.heart_rate.calm_delta
+            ),
             focused_delta=_get_float(
                 parser, "heart_rate", "focused_delta", defaults.heart_rate.focused_delta
             ),
@@ -409,8 +419,12 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         ),
         system_info=SystemInfoSettings(
             enabled=_get_bool(parser, "system_info", "enabled", defaults.system_info.enabled),
-            cpu_enabled=_get_bool(parser, "system_info.cpu", "enabled", defaults.system_info.cpu_enabled),
-            gpu_enabled=_get_bool(parser, "system_info.gpu", "enabled", defaults.system_info.gpu_enabled),
+            cpu_enabled=_get_bool(
+                parser, "system_info.cpu", "enabled", defaults.system_info.cpu_enabled
+            ),
+            gpu_enabled=_get_bool(
+                parser, "system_info.gpu", "enabled", defaults.system_info.gpu_enabled
+            ),
             memory_enabled=_get_bool(
                 parser, "system_info.memory", "enabled", defaults.system_info.memory_enabled
             ),
@@ -434,7 +448,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             ),
             lap_duration=_get_float(parser, "events", "lap_duration", defaults.events.lap_duration),
             lap_cooldown=_get_float(parser, "events", "lap_cooldown", defaults.events.lap_cooldown),
-            alert_duration=_get_float(parser, "events", "alert_duration", defaults.events.alert_duration),
+            alert_duration=_get_float(
+                parser, "events", "alert_duration", defaults.events.alert_duration
+            ),
             session_duration=_get_float(
                 parser, "events", "session_duration", defaults.events.session_duration
             ),

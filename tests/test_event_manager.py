@@ -8,11 +8,15 @@ from irswitch.overlay.protocol import CandidateEvent
 def test_battle_channel_holds_both() -> None:
     mgr = EventManager()
     a = mgr.submit(
-        CandidateEvent(name="battle", channel="battle", priority=20, phase="enter", data={"state": "hunting"}),
+        CandidateEvent(
+            name="battle", channel="battle", priority=20, phase="enter", data={"state": "hunting"}
+        ),
         1.0,
     )
     b = mgr.submit(
-        CandidateEvent(name="battle", channel="battle", priority=20, phase="enter", data={"state": "hunted"}),
+        CandidateEvent(
+            name="battle", channel="battle", priority=20, phase="enter", data={"state": "hunted"}
+        ),
         1.0,
     )
     assert a is not None and b is not None
@@ -22,11 +26,15 @@ def test_battle_channel_holds_both() -> None:
 def test_lap_channel_higher_priority_replaces() -> None:
     mgr = EventManager()
     mgr.submit(
-        CandidateEvent(name="lap_complete", channel="lap", priority=40, phase="trigger", duration=4),
+        CandidateEvent(
+            name="lap_complete", channel="lap", priority=40, phase="trigger", duration=4
+        ),
         1.0,
     )
     pb = mgr.submit(
-        CandidateEvent(name="personal_best", channel="lap", priority=60, phase="trigger", duration=4),
+        CandidateEvent(
+            name="personal_best", channel="lap", priority=60, phase="trigger", duration=4
+        ),
         1.1,
     )
     assert pb is not None
@@ -37,11 +45,15 @@ def test_lap_channel_higher_priority_replaces() -> None:
 def test_cooldown_blocks_retrigger() -> None:
     mgr = EventManager()
     first = mgr.submit(
-        CandidateEvent(name="incident", channel="alert", priority=90, phase="trigger", duration=2, cooldown=5),
+        CandidateEvent(
+            name="incident", channel="alert", priority=90, phase="trigger", duration=2, cooldown=5
+        ),
         1.0,
     )
     second = mgr.submit(
-        CandidateEvent(name="incident", channel="alert", priority=90, phase="trigger", duration=2, cooldown=5),
+        CandidateEvent(
+            name="incident", channel="alert", priority=90, phase="trigger", duration=2, cooldown=5
+        ),
         2.0,
     )
     assert first is not None
@@ -51,7 +63,9 @@ def test_cooldown_blocks_retrigger() -> None:
 def test_tick_expires_and_inject() -> None:
     mgr = EventManager()
     mgr.submit(
-        CandidateEvent(name="lap_complete", channel="lap", priority=40, phase="trigger", duration=1.0),
+        CandidateEvent(
+            name="lap_complete", channel="lap", priority=40, phase="trigger", duration=1.0
+        ),
         10.0,
     )
     expired = mgr.tick(11.1)

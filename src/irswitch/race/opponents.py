@@ -14,23 +14,28 @@ def _get(seq: tuple[object, ...], idx: int) -> object:
     return seq[idx]
 
 
+def _as_float(value: object) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
 def race_distance(snap: TelemetrySnapshot, car_idx: int) -> float | None:
     """Fractional laps completed (lap + dist pct)."""
-    lap = _get(snap.car_idx_lap_completed, car_idx)
-    pct = _get(snap.car_idx_lap_dist_pct, car_idx)
+    lap = _as_float(_get(snap.car_idx_lap_completed, car_idx))
+    pct = _as_float(_get(snap.car_idx_lap_dist_pct, car_idx))
     if lap is None or pct is None:
         return None
-    try:
-        return float(lap) + float(pct)
-    except (TypeError, ValueError):
-        return None
+    return lap + pct
 
 
 def is_active_racer(snap: TelemetrySnapshot, car_idx: int, player_idx: int) -> bool:
     if car_idx == player_idx:
         return False
     surface = _get(snap.car_idx_track_surface, car_idx)
-    if surface is not None and int(surface) == 0:
+    if isinstance(surface, (int, float)) and int(surface) == 0:
         return False
     on_pit = _get(snap.car_idx_on_pit_road, car_idx)
     if on_pit is True:
@@ -40,13 +45,15 @@ def is_active_racer(snap: TelemetrySnapshot, car_idx: int, player_idx: int) -> b
 
 
 def same_class(snap: TelemetrySnapshot, car_idx: int, player_idx: int) -> bool:
-    player_class = snap.player_car_class
-    if player_class is None:
-        player_class = _get(snap.car_idx_class, player_idx)  # type: ignore[assignment]
+    raw_class: object = snap.player_car_class
+    if raw_class is None:
+        raw_class = _get(snap.car_idx_class, player_idx)
     other = _get(snap.car_idx_class, car_idx)
-    if player_class is None or other is None:
+    player_num = _as_float(raw_class)
+    other_num = _as_float(other)
+    if player_num is None or other_num is None:
         return True
-    return int(player_class) == int(other)
+    return int(player_num) == int(other_num)
 
 
 def estimated_gap_seconds(snap: TelemetrySnapshot, player_idx: int, other_idx: int) -> float | None:
@@ -113,9 +120,7 @@ def relevant_ahead_behind(
         # are the immediate class-position neighbour.
         other_cp = class_position_of(snap, car_idx)
         neighbour = (
-            player_cp is not None
-            and other_cp is not None
-            and abs(other_cp - player_cp) == 1
+            player_cp is not None and other_cp is not None and abs(other_cp - player_cp) == 1
         )
         if abs(gap) > 0.7 * (snap.last_lap_time or 90.0) and not neighbour:
             continue

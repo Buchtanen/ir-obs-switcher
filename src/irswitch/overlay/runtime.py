@@ -46,8 +46,8 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         self.engine = EventEngine(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
-        self._bio = None
-        self._system = None
+        self._bio: Any = None
+        self._system: Any = None
         self._origin = time.monotonic()
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
@@ -82,7 +82,9 @@ class OverlayRuntime:
             await OverlayReplayer(self._replay_path, self.bus).run()
             return
 
-        self._registry.spawn("overlay_race", SamplingScheduler("race", self._race_hz, self._tick_race).run())
+        self._registry.spawn(
+            "overlay_race", SamplingScheduler("race", self._race_hz, self._tick_race).run()
+        )
         self._registry.spawn(
             "overlay_system", SamplingScheduler("system", self._system_hz, self._tick_system).run()
         )

@@ -135,7 +135,9 @@ async def test_overlay_page_served(app: web.Application) -> None:
             text = await resp.text()
             assert "sysinfo-widget" in text
             assert "data-slot=" in text
-            asset = await client.get("/overlay/web/themes/cyber_racing/assets/sysinfo_background.svg")
+            asset = await client.get(
+                "/overlay/web/themes/cyber_racing/assets/sysinfo_background.svg"
+            )
             assert asset.status == 200
             dbg = await client.get("/overlay/debug")
             assert dbg.status == 200

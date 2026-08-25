@@ -24,7 +24,9 @@ def test_mock_hunting_sequence_gaps_decrease() -> None:
 def test_jsonl_roundtrip_strips_secrets(tmp_path: Path) -> None:
     path = tmp_path / "battle.jsonl"
     rec = OverlayRecorder(str(path))
-    rec.write(1.0, {"type": "state", "domain": "race", "password": "nope", "data": {"gap_ahead": 2.0}})
+    rec.write(
+        1.0, {"type": "state", "domain": "race", "password": "nope", "data": {"gap_ahead": 2.0}}
+    )
     rec.write(1.5, snapshot_envelope(mock_race_state(1.0), None, None, []))
     rows = load_jsonl(str(path))
     assert rows[0]["t"] == 0.0
@@ -39,7 +41,14 @@ async def test_replayer_applies_state(tmp_path: Path) -> None:
 
     path = tmp_path / "replay.jsonl"
     path.write_text(
-        json.dumps({"t": 0.0, "type": "state", "domain": "race", "data": {"connected": True, "position": 3}})
+        json.dumps(
+            {
+                "t": 0.0,
+                "type": "state",
+                "domain": "race",
+                "data": {"connected": True, "position": 3},
+            }
+        )
         + "\n"
     )
     bus = OverlayBus()

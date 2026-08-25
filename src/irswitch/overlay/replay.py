@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from dataclasses import fields
 from typing import Any
 
 from irswitch.overlay.bus import OverlayBus, load_jsonl
-from irswitch.overlay.models import BioState, RaceState, SystemState
+from irswitch.overlay.models import BioState, OpponentInfo, RaceState, SystemState
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +64,17 @@ class OverlayReplayer:
 
 def _race_from_dict(data: dict[str, Any]) -> RaceState:
     # Opponent dicts need OpponentInfo; RaceState(**) will fail on nested dicts.
-    from irswitch.overlay.models import OpponentInfo
-
     ahead = data.get("opponent_ahead")
     behind = data.get("opponent_behind")
     clean = dict(data)
     clean["opponent_ahead"] = OpponentInfo(**ahead) if isinstance(ahead, dict) else ahead
     clean["opponent_behind"] = OpponentInfo(**behind) if isinstance(behind, dict) else behind
-    allowed = {f.name for f in RaceState.__dataclass_fields__.values()}  # type: ignore[attr-defined]
+    allowed = {item.name for item in fields(RaceState)}
     return RaceState(**{k: v for k, v in clean.items() if k in allowed})
 
 
 def _bio_from_dict(data: dict[str, Any]) -> BioState:
-    allowed = {f.name for f in BioState.__dataclass_fields__.values()}  # type: ignore[attr-defined]
+    allowed = {item.name for item in fields(BioState)}
     if "rr_intervals" in data and isinstance(data["rr_intervals"], list):
         data = {**data, "rr_intervals": tuple(data["rr_intervals"])}
     return BioState(**{k: v for k, v in data.items() if k in allowed})
@@ -93,7 +92,7 @@ def _system_from_dict(data: dict[str, Any]) -> SystemState:
     def _sub(cls: Any, payload: Any) -> Any:
         if not isinstance(payload, dict):
             return cls()
-        allowed = {f.name for f in cls.__dataclass_fields__.values()}
+        allowed = {item.name for item in fields(cls)}
         clean = dict(payload)
         if "per_core_load" in clean and isinstance(clean["per_core_load"], list):
             clean["per_core_load"] = tuple(clean["per_core_load"])

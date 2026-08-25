@@ -176,7 +176,10 @@ class BleHeartRateProvider:
                     logger.debug("HR parse failed", exc_info=True)
 
             await client.start_notify(HR_MEASUREMENT, _notify)
-            waiters = [asyncio.create_task(disconnected.wait()), asyncio.create_task(self._stop.wait())]
+            waiters = [
+                asyncio.create_task(disconnected.wait()),
+                asyncio.create_task(self._stop.wait()),
+            ]
             done, pending = await asyncio.wait(waiters, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
