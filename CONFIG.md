@@ -640,7 +640,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`) — assety v `src/irswitch/web/themes/<theme>/assets/`
 - `[battle.hunting]` / `[battle.hunted]` hysteresis
 - `[heart_rate]` + `[heart_rate.bluetooth]`
-- `[system_info]` (+ cpu/gpu/memory enabled). CPU package temp/power on Windows: WMI only (`root\LibreHardwareMonitor` / `root\OpenHardwareMonitor` if that app is running, otherwise ACPI/perf thermal zone for temperature). Stock Windows has no CPU package power class. FPS/frametime come from iRacing (empty in the garage).
+- `[system_info]` (+ cpu/gpu/memory enabled). CPU package on Windows: LibreHardwareMonitor 0.9.5+ HTTP `http://127.0.0.1:8085/data.json` (Remote Web Server). Older LHM WMI `root\LibreHardwareMonitor`. Stock Windows has no CPU package power class. FPS/frametime come from iRacing (empty in the garage).
 - `[events]` / `[events.priorities]`
 
 UI editor: `GET /config` (schema-driven). Zápis jen z localhost s hlavičkou `X-Requested-With: irswitch`.

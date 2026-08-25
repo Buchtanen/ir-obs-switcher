@@ -129,6 +129,67 @@ def test_merge_wmi_prefers_lhm_then_thermal_zone() -> None:
     assert fallback.get("power") is None
 
 
+def test_pick_cpu_package_accepts_lhm_numeric_sensor_types() -> None:
+    picked = cpu_sensors.pick_cpu_package(
+        [
+            {
+                "name": "CPU Package",
+                "sensor_type": 2,
+                "value": 64,
+                "identifier": "/intelcpu/0/temperature/2",
+            },
+            {
+                "name": "Package",
+                "sensor_type": 10,
+                "value": 91,
+                "identifier": "/intelcpu/0/power/0",
+            },
+        ]
+    )
+    assert picked == {"temperature": 64.0, "power": 91.0}
+
+
+def test_parse_lhm_http_json_package_sensors() -> None:
+    from irswitch.system.lhm_http import parse_lhm_data_json
+
+    payload = {
+        "Text": "Computer",
+        "Children": [
+            {
+                "Text": "AMD Ryzen 9",
+                "HardwareId": "/amdcpu/0",
+                "Children": [
+                    {
+                        "Text": "Core (Tctl/Tdie)",
+                        "Value": "46.9 °C",
+                        "SensorId": "/amdcpu/0/temperature/2",
+                        "Type": "Temperature",
+                        "Children": [],
+                    },
+                    {
+                        "Text": "Package",
+                        "Value": "88.0 W",
+                        "SensorId": "/amdcpu/0/power/0",
+                        "Type": "Power",
+                        "Children": [],
+                    },
+                    {
+                        "Text": "GPU Core",
+                        "Value": "70 °C",
+                        "SensorId": "/gpu-nvidia/0/temperature/0",
+                        "Type": "Temperature",
+                        "Children": [],
+                    },
+                ],
+            }
+        ],
+    }
+    rows = parse_lhm_data_json(payload)
+    picked = cpu_sensors.pick_cpu_package(rows)
+    assert picked["temperature"] == 46.9
+    assert picked["power"] == 88.0
+
+
 def test_collect_merges_cpu_package_sensors(monkeypatch) -> None:
     monkeypatch.setattr(
         "irswitch.system.provider.read_cpu_package_sensors",

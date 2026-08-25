@@ -61,12 +61,12 @@ def pick_cpu_package(sensors: Sequence[Mapping[str, Any]]) -> dict[str, float | 
             continue
         if not _looks_like_cpu(blob):
             continue
-        if "temp" in stype or stype == str(HWiNFO_TYPE_TEMP):
+        if stype in {"temperature", "temp", "2"} or "temp" in stype:
             score = _temperature_score(name)
             if score > temp_score:
                 temperature = value
                 temp_score = score
-        elif stype == "power" or stype == str(HWiNFO_TYPE_POWER):
+        elif stype in {"power", "10"}:
             score = _power_score(name)
             if score > power_score:
                 power = value
@@ -162,6 +162,7 @@ def read_cpu_package_sensors(dll_path: str | None) -> dict[str, float | None]:
         _read_psutil_cpu_sensors,
         _read_rapl_power,
         _read_pdh_thermal,
+        _read_lhm_http,
         _read_hardware_monitor_wmi,
         lambda: _read_lhm(dll_path if dll_path and Path(dll_path).is_file() else None),
     ):
@@ -300,10 +301,10 @@ def _log_if_empty(result: dict[str, float | None]) -> None:
         return
     _CPU_SENSORS_EMPTY_LOGGED = True
     logger.info(
-        "CPU package temp/power still empty after WMI + PDH thermal zone. "
-        "GPU numbers come from NVIDIA NVML; Windows has no CPU package power class. "
-        "Package temp+power need LibreHardwareMonitor running (WMI namespace "
-        "root/LibreHardwareMonitor). Thermal-zone counters are often missing on AM5/desktop boards."
+        "CPU package temp/power still empty. LibreHardwareMonitor 0.9.5+ removed WMI; "
+        "enable Options → Remote Web Server → Run and keep it on "
+        "(http://127.0.0.1:8085/data.json). Older LHM still uses "
+        "root/LibreHardwareMonitor via Get-WmiObject."
     )
 
 
@@ -395,6 +396,19 @@ def _read_pdh_thermal() -> dict[str, float | None]:
     if celsius is None:
         return {}
     return {"temperature": celsius}
+
+
+def _read_lhm_http() -> dict[str, float | None]:
+    try:
+        from irswitch.system.lhm_http import fetch_lhm_http_rows
+    except Exception:
+        return {}
+    try:
+        rows = fetch_lhm_http_rows()
+    except Exception:
+        logger.debug("LibreHardwareMonitor HTTP read failed", exc_info=True)
+        return {}
+    return pick_cpu_package(rows)
 
 
 def _read_hardware_monitor_wmi(
@@ -526,9 +540,9 @@ def _powershell_wmi_bundle() -> dict[str, list[dict[str, Any]]]:
     script = (
         "$ErrorActionPreference='SilentlyContinue'; "
         "[pscustomobject]@{"
-        "lhm=@(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Sensor "
+        "lhm=@(Get-WmiObject -Namespace root/LibreHardwareMonitor -Class Sensor "
         "| Select-Object Name,SensorType,Value,Identifier);"
-        "ohm=@(Get-CimInstance -Namespace root/OpenHardwareMonitor -ClassName Sensor "
+        "ohm=@(Get-WmiObject -Namespace root/OpenHardwareMonitor -Class Sensor "
         "| Select-Object Name,SensorType,Value,Identifier);"
         "tz=@(Get-CimInstance -ClassName Win32_PerfFormattedData_Counters_ThermalZoneInformation "
         "| Select-Object Name,Temperature,HighPrecisionTemperature);"

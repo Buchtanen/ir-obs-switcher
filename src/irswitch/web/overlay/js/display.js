@@ -319,12 +319,12 @@ export function applySysinfo(system, bio) {
   hintEmpty(
     "cpu-temp",
     cpu.temperature,
-    "Windows WMI/PDH has no CPU package temp. Start LibreHardwareMonitor.",
+    "Windows has no CPU package sensors. LHM 0.9.5+: Options → Remote Web Server → Run.",
   );
   hintEmpty(
     "cpu-pwr",
     cpu.power,
-    "Windows has no CPU package power class. Start LibreHardwareMonitor (WMI).",
+    "LHM 0.9.5+ dropped WMI. Enable Remote Web Server (http://127.0.0.1:8085/data.json).",
   );
   setMod("gpu-load", fmtUnit(gpu.load, 0, "%"), gpu.load, 90, 98);
   setMod("gpu-temp", fmtUnit(gpu.temperature, 0, "°C"), gpu.temperature, 80, 90);
