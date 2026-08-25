@@ -141,7 +141,7 @@ Rozměr karty cílit na cca 420×140 px @1080p (logický box). HUNTING a HUNTED 
 
 - `sysinfo_background.svg` — celý pruh 1920×(60–78), branding zóna vlevo prázdná (~12 % šířky)
 - `sysinfo_module_segment.svg` — jeden modul (opakovatelný)
-- `sysinfo_dividers.svg`
+- `sysinfo_dividers.svg` — svislé čáry na 230, 380, … 1730 (brand + 11×150 px)
 - `cpu_icon.svg`
 - `gpu_icon.svg`
 - `ram_icon.svg`
@@ -149,7 +149,7 @@ Rozměr karty cílit na cca 420×140 px @1080p (logický box). HUNTING a HUNTED 
 - `power_icon.svg`
 - `fps_icon.svg`
 
-SYSINFO je statický tvarem. Žádný running animation artwork. State barvy řeší kód (cyan/amber/red na hodnotě).
+SYSINFO je statický tvarem. HTML overlay drží stejný grid (ne 13 flex sloupců). Žádný running animation artwork. State barvy řeší kód (cyan/amber/red na hodnotě).
 
 ### Motion fragments (sdílené)
 

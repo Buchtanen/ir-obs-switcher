@@ -47,14 +47,17 @@ function paintLayer(el, slot, asMask) {
     el.style.backgroundImage = "";
     el.style.backgroundColor = "currentColor";
     const mask = `url("${url}")`;
+    const cover = el.classList.contains("cover");
+    const size = cover ? "100% 100%" : "contain";
+    const pos = cover ? "0 0" : "center";
     el.style.webkitMaskImage = mask;
     el.style.maskImage = mask;
-    el.style.webkitMaskSize = "contain";
-    el.style.maskSize = "contain";
+    el.style.webkitMaskSize = size;
+    el.style.maskSize = size;
     el.style.webkitMaskRepeat = "no-repeat";
     el.style.maskRepeat = "no-repeat";
-    el.style.webkitMaskPosition = "center";
-    el.style.maskPosition = "center";
+    el.style.webkitMaskPosition = pos;
+    el.style.maskPosition = pos;
   } else {
     el.style.backgroundColor = "";
     el.style.backgroundImage = `url("${url}")`;
@@ -289,27 +292,56 @@ export const DisplayManager = {
   },
 };
 
+function fmtUnit(n, digits, suffix) {
+  if (n == null || Number.isNaN(n)) return "—";
+  return Number(n).toFixed(digits) + suffix;
+}
+
+function joinParts(parts) {
+  const present = parts.filter((part) => part != null && part !== "—");
+  return present.length ? present.join(" ") : "—";
+}
+
 export function applySysinfo(system, bio) {
   const cpu = (system && system.cpu) || {};
   const gpu = (system && system.gpu) || {};
   const mem = (system && system.memory) || {};
   const perf = (system && system.performance) || {};
-  setMod("cpu-load", fmt(cpu.load, 0) + "%", cpu.load, 85, 95);
-  setMod("cpu-temp", fmt(cpu.temperature, 0) + "°C", cpu.temperature, 80, 95);
-  setMod("cpu-pwr", fmt(cpu.power, 0) + "W", cpu.power, 140, 200);
-  setMod("cpu-freq", fmt(cpu.frequency, 2) + "G", null, 99, 99);
-  setMod("gpu-load", fmt(gpu.load, 0) + "%", gpu.load, 90, 98);
-  setMod("gpu-temp", fmt(gpu.temperature, 0) + "°C", gpu.temperature, 80, 90);
-  setMod("gpu-pwr", fmt(gpu.power, 0) + "W", gpu.power, 350, 450);
-  setMod("gpu-clk", fmt(gpu.clock, 0) + "M", null, 99, 99);
-  const vram = gpu.vram_used != null ? `${fmt(gpu.vram_used, 1)}/${fmt(gpu.vram_total, 0)}` : "—";
-  setMod("vram", vram, gpu.vram_used && gpu.vram_total ? (gpu.vram_used / gpu.vram_total) * 100 : null, 85, 95);
-  const ram = mem.used != null ? `${fmt(mem.used, 1)}/${fmt(mem.total, 0)}` : "—";
+  setMod(
+    "cpu-load",
+    joinParts([fmtUnit(cpu.load, 0, "%"), fmtUnit(cpu.frequency, 2, "G")]),
+    cpu.load,
+    85,
+    95,
+  );
+  setMod("cpu-temp", fmtUnit(cpu.temperature, 0, "°C"), cpu.temperature, 80, 95);
+  setMod("cpu-pwr", fmtUnit(cpu.power, 0, "W"), cpu.power, 140, 200);
+  setMod("gpu-load", fmtUnit(gpu.load, 0, "%"), gpu.load, 90, 98);
+  setMod("gpu-temp", fmtUnit(gpu.temperature, 0, "°C"), gpu.temperature, 80, 90);
+  setMod("gpu-pwr", fmtUnit(gpu.power, 0, "W"), gpu.power, 350, 450);
+  setMod("gpu-clk", fmtUnit(gpu.clock, 0, "M"), null, 99, 99);
+  const vram =
+    gpu.vram_used != null && gpu.vram_total != null
+      ? `${fmt(gpu.vram_used, 1)}/${fmt(gpu.vram_total, 0)}`
+      : "—";
+  setMod(
+    "vram",
+    vram,
+    gpu.vram_used != null && gpu.vram_total ? (gpu.vram_used / gpu.vram_total) * 100 : null,
+    85,
+    95,
+  );
+  const ram = mem.used != null && mem.total != null ? `${fmt(mem.used, 1)}/${fmt(mem.total, 0)}` : "—";
   setMod("ram", ram, mem.percent, 85, 95);
-  setMod("fps", fmt(perf.fps, 0), perf.fps != null ? 200 - perf.fps : null, 40, 80);
-  setMod("ft", perf.frametime != null ? fmt(perf.frametime, 1) + "ms" : "—", perf.frametime, 20, 33);
+  setMod(
+    "fps",
+    joinParts([fmt(perf.fps, 0), fmtUnit(perf.frametime, 1, "ms")]),
+    perf.frametime,
+    20,
+    33,
+  );
   const bpm = bio && bio.bpm != null ? String(bio.bpm) : "—";
-  setMod("hr", bpm, bio && bio.state === "high" ? 90 : 0, 80, 90);
+  setMod("hr", bpm, bio && bio.state === "high" ? 90 : bio && bio.bpm != null ? 0 : null, 80, 90);
   const ble = document.getElementById("ble-dot");
   if (ble) {
     ble.className =
@@ -326,6 +358,7 @@ function setMod(id, label, metric, warn, crit) {
   if (!el) return;
   const value = el.querySelector(".value");
   if (value) text(value, label);
+  el.classList.toggle("empty-metric", label == null || label === "—");
   el.classList.remove("warn", "crit");
   if (metric != null && metric >= crit) el.classList.add("crit");
   else if (metric != null && metric >= warn) el.classList.add("warn");

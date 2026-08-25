@@ -297,7 +297,8 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         None,
         False,
         "system_info",
-        "Optional LibreHardwareMonitorLib.dll path. Empty = disabled.",
+        "Optional LibreHardwareMonitorLib.dll path. Empty = auto-discover; "
+        "HWiNFO shared memory and LHM/OHM WMI are also tried.",
         optional=True,
     ),
     FieldSpec(

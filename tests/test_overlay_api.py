@@ -135,6 +135,13 @@ async def test_overlay_page_served(app: web.Application) -> None:
             text = await resp.text()
             assert "sysinfo-widget" in text
             assert "data-slot=" in text
+            assert text.count('class="sys-mod"') == 11
+            assert 'id="cpu-freq"' not in text
+            assert 'id="ft"' not in text
+            assert 'id="fps"' in text
+            css = await client.get("/overlay/static/css/overlay.css")
+            assert css.status == 200
+            assert "repeat(11, 150px)" in await css.text()
             asset = await client.get(
                 "/overlay/web/themes/cyber_racing/assets/sysinfo_background.svg"
             )

@@ -640,7 +640,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`) — assety v `src/irswitch/web/themes/<theme>/assets/`
 - `[battle.hunting]` / `[battle.hunted]` hysteresis
 - `[heart_rate]` + `[heart_rate.bluetooth]`
-- `[system_info]` (+ cpu/gpu/memory enabled)
+- `[system_info]` (+ cpu/gpu/memory enabled). CPU package temp/power: `psutil` (Linux), HWiNFO shared memory, LibreHardwareMonitor/OpenHardwareMonitor WMI, or `lhm_dll_path` + `pythonnet`. Empty `lhm_dll_path` auto-discovers the LHM DLL. FPS/frametime come from iRacing (empty in the garage).
 - `[events]` / `[events.priorities]`
 
 UI editor: `GET /config` (schema-driven). Zápis jen z localhost s hlavičkou `X-Requested-With: irswitch`.

@@ -44,6 +44,6 @@
 
 Layering: background -> frame -> accent -> icon -> micro detail -> glow -> reveal/mask -> HTML.
 
-SYSINFO is 72 px high; its first 230 px (12%) are an empty branding zone.
+SYSINFO is 72 px high; its first 230 px are an empty branding zone, then 11 modules of 150 px (dividers at 230, 380, … 1730). HTML must keep that grid — leftover 40 px is the right chamfer, not a 12th column.
 
 QA: 3 themes x 37 files; names, alpha, SVG text ban and geometry parity verified.

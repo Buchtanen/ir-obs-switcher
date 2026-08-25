@@ -17,13 +17,13 @@ from irswitch.overlay.models import (
 )
 from irswitch.overlay.settings import SamplingSettings, SystemInfoSettings
 from irswitch.sampling.scheduler import resolve_component_hz
+from irswitch.system.cpu_sensors import read_cpu_package_sensors
 from irswitch.system.history import MetricHistory
 
 logger = logging.getLogger(__name__)
 
 _NVML_UNAVAILABLE_LOGGED = False
 _PSUTIL_UNAVAILABLE_LOGGED = False
-_LHM_UNAVAILABLE_LOGGED = False
 
 
 def _read_psutil() -> tuple[CPUState, MemoryState]:
@@ -121,43 +121,6 @@ def _read_nvml() -> GPUState:
         return GPUState()
 
 
-def _read_lhm(dll_path: str | None) -> dict[str, float | None]:
-    """Best-effort CPU package temp/power via LibreHardwareMonitor. Optional."""
-    global _LHM_UNAVAILABLE_LOGGED
-    if not dll_path:
-        return {}
-    try:
-        import clr
-    except ImportError:
-        if not _LHM_UNAVAILABLE_LOGGED:
-            logger.info("System info: pythonnet not installed; LHM skipped")
-            _LHM_UNAVAILABLE_LOGGED = True
-        return {}
-    try:
-        clr.AddReference(dll_path)
-        # Import after AddReference; keep optional.
-        from LibreHardwareMonitor.Hardware import Computer  # type: ignore
-
-        computer = Computer()
-        computer.IsCpuEnabled = True
-        computer.Open()
-        temp = None
-        power = None
-        for hardware in computer.Hardware:
-            hardware.Update()
-            for sensor in hardware.Sensors:
-                name = str(sensor.Name)
-                if "Package" in name and "Temperature" in str(sensor.SensorType):
-                    temp = float(sensor.Value) if sensor.Value is not None else temp
-                if "Package" in name and "Power" in str(sensor.SensorType):
-                    power = float(sensor.Value) if sensor.Value is not None else power
-        computer.Close()
-        return {"temperature": temp, "power": power}
-    except Exception:
-        logger.debug("LibreHardwareMonitor sample failed", exc_info=True)
-        return {}
-
-
 def collect_system_state(
     settings: SystemInfoSettings,
     *,
@@ -182,12 +145,16 @@ def collect_system_state(
                 memory = mem_s
         if settings.gpu_enabled:
             gpu = _read_nvml()
-        lhm = _read_lhm(settings.lhm_dll_path)
-        if lhm:
+        package = read_cpu_package_sensors(settings.lhm_dll_path)
+        if package.get("temperature") is not None or package.get("power") is not None:
             cpu = CPUState(
                 load=cpu.load,
-                temperature=lhm.get("temperature", cpu.temperature),
-                power=lhm.get("power", cpu.power),
+                temperature=(
+                    package["temperature"]
+                    if package.get("temperature") is not None
+                    else cpu.temperature
+                ),
+                power=package["power"] if package.get("power") is not None else cpu.power,
                 frequency=cpu.frequency,
                 per_core_load=cpu.per_core_load,
             )

@@ -1,0 +1,543 @@
+"""CPU package temperature/power. Optional backends; never crash the sampler."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import struct
+import subprocess
+import sys
+import threading
+import time
+from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+_PSUTIL_TEMP_LOGGED = False
+_LHM_NET_LOGGED = False
+_CPU_SENSORS_EMPTY_LOGGED = False
+_LHM_LOCK = threading.Lock()
+_LHM_COMPUTER: Any = None
+_LHM_DLL_LOADED: str | None = None
+
+_WMI_CACHE: tuple[float, dict[str, float | None], float] | None = None
+_WMI_TTL_HIT = 2.0
+_WMI_TTL_MISS = 15.0
+_WMI_NAMESPACES = ("root/LibreHardwareMonitor", "root/OpenHardwareMonitor")
+_CREATE_NO_WINDOW = 0x08000000
+
+_RAPL_LAST: tuple[float, float] | None = None  # monotonic, energy_uj
+_RAPL_PATHS = (
+    Path("/sys/class/powercap/intel-rapl:0/energy_uj"),
+    Path("/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj"),
+)
+
+HWiNFO_MAP_NAMES = ("Global\\HWiNFO_SENS_SM2", "HWiNFO_SENS_SM2")
+HWiNFO_HEADER_SIZE = 44
+HWiNFO_TYPE_TEMP = 1
+HWiNFO_TYPE_POWER = 5
+
+
+def pick_cpu_package(sensors: Sequence[Mapping[str, Any]]) -> dict[str, float | None]:
+    """Choose CPU package temp/power from a list of hardware-monitor sensors."""
+    temperature: float | None = None
+    power: float | None = None
+    temp_score = -1
+    power_score = -1
+    for raw in sensors:
+        name = str(raw.get("name") or "")
+        ident = str(raw.get("identifier") or "")
+        parent = str(raw.get("parent") or "")
+        stype = str(raw.get("sensor_type") or raw.get("type") or "").strip().lower()
+        value = _as_float(raw.get("value"))
+        if value is None:
+            continue
+        blob = f"{name} {ident} {parent}".lower()
+        if _looks_like_gpu(blob):
+            continue
+        if not _looks_like_cpu(blob):
+            continue
+        if stype in {"temperature", "temp", str(HWiNFO_TYPE_TEMP)}:
+            score = _temperature_score(name)
+            if score > temp_score:
+                temperature = value
+                temp_score = score
+        elif stype in {"power", str(HWiNFO_TYPE_POWER)}:
+            score = _power_score(name)
+            if score > power_score:
+                power = value
+                power_score = score
+    return {"temperature": temperature, "power": power}
+
+
+def resolve_lhm_dll(configured: str | None) -> str | None:
+    """Use an explicit path when set; otherwise look in common install locations."""
+    if configured:
+        path = Path(configured)
+        return str(path) if path.is_file() else configured
+    for candidate in _lhm_candidate_paths():
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def read_cpu_package_sensors(dll_path: str | None) -> dict[str, float | None]:
+    """Best available CPU package temp/power. Later sources overwrite when they have a value."""
+    result: dict[str, float | None] = {"temperature": None, "power": None}
+    for reader in (
+        _read_psutil_cpu_sensors,
+        _read_rapl_power,
+        _read_hardware_monitor_wmi,
+        _read_hwinfo_shared_memory,
+        lambda: _read_lhm(resolve_lhm_dll(dll_path)),
+    ):
+        try:
+            extra = reader()
+        except Exception:
+            logger.debug("CPU package sensor reader failed", exc_info=True)
+            extra = {}
+        for key in ("temperature", "power"):
+            value = extra.get(key)
+            if value is not None:
+                result[key] = float(value)
+    _log_if_empty(result)
+    return result
+
+
+def parse_hwinfo_shared_memory(data: bytes) -> dict[str, float | None]:
+    """Parse a HWiNFO shared-memory snapshot (SENS_SM2)."""
+    if len(data) < HWiNFO_HEADER_SIZE:
+        return {}
+    offset_sensor, size_sensor, num_sensor, offset_reading, size_reading, num_reading = (
+        struct.unpack_from("<IIIIII", data, 20)
+    )
+    if size_reading < 12 + 128 + 128 + 16 + 8 or num_reading > 4096 or num_sensor > 1024:
+        return {}
+    gpu_indexes: set[int] = set()
+    for i in range(num_sensor):
+        start = offset_sensor + i * size_sensor
+        chunk = data[start : start + size_sensor]
+        if len(chunk) < 8 + 128:
+            continue
+        orig = _cstr(chunk[8 : 8 + 128])
+        user = _cstr(chunk[8 + 128 : 8 + 256]) if len(chunk) >= 8 + 256 else ""
+        if _looks_like_gpu(f"{orig} {user}".lower()):
+            gpu_indexes.add(i)
+    rows: list[dict[str, Any]] = []
+    for i in range(num_reading):
+        start = offset_reading + i * size_reading
+        chunk = data[start : start + size_reading]
+        if len(chunk) < 12 + 128 + 128 + 16 + 8:
+            continue
+        reading_type, sensor_index = struct.unpack_from("<II", chunk, 0)
+        if sensor_index in gpu_indexes:
+            continue
+        label = _cstr(chunk[12 : 12 + 128])
+        user = _cstr(chunk[12 + 128 : 12 + 256])
+        value_off = 12 + 128 + 128 + 16
+        (value,) = struct.unpack_from("<d", chunk, value_off)
+        sensor_name = ""
+        sensor_start = offset_sensor + sensor_index * size_sensor
+        if 0 <= sensor_index < num_sensor and sensor_start + 8 + 128 <= len(data):
+            sensor_name = _cstr(data[sensor_start + 8 : sensor_start + 8 + 128])
+        stype = {HWiNFO_TYPE_TEMP: "temperature", HWiNFO_TYPE_POWER: "power"}.get(
+            reading_type, str(reading_type)
+        )
+        rows.append(
+            {
+                "name": user or label,
+                "sensor_type": stype,
+                "value": value,
+                "identifier": label,
+                "parent": sensor_name,
+            }
+        )
+    return pick_cpu_package(rows)
+
+
+def _as_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number != number:  # NaN
+        return None
+    return number
+
+
+def _cstr(raw: bytes) -> str:
+    return raw.split(b"\0", 1)[0].decode("latin-1", errors="replace").strip()
+
+
+def _looks_like_gpu(blob: str) -> bool:
+    return any(token in blob for token in ("gpu", "nvidia", "geforce", "radeon", "intel arc"))
+
+
+def _looks_like_cpu(blob: str) -> bool:
+    return any(
+        token in blob
+        for token in (
+            "cpu",
+            "amdcpu",
+            "intelcpu",
+            "/intelcpu/",
+            "/amdcpu/",
+            "package",
+            "tctl",
+            "tdie",
+            "ryzen",
+            "core(tm)",
+            "core tm",
+        )
+    )
+
+
+def _temperature_score(name: str) -> int:
+    lowered = name.lower()
+    if "package" in lowered:
+        return 40
+    if "tctl" in lowered or "tdie" in lowered:
+        return 30
+    if "ccd" in lowered:
+        return 15
+    if "core" in lowered:
+        return 5
+    return 1
+
+
+def _power_score(name: str) -> int:
+    lowered = name.lower()
+    if "package" in lowered:
+        return 40
+    if "ppt" in lowered:
+        return 30
+    if "cores" in lowered:
+        return 5
+    return 1
+
+
+def _log_if_empty(result: dict[str, float | None]) -> None:
+    global _CPU_SENSORS_EMPTY_LOGGED
+    if result.get("temperature") is not None or result.get("power") is not None:
+        return
+    if _CPU_SENSORS_EMPTY_LOGGED:
+        return
+    _CPU_SENSORS_EMPTY_LOGGED = True
+    logger.info(
+        "CPU package temp/power unavailable. On Windows run HWiNFO (shared memory) or "
+        "LibreHardwareMonitor, or set system_info.lhm_dll_path and pip install pythonnet."
+    )
+
+
+def _read_psutil_cpu_sensors() -> dict[str, float | None]:
+    global _PSUTIL_TEMP_LOGGED
+    try:
+        import psutil
+    except ImportError:
+        return {}
+    temps = getattr(psutil, "sensors_temperatures", None)
+    if temps is None:
+        return {}
+    try:
+        grouped = temps() or {}
+    except Exception:
+        if not _PSUTIL_TEMP_LOGGED:
+            logger.debug("psutil.sensors_temperatures failed", exc_info=True)
+            _PSUTIL_TEMP_LOGGED = True
+        return {}
+    rows: list[dict[str, Any]] = []
+    for chip, entries in grouped.items():
+        chip_l = str(chip).lower()
+        if _looks_like_gpu(chip_l):
+            continue
+        for entry in entries:
+            label = getattr(entry, "label", "") or chip
+            current = getattr(entry, "current", None)
+            rows.append(
+                {
+                    "name": label,
+                    "sensor_type": "temperature",
+                    "value": current,
+                    "identifier": chip,
+                    "parent": chip,
+                }
+            )
+    picked = pick_cpu_package(rows)
+    if picked.get("temperature") is None and rows:
+        # Linux coretemp/k10temp often labels the package clearly; if the CPU
+        # filter missed (generic 'acpi'), keep the first plausible chip reading.
+        for chip, entries in grouped.items():
+            if _looks_like_gpu(str(chip).lower()):
+                continue
+            if str(chip).lower() in {"coretemp", "k10temp", "zenpower", "cpu_thermal", "acpitz"}:
+                for entry in entries:
+                    current = _as_float(getattr(entry, "current", None))
+                    if current is not None:
+                        picked["temperature"] = current
+                        break
+            if picked.get("temperature") is not None:
+                break
+    return picked
+
+
+def _read_rapl_power() -> dict[str, float | None]:
+    global _RAPL_LAST
+    path = next((candidate for candidate in _RAPL_PATHS if candidate.is_file()), None)
+    if path is None:
+        return {}
+    try:
+        energy_uj = float(path.read_text().strip())
+    except (OSError, ValueError):
+        return {}
+    now = time.monotonic()
+    prev = _RAPL_LAST
+    _RAPL_LAST = (now, energy_uj)
+    if prev is None:
+        return {}
+    dt = now - prev[0]
+    if dt <= 0:
+        return {}
+    watts = (energy_uj - prev[1]) / (dt * 1_000_000.0)
+    if watts < 0 or watts > 500:
+        return {}
+    return {"power": watts}
+
+
+def _read_hardware_monitor_wmi(
+    fetch: Callable[[str], list[dict[str, Any]]] | None = None,
+) -> dict[str, float | None]:
+    if sys.platform != "win32" and fetch is None:
+        return {}
+    global _WMI_CACHE
+    now = time.monotonic()
+    if _WMI_CACHE is not None:
+        cached_at, cached, ttl = _WMI_CACHE
+        if now - cached_at < ttl:
+            return cached
+    fetcher = fetch or _fetch_wmi_sensors
+    picked: dict[str, float | None] = {}
+    for namespace in _WMI_NAMESPACES:
+        try:
+            rows = fetcher(namespace)
+        except Exception:
+            logger.debug("WMI %s query failed", namespace, exc_info=True)
+            rows = []
+        candidate = pick_cpu_package(rows)
+        if candidate.get("temperature") is not None or candidate.get("power") is not None:
+            picked = candidate
+            break
+    ttl = _WMI_TTL_HIT if picked else _WMI_TTL_MISS
+    _WMI_CACHE = (now, picked, ttl)
+    return picked
+
+
+def _fetch_wmi_sensors(namespace: str) -> list[dict[str, Any]]:
+    if sys.platform != "win32":
+        return []
+    try:
+        import win32com.client  # type: ignore
+
+        locator = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        service = locator.ConnectServer(".", namespace)
+        items = service.ExecQuery("SELECT Name, SensorType, Value, Identifier FROM Sensor")
+        rows: list[dict[str, Any]] = []
+        for item in items:
+            rows.append(
+                {
+                    "name": str(getattr(item, "Name", "")),
+                    "sensor_type": str(getattr(item, "SensorType", "")),
+                    "value": getattr(item, "Value", None),
+                    "identifier": str(getattr(item, "Identifier", "")),
+                }
+            )
+        return rows
+    except Exception:
+        return _powershell_cim_sensors(namespace)
+
+
+def _powershell_cim_sensors(namespace: str) -> list[dict[str, Any]]:
+    script = (
+        f"$ErrorActionPreference='SilentlyContinue'; "
+        f"Get-CimInstance -Namespace '{namespace}' -ClassName Sensor | "
+        "Select-Object Name,SensorType,Value,Identifier | ConvertTo-Json -Compress"
+    )
+    command = [
+        "powershell",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        script,
+    ]
+    try:
+        if sys.platform == "win32":
+            proc = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=3,
+                creationflags=_CREATE_NO_WINDOW,
+            )
+        else:
+            proc = subprocess.run(command, capture_output=True, text=True, timeout=3)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if proc.returncode != 0 or not proc.stdout or not proc.stdout.strip():
+        return []
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, dict):
+        payload = [payload]
+    rows: list[dict[str, Any]] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            {
+                "name": item.get("Name"),
+                "sensor_type": item.get("SensorType"),
+                "value": item.get("Value"),
+                "identifier": item.get("Identifier") or "",
+            }
+        )
+    return rows
+
+
+def _read_hwinfo_shared_memory() -> dict[str, float | None]:
+    if sys.platform != "win32":
+        return {}
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    file_map_read = 0x0004
+    for name in HWiNFO_MAP_NAMES:
+        handle = kernel32.OpenFileMappingW(file_map_read, False, name)
+        if not handle:
+            continue
+        try:
+            view = kernel32.MapViewOfFile(handle, file_map_read, 0, 0, 0)
+            if not view:
+                continue
+            try:
+                header = ctypes.string_at(view, HWiNFO_HEADER_SIZE)
+                if len(header) < HWiNFO_HEADER_SIZE:
+                    continue
+                (
+                    _sig,
+                    _ver,
+                    _rev,
+                    _poll,
+                    offset_sensor,
+                    size_sensor,
+                    num_sensor,
+                    offset_reading,
+                    size_reading,
+                    num_reading,
+                ) = struct.unpack("<IIIQIIIIII", header)
+                if (
+                    size_reading < 292
+                    or size_reading > 1024
+                    or size_sensor > 1024
+                    or num_reading > 4096
+                    or num_sensor > 1024
+                ):
+                    continue
+                end = max(
+                    offset_sensor + size_sensor * num_sensor,
+                    offset_reading + size_reading * num_reading,
+                    HWiNFO_HEADER_SIZE,
+                )
+                blob = ctypes.string_at(view, min(end, 2 * 1024 * 1024))
+                return parse_hwinfo_shared_memory(blob)
+            finally:
+                kernel32.UnmapViewOfFile(view)
+        finally:
+            kernel32.CloseHandle(handle)
+    return {}
+
+
+def _lhm_candidate_paths() -> list[Path]:
+    if sys.platform != "win32":
+        return []
+    program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+    program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
+    local_app = os.environ.get("LOCALAPPDATA", "")
+    names = ("LibreHardwareMonitorLib.dll",)
+    roots = [
+        Path(program_files) / "LibreHardwareMonitor",
+        Path(program_files_x86) / "LibreHardwareMonitor",
+        Path(program_files) / "Libre Hardware Monitor",
+        Path(program_files_x86) / "Libre Hardware Monitor",
+    ]
+    if local_app:
+        roots.append(Path(local_app) / "LibreHardwareMonitor")
+    return [root / name for root in roots for name in names]
+
+
+def _read_lhm(dll_path: str | None) -> dict[str, float | None]:
+    global _LHM_NET_LOGGED, _LHM_COMPUTER, _LHM_DLL_LOADED
+    if not dll_path or not Path(dll_path).is_file():
+        return {}
+    try:
+        import clr
+    except ImportError:
+        if not _LHM_NET_LOGGED:
+            logger.info(
+                "LibreHardwareMonitor DLL found at %s but pythonnet is not installed; "
+                "CPU package via LHM skipped. pip install pythonnet (extra sysinfo-lhm).",
+                dll_path,
+            )
+            _LHM_NET_LOGGED = True
+        return {}
+    with _LHM_LOCK:
+        try:
+            if _LHM_COMPUTER is None or _LHM_DLL_LOADED != dll_path:
+                if _LHM_COMPUTER is not None:
+                    try:
+                        _LHM_COMPUTER.Close()
+                    except Exception:
+                        pass
+                    _LHM_COMPUTER = None
+                clr.AddReference(dll_path)
+                from LibreHardwareMonitor.Hardware import Computer  # type: ignore
+
+                computer = Computer()
+                computer.IsCpuEnabled = True
+                computer.Open()
+                _LHM_COMPUTER = computer
+                _LHM_DLL_LOADED = dll_path
+            rows: list[dict[str, Any]] = []
+            for hardware in _LHM_COMPUTER.Hardware:
+                rows.extend(_lhm_rows(hardware))
+            return pick_cpu_package(rows)
+        except Exception:
+            logger.debug("LibreHardwareMonitor sample failed", exc_info=True)
+            return {}
+
+
+def _lhm_rows(hardware: Any) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        hardware.Update()
+    except Exception:
+        return rows
+    parent = str(getattr(hardware, "Name", ""))
+    for sensor in getattr(hardware, "Sensors", ()) or ():
+        rows.append(
+            {
+                "name": str(getattr(sensor, "Name", "")),
+                "sensor_type": str(getattr(sensor, "SensorType", "")),
+                "value": getattr(sensor, "Value", None),
+                "identifier": str(getattr(sensor, "Identifier", "")),
+                "parent": parent,
+            }
+        )
+    for sub in getattr(hardware, "SubHardware", ()) or ():
+        rows.extend(_lhm_rows(sub))
+    return rows
