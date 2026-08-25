@@ -161,7 +161,7 @@ irswitchd --config config\config.ini --mock
 irswitchd --config config\config.ini --replay recordings\battle.jsonl
 ```
 
-Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. CPU teplota/příkon na Windows: spusť HWiNFO (Shared Memory) nebo LibreHardwareMonitor, případně `pip install .[sysinfo-lhm]` a cesta k `LibreHardwareMonitorLib.dll` (prázdné = auto-discover, DLL se do gitu nedává). FPS/FT v SYSINFO berou iRacing — mimo 3D zůstanou prázdné.
+Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. CPU teplota/příkon na Windows jdou přes WMI: LibreHardwareMonitor (`root\LibreHardwareMonitor`) nebo OpenHardwareMonitor. Bez nich zkusí Windows thermal zone (teplota, ne příkon). FPS/FT v SYSINFO berou iRacing — mimo 3D zůstanou prázdné.
 
 ### VR Dashboard (pro VR)
 

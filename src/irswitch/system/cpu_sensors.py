@@ -60,17 +60,77 @@ def pick_cpu_package(sensors: Sequence[Mapping[str, Any]]) -> dict[str, float | 
             continue
         if not _looks_like_cpu(blob):
             continue
-        if stype in {"temperature", "temp", str(HWiNFO_TYPE_TEMP)}:
+        if "temp" in stype or stype == str(HWiNFO_TYPE_TEMP):
             score = _temperature_score(name)
             if score > temp_score:
                 temperature = value
                 temp_score = score
-        elif stype in {"power", str(HWiNFO_TYPE_POWER)}:
+        elif stype == "power" or stype == str(HWiNFO_TYPE_POWER):
             score = _power_score(name)
             if score > power_score:
                 power = value
                 power_score = score
     return {"temperature": temperature, "power": power}
+
+
+def kelvin_raw_to_celsius(raw: float | None) -> float | None:
+    """Convert ACPI/perf-counter Kelvin (or tenths of Kelvin) to a sane °C."""
+    if raw is None:
+        return None
+    if raw >= 2000:
+        celsius = raw / 10.0 - 273.15
+    elif raw >= 200:
+        celsius = raw - 273.15
+    else:
+        return None
+    if 15.0 <= celsius <= 115.0:
+        return round(celsius, 2)
+    return None
+
+
+def pick_thermal_zone(rows: Sequence[Mapping[str, Any]]) -> float | None:
+    """Pick a CPU-ish ACPI/perf thermal zone. Last resort when LHM/OHM WMI is empty."""
+    best: tuple[int, float] | None = None
+    for row in rows:
+        name = str(row.get("name") or row.get("Name") or row.get("InstanceName") or "")
+        raw = None
+        for key in (
+            "value",
+            "HighPrecisionTemperature",
+            "CurrentTemperature",
+            "Temperature",
+        ):
+            if row.get(key) is not None:
+                raw = _as_float(row.get(key))
+                break
+        celsius = kelvin_raw_to_celsius(raw)
+        if celsius is None:
+            continue
+        lowered = name.lower()
+        score = 5
+        if "cpu" in lowered or "proc" in lowered:
+            score = 30
+        elif "tz00" in lowered or "thrm" in lowered:
+            score = 20
+        if best is None or score > best[0] or (score == best[0] and celsius > best[1]):
+            best = (score, celsius)
+    return None if best is None else best[1]
+
+
+def merge_wmi_cpu_readings(
+    lhm: Sequence[Mapping[str, Any]],
+    ohm: Sequence[Mapping[str, Any]],
+    thermal: Sequence[Mapping[str, Any]],
+) -> dict[str, float | None]:
+    """LHM/OHM package sensors win; Windows thermal zone fills temperature only."""
+    picked = pick_cpu_package(lhm)
+    if picked.get("temperature") is None and picked.get("power") is None:
+        picked = pick_cpu_package(ohm)
+    if picked.get("temperature") is None:
+        zone = pick_thermal_zone(thermal)
+        if zone is not None:
+            picked = {"temperature": zone, "power": picked.get("power")}
+    return picked
 
 
 def resolve_lhm_dll(configured: str | None) -> str | None:
@@ -91,8 +151,7 @@ def read_cpu_package_sensors(dll_path: str | None) -> dict[str, float | None]:
         _read_psutil_cpu_sensors,
         _read_rapl_power,
         _read_hardware_monitor_wmi,
-        _read_hwinfo_shared_memory,
-        lambda: _read_lhm(resolve_lhm_dll(dll_path)),
+        lambda: _read_lhm(dll_path if dll_path and Path(dll_path).is_file() else None),
     ):
         try:
             extra = reader()
@@ -229,8 +288,12 @@ def _log_if_empty(result: dict[str, float | None]) -> None:
         return
     _CPU_SENSORS_EMPTY_LOGGED = True
     logger.info(
-        "CPU package temp/power unavailable. On Windows run HWiNFO (shared memory) or "
-        "LibreHardwareMonitor, or set system_info.lhm_dll_path and pip install pythonnet."
+        "CPU package temp/power unavailable via WMI. Stock Windows has no CPU package "
+        "power class. Temperature may appear from a thermal zone "
+        "(Win32_PerfFormattedData_Counters_ThermalZoneInformation / "
+        "MSAcpi_ThermalZoneTemperature). Package temp+power need LibreHardwareMonitor "
+        "or OpenHardwareMonitor exposing root/LibreHardwareMonitor or "
+        "root/OpenHardwareMonitor."
     )
 
 
@@ -319,85 +382,150 @@ def _read_hardware_monitor_wmi(
         cached_at, cached, ttl = _WMI_CACHE
         if now - cached_at < ttl:
             return cached
-    fetcher = fetch or _fetch_wmi_sensors
-    picked: dict[str, float | None] = {}
-    for namespace in _WMI_NAMESPACES:
-        try:
-            rows = fetcher(namespace)
-        except Exception:
-            logger.debug("WMI %s query failed", namespace, exc_info=True)
-            rows = []
-        candidate = pick_cpu_package(rows)
-        if candidate.get("temperature") is not None or candidate.get("power") is not None:
-            picked = candidate
-            break
+    if fetch is not None:
+        picked: dict[str, float | None] = {}
+        for namespace in _WMI_NAMESPACES:
+            try:
+                rows = fetch(namespace)
+            except Exception:
+                logger.debug("WMI %s query failed", namespace, exc_info=True)
+                rows = []
+            candidate = pick_cpu_package(rows)
+            if candidate.get("temperature") is not None or candidate.get("power") is not None:
+                picked = candidate
+                break
+    else:
+        bundle = _fetch_wmi_bundle()
+        picked = merge_wmi_cpu_readings(
+            bundle.get("lhm") or [],
+            bundle.get("ohm") or [],
+            (bundle.get("tz") or []) + (bundle.get("acpi") or []),
+        )
     ttl = _WMI_TTL_HIT if picked else _WMI_TTL_MISS
     _WMI_CACHE = (now, picked, ttl)
     return picked
+
+
+def _fetch_wmi_bundle() -> dict[str, list[dict[str, Any]]]:
+    if sys.platform != "win32":
+        return {}
+    try:
+        return _win32com_wmi_bundle()
+    except Exception:
+        logger.debug("win32com WMI bundle failed", exc_info=True)
+        return _powershell_wmi_bundle()
 
 
 def _fetch_wmi_sensors(namespace: str) -> list[dict[str, Any]]:
     if sys.platform != "win32":
         return []
     try:
-        import win32com.client  # type: ignore
+        import win32com.client  # type: ignore[import-untyped]
 
         locator = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-        service = locator.ConnectServer(".", namespace)
-        items = service.ExecQuery("SELECT Name, SensorType, Value, Identifier FROM Sensor")
-        rows: list[dict[str, Any]] = []
-        for item in items:
-            rows.append(
-                {
-                    "name": str(getattr(item, "Name", "")),
-                    "sensor_type": str(getattr(item, "SensorType", "")),
-                    "value": getattr(item, "Value", None),
-                    "identifier": str(getattr(item, "Identifier", "")),
-                }
-            )
-        return rows
+        return _com_query_sensors(locator, namespace.replace("/", "\\"))
     except Exception:
         return _powershell_cim_sensors(namespace)
 
 
-def _powershell_cim_sensors(namespace: str) -> list[dict[str, Any]]:
-    script = (
-        f"$ErrorActionPreference='SilentlyContinue'; "
-        f"Get-CimInstance -Namespace '{namespace}' -ClassName Sensor | "
-        "Select-Object Name,SensorType,Value,Identifier | ConvertTo-Json -Compress"
-    )
-    command = [
-        "powershell",
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command",
-        script,
-    ]
+def _com_query_sensors(locator: Any, namespace: str) -> list[dict[str, Any]]:
     try:
-        if sys.platform == "win32":
-            proc = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                timeout=3,
-                creationflags=_CREATE_NO_WINDOW,
-            )
-        else:
-            proc = subprocess.run(command, capture_output=True, text=True, timeout=3)
-    except (OSError, subprocess.TimeoutExpired):
+        service = locator.ConnectServer(".", namespace)
+        items = service.ExecQuery("SELECT Name, SensorType, Value, Identifier FROM Sensor")
+    except Exception:
         return []
-    if proc.returncode != 0 or not proc.stdout or not proc.stdout.strip():
-        return []
-    try:
-        payload = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        return []
-    if isinstance(payload, dict):
-        payload = [payload]
     rows: list[dict[str, Any]] = []
-    for item in payload:
-        if not isinstance(item, dict):
-            continue
+    for item in items:
+        rows.append(
+            {
+                "name": str(getattr(item, "Name", "")),
+                "sensor_type": str(getattr(item, "SensorType", "")),
+                "value": getattr(item, "Value", None),
+                "identifier": str(getattr(item, "Identifier", "")),
+            }
+        )
+    return rows
+
+
+def _win32com_wmi_bundle() -> dict[str, list[dict[str, Any]]]:
+    import win32com.client
+
+    locator = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+    return {
+        "lhm": _com_query_sensors(locator, "root\\LibreHardwareMonitor"),
+        "ohm": _com_query_sensors(locator, "root\\OpenHardwareMonitor"),
+        "tz": _com_query_class(
+            locator,
+            "root\\cimv2",
+            "SELECT Name, Temperature, HighPrecisionTemperature "
+            "FROM Win32_PerfFormattedData_Counters_ThermalZoneInformation",
+            name_attr="Name",
+            value_attrs=("HighPrecisionTemperature", "Temperature"),
+        ),
+        "acpi": _com_query_class(
+            locator,
+            "root\\wmi",
+            "SELECT InstanceName, CurrentTemperature FROM MSAcpi_ThermalZoneTemperature",
+            name_attr="InstanceName",
+            value_attrs=("CurrentTemperature",),
+        ),
+    }
+
+
+def _com_query_class(
+    locator: Any,
+    namespace: str,
+    wql: str,
+    *,
+    name_attr: str,
+    value_attrs: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    try:
+        service = locator.ConnectServer(".", namespace)
+        items = service.ExecQuery(wql)
+    except Exception:
+        return []
+    rows: list[dict[str, Any]] = []
+    for item in items:
+        value = None
+        for attr in value_attrs:
+            value = getattr(item, attr, None)
+            if value is not None:
+                break
+        rows.append({"name": str(getattr(item, name_attr, "")), "value": value})
+    return rows
+
+
+def _powershell_wmi_bundle() -> dict[str, list[dict[str, Any]]]:
+    script = (
+        "$ErrorActionPreference='SilentlyContinue'; "
+        "[pscustomobject]@{"
+        "lhm=@(Get-CimInstance -Namespace root/LibreHardwareMonitor -ClassName Sensor "
+        "| Select-Object Name,SensorType,Value,Identifier);"
+        "ohm=@(Get-CimInstance -Namespace root/OpenHardwareMonitor -ClassName Sensor "
+        "| Select-Object Name,SensorType,Value,Identifier);"
+        "tz=@(Get-CimInstance -ClassName Win32_PerfFormattedData_Counters_ThermalZoneInformation "
+        "| Select-Object Name,Temperature,HighPrecisionTemperature);"
+        "acpi=@(Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature "
+        "| Select-Object InstanceName,CurrentTemperature)"
+        "} | ConvertTo-Json -Compress -Depth 5"
+    )
+    payload = _powershell_json(script, timeout=8)
+    if not isinstance(payload, dict):
+        return {}
+    return {
+        "lhm": _json_sensor_rows(payload.get("lhm")),
+        "ohm": _json_sensor_rows(payload.get("ohm")),
+        "tz": _json_zone_rows(
+            payload.get("tz"), "Name", ("HighPrecisionTemperature", "Temperature")
+        ),
+        "acpi": _json_zone_rows(payload.get("acpi"), "InstanceName", ("CurrentTemperature",)),
+    }
+
+
+def _json_sensor_rows(raw: Any) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in _as_json_list(raw):
         rows.append(
             {
                 "name": item.get("Name"),
@@ -407,6 +535,61 @@ def _powershell_cim_sensors(namespace: str) -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def _json_zone_rows(raw: Any, name_key: str, value_keys: tuple[str, ...]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in _as_json_list(raw):
+        value = None
+        for key in value_keys:
+            if item.get(key) is not None:
+                value = item.get(key)
+                break
+        rows.append({"name": item.get(name_key), "value": value})
+    return rows
+
+
+def _as_json_list(raw: Any) -> list[dict[str, Any]]:
+    if raw is None:
+        return []
+    if isinstance(raw, dict):
+        return [raw]
+    if isinstance(raw, list):
+        return [item for item in raw if isinstance(item, dict)]
+    return []
+
+
+def _powershell_json(script: str, *, timeout: int) -> Any:
+    command = ["powershell", "-NoProfile", "-NonInteractive", "-Command", script]
+    try:
+        if sys.platform == "win32":
+            proc = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                creationflags=_CREATE_NO_WINDOW,
+            )
+        else:
+            proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0 or not proc.stdout or not proc.stdout.strip():
+        return None
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def _powershell_cim_sensors(namespace: str) -> list[dict[str, Any]]:
+    script = (
+        f"$ErrorActionPreference='SilentlyContinue'; "
+        f"Get-CimInstance -Namespace '{namespace}' -ClassName Sensor | "
+        "Select-Object Name,SensorType,Value,Identifier | ConvertTo-Json -Compress"
+    )
+    payload = _powershell_json(script, timeout=3)
+    return _json_sensor_rows(payload)
 
 
 def _read_hwinfo_shared_memory() -> dict[str, float | None]:

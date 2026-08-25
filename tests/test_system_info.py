@@ -98,6 +98,35 @@ def test_wmi_reader_uses_injected_fetch() -> None:
     cpu_sensors._WMI_CACHE = None
 
 
+def test_kelvin_raw_to_celsius_tenths_and_kelvin() -> None:
+    assert cpu_sensors.kelvin_raw_to_celsius(3132) == 40.05
+    assert cpu_sensors.kelvin_raw_to_celsius(313.15) == 40.0
+    assert cpu_sensors.kelvin_raw_to_celsius(40) is None
+
+
+def test_merge_wmi_prefers_lhm_then_thermal_zone() -> None:
+    lhm = [
+        {
+            "name": "CPU Package",
+            "sensor_type": "Temperature",
+            "value": 71,
+            "identifier": "/amdcpu/0/temperature/2",
+        },
+        {
+            "name": "Package",
+            "sensor_type": "Power",
+            "value": 88,
+            "identifier": "/amdcpu/0/power/0",
+        },
+    ]
+    zone = [{"name": "CPU", "value": 3132}]
+    picked = cpu_sensors.merge_wmi_cpu_readings(lhm, [], zone)
+    assert picked == {"temperature": 71.0, "power": 88.0}
+    fallback = cpu_sensors.merge_wmi_cpu_readings([], [], zone)
+    assert fallback["temperature"] == 40.05
+    assert fallback.get("power") is None
+
+
 def test_collect_merges_cpu_package_sensors(monkeypatch) -> None:
     monkeypatch.setattr(
         "irswitch.system.provider.read_cpu_package_sensors",
