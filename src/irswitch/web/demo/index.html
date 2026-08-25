@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Overlay dry test</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #07090b;
+      color: #d7e6ea;
+      font-family: "Segoe UI", sans-serif;
+    }
+    body {
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      padding: 10px 16px;
+      background: #101418;
+      border-bottom: 1px solid #243036;
+      z-index: 2;
+    }
+    nav a { color: #9be7ff; margin-right: 12px; text-decoration: none; }
+    h1 { font-size: 16px; margin: 0 12px 0 0; letter-spacing: 0.08em; }
+    .hint { color: #8aa0a8; font-size: 13px; }
+    select, button {
+      background: #1b2226;
+      color: #e8fbff;
+      border: 1px solid #3ad7ff;
+      padding: 6px 10px;
+    }
+    #cue {
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.14em;
+      color: #3ad7ff;
+      min-height: 1.2em;
+    }
+    .stage {
+      position: relative;
+      overflow: auto;
+      background:
+        radial-gradient(ellipse at center, rgba(20, 40, 48, 0.55), #050607 72%),
+        repeating-linear-gradient(0deg, #101214 0 2px, #0b0d0f 2px 48px),
+        repeating-linear-gradient(90deg, #101214 0 2px, #0b0d0f 2px 48px);
+    }
+    .frame-wrap {
+      width: 1920px;
+      height: 1080px;
+      transform-origin: top left;
+      box-shadow: 0 0 0 1px #1d2a30;
+    }
+    iframe {
+      width: 1920px;
+      height: 1080px;
+      border: 0;
+      background: transparent;
+    }
+    .badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 3;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      color: #7aa0aa;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/gr-status">Switcher</a>
+      <a href="/overlay">OBS overlay</a>
+      <a href="/overlay/demo">Dry test</a>
+      <a href="/overlay/debug">Debug</a>
+      <a href="/config">Config</a>
+    </nav>
+    <h1>DRY TEST</h1>
+    <span class="hint">Bez OBS, bez iRacing, bez streamu. Scénář se točí dokola.</span>
+    <label>Theme
+      <select id="theme">
+        <option value="cyber_racing">cyber_racing</option>
+        <option value="stealth_graphite">stealth_graphite</option>
+        <option value="night_attack">night_attack</option>
+      </select>
+    </label>
+    <button id="replay" type="button">Replay</button>
+    <span id="cue"></span>
+  </header>
+  <div class="stage">
+    <div class="badge">1920 × 1080 · transparent HUD na tmavém jevišti</div>
+    <div class="frame-wrap" id="wrap">
+      <iframe id="hud" title="Overlay HUD" src="/overlay?demo=1"></iframe>
+    </div>
+  </div>
+  <script>
+    const wrap = document.getElementById("wrap");
+    const hud = document.getElementById("hud");
+    const theme = document.getElementById("theme");
+    const cue = document.getElementById("cue");
+
+    function scale() {
+      const pad = 8;
+      const header = document.querySelector("header").offsetHeight;
+      const availW = Math.max(320, window.innerWidth - pad * 2);
+      const availH = Math.max(180, window.innerHeight - header - pad * 2);
+      const s = Math.min(availW / 1920, availH / 1080, 1);
+      wrap.style.transform = `scale(${s})`;
+      wrap.style.margin = `${pad}px`;
+    }
+
+    function hudSrc() {
+      return `/overlay?demo=1&theme=${encodeURIComponent(theme.value)}`;
+    }
+
+    document.getElementById("replay").onclick = () => {
+      hud.src = hudSrc();
+    };
+    theme.onchange = () => {
+      hud.src = hudSrc();
+    };
+    window.addEventListener("message", (ev) => {
+      if (!ev.data || ev.data.type !== "overlay-demo-cue") return;
+      cue.textContent = ev.data.label || "";
+    });
+    window.addEventListener("resize", scale);
+    scale();
+  </script>
+</body>
+</html>

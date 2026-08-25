@@ -168,9 +168,17 @@ export const DisplayManager = {
     node.classList.add("exit");
     node.classList.remove("visible");
     setTimeout(() => {
+      if (this.active.get(key) !== node) return;
       node.remove();
       this.active.delete(key);
     }, 400);
+  },
+
+  clear() {
+    for (const [key, node] of [...this.active.entries()]) {
+      node.remove();
+      this.active.delete(key);
+    }
   },
 
   refreshArt() {

@@ -143,11 +143,12 @@ Aplikace poskytuje dva HTML dashboardy:
 - **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics (včetně `errors_total`)
 - **Konfigurovatelné**: Obrázky pozadí a loga
 - **Screenshot**: [GR Dashboard](assets/rg-status-screen.png)
-- **Navigace**: Overlay, Overlay debug, Config
+- **Navigace**: Overlay, Overlay demo, Overlay debug, Config
 
 ### Race overlay (OBS Browser Source)
 
 - **URL**: `http://127.0.0.1:17321/overlay` — transparentní 1920×1080 overlay
+- **Dry test**: `http://127.0.0.1:17321/overlay/demo` — tmavé jeviště, auto-scénář HUD bez OBS/iRacing
 - **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
 - **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
 - **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)

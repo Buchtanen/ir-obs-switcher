@@ -925,6 +925,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
         <nav class="app-nav" aria-label="App">
             <a href="/gr-status">Switcher</a>
             <a href="/overlay">Overlay</a>
+            <a href="/overlay/demo">Overlay demo</a>
             <a href="/overlay/debug">Overlay debug</a>
             <a href="/config">Config</a>
         </nav>

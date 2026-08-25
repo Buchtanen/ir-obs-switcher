@@ -22,7 +22,7 @@ function applyPresentation(msg) {
   }
 }
 
-function applySnapshot(msg) {
+function applySnapshot(msg, { events = true } = {}) {
   applyPresentation(msg);
   if (msg.race) window.__race = msg.race;
   if (msg.bio) window.__bio = msg.bio;
@@ -31,7 +31,7 @@ function applySnapshot(msg) {
     applySysinfo(msg.system, window.__bio);
   }
   if (msg.bio) applySysinfo(window.__system || {}, msg.bio);
-  (msg.activeEvents || []).forEach((ev) => DisplayManager.show(ev));
+  if (events) (msg.activeEvents || []).forEach((ev) => DisplayManager.show(ev));
 }
 
 function onMessage(msg) {
@@ -88,12 +88,40 @@ export function connectOverlay() {
   connect();
 }
 
+function remapThemeAssets(assets, theme) {
+  const next = {};
+  Object.entries(assets || {}).forEach(([slot, rel]) => {
+    next[slot] = rel ? String(rel).replace(/themes\/[^/]+\//, `themes/${theme}/`) : rel;
+  });
+  return next;
+}
+
+function demoParams() {
+  return new URLSearchParams(location.search);
+}
+
 async function bootstrap() {
+  const params = demoParams();
+  const demo = params.has("demo");
+  const theme = params.get("theme");
   try {
     const res = await fetch("/api/overlay/snapshot");
-    if (res.ok) applySnapshot(await res.json());
+    if (res.ok) {
+      const snap = await res.json();
+      if (theme) {
+        snap.theme = theme;
+        snap.assets = remapThemeAssets(snap.assets, theme);
+      }
+      applySnapshot(snap, { events: !demo });
+    }
   } catch (err) {
     // WS snapshot is the fallback
+  }
+  if (theme) applyTheme(theme);
+  if (demo) {
+    const { startDemo } = await import("./demo.js");
+    startDemo();
+    return;
   }
   connectOverlay();
 }

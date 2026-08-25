@@ -28,6 +28,7 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /test](#get-test)
   - [GET /overlay](#get-overlay)
   - [GET /overlay/debug](#get-overlaydebug)
+  - [GET /overlay/demo](#get-overlaydemo)
   - [GET /config](#get-config)
 - [Overlay API](#overlay-api)
   - [WS /ws/overlay](#ws-wsoverlay)
@@ -678,6 +679,10 @@ OBS Browser Source, 1920×1080, transparentní pozadí.
 ### GET /overlay/debug
 
 Ruční TEST eventy (HUNTING, LAP, …). Write volá `POST /overlay/debug/emit`.
+
+### GET /overlay/demo
+
+Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1`, auto-scénář (battle, lap, PB, position, incident, HR, final, finish) v loopu. Bez OBS a bez iRacing. Theme se přepíná v UI.
 
 ### GET /config
 

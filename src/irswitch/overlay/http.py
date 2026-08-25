@@ -99,6 +99,10 @@ async def handle_overlay_debug_page(request: web.Request) -> web.StreamResponse:
     return _file_response("debug/index.html")
 
 
+async def handle_overlay_demo_page(request: web.Request) -> web.StreamResponse:
+    return _file_response("demo/index.html")
+
+
 async def handle_config_page(request: web.Request) -> web.StreamResponse:
     return _file_response("config/index.html")
 
@@ -243,6 +247,8 @@ def register_overlay_routes(app: web.Application) -> None:
     app.router.add_get("/overlay", handle_overlay_page)
     app.router.add_get("/overlay/", handle_overlay_page)
     app.router.add_get("/overlay/debug", handle_overlay_debug_page)
+    app.router.add_get("/overlay/demo", handle_overlay_demo_page)
+    app.router.add_get("/overlay/demo/", handle_overlay_demo_page)
     app.router.add_get("/config", handle_config_page)
     app.router.add_get("/ws/overlay", handle_overlay_ws)
     app.router.add_get("/api/overlay/snapshot", handle_overlay_snapshot)
