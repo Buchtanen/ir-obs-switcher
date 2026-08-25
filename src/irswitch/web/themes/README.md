@@ -1,5 +1,7 @@
 # Overlay theme assets
 
+Prompt pro grafického agenta (přiložit k PDF specifikaci): [GRAPHICS_BRIEF.md](GRAPHICS_BRIEF.md).
+
 Drop generated SVG/PNG files here. The overlay never bakes numbers into bitmaps.
 
 Convention per theme directory (`cyber_racing`, `stealth_graphite`, `night_attack`):
