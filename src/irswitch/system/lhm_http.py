@@ -288,8 +288,8 @@ def _lhm_config_paths() -> list[Path]:
         try:
             import psutil
         except ImportError:
-            psutil = None  # type: ignore[assignment]
-        if psutil is not None:
+            pass
+        else:
             try:
                 for proc in psutil.process_iter(["name", "exe"]):
                     name = str(proc.info.get("name") or "").lower()
