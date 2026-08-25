@@ -44,7 +44,10 @@ def read_pdh_thermal_rows() -> list[dict[str, Any]]:
 
 
 def _expand_and_read() -> list[dict[str, Any]]:
-    pdh = ctypes.windll.pdh  # type: ignore[attr-defined]
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:
+        return []
+    pdh = windll.pdh
     _bind_pdh(pdh)
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
