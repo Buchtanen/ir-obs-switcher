@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import re
 import struct
+from pathlib import Path
 
 from irswitch.overlay.display import ASSET_SLOTS, AssetManifest
 from irswitch.overlay.http import presentation_payload, web_root
