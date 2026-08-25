@@ -260,6 +260,17 @@ def test_parse_lhm_config_and_http_bases() -> None:
     )
     assert wild["ip"] is None
     assert iter_http_bases(8085, None)[0] == "http://127.0.0.1:8085"
+    public = parse_lhm_config(
+        '<add key="listenerIp" value="8.8.8.8" /><add key="listenerPort" value="8085" />'
+    )
+    assert public["ip"] is None
+    assert "http://8.8.8.8:8085" not in iter_http_bases(8085, "8.8.8.8")
+    from irswitch.system.lhm_http import is_allowed_lhm_url
+
+    assert is_allowed_lhm_url("http://127.0.0.1:8085/data.json")
+    assert not is_allowed_lhm_url("https://127.0.0.1:8085/data.json")
+    assert not is_allowed_lhm_url("http://example.com:8085/data.json")
+    assert not is_allowed_lhm_url("http://127.0.0.1:8085/other")
 
 
 def test_parse_lhm_prometheus_cpu_gauges() -> None:

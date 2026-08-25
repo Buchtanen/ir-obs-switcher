@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import gzip
+import http.client
+import ipaddress
 import json
 import logging
 import os
@@ -15,6 +17,7 @@ import urllib.request
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,9 @@ _VALUE_RE = re.compile(r"[-+]?\d+(?:\.\d+(?:[eE][-+]?\d+)?)?")
 _PORT_RE = re.compile(r'key="listenerPort"\s+value="(\d+)"', re.I)
 _IP_RE = re.compile(r'key="listenerIp"\s+value="([^"]*)"', re.I)
 _PROM_LABEL_RE = re.compile(r'"?(\w+)"?\s*=\s*"([^"]*)"')
-_WILDCARD_IPS = {"", "+", "*", "?", "0.0.0.0", "::"}
+# Rejected LHM bind wildcards; never used as a listen address.
+_WILDCARD_IPS = {"", "+", "*", "?", "0.0.0.0", "::"}  # nosec B104
+_ALLOWED_PATHS = {"", "/", "/data.json", "/metrics"}
 _HTTP_TIMEOUT_S = 2.5
 _ROWS_TTL_S = 1.5
 _CONFIG_TTL_S = 30.0
@@ -53,9 +58,39 @@ def parse_lhm_config(text: str) -> dict[str, Any]:
     match = _IP_RE.search(text)
     if match:
         raw = match.group(1).strip()
-        if raw and raw not in _WILDCARD_IPS:
+        if raw and raw not in _WILDCARD_IPS and is_local_lhm_host(raw):
             ip = raw
     return {"port": port, "ip": ip}
+
+
+def is_local_lhm_host(host: str) -> bool:
+    """Loopback / RFC1918 / link-local only. No DNS — host must be localhost or a literal IP."""
+    cleaned = host.strip().strip("[]")
+    if not cleaned or cleaned in _WILDCARD_IPS:
+        return False
+    if cleaned.lower() == "localhost":
+        return True
+    try:
+        ip = ipaddress.ip_address(cleaned)
+    except ValueError:
+        return False
+    return bool(ip.is_loopback or ip.is_private or ip.is_link_local)
+
+
+def is_allowed_lhm_url(url: str) -> bool:
+    """SSRF gate: http to a local LHM listener, only /data.json or /metrics."""
+    parsed = urlparse(url)
+    if parsed.scheme != "http":
+        return False
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        return False
+    if parsed.path not in _ALLOWED_PATHS:
+        return False
+    host = parsed.hostname
+    port = parsed.port
+    if not host or port is None or not (1 <= int(port) <= 65535):
+        return False
+    return is_local_lhm_host(host)
 
 
 def iter_http_bases(
@@ -70,7 +105,7 @@ def iter_http_bases(
         if not host:
             return
         host = host.strip()
-        if not host or host in _WILDCARD_IPS:
+        if not is_local_lhm_host(host):
             return
         if host not in hosts:
             hosts.append(host)
@@ -165,7 +200,7 @@ def fetch_lhm_http_rows(
     if sticky_base:
         bases = [sticky_base] + [base for base in bases if base != sticky_base]
     last_error: Exception | None = None
-    open_fn = opener or urllib.request.urlopen
+    open_fn = opener
     for base in bases:
         rows: list[dict[str, Any]] = []
         try:
@@ -176,6 +211,7 @@ def fetch_lhm_http_rows(
             json.JSONDecodeError,
             OSError,
             ValueError,
+            http.client.HTTPException,
         ) as exc:
             last_error = exc
             rows = []
@@ -188,6 +224,7 @@ def fetch_lhm_http_rows(
                 json.JSONDecodeError,
                 OSError,
                 ValueError,
+                http.client.HTTPException,
             ) as exc:
                 last_error = exc
                 rows = []
@@ -284,11 +321,16 @@ def _lhm_config_paths() -> list[Path]:
 
 
 def _read_endpoint(
-    open_fn: Opener, url: str, parser: Callable[[Any], list[dict[str, Any]]]
+    open_fn: Opener | None, url: str, parser: Callable[[Any], list[dict[str, Any]]]
 ) -> list[dict[str, Any]]:
-    request = urllib.request.Request(url, headers=_HEADERS, method="GET")
-    with open_fn(request, timeout=_HTTP_TIMEOUT_S) as resp:
-        raw = resp.read()
+    if not is_allowed_lhm_url(url):
+        raise ValueError(f"refusing non-local LHM URL {url}")
+    if open_fn is not None:
+        request = urllib.request.Request(url, headers=_HEADERS, method="GET")
+        with open_fn(request, timeout=_HTTP_TIMEOUT_S) as resp:
+            raw = resp.read()
+    else:
+        raw = _http_get(url)
     if isinstance(raw, str):
         body = raw
     else:
@@ -298,6 +340,23 @@ def _read_endpoint(
     else:
         payload = json.loads(body)
     return parser(payload)
+
+
+def _http_get(url: str) -> bytes:
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    port = int(parsed.port or _DEFAULT_PORT)
+    path = parsed.path or "/"
+    conn = http.client.HTTPConnection(host, port, timeout=_HTTP_TIMEOUT_S)
+    try:
+        conn.request("GET", path, headers=_HEADERS)
+        resp = conn.getresponse()
+        data = resp.read()
+        if resp.status >= 400:
+            raise urllib.error.HTTPError(url, resp.status, resp.reason, hdrs={}, fp=None)
+        return data
+    finally:
+        conn.close()
 
 
 def _decode_body(raw: bytes) -> str:
