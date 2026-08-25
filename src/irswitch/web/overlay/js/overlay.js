@@ -1,4 +1,4 @@
-import { DisplayManager, applySysinfo } from "./display.js";
+import { DisplayManager, applySysinfo, applyPersistentArt } from "./display.js";
 
 const BACKOFF = [1000, 2000, 5000, 10000];
 
@@ -13,8 +13,17 @@ function applyTheme(theme) {
   if (link) link.href = `/overlay/static/css/themes/${id}.css`;
 }
 
-function applySnapshot(msg) {
+function applyPresentation(msg) {
   if (msg.theme) applyTheme(msg.theme);
+  if (msg.assets) {
+    window.__assets = msg.assets;
+    applyPersistentArt();
+    DisplayManager.refreshArt();
+  }
+}
+
+function applySnapshot(msg) {
+  applyPresentation(msg);
   if (msg.race) window.__race = msg.race;
   if (msg.bio) window.__bio = msg.bio;
   if (msg.system) {
@@ -79,4 +88,18 @@ export function connectOverlay() {
   connect();
 }
 
-window.addEventListener("DOMContentLoaded", connectOverlay);
+async function bootstrap() {
+  try {
+    const res = await fetch("/api/overlay/snapshot");
+    if (res.ok) applySnapshot(await res.json());
+  } catch (err) {
+    // WS snapshot is the fallback
+  }
+  connectOverlay();
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", bootstrap);
+} else {
+  bootstrap();
+}

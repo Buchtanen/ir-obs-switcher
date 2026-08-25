@@ -7,7 +7,12 @@ const CHANNELS = {
   system: { cap: 1, layer: "event-layer" },
 };
 
+const ASSET_BASE = "/overlay/web/";
+
+const ART_LAYERS = ["bg", "frame", "glow", "accent", "corners", "deco", "icon"];
+
 function text(el, value) {
+  if (!el) return;
   el.textContent = value == null ? "—" : String(value);
 }
 
@@ -19,6 +24,124 @@ function fmt(n, digits) {
 function lerp(a, b, t) {
   if (a == null || b == null) return b;
   return a + (b - a) * t;
+}
+
+export function assetUrl(slot) {
+  const rel = window.__assets && window.__assets[slot];
+  if (!rel) return null;
+  return ASSET_BASE + rel;
+}
+
+function paintLayer(el, slot, asMask) {
+  if (!el) return;
+  const url = slot ? assetUrl(slot) : null;
+  if (!url) {
+    el.classList.add("empty");
+    el.style.backgroundImage = "";
+    el.style.webkitMaskImage = "";
+    el.style.maskImage = "";
+    return;
+  }
+  el.classList.remove("empty");
+  if (asMask) {
+    el.style.backgroundImage = "";
+    el.style.backgroundColor = "currentColor";
+    const mask = `url("${url}")`;
+    el.style.webkitMaskImage = mask;
+    el.style.maskImage = mask;
+    el.style.webkitMaskSize = "contain";
+    el.style.maskSize = "contain";
+    el.style.webkitMaskRepeat = "no-repeat";
+    el.style.maskRepeat = "no-repeat";
+    el.style.webkitMaskPosition = "center";
+    el.style.maskPosition = "center";
+  } else {
+    el.style.backgroundColor = "";
+    el.style.backgroundImage = `url("${url}")`;
+    el.style.webkitMaskImage = "";
+    el.style.maskImage = "";
+  }
+}
+
+function sizeClass(event) {
+  if (event.channel === "battle") return "battle";
+  if (event.name === "position_change") return "position";
+  if (event.channel === "lap") return "lap";
+  if (event.channel === "session") return "session";
+  if (event.channel === "bio") return "bio";
+  return "alert";
+}
+
+function toneClass(event) {
+  const name = event.name;
+  const data = event.data || {};
+  if (name === "battle") return data.state === "hunted" ? "hunted" : "hunting";
+  if (name === "incident" || name === "ble_lost") return "alert";
+  if (name === "personal_best") return "pb";
+  return name;
+}
+
+function artSlots(event) {
+  const name = event.name;
+  const data = event.data || {};
+  if (name === "battle") {
+    const hunted = data.state === "hunted";
+    return {
+      bg: "battle_background",
+      frame: "battle_frame",
+      glow: "battle_glow",
+      corners: "battle_corner_caps",
+      deco: "battle_radar_rings",
+      icon: hunted ? "battle_pressure_icon" : "battle_target_icon",
+      decoMask: true,
+      iconMask: true,
+    };
+  }
+  if (name === "lap_complete") {
+    return { bg: "lap_background", frame: "lap_frame", icon: "lap_flag_icon", iconMask: true };
+  }
+  if (name === "personal_best") {
+    return { bg: "lap_background", frame: "lap_frame", icon: "lap_stopwatch_icon", iconMask: true };
+  }
+  if (name === "position_change") {
+    return {
+      bg: "position_banner",
+      icon: data.direction === "gain" ? "chevron_up" : "chevron_down",
+      iconMask: true,
+    };
+  }
+  if (name === "final_lap") {
+    return { bg: "session_background", icon: "final_lap_flag", iconMask: true };
+  }
+  if (name === "finish") {
+    return { bg: "session_background", icon: "finish_flag", iconMask: true };
+  }
+  if (name === "heart_rate") {
+    return {
+      bg: "bio_expanded_plate",
+      accent: "bio_accent",
+      deco: "bio_pulse_trace",
+      icon: "heart_icon",
+      accentMask: true,
+      decoMask: true,
+      iconMask: true,
+    };
+  }
+  if (name === "ble_lost") {
+    return { bg: "bio_expanded_plate", icon: "ble_icon", iconMask: true };
+  }
+  return { bg: "alert_banner" };
+}
+
+export function applyPersistentArt() {
+  document.querySelectorAll("[data-slot]").forEach((el) => {
+    const asMask = el.classList.contains("icon") || el.classList.contains("mask");
+    paintLayer(el, el.dataset.slot, asMask);
+  });
+  const sys = document.getElementById("sysinfo-widget");
+  if (sys) sys.classList.toggle("has-art", Boolean(assetUrl("sysinfo_background")));
+  const bio = document.getElementById("bio-compact");
+  if (bio) bio.classList.toggle("has-art", Boolean(assetUrl("bio_compact_plate")));
 }
 
 export const DisplayManager = {
@@ -50,24 +173,55 @@ export const DisplayManager = {
     }, 400);
   },
 
+  refreshArt() {
+    for (const node of this.active.values()) {
+      if (node._event) this._applyArt(node, node._event);
+    }
+    applyPersistentArt();
+  },
+
   _create(event, channel) {
     const spec = CHANNELS[channel] || CHANNELS.alert;
     const layer = document.getElementById(spec.layer);
     const node = document.createElement("div");
-    node.className = `widget ${event.data && event.data.state ? event.data.state : event.name}`;
+    node.className = `widget ${sizeClass(event)} ${toneClass(event)}`;
     node.dataset.key = `${channel}:${event.name}`;
+    const art = document.createElement("div");
+    art.className = "widget-art";
+    ART_LAYERS.forEach((name) => {
+      const el = document.createElement("div");
+      el.className = `layer ${name}`;
+      el.dataset.layer = name;
+      art.appendChild(el);
+    });
+    const copy = document.createElement("div");
+    copy.className = "widget-copy";
+    copy.innerHTML = '<div class="kicker"></div><div class="title"></div><div class="meta"></div>';
+    node.append(art, copy);
     layer.appendChild(node);
     return node;
   },
 
+  _applyArt(node, event) {
+    const slots = artSlots(event);
+    const hasPlate = Boolean(assetUrl(slots.bg));
+    node.classList.toggle("has-art", hasPlate);
+    node.classList.remove("battle", "lap", "alert", "position", "session", "bio");
+    node.classList.add(sizeClass(event));
+    ART_LAYERS.forEach((name) => {
+      const el = node.querySelector(`[data-layer="${name}"]`);
+      const asMask = Boolean(slots[`${name}Mask`]) || name === "icon";
+      paintLayer(el, slots[name], asMask && Boolean(slots[name]));
+    });
+  },
+
   _fill(node, event) {
+    node._event = event;
     const data = event.data || {};
-    const kicker = document.createElement("div");
-    kicker.className = "kicker";
-    const title = document.createElement("div");
-    title.className = "title";
-    const meta = document.createElement("div");
-    meta.className = "meta";
+    node.className = `widget ${sizeClass(event)} ${toneClass(event)}${node.classList.contains("visible") ? " visible" : ""}${node.classList.contains("exit") ? " exit" : ""}`;
+    const kicker = node.querySelector(".kicker");
+    const title = node.querySelector(".title");
+    const meta = node.querySelector(".meta");
     const name = event.name;
     const state = data.state;
     if (name === "battle" && state === "hunting") {
@@ -123,7 +277,7 @@ export const DisplayManager = {
       text(title, String(name || "").replaceAll("_", " ").toUpperCase());
       text(meta, "");
     }
-    node.replaceChildren(kicker, title, meta);
+    this._applyArt(node, event);
   },
 };
 
@@ -147,10 +301,13 @@ export function applySysinfo(system, bio) {
   setMod("fps", fmt(perf.fps, 0), perf.fps != null ? 200 - perf.fps : null, 40, 80);
   setMod("ft", perf.frametime != null ? fmt(perf.frametime, 1) + "ms" : "—", perf.frametime, 20, 33);
   const bpm = bio && bio.bpm != null ? String(bio.bpm) : "—";
-  setMod("hr", "♥ " + bpm, bio && bio.state === "high" ? 90 : 0, 80, 90);
+  setMod("hr", bpm, bio && bio.state === "high" ? 90 : 0, 80, 90);
   const ble = document.getElementById("ble-dot");
   if (ble) {
-    ble.className = "ble-dot" + (bio && bio.connected ? " on" : bio && bio.status === "reconnecting" ? " warn" : "");
+    ble.className =
+      "icon mask ble-icon" +
+      (bio && bio.connected ? " on" : bio && bio.status === "reconnecting" ? " warn" : "");
+    if (ble.dataset.slot) paintLayer(ble, ble.dataset.slot, true);
   }
   const compact = document.getElementById("bio-bpm");
   if (compact) text(compact, bpm);

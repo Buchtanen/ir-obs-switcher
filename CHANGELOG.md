@@ -14,6 +14,7 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 * overlay WebSocket `/ws/overlay`, debug inject, schema-driven `/config` page
 * per-component sampling Hz (global default + override, bio push by default)
 * mock (`--mock`) and JSONL replay (`--replay`) without iRacing
+* overlay theme asset pack (3×37 SVG/PNG) wired into the OBS HUD via snapshot `assets`
 
 ### Security
 

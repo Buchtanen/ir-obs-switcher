@@ -76,6 +76,21 @@ def _file_response(relative: str) -> web.FileResponse | web.Response:
     return web.FileResponse(path)
 
 
+def presentation_payload() -> dict[str, Any]:
+    """Theme id + resolved asset slots for the overlay HUD. Missing files are null."""
+    theme = "cyber_racing"
+    try:
+        from irswitch.server.api import get_app_config
+
+        cfg = get_app_config()
+        if cfg is not None:
+            theme = cfg.overlay.theme or theme
+    except Exception:
+        logger.debug("Overlay theme lookup failed", exc_info=True)
+    dumped = AssetManifest(theme, web_root()).to_dict()
+    return {"theme": dumped["theme"], "assets": dumped["assets"]}
+
+
 async def handle_overlay_page(request: web.Request) -> web.StreamResponse:
     return _file_response("overlay/index.html")
 
@@ -93,7 +108,7 @@ async def handle_overlay_ws(request: web.Request) -> WebSocketResponse:
     await ws.prepare(request)
     bus = get_overlay_bus()
     _overlay_clients.add(ws)
-    await bus.add_client(ws)
+    await bus.add_client(ws, extra=presentation_payload())
     try:
         async for msg in ws:
             if msg.type == web.WSMsgType.ERROR:
@@ -105,15 +120,8 @@ async def handle_overlay_ws(request: web.Request) -> WebSocketResponse:
 
 
 async def handle_overlay_snapshot(request: web.Request) -> web.Response:
-    from irswitch.server.api import get_app_config
-
-    bus = get_overlay_bus()
-    cfg = get_app_config()
-    theme = cfg.overlay.theme if cfg else "cyber_racing"
-    manifest = AssetManifest(theme, web_root())
-    payload = bus.snapshot()
-    payload["theme"] = theme
-    payload["assets"] = manifest.to_dict()["assets"]
+    payload = get_overlay_bus().snapshot()
+    payload.update(presentation_payload())
     return web.json_response(payload)
 
 

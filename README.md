@@ -151,7 +151,7 @@ Aplikace poskytuje dva HTML dashboardy:
 - **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
 - **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
 - **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)
-- Grafické SVG/PNG assety se pokládají do `src/irswitch/web/themes/<theme>/assets/` (viz README tam). Overlay běží i bez nich (CSS fallback).
+- Tři themes (`cyber_racing`, `stealth_graphite`, `night_attack`) mají shodnou geometrii, 37 assetů na theme (SYSINFO 1920×72, battle karta 420×140). Popis: `src/irswitch/web/themes/ASSETS.md`. Chybějící soubor = CSS fallback.
 
 Mock / replay (bez iRacing):
 

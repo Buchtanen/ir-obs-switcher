@@ -637,7 +637,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče jsou v [`config/config.example.ini`](config/config.example.ini).
 
 - `[sampling]` `default_hz` — globální vzorkování; `[sampling.race]`, `[sampling.system]`, `[sampling.bio]` můžou přetížit. `bio` 0 / prázdné = BLE notifications (ne poll). Clamp 0.2–30 Hz.
-- `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`)
+- `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`) — assety v `src/irswitch/web/themes/<theme>/assets/`
 - `[battle.hunting]` / `[battle.hunted]` hysteresis
 - `[heart_rate]` + `[heart_rate.bluetooth]`
 - `[system_info]` (+ cpu/gpu/memory enabled)

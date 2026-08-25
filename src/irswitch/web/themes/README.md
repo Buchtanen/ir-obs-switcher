@@ -1,25 +1,14 @@
 # Overlay theme assets
 
-Prompt pro grafického agenta (přiložit k PDF specifikaci): [GRAPHICS_BRIEF.md](GRAPHICS_BRIEF.md).
+Shipped pack: [ASSETS.md](ASSETS.md) (rozměry / viewBox) a [manifest.json](manifest.json).
 
-Drop generated SVG/PNG files here. The overlay never bakes numbers into bitmaps.
+Prompt pro nový export: [GRAPHICS_BRIEF.md](GRAPHICS_BRIEF.md).
 
-Convention per theme directory (`cyber_racing`, `stealth_graphite`, `night_attack`):
+Themes (`cyber_racing`, `stealth_graphite`, `night_attack`) mají **stejné filenames i geometrii**. Liší se barvy.
 
 ```
-assets/battle_background.svg
-assets/battle_frame.svg
-assets/battle_glow.png
-assets/battle_target_icon.svg
-assets/lap_background.svg
-assets/lap_frame.svg
-assets/heart_icon.svg
-assets/ble_icon.svg
-assets/sysinfo_background.svg
-assets/sysinfo_dividers.svg
-assets/cpu_icon.svg
-assets/gpu_icon.svg
-assets/ram_icon.svg
+themes/<theme>/assets/<slot>.svg
+themes/<theme>/assets/battle_glow.png
 ```
 
-Missing files fall back to CSS plates. Dynamic text is always HTML.
+37 souborů na theme, snake_case, žádný zapečený text. Overlay čte sloty z WS/HTTP snapshotu (`assets`). Chybějící soubor = CSS deska. Stavové ikony používají `currentColor` a na HUD jdou přes CSS mask, ne `<img>`.

@@ -1,0 +1,175 @@
+{
+  "canvas": [
+    1920,
+    1080
+  ],
+  "themes": [
+    "cyber_racing",
+    "stealth_graphite",
+    "night_attack"
+  ],
+  "assets": {
+    "battle_background.svg": [
+      420,
+      140
+    ],
+    "battle_frame.svg": [
+      420,
+      140
+    ],
+    "battle_glow.png": [
+      840,
+      280
+    ],
+    "battle_target_icon.svg": [
+      72,
+      72
+    ],
+    "battle_pressure_icon.svg": [
+      72,
+      72
+    ],
+    "battle_corner_caps.svg": [
+      420,
+      140
+    ],
+    "battle_radar_rings.svg": [
+      116,
+      116
+    ],
+    "lap_background.svg": [
+      380,
+      112
+    ],
+    "lap_frame.svg": [
+      380,
+      112
+    ],
+    "lap_flag_icon.svg": [
+      64,
+      64
+    ],
+    "lap_stopwatch_icon.svg": [
+      64,
+      64
+    ],
+    "alert_banner.svg": [
+      380,
+      84
+    ],
+    "position_banner.svg": [
+      380,
+      96
+    ],
+    "chevron_up.svg": [
+      64,
+      64
+    ],
+    "chevron_down.svg": [
+      64,
+      64
+    ],
+    "session_background.svg": [
+      520,
+      126
+    ],
+    "final_lap_flag.svg": [
+      80,
+      80
+    ],
+    "finish_flag.svg": [
+      96,
+      80
+    ],
+    "bio_compact_plate.svg": [
+      240,
+      64
+    ],
+    "bio_expanded_plate.svg": [
+      280,
+      118
+    ],
+    "heart_icon.svg": [
+      56,
+      56
+    ],
+    "ble_icon.svg": [
+      48,
+      48
+    ],
+    "bio_pulse_trace.svg": [
+      220,
+      52
+    ],
+    "bio_accent.svg": [
+      280,
+      118
+    ],
+    "sysinfo_background.svg": [
+      1920,
+      72
+    ],
+    "sysinfo_module_segment.svg": [
+      150,
+      72
+    ],
+    "sysinfo_dividers.svg": [
+      1920,
+      72
+    ],
+    "cpu_icon.svg": [
+      48,
+      48
+    ],
+    "gpu_icon.svg": [
+      48,
+      48
+    ],
+    "ram_icon.svg": [
+      48,
+      48
+    ],
+    "temp_icon.svg": [
+      48,
+      48
+    ],
+    "power_icon.svg": [
+      48,
+      48
+    ],
+    "fps_icon.svg": [
+      48,
+      48
+    ],
+    "accent_slash.svg": [
+      128,
+      64
+    ],
+    "scan_line.svg": [
+      320,
+      48
+    ],
+    "thin_divider.svg": [
+      320,
+      32
+    ],
+    "wireframe_fragment.svg": [
+      220,
+      88
+    ]
+  },
+  "qa": [
+    {
+      "theme": "cyber_racing",
+      "files": 37
+    },
+    {
+      "theme": "stealth_graphite",
+      "files": 37
+    },
+    {
+      "theme": "night_attack",
+      "files": 37
+    }
+  ]
+}

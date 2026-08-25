@@ -33,10 +33,13 @@ class OverlayBus:
     def snapshot(self) -> dict[str, Any]:
         return snapshot_envelope(self.race, self.bio, self.system, self.active_events)
 
-    async def add_client(self, ws: WebSocketResponse) -> None:
+    async def add_client(self, ws: WebSocketResponse, extra: dict[str, Any] | None = None) -> None:
         self._clients.add(ws)
         try:
-            await ws.send_str(json.dumps(self.snapshot()))
+            payload = self.snapshot()
+            if extra:
+                payload.update(extra)
+            await ws.send_str(json.dumps(payload))
         except Exception:
             logger.debug("Overlay WS snapshot send failed", exc_info=True)
             self._clients.discard(ws)

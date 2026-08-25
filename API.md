@@ -668,7 +668,7 @@ Envelope:
 ```json
 { "type": "event", "name": "battle", "phase": "enter", "channel": "battle", "priority": 20, "timestamp": 0, "data": {} }
 { "type": "state", "domain": "system", "data": {} }
-{ "type": "snapshot", "race": {}, "bio": {}, "system": {}, "activeEvents": [] }
+{ "type": "snapshot", "race": {}, "bio": {}, "system": {}, "activeEvents": [], "theme": "cyber_racing", "assets": {} }
 ```
 
 ### GET /overlay
@@ -685,11 +685,13 @@ Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 
 ### WS /ws/overlay
 
-Po connectu okamžitý `snapshot`. State se coalescuje, eventy jdou hned. Reconnect backoff 1/2/5/10 s řeší frontend.
+Po connectu okamžitý `snapshot` včetně `theme` a `assets` (relativní cesty pod `/overlay/web/`). State se coalescuje, eventy jdou hned. Reconnect backoff 1/2/5/10 s řeší frontend.
+
+Ikony se stavovou barvou (`currentColor`) se na HUD kreslí přes CSS `mask-image`, ne jako `<img>`.
 
 ### GET /api/overlay/snapshot
 
-JSON snapshot + theme + asset manifest.
+JSON snapshot + `theme` + `assets` (stejný payload jako první WS zpráva). Chybějící soubor je `null`, overlay spadne na CSS desku.
 
 ### POST /overlay/debug/emit
 

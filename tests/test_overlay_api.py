@@ -31,6 +31,27 @@ async def test_overlay_ws_sends_snapshot(app: web.Application) -> None:
                 assert "bio" in msg
                 assert "system" in msg
                 assert "activeEvents" in msg
+                assert msg["theme"] == "cyber_racing"
+                assert msg["assets"]["sysinfo_background"].endswith("sysinfo_background.svg")
+                assert msg["assets"]["battle_glow"].endswith("battle_glow.png")
+
+
+@pytest.mark.asyncio
+async def test_overlay_snapshot_and_theme_assets_served(app: web.Application) -> None:
+    from aiohttp.test_utils import TestClient, TestServer
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/overlay/snapshot")
+            assert resp.status == 200
+            body = await resp.json()
+            assert body["type"] == "snapshot"
+            assert body["theme"] == "cyber_racing"
+            assert body["assets"]["battle_background"]
+            asset = await client.get("/overlay/web/" + body["assets"]["battle_background"])
+            assert asset.status == 200
+            glow = await client.get("/overlay/web/" + body["assets"]["battle_glow"])
+            assert glow.status == 200
 
 
 @pytest.mark.asyncio
@@ -113,6 +134,9 @@ async def test_overlay_page_served(app: web.Application) -> None:
             assert resp.status == 200
             text = await resp.text()
             assert "sysinfo-widget" in text
+            assert "data-slot=" in text
+            asset = await client.get("/overlay/web/themes/cyber_racing/assets/sysinfo_background.svg")
+            assert asset.status == 200
             dbg = await client.get("/overlay/debug")
             assert dbg.status == 200
             cfg = await client.get("/config")
