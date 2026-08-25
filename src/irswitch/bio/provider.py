@@ -171,7 +171,7 @@ class BleHeartRateProvider:
         async with BleakClient(device, disconnected_callback=_on_disconnect) as client:
             self.set_status("connected", device_name=name)
 
-            def _notify(_handle: int, data: bytearray) -> None:
+            def _notify(_char: object, data: bytearray) -> None:
                 try:
                     self.ingest_measurement(bytes(data))
                 except Exception:
