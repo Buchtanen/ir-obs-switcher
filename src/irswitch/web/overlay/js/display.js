@@ -319,12 +319,12 @@ export function applySysinfo(system, bio) {
   hintEmpty(
     "cpu-temp",
     cpu.temperature,
-    "Windows has no CPU package sensors. LHM 0.9.5+: Options → Remote Web Server → Run.",
+    "Windows has no CPU package sensors. LHM 0.9.5+: Remote Web Server → Run, File → Hardware → CPU.",
   );
   hintEmpty(
     "cpu-pwr",
     cpu.power,
-    "LHM 0.9.5+ dropped WMI. Enable Remote Web Server (http://127.0.0.1:8085/data.json).",
+    "LHM 0.9.5+ dropped WMI. Keep Remote Web Server running (data.json on 8085 or the bound NIC).",
   );
   setMod("gpu-load", fmtUnit(gpu.load, 0, "%"), gpu.load, 90, 98);
   setMod("gpu-temp", fmtUnit(gpu.temperature, 0, "°C"), gpu.temperature, 80, 90);

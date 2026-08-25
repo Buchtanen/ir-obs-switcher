@@ -298,7 +298,7 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         False,
         "system_info",
         "Optional LibreHardwareMonitorLib.dll path. Empty = unused; "
-        "CPU package sensors come from WMI (LHM/OHM or Windows thermal zone).",
+        "CPU package sensors come from LHM HTTP /data.json (0.9.5+) or older WMI.",
         optional=True,
     ),
     FieldSpec(

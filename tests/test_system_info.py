@@ -190,6 +190,210 @@ def test_parse_lhm_http_json_package_sensors() -> None:
     assert picked["power"] == 88.0
 
 
+def test_parse_lhm_http_json_via_type_nodes_and_locale() -> None:
+    from irswitch.system.lhm_http import parse_lhm_data_json
+
+    payload = {
+        "Text": "Sensor",
+        "Children": [
+            {
+                "Text": "PC",
+                "Children": [
+                    {
+                        "Text": "AMD Ryzen 9 9950X",
+                        "HardwareId": "/amdcpu/0",
+                        "Children": [
+                            {
+                                "Text": "Temperatures",
+                                "Children": [
+                                    {
+                                        "Text": "Core (Tctl/Tdie)",
+                                        "Value": "46,9 °C",
+                                        "RawValue": 46.9,
+                                        "SensorId": "/amdcpu/0/temperature/2",
+                                        "Type": "Temperature",
+                                        "Children": [],
+                                    }
+                                ],
+                            },
+                            {
+                                "Text": "Powers",
+                                "Children": [
+                                    {
+                                        "Text": "Package",
+                                        "Value": "88,0 W",
+                                        "SensorId": "/amdcpu/0/power/0",
+                                        "Type": "Power",
+                                        "Children": [],
+                                    }
+                                ],
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    picked = cpu_sensors.pick_cpu_package(parse_lhm_data_json(payload))
+    assert picked == {"temperature": 46.9, "power": 88.0}
+
+
+def test_parse_lhm_config_and_http_bases() -> None:
+    from irswitch.system.lhm_http import iter_http_bases, parse_lhm_config
+
+    parsed = parse_lhm_config(
+        """<?xml version="1.0"?>
+<configuration>
+  <appSettings>
+    <add key="listenerPort" value="18085" />
+    <add key="listenerIp" value="192.168.1.50" />
+  </appSettings>
+</configuration>
+"""
+    )
+    assert parsed == {"port": 18085, "ip": "192.168.1.50"}
+    bases = iter_http_bases(int(parsed["port"]), parsed["ip"])
+    assert bases[0] == "http://192.168.1.50:18085"
+    assert "http://127.0.0.1:18085" in bases
+    wild = parse_lhm_config(
+        '<add key="listenerIp" value="+" /><add key="listenerPort" value="8085" />'
+    )
+    assert wild["ip"] is None
+    assert iter_http_bases(8085, None)[0] == "http://127.0.0.1:8085"
+
+
+def test_parse_lhm_prometheus_cpu_gauges() -> None:
+    from irswitch.system.lhm_http import parse_lhm_prometheus
+
+    text = """
+# TYPE lhm_cpu_temperature_celsius gauge
+lhm_cpu_temperature_celsius {"sensorName"="CPU Package", "hardwareName"="AMD Ryzen 9", "sensorId"="/temperature/2", "hardwareId"="/amdcpu/0"} 71.5
+lhm_cpu_temperature_celsius {"sensorName"="CPU Package", "hardwareName"="AMD Ryzen 9", "sensorId"="/temperature/2", "hardwareId"="/amdcpu/0"} 70.0
+# TYPE lhm_cpu_power_watts gauge
+lhm_cpu_power_watts {"sensorName"="Package", "hardwareName"="AMD Ryzen 9", "sensorId"="/power/0", "hardwareId"="/amdcpu/0"} 88
+lhm_gpuamd_temperature_celsius {"sensorName"="GPU Core", "hardwareId"="/gpu-amd/0"} 80
+"""
+    picked = cpu_sensors.pick_cpu_package(parse_lhm_prometheus(text))
+    assert picked == {"temperature": 71.5, "power": 88.0}
+
+
+def test_fetch_lhm_http_uses_bound_nic_and_gzip() -> None:
+    import gzip
+    import json
+    import urllib.error
+
+    from irswitch.system import lhm_http
+
+    _reset_lhm_http(lhm_http)
+    payload = {
+        "Text": "Sensor",
+        "Children": [
+            {
+                "Text": "AMD Ryzen 9",
+                "HardwareId": "/amdcpu/0",
+                "Children": [
+                    {
+                        "Text": "CPU Package",
+                        "Value": "64.0 °C",
+                        "SensorId": "/amdcpu/0/temperature/2",
+                        "Type": "Temperature",
+                        "Children": [],
+                    },
+                    {
+                        "Text": "Package",
+                        "Value": "91.0 W",
+                        "SensorId": "/amdcpu/0/power/0",
+                        "Type": "Power",
+                        "Children": [],
+                    },
+                ],
+            }
+        ],
+    }
+    body = gzip.compress(json.dumps(payload).encode("utf-8"))
+
+    def opener(request, timeout=0):
+        url = request.full_url
+        if "127.0.0.1" in url or "localhost" in url:
+            raise urllib.error.URLError("bound to LAN only")
+        if url == "http://10.0.0.8:8085/data.json":
+            return _FakeHttp(body)
+        raise urllib.error.URLError(url)
+
+    rows = lhm_http.fetch_lhm_http_rows(
+        opener=opener,
+        now=1.0,
+        config_text='<add key="listenerIp" value="10.0.0.8" /><add key="listenerPort" value="8085" />',
+        force=True,
+    )
+    picked = cpu_sensors.pick_cpu_package(rows)
+    assert picked == {"temperature": 64.0, "power": 91.0}
+
+
+def test_fetch_lhm_http_falls_back_to_metrics() -> None:
+    import urllib.error
+
+    from irswitch.system import lhm_http
+
+    _reset_lhm_http(lhm_http)
+    metrics = (
+        'lhm_cpu_temperature_celsius {"sensorName"="CPU Package", '
+        '"hardwareId"="/intelcpu/0", "sensorId"="/temperature/0"} 55\n'
+        'lhm_cpu_power_watts {"sensorName"="Package", '
+        '"hardwareId"="/intelcpu/0", "sensorId"="/power/0"} 42\n'
+    )
+
+    def opener(request, timeout=0):
+        if request.full_url.endswith("/data.json"):
+            raise urllib.error.HTTPError(request.full_url, 404, "missing", hdrs={}, fp=None)
+        if request.full_url.endswith("/metrics"):
+            return _FakeHttp(metrics)
+        raise urllib.error.URLError(request.full_url)
+
+    rows = lhm_http.fetch_lhm_http_rows(opener=opener, now=2.0, config_text="", force=True)
+    assert cpu_sensors.pick_cpu_package(rows) == {"temperature": 55.0, "power": 42.0}
+
+
+def test_read_cpu_package_sensors_stops_after_http_hit(monkeypatch) -> None:
+    monkeypatch.setattr(cpu_sensors, "_read_psutil_cpu_sensors", lambda: {})
+    monkeypatch.setattr(cpu_sensors, "_read_rapl_power", lambda: {})
+    monkeypatch.setattr(cpu_sensors, "_read_pdh_thermal", lambda: {})
+    monkeypatch.setattr(cpu_sensors, "_read_lhm_http", lambda: {"temperature": 50.0, "power": 80.0})
+    wmi_called = {"n": 0}
+
+    def _wmi() -> dict[str, float | None]:
+        wmi_called["n"] += 1
+        return {"temperature": 1.0, "power": 1.0}
+
+    monkeypatch.setattr(cpu_sensors, "_read_hardware_monitor_wmi", _wmi)
+    monkeypatch.setattr(cpu_sensors, "_read_lhm", lambda _path: {"temperature": 2.0, "power": 2.0})
+    picked = cpu_sensors.read_cpu_package_sensors(None)
+    assert picked == {"temperature": 50.0, "power": 80.0}
+    assert wmi_called["n"] == 0
+
+
+class _FakeHttp:
+    def __init__(self, body: bytes | str) -> None:
+        self._body = body.encode("utf-8") if isinstance(body, str) else body
+
+    def read(self) -> bytes:
+        return self._body
+
+    def __enter__(self) -> _FakeHttp:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+
+def _reset_lhm_http(module: object) -> None:
+    module._CACHED_ROWS = None  # type: ignore[attr-defined]
+    module._CACHED_BASE = None  # type: ignore[attr-defined]
+    module._CACHED_CONFIG = None  # type: ignore[attr-defined]
+    module._LHM_HTTP_LOGGED = False  # type: ignore[attr-defined]
+    module._LHM_HTTP_OK_LOGGED = False  # type: ignore[attr-defined]
+
+
 def test_collect_merges_cpu_package_sensors(monkeypatch) -> None:
     monkeypatch.setattr(
         "irswitch.system.provider.read_cpu_package_sensors",

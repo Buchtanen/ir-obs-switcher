@@ -175,6 +175,8 @@ def read_cpu_package_sensors(dll_path: str | None) -> dict[str, float | None]:
             value = extra.get(key)
             if value is not None:
                 result[key] = float(value)
+        if result["temperature"] is not None and result["power"] is not None:
+            break
     _log_if_empty(result)
     return result
 
@@ -263,6 +265,8 @@ def _looks_like_cpu(blob: str) -> bool:
             "tctl",
             "tdie",
             "ryzen",
+            "threadripper",
+            "epyc",
             "core(tm)",
             "core tm",
         )
@@ -302,8 +306,8 @@ def _log_if_empty(result: dict[str, float | None]) -> None:
     _CPU_SENSORS_EMPTY_LOGGED = True
     logger.info(
         "CPU package temp/power still empty. LibreHardwareMonitor 0.9.5+ removed WMI; "
-        "enable Options → Remote Web Server → Run and keep it on "
-        "(http://127.0.0.1:8085/data.json). Older LHM still uses "
+        "keep Options → Remote Web Server → Run and File → Hardware → CPU checked "
+        "(http://127.0.0.1:8085/data.json, or the NIC LHM bound to). Older LHM still uses "
         "root/LibreHardwareMonitor via Get-WmiObject."
     )
 
