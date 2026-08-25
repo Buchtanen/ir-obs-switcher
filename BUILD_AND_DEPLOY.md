@@ -386,6 +386,7 @@ pyinstaller --onefile `
     --workpath build `
     --clean `
     --add-data "assets;assets" `
+    --add-data "src/irswitch/web;irswitch/web" `
     --noupx `
     src\irswitch\main.py
 ```
@@ -396,6 +397,7 @@ pyinstaller --onefile `
 - `--noconsole` - vytváří silent EXE bez konzole (doporučeno pro background proces)
 - `--collect-all irswitch` - zahrne všechny moduly z balíčku irswitch
 - `--add-data "assets;assets"` - zahrne assets adresář do EXE (favicon, logo, atd.)
+- `--add-data "src/irswitch/web;irswitch/web"` - overlay/debug/config HTML+CSS+JS
 - `--distpath dist` - výstupní adresář
 - `--workpath build` - pracovní adresář pro build
 - `--clean` - vyčistí cache před buildem

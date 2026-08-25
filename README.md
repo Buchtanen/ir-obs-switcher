@@ -143,6 +143,24 @@ Aplikace poskytuje dva HTML dashboardy:
 - **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics (včetně `errors_total`)
 - **Konfigurovatelné**: Obrázky pozadí a loga
 - **Screenshot**: [GR Dashboard](assets/rg-status-screen.png)
+- **Navigace**: Overlay, Overlay debug, Config
+
+### Race overlay (OBS Browser Source)
+
+- **URL**: `http://127.0.0.1:17321/overlay` — transparentní 1920×1080 overlay
+- **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
+- **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
+- **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)
+- Grafické SVG/PNG assety se pokládají do `src/irswitch/web/themes/<theme>/assets/` (viz README tam). Overlay běží i bez nich (CSS fallback).
+
+Mock / replay (bez iRacing):
+
+```powershell
+irswitchd --config config\config.ini --mock
+irswitchd --config config\config.ini --replay recordings\battle.jsonl
+```
+
+Optional extras: `pip install .[ble]` (heart rate), `pip install .[sysinfo]` (psutil/NVML). LibreHardwareMonitor DLL se do gitu nedává.
 
 ### VR Dashboard (pro VR)
 

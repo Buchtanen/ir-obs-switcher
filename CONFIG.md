@@ -621,6 +621,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `switching.auto_start_broadcast`, `auto_start_at_percent`, `default_loading_time_seconds`
 - `switching.auto_stop_stream`, `stop_stream_after_seconds`
 - většina `[dashboards]` klíčů čtených při requestu
+- overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 
 ### Vyžaduje restart procesu
 
@@ -629,3 +630,17 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `obs.ws_url`, `obs.password`, `obs.required_profile`
 - OAuth / YouTube credentials (env / config)
 - `hotkeys.restart_hotkey`
+- `system_info.lhm_dll_path`
+
+## Overlay / race pipeline
+
+Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče jsou v [`config/config.example.ini`](config/config.example.ini).
+
+- `[sampling]` `default_hz` — globální vzorkování; `[sampling.race]`, `[sampling.system]`, `[sampling.bio]` můžou přetížit. `bio` 0 / prázdné = BLE notifications (ne poll). Clamp 0.2–30 Hz.
+- `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`)
+- `[battle.hunting]` / `[battle.hunted]` hysteresis
+- `[heart_rate]` + `[heart_rate.bluetooth]`
+- `[system_info]` (+ cpu/gpu/memory enabled)
+- `[events]` / `[events.priorities]`
+
+UI editor: `GET /config` (schema-driven). Zápis jen z localhost s hlavičkou `X-Requested-With: irswitch`.

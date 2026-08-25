@@ -1,0 +1,82 @@
+import { DisplayManager, applySysinfo } from "./display.js";
+
+const BACKOFF = [1000, 2000, 5000, 10000];
+
+function wsUrl() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  return `${proto}://${location.host}/ws/overlay`;
+}
+
+function applyTheme(theme) {
+  const id = theme || "cyber_racing";
+  const link = document.getElementById("theme-css");
+  if (link) link.href = `/overlay/static/css/themes/${id}.css`;
+}
+
+function applySnapshot(msg) {
+  if (msg.theme) applyTheme(msg.theme);
+  if (msg.race) window.__race = msg.race;
+  if (msg.bio) window.__bio = msg.bio;
+  if (msg.system) {
+    window.__system = msg.system;
+    applySysinfo(msg.system, window.__bio);
+  }
+  if (msg.bio) applySysinfo(window.__system || {}, msg.bio);
+  (msg.activeEvents || []).forEach((ev) => DisplayManager.show(ev));
+}
+
+function onMessage(msg) {
+  if (msg.type === "snapshot") {
+    applySnapshot(msg);
+    return;
+  }
+  if (msg.type === "state") {
+    if (msg.domain === "race") window.__race = msg.data;
+    if (msg.domain === "bio") {
+      window.__bio = msg.data;
+      applySysinfo(window.__system || {}, msg.data);
+    }
+    if (msg.domain === "system") {
+      window.__system = msg.data;
+      applySysinfo(msg.data, window.__bio);
+    }
+    return;
+  }
+  if (msg.type === "event") {
+    DisplayManager.show(msg);
+    return;
+  }
+  if (msg.type === "activeEvents") {
+    return;
+  }
+}
+
+export function connectOverlay() {
+  let attempt = 0;
+  let socket;
+
+  function connect() {
+    socket = new WebSocket(wsUrl());
+    socket.onopen = () => {
+      attempt = 0;
+    };
+    socket.onmessage = (ev) => {
+      try {
+        onMessage(JSON.parse(ev.data));
+      } catch (err) {
+        // ignore malformed
+      }
+    };
+    socket.onclose = () => {
+      const wait = BACKOFF[Math.min(attempt, BACKOFF.length - 1)];
+      attempt += 1;
+      setTimeout(connect, wait);
+    };
+    socket.onerror = () => {
+      socket.close();
+    };
+  }
+  connect();
+}
+
+window.addEventListener("DOMContentLoaded", connectOverlay);

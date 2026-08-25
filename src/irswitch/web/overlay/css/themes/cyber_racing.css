@@ -1,0 +1,11 @@
+:root {
+  --panel-fill: rgba(6, 14, 18, 0.78);
+  --border: #3ad7ff;
+  --primary: #3ad7ff;
+  --warning: #ffbf4a;
+  --alert: #ff5a3d;
+  --text-primary: #eefcff;
+  --text-muted: #7aa8b4;
+  --glow: rgba(58, 215, 255, 0.22);
+  --divider: rgba(58, 215, 255, 0.28);
+}

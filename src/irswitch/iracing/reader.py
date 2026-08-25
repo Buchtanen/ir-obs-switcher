@@ -10,7 +10,9 @@ from collections.abc import Iterable
 import irsdk
 
 from irswitch.iracing.extractors import as_bool, extract_mode
+from irswitch.iracing.telemetry import TELEMETRY_VARS, extract_telemetry
 from irswitch.models import DrivingMode
+from irswitch.overlay.models import TelemetrySnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -453,3 +455,25 @@ class IRacingReader:
         except Exception as e:
             logger.debug(f"read_mode() - exception: {e}", exc_info=True)
             return None
+
+    async def read_telemetry(self) -> TelemetrySnapshot:
+        """
+        Read overlay telemetry vars. Extraction only — no race logic.
+
+        Returns a disconnected snapshot when iRacing is down. Never raises
+        to the caller except CancelledError.
+        """
+        now = time.monotonic()
+        if not self.is_connected():
+            return TelemetrySnapshot.disconnected(now)
+        try:
+            data = await asyncio.wait_for(
+                asyncio.to_thread(self.read_vars, TELEMETRY_VARS),
+                timeout=2.0,
+            )
+            return extract_telemetry(data, now)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.debug("read_telemetry() failed", exc_info=True)
+            return TelemetrySnapshot.disconnected(now)

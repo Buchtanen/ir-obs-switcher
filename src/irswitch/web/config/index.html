@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>irswitch config</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; margin: 0; padding: 16px; }
+    nav a { color: #9be7ff; margin-right: 12px; }
+    fieldset { border: 1px solid #333; margin: 12px 0; padding: 12px; }
+    label { display: block; margin: 8px 0; }
+    input, select { background: #1c1c1c; color: #eee; border: 1px solid #444; padding: 4px 6px; min-width: 220px; }
+    .help { color: #888; font-size: 0.85em; }
+    .live { color: #9be7ff; font-size: 0.75em; }
+    .restart { color: #ffbf4a; font-size: 0.75em; }
+    button { margin-top: 12px; padding: 8px 16px; }
+    #status { margin-left: 12px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/gr-status">Switcher</a>
+    <a href="/overlay">Overlay</a>
+    <a href="/overlay/debug">Overlay debug</a>
+    <a href="/config">Config</a>
+  </nav>
+  <h1>Config</h1>
+  <p>Switcher secrets (OBS password, OAuth) are not editable here and are redacted.</p>
+  <form id="form"></form>
+  <button id="save" type="button">Save overlay settings</button>
+  <span id="status"></span>
+  <script>
+    const CSRF = { "X-Requested-With": "irswitch", "Content-Type": "application/json" };
+    const form = document.getElementById("form");
+    let schema = [];
+    let overlay = {};
+
+    function groupBySection(fields) {
+      const groups = {};
+      fields.forEach((f) => {
+        groups[f.section] = groups[f.section] || [];
+        groups[f.section].push(f);
+      });
+      return groups;
+    }
+
+    function render() {
+      form.innerHTML = "";
+      const groups = groupBySection(schema);
+      Object.keys(groups).forEach((section) => {
+        const set = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent = section;
+        set.appendChild(legend);
+        groups[section].forEach((field) => {
+          const label = document.createElement("label");
+          const title = document.createElement("div");
+          title.textContent = field.key + " ";
+          const badge = document.createElement("span");
+          badge.className = field.live ? "live" : "restart";
+          badge.textContent = field.live ? "live" : "restart";
+          title.appendChild(badge);
+          label.appendChild(title);
+          let input;
+          const current = overlay[field.key];
+          if (field.type === "bool") {
+            input = document.createElement("input");
+            input.type = "checkbox";
+            input.checked = Boolean(current);
+          } else if (field.choices && field.choices.length) {
+            input = document.createElement("select");
+            field.choices.forEach((c) => {
+              const opt = document.createElement("option");
+              opt.value = c;
+              opt.textContent = c;
+              if (c === current) opt.selected = true;
+              input.appendChild(opt);
+            });
+          } else {
+            input = document.createElement("input");
+            input.type = field.type === "str" ? "text" : "number";
+            if (field.min != null) input.min = field.min;
+            if (field.max != null) input.max = field.max;
+            if (field.type === "float") input.step = "any";
+            input.value = current == null ? "" : current;
+          }
+          input.dataset.key = field.key;
+          input.dataset.type = field.type;
+          label.appendChild(input);
+          const help = document.createElement("div");
+          help.className = "help";
+          help.textContent = field.help;
+          label.appendChild(help);
+          set.appendChild(label);
+        });
+        form.appendChild(set);
+      });
+    }
+
+    async function load() {
+      const res = await fetch("/api/config");
+      const data = await res.json();
+      schema = data.schema || [];
+      overlay = data.overlay || {};
+      render();
+    }
+
+    document.getElementById("save").onclick = async () => {
+      const values = {};
+      form.querySelectorAll("[data-key]").forEach((el) => {
+        const key = el.dataset.key;
+        if (el.type === "checkbox") values[key] = el.checked;
+        else if (el.value === "") values[key] = null;
+        else if (el.dataset.type === "int") values[key] = parseInt(el.value, 10);
+        else if (el.dataset.type === "float") values[key] = parseFloat(el.value);
+        else values[key] = el.value;
+      });
+      const res = await fetch("/api/config", {
+        method: "PUT",
+        headers: CSRF,
+        body: JSON.stringify({ values }),
+      });
+      const body = await res.json();
+      document.getElementById("status").textContent = res.ok
+        ? "Saved (" + (body.applied_live || []).length + " live)"
+        : (body.error || "failed");
+    };
+
+    load();
+  </script>
+</body>
+</html>

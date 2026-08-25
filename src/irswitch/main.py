@@ -175,6 +175,16 @@ def build_parser() -> argparse.ArgumentParser:
     """Build command line argument parser."""
     parser = argparse.ArgumentParser(description="iRacing OBS scene switcher")
     parser.add_argument("--config", required=True, help="Path to config INI")
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Feed overlay with synthetic race/bio/system data (no iRacing required)",
+    )
+    parser.add_argument(
+        "--replay",
+        default=None,
+        help="Replay overlay JSONL recording into the overlay bus",
+    )
     return parser
 
 
@@ -1186,7 +1196,13 @@ async def main_loop(
             await asyncio.sleep(poll_interval)
 
 
-async def run_service(config: AppConfig, config_path: str) -> None:
+async def run_service(
+    config: AppConfig,
+    config_path: str,
+    *,
+    overlay_mode: str = "live",
+    replay_path: str | None = None,
+) -> None:
     """Run the service with all components."""
     # Setup logging (always to console, optionally to file)
     setup_logging(
@@ -1482,6 +1498,26 @@ async def run_service(config: AppConfig, config_path: str) -> None:
         )
         logger.info("OAuth reauth watchdog started")
 
+    overlay_task: asyncio.Task[None] | None = None
+    try:
+        from irswitch.overlay.http import get_overlay_bus, set_overlay_bus, set_overlay_runtime
+        from irswitch.overlay.runtime import OverlayRuntime
+
+        bus = get_overlay_bus()
+        set_overlay_bus(bus)
+        overlay_runtime = OverlayRuntime(
+            get_app_config,
+            reader,
+            bus,
+            mode=overlay_mode if overlay_mode in {"live", "mock", "replay"} else "live",
+            replay_path=replay_path,
+        )
+        set_overlay_runtime(overlay_runtime)
+        overlay_task = asyncio.create_task(overlay_runtime.run(), name="overlay_runtime")
+        logger.info("Overlay pipeline started (mode=%s)", overlay_mode)
+    except Exception:
+        logger.warning("Overlay pipeline failed to start", exc_info=True)
+
     # Start background task to continue trying to connect to OBS if not connected yet
     async def background_obs_connect():
         """Background task to keep trying to connect to OBS."""
@@ -1581,6 +1617,13 @@ async def run_service(config: AppConfig, config_path: str) -> None:
             except asyncio.CancelledError:
                 pass
 
+        if overlay_task is not None:
+            overlay_task.cancel()
+            try:
+                await overlay_task
+            except asyncio.CancelledError:
+                pass
+
         # Cancel main loop
         main_task.cancel()
         try:
@@ -1606,8 +1649,21 @@ def main() -> int:
         print(f"Error loading config: {e}", file=sys.stderr)
         return 1
 
+    overlay_mode = "live"
+    if args.mock:
+        overlay_mode = "mock"
+    elif args.replay:
+        overlay_mode = "replay"
+
     try:
-        asyncio.run(run_service(config, args.config))
+        asyncio.run(
+            run_service(
+                config,
+                args.config,
+                overlay_mode=overlay_mode,
+                replay_path=args.replay,
+            )
+        )
         return 0
     except InstanceAlreadyRunningError:
         # Already logged + printed in run_service.
