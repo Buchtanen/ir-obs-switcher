@@ -241,16 +241,14 @@ def test_parse_lhm_http_json_via_type_nodes_and_locale() -> None:
 def test_parse_lhm_config_and_http_bases() -> None:
     from irswitch.system.lhm_http import iter_http_bases, parse_lhm_config
 
-    parsed = parse_lhm_config(
-        """<?xml version="1.0"?>
+    parsed = parse_lhm_config("""<?xml version="1.0"?>
 <configuration>
   <appSettings>
     <add key="listenerPort" value="18085" />
     <add key="listenerIp" value="192.168.1.50" />
   </appSettings>
 </configuration>
-"""
-    )
+""")
     assert parsed == {"port": 18085, "ip": "192.168.1.50"}
     bases = iter_http_bases(int(parsed["port"]), parsed["ip"])
     assert bases[0] == "http://192.168.1.50:18085"

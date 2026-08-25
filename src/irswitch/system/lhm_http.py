@@ -353,7 +353,7 @@ def _http_get(url: str) -> bytes:
         resp = conn.getresponse()
         data = resp.read()
         if resp.status >= 400:
-            raise urllib.error.HTTPError(url, resp.status, resp.reason, hdrs={}, fp=None)
+            raise urllib.error.URLError(f"HTTP {resp.status} {resp.reason} for {url}")
         return data
     finally:
         conn.close()
