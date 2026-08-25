@@ -161,7 +161,7 @@ irswitchd --config config\config.ini --mock
 irswitchd --config config\config.ini --replay recordings\battle.jsonl
 ```
 
-Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. CPU teplota/příkon na Windows jdou přes WMI: LibreHardwareMonitor (`root\LibreHardwareMonitor`) nebo OpenHardwareMonitor. Bez nich zkusí Windows thermal zone (teplota, ne příkon). FPS/FT v SYSINFO berou iRacing — mimo 3D zůstanou prázdné.
+Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. GPU čísla bere NVML. CPU package teplota/příkon na Windows: PDH thermal zone (jen teplota, často na desktopu chybí) a WMI `root\LibreHardwareMonitor` když běží LibreHardwareMonitor. Stock Windows **nemá** CPU package power. FPS/FT berou iRacing — mimo 3D zůstanou prázdné.
 
 ### VR Dashboard (pro VR)
 

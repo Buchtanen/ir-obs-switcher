@@ -102,6 +102,8 @@ def test_kelvin_raw_to_celsius_tenths_and_kelvin() -> None:
     assert cpu_sensors.kelvin_raw_to_celsius(3132) == 40.05
     assert cpu_sensors.kelvin_raw_to_celsius(313.15) == 40.0
     assert cpu_sensors.kelvin_raw_to_celsius(40) is None
+    assert cpu_sensors.thermal_raw_to_celsius(55) == 55.0
+    assert cpu_sensors.thermal_raw_to_celsius(3132) == 40.05
 
 
 def test_merge_wmi_prefers_lhm_then_thermal_zone() -> None:

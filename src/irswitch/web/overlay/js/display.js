@@ -316,6 +316,16 @@ export function applySysinfo(system, bio) {
   );
   setMod("cpu-temp", fmtUnit(cpu.temperature, 0, "°C"), cpu.temperature, 80, 95);
   setMod("cpu-pwr", fmtUnit(cpu.power, 0, "W"), cpu.power, 140, 200);
+  hintEmpty(
+    "cpu-temp",
+    cpu.temperature,
+    "Windows WMI/PDH has no CPU package temp. Start LibreHardwareMonitor.",
+  );
+  hintEmpty(
+    "cpu-pwr",
+    cpu.power,
+    "Windows has no CPU package power class. Start LibreHardwareMonitor (WMI).",
+  );
   setMod("gpu-load", fmtUnit(gpu.load, 0, "%"), gpu.load, 90, 98);
   setMod("gpu-temp", fmtUnit(gpu.temperature, 0, "°C"), gpu.temperature, 80, 90);
   setMod("gpu-pwr", fmtUnit(gpu.power, 0, "W"), gpu.power, 350, 450);
@@ -362,6 +372,12 @@ function setMod(id, label, metric, warn, crit) {
   el.classList.remove("warn", "crit");
   if (metric != null && metric >= crit) el.classList.add("crit");
   else if (metric != null && metric >= warn) el.classList.add("warn");
+}
+
+function hintEmpty(id, metric, message) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.title = metric == null ? message : "";
 }
 
 export { lerp };

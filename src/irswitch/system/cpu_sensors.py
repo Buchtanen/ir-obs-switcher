@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
@@ -25,7 +26,7 @@ _LHM_DLL_LOADED: str | None = None
 
 _WMI_CACHE: tuple[float, dict[str, float | None], float] | None = None
 _WMI_TTL_HIT = 2.0
-_WMI_TTL_MISS = 15.0
+_WMI_TTL_MISS = 5.0
 _WMI_NAMESPACES = ("root/LibreHardwareMonitor", "root/OpenHardwareMonitor")
 _CREATE_NO_WINDOW = 0x08000000
 
@@ -88,6 +89,16 @@ def kelvin_raw_to_celsius(raw: float | None) -> float | None:
     return None
 
 
+def thermal_raw_to_celsius(raw: float | None) -> float | None:
+    """ACPI/PDH Kelvin, tenths of Kelvin, or a value already in °C."""
+    converted = kelvin_raw_to_celsius(raw)
+    if converted is not None:
+        return converted
+    if raw is not None and 15.0 <= raw <= 115.0:
+        return round(float(raw), 2)
+    return None
+
+
 def pick_thermal_zone(rows: Sequence[Mapping[str, Any]]) -> float | None:
     """Pick a CPU-ish ACPI/perf thermal zone. Last resort when LHM/OHM WMI is empty."""
     best: tuple[int, float] | None = None
@@ -103,7 +114,7 @@ def pick_thermal_zone(rows: Sequence[Mapping[str, Any]]) -> float | None:
             if row.get(key) is not None:
                 raw = _as_float(row.get(key))
                 break
-        celsius = kelvin_raw_to_celsius(raw)
+        celsius = thermal_raw_to_celsius(raw)
         if celsius is None:
             continue
         lowered = name.lower()
@@ -150,6 +161,7 @@ def read_cpu_package_sensors(dll_path: str | None) -> dict[str, float | None]:
     for reader in (
         _read_psutil_cpu_sensors,
         _read_rapl_power,
+        _read_pdh_thermal,
         _read_hardware_monitor_wmi,
         lambda: _read_lhm(dll_path if dll_path and Path(dll_path).is_file() else None),
     ):
@@ -288,12 +300,10 @@ def _log_if_empty(result: dict[str, float | None]) -> None:
         return
     _CPU_SENSORS_EMPTY_LOGGED = True
     logger.info(
-        "CPU package temp/power unavailable via WMI. Stock Windows has no CPU package "
-        "power class. Temperature may appear from a thermal zone "
-        "(Win32_PerfFormattedData_Counters_ThermalZoneInformation / "
-        "MSAcpi_ThermalZoneTemperature). Package temp+power need LibreHardwareMonitor "
-        "or OpenHardwareMonitor exposing root/LibreHardwareMonitor or "
-        "root/OpenHardwareMonitor."
+        "CPU package temp/power still empty after WMI + PDH thermal zone. "
+        "GPU numbers come from NVIDIA NVML; Windows has no CPU package power class. "
+        "Package temp+power need LibreHardwareMonitor running (WMI namespace "
+        "root/LibreHardwareMonitor). Thermal-zone counters are often missing on AM5/desktop boards."
     )
 
 
@@ -369,6 +379,22 @@ def _read_rapl_power() -> dict[str, float | None]:
     if watts < 0 or watts > 500:
         return {}
     return {"power": watts}
+
+
+def _read_pdh_thermal() -> dict[str, float | None]:
+    try:
+        from irswitch.system.pdh_thermal import read_pdh_thermal_rows
+    except Exception:
+        return {}
+    try:
+        rows = read_pdh_thermal_rows()
+    except Exception:
+        logger.debug("PDH thermal zone failed", exc_info=True)
+        return {}
+    celsius = pick_thermal_zone(rows)
+    if celsius is None:
+        return {}
+    return {"temperature": celsius}
 
 
 def _read_hardware_monitor_wmi(
@@ -510,7 +536,7 @@ def _powershell_wmi_bundle() -> dict[str, list[dict[str, Any]]]:
         "| Select-Object InstanceName,CurrentTemperature)"
         "} | ConvertTo-Json -Compress -Depth 5"
     )
-    payload = _powershell_json(script, timeout=8)
+    payload = _powershell_json(script, timeout=20)
     if not isinstance(payload, dict):
         return {}
     return {
@@ -560,7 +586,21 @@ def _as_json_list(raw: Any) -> list[dict[str, Any]]:
 
 
 def _powershell_json(script: str, *, timeout: int) -> Any:
-    command = ["powershell", "-NoProfile", "-NonInteractive", "-Command", script]
+    wrapped = (
+        "$ErrorActionPreference='SilentlyContinue'; "
+        "$ProgressPreference='SilentlyContinue'; "
+        f"{script}; exit 0"
+    )
+    encoded = base64.b64encode(wrapped.encode("utf-16-le")).decode("ascii")
+    command = [
+        "powershell",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-EncodedCommand",
+        encoded,
+    ]
     try:
         if sys.platform == "win32":
             proc = subprocess.run(
@@ -573,12 +613,19 @@ def _powershell_json(script: str, *, timeout: int) -> Any:
         else:
             proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.TimeoutExpired):
+        logger.debug("PowerShell WMI timed out or failed to start", exc_info=True)
         return None
-    if proc.returncode != 0 or not proc.stdout or not proc.stdout.strip():
+    text = proc.stdout or ""
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end <= start:
+        if proc.stderr:
+            logger.debug("PowerShell WMI stderr: %s", proc.stderr[:500])
         return None
     try:
-        return json.loads(proc.stdout)
+        return json.loads(text[start : end + 1])
     except json.JSONDecodeError:
+        logger.debug("PowerShell WMI JSON parse failed: %s", text[:300])
         return None
 
 
