@@ -124,7 +124,12 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     )
     assert "left: 119px" in css
     assert "top: 38px" in css
-    assert ".widget.battle .layer.native" in css
+    assert ".widget .layer.native" in css
+    assert "width: 380px" not in css
+    assert "height: 112px" not in css
+    assert "height: 84px" not in css
+    assert "#event-layer" in css and "width: 420px" in css
+    assert ".widget.lap {" not in css
     assert "paintPlateMask" in (web_root() / "overlay" / "js" / "display.js").read_text(
         encoding="utf-8"
     )
@@ -267,6 +272,7 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert "function v3SharedPlate" in js
     shared = js.split("function v3SharedPlate", 1)[1].split("function paintPlateMask", 1)[0]
     assert "battle_base_plate" in shared
+    assert "native: canvas" in shared
     assert "battle_shadow" not in shared
     assert "bio-compact" not in html
     assert "bio-bpm" not in html
@@ -301,7 +307,7 @@ def test_battle_css_matches_v3_text_slots() -> None:
     assert "top: 38px" in css
     assert "top: 74px" in css
     assert "top: 94px" in css
-    assert ".widget.battle .layer.native" in css
+    assert ".widget .layer.native" in css
     assert "scale(0.62)" not in css
     assert "golden-layout" in css
     assert "radar-spin" not in css

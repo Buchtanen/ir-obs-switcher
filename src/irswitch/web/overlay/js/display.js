@@ -227,20 +227,21 @@ function battleLayerPlan(hunted) {
 }
 
 function v3SharedPlate(glow, extra, well = true) {
+  const canvas = [420, 140];
   const layers = [
-    { id: "base", slot: "battle_base_plate" },
-    { id: "material", slot: "battle_material" },
-    { id: "tech", slot: "battle_tech_diagram" },
-    { id: "frame", slot: "battle_frame_base" },
-    { id: "highlight", slot: "battle_frame_highlight" },
-    { id: "accent", slot: "battle_state_accent_mask", mask: true },
-    { id: "corner-left", slot: "battle_corner_left", mask: true },
-    { id: "corner-right", slot: "battle_corner_right", mask: true },
+    { id: "base", slot: "battle_base_plate", native: canvas },
+    { id: "material", slot: "battle_material", native: canvas },
+    { id: "tech", slot: "battle_tech_diagram", native: canvas },
+    { id: "frame", slot: "battle_frame_base", native: canvas },
+    { id: "highlight", slot: "battle_frame_highlight", native: canvas },
+    { id: "accent", slot: "battle_state_accent_mask", mask: true, native: canvas },
+    { id: "corner-left", slot: "battle_corner_left", mask: true, native: canvas },
+    { id: "corner-right", slot: "battle_corner_right", mask: true, native: canvas },
   ];
-  if (well) layers.push({ id: "well", slot: "battle_icon_well" });
+  if (well) layers.push({ id: "well", slot: "battle_icon_well", native: canvas });
   layers.push(...extra);
-  layers.push({ id: "micro", slot: "battle_micro_details", mask: true });
-  if (glow) layers.push({ id: "glow", slot: glow, plateMask: true });
+  layers.push({ id: "micro", slot: "battle_micro_details", mask: true, native: canvas });
+  if (glow) layers.push({ id: "glow", slot: glow, native: canvas, plateMask: true });
   return layers;
 }
 
