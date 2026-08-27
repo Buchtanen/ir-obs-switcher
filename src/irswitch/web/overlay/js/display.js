@@ -232,7 +232,12 @@ function v3SharedPlate(glow, extra, well = true) {
 
 function paintPlateMask(el) {
   const url = assetUrl("battle_base_plate");
-  if (!el || !url) return;
+  if (!el) return;
+  if (!url) {
+    el.style.webkitMaskImage = "";
+    el.style.maskImage = "";
+    return;
+  }
   const mask = `url("${url}")`;
   el.style.webkitMaskImage = mask;
   el.style.maskImage = mask;
@@ -242,6 +247,7 @@ function paintPlateMask(el) {
   el.style.maskRepeat = "no-repeat";
   el.style.webkitMaskPosition = "0 0";
   el.style.maskPosition = "0 0";
+  el.style.maskMode = "alpha";
 }
 
 function layersFor(event) {
@@ -315,8 +321,9 @@ export function applyPersistentArt() {
     const plate = Boolean(assetUrl("battle_base_plate"));
     bio.classList.toggle("has-art", plate);
     bio.classList.toggle("fallback", !plate);
+    const art = bio.querySelector(".widget-art");
+    if (plate) paintPlateMask(art);
   }
-  document.querySelectorAll("#bio-compact .layer.glow").forEach((el) => paintPlateMask(el));
 }
 
 export const DisplayManager = {
@@ -411,6 +418,11 @@ export const DisplayManager = {
       paintLayer(el, layer.slot, Boolean(layer.mask) && Boolean(layer.slot), layer.native);
       if (layer.plateMask) paintPlateMask(el);
     });
+    if (hasPlate) paintPlateMask(art);
+    else {
+      art.style.webkitMaskImage = "";
+      art.style.maskImage = "";
+    }
   },
 
   _fill(node, event) {

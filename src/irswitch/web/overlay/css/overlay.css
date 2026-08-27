@@ -246,6 +246,17 @@ html.preview-layout .widget {
   overflow: visible;
 }
 
+.widget.has-art .widget-art,
+#bio-compact.has-art .widget-art {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  mask-mode: alpha;
+}
+
 .widget-art .layer {
   position: absolute;
   inset: 0;
@@ -312,6 +323,11 @@ html.preview-layout .widget {
   width: 100%;
   height: 100%;
   object-fit: fill;
+}
+
+/* Same lock/scan WebM as HUNTING, shifted to the hunted warning hue. */
+.widget.hunted video.fx {
+  filter: hue-rotate(-150deg) saturate(1.2);
 }
 
 .widget.bio .layer.deco {

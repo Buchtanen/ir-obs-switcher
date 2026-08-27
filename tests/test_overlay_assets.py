@@ -122,6 +122,8 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
         encoding="utf-8"
     )
     assert "filter: drop-shadow" not in css
+    assert ".widget.hunted video.fx" in css
+    assert "hue-rotate(-150deg)" in css
     assert ".widget.has-art.lap" not in css
     assert "scale(0.62)" not in css
 
@@ -271,6 +273,7 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     fx = js.split("function syncWidgetFx", 1)[1].split("function sizeClass", 1)[0]
     assert "battle_signal_lock" in fx
     assert 'state === "hunting"' not in fx
+    assert "paintPlateMask(art)" in js
     assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
         encoding="utf-8"
     )
