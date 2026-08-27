@@ -8,9 +8,11 @@
   <script>
     const params = new URLSearchParams(location.search);
     if (params.has("demo")) document.documentElement.classList.add("is-demo");
-    if (params.get("layout") === "preview" || params.get("layout") === "golden") {
+    const layout = params.get("layout");
+    if (layout === "preview" || layout === "golden") {
       document.documentElement.classList.add("preview-layout");
     }
+    if (layout === "golden") document.documentElement.classList.add("golden-layout");
   </script>
 </head>
 <body>

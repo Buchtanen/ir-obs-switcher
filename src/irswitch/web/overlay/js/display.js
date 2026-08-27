@@ -81,6 +81,27 @@ function playMuted(video) {
   if (run && typeof run.catch === "function") run.catch(() => {});
 }
 
+function playOnceFromStart(video) {
+  if (!video) return;
+  try {
+    video.currentTime = 0;
+  } catch (_err) {
+    /* metadata not ready yet */
+  }
+  playMuted(video);
+}
+
+function huntingLockMs() {
+  const href = document.getElementById("theme-css")?.getAttribute("href") || "";
+  return href.includes("stealth_graphite") ? 1800 : 1400;
+}
+
+function clearLockTimer(node) {
+  if (!node || !node._lockTimer) return;
+  clearInterval(node._lockTimer);
+  node._lockTimer = 0;
+}
+
 function ensureFxVideo(art, className, slot, loop) {
   let video = art.querySelector(`video.${className}`);
   const url = assetUrl(slot);
@@ -123,41 +144,24 @@ function syncWidgetFx(node, event, isEnter) {
   if (hunting) {
     const lock = ensureFxVideo(art, "signal-lock", "battle_signal_lock", false);
     node.classList.toggle("has-radar-fx", Boolean(lock));
-    if (isEnter) playMuted(lock);
+    if (isEnter) playOnceFromStart(lock);
+    if (lock && !node._lockTimer) {
+      node._lockTimer = setInterval(() => playOnceFromStart(lock), huntingLockMs());
+    }
   } else {
+    clearLockTimer(node);
     removeFxVideo(art, "signal-lock");
     node.classList.remove("has-radar-fx");
   }
   if (isEnter && event.name === "battle") {
     const scan = ensureFxVideo(art, "scan-enter", "battle_scan_enter", false);
-    if (scan) {
-      try {
-        scan.currentTime = 0;
-      } catch (_err) {
-        /* metadata not ready yet */
-      }
-      playMuted(scan);
-    }
+    playOnceFromStart(scan);
     const themeFx = ensureFxVideo(art, "theme-motion", "battle_theme_motion", false);
-    if (themeFx) {
-      try {
-        themeFx.currentTime = 0;
-      } catch (_err) {
-        /* metadata not ready yet */
-      }
-      playMuted(themeFx);
-    }
+    playOnceFromStart(themeFx);
   }
   if (isEnter && event.name === "finish") {
     const sweep = ensureFxVideo(art, "finish-sweep", "finish_accent_sweep", false);
-    if (sweep) {
-      try {
-        sweep.currentTime = 0;
-      } catch (_err) {
-        /* metadata not ready yet */
-      }
-      playMuted(sweep);
-    }
+    playOnceFromStart(sweep);
   }
 }
 
@@ -188,7 +192,7 @@ function battleLayerPlan(hunted) {
     { id: "material", slot: "battle_material" },
     { id: "tech", slot: "battle_tech_diagram" },
     { id: "frame", slot: "battle_frame_base" },
-    { id: "highlight", slot: "battle_frame_highlight", blend: "screen" },
+    { id: "highlight", slot: "battle_frame_highlight" },
     { id: "accent", slot: "battle_state_accent_mask", mask: true },
     { id: "corner-left", slot: "battle_corner_left", mask: true },
     { id: "corner-right", slot: "battle_corner_right", mask: true },
@@ -198,7 +202,7 @@ function battleLayerPlan(hunted) {
     { id: "ring-outer", slot: "battle_radar_ring_outer", mask: true },
     { id: "icon", slot: icon, mask: true },
     { id: "micro", slot: "battle_micro_details", mask: true },
-    { id: "glow", slot: glow, blend: "screen" },
+    { id: "glow", slot: glow },
   ];
 }
 
@@ -335,6 +339,7 @@ export const DisplayManager = {
   hide(key) {
     const node = this.active.get(key);
     if (!node) return;
+    clearLockTimer(node);
     node.querySelectorAll("video").forEach((video) => video.pause());
     node.classList.add("exit");
     node.classList.remove("visible");
@@ -347,6 +352,7 @@ export const DisplayManager = {
 
   clear() {
     for (const [key, node] of [...this.active.entries()]) {
+      clearLockTimer(node);
       node.remove();
       this.active.delete(key);
     }

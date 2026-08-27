@@ -153,7 +153,7 @@ Aplikace poskytuje dva HTML dashboardy:
 - **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
 - **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)
 - Tři themes (`cyber_racing`, `stealth_graphite`, `night_attack`) mají shodnou geometrii, 50 PNG + 4 WebM na theme (SYSINFO 1920×72, battle karta 420×140, V3 vrstvy). Popis: `src/irswitch/web/themes/ASSETS.md`. Chybějící soubor = CSS fallback.
-- **Battle golden freeze**: `http://127.0.0.1:17321/overlay?demo=1&layout=golden`
+- **Battle golden freeze**: `http://127.0.0.1:17321/overlay?demo=1&layout=golden` (HUNTING + HUNTED, bez SYSINFO). Theme: `&theme=cyber_racing` / `stealth_graphite` / `night_attack`.
 
 Mock / replay (bez iRacing):
 

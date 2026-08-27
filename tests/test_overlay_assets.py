@@ -115,7 +115,8 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert "bottom: 91px" in css
     assert "#bio-compact.has-art" in css
     assert "filter: drop-shadow" not in css
-    assert "padding: 40px 18px 16px 119px" in css
+    assert "left: 119px" in css
+    assert "top: 38px" in css
     assert ".widget.battle .widget-art .layer.icon" in css
 
 
@@ -247,3 +248,24 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert "function battleLayerPlan" in js
     assert "battle_base_plate" in js
     assert "battle_glow_amber" in js
+    plan = js.split("function battleLayerPlan", 1)[1].split("function fallbackLayerPlan", 1)[0]
+    assert 'id: "highlight"' in plan
+    assert "blend: \"screen\"" not in plan
+    assert "huntingLockMs" in js
+    assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_battle_css_matches_v3_text_slots() -> None:
+    css = (web_root() / "overlay" / "css" / "overlay.css").read_text(encoding="utf-8")
+    assert "left: 119px" in css
+    assert "top: 38px" in css
+    assert "top: 74px" in css
+    assert "top: 94px" in css
+    assert ".widget.battle .layer.micro" in css
+    assert "opacity: 0.56" in css
+    assert "golden-layout" in css
+    assert "radar-spin" not in css
+    html = (web_root() / "overlay" / "index.html").read_text(encoding="utf-8")
+    assert "golden-layout" in html

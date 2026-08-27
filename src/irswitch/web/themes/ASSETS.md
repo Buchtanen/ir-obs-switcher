@@ -70,6 +70,8 @@ WebM does not replace the 320 ms / 280 ms widget enter/exit transitions. Missing
 
 Layering (battle V3): shadow → base plate → material → tech diagram → frame → highlight → state accent → corners → icon well → radar → icon → micro → HTML → motion → local glow. Other widgets still use V2 plates until Phase B. SYSINFO grid is unchanged: `230px + 11×150px`.
 
-HUNTING uses `battle_glow_cyan`; HUNTED uses `battle_glow_amber`. Lap/session/bio reuse those pre-colored glows. Never `filter: drop-shadow` on the plate PNG (it halos internal alpha).
+HUNTING uses `battle_glow_cyan`; HUNTED uses `battle_glow_amber`. Battle glow is alpha-composited (not `mix-blend-mode: screen`). Lap/session/bio reuse those pre-colored glows. Never `filter: drop-shadow` on the plate PNG (it halos internal alpha).
+
+Text slots (battle): title 26px italic at y≈42, kicker 13px at y≈76, meta 11px muted at y≈96, copy pad 119px. Radar rings stay static; `battle_signal_lock.webm` may retrigger while HUNTING (1.4s, stealth 1.8s).
 
 QA: 3 themes × 50 PNG + 4 WebM; names, alpha, geometry parity verified. Preview MP4/PNG boards stay out of the web tree.

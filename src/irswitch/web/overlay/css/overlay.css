@@ -7,7 +7,7 @@ html, body {
   height: 1080px;
   overflow: hidden;
   background: transparent;
-  font-family: "Eurostile", "Rajdhani", "Segoe UI", sans-serif;
+  font-family: "Nimbus Sans Narrow", "Arial Narrow", "Eurostile", "Rajdhani", "Segoe UI", sans-serif;
   color: var(--text-primary, #e8fbff);
 }
 
@@ -18,6 +18,13 @@ html.is-demo body {
 }
 
 html.preview-layout #bio-compact {
+  display: none;
+}
+
+html.golden-layout #sysinfo-widget,
+html.golden-layout #session-layer,
+html.golden-layout #event-layer,
+html.golden-layout #bio-expanded {
   display: none;
 }
 
@@ -257,6 +264,26 @@ html.preview-layout .widget {
   opacity: 0.9;
 }
 
+/* Pre-colored battle glow/highlight match PIL alpha_composite, not CSS screen. */
+.widget.battle .layer.glow,
+.widget.battle .layer.highlight {
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+.widget.battle .layer.accent,
+.widget.battle .layer.corner-left,
+.widget.battle .layer.corner-right,
+.widget.battle .layer.ticks,
+.widget.battle .layer.ring-inner,
+.widget.battle .layer.ring-outer {
+  opacity: 0.92;
+}
+
+.widget.battle .layer.micro {
+  opacity: 0.56;
+}
+
 /* Halo around the box, not filter:drop-shadow on the PNG — that lit every
    honeycomb cell and the inner well, so the frame sat on top of the icon. */
 .widget.has-art.lap,
@@ -309,12 +336,6 @@ html.preview-layout .widget {
   opacity: 0.55;
 }
 
-.widget.hunting .layer.ring-outer {
-  transform-origin: 58px 70px;
-  animation: radar-spin 18s linear infinite;
-  opacity: 0.85;
-}
-
 .widget.hunting.has-radar-fx .layer.ticks {
   opacity: 0.55;
 }
@@ -353,28 +374,46 @@ html.preview-layout .widget {
 }
 
 .widget.battle .widget-copy {
-  justify-content: flex-start;
-  padding: 40px 18px 16px 119px;
-  gap: 2px;
+  display: block;
+  padding: 0;
 }
 
 .widget.battle .title {
-  font-size: 22px;
+  position: absolute;
+  left: 119px;
+  top: 38px;
+  margin: 0;
+  font-size: 26px;
+  line-height: 26px;
+  font-weight: 700;
   font-style: italic;
-  letter-spacing: 0.08em;
-  order: 1;
+  letter-spacing: 0.04em;
+  color: #ebf1f1;
 }
 
 .widget.battle .kicker {
-  order: 2;
+  position: absolute;
+  left: 120px;
+  top: 74px;
+  margin: 0;
   font-size: 13px;
-  letter-spacing: 0.16em;
+  line-height: 13px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.08em;
 }
 
 .widget.battle .meta {
-  order: 3;
-  font-size: 12px;
-  color: var(--text-primary, #e8fbff);
+  position: absolute;
+  left: 120px;
+  top: 94px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: #becdd0;
+  font-variant-numeric: tabular-nums;
 }
 
 .widget.session .widget-copy {
@@ -524,19 +563,4 @@ html.preview-layout .widget {
 @keyframes pulse {
   0%, 100% { transform: scale(1); opacity: 0.9; }
   50% { transform: scale(1.12); opacity: 1; }
-}
-
-@keyframes radar-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-html.preview-layout .widget {
-  opacity: 1;
-  transform: none;
-  transition: none;
-}
-
-html.preview-layout .widget.hunting .layer.ring-outer {
-  animation: none;
 }

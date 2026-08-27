@@ -219,6 +219,21 @@ export function startQaLayout(mode) {
   cue("QA LAP");
 }
 
+export function startGoldenLayout() {
+  stopDemo();
+  show({
+    name: "battle",
+    channel: "battle",
+    data: { state: "hunting", targetPosition: 6, gap: 0.742, closingRate: 0.34 },
+  });
+  show({
+    name: "battle",
+    channel: "battle",
+    data: { state: "hunted", targetPosition: 7, gap: 0.388, closingRate: 0.21 },
+  });
+  cue("GOLDEN BATTLE");
+}
+
 export function startPreviewLayout() {
   stopDemo();
   startedAt = performance.now();
