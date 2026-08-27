@@ -274,6 +274,9 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert "battle_signal_lock" in fx
     assert 'state === "hunting"' not in fx
     assert "paintPlateMask(art)" in js
+    assert '"lap_complete"' in fx
+    assert '"final_lap"' in fx
+    assert "sysinfo_module_segment" in html
     assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
         encoding="utf-8"
     )

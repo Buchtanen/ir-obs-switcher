@@ -164,7 +164,14 @@ function syncWidgetFx(node, event, isEnter) {
     const themeFx = ensureFxVideo(art, "theme-motion", "battle_theme_motion", false);
     playOnceFromStart(themeFx);
   }
-  if (isEnter && event.name === "finish") {
+  const eventSweep = ["lap_complete", "personal_best", "position_change", "final_lap"];
+  if (isEnter && eventSweep.includes(event.name)) {
+    const scan = ensureFxVideo(art, "scan-enter", "battle_scan_enter", false);
+    playOnceFromStart(scan);
+    const themeFx = ensureFxVideo(art, "theme-motion", "battle_theme_motion", false);
+    playOnceFromStart(themeFx);
+  }
+  if (isEnter && (event.name === "finish" || event.name === "final_lap")) {
     const sweep = ensureFxVideo(art, "finish-sweep", "finish_accent_sweep", false);
     playOnceFromStart(sweep);
   }
@@ -431,11 +438,15 @@ export const DisplayManager = {
     const keep = ["visible", "exit", "has-art", "has-radar-fx", "fallback"].filter((name) =>
       node.classList.contains(name),
     );
-    node.className = ["widget", sizeClass(event), toneClass(event), ...keep].join(" ");
+    const name = event.name;
+    const lost =
+      name === "position_change" && data.direction && data.direction !== "gain" ? "lost" : "";
+    node.className = ["widget", sizeClass(event), toneClass(event), lost, ...keep]
+      .filter(Boolean)
+      .join(" ");
     const kicker = node.querySelector(".kicker");
     const title = node.querySelector(".title");
     const meta = node.querySelector(".meta");
-    const name = event.name;
     const state = data.state;
     if (name === "battle" && state === "hunting") {
       text(kicker, "CLOSING IN");
