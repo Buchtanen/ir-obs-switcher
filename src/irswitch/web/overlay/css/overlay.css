@@ -350,6 +350,20 @@ html.preview-layout .widget {
   filter: hue-rotate(-150deg) saturate(1.2);
 }
 
+.widget.incident.glow-flash .layer.glow {
+  animation: incident-glow-flash 780ms ease-out 1;
+}
+
+@keyframes incident-glow-flash {
+  0%,
+  100% { opacity: 0.9; }
+  16% { opacity: 0.15; }
+  32% { opacity: 1; }
+  48% { opacity: 0.2; }
+  64% { opacity: 1; }
+  80% { opacity: 0.35; }
+}
+
 .widget.bio .layer.deco {
   inset: auto;
   left: var(--copy-pad, 96px);

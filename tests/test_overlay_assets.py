@@ -124,6 +124,7 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert "filter: drop-shadow" not in css
     assert ".widget.hunted video.fx" in css
     assert "hue-rotate(-150deg)" in css
+    assert "incident-glow-flash" in css
     assert ".widget.has-art.lap" not in css
     assert "scale(0.62)" not in css
 
@@ -276,6 +277,8 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert "paintPlateMask(art)" in js
     assert '"lap_complete"' in fx
     assert '"final_lap"' in fx
+    assert '"incident"' in fx
+    assert "glow-flash" in fx
     assert "sysinfo_module_segment" in html
     assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
         encoding="utf-8"

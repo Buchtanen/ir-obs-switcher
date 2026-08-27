@@ -175,6 +175,13 @@ function syncWidgetFx(node, event, isEnter) {
     const sweep = ensureFxVideo(art, "finish-sweep", "finish_accent_sweep", false);
     playOnceFromStart(sweep);
   }
+  if (event.name === "incident") {
+    node.classList.remove("glow-flash");
+    if (isEnter) {
+      void node.offsetWidth;
+      node.classList.add("glow-flash");
+    }
+  }
 }
 
 function sizeClass(event) {
@@ -435,8 +442,8 @@ export const DisplayManager = {
   _fill(node, event) {
     node._event = event;
     const data = event.data || {};
-    const keep = ["visible", "exit", "has-art", "has-radar-fx", "fallback"].filter((name) =>
-      node.classList.contains(name),
+    const keep = ["visible", "exit", "has-art", "has-radar-fx", "fallback", "glow-flash"].filter(
+      (name) => node.classList.contains(name),
     );
     const name = event.name;
     const lost =
