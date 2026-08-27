@@ -1,14 +1,16 @@
 # Overlay theme assets
 
-Shipped pack: [ASSETS.md](ASSETS.md) (rozměry / viewBox) a [manifest.json](manifest.json).
+Shipped pack: [ASSETS.md](ASSETS.md) (PNG pixels / WebM) and [manifest.json](manifest.json).
 
-Prompt pro nový export: [GRAPHICS_BRIEF.md](GRAPHICS_BRIEF.md).
+Prompt for a new export: [GRAPHICS_BRIEF.md](GRAPHICS_BRIEF.md).
 
-Themes (`cyber_racing`, `stealth_graphite`, `night_attack`) mají **stejné filenames i geometrii**. Liší se barvy.
+Themes (`cyber_racing`, `stealth_graphite`, `night_attack`) share **filenames and geometry**. Only color/glow changes.
 
 ```
-themes/<theme>/assets/<slot>.svg
-themes/<theme>/assets/battle_glow.png
+themes/<theme>/assets/<slot>.png
+themes/<theme>/assets/battle_radar_loop.webm
+themes/<theme>/assets/battle_scan_enter.webm
+themes/<theme>/assets/finish_accent_sweep.webm
 ```
 
-37 souborů na theme, snake_case, žádný zapečený text. Overlay čte sloty z WS/HTTP snapshotu (`assets`). Chybějící soubor = CSS deska. Stavové ikony používají `currentColor` a na HUD jdou přes CSS mask, ne `<img>`.
+37 PNG + 3 WebM per theme, snake_case, no baked text. Overlay reads slots from the WS/HTTP snapshot (`assets`). Missing file = CSS plate. State icons/dividers/corners use CSS `mask-image` and `currentColor`, not `<img>`. Background/frame PNGs are normal images. Glow is authored at 420×140 (`inset: 0`).

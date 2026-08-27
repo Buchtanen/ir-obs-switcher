@@ -1,49 +1,59 @@
 # Buchtanen iRacer - overlay assets
 
-1920 x 1080 target, transparent. No visible text, numbers or units are embedded. State-sensitive SVG layers use `currentColor`.
+1920 x 1080 target, transparent PNG layers at exact widget pixels. No production asset contains text or numbers. Icons, dividers, corners, radar rings, pulse traces and accent fragments are white alpha masks for CSS `mask-image` / `currentColor`. Background and frame PNGs are normal images, never masks.
 
-| File | viewBox / pixels |
+Do not load `previews/` in the overlay.
+
+| File | pixels |
 |---|---|
-| `battle_background.svg` | `420 x 140` |
-| `battle_frame.svg` | `420 x 140` |
-| `battle_glow.png` | `840 x 280` |
-| `battle_target_icon.svg` | `72 x 72` |
-| `battle_pressure_icon.svg` | `72 x 72` |
-| `battle_corner_caps.svg` | `420 x 140` |
-| `battle_radar_rings.svg` | `116 x 116` |
-| `lap_background.svg` | `380 x 112` |
-| `lap_frame.svg` | `380 x 112` |
-| `lap_flag_icon.svg` | `64 x 64` |
-| `lap_stopwatch_icon.svg` | `64 x 64` |
-| `alert_banner.svg` | `380 x 84` |
-| `position_banner.svg` | `380 x 96` |
-| `chevron_up.svg` | `64 x 64` |
-| `chevron_down.svg` | `64 x 64` |
-| `session_background.svg` | `520 x 126` |
-| `final_lap_flag.svg` | `80 x 80` |
-| `finish_flag.svg` | `96 x 80` |
-| `bio_compact_plate.svg` | `240 x 64` |
-| `bio_expanded_plate.svg` | `280 x 118` |
-| `heart_icon.svg` | `56 x 56` |
-| `ble_icon.svg` | `48 x 48` |
-| `bio_pulse_trace.svg` | `220 x 52` |
-| `bio_accent.svg` | `280 x 118` |
-| `sysinfo_background.svg` | `1920 x 72` |
-| `sysinfo_module_segment.svg` | `150 x 72` |
-| `sysinfo_dividers.svg` | `1920 x 72` |
-| `cpu_icon.svg` | `48 x 48` |
-| `gpu_icon.svg` | `48 x 48` |
-| `ram_icon.svg` | `48 x 48` |
-| `temp_icon.svg` | `48 x 48` |
-| `power_icon.svg` | `48 x 48` |
-| `fps_icon.svg` | `48 x 48` |
-| `accent_slash.svg` | `128 x 64` |
-| `scan_line.svg` | `320 x 48` |
-| `thin_divider.svg` | `320 x 32` |
-| `wireframe_fragment.svg` | `220 x 88` |
+| `battle_background.png` | `420 x 140` |
+| `battle_frame.png` | `420 x 140` |
+| `battle_glow.png` | `420 x 140` |
+| `battle_target_icon.png` | `72 x 72` |
+| `battle_pressure_icon.png` | `72 x 72` |
+| `battle_corner_caps.png` | `420 x 140` |
+| `battle_radar_rings.png` | `116 x 116` |
+| `lap_background.png` | `380 x 112` |
+| `lap_frame.png` | `380 x 112` |
+| `lap_flag_icon.png` | `64 x 64` |
+| `lap_stopwatch_icon.png` | `64 x 64` |
+| `alert_banner.png` | `380 x 84` |
+| `position_banner.png` | `380 x 96` |
+| `chevron_up.png` | `64 x 64` |
+| `chevron_down.png` | `64 x 64` |
+| `session_background.png` | `520 x 126` |
+| `final_lap_flag.png` | `80 x 80` |
+| `finish_flag.png` | `96 x 80` |
+| `bio_compact_plate.png` | `240 x 64` |
+| `bio_expanded_plate.png` | `280 x 118` |
+| `heart_icon.png` | `56 x 56` |
+| `ble_icon.png` | `48 x 48` |
+| `bio_pulse_trace.png` | `220 x 52` |
+| `bio_accent.png` | `280 x 118` |
+| `sysinfo_background.png` | `1920 x 72` |
+| `sysinfo_module_segment.png` | `150 x 72` |
+| `sysinfo_dividers.png` | `1920 x 72` |
+| `cpu_icon.png` | `48 x 48` |
+| `gpu_icon.png` | `48 x 48` |
+| `ram_icon.png` | `48 x 48` |
+| `temp_icon.png` | `48 x 48` |
+| `power_icon.png` | `48 x 48` |
+| `fps_icon.png` | `48 x 48` |
+| `accent_slash.png` | `128 x 64` |
+| `scan_line.png` | `320 x 48` |
+| `thin_divider.png` | `320 x 32` |
+| `wireframe_fragment.png` | `220 x 88` |
 
-Layering: background -> frame -> accent -> icon -> micro detail -> glow -> reveal/mask -> HTML.
+## Animations (optional VP9 alpha WebM)
 
-SYSINFO is 72 px high; its first 230 px are an empty branding zone, then 11 modules of 150 px (dividers at 230, 380, … 1730). HTML must keep that grid — leftover 40 px is the right chamfer, not a 12th column.
+| File | pixels | playback |
+|---|---|---|
+| `battle_radar_loop.webm` | `116 x 116` | loop while HUNTING is active |
+| `battle_scan_enter.webm` | `420 x 140` | once on battle ENTER |
+| `finish_accent_sweep.webm` | `520 x 126` | once on FINISH ENTER |
 
-QA: 3 themes x 37 files; names, alpha, SVG text ban and geometry parity verified.
+WebM does not replace the 320 ms / 280 ms widget enter/exit transitions. Missing file = CSS/PNG fallback.
+
+Layering: background -> frame -> accent -> icon -> micro detail -> glow -> HTML. SYSINFO grid is unchanged: `230px + 11×150px`.
+
+QA: 3 themes × 37 PNG + 3 WebM; names, alpha, geometry parity verified.

@@ -2,7 +2,9 @@
 
 Jsi grafik. Z PDF přiloženého k tomuto promptu vygeneruj **grafické podklady** pro OBS Browser Source overlay (1920×1080, transparentní).
 
-Kód overlaye už existuje. Ty **neděláš HTML, CSS, JS ani čísla**. Děláš jen vizuální vrstvy (SVG + pár PNG), které se nasadí do existujících widgetů.
+Kód overlaye už existuje. Ty **neděláš HTML, CSS, JS ani čísla**. Děláš jen vizuální vrstvy (PNG + volitelné WebM), které se nasadí do existujících widgetů.
+
+Produkce v2 je raster: PNG masky/pláty a 3× VP9 alpha WebM.
 
 PDF = vizuální source of truth (směr, zóny, themes, widgety, sysinfo, bio). Tento MD = technický export, pojmenování a tvrdé zákazy.
 
@@ -56,14 +58,11 @@ V tomto repu: `src/irswitch/web/themes/<theme>/assets/`.
 
 ## Formáty a technika
 
-- **SVG** (preferováno): rámy, pláty, ikony, chevrons, radar rings, dividers, masky, corner caps.
-- **PNG/WebP s alfa**: jen glow, textura, raster detail. Ne na ikony.
-- Master minimálně 1080p; ideálně 2× (pro 1440/4K).
+- **PNG s alfa** (produkce v2): pláty, rámy, ikony, glow. Ikony / dividery / corners / radar / pulse / accent = bílá maska pro CSS `mask-image`. Background a frame = běžný `background-image`, ne maska.
+- **WebM VP9 alpha** (volitelné): `battle_radar_loop`, `battle_scan_enter`, `finish_accent_sweep`. Ne na celý widget a ne místo 320/280 ms enter/exit.
+- Master v přesných widget pixelech (battle 420×140, sysinfo 1920×72, …).
 - Transparentní pozadí.
-- Jasný bounding box, konzistentní padding uvnitř boxu.
-- SVG: čisté pathy, stroke v `currentColor` nebo oddělená accent vrstva, žádný zbytečný inline text.
-- ViewBox podle komponenty, ne jeden canvas 1920×1080 pro malou ikonu.
-- Barvy themes držet podle PDF; v SVG klidně pojmenované skupiny, ne zapečený jediný flatten.
+- Žádný zapečený text / čísla.
 
 Každý asset, který se má umět zvlášť přijet / pulznout / změnit barvu / zmizet = **samostatný soubor**.
 
@@ -98,65 +97,68 @@ Karty jsou úhlové pláty (clip/chamfer), ne round-rect chat bubliny.
 
 ### Battle
 
-- `battle_background.svg` — deska karty, bez textu
-- `battle_frame.svg` — tenký rám / wireframe
+- `battle_background.png` — deska karty, bez textu
+- `battle_frame.png` — tenký rám / wireframe
 - `battle_glow.png` — lokální glow (ne přes celou kartu agresivně)
-- `battle_target_icon.svg` — radar / target (HUNTING, cyan)
-- `battle_pressure_icon.svg` — shield / pressure (HUNTED, amber)
-- `battle_corner_caps.svg` — rohy, které můžou přijet samostatně
-- `battle_radar_rings.svg` — kroužky, animovatelná vrstva
+- `battle_target_icon.png` — radar / target (HUNTING, cyan)
+- `battle_pressure_icon.png` — shield / pressure (HUNTED, amber)
+- `battle_corner_caps.png` — rohy, které můžou přijet samostatně
+- `battle_radar_rings.png` — kroužky, fallback když není WebM
+- `battle_radar_loop.webm` — 116×116, loop jen HUNTING
+- `battle_scan_enter.webm` — 420×140, one-shot na battle ENTER
 
 Rozměr karty cílit na cca 420×140 px @1080p (logický box). HUNTING a HUNTED sdílí geometrii, liší se accent + ikona.
 
 ### Lap / PB
 
-- `lap_background.svg`
-- `lap_frame.svg`
-- `lap_flag_icon.svg` — checkered flag, bez písmen
-- `lap_stopwatch_icon.svg` — PB, bez čísel
+- `lap_background.png`
+- `lap_frame.png`
+- `lap_flag_icon.png` — checkered flag, bez písmen
+- `lap_stopwatch_icon.png` — PB, bez čísel
 
 ### Position / alert
 
-- `alert_banner.svg` — úzký banner
-- `position_banner.svg`
-- `chevron_up.svg`
-- `chevron_down.svg`
+- `alert_banner.png` — úzký banner
+- `position_banner.png`
+- `chevron_up.png`
+- `chevron_down.png`
 
 ### Session
 
-- `session_background.svg`
-- `final_lap_flag.svg` — bez textu „FINAL LAP“
-- `finish_flag.svg` — checkered, větší důraz než lap flag
+- `session_background.png`
+- `final_lap_flag.png` — bez textu „FINAL LAP“
+- `finish_flag.png` — checkered, větší důraz než lap flag
+- `finish_accent_sweep.webm` — 520×126, one-shot na FINISH ENTER
 
 ### Bio / BLE
 
-- `bio_compact_plate.svg` — malá deska pro heart + BPM (BPM nekreslit)
-- `bio_expanded_plate.svg`
-- `heart_icon.svg`
-- `ble_icon.svg`
-- `bio_pulse_trace.svg` — jemná pulse křivka, ne agresivní EKG
-- `bio_accent.svg` — oddělená cyan/amber/red vrstva
+- `bio_compact_plate.png` — malá deska pro heart + BPM (BPM nekreslit)
+- `bio_expanded_plate.png`
+- `heart_icon.png`
+- `ble_icon.png`
+- `bio_pulse_trace.png` — jemná pulse křivka, ne agresivní EKG
+- `bio_accent.png` — oddělená cyan/amber/red vrstva
 
 ### SYSINFO strip
 
-- `sysinfo_background.svg` — celý pruh 1920×(60–78), branding zóna vlevo prázdná (~12 % šířky)
-- `sysinfo_module_segment.svg` — jeden modul (opakovatelný)
-- `sysinfo_dividers.svg` — svislé čáry na 230, 380, … 1730 (brand + 11×150 px)
-- `cpu_icon.svg`
-- `gpu_icon.svg`
-- `ram_icon.svg`
-- `temp_icon.svg`
-- `power_icon.svg`
-- `fps_icon.svg`
+- `sysinfo_background.png` — celý pruh 1920×(60–78), branding zóna vlevo prázdná (~12 % šířky)
+- `sysinfo_module_segment.png` — jeden modul (opakovatelný)
+- `sysinfo_dividers.png` — svislé čáry na 230, 380, … 1730 (brand + 11×150 px)
+- `cpu_icon.png`
+- `gpu_icon.png`
+- `ram_icon.png`
+- `temp_icon.png`
+- `power_icon.png`
+- `fps_icon.png`
 
 SYSINFO je statický tvarem. HTML overlay drží stejný grid (ne 13 flex sloupců). Žádný running animation artwork. State barvy řeší kód (cyan/amber/red na hodnotě).
 
 ### Motion fragments (sdílené)
 
-- `accent_slash.svg`
-- `scan_line.svg`
-- `thin_divider.svg`
-- `wireframe_fragment.svg` — malý ornament, ne auto přes půlku obrazu
+- `accent_slash.png`
+- `scan_line.png`
+- `thin_divider.png`
+- `wireframe_fragment.png` — malý ornament, ne auto přes půlku obrazu
 
 ---
 
@@ -191,4 +193,4 @@ Entry/active/exit animaci dělá CSS. Připrav vrstvy, které jdou fadetnout / p
 - [ ] night_attack nemá permanentní červenou na všech modulech
 - [ ] soubory pojmenované přesně jak výše (snake_case)
 
-Výstup: ZIP se třemi `themes/*/assets/` adresáři. Krátké MD v ZIPu: seznam souborů + viewBox/px velikost každého assetu.
+Výstup: ZIP se třemi `themes/*/assets/` adresáři. Krátké MD v ZIPu: seznam souborů + px velikost každého PNG a WebM.

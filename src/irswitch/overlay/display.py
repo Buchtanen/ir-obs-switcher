@@ -23,6 +23,8 @@ ASSET_SLOTS: tuple[str, ...] = (
     "battle_pressure_icon",
     "battle_corner_caps",
     "battle_radar_rings",
+    "battle_radar_loop",
+    "battle_scan_enter",
     "lap_background",
     "lap_frame",
     "lap_flag_icon",
@@ -34,6 +36,7 @@ ASSET_SLOTS: tuple[str, ...] = (
     "session_background",
     "final_lap_flag",
     "finish_flag",
+    "finish_accent_sweep",
     "bio_compact_plate",
     "bio_expanded_plate",
     "heart_icon",
@@ -54,6 +57,8 @@ ASSET_SLOTS: tuple[str, ...] = (
     "thin_divider",
     "wireframe_fragment",
 )
+
+_ASSET_EXTS = (".png", ".webm", ".svg")
 
 
 @dataclass(frozen=True)
@@ -99,15 +104,14 @@ class AssetManifest:
 
     def resolve(self, slot: str) -> str | None:
         rel = self.slots.get(slot)
-        if not rel:
-            # Convention: themes/<theme>/assets/<slot>.svg
-            rel = f"themes/{self.theme}/assets/{slot}.svg"
-        path = self.web_root / rel
-        if path.is_file():
-            return rel.replace("\\", "/")
-        png = path.with_suffix(".png")
-        if png.is_file():
-            return str(Path(rel).with_suffix(".png")).replace("\\", "/")
+        if rel:
+            path = self.web_root / rel
+            return rel.replace("\\", "/") if path.is_file() else None
+        stem = f"themes/{self.theme}/assets/{slot}"
+        for ext in _ASSET_EXTS:
+            rel = f"{stem}{ext}"
+            if (self.web_root / rel).is_file():
+                return rel.replace("\\", "/")
         return None
 
     def to_dict(self) -> dict[str, Any]:

@@ -32,7 +32,7 @@ async def test_overlay_ws_sends_snapshot(app: web.Application) -> None:
                 assert "system" in msg
                 assert "activeEvents" in msg
                 assert msg["theme"] == "cyber_racing"
-                assert msg["assets"]["sysinfo_background"].endswith("sysinfo_background.svg")
+                assert msg["assets"]["sysinfo_background"].endswith("sysinfo_background.png")
                 assert msg["assets"]["battle_glow"].endswith("battle_glow.png")
 
 
@@ -143,9 +143,13 @@ async def test_overlay_page_served(app: web.Application) -> None:
             assert css.status == 200
             assert "repeat(11, 150px)" in await css.text()
             asset = await client.get(
-                "/overlay/web/themes/cyber_racing/assets/sysinfo_background.svg"
+                "/overlay/web/themes/cyber_racing/assets/sysinfo_background.png"
             )
             assert asset.status == 200
+            webm = await client.get(
+                "/overlay/web/themes/cyber_racing/assets/battle_radar_loop.webm"
+            )
+            assert webm.status == 200
             dbg = await client.get("/overlay/debug")
             assert dbg.status == 200
             demo = await client.get("/overlay/demo")

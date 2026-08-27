@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,8 @@ from irswitch.overlay.display import AssetManifest
 from irswitch.overlay.schema import overlay_values, schema_as_dicts
 
 logger = logging.getLogger(__name__)
+
+mimetypes.add_type("video/webm", ".webm")
 
 CSRF_HEADER = "X-Requested-With"
 CSRF_VALUE = "irswitch"

@@ -66,6 +66,83 @@ function paintLayer(el, slot, asMask) {
   }
 }
 
+function playMuted(video) {
+  if (!video) return;
+  const run = video.play();
+  if (run && typeof run.catch === "function") run.catch(() => {});
+}
+
+function ensureFxVideo(art, className, slot, loop) {
+  let video = art.querySelector(`video.${className}`);
+  const url = assetUrl(slot);
+  if (!url) {
+    if (video) {
+      video.pause();
+      video.remove();
+    }
+    return null;
+  }
+  if (!video) {
+    video = document.createElement("video");
+    video.className = `layer fx ${className}`;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    art.appendChild(video);
+  }
+  if (video.dataset.src !== url) {
+    video.dataset.src = url;
+    video.src = url;
+  }
+  video.loop = Boolean(loop);
+  return video;
+}
+
+function removeFxVideo(art, className) {
+  const video = art.querySelector(`video.${className}`);
+  if (!video) return;
+  video.pause();
+  video.remove();
+}
+
+function syncWidgetFx(node, event, isEnter) {
+  const art = node.querySelector(".widget-art");
+  if (!art) return;
+  const hunting = event.name === "battle" && event.data && event.data.state === "hunting";
+  if (hunting) {
+    const loop = ensureFxVideo(art, "radar-loop", "battle_radar_loop", true);
+    node.classList.toggle("has-radar-fx", Boolean(loop));
+    playMuted(loop);
+  } else {
+    removeFxVideo(art, "radar-loop");
+    node.classList.remove("has-radar-fx");
+  }
+  if (isEnter && event.name === "battle") {
+    const scan = ensureFxVideo(art, "scan-enter", "battle_scan_enter", false);
+    if (scan) {
+      try {
+        scan.currentTime = 0;
+      } catch (_err) {
+        /* metadata not ready yet */
+      }
+      playMuted(scan);
+    }
+  }
+  if (isEnter && event.name === "finish") {
+    const sweep = ensureFxVideo(art, "finish-sweep", "finish_accent_sweep", false);
+    if (sweep) {
+      try {
+        sweep.currentTime = 0;
+      } catch (_err) {
+        /* metadata not ready yet */
+      }
+      playMuted(sweep);
+    }
+  }
+}
+
 function sizeClass(event) {
   if (event.channel === "battle") return "battle";
   if (event.name === "position_change") return "position";
@@ -94,9 +171,10 @@ function artSlots(event) {
       frame: "battle_frame",
       glow: "battle_glow",
       corners: "battle_corner_caps",
+      cornersMask: true,
       deco: "battle_radar_rings",
-      icon: hunted ? "battle_pressure_icon" : "battle_target_icon",
       decoMask: true,
+      icon: hunted ? "battle_pressure_icon" : "battle_target_icon",
       iconMask: true,
     };
   }
@@ -154,6 +232,7 @@ export const DisplayManager = {
     const channel = event.channel || "alert";
     const key = `${channel}:${event.data && event.data.state ? event.data.state : event.name}`;
     let node = this.active.get(key);
+    const created = !node;
     if (!node) {
       node = this._create(event, channel);
       this.active.set(key, node);
@@ -161,6 +240,7 @@ export const DisplayManager = {
     this._fill(node, event);
     node.classList.remove("exit");
     requestAnimationFrame(() => node.classList.add("visible"));
+    syncWidgetFx(node, event, created);
     if (event.phase === "exit") this.hide(key);
     return node;
   },
@@ -168,6 +248,7 @@ export const DisplayManager = {
   hide(key) {
     const node = this.active.get(key);
     if (!node) return;
+    node.querySelectorAll("video").forEach((video) => video.pause());
     node.classList.add("exit");
     node.classList.remove("visible");
     setTimeout(() => {
@@ -186,7 +267,10 @@ export const DisplayManager = {
 
   refreshArt() {
     for (const node of this.active.values()) {
-      if (node._event) this._applyArt(node, node._event);
+      if (node._event) {
+        this._applyArt(node, node._event);
+        syncWidgetFx(node, node._event, false);
+      }
     }
     applyPersistentArt();
   },
