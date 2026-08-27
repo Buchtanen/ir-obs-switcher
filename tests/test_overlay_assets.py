@@ -119,9 +119,7 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert ".heart-pulse" not in css
     assert "#hr:not(.empty-metric)" in css
     assert "hr-pulse" in css
-    assert "--hr-beat" in (web_root() / "overlay" / "js" / "display.js").read_text(
-        encoding="utf-8"
-    )
+    assert "--hr-beat" in (web_root() / "overlay" / "js" / "display.js").read_text(encoding="utf-8")
     assert "left: 119px" in css
     assert "top: 38px" in css
     assert ".widget .layer.native" in css
@@ -296,6 +294,8 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert "glow-flash" in fx
     assert "sysinfo_module_segment" in html
     assert "--hr-beat" in js
+    assert 'setMod("hr"' in js
+    assert "128, 138" in js
     assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
         encoding="utf-8"
     )
