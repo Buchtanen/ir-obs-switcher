@@ -214,7 +214,6 @@ function battleLayerPlan(hunted) {
 
 function v3SharedPlate(glow, extra, well = true) {
   const layers = [
-    { id: "shadow", slot: "battle_shadow" },
     { id: "base", slot: "battle_base_plate" },
     { id: "material", slot: "battle_material" },
     { id: "tech", slot: "battle_tech_diagram" },

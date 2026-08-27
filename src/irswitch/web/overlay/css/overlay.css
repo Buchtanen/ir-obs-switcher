@@ -38,6 +38,8 @@ html.preview-layout .widget {
 #session-layer,
 #bio-expanded,
 #battle-stack {
+  position: absolute;
+  pointer-events: none;
   overflow: visible;
 }
 
@@ -284,29 +286,11 @@ html.preview-layout .widget {
   opacity: 0.56;
 }
 
-/* V3 local glow on small widgets: PNG clipped to the chamfered plate, plus
-   drop-shadow on the plate silhouette (not a rectangular box-shadow). */
+/* V3 local glow on small widgets: pre-colored PNG masked to the chamfered
+   plate. No rectangular box-shadow / drop-shadow around the CSS box. */
 .widget:not(.battle) .layer.glow {
   mix-blend-mode: normal;
   opacity: 1;
-}
-
-.widget:not(.battle).has-art .layer.base {
-  filter: drop-shadow(0 0 8px var(--primary, #3ad7ff))
-    drop-shadow(0 0 16px var(--glow, rgba(58, 215, 255, 0.35)));
-}
-
-.widget.pb.has-art .layer.base,
-.widget.personal_best.has-art .layer.base {
-  filter: drop-shadow(0 0 8px var(--warning, #ffbf4a))
-    drop-shadow(0 0 16px rgba(255, 191, 74, 0.35));
-}
-
-.widget.alert.has-art .layer.base,
-.widget.incident.has-art .layer.base,
-.widget.ble_lost.has-art .layer.base {
-  filter: drop-shadow(0 0 8px var(--alert, #ff5a3d))
-    drop-shadow(0 0 16px rgba(255, 90, 61, 0.35));
 }
 
 .widget-art video.fx {
@@ -523,11 +507,6 @@ html.preview-layout .widget {
 #bio-compact .widget-art .layer.glow {
   mix-blend-mode: normal;
   opacity: 1;
-}
-
-#bio-compact.has-art .layer.base {
-  filter: drop-shadow(0 0 8px var(--primary, #3ad7ff))
-    drop-shadow(0 0 14px var(--glow, rgba(58, 215, 255, 0.4)));
 }
 
 #bio-compact .icon,

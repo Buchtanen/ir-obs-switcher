@@ -68,9 +68,9 @@ Battle is golden-master V3: every battle layer is a full 420×140 canvas. Layer 
 
 WebM does not replace the 320 ms / 280 ms widget enter/exit transitions. Missing file = CSS/PNG fallback.
 
-Layering (battle V3): shadow → base plate → material → tech diagram → frame → highlight → state accent → corners → icon well → radar → icon → micro → HTML → motion → local glow. Until Phase B dedicated `lap_*` / `session_*` / `bio_*` layer packs exist, lap/PB/position/alert/session/bio reuse the same V3 battle plate stack (stretched to the widget box) plus the widget’s own 64×64 icon. Do not fall back to V2 `lap_background` / `session_background` / `bio_*_plate` — those bitmaps are opaque rectangles and square-glow. SYSINFO grid is unchanged: `230px + 11×150px`.
+Layering (battle V3): shadow → base plate → material → tech diagram → frame → highlight → state accent → corners → icon well → radar → icon → micro → HTML → motion → local glow. Until Phase B dedicated `lap_*` / `session_*` / `bio_*` layer packs exist, lap/PB/position/alert/session/bio reuse the V3 battle plate stack (base/material/frame/highlight/well/micro/glow, stretched to the widget box) plus the widget’s own icon. Skip `battle_shadow` on those sizes — that PNG is opaque to the 420×140 edge and reads as a square plate. Do not fall back to V2 `lap_background` / `session_background` / `bio_*_plate`. SYSINFO grid is unchanged: `230px + 11×150px`.
 
-HUNTING uses `battle_glow_cyan`; HUNTED uses `battle_glow_amber`. Battle glow is alpha-composited (not `mix-blend-mode: screen`). Small widgets use the same pre-colored glow PNG masked to `battle_base_plate` plus `filter: drop-shadow` on the chamfered `.layer.base` silhouette — never a rectangular `box-shadow`.
+HUNTING uses `battle_glow_cyan`; HUNTED uses `battle_glow_amber`. Battle glow is alpha-composited (not `mix-blend-mode: screen`). Small widgets use the same pre-colored glow PNG masked to `battle_base_plate` so the halo follows the chamfer — never a rectangular `box-shadow` or `filter: drop-shadow`.
 
 Text slots (battle): title 26px italic at y≈42, kicker 13px at y≈76, meta 11px muted at y≈96, copy pad 119px. Radar rings stay static; `battle_signal_lock.webm` may retrigger while HUNTING (1.4s, stealth 1.8s).
 
