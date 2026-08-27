@@ -191,7 +191,7 @@ html.preview-layout .widget {
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
 }
 
-.widget.battle { width: 420px; height: 140px; --icon-w: 72px; --icon-h: 72px; --icon-left: 22px; --icon-top: 35px; --copy-pad: 112px; }
+.widget.battle { width: 420px; height: 140px; --copy-pad: 119px; }
 .widget.lap { width: 380px; height: 112px; --icon-w: 64px; --icon-h: 64px; --icon-left: 18px; --icon-top: 24px; --copy-pad: 96px; }
 .widget.alert { width: 380px; height: 84px; --icon-w: 48px; --icon-h: 48px; --icon-left: 16px; --icon-top: 18px; --copy-pad: 78px; }
 .widget.position { width: 380px; height: 96px; --icon-w: 64px; --icon-h: 64px; --icon-left: 16px; --icon-top: 16px; --copy-pad: 92px; }
@@ -199,10 +199,23 @@ html.preview-layout .widget {
 .widget.session.finish { --icon-w: 96px; --icon-h: 80px; --icon-left: 14px; --icon-top: 23px; --copy-pad: 120px; }
 .widget.bio { width: 280px; height: 118px; --icon-w: 56px; --icon-h: 56px; --icon-left: 16px; --icon-top: 18px; --copy-pad: 84px; }
 
+.widget.battle {
+  transform: translateX(-36px);
+}
+
 .widget.visible {
   opacity: 1;
   transform: none;
   transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.widget.battle.visible {
+  transition: opacity 360ms ease, transform 360ms ease;
+}
+
+.widget.battle.exit {
+  transform: translateX(-22px);
+  transition: opacity 260ms ease, transform 260ms ease;
 }
 
 .widget.exit {
@@ -237,7 +250,8 @@ html.preview-layout .widget {
   display: none;
 }
 
-.widget-art .layer.glow {
+.widget-art .layer.glow,
+.widget-art .layer.blend-screen {
   inset: 0;
   mix-blend-mode: screen;
   opacity: 0.9;
@@ -274,24 +288,14 @@ html.preview-layout .widget {
   z-index: 1;
 }
 
-.widget.battle video.radar-loop {
-  inset: auto;
-  left: 8px;
-  top: 13px;
-  width: 116px;
-  height: 116px;
-  transform: none;
-  opacity: 0.85;
-}
-
-.widget.battle .layer.deco {
-  inset: auto;
-  left: 8px;
-  top: 13px;
-  width: 116px;
-  height: 116px;
-  transform: none;
-  opacity: 0.7;
+.widget.battle video.radar-loop,
+.widget.battle video.signal-lock,
+.widget.battle video.scan-enter,
+.widget.battle video.theme-motion {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
 }
 
 .widget.bio .layer.deco {
@@ -305,14 +309,14 @@ html.preview-layout .widget {
   opacity: 0.55;
 }
 
-.widget.hunting .layer.deco {
-  transform-origin: 58px 58px;
-  animation: radar-spin 12s linear infinite;
+.widget.hunting .layer.ring-outer {
+  transform-origin: 58px 70px;
+  animation: radar-spin 18s linear infinite;
+  opacity: 0.85;
 }
 
-.widget.hunting.has-radar-fx .layer.deco {
-  animation: none;
-  display: none;
+.widget.hunting.has-radar-fx .layer.ticks {
+  opacity: 0.55;
 }
 
 .widget-art .layer.icon {
@@ -325,6 +329,15 @@ html.preview-layout .widget {
   z-index: 2;
   background-size: contain;
   background-position: center;
+}
+
+.widget.battle .widget-art .layer.icon {
+  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-size: 100% 100%;
 }
 
 .widget-copy {
@@ -341,9 +354,27 @@ html.preview-layout .widget {
 
 .widget.battle .widget-copy {
   justify-content: flex-start;
-  padding-top: 44px;
-  padding-bottom: 16px;
-  gap: 4px;
+  padding: 40px 18px 16px 119px;
+  gap: 2px;
+}
+
+.widget.battle .title {
+  font-size: 22px;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  order: 1;
+}
+
+.widget.battle .kicker {
+  order: 2;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+}
+
+.widget.battle .meta {
+  order: 3;
+  font-size: 12px;
+  color: var(--text-primary, #e8fbff);
 }
 
 .widget.session .widget-copy {
@@ -506,6 +537,6 @@ html.preview-layout .widget {
   transition: none;
 }
 
-html.preview-layout .widget.hunting .layer.deco {
+html.preview-layout .widget.hunting .layer.ring-outer {
   animation: none;
 }

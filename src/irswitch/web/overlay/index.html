@@ -8,7 +8,9 @@
   <script>
     const params = new URLSearchParams(location.search);
     if (params.has("demo")) document.documentElement.classList.add("is-demo");
-    if (params.get("layout") === "preview") document.documentElement.classList.add("preview-layout");
+    if (params.get("layout") === "preview" || params.get("layout") === "golden") {
+      document.documentElement.classList.add("preview-layout");
+    }
   </script>
 </head>
 <body>
@@ -18,7 +20,7 @@
   <div id="battle-stack"></div>
   <div id="bio-compact">
     <div class="layer plate" data-slot="bio_compact_plate"></div>
-    <div class="layer glow" data-slot="battle_glow"></div>
+    <div class="layer glow" data-slot="battle_glow_cyan"></div>
     <span class="icon mask heart-pulse" data-slot="heart_icon"></span>
     <span id="bio-bpm">—</span>
     <span id="ble-dot" class="icon mask ble-icon" data-slot="ble_icon" title="BLE"></span>

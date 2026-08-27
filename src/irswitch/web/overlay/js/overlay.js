@@ -121,7 +121,7 @@ async function bootstrap() {
   if (demo) {
     const layout = params.get("layout");
     const mod = await import("./demo.js");
-    if (layout === "preview") {
+    if (layout === "preview" || layout === "golden") {
       mod.startPreviewLayout();
     } else if (layout === "qa") {
       mod.startQaLayout("lap");

@@ -15,8 +15,9 @@ THEMES = ("cyber_racing", "stealth_graphite", "night_attack")
 SNAKE_STEM = re.compile(r"^[a-z0-9_]+$")
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 WEBM_FILES = (
-    "battle_radar_loop.webm",
     "battle_scan_enter.webm",
+    "battle_signal_lock.webm",
+    "battle_theme_motion.webm",
     "finish_accent_sweep.webm",
 )
 
@@ -34,7 +35,7 @@ def test_theme_pack_file_parity() -> None:
         )
         png = [name for name in files if name.endswith(".png")]
         webm = [name for name in files if name.endswith(".webm")]
-        assert len(png) == 37, theme
+        assert len(png) == 50, theme
         assert webm == sorted(WEBM_FILES), theme
         for name in files:
             stem = Path(name).stem
@@ -56,14 +57,20 @@ def test_asset_slots_resolve_and_glow_has_alpha() -> None:
             assert rel, f"{theme}/{slot}"
             path = web_root() / rel
             assert path.is_file(), path
-        glow = web_root() / resolved["battle_glow"]
+        glow = web_root() / resolved["battle_glow_cyan"]
         data = glow.read_bytes()
         assert data[:8] == PNG_SIGNATURE
         width, height = struct.unpack(">II", data[16:24])
         assert [width, height] == [420, 140]
         assert data[25] in {4, 6}  # greyscale+alpha or RGBA
-        assert resolved["battle_radar_loop"].endswith(".webm")
+        assert resolved["battle_signal_lock"].endswith(".webm")
+        assert resolved["battle_theme_motion"].endswith(".webm")
         assert resolved["finish_accent_sweep"].endswith(".webm")
+        for slot in ("battle_target_icon", "battle_base_plate", "battle_icon_well"):
+            path = web_root() / resolved[slot]
+            data = path.read_bytes()
+            width, height = struct.unpack(">II", data[16:24])
+            assert [width, height] == [420, 140], slot
 
 
 def test_png_geometry_matches_manifest() -> None:
@@ -91,9 +98,11 @@ def test_presentation_payload_default_theme() -> None:
     payload = presentation_payload()
     assert payload["theme"] == "cyber_racing"
     assert (
-        payload["assets"]["battle_background"] == "themes/cyber_racing/assets/battle_background.png"
+        payload["assets"]["battle_base_plate"] == "themes/cyber_racing/assets/battle_base_plate.png"
     )
-    assert payload["assets"]["battle_glow"] == "themes/cyber_racing/assets/battle_glow.png"
+    assert (
+        payload["assets"]["battle_glow_cyan"] == "themes/cyber_racing/assets/battle_glow_cyan.png"
+    )
     assert payload["assets"]["battle_scan_enter"].endswith("battle_scan_enter.webm")
     assert all(payload["assets"][slot] for slot in ASSET_SLOTS)
 
@@ -106,8 +115,25 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert "bottom: 91px" in css
     assert "#bio-compact.has-art" in css
     assert "filter: drop-shadow" not in css
-    assert ".widget.has-art.lap" in css
-    assert ".widget.has-art.lap .widget-art" not in css
+    assert "padding: 40px 18px 16px 119px" in css
+    assert ".widget.battle .widget-art .layer.icon" in css
+
+
+def test_web_tree_has_no_review_previews() -> None:
+    root = web_root()
+    leaked = [
+        p
+        for p in root.rglob("*")
+        if p.is_file()
+        and (
+            p.suffix.lower() == ".mp4"
+            or "golden_master" in p.name
+            or "review_2x" in p.name
+            or "composite_no_text" in p.name
+        )
+    ]
+    assert leaked == []
+    assert not list(root.glob("themes/**/previews/**"))
 
 
 def _png_rgba(path: Path) -> tuple[int, int, bytes]:
@@ -212,10 +238,12 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     final = art.split('if (name === "final_lap")', 1)[1].split("if (name ===", 1)[0]
     finish = art.split('if (name === "finish")', 1)[1].split("if (name ===", 1)[0]
     assert "final_lap_flag" in final and "iconMask: false" in final
-    assert 'glow: "battle_glow"' in final
+    assert "battle_glow_cyan" in final
     assert "finish_flag" in finish and "iconMask: true" in finish
     for name in ("lap_complete", "personal_best", "heart_rate"):
         block = art.split(f'if (name === "{name}")', 1)[1].split("if (name ===", 1)[0]
-        assert 'glow: "battle_glow"' in block, name
-    assert 'data-slot="battle_glow"' in html
-    assert 'explicit ? Boolean(slots[maskKey]) : name === "icon"' in js
+        assert "battle_glow" in block, name
+    assert 'data-slot="battle_glow_cyan"' in html
+    assert "function battleLayerPlan" in js
+    assert "battle_base_plate" in js
+    assert "battle_glow_amber" in js

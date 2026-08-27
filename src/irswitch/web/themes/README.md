@@ -1,16 +1,17 @@
 # Overlay theme assets
 
-Shipped pack: [ASSETS.md](ASSETS.md) (PNG pixels / WebM) and [manifest.json](manifest.json).
+Shipped pack: [ASSETS.md](ASSETS.md), [manifest.json](manifest.json), [composition_manifest.json](composition_manifest.json).
 
-Prompt for a new export: [GRAPHICS_BRIEF.md](GRAPHICS_BRIEF.md).
-
-Themes (`cyber_racing`, `stealth_graphite`, `night_attack`) share **filenames and geometry**. Only color/glow changes.
+Battle V3 production rules: [V3_INTEGRATION.md](V3_INTEGRATION.md) and [V3_DESIGN_AND_MOTION_SPEC.md](V3_DESIGN_AND_MOTION_SPEC.md). Older V2 widget families (lap/session/bio/sysinfo) still use the raster plates listed in ASSETS.md until Phase B.
 
 ```
 themes/<theme>/assets/<slot>.png
-themes/<theme>/assets/battle_radar_loop.webm
 themes/<theme>/assets/battle_scan_enter.webm
+themes/<theme>/assets/battle_signal_lock.webm
+themes/<theme>/assets/battle_theme_motion.webm
 themes/<theme>/assets/finish_accent_sweep.webm
 ```
 
-37 PNG + 3 WebM per theme, snake_case, no baked text. Overlay reads slots from the WS/HTTP snapshot (`assets`). Missing file = CSS plate. State icons/dividers/corners use CSS `mask-image` and `currentColor`, not `<img>`. Background/frame PNGs are normal images. `final_lap_flag.png` is painted white (last lap); `finish_flag.png` is the checkered mask (race end). Glow is authored at 420×140 (`inset: 0`) and reused on the other widget plates.
+50 PNG + 4 WebM per theme, snake_case, no baked text. Overlay reads slots from the WS/HTTP snapshot (`assets`). Missing file = CSS plate.
+
+Battle layers are all **420×140** (including icons and radar). Tint mask layers with `mask-image` / `currentColor`. Pre-colored glow PNGs (`battle_glow_cyan|amber|red`) are images, mix-blend screen. Do not load `previews/` or MP4 review clips in the overlay.

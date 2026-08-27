@@ -2,13 +2,26 @@
   "canvas": [1920, 1080],
   "themes": ["cyber_racing", "stealth_graphite", "night_attack"],
   "assets": {
-    "battle_background.png": [420, 140],
-    "battle_frame.png": [420, 140],
-    "battle_glow.png": [420, 140],
-    "battle_target_icon.png": [72, 72],
-    "battle_pressure_icon.png": [72, 72],
-    "battle_corner_caps.png": [420, 140],
-    "battle_radar_rings.png": [116, 116],
+    "battle_shadow.png": [420, 140],
+    "battle_base_plate.png": [420, 140],
+    "battle_material.png": [420, 140],
+    "battle_tech_diagram.png": [420, 140],
+    "battle_frame_base.png": [420, 140],
+    "battle_frame_highlight.png": [420, 140],
+    "battle_state_accent_mask.png": [420, 140],
+    "battle_corner_left.png": [420, 140],
+    "battle_corner_right.png": [420, 140],
+    "battle_icon_well.png": [420, 140],
+    "battle_radar_ticks.png": [420, 140],
+    "battle_radar_ring_inner.png": [420, 140],
+    "battle_radar_ring_outer.png": [420, 140],
+    "battle_target_icon.png": [420, 140],
+    "battle_pressure_icon.png": [420, 140],
+    "battle_micro_details.png": [420, 140],
+    "battle_scan_mask.png": [420, 140],
+    "battle_glow_cyan.png": [420, 140],
+    "battle_glow_amber.png": [420, 140],
+    "battle_glow_red.png": [420, 140],
     "lap_background.png": [380, 112],
     "lap_frame.png": [380, 112],
     "lap_flag_icon.png": [64, 64],
@@ -41,13 +54,14 @@
     "wireframe_fragment.png": [220, 88]
   },
   "animations": [
-    "battle_radar_loop.webm",
     "battle_scan_enter.webm",
+    "battle_signal_lock.webm",
+    "battle_theme_motion.webm",
     "finish_accent_sweep.webm"
   ],
   "qa": [
-    { "theme": "cyber_racing", "png": 37, "webm": 3 },
-    { "theme": "stealth_graphite", "png": 37, "webm": 3 },
-    { "theme": "night_attack", "png": 37, "webm": 3 }
+    { "theme": "cyber_racing", "png": 50, "webm": 4 },
+    { "theme": "stealth_graphite", "png": 50, "webm": 4 },
+    { "theme": "night_attack", "png": 50, "webm": 4 }
   ]
 }

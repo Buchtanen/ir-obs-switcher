@@ -1,5 +1,7 @@
 # Buchtanen iRacer — zadání overlay assetů
 
+Battle V3 nahradil výtvarnou logiku V2 pro hunting/hunted. Kanonický brief: [V3_DESIGN_AND_MOTION_SPEC.md](V3_DESIGN_AND_MOTION_SPEC.md) a [V3_INTEGRATION.md](V3_INTEGRATION.md). Tento soubor zůstává pro V2 rodiny (lap/session/bio/sysinfo), dokud nepřijde Phase B.
+
 Jsi grafik. Z PDF přiloženého k tomuto promptu vygeneruj **grafické podklady** pro OBS Browser Source overlay (1920×1080, transparentní).
 
 Kód overlaye už existuje. Ty **neděláš HTML, CSS, JS ani čísla**. Děláš jen vizuální vrstvy (PNG + volitelné WebM), které se nasadí do existujících widgetů.

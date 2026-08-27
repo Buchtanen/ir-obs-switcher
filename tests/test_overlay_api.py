@@ -33,7 +33,7 @@ async def test_overlay_ws_sends_snapshot(app: web.Application) -> None:
                 assert "activeEvents" in msg
                 assert msg["theme"] == "cyber_racing"
                 assert msg["assets"]["sysinfo_background"].endswith("sysinfo_background.png")
-                assert msg["assets"]["battle_glow"].endswith("battle_glow.png")
+                assert msg["assets"]["battle_glow_cyan"].endswith("battle_glow_cyan.png")
 
 
 @pytest.mark.asyncio
@@ -47,10 +47,10 @@ async def test_overlay_snapshot_and_theme_assets_served(app: web.Application) ->
             body = await resp.json()
             assert body["type"] == "snapshot"
             assert body["theme"] == "cyber_racing"
-            assert body["assets"]["battle_background"]
-            asset = await client.get("/overlay/web/" + body["assets"]["battle_background"])
+            assert body["assets"]["battle_base_plate"]
+            asset = await client.get("/overlay/web/" + body["assets"]["battle_base_plate"])
             assert asset.status == 200
-            glow = await client.get("/overlay/web/" + body["assets"]["battle_glow"])
+            glow = await client.get("/overlay/web/" + body["assets"]["battle_glow_cyan"])
             assert glow.status == 200
 
 
@@ -147,7 +147,7 @@ async def test_overlay_page_served(app: web.Application) -> None:
             )
             assert asset.status == 200
             webm = await client.get(
-                "/overlay/web/themes/cyber_racing/assets/battle_radar_loop.webm"
+                "/overlay/web/themes/cyber_racing/assets/battle_signal_lock.webm"
             )
             assert webm.status == 200
             dbg = await client.get("/overlay/debug")

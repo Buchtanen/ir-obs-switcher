@@ -9,7 +9,16 @@ const CHANNELS = {
 
 const ASSET_BASE = "/overlay/web/";
 
-const ART_LAYERS = ["bg", "frame", "glow", "accent", "corners", "deco", "icon"];
+const FALLBACK_LAYERS = ["bg", "frame", "glow", "accent", "corners", "deco", "icon"];
+
+function makeLayerEl(layer) {
+  const el = document.createElement("div");
+  el.className = `layer ${layer.id}`;
+  el.dataset.layer = layer.id;
+  if (layer.blend === "screen") el.classList.add("blend-screen");
+  if (layer.mask || layer.id === "frame" || layer.id === "accent") el.classList.add("cover");
+  return el;
+}
 
 function text(el, value) {
   if (!el) return;
@@ -112,11 +121,11 @@ function syncWidgetFx(node, event, isEnter) {
   if (!art) return;
   const hunting = event.name === "battle" && event.data && event.data.state === "hunting";
   if (hunting) {
-    const loop = ensureFxVideo(art, "radar-loop", "battle_radar_loop", true);
-    node.classList.toggle("has-radar-fx", Boolean(loop));
-    playMuted(loop);
+    const lock = ensureFxVideo(art, "signal-lock", "battle_signal_lock", false);
+    node.classList.toggle("has-radar-fx", Boolean(lock));
+    if (isEnter) playMuted(lock);
   } else {
-    removeFxVideo(art, "radar-loop");
+    removeFxVideo(art, "signal-lock");
     node.classList.remove("has-radar-fx");
   }
   if (isEnter && event.name === "battle") {
@@ -128,6 +137,15 @@ function syncWidgetFx(node, event, isEnter) {
         /* metadata not ready yet */
       }
       playMuted(scan);
+    }
+    const themeFx = ensureFxVideo(art, "theme-motion", "battle_theme_motion", false);
+    if (themeFx) {
+      try {
+        themeFx.currentTime = 0;
+      } catch (_err) {
+        /* metadata not ready yet */
+      }
+      playMuted(themeFx);
     }
   }
   if (isEnter && event.name === "finish") {
@@ -161,28 +179,58 @@ function toneClass(event) {
   return name;
 }
 
+function battleLayerPlan(hunted) {
+  const icon = hunted ? "battle_pressure_icon" : "battle_target_icon";
+  const glow = hunted ? "battle_glow_amber" : "battle_glow_cyan";
+  return [
+    { id: "shadow", slot: "battle_shadow" },
+    { id: "base", slot: "battle_base_plate" },
+    { id: "material", slot: "battle_material" },
+    { id: "tech", slot: "battle_tech_diagram" },
+    { id: "frame", slot: "battle_frame_base" },
+    { id: "highlight", slot: "battle_frame_highlight", blend: "screen" },
+    { id: "accent", slot: "battle_state_accent_mask", mask: true },
+    { id: "corner-left", slot: "battle_corner_left", mask: true },
+    { id: "corner-right", slot: "battle_corner_right", mask: true },
+    { id: "well", slot: "battle_icon_well" },
+    { id: "ticks", slot: "battle_radar_ticks", mask: true },
+    { id: "ring-inner", slot: "battle_radar_ring_inner", mask: true },
+    { id: "ring-outer", slot: "battle_radar_ring_outer", mask: true },
+    { id: "icon", slot: icon, mask: true },
+    { id: "micro", slot: "battle_micro_details", mask: true },
+    { id: "glow", slot: glow, blend: "screen" },
+  ];
+}
+
+function fallbackLayerPlan(slots) {
+  return FALLBACK_LAYERS.filter((name) => slots[name]).map((name) => {
+    const maskKey = `${name}Mask`;
+    const explicit = Object.prototype.hasOwnProperty.call(slots, maskKey);
+    const mask = explicit ? Boolean(slots[maskKey]) : name === "icon";
+    return {
+      id: name,
+      slot: slots[name],
+      mask,
+      blend: name === "glow" ? "screen" : undefined,
+    };
+  });
+}
+
+function layersFor(event) {
+  if (event.name === "battle") {
+    return battleLayerPlan(event.data && event.data.state === "hunted");
+  }
+  return fallbackLayerPlan(artSlots(event));
+}
+
 function artSlots(event) {
   const name = event.name;
   const data = event.data || {};
-  if (name === "battle") {
-    const hunted = data.state === "hunted";
-    return {
-      bg: "battle_background",
-      frame: "battle_frame",
-      glow: "battle_glow",
-      corners: "battle_corner_caps",
-      cornersMask: true,
-      deco: "battle_radar_rings",
-      decoMask: true,
-      icon: hunted ? "battle_pressure_icon" : "battle_target_icon",
-      iconMask: true,
-    };
-  }
   if (name === "lap_complete") {
     return {
       bg: "lap_background",
       frame: "lap_frame",
-      glow: "battle_glow",
+      glow: "battle_glow_cyan",
       icon: "lap_flag_icon",
       iconMask: true,
     };
@@ -191,7 +239,7 @@ function artSlots(event) {
     return {
       bg: "lap_background",
       frame: "lap_frame",
-      glow: "battle_glow",
+      glow: "battle_glow_amber",
       icon: "lap_stopwatch_icon",
       iconMask: true,
     };
@@ -199,7 +247,7 @@ function artSlots(event) {
   if (name === "position_change") {
     return {
       bg: "position_banner",
-      glow: "battle_glow",
+      glow: "battle_glow_cyan",
       icon: data.direction === "gain" ? "chevron_up" : "chevron_down",
       iconMask: true,
     };
@@ -207,7 +255,7 @@ function artSlots(event) {
   if (name === "final_lap") {
     return {
       bg: "session_background",
-      glow: "battle_glow",
+      glow: "battle_glow_cyan",
       icon: "final_lap_flag",
       iconMask: false,
     };
@@ -215,7 +263,7 @@ function artSlots(event) {
   if (name === "finish") {
     return {
       bg: "session_background",
-      glow: "battle_glow",
+      glow: "battle_glow_amber",
       icon: "finish_flag",
       iconMask: true,
     };
@@ -223,7 +271,7 @@ function artSlots(event) {
   if (name === "heart_rate") {
     return {
       bg: "bio_expanded_plate",
-      glow: "battle_glow",
+      glow: "battle_glow_cyan",
       accent: "bio_accent",
       deco: "bio_pulse_trace",
       icon: "heart_icon",
@@ -235,12 +283,12 @@ function artSlots(event) {
   if (name === "ble_lost") {
     return {
       bg: "bio_expanded_plate",
-      glow: "battle_glow",
+      glow: "battle_glow_red",
       icon: "ble_icon",
       iconMask: true,
     };
   }
-  return { bg: "alert_banner", glow: "battle_glow" };
+  return { bg: "alert_banner", glow: "battle_glow_amber" };
 }
 
 export function applyPersistentArt() {
@@ -324,12 +372,6 @@ export const DisplayManager = {
     node.dataset.key = `${channel}:${event.name}`;
     const art = document.createElement("div");
     art.className = "widget-art";
-    ART_LAYERS.forEach((name) => {
-      const el = document.createElement("div");
-      el.className = `layer ${name}`;
-      el.dataset.layer = name;
-      art.appendChild(el);
-    });
     const copy = document.createElement("div");
     copy.className = "widget-copy";
     copy.innerHTML = '<div class="kicker"></div><div class="title"></div><div class="meta"></div>';
@@ -339,21 +381,23 @@ export const DisplayManager = {
   },
 
   _applyArt(node, event) {
-    const slots = artSlots(event);
-    const hasPlate = Boolean(assetUrl(slots.bg));
+    const plan = layersFor(event);
+    const art = node.querySelector(".widget-art");
+    const hasPlate = plan.some((layer) => {
+      const id = layer.id;
+      return (id === "base" || id === "bg") && Boolean(assetUrl(layer.slot));
+    });
     node.classList.toggle("has-art", hasPlate);
     node.classList.toggle("fallback", !hasPlate);
     node.classList.remove("battle", "lap", "alert", "position", "session", "bio");
     node.classList.add(sizeClass(event));
-    ART_LAYERS.forEach((name) => {
-      const el = node.querySelector(`[data-layer="${name}"]`);
-      const maskKey = `${name}Mask`;
-      const explicit = Object.prototype.hasOwnProperty.call(slots, maskKey);
-      const asMask = explicit ? Boolean(slots[maskKey]) : name === "icon";
-      if (name === "corners" || name === "accent" || name === "frame") {
-        el.classList.add("cover");
-      }
-      paintLayer(el, slots[name], asMask && Boolean(slots[name]));
+    const videos = [...art.querySelectorAll("video")];
+    [...art.querySelectorAll(".layer:not(video)")].forEach((el) => el.remove());
+    const firstVideo = videos[0] || null;
+    plan.forEach((layer) => {
+      const el = makeLayerEl(layer);
+      art.insertBefore(el, firstVideo);
+      paintLayer(el, layer.slot, Boolean(layer.mask) && Boolean(layer.slot));
     });
   },
 
@@ -370,13 +414,13 @@ export const DisplayManager = {
     const name = event.name;
     const state = data.state;
     if (name === "battle" && state === "hunting") {
-      text(kicker, "");
+      text(kicker, "CLOSING IN");
       text(title, "HUNTING");
-      text(meta, `CLOSING IN  P${data.targetPosition ?? "—"}  +${fmt(data.gap, 3)}`);
+      text(meta, `P${data.targetPosition ?? "—"}  +${fmt(data.gap, 3)}`);
     } else if (name === "battle" && state === "hunted") {
-      text(kicker, "");
+      text(kicker, "UNDER PRESSURE");
       text(title, "HUNTED");
-      text(meta, `UNDER PRESSURE  P${data.targetPosition ?? "—"}  -${fmt(data.gap, 3)}`);
+      text(meta, `P${data.targetPosition ?? "—"}  -${fmt(data.gap, 3)}`);
     } else if (name === "lap_complete") {
       text(kicker, `LAP ${data.lap ?? ""}`);
       text(title, "LAP COMPLETE");
