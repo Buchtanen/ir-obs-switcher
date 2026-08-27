@@ -243,26 +243,24 @@ html.preview-layout .widget {
   opacity: 0.9;
 }
 
-/* Pack ships battle_glow only; stretch it onto other plates and add a local halo. */
-.widget.has-art.lap .widget-art,
-.widget.has-art.session .widget-art,
-.widget.has-art.bio .widget-art,
-.widget.has-art.position .widget-art {
-  filter: drop-shadow(0 0 6px var(--primary, #3ad7ff))
-    drop-shadow(0 0 16px var(--glow, rgba(58, 215, 255, 0.4)));
+/* Halo around the box, not filter:drop-shadow on the PNG — that lit every
+   honeycomb cell and the inner well, so the frame sat on top of the icon. */
+.widget.has-art.lap,
+.widget.has-art.session,
+.widget.has-art.bio,
+.widget.has-art.position {
+  box-shadow: 0 0 18px var(--glow, rgba(58, 215, 255, 0.28));
 }
 
-.widget.has-art.pb .widget-art,
-.widget.has-art.personal_best .widget-art {
-  filter: drop-shadow(0 0 6px var(--warning, #ffbf4a))
-    drop-shadow(0 0 16px rgba(255, 191, 74, 0.35));
+.widget.has-art.pb,
+.widget.has-art.personal_best {
+  box-shadow: 0 0 18px rgba(255, 191, 74, 0.28);
 }
 
-.widget.has-art.alert .widget-art,
-.widget.has-art.incident .widget-art,
-.widget.has-art.ble_lost .widget-art {
-  filter: drop-shadow(0 0 6px var(--alert, #ff5a3d))
-    drop-shadow(0 0 16px rgba(255, 90, 61, 0.35));
+.widget.has-art.alert,
+.widget.has-art.incident,
+.widget.has-art.ble_lost {
+  box-shadow: 0 0 18px rgba(255, 90, 61, 0.28);
 }
 
 .widget-art video.fx {
@@ -425,8 +423,7 @@ html.preview-layout .widget {
 }
 
 #bio-compact.has-art {
-  filter: drop-shadow(0 0 6px var(--primary, #3ad7ff))
-    drop-shadow(0 0 14px var(--glow, rgba(58, 215, 255, 0.4)));
+  box-shadow: 0 0 14px var(--glow, rgba(58, 215, 255, 0.28));
 }
 
 #bio-compact .layer.plate,

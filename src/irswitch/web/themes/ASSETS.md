@@ -56,6 +56,6 @@ WebM does not replace the 320 ms / 280 ms widget enter/exit transitions. Missing
 
 Layering: background -> frame -> accent -> icon -> micro detail -> glow -> HTML. SYSINFO grid is unchanged: `230px + 11×150px`.
 
-The pack ships one glow PNG (`battle_glow.png`). Overlay stretches it onto lap / PB / session / bio / alert / position plates and adds a CSS `drop-shadow` so those widgets still read a local halo. Compact BPM reuses the same glow slot.
+The pack ships one glow PNG (`battle_glow.png`). Overlay stretches it onto lap / PB / session / bio / alert / position plates and adds a CSS `box-shadow` (not `filter: drop-shadow`, which would halo the honeycomb mesh and the inner well). Compact BPM reuses the same glow slot.
 
 QA: 3 themes × 37 PNG + 3 WebM; names, alpha, geometry parity verified.

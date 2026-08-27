@@ -105,7 +105,9 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert "html.is-demo" in css
     assert "bottom: 91px" in css
     assert "#bio-compact.has-art" in css
-    assert "drop-shadow" in css
+    assert "filter: drop-shadow" not in css
+    assert ".widget.has-art.lap" in css
+    assert ".widget.has-art.lap .widget-art" not in css
 
 
 def _png_rgba(path: Path) -> tuple[int, int, bytes]:
