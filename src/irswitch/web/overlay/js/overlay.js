@@ -119,8 +119,13 @@ async function bootstrap() {
   }
   if (theme) applyTheme(theme);
   if (demo) {
-    const { startDemo } = await import("./demo.js");
-    startDemo();
+    const layout = params.get("layout");
+    const mod = await import("./demo.js");
+    if (layout === "preview") {
+      mod.startPreviewLayout();
+    } else {
+      mod.startDemo();
+    }
     return;
   }
   connectOverlay();

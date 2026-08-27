@@ -95,3 +95,11 @@ def test_presentation_payload_default_theme() -> None:
     assert payload["assets"]["battle_glow"] == "themes/cyber_racing/assets/battle_glow.png"
     assert payload["assets"]["battle_scan_enter"].endswith("battle_scan_enter.webm")
     assert all(payload["assets"][slot] for slot in ASSET_SLOTS)
+
+
+def test_overlay_css_plate_fill_is_fallback_only() -> None:
+    css = (web_root() / "overlay" / "css" / "overlay.css").read_text(encoding="utf-8")
+    assert ".widget.fallback" in css
+    assert "#sysinfo-widget.fallback" in css
+    assert "html.is-demo" in css
+    assert "bottom: 91px" in css

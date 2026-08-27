@@ -5,6 +5,11 @@
   <title>Buchtanen iRacer Overlay</title>
   <link rel="stylesheet" href="/overlay/static/css/overlay.css">
   <link id="theme-css" rel="stylesheet" href="/overlay/static/css/themes/cyber_racing.css">
+  <script>
+    const params = new URLSearchParams(location.search);
+    if (params.has("demo")) document.documentElement.classList.add("is-demo");
+    if (params.get("layout") === "preview") document.documentElement.classList.add("preview-layout");
+  </script>
 </head>
 <body>
   <div id="session-layer"></div>

@@ -220,9 +220,17 @@ export function applyPersistentArt() {
     paintLayer(el, el.dataset.slot, asMask);
   });
   const sys = document.getElementById("sysinfo-widget");
-  if (sys) sys.classList.toggle("has-art", Boolean(assetUrl("sysinfo_background")));
+  if (sys) {
+    const plate = Boolean(assetUrl("sysinfo_background"));
+    sys.classList.toggle("has-art", plate);
+    sys.classList.toggle("fallback", !plate);
+  }
   const bio = document.getElementById("bio-compact");
-  if (bio) bio.classList.toggle("has-art", Boolean(assetUrl("bio_compact_plate")));
+  if (bio) {
+    const plate = Boolean(assetUrl("bio_compact_plate"));
+    bio.classList.toggle("has-art", plate);
+    bio.classList.toggle("fallback", !plate);
+  }
 }
 
 export const DisplayManager = {
@@ -240,7 +248,9 @@ export const DisplayManager = {
     this._fill(node, event);
     node.classList.remove("exit");
     requestAnimationFrame(() => node.classList.add("visible"));
-    syncWidgetFx(node, event, created);
+    if (!document.documentElement.classList.contains("preview-layout")) {
+      syncWidgetFx(node, event, created);
+    }
     if (event.phase === "exit") this.hide(key);
     return node;
   },
@@ -269,7 +279,9 @@ export const DisplayManager = {
     for (const node of this.active.values()) {
       if (node._event) {
         this._applyArt(node, node._event);
-        syncWidgetFx(node, node._event, false);
+        if (!document.documentElement.classList.contains("preview-layout")) {
+          syncWidgetFx(node, node._event, false);
+        }
       }
     }
     applyPersistentArt();
@@ -301,11 +313,15 @@ export const DisplayManager = {
     const slots = artSlots(event);
     const hasPlate = Boolean(assetUrl(slots.bg));
     node.classList.toggle("has-art", hasPlate);
+    node.classList.toggle("fallback", !hasPlate);
     node.classList.remove("battle", "lap", "alert", "position", "session", "bio");
     node.classList.add(sizeClass(event));
     ART_LAYERS.forEach((name) => {
       const el = node.querySelector(`[data-layer="${name}"]`);
       const asMask = Boolean(slots[`${name}Mask`]) || name === "icon";
+      if (name === "corners" || name === "accent" || name === "frame") {
+        el.classList.add("cover");
+      }
       paintLayer(el, slots[name], asMask && Boolean(slots[name]));
     });
   },
@@ -313,20 +329,23 @@ export const DisplayManager = {
   _fill(node, event) {
     node._event = event;
     const data = event.data || {};
-    node.className = `widget ${sizeClass(event)} ${toneClass(event)}${node.classList.contains("visible") ? " visible" : ""}${node.classList.contains("exit") ? " exit" : ""}`;
+    const keep = ["visible", "exit", "has-art", "has-radar-fx", "fallback"].filter((name) =>
+      node.classList.contains(name),
+    );
+    node.className = ["widget", sizeClass(event), toneClass(event), ...keep].join(" ");
     const kicker = node.querySelector(".kicker");
     const title = node.querySelector(".title");
     const meta = node.querySelector(".meta");
     const name = event.name;
     const state = data.state;
     if (name === "battle" && state === "hunting") {
-      text(kicker, "CLOSING IN");
+      text(kicker, "");
       text(title, "HUNTING");
-      text(meta, `P${data.targetPosition ?? "—"}  +${fmt(data.gap, 2)}`);
+      text(meta, `CLOSING IN  P${data.targetPosition ?? "—"}  +${fmt(data.gap, 3)}`);
     } else if (name === "battle" && state === "hunted") {
-      text(kicker, "UNDER PRESSURE");
+      text(kicker, "");
       text(title, "HUNTED");
-      text(meta, `P${data.targetPosition ?? "—"}  -${fmt(data.gap, 2)}`);
+      text(meta, `UNDER PRESSURE  P${data.targetPosition ?? "—"}  -${fmt(data.gap, 3)}`);
     } else if (name === "lap_complete") {
       text(kicker, `LAP ${data.lap ?? ""}`);
       text(title, "LAP COMPLETE");
@@ -352,7 +371,7 @@ export const DisplayManager = {
       text(title, "BACK ON TRACK");
       text(meta, data.position != null ? `P${data.position}` : "");
     } else if (name === "final_lap") {
-      text(kicker, "FLAG");
+      text(kicker, "");
       text(title, "FINAL LAP");
       text(meta, "ONE MORE PUSH");
     } else if (name === "finish") {

@@ -188,6 +188,32 @@ export function stopDemo() {
   cue("");
 }
 
+export function startPreviewLayout() {
+  stopDemo();
+  startedAt = performance.now();
+  applySysinfo(
+    {
+      cpu: { load: 88, temperature: 88, power: 88, frequency: 5.12 },
+      gpu: { load: 88, temperature: 88, power: 88, clock: 88, vram_used: 88, vram_total: 88 },
+      memory: { used: 88, total: 88, percent: 88 },
+      performance: { fps: 88, frametime: 88 },
+    },
+    { connected: true, status: "connected", bpm: 88, baseline_bpm: 88, delta_bpm: 0, state: "focused" },
+  );
+  show({
+    name: "battle",
+    channel: "battle",
+    data: { state: "hunting", targetPosition: 6, gap: 0.742, closingRate: 0.34 },
+  });
+  show({
+    name: "battle",
+    channel: "battle",
+    data: { state: "hunted", targetPosition: 7, gap: 0.388, closingRate: 0.21 },
+  });
+  show({ name: "final_lap", channel: "session", data: { lap: 20 } });
+  cue("PREVIEW LAYOUT");
+}
+
 export function startDemo() {
   stopDemo();
   startedAt = performance.now();
