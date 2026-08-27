@@ -250,7 +250,7 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert "battle_glow_amber" in js
     plan = js.split("function battleLayerPlan", 1)[1].split("function fallbackLayerPlan", 1)[0]
     assert 'id: "highlight"' in plan
-    assert "blend: \"screen\"" not in plan
+    assert 'blend: "screen"' not in plan
     assert "huntingLockMs" in js
     assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
         encoding="utf-8"
