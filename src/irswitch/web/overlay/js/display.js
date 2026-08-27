@@ -9,14 +9,15 @@ const CHANNELS = {
 
 const ASSET_BASE = "/overlay/web/";
 
-const FALLBACK_LAYERS = ["bg", "frame", "glow", "accent", "corners", "deco", "icon"];
-
 function makeLayerEl(layer) {
   const el = document.createElement("div");
   el.className = `layer ${layer.id}`;
   el.dataset.layer = layer.id;
   if (layer.blend === "screen") el.classList.add("blend-screen");
-  if (layer.mask || layer.id === "frame" || layer.id === "accent") el.classList.add("cover");
+  if (layer.native) el.classList.add("native");
+  if (!layer.native && (layer.mask || layer.id === "frame" || layer.id === "accent")) {
+    el.classList.add("cover");
+  }
   return el;
 }
 
@@ -41,7 +42,7 @@ export function assetUrl(slot) {
   return ASSET_BASE + rel;
 }
 
-function paintLayer(el, slot, asMask) {
+function paintLayer(el, slot, asMask, native) {
   if (!el) return;
   const url = slot ? assetUrl(slot) : null;
   if (!url) {
@@ -57,8 +58,8 @@ function paintLayer(el, slot, asMask) {
     el.style.backgroundColor = "currentColor";
     const mask = `url("${url}")`;
     const cover = el.classList.contains("cover");
-    const size = cover ? "100% 100%" : "contain";
-    const pos = cover ? "0 0" : "center";
+    const size = native ? `${native[0]}px ${native[1]}px` : cover ? "100% 100%" : "contain";
+    const pos = native || cover ? "0 0" : "center";
     el.style.webkitMaskImage = mask;
     el.style.maskImage = mask;
     el.style.webkitMaskSize = size;
@@ -72,6 +73,10 @@ function paintLayer(el, slot, asMask) {
     el.style.backgroundImage = `url("${url}")`;
     el.style.webkitMaskImage = "";
     el.style.maskImage = "";
+    if (native) {
+      el.style.backgroundSize = `${native[0]}px ${native[1]}px`;
+      el.style.backgroundPosition = "0 0";
+    }
   }
 }
 
@@ -184,9 +189,31 @@ function toneClass(event) {
 }
 
 function battleLayerPlan(hunted) {
+  const canvas = [420, 140];
   const icon = hunted ? "battle_pressure_icon" : "battle_target_icon";
   const glow = hunted ? "battle_glow_amber" : "battle_glow_cyan";
   return [
+    { id: "shadow", slot: "battle_shadow", native: canvas },
+    { id: "base", slot: "battle_base_plate", native: canvas },
+    { id: "material", slot: "battle_material", native: canvas },
+    { id: "tech", slot: "battle_tech_diagram", native: canvas },
+    { id: "frame", slot: "battle_frame_base", native: canvas },
+    { id: "highlight", slot: "battle_frame_highlight", native: canvas },
+    { id: "accent", slot: "battle_state_accent_mask", mask: true, native: canvas },
+    { id: "corner-left", slot: "battle_corner_left", mask: true, native: canvas },
+    { id: "corner-right", slot: "battle_corner_right", mask: true, native: canvas },
+    { id: "well", slot: "battle_icon_well", native: canvas },
+    { id: "ticks", slot: "battle_radar_ticks", mask: true, native: canvas },
+    { id: "ring-inner", slot: "battle_radar_ring_inner", mask: true, native: canvas },
+    { id: "ring-outer", slot: "battle_radar_ring_outer", mask: true, native: canvas },
+    { id: "glyph", slot: icon, mask: true, native: canvas },
+    { id: "micro", slot: "battle_micro_details", mask: true, native: canvas },
+    { id: "glow", slot: glow, native: canvas },
+  ];
+}
+
+function v3SharedPlate(glow, extra, well = true) {
+  const layers = [
     { id: "shadow", slot: "battle_shadow" },
     { id: "base", slot: "battle_base_plate" },
     { id: "material", slot: "battle_material" },
@@ -196,103 +223,81 @@ function battleLayerPlan(hunted) {
     { id: "accent", slot: "battle_state_accent_mask", mask: true },
     { id: "corner-left", slot: "battle_corner_left", mask: true },
     { id: "corner-right", slot: "battle_corner_right", mask: true },
-    { id: "well", slot: "battle_icon_well" },
-    { id: "ticks", slot: "battle_radar_ticks", mask: true },
-    { id: "ring-inner", slot: "battle_radar_ring_inner", mask: true },
-    { id: "ring-outer", slot: "battle_radar_ring_outer", mask: true },
-    { id: "icon", slot: icon, mask: true },
-    { id: "micro", slot: "battle_micro_details", mask: true },
-    { id: "glow", slot: glow },
   ];
+  if (well) layers.push({ id: "well", slot: "battle_icon_well" });
+  layers.push(...extra);
+  layers.push({ id: "micro", slot: "battle_micro_details", mask: true });
+  if (glow) layers.push({ id: "glow", slot: glow, plateMask: true });
+  return layers;
 }
 
-function fallbackLayerPlan(slots) {
-  return FALLBACK_LAYERS.filter((name) => slots[name]).map((name) => {
-    const maskKey = `${name}Mask`;
-    const explicit = Object.prototype.hasOwnProperty.call(slots, maskKey);
-    const mask = explicit ? Boolean(slots[maskKey]) : name === "icon";
-    return {
-      id: name,
-      slot: slots[name],
-      mask,
-      blend: name === "glow" ? "screen" : undefined,
-    };
-  });
+function paintPlateMask(el) {
+  const url = assetUrl("battle_base_plate");
+  if (!el || !url) return;
+  const mask = `url("${url}")`;
+  el.style.webkitMaskImage = mask;
+  el.style.maskImage = mask;
+  el.style.webkitMaskSize = "100% 100%";
+  el.style.maskSize = "100% 100%";
+  el.style.webkitMaskRepeat = "no-repeat";
+  el.style.maskRepeat = "no-repeat";
+  el.style.webkitMaskPosition = "0 0";
+  el.style.maskPosition = "0 0";
 }
 
 function layersFor(event) {
   if (event.name === "battle") {
     return battleLayerPlan(event.data && event.data.state === "hunted");
   }
-  return fallbackLayerPlan(artSlots(event));
+  const slots = artSlots(event);
+  const extra = [];
+  if (slots.deco) {
+    extra.push({ id: "deco", slot: slots.deco, mask: Boolean(slots.decoMask) });
+  }
+  if (slots.icon) {
+    extra.push({ id: "icon", slot: slots.icon, mask: Boolean(slots.iconMask) });
+  }
+  return v3SharedPlate(slots.glow, extra, slots.well !== false);
 }
 
 function artSlots(event) {
   const name = event.name;
   const data = event.data || {};
   if (name === "lap_complete") {
-    return {
-      bg: "lap_background",
-      frame: "lap_frame",
-      glow: "battle_glow_cyan",
-      icon: "lap_flag_icon",
-      iconMask: true,
-    };
+    return { glow: "battle_glow_cyan", icon: "lap_flag_icon", iconMask: true };
   }
   if (name === "personal_best") {
-    return {
-      bg: "lap_background",
-      frame: "lap_frame",
-      glow: "battle_glow_amber",
-      icon: "lap_stopwatch_icon",
-      iconMask: true,
-    };
+    return { glow: "battle_glow_amber", icon: "lap_stopwatch_icon", iconMask: true };
   }
   if (name === "position_change") {
     return {
-      bg: "position_banner",
-      glow: "battle_glow_cyan",
+      glow: data.direction === "gain" ? "battle_glow_cyan" : "battle_glow_amber",
       icon: data.direction === "gain" ? "chevron_up" : "chevron_down",
       iconMask: true,
     };
   }
   if (name === "final_lap") {
-    return {
-      bg: "session_background",
-      glow: "battle_glow_cyan",
-      icon: "final_lap_flag",
-      iconMask: false,
-    };
+    return { glow: "battle_glow_cyan", icon: "final_lap_flag", iconMask: false };
   }
   if (name === "finish") {
-    return {
-      bg: "session_background",
-      glow: "battle_glow_amber",
-      icon: "finish_flag",
-      iconMask: true,
-    };
+    return { glow: "battle_glow_amber", icon: "finish_flag", iconMask: true };
   }
   if (name === "heart_rate") {
     return {
-      bg: "bio_expanded_plate",
       glow: "battle_glow_cyan",
-      accent: "bio_accent",
       deco: "bio_pulse_trace",
       icon: "heart_icon",
-      accentMask: true,
       decoMask: true,
       iconMask: true,
     };
   }
   if (name === "ble_lost") {
-    return {
-      bg: "bio_expanded_plate",
-      glow: "battle_glow_red",
-      icon: "ble_icon",
-      iconMask: true,
-    };
+    return { glow: "battle_glow_red", icon: "ble_icon", iconMask: true };
   }
-  return { bg: "alert_banner", glow: "battle_glow_amber" };
+  if (name === "incident") {
+    return { glow: "battle_glow_red" };
+  }
+  return { glow: "battle_glow_amber" };
 }
 
 export function applyPersistentArt() {
@@ -308,10 +313,11 @@ export function applyPersistentArt() {
   }
   const bio = document.getElementById("bio-compact");
   if (bio) {
-    const plate = Boolean(assetUrl("bio_compact_plate"));
+    const plate = Boolean(assetUrl("battle_base_plate"));
     bio.classList.toggle("has-art", plate);
     bio.classList.toggle("fallback", !plate);
   }
+  document.querySelectorAll("#bio-compact .layer.glow").forEach((el) => paintPlateMask(el));
 }
 
 export const DisplayManager = {
@@ -403,7 +409,8 @@ export const DisplayManager = {
     plan.forEach((layer) => {
       const el = makeLayerEl(layer);
       art.insertBefore(el, firstVideo);
-      paintLayer(el, layer.slot, Boolean(layer.mask) && Boolean(layer.slot));
+      paintLayer(el, layer.slot, Boolean(layer.mask) && Boolean(layer.slot), layer.native);
+      if (layer.plateMask) paintPlateMask(el);
     });
   },
 

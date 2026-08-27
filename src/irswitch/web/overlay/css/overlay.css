@@ -17,7 +17,7 @@ html.is-demo body {
   background: #04070a;
 }
 
-html.preview-layout #bio-compact {
+html.golden-layout #bio-compact {
   display: none;
 }
 
@@ -34,13 +34,11 @@ html.preview-layout .widget {
   transition: none;
 }
 
-#persistent-layer,
-#battle-stack,
 #event-layer,
 #session-layer,
-#bio-expanded {
-  position: absolute;
-  pointer-events: none;
+#bio-expanded,
+#battle-stack {
+  overflow: visible;
 }
 
 #battle-stack {
@@ -199,12 +197,12 @@ html.preview-layout .widget {
 }
 
 .widget.battle { width: 420px; height: 140px; --copy-pad: 119px; }
-.widget.lap { width: 380px; height: 112px; --icon-w: 64px; --icon-h: 64px; --icon-left: 18px; --icon-top: 24px; --copy-pad: 96px; }
-.widget.alert { width: 380px; height: 84px; --icon-w: 48px; --icon-h: 48px; --icon-left: 16px; --icon-top: 18px; --copy-pad: 78px; }
-.widget.position { width: 380px; height: 96px; --icon-w: 64px; --icon-h: 64px; --icon-left: 16px; --icon-top: 16px; --copy-pad: 92px; }
-.widget.session { width: 520px; height: 126px; --icon-w: 80px; --icon-h: 80px; --icon-left: 22px; --icon-top: 19px; --copy-pad: 112px; }
-.widget.session.finish { --icon-w: 96px; --icon-h: 80px; --icon-left: 14px; --icon-top: 23px; --copy-pad: 120px; }
-.widget.bio { width: 280px; height: 118px; --icon-w: 56px; --icon-h: 56px; --icon-left: 16px; --icon-top: 18px; --copy-pad: 84px; }
+.widget.lap { width: 380px; height: 112px; --icon-w: 64px; --icon-h: 64px; --copy-pad: 118px; }
+.widget.alert { width: 380px; height: 84px; --icon-w: 48px; --icon-h: 48px; --copy-pad: 118px; }
+.widget.position { width: 380px; height: 96px; --icon-w: 64px; --icon-h: 64px; --copy-pad: 118px; }
+.widget.session { width: 520px; height: 126px; --icon-w: 80px; --icon-h: 80px; --copy-pad: 160px; }
+.widget.session.finish { --icon-w: 96px; --icon-h: 80px; --copy-pad: 160px; }
+.widget.bio { width: 280px; height: 118px; --icon-w: 56px; --icon-h: 56px; --copy-pad: 96px; }
 
 .widget.battle {
   transform: translateX(-36px);
@@ -243,6 +241,7 @@ html.preview-layout .widget {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  overflow: visible;
 }
 
 .widget-art .layer {
@@ -269,6 +268,7 @@ html.preview-layout .widget {
 .widget.battle .layer.highlight {
   mix-blend-mode: normal;
   opacity: 1;
+  filter: none;
 }
 
 .widget.battle .layer.accent,
@@ -284,24 +284,29 @@ html.preview-layout .widget {
   opacity: 0.56;
 }
 
-/* Halo around the box, not filter:drop-shadow on the PNG — that lit every
-   honeycomb cell and the inner well, so the frame sat on top of the icon. */
-.widget.has-art.lap,
-.widget.has-art.session,
-.widget.has-art.bio,
-.widget.has-art.position {
-  box-shadow: 0 0 18px var(--glow, rgba(58, 215, 255, 0.28));
+/* V3 local glow on small widgets: PNG clipped to the chamfered plate, plus
+   drop-shadow on the plate silhouette (not a rectangular box-shadow). */
+.widget:not(.battle) .layer.glow {
+  mix-blend-mode: normal;
+  opacity: 1;
 }
 
-.widget.has-art.pb,
-.widget.has-art.personal_best {
-  box-shadow: 0 0 18px rgba(255, 191, 74, 0.28);
+.widget:not(.battle).has-art .layer.base {
+  filter: drop-shadow(0 0 8px var(--primary, #3ad7ff))
+    drop-shadow(0 0 16px var(--glow, rgba(58, 215, 255, 0.35)));
 }
 
-.widget.has-art.alert,
-.widget.has-art.incident,
-.widget.has-art.ble_lost {
-  box-shadow: 0 0 18px rgba(255, 90, 61, 0.28);
+.widget.pb.has-art .layer.base,
+.widget.personal_best.has-art .layer.base {
+  filter: drop-shadow(0 0 8px var(--warning, #ffbf4a))
+    drop-shadow(0 0 16px rgba(255, 191, 74, 0.35));
+}
+
+.widget.alert.has-art .layer.base,
+.widget.incident.has-art .layer.base,
+.widget.ble_lost.has-art .layer.base {
+  filter: drop-shadow(0 0 8px var(--alert, #ff5a3d))
+    drop-shadow(0 0 16px rgba(255, 90, 61, 0.35));
 }
 
 .widget-art video.fx {
@@ -327,7 +332,7 @@ html.preview-layout .widget {
 
 .widget.bio .layer.deco {
   inset: auto;
-  left: 28px;
+  left: var(--copy-pad, 96px);
   right: 16px;
   top: auto;
   bottom: 10px;
@@ -342,8 +347,9 @@ html.preview-layout .widget {
 
 .widget-art .layer.icon {
   inset: auto;
-  left: var(--icon-left, 16px);
-  top: var(--icon-top, 16px);
+  /* V3 well centre is (64, 71) on the 420x140 canvas. */
+  left: calc(15.24% - var(--icon-w, 64px) / 2);
+  top: calc(50.7% - var(--icon-h, 64px) / 2);
   width: var(--icon-w, 64px);
   height: var(--icon-h, 64px);
   transform: none;
@@ -352,13 +358,17 @@ html.preview-layout .widget {
   background-position: center;
 }
 
-.widget.battle .widget-art .layer.icon {
+/* V3 battle glyphs are authored 420x140 with the radar in the left well.
+   Never reuse the 64x64 .icon box or they stretch across the plate. */
+.widget.battle .layer.native {
   inset: 0;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-size: 100% 100%;
+  left: auto;
+  top: auto;
+  width: 420px;
+  height: 140px;
+  background-size: 420px 140px;
+  background-position: 0 0;
+  transform: none;
 }
 
 .widget-copy {
@@ -479,6 +489,7 @@ html.preview-layout .widget {
   bottom: 84px;
   width: 240px;
   height: 64px;
+  overflow: visible;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -486,29 +497,37 @@ html.preview-layout .widget {
   padding: 0 16px 0 12px;
   box-sizing: border-box;
   background: transparent;
+  color: var(--primary, #3ad7ff);
 }
 
 #bio-compact.fallback {
   background: var(--panel-fill, rgba(8, 12, 16, 0.78));
 }
 
-#bio-compact.has-art {
-  box-shadow: 0 0 14px var(--glow, rgba(58, 215, 255, 0.28));
+#bio-compact .widget-art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
 }
 
-#bio-compact .layer.plate,
-#bio-compact .layer.glow {
+#bio-compact .widget-art .layer {
   position: absolute;
   inset: 0;
   background-repeat: no-repeat;
-  background-size: 240px 64px;
+  background-position: 0 0;
+  background-size: 100% 100%;
   z-index: 0;
-  pointer-events: none;
 }
 
-#bio-compact .layer.glow {
-  mix-blend-mode: screen;
-  opacity: 0.9;
+#bio-compact .widget-art .layer.glow {
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+#bio-compact.has-art .layer.base {
+  filter: drop-shadow(0 0 8px var(--primary, #3ad7ff))
+    drop-shadow(0 0 14px var(--glow, rgba(58, 215, 255, 0.4)));
 }
 
 #bio-compact .icon,
