@@ -268,6 +268,9 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert 'id: "glyph"' in plan
     assert 'blend: "screen"' not in plan
     assert "huntingLockMs" in js
+    fx = js.split("function syncWidgetFx", 1)[1].split("function sizeClass", 1)[0]
+    assert "battle_signal_lock" in fx
+    assert 'state === "hunting"' not in fx
     assert "startGoldenLayout" in (web_root() / "overlay" / "js" / "demo.js").read_text(
         encoding="utf-8"
     )

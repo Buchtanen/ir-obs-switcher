@@ -62,7 +62,7 @@ Battle is golden-master V3: every battle layer is a full 420×140 canvas. Layer 
 | File | pixels | playback |
 |---|---|---|
 | `battle_scan_enter.webm` | `420 x 140` | once on battle ENTER |
-| `battle_signal_lock.webm` | `420 x 140` | radar acquisition; may retrigger while HUNTING |
+| `battle_signal_lock.webm` | `420 x 140` | radar acquisition; retriggers while HUNTING or HUNTED |
 | `battle_theme_motion.webm` | `420 x 140` | once on ENTER; cyber `data_slice`, stealth `edge_pulse`, night `line_tear` |
 | `finish_accent_sweep.webm` | `520 x 126` | once on FINISH ENTER |
 
@@ -72,6 +72,6 @@ Layering (battle V3): shadow → base plate → material → tech diagram → fr
 
 HUNTING uses `battle_glow_cyan`; HUNTED uses `battle_glow_amber`. Battle glow is alpha-composited (not `mix-blend-mode: screen`). Small widgets use the same pre-colored glow PNG masked to `battle_base_plate` so the halo follows the chamfer — never a rectangular `box-shadow` or `filter: drop-shadow`.
 
-Text slots (battle): title 26px italic at y≈42, kicker 13px at y≈76, meta 11px muted at y≈96, copy pad 119px. Radar rings stay static; `battle_signal_lock.webm` may retrigger while HUNTING (1.4s, stealth 1.8s).
+Text slots (battle): title 26px italic at y≈42, kicker 13px at y≈76, meta 11px muted at y≈96, copy pad 119px. Radar rings stay static; `battle_signal_lock.webm` retriggers while HUNTING or HUNTED (1.4s, stealth 1.8s).
 
 QA: 3 themes × 50 PNG + 4 WebM; names, alpha, geometry parity verified. Preview MP4/PNG boards stay out of the web tree.

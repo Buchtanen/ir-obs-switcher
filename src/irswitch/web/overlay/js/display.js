@@ -145,8 +145,8 @@ function removeFxVideo(art, className) {
 function syncWidgetFx(node, event, isEnter) {
   const art = node.querySelector(".widget-art");
   if (!art) return;
-  const hunting = event.name === "battle" && event.data && event.data.state === "hunting";
-  if (hunting) {
+  const battle = event.name === "battle";
+  if (battle) {
     const lock = ensureFxVideo(art, "signal-lock", "battle_signal_lock", false);
     node.classList.toggle("has-radar-fx", Boolean(lock));
     if (isEnter) playOnceFromStart(lock);
