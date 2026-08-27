@@ -328,7 +328,7 @@ html.preview-layout .widget {
 
 /* V3 local glow on small widgets: pre-colored PNG masked to the chamfered
    plate. No rectangular box-shadow / drop-shadow around the CSS box. */
-.widget:not(.battle) .layer.glow {
+.widget:not(.battle):not(.glow-flash) .layer.glow {
   mix-blend-mode: normal;
   opacity: 1;
 }
@@ -363,18 +363,18 @@ html.preview-layout .widget {
   filter: hue-rotate(-150deg) saturate(1.2);
 }
 
-.widget.incident.glow-flash .layer.glow {
-  animation: incident-glow-flash 780ms ease-out 1;
+.widget.glow-flash .layer.glow {
+  mix-blend-mode: normal;
+  animation: incident-glow-flash 900ms ease-in-out 1;
 }
 
 @keyframes incident-glow-flash {
   0%,
-  100% { opacity: 0.9; }
-  16% { opacity: 0.15; }
-  32% { opacity: 1; }
-  48% { opacity: 0.2; }
-  64% { opacity: 1; }
-  80% { opacity: 0.35; }
+  100% { opacity: 1; }
+  18% { opacity: 0.08; }
+  36% { opacity: 1; }
+  54% { opacity: 0.08; }
+  72% { opacity: 1; }
 }
 
 .widget.bio .layer.deco {

@@ -135,6 +135,8 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert ".widget.hunted video.fx" in css
     assert "hue-rotate(-150deg)" in css
     assert "incident-glow-flash" in css
+    assert ".widget.glow-flash .layer.glow" in css
+    assert ".widget.incident.glow-flash" not in css
     assert ".widget.has-art.lap" not in css
     assert "scale(0.62)" not in css
 
@@ -292,6 +294,10 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     assert '"final_lap"' in fx
     assert '"incident"' in fx
     assert "glow-flash" in fx
+    assert "_glowFlashTimer" in fx
+    tone = js.split("function toneClass", 1)[1].split("function battleLayerPlan", 1)[0]
+    assert "return name" in tone
+    assert 'return "alert"' not in tone
     assert "sysinfo_module_segment" in html
     assert "--hr-beat" in js
     assert 'setMod("hr"' in js

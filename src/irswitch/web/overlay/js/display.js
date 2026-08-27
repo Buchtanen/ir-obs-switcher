@@ -107,6 +107,15 @@ function clearLockTimer(node) {
   node._lockTimer = 0;
 }
 
+function clearGlowFlash(node) {
+  if (!node) return;
+  if (node._glowFlashTimer) {
+    clearTimeout(node._glowFlashTimer);
+    node._glowFlashTimer = 0;
+  }
+  node.classList.remove("glow-flash");
+}
+
 function ensureFxVideo(art, className, slot, loop) {
   let video = art.querySelector(`video.${className}`);
   const url = assetUrl(slot);
@@ -145,42 +154,45 @@ function removeFxVideo(art, className) {
 function syncWidgetFx(node, event, isEnter) {
   const art = node.querySelector(".widget-art");
   if (!art) return;
+  const preview = document.documentElement.classList.contains("preview-layout");
   const battle = event.name === "battle";
-  if (battle) {
+  if (!preview && battle) {
     const lock = ensureFxVideo(art, "signal-lock", "battle_signal_lock", false);
     node.classList.toggle("has-radar-fx", Boolean(lock));
     if (isEnter) playOnceFromStart(lock);
     if (lock && !node._lockTimer) {
       node._lockTimer = setInterval(() => playOnceFromStart(lock), huntingLockMs());
     }
-  } else {
+  } else if (!battle) {
     clearLockTimer(node);
     removeFxVideo(art, "signal-lock");
     node.classList.remove("has-radar-fx");
   }
-  if (isEnter && event.name === "battle") {
+  if (!preview && isEnter && event.name === "battle") {
     const scan = ensureFxVideo(art, "scan-enter", "battle_scan_enter", false);
     playOnceFromStart(scan);
     const themeFx = ensureFxVideo(art, "theme-motion", "battle_theme_motion", false);
     playOnceFromStart(themeFx);
   }
   const eventSweep = ["lap_complete", "personal_best", "position_change", "final_lap"];
-  if (isEnter && eventSweep.includes(event.name)) {
+  if (!preview && isEnter && eventSweep.includes(event.name)) {
     const scan = ensureFxVideo(art, "scan-enter", "battle_scan_enter", false);
     playOnceFromStart(scan);
     const themeFx = ensureFxVideo(art, "theme-motion", "battle_theme_motion", false);
     playOnceFromStart(themeFx);
   }
-  if (isEnter && (event.name === "finish" || event.name === "final_lap")) {
+  if (!preview && isEnter && (event.name === "finish" || event.name === "final_lap")) {
     const sweep = ensureFxVideo(art, "finish-sweep", "finish_accent_sweep", false);
     playOnceFromStart(sweep);
   }
-  if (event.name === "incident") {
-    node.classList.remove("glow-flash");
-    if (isEnter) {
+  clearGlowFlash(node);
+  if (event.name === "incident" && isEnter) {
+    node._glowFlashTimer = setTimeout(() => {
+      node._glowFlashTimer = 0;
+      node.classList.remove("glow-flash");
       void node.offsetWidth;
       node.classList.add("glow-flash");
-    }
+    }, 320);
   }
 }
 
@@ -197,7 +209,7 @@ function toneClass(event) {
   const name = event.name;
   const data = event.data || {};
   if (name === "battle") return data.state === "hunted" ? "hunted" : "hunting";
-  if (name === "incident" || name === "ble_lost") return "alert";
+  if (name === "incident" || name === "ble_lost") return name;
   if (name === "personal_best") return "pb";
   return name;
 }
@@ -348,9 +360,7 @@ export const DisplayManager = {
     this._fill(node, event);
     node.classList.remove("exit");
     requestAnimationFrame(() => node.classList.add("visible"));
-    if (!document.documentElement.classList.contains("preview-layout")) {
-      syncWidgetFx(node, event, created);
-    }
+    syncWidgetFx(node, event, created);
     if (event.phase === "exit") this.hide(key);
     return node;
   },
@@ -359,6 +369,7 @@ export const DisplayManager = {
     const node = this.active.get(key);
     if (!node) return;
     clearLockTimer(node);
+    clearGlowFlash(node);
     node.querySelectorAll("video").forEach((video) => video.pause());
     node.classList.add("exit");
     node.classList.remove("visible");
@@ -372,6 +383,7 @@ export const DisplayManager = {
   clear() {
     for (const [key, node] of [...this.active.entries()]) {
       clearLockTimer(node);
+      clearGlowFlash(node);
       node.remove();
       this.active.delete(key);
     }
@@ -381,9 +393,7 @@ export const DisplayManager = {
     for (const node of this.active.values()) {
       if (node._event) {
         this._applyArt(node, node._event);
-        if (!document.documentElement.classList.contains("preview-layout")) {
-          syncWidgetFx(node, node._event, false);
-        }
+        syncWidgetFx(node, node._event, false);
       }
     }
     applyPersistentArt();
