@@ -37,7 +37,7 @@ Battle is golden-master V3: every battle layer is a full 420×140 canvas. Layer 
 | `session_background.png` | `520 x 126` |
 | `final_lap_flag.png` | `80 x 80` | solid white cloth; painted, not masked |
 | `finish_flag.png` | `96 x 80` | checkered mask; FINISH only |
-| `bio_compact_plate.png` | `240 x 64` |
+| `bio_compact_plate.png` | `240 x 64` | pack keep; overlay does not show a persistent compact BPM — HR lives on SYSINFO, high-load uses the expanded bio card |
 | `bio_expanded_plate.png` | `280 x 118` |
 | `heart_icon.png` | `56 x 56` |
 | `ble_icon.png` | `48 x 48` |
@@ -72,6 +72,6 @@ Layering (battle V3): shadow → base plate → material → tech diagram → fr
 
 HUNTING uses `battle_glow_cyan`; HUNTED uses `battle_glow_amber`. Battle glow is alpha-composited (not `mix-blend-mode: screen`). Small widgets use the same pre-colored glow PNG. Clip plates, glow and motion to the chamfer with CSS `mask-image` from `battle_base_plate` alpha — that PNG already is the outline mask, no extra graphic. Never a rectangular `box-shadow` or `filter: drop-shadow`. HUNTED motion WebM is the hunting clip hue-shifted to `--warning`.
 
-Text slots (battle): title 26px italic at y≈42, kicker 13px at y≈76, meta 11px muted at y≈96, copy pad 119px. Radar rings stay static; `battle_signal_lock.webm` retriggers while HUNTING or HUNTED (1.4s, stealth 1.8s). Lap / PB / position / FINAL LAP play the same enter scan + theme-motion clip (PB/lost hue-shifted); FINAL LAP also uses `finish_accent_sweep`. SYSINFO tiles `sysinfo_module_segment` per 150px module on top of `sysinfo_background` — V3 per-module frame packs (`module_base` / `module_material`) are Phase B and not in this pack.
+Text slots (battle): title 26px italic at y≈42, kicker 13px at y≈76, meta 11px muted at y≈96, copy pad 119px. Radar rings stay static; `battle_signal_lock.webm` retriggers while HUNTING or HUNTED (1.4s, stealth 1.8s). Lap / PB / position / FINAL LAP play the same enter scan + theme-motion clip (PB/lost hue-shifted); FINAL LAP also uses `finish_accent_sweep`. SYSINFO tiles `sysinfo_module_segment` per 150px module on top of `sysinfo_background` — V3 per-module frame packs (`module_base` / `module_material`) are Phase B and not in this pack. Persistent BPM is the SYSINFO HR module; high-load uses the expanded bio card. Compact BPM is not shown.
 
 QA: 3 themes × 50 PNG + 4 WebM; names, alpha, geometry parity verified. Preview MP4/PNG boards stay out of the web tree.

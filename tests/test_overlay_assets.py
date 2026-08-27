@@ -113,8 +113,10 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert "#sysinfo-widget.fallback" in css
     assert "html.is-demo" in css
     assert "bottom: 91px" in css
+    assert "bottom: 140px" not in css
     assert "position: absolute" in css
-    assert "#bio-compact .widget-art" in css
+    assert "#bio-compact" not in css
+    assert ".heart-pulse" not in css
     assert "left: 119px" in css
     assert "top: 38px" in css
     assert ".widget.battle .layer.native" in css
@@ -261,8 +263,10 @@ def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
     shared = js.split("function v3SharedPlate", 1)[1].split("function paintPlateMask", 1)[0]
     assert "battle_base_plate" in shared
     assert "battle_shadow" not in shared
-    assert 'data-slot="battle_base_plate"' in html
-    assert 'data-slot="battle_glow_cyan"' in html
+    assert "bio-compact" not in html
+    assert "bio-bpm" not in html
+    assert "ble-dot" not in html
+    assert "bio-compact" not in js
     assert "function battleLayerPlan" in js
     assert "battle_base_plate" in js
     assert "battle_glow_amber" in js

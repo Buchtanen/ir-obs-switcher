@@ -330,14 +330,6 @@ export function applyPersistentArt() {
     sys.classList.toggle("has-art", plate);
     sys.classList.toggle("fallback", !plate);
   }
-  const bio = document.getElementById("bio-compact");
-  if (bio) {
-    const plate = Boolean(assetUrl("battle_base_plate"));
-    bio.classList.toggle("has-art", plate);
-    bio.classList.toggle("fallback", !plate);
-    const art = bio.querySelector(".widget-art");
-    if (plate) paintPlateMask(art);
-  }
 }
 
 export const DisplayManager = {
@@ -572,15 +564,6 @@ export function applySysinfo(system, bio) {
   );
   const bpm = bio && bio.bpm != null ? String(bio.bpm) : "—";
   setMod("hr", bpm, bio && bio.state === "high" ? 90 : bio && bio.bpm != null ? 0 : null, 80, 90);
-  const ble = document.getElementById("ble-dot");
-  if (ble) {
-    ble.className =
-      "icon mask ble-icon" +
-      (bio && bio.connected ? " on" : bio && bio.status === "reconnecting" ? " warn" : "");
-    if (ble.dataset.slot) paintLayer(ble, ble.dataset.slot, true);
-  }
-  const compact = document.getElementById("bio-bpm");
-  if (compact) text(compact, bpm);
 }
 
 function setMod(id, label, metric, warn, crit) {
