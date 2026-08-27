@@ -564,6 +564,15 @@ export function applySysinfo(system, bio) {
   );
   const bpm = bio && bio.bpm != null ? String(bio.bpm) : "—";
   setMod("hr", bpm, bio && bio.state === "high" ? 90 : bio && bio.bpm != null ? 0 : null, 80, 90);
+  const hr = document.getElementById("hr");
+  if (hr) {
+    const n = bio && bio.bpm != null ? Number(bio.bpm) : 0;
+    if (n > 0) {
+      hr.style.setProperty("--hr-beat", `${Math.max(0.4, Math.min(1.2, 60 / n)).toFixed(2)}s`);
+    } else {
+      hr.style.removeProperty("--hr-beat");
+    }
+  }
 }
 
 function setMod(id, label, metric, warn, crit) {

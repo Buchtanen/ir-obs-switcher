@@ -191,6 +191,21 @@ html.preview-layout .widget {
 .sys-mod.crit .value,
 .sys-mod.crit .sys-icon { color: var(--alert, #ff5a3d); }
 
+/* Heart beats only while SYSINFO has a live BPM. Period is --hr-beat (60/bpm). */
+#hr {
+  overflow: visible;
+}
+
+#hr:not(.empty-metric) .sys-icon {
+  transform-origin: center;
+  animation: hr-pulse var(--hr-beat, 0.85s) ease-in-out infinite;
+}
+
+@keyframes hr-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.88; }
+  50% { transform: scale(1.14); opacity: 1; }
+}
+
 .widget {
   position: relative;
   padding: 0;
