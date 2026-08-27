@@ -113,7 +113,7 @@ Rozměr karty cílit na cca 420×140 px @1080p (logický box). HUNTING a HUNTED 
 
 - `lap_background.png`
 - `lap_frame.png`
-- `lap_flag_icon.png` — checkered flag, bez písmen
+- `lap_flag_icon.png` — checkered flag, bez písmen (lap complete, ne finish)
 - `lap_stopwatch_icon.png` — PB, bez čísel
 
 ### Position / alert
@@ -126,8 +126,8 @@ Rozměr karty cílit na cca 420×140 px @1080p (logický box). HUNTING a HUNTED 
 ### Session
 
 - `session_background.png`
-- `final_lap_flag.png` — bez textu „FINAL LAP“
-- `finish_flag.png` — checkered, větší důraz než lap flag
+- `final_lap_flag.png` — **celá bílá vlajka** (plná látka, žádný checker), bez textu „FINAL LAP“. Není CSS maska — musí zůstat bílá.
+- `finish_flag.png` — checkered až po úplném konci (FINISH), větší důraz než lap flag
 - `finish_accent_sweep.webm` — 520×126, one-shot na FINISH ENTER
 
 ### Bio / BLE

@@ -1,6 +1,6 @@
 # Buchtanen iRacer - overlay assets
 
-1920 x 1080 target, transparent PNG layers at exact widget pixels. No production asset contains text or numbers. Icons, dividers, corners, radar rings, pulse traces and accent fragments are white alpha masks for CSS `mask-image` / `currentColor`. Background and frame PNGs are normal images, never masks.
+1920 x 1080 target, transparent PNG layers at exact widget pixels. No production asset contains text or numbers. Icons, dividers, corners, radar rings, pulse traces and accent fragments are white alpha masks for CSS `mask-image` / `currentColor`. Background and frame PNGs are normal images, never masks. Exception: `final_lap_flag.png` is a painted solid white flag (not a mask) so last-lap stays white; `finish_flag.png` is the checkered mask used only after the race ends.
 
 Do not load `previews/` in the overlay.
 
@@ -22,8 +22,8 @@ Do not load `previews/` in the overlay.
 | `chevron_up.png` | `64 x 64` |
 | `chevron_down.png` | `64 x 64` |
 | `session_background.png` | `520 x 126` |
-| `final_lap_flag.png` | `80 x 80` |
-| `finish_flag.png` | `96 x 80` |
+| `final_lap_flag.png` | `80 x 80` | solid white cloth; painted, not masked |
+| `finish_flag.png` | `96 x 80` | checkered mask; FINISH only |
 | `bio_compact_plate.png` | `240 x 64` |
 | `bio_expanded_plate.png` | `280 x 118` |
 | `heart_icon.png` | `56 x 56` |
@@ -55,5 +55,7 @@ Do not load `previews/` in the overlay.
 WebM does not replace the 320 ms / 280 ms widget enter/exit transitions. Missing file = CSS/PNG fallback.
 
 Layering: background -> frame -> accent -> icon -> micro detail -> glow -> HTML. SYSINFO grid is unchanged: `230px + 11×150px`.
+
+The pack ships one glow PNG (`battle_glow.png`). Overlay stretches it onto lap / PB / session / bio / alert / position plates and adds a CSS `drop-shadow` so those widgets still read a local halo. Compact BPM reuses the same glow slot.
 
 QA: 3 themes × 37 PNG + 3 WebM; names, alpha, geometry parity verified.

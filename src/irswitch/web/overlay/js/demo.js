@@ -188,6 +188,37 @@ export function stopDemo() {
   cue("");
 }
 
+function mockQaVitals() {
+  applySysinfo(
+    {
+      cpu: { load: 88, temperature: 88, power: 88, frequency: 5.12 },
+      gpu: { load: 88, temperature: 88, power: 88, clock: 88, vram_used: 88, vram_total: 88 },
+      memory: { used: 88, total: 88, percent: 88 },
+      performance: { fps: 88, frametime: 88 },
+    },
+    { connected: true, status: "connected", bpm: 147, baseline_bpm: 118, delta_bpm: 29, state: "high" },
+  );
+}
+
+export function startQaLayout(mode) {
+  stopDemo();
+  startedAt = performance.now();
+  mockQaVitals();
+  show(HUNTING);
+  show(HUNTED);
+  show(HR);
+  show(GAIN);
+  if (mode === "finish") {
+    show(PB);
+    show(FINISH);
+    cue("QA FINISH");
+    return;
+  }
+  show(LAP);
+  show(FINAL);
+  cue("QA LAP");
+}
+
 export function startPreviewLayout() {
   stopDemo();
   startedAt = performance.now();

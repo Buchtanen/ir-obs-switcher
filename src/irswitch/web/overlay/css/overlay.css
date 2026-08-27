@@ -243,6 +243,28 @@ html.preview-layout .widget {
   opacity: 0.9;
 }
 
+/* Pack ships battle_glow only; stretch it onto other plates and add a local halo. */
+.widget.has-art.lap .widget-art,
+.widget.has-art.session .widget-art,
+.widget.has-art.bio .widget-art,
+.widget.has-art.position .widget-art {
+  filter: drop-shadow(0 0 6px var(--primary, #3ad7ff))
+    drop-shadow(0 0 16px var(--glow, rgba(58, 215, 255, 0.4)));
+}
+
+.widget.has-art.pb .widget-art,
+.widget.has-art.personal_best .widget-art {
+  filter: drop-shadow(0 0 6px var(--warning, #ffbf4a))
+    drop-shadow(0 0 16px rgba(255, 191, 74, 0.35));
+}
+
+.widget.has-art.alert .widget-art,
+.widget.has-art.incident .widget-art,
+.widget.has-art.ble_lost .widget-art {
+  filter: drop-shadow(0 0 6px var(--alert, #ff5a3d))
+    drop-shadow(0 0 16px rgba(255, 90, 61, 0.35));
+}
+
 .widget-art video.fx {
   position: absolute;
   inset: 0;
@@ -402,12 +424,24 @@ html.preview-layout .widget {
   background: var(--panel-fill, rgba(8, 12, 16, 0.78));
 }
 
-#bio-compact .layer.plate {
+#bio-compact.has-art {
+  filter: drop-shadow(0 0 6px var(--primary, #3ad7ff))
+    drop-shadow(0 0 14px var(--glow, rgba(58, 215, 255, 0.4)));
+}
+
+#bio-compact .layer.plate,
+#bio-compact .layer.glow {
   position: absolute;
   inset: 0;
   background-repeat: no-repeat;
   background-size: 240px 64px;
   z-index: 0;
+  pointer-events: none;
+}
+
+#bio-compact .layer.glow {
+  mix-blend-mode: screen;
+  opacity: 0.9;
 }
 
 #bio-compact .icon,

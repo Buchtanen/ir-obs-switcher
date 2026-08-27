@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import struct
+import zlib
 from pathlib import Path
 
 from irswitch.overlay.display import ASSET_SLOTS, AssetManifest
@@ -103,3 +104,116 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert "#sysinfo-widget.fallback" in css
     assert "html.is-demo" in css
     assert "bottom: 91px" in css
+    assert "#bio-compact.has-art" in css
+    assert "drop-shadow" in css
+
+
+def _png_rgba(path: Path) -> tuple[int, int, bytes]:
+    data = path.read_bytes()
+    assert data[:8] == PNG_SIGNATURE
+    pos = 8
+    width = height = bit_depth = color_type = interlace = None
+    idat = bytearray()
+    while pos < len(data):
+        length = struct.unpack(">I", data[pos : pos + 4])[0]
+        ctype = data[pos + 4 : pos + 8]
+        chunk = data[pos + 8 : pos + 8 + length]
+        pos += 12 + length
+        if ctype == b"IHDR":
+            width, height, bit_depth, color_type, _comp, _filt, interlace = struct.unpack(
+                ">IIBBBBB", chunk
+            )
+        elif ctype == b"IDAT":
+            idat.extend(chunk)
+        elif ctype == b"IEND":
+            break
+    assert width and height and bit_depth == 8 and color_type == 6 and interlace == 0
+    raw = zlib.decompress(bytes(idat))
+    bpp = 4
+    stride = width * bpp
+    prev = bytearray(stride)
+    pixels = bytearray()
+    i = 0
+
+    def paeth(a: int, b: int, c: int) -> int:
+        p = a + b - c
+        pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+        if pa <= pb and pa <= pc:
+            return a
+        if pb <= pc:
+            return b
+        return c
+
+    for _ in range(height):
+        ftype = raw[i]
+        i += 1
+        filt = raw[i : i + stride]
+        i += stride
+        recon = bytearray(stride)
+        for x, up in enumerate(filt):
+            left = recon[x - bpp] if x >= bpp else 0
+            up_px = prev[x]
+            ul = prev[x - bpp] if x >= bpp else 0
+            if ftype == 0:
+                recon[x] = up
+            elif ftype == 1:
+                recon[x] = (up + left) & 255
+            elif ftype == 2:
+                recon[x] = (up + up_px) & 255
+            elif ftype == 3:
+                recon[x] = (up + ((left + up_px) // 2)) & 255
+            elif ftype == 4:
+                recon[x] = (up + paeth(left, up_px, ul)) & 255
+            else:
+                raise AssertionError(ftype)
+        pixels.extend(recon)
+        prev = recon
+    return width, height, bytes(pixels)
+
+
+def _cloth_fill_ratio(path: Path) -> float:
+    width, height, pixels = _png_rgba(path)
+    opaque = 0
+    span = 0
+    for y in range(height):
+        row = pixels[y * width * 4 : (y + 1) * width * 4]
+        xs = [x for x in range(width) if row[x * 4 + 3] > 40]
+        if len(xs) < 8:
+            continue
+        left, right = min(xs) + 2, max(xs)
+        if right <= left:
+            continue
+        for x in range(left, right):
+            span += 1
+            if row[x * 4 + 3] > 200:
+                opaque += 1
+    assert span > 0, path
+    return opaque / span
+
+
+def test_final_lap_flag_is_solid_white_not_checkered() -> None:
+    for theme in THEMES:
+        assets = web_root() / "themes" / theme / "assets"
+        final = _cloth_fill_ratio(assets / "final_lap_flag.png")
+        finish = _cloth_fill_ratio(assets / "finish_flag.png")
+        assert final >= 0.92, (theme, final)
+        assert finish <= 0.72, (theme, finish)
+        assert final - finish >= 0.2, (theme, final, finish)
+
+
+def test_overlay_js_reuses_glow_and_paints_final_lap_white() -> None:
+    js = (web_root() / "overlay" / "js" / "display.js").read_text(encoding="utf-8")
+    html = (web_root() / "overlay" / "index.html").read_text(encoding="utf-8")
+    art = js.split("function artSlots(event)", 1)[1].split("export function applyPersistentArt", 1)[
+        0
+    ]
+    final = art.split('if (name === "final_lap")', 1)[1].split("if (name ===", 1)[0]
+    finish = art.split('if (name === "finish")', 1)[1].split("if (name ===", 1)[0]
+    assert "final_lap_flag" in final and "iconMask: false" in final
+    assert 'glow: "battle_glow"' in final
+    assert "finish_flag" in finish and "iconMask: true" in finish
+    for name in ("lap_complete", "personal_best", "heart_rate"):
+        block = art.split(f'if (name === "{name}")', 1)[1].split("if (name ===", 1)[0]
+        assert 'glow: "battle_glow"' in block, name
+    assert 'data-slot="battle_glow"' in html
+    assert 'explicit ? Boolean(slots[maskKey]) : name === "icon"' in js

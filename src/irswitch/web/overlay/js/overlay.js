@@ -123,6 +123,10 @@ async function bootstrap() {
     const mod = await import("./demo.js");
     if (layout === "preview") {
       mod.startPreviewLayout();
+    } else if (layout === "qa") {
+      mod.startQaLayout("lap");
+    } else if (layout === "qa-finish") {
+      mod.startQaLayout("finish");
     } else {
       mod.startDemo();
     }

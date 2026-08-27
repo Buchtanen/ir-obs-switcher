@@ -179,27 +179,51 @@ function artSlots(event) {
     };
   }
   if (name === "lap_complete") {
-    return { bg: "lap_background", frame: "lap_frame", icon: "lap_flag_icon", iconMask: true };
+    return {
+      bg: "lap_background",
+      frame: "lap_frame",
+      glow: "battle_glow",
+      icon: "lap_flag_icon",
+      iconMask: true,
+    };
   }
   if (name === "personal_best") {
-    return { bg: "lap_background", frame: "lap_frame", icon: "lap_stopwatch_icon", iconMask: true };
+    return {
+      bg: "lap_background",
+      frame: "lap_frame",
+      glow: "battle_glow",
+      icon: "lap_stopwatch_icon",
+      iconMask: true,
+    };
   }
   if (name === "position_change") {
     return {
       bg: "position_banner",
+      glow: "battle_glow",
       icon: data.direction === "gain" ? "chevron_up" : "chevron_down",
       iconMask: true,
     };
   }
   if (name === "final_lap") {
-    return { bg: "session_background", icon: "final_lap_flag", iconMask: true };
+    return {
+      bg: "session_background",
+      glow: "battle_glow",
+      icon: "final_lap_flag",
+      iconMask: false,
+    };
   }
   if (name === "finish") {
-    return { bg: "session_background", icon: "finish_flag", iconMask: true };
+    return {
+      bg: "session_background",
+      glow: "battle_glow",
+      icon: "finish_flag",
+      iconMask: true,
+    };
   }
   if (name === "heart_rate") {
     return {
       bg: "bio_expanded_plate",
+      glow: "battle_glow",
       accent: "bio_accent",
       deco: "bio_pulse_trace",
       icon: "heart_icon",
@@ -209,9 +233,14 @@ function artSlots(event) {
     };
   }
   if (name === "ble_lost") {
-    return { bg: "bio_expanded_plate", icon: "ble_icon", iconMask: true };
+    return {
+      bg: "bio_expanded_plate",
+      glow: "battle_glow",
+      icon: "ble_icon",
+      iconMask: true,
+    };
   }
-  return { bg: "alert_banner" };
+  return { bg: "alert_banner", glow: "battle_glow" };
 }
 
 export function applyPersistentArt() {
@@ -318,7 +347,9 @@ export const DisplayManager = {
     node.classList.add(sizeClass(event));
     ART_LAYERS.forEach((name) => {
       const el = node.querySelector(`[data-layer="${name}"]`);
-      const asMask = Boolean(slots[`${name}Mask`]) || name === "icon";
+      const maskKey = `${name}Mask`;
+      const explicit = Object.prototype.hasOwnProperty.call(slots, maskKey);
+      const asMask = explicit ? Boolean(slots[maskKey]) : name === "icon";
       if (name === "corners" || name === "accent" || name === "frame") {
         el.classList.add("cover");
       }
