@@ -36,7 +36,8 @@ Součástí tohoto review je i doporučený kontrakt pro:
 - řízení pozic widgetů na FullHD canvasu (zónování, anchor/offset, stack capy),
 - řízení vstupních/výstupních animací widgetů (fade/swipe/swipe+fade…),
 
-viz `docs/overlay_v4_layout_sizing_motion_spec.md`.
+viz `docs/overlay_v4_layout_sizing_motion_spec.md` (revize po obou Opus reviewích).
+CDP review: `docs/overlay_v4_layout_sizing_motion_spec_review.md`.
 
 ---
 

@@ -6,6 +6,10 @@ transitions, motion WebM, hard gates) a jeho návaznosti na `V4_RENDERER_SIZING_
 **Rozsah:** *sada velikostí a rodin se neřeší* (grafik). Řeší se rozpory v kontraktu,
 implementovatelnost v dnešním kódu a to, které gates jsou v tomhle repu reálně levné a spolehlivé.
 
+**Follow-up:** nálezy z tohoto review + druhého Opus passu jsou zapracované do
+`docs/overlay_v4_layout_sizing_motion_spec.md` (routing `family.zone`, icon_mode precedence,
+golden-cell CSS vars, `contain` not `cover`, Python-first gates, `event.max` kopíruje dnešních 6 karet).
+
 **Stav kódu při review:** commit `686470c`; `src/irswitch/web/overlay/js/display-v4.js`,
 `js/overlay.js`, `css/display-v4.css`, `css/overlay.css`, `src/irswitch/overlay/display_v4.py`,
 `src/irswitch/web/themes-v4/manifest.json`.
