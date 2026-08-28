@@ -31,6 +31,13 @@ je **neprůchodná** ze čtyř důvodů, které plán nepokrývá:
 Doporučení: rozdělit na **fázi „mechanismus bez vizuální změny“** (hard gate: pixel-identický
 render) a **fázi „oprava geometrie“** (vyžaduje re-approval grafika). Dnešní specka to míchá.
 
+Součástí tohoto review je i doporučený kontrakt pro:
+
+- řízení pozic widgetů na FullHD canvasu (zónování, anchor/offset, stack capy),
+- řízení vstupních/výstupních animací widgetů (fade/swipe/swipe+fade…),
+
+viz `docs/overlay_v4_layout_sizing_motion_spec.md`.
+
 ---
 
 ## 1. Faktické korekce vůči specce
