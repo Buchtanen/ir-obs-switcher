@@ -12,11 +12,10 @@ from irswitch.events.incident import IncidentEmitter
 from irswitch.events.invalid_lap import InvalidLapEmitter
 from irswitch.events.lap import LapEmitter
 from irswitch.events.link_drop import LinkDropEmitter
-from irswitch.events.rival_threat import RivalThreatEmitter
-from irswitch.events.target_locked import TargetLockedEmitter
 from irswitch.events.overtake import OvertakeClassifierEmitter
 from irswitch.events.pit import PitEmitter
 from irswitch.events.position import PositionEmitter
+from irswitch.events.rival_threat import RivalThreatEmitter
 from irswitch.events.session import SessionEmitter
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.overlay.protocol import CandidateEvent

@@ -6,7 +6,6 @@ import json
 import re
 
 from irswitch.overlay.http import web_root
-
 from tests.test_golden_v4_fixtures import (
     GOLDEN_FIXTURES,
     _display_v4_js,

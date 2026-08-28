@@ -7,7 +7,7 @@ from dataclasses import replace
 from irswitch.events.invalid_lap import InvalidLapEmitter
 from irswitch.events.rival_threat import RivalThreatEmitter
 from irswitch.events.target_locked import TargetLockedEmitter
-from irswitch.overlay.models import OpponentInfo, RaceState
+from irswitch.overlay.models import OpponentInfo
 from irswitch.overlay.replay import _race_from_dict
 
 
