@@ -1,9 +1,21 @@
 # Event Engine + Overlay V4 — remainder plan (post S3a/b/c)
 
 **Branch base:** `master`  
-**Status:** planning (2026-08-28)  
+**Status:** planning (2026-08-28, updated)  
 **Inputs:** `EVENT_ENGINE_V4_PARALLEL_PLAN.md` §7 Definition of done, merged T1–T5 + S3a/b/c  
 **Constraint:** **S3d is last** — no legacy removal until all prior gates are green.
+
+### 0.1 Product decisions (2026-08-28)
+
+| Decision | Verdict |
+| --- | --- |
+| **#111** demo JS hotfix | **Merged** |
+| **R0** golden glow clip | **Approved** — PR #113 |
+| **SYSINFO** | **Full V4 renderer required** for v1 (1920×72, no V3 waiver) |
+| **Bio emitters** `composure_test`, `high_load` | **Deferred beyond v1** — no emitter, no catalog entry, no replay scenario in v1 |
+| **Bio v1 scope** | `hr_pressure` + `ble_reconnecting` only (shipped) |
+
+**Bio deferral rationale:** `HrPressureEmitter` already covers live `pushing`/`high` via `hr_pressure`. `composure_test` (post-battle elevated BPM) and `high_load` (extreme relative surge) need new correlation logic (battle EXIT + hysteresis, absolute threshold). Assets + manifest samples stay for future; not wired in v1.
 
 ---
 
@@ -18,7 +30,8 @@
 | S3a | Input-replay harness + scenarios 1–10 (#109) |
 | S3b | Golden gallery, 21 fixtures, `/overlay/golden` (#108) |
 | S3c | i18n CS + pit/bio renderer polish (#107) |
-| **Open** | **#111** — demo JS hotfix (`resolvedStates`, duplicate exports) — **merge before any visual work** |
+| **Done** | **#111** demo JS hotfix merged |
+| **Open** | **#113** R0 golden glow clip |
 
 **Coverage today**
 
@@ -32,29 +45,20 @@
 
 ---
 
-## 1. Known visual bug (P0 — before expanding golden)
+## 1. Known visual bug (P0 — R0)
 
 **Symptom:** Initial enter glow bleeds outside 420×140 cells on **all** golden gallery fixtures (user report 2026-08-28).
 
-**Likely causes (investigate in order):**
+**Fix:** PR **#113** (`cursor/fix-golden-glow-clip-65db`) — approved.
 
-1. Static `glow_cyan|amber|red.png` layers in manifest stack extend beyond canvas bounds; `overflow: hidden` on `.v4-art` may not contain soft alpha when adjacent cells are close in the grid.
-2. Residual enter animation: `.v4-widget` default `transform: translateX(16px)` + `.visible` toggle even when `html.golden-layout` zeroes transition (timing / rAF race on first paint).
-3. Motion WebMs (`enter_reveal`, `theme_glitch`) — should be skipped when `motion=off` or `golden-layout`; verify `prefersReducedMotion()` / `syncWidgetMotion()` early return in gallery.
+| Step | Status |
+| --- | --- |
+| R0.1 Reproduce | done |
+| R0.2 CSS `isolation` + `contain: paint` on `.golden-stage` | done |
+| R0.3 JS skip `syncWidgetMotion` + `glow_*` layers in golden snapshot | done |
+| R0.5 Regression test | done |
 
-**Fix track (single PR, no emitter changes):**
-
-| Step | Owner | Deliverable |
-| --- | --- | --- |
-| R0.1 | T5 | Reproduce on `/overlay/golden?…&motion=off`; screenshot before/after |
-| R0.2 | T5 | CSS: `isolation: isolate; contain: paint` on `.golden-stage` + `.v4-art`; ensure `.v4-widget` in gallery has no transform on create |
-| R0.3 | T5 | JS: golden gallery path skips `syncWidgetMotion` entirely (not only `prefersReducedMotion`) |
-| R0.4 | T5 | Optional: golden mode hides glow image layers, shows plate-only snapshot (configurable) |
-| R0.5 | T5 | Regression test: golden gallery cells have bounded box (DOM/CSS assertion or Playwright bbox) |
-
-**Merge gate:** Gallery visually clean at default zoom; `motion=off` deterministic; no change to live overlay enter motion unless explicitly desired.
-
-**Branch:** `cursor/fix-golden-glow-clip-65db` (after #111 merged)
+**Merge gate:** Gallery visually clean at default zoom; `motion=off` deterministic; live overlay enter motion unchanged.
 
 ---
 
@@ -83,9 +87,11 @@ Phases R4–R6 may run **partially in parallel** after R0; only **S3d** requires
 
 ---
 
-## 3. R4 — Missing manifest states (14) + catalog wiring (11)
+## 3. R4 — Missing manifest states (12 v1) + catalog wiring (9)
 
-### 3.1 Golden fixtures missing (14 states)
+**Note:** `composure_test` and `high_load` are **out of v1 scope** (§0.1). Manifest retains 35 states; v1 targets **33** wired states (21 today + 12 new).
+
+### 3.1 Golden fixtures missing (12 states for v1)
 
 Add to `V4_GOLDEN_CATALOG`, `GOLDEN_V4.md`, and `tests/test_golden_v4_fixtures.py`:
 
@@ -103,16 +109,23 @@ Add to `V4_GOLDEN_CATALOG`, `GOLDEN_V4.md`, and `tests/test_golden_v4_fixtures.p
 | `rival_threat` | position | `RIVAL_THREAT` | Needs emitter |
 | `invalid_lap` | exception | `INVALID_LAP` | Lap validity policy |
 | `link_drop` | exception | `LINK_DROP` | Telemetry stale / disconnect |
-| `composure_test` | bio | `COMPOSURE_TEST` | T4 defer — v1 nicety |
-| `high_load` | bio | `HIGH_LOAD` | T4 defer — v1 nicety |
 
-**Merge gate:** `test_golden_fixture_registry_covers_catalog_states` extended; gallery shows 35 cells (or 33 if bio niceties deferred with written waiver).
+**Deferred (not in v1 golden/catalog):**
 
-### 3.2 Catalog entries missing (11 states — no direct or fallback)
+| State | Family | Reason |
+| --- | --- | --- |
+| `composure_test` | bio | Emitter deferred — §0.1 |
+| `high_load` | bio | Emitter deferred — §0.1 |
+
+**Merge gate:** Golden gallery covers all **catalog** states; v1 catalog target **33** states (excludes deferred bio pair).
+
+### 3.2 Catalog entries missing (9 states — no direct or fallback in v1)
 
 Add to `event_catalog.json` + adapters + debug inject keys:
 
-`target`, `hot_lap`, `invalid_lap`, `clean_streak`, `battle_won`, `battle_for_position`, `rival_threat`, `position_attack`, `high_load`, `composure_test`, `link_drop`
+`target`, `hot_lap`, `invalid_lap`, `clean_streak`, `battle_won`, `battle_for_position`, `rival_threat`, `position_attack`, `link_drop`
+
+**Not in v1:** `composure_test`, `high_load` (§0.1 — deferred)
 
 Plus promote from fallback-only to direct entries where emitters exist:
 
@@ -130,7 +143,8 @@ Plus promote from fallback-only to direct entries where emitters exist:
 | `RIVAL_THREAT` | T3 | Opponent projected pace |
 | `BATTLE_FOR_POSITION`, `BATTLE_WON` | T3 | Battle correlation / story end |
 | `LINK_DROP` | T1 | `data_quality` / stale telemetry gate |
-| `COMPOSURE_TEST`, `HIGH_LOAD` | T4 | HR baseline (may **defer** with §7 waiver) |
+
+**Deferred beyond v1 (no PR in R4):** `COMPOSURE_TEST`, `HIGH_LOAD` — bio correlation emitters (§0.1)
 
 **Branch:** `cursor/ee-timing-pq-v4-65db` (T2), `cursor/ee-race-states-65db` (T3), small T1 PR for link_drop
 
@@ -154,18 +168,18 @@ Plus promote from fallback-only to direct entries where emitters exist:
 
 ---
 
-## 5. R3 — Sysinfo V4 renderer
+## 5. R3 — Sysinfo V4 renderer (required)
+
+**Product decision:** Full V4 sysinfo for v1 — **no V3 waiver** (§0.1).
 
 **Today:** `#sysinfo-widget` still V3 (`display.js`, flat slots). Hidden in golden layout. Manifest defines `sysinfo_canvas: [1920, 72]` but no V4 sysinfo layers in production tree.
 
 **Scope (v1):**
 
-- Asset import: sysinfo module segments per theme (or reuse V3 slots behind flag until assets land)
+- Asset import: sysinfo module segments per theme (3 themes)
 - `display-v4-sysinfo.js` or extend `display-v4.js` with persistent 1920×72 layer
 - Geometry unchanged vs approved layout (§7 DoD)
 - Golden URL optional: `/overlay?…&layout=golden&fixture=sysinfo`
-
-**Can defer** if product accepts V3 sysinfo + V4 transients for v1 — document waiver in §7 checklist.
 
 **Branch:** `cursor/overlay-v4-sysinfo-65db`
 
@@ -207,8 +221,8 @@ Per original plan §2 gate **S3** and §7:
 
 **Preconditions (all required):**
 
-1. #111 merged; golden glow fixed (R0)
-2. R4 catalog + golden ≥ 33 states (or waivers documented)
+1. #111 merged; golden glow fixed — **#113** merge pending
+2. R4 catalog + golden **33** v1 states (bio pair excluded per §0.1)
 3. R2 P/Q path green behind flags
 4. Replay scenarios 1–12+ green
 5. R6 release prep merged; product explicit accept for legacy removal
@@ -238,12 +252,12 @@ Per original plan §2 gate **S3** and §7:
 | Practice / Quali / Race behind flags | **partial** — emitters exist; V4 adapter path incomplete |
 | i18n EN + CS | pass (#107) |
 | Overtake ≠ silent position; pit suppression | pass (#105, #104, S2 tests) |
-| V4 layered render; motion vibe | **partial** — golden glow overflow open |
-| SYSINFO geometry | **open** — still V3 |
+| V4 layered render; motion vibe | **partial** — #113 R0 pending merge |
+| SYSINFO geometry | **open** — full V4 required (§0.1) |
 | Replay scenarios 1–10 | pass (#109) |
 | DecisionLog suppressions | pass (manager v2 tests) |
 | Reduced-motion | **partial** — needs golden verification |
-| Golden URL deterministic `motion=off` | **partial** — glow bug |
+| Golden URL deterministic `motion=off` | **partial** — #113 pending |
 | Asset size CI | pass |
 | Per-emitter fail-soft + reset | pass |
 | Legacy removal scheduled | **this plan — S3d last** |
@@ -258,7 +272,7 @@ Per original plan §2 gate **S3** and §7:
 3. **R4.2** — catalog entries for existing emitters (low risk)  
 4. **R2** — P/Q V4 adapters + replay 11–12  
 5. **R4.1 + R4.3** — remaining golden fixtures + new emitters (split T2/T3 PRs)  
-6. **R3** — sysinfo V4 (or explicit waiver)  
+6. **R3** — sysinfo V4 (**required**, §0.1)  
 7. **R5** — replay/golden extension  
 8. **R6** — release prep  
 9. **S3d** — legacy removal (**last**)
@@ -286,12 +300,13 @@ Per original plan §2 gate **S3** and §7:
 - Hand-authored track corner labels
 - Full SUSPEND/RESUME polish
 - Preview packs in `web/` tree
+- **Bio emitters `composure_test`, `high_load`** — deferred beyond v1 (§0.1); assets remain in manifest for future wiring
 
 ---
 
 ## 13. Immediate next actions
 
-1. Merge **#111**.  
-2. Product review: confirm bio state deferral (`composure_test`, `high_load`) vs full 35-state golden.  
-3. Approve **R0** glow fix approach (CSS-only vs hide glow layers in gallery).  
-4. Start **R4.2** catalog promotion + **R2** P/Q adapters in parallel once R0 is up.
+1. Merge **#113** (R0).  
+2. Start **R4.2** catalog promotion + **R2** P/Q adapters in parallel.  
+3. **R3** sysinfo V4 (required).  
+4. Bio `composure_test` / `high_load` emitters: **post-v1** (§0.1).
