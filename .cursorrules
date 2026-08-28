@@ -7,6 +7,7 @@ Authoritative rules live in:
 - `.cursor/rules/*.mdc`
 
 ## Core expectations (summary)
+- **PRs to `master`:** always add exactly one `semver:*` label immediately after create — see `.cursor/skills/pr-semver-label/SKILL.md`.
 - Stability > elegance; determinism > cleverness.
 - External systems (iRacing/OBS/network) are unreliable: **never crash the main loop**.
 - Respect layer boundaries: `iracing/` extraction only, `obs/` thin client, `logic/` decisions+state machine, `server/` glue only.
