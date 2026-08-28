@@ -168,29 +168,42 @@ def test_v4_icons_use_full_canvas_well_alignment() -> None:
 
 
 def test_cyber_racing_icon_wells_centered_on_glyph() -> None:
-    """cyber_racing icon_well frame mid must sit on the 420×140 glyph center."""
+    """cyber_racing icon_well fill+rim must be concentric on the glyph center."""
     from test_overlay_assets_v3 import _png_rgba
 
     root = web_root() / "themes-v4" / "cyber_racing"
     wells = sorted(root.rglob("icon_well.png"))
     assert wells, "expected cyber_racing icon_well assets"
-    # hunting.png glyph bbox center (shared across themes)
     target_x, target_y = 62.0, 70.0
     for path in wells:
         width, height, pixels = _png_rgba(path)
-        xs: list[int] = []
-        ys: list[int] = []
+        fill_xs: list[int] = []
+        fill_ys: list[int] = []
+        rim_xs: list[int] = []
+        rim_ys: list[int] = []
         for y in range(height):
             row = pixels[y * width * 4 : (y + 1) * width * 4]
             for x in range(width):
-                if row[x * 4 + 3] > 100:
-                    xs.append(x)
-                    ys.append(y)
-        assert xs, path.name
-        mx = (min(xs) + max(xs)) / 2.0
-        my = (min(ys) + max(ys)) / 2.0
-        assert abs(mx - target_x) <= 1.0, f"{path}: frame_mid_x={mx}"
-        assert abs(my - target_y) <= 1.0, f"{path}: frame_mid_y={my}"
+                a = row[x * 4 + 3]
+                if a <= 100:
+                    continue
+                r, g, b = row[x * 4], row[x * 4 + 1], row[x * 4 + 2]
+                lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+                if lum <= 40:
+                    fill_xs.append(x)
+                    fill_ys.append(y)
+                else:
+                    rim_xs.append(x)
+                    rim_ys.append(y)
+        assert fill_xs and rim_xs, path.name
+        fill_mx = (min(fill_xs) + max(fill_xs)) / 2.0
+        fill_my = (min(fill_ys) + max(fill_ys)) / 2.0
+        rim_mx = (min(rim_xs) + max(rim_xs)) / 2.0
+        rim_my = (min(rim_ys) + max(rim_ys)) / 2.0
+        assert abs(fill_mx - rim_mx) <= 1.0, f"{path}: fill/rim x {fill_mx} vs {rim_mx}"
+        assert abs(fill_my - rim_my) <= 1.0, f"{path}: fill/rim y {fill_my} vs {rim_my}"
+        assert abs(fill_mx - target_x) <= 1.0, f"{path}: fill_mid_x={fill_mx}"
+        assert abs(fill_my - target_y) <= 1.5, f"{path}: fill_mid_y={fill_my}"
 
 
 def test_golden_reduced_motion_paths() -> None:

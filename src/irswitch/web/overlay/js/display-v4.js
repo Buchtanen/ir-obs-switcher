@@ -1,6 +1,8 @@
 /** V4 overlay renderer (S1: timing + battle + position families). */
 
 const ASSET_BASE = "/overlay/web/";
+/** Bust browser cache for theme PNGs when wells/icons change. */
+const ASSET_CACHE = "1.2.5";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -186,10 +188,14 @@ function syncWidgetMotion(node, envelope, familyName, created) {
 
 function manifestDiskPath(rel) {
   const themed = rel.replace(/^themes\/[^/]+/, `themes-v4/${theme}`);
+  let path;
   if (themed.startsWith("themes/")) {
-    return ASSET_BASE + themed.replace(/^themes\//, "themes-v4/");
+    path = ASSET_BASE + themed.replace(/^themes\//, "themes-v4/");
+  } else {
+    path = ASSET_BASE + themed;
   }
-  return ASSET_BASE + themed;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}v=${ASSET_CACHE}`;
 }
 
 function familyForState(stateKey) {
