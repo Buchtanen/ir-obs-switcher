@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 from irswitch.events.adapters.battle import battle_race_event_to_envelope
 from irswitch.events.adapters.lap import lap_race_event_to_envelope
+from irswitch.events.adapters.position import position_race_event_to_envelope
 from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.protocol import RaceEvent
 
@@ -14,6 +15,7 @@ AdapterFn = Callable[..., EventEnvelope | None]
 _ADAPTERS: tuple[AdapterFn, ...] = (
     lap_race_event_to_envelope,
     battle_race_event_to_envelope,
+    position_race_event_to_envelope,
 )
 
 
