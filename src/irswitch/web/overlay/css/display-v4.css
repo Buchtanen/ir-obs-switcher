@@ -1,0 +1,127 @@
+/* V4 transient widget (420×140). Scoped under .v4-widget. */
+
+#v4-event-layer {
+  position: absolute;
+  right: 48px;
+  bottom: 91px;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.v4-widget {
+  position: relative;
+  width: 420px;
+  height: 140px;
+  opacity: 0;
+  transform: translateX(16px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  color: var(--primary, #3ad7ff);
+  box-sizing: border-box;
+}
+
+.v4-widget.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.v4-widget.exit {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.v4-widget.tone-warning {
+  color: var(--warning, #ffbf4a);
+}
+
+.v4-widget.tone-alert {
+  color: var(--alert, #ff5a3d);
+}
+
+.v4-art {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.v4-art .layer {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: 420px 140px;
+  background-position: 0 0;
+}
+
+.v4-art .layer.mask {
+  background-color: currentColor;
+  background-image: none;
+}
+
+.v4-art .icon {
+  position: absolute;
+  left: 28px;
+  top: 38px;
+  width: 64px;
+  height: 64px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
+
+.v4-copy {
+  position: absolute;
+  left: 119px;
+  right: 16px;
+  top: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  align-content: center;
+  gap: 2px;
+  line-height: 1.05;
+  pointer-events: none;
+}
+
+.v4-copy .title {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.v4-copy .subtitle {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted, #7aa0aa);
+}
+
+.v4-copy .value {
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.v4-copy .meta {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted, #7aa0aa);
+}
+
+.v4-widget.fallback {
+  padding: 14px 16px 14px 18px;
+  background: var(--panel-fill, rgba(8, 12, 16, 0.78));
+  border: 1px solid var(--border, #3ad7ff);
+}
+
+html.preview-layout .v4-widget,
+html.golden-layout .v4-widget {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v4-widget {
+    transition: none;
+  }
+}
