@@ -10,8 +10,6 @@ from irswitch.events.quali import QualiEmitter
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.settings import (
     EventEngineFeatureSettings,
-    EventPrioritySettings,
-    EventSettings,
     OverlaySettings,
 )
 from irswitch.race.timing import SegmentReferenceTracker, TimingStore
