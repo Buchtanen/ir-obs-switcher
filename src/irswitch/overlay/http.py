@@ -15,6 +15,8 @@ from irswitch.events.manager import DEBUG_EVENT_NAMES
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.config_io import apply_overlay_values
 from irswitch.overlay.display import AssetManifest
+from irswitch.overlay.display_v4 import V4AssetResolver
+from irswitch.overlay.i18n import copy_catalog_for_renderer, normalize_language
 from irswitch.overlay.schema import overlay_values, schema_as_dicts
 
 logger = logging.getLogger(__name__)
@@ -99,14 +101,33 @@ def presentation_payload() -> dict[str, Any]:
     dumped = AssetManifest(theme, web_root()).to_dict()
     payload: dict[str, Any] = {"theme": dumped["theme"], "assets": dumped["assets"]}
     if v4_assets or v4_renderer:
+        resolver = V4AssetResolver.load(theme, web_root())
         payload["v4"] = {
             "assets": v4_assets,
             "renderer": v4_renderer,
             "manifestUrl": "/overlay/web/themes-v4/manifest.json",
             "catalogUrl": "/overlay/web/themes-v4/event_catalog.json",
             "language": language,
+            "copyCatalog": copy_catalog_for_renderer(language),
+            "resolved": resolver.to_dict(),
         }
     return payload
+
+
+async def handle_overlay_i18n(request: web.Request) -> web.Response:
+    """Return overlay copy catalog for the configured language (+ EN fallback)."""
+    language = "en"
+    try:
+        from irswitch.server.api import get_app_config
+
+        cfg = get_app_config()
+        if cfg is not None:
+            language = normalize_language(cfg.overlay.language)
+    except Exception:
+        logger.debug("Overlay language lookup failed", exc_info=True)
+    return web.json_response(
+        {"language": language, "copyCatalog": copy_catalog_for_renderer(language)}
+    )
 
 
 async def handle_overlay_page(request: web.Request) -> web.StreamResponse:
@@ -284,6 +305,7 @@ def register_overlay_routes(app: web.Application) -> None:
     app.router.add_get("/config", handle_config_page)
     app.router.add_get("/ws/overlay", handle_overlay_ws)
     app.router.add_get("/api/overlay/snapshot", handle_overlay_snapshot)
+    app.router.add_get("/api/overlay/i18n", handle_overlay_i18n)
     app.router.add_get("/api/overlay/debug/events", handle_debug_catalog)
     app.router.add_post("/overlay/debug/emit", handle_debug_emit)
     app.router.add_get("/api/config", handle_get_config)

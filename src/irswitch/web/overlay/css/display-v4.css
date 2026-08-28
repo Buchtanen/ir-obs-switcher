@@ -81,6 +81,15 @@
   background-position: center;
 }
 
+.v4-art video.fx {
+  position: absolute;
+  inset: 0;
+  width: 420px;
+  height: 140px;
+  object-fit: fill;
+  pointer-events: none;
+}
+
 .v4-copy {
   position: absolute;
   left: 119px;

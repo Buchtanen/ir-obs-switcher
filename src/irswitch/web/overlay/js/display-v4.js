@@ -4,17 +4,20 @@ const ASSET_BASE = "/overlay/web/";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
-const COPY_EN = {
-  "lap.complete": "LAP COMPLETE",
-  "lap.personal_best": "PERSONAL BEST",
-  "battle.hunting": "HUNTING",
-  "battle.hunted": "UNDER ATTACK",
-  "battle.closing_in": "CLOSING IN",
-  "battle.approach": "APPROACH",
-  "battle.attack_range": "ATTACK RANGE",
-  "position.gained": "POSITION GAINED",
-  "position.lost": "POSITION LOST",
-  "position.overtake": "OVERTAKE",
+const ENTER_MOTIONS = ["enter_reveal", "theme_glitch"];
+const REDUCED_MOTION_SKIP = new Set([
+  "theme_glitch",
+  "result_burst",
+  "exception_link_drop",
+  "session_finish_burst",
+]);
+const FAMILY_RESULT_MOTION = {
+  timing: "timing_projection_sweep",
+  position: "position_chevron_hit",
+  pit: "pit_stop_ring",
+  bio: "bio_pulse",
+  session: "session_finish_burst",
+  exception: "exception_link_drop",
 };
 
 const TRANSIENT_FAMILIES = new Set([
@@ -31,6 +34,9 @@ let manifest = null;
 let catalog = null;
 let theme = "cyber_racing";
 let language = "en";
+let copyCatalog = {};
+let resolvedMotions = {};
+let motionDisabled = false;
 let lastSequence = new Map();
 
 function text(el, value) {
@@ -76,7 +82,100 @@ function fmtPositionRange(oldPos, newPos) {
 
 function resolveCopy(token) {
   if (!token) return "";
-  return COPY_EN[token] || token;
+  return copyCatalog[token] || token;
+}
+
+function prefersReducedMotion() {
+  return (
+    motionDisabled ||
+    (typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)
+  );
+}
+
+function motionUrl(name) {
+  const rel = resolvedMotions[name];
+  if (rel) return ASSET_BASE + rel;
+  return manifestDiskPath(`themes/${theme}/motion/${name}.webm`);
+}
+
+function ensureFxVideo(art, className, url, loop) {
+  if (!url) {
+    const existing = art.querySelector(`video.${className}`);
+    if (existing) {
+      existing.pause();
+      existing.remove();
+    }
+    return null;
+  }
+  let video = art.querySelector(`video.${className}`);
+  if (!video) {
+    video = document.createElement("video");
+    video.className = `layer fx ${className}`;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    art.appendChild(video);
+  }
+  if (video.dataset.src !== url) {
+    video.dataset.src = url;
+    video.src = url;
+  }
+  video.loop = Boolean(loop);
+  return video;
+}
+
+function playOnceFromStart(video) {
+  if (!video) return;
+  video.currentTime = 0;
+  const playPromise = video.play();
+  if (playPromise?.catch) playPromise.catch(() => {});
+}
+
+function syncWidgetMotion(node, envelope, familyName, created) {
+  if (prefersReducedMotion()) return;
+  const art = node.querySelector(".v4-art");
+  if (!art) return;
+  const preview =
+    document.documentElement.classList.contains("preview-layout") ||
+    document.documentElement.classList.contains("golden-layout");
+  if (preview) return;
+
+  const phase = String(envelope.phase || "RESULT").toUpperCase();
+  const isEnter = created || phase === "ENTER";
+
+  if (isEnter) {
+    for (const name of ENTER_MOTIONS) {
+      if (REDUCED_MOTION_SKIP.has(name) && prefersReducedMotion()) continue;
+      playOnceFromStart(ensureFxVideo(art, `motion-${name}`, motionUrl(name), false));
+    }
+  }
+
+  if (phase === "ACTIVE" && familyName === "battle") {
+    playOnceFromStart(
+      ensureFxVideo(art, "motion-battle_signal_lock", motionUrl("battle_signal_lock"), false),
+    );
+  }
+
+  if (phase === "RESULT") {
+    if (!REDUCED_MOTION_SKIP.has("result_burst") || !prefersReducedMotion()) {
+      playOnceFromStart(
+        ensureFxVideo(art, "motion-result_burst", motionUrl("result_burst"), false),
+      );
+    }
+    const familyMotion = FAMILY_RESULT_MOTION[familyName];
+    if (familyMotion && !(REDUCED_MOTION_SKIP.has(familyMotion) && prefersReducedMotion())) {
+      playOnceFromStart(
+        ensureFxVideo(art, `motion-${familyMotion}`, motionUrl(familyMotion), false),
+      );
+    }
+  }
+
+  if (phase === "EXIT") {
+    playOnceFromStart(ensureFxVideo(art, "motion-exit_trace", motionUrl("exit_trace"), false));
+  }
 }
 
 function manifestDiskPath(rel) {
@@ -258,6 +357,58 @@ function fillPositionCopy(node, envelope, stateKey, sample, metrics, copy) {
   }
 }
 
+function fillPitCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  if (stateKey === "pit_entry") {
+    text(subtitle, resolveCopy("pit.entry") || sample.subtitle || "STORY START");
+    text(
+      value,
+      metrics.position != null ? `P${metrics.position}` : metrics.lapTime ?? sample.value,
+    );
+    text(meta, sample.meta || "lane detected");
+  } else if (stateKey === "pit_exit") {
+    text(subtitle, resolveCopy("pit.exit") || sample.subtitle || "BACK ON TRACK");
+    text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
+    text(meta, sample.meta || "");
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, metrics.duration != null ? fmt(metrics.duration, 1) + " s" : sample.value || "");
+    text(meta, sample.meta || "");
+  }
+}
+
+function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  if (stateKey === "hr_pressure") {
+    text(subtitle, resolveCopy("bio.hr_high") || sample.subtitle || "HR PRESSURE");
+    text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value);
+    text(
+      meta,
+      metrics.deltaBpm != null
+        ? `${metrics.deltaBpm >= 0 ? "+" : ""}${metrics.deltaBpm} vs baseline`
+        : sample.meta,
+    );
+  } else if (stateKey === "ble_reconnecting") {
+    text(subtitle, resolveCopy("ble.lost") || sample.subtitle || "DATA STALE");
+    text(value, sample.value || "--");
+    text(meta, sample.meta || "reconnecting");
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value || "");
+    text(meta, sample.meta || "");
+  }
+}
+
 function fillCopySlots(node, envelope, stateKey) {
   const sample = manifest?.states?.[stateKey]?.sample || {};
   const metrics = envelope.metrics || {};
@@ -269,6 +420,14 @@ function fillCopySlots(node, envelope, stateKey) {
   }
   if (familyName === "position") {
     fillPositionCopy(node, envelope, stateKey, sample, metrics, copy);
+    return;
+  }
+  if (familyName === "pit") {
+    fillPitCopy(node, envelope, stateKey, sample, metrics, copy);
+    return;
+  }
+  if (familyName === "bio") {
+    fillBioCopy(node, envelope, stateKey, sample, metrics, copy);
     return;
   }
   const title = node.querySelector(".title");
@@ -310,11 +469,24 @@ function enforceFamilyCap(familyName) {
 export async function initV4(options = {}) {
   theme = options.theme || theme;
   language = options.language || language;
+  copyCatalog = options.copyCatalog || copyCatalog;
+  resolvedMotions = options.resolvedMotions || resolvedMotions;
+  motionDisabled = Boolean(options.motionDisabled);
   const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
   const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
-  const [manifestRes, catalogRes] = await Promise.all([fetch(manifestUrl), fetch(catalogUrl)]);
+  const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
+  if (!Object.keys(copyCatalog).length) {
+    tasks.push(fetch("/api/overlay/i18n"));
+  }
+  const results = await Promise.all(tasks);
+  const [manifestRes, catalogRes, i18nRes] = results;
   if (manifestRes.ok) manifest = await manifestRes.json();
   if (catalogRes.ok) catalog = await catalogRes.json();
+  if (i18nRes?.ok) {
+    const i18n = await i18nRes.json();
+    copyCatalog = i18n.copyCatalog || copyCatalog;
+    language = i18n.language || language;
+  }
 }
 
 export const DisplayV4 = {
@@ -349,6 +521,7 @@ export const DisplayV4 = {
     node.dataset.phase = phase;
     node.classList.toggle("phase-compact", phase === "COMPACT");
     fillCopySlots(node, envelope, stateKey);
+    syncWidgetMotion(node, envelope, familyName, created);
     node.classList.remove("exit");
     if (created) requestAnimationFrame(() => node.classList.add("visible"));
     else node.classList.add("visible");
@@ -572,6 +745,59 @@ export function v4FixtureOvertake(sequence = 1) {
       accent: "primary",
       preferredState: "RESULT",
       minHoldMs: 5000,
+    },
+  };
+}
+
+export function v4FixturePitEntry(sequence = 1, phase = "ENTER") {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:pit:entry",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "PIT_ENTRY",
+    mode: "RACE",
+    phase,
+    priority: 50,
+    dedupeKey: "RACE:PIT_ENTRY:7",
+    correlationId: "pit:7",
+    metrics: { position: 7 },
+    copy: { headlineToken: "pit.entry", statusToken: "" },
+    presentation: {
+      widget: "pit",
+      zone: "EVENT",
+      variant: "pit_entry",
+      accent: "warning",
+      preferredState: "ENTER",
+      minHoldMs: 5000,
+    },
+  };
+}
+
+export function v4FixtureHrPressure(sequence = 1, phase = "ACTIVE") {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:bio:hr",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "HR_PRESSURE_RISING",
+    mode: "RACE",
+    phase,
+    priority: 35,
+    dedupeKey: "RACE:HR_PRESSURE",
+    correlationId: "bio:hr",
+    metrics: { bpm: 164, deltaBpm: 14, intensity: 72 },
+    copy: { headlineToken: "bio.hr_high", statusToken: "" },
+    presentation: {
+      widget: "bio",
+      zone: "EVENT",
+      variant: "hr_pressure",
+      accent: "warning",
+      preferredState: "ACTIVE",
     },
   };
 }
