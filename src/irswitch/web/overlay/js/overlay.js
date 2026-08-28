@@ -208,7 +208,17 @@ async function startV4Demo(params) {
     await startV4Golden(params, v4);
     return;
   }
-  const fixture = params.get("fixture") || "lap_complete";
+  // Explicit fixture → frozen snapshot. No fixture → cyclic V4 dry-test loop.
+  const fixture = params.get("fixture");
+  if (!fixture) {
+    if (layout === "preview") {
+      DisplayV4.show(getV4GoldenFixture("lap_complete"));
+      return;
+    }
+    const mod = await import("./demo-v4.js");
+    mod.startV4DemoLoop();
+    return;
+  }
   if (fixture === "hunting") {
     DisplayV4.show(v4FixtureHunting(1, "ENTER"));
     DisplayV4.show(v4FixtureHunting(2, "ACTIVE"));
@@ -224,15 +234,6 @@ async function startV4Demo(params) {
     DisplayV4.show(v4FixtureHunted(1, "ACTIVE"));
     return;
   }
-  const envelope = getV4GoldenFixture(fixture);
-  if (envelope) {
-    DisplayV4.show(envelope);
-    return;
-  }
-  if (layout === "preview" || fixture === "lap_complete") {
-    DisplayV4.show(getV4GoldenFixture("lap_complete"));
-    return;
-  }
   if (fixture === "pit_entry") {
     DisplayV4.show(v4FixturePitEntry(1, "ENTER"));
     DisplayV4.show(v4FixturePitEntry(2, "ACTIVE"));
@@ -243,8 +244,13 @@ async function startV4Demo(params) {
     DisplayV4.show(v4FixtureHrPressure(2, "ACTIVE"));
     return;
   }
-  const mod = await import("./demo.js");
-  mod.startDemo();
+  const envelope = getV4GoldenFixture(fixture);
+  if (envelope) {
+    DisplayV4.show(envelope);
+    return;
+  }
+  const mod = await import("./demo-v4.js");
+  mod.startV4DemoLoop();
 }
 
 async function bootstrap() {

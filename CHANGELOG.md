@@ -14,6 +14,7 @@ a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 * `event_catalog.json` v1 wiring for all shipped transient families (timing, battle, position, pit, bio, session, exception)
 * Input-replay harness scenarios 1–15 (lap/PB, battle ladder, overtake, pit FSM, HR pressure, P/Q timing, invalid lap, link drop, mixed race beat)
 * Practice / quali / race emitters and adapters behind `[event_engine]` flags; V4 WebSocket envelopes when `v2_payload=true` (phases ENTER / ACTIVE / UPDATE / RESULT / EXIT; `STATE_SNAPSHOT` on reconnect)
+* V4 cyclic dry-test demo (`/overlay/demo` default `renderer=v4`) — DisplayV4 envelope loop (~28&nbsp;s) with legacy V3 fallback in UI
 
 ### Documentation
 

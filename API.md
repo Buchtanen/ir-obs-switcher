@@ -683,7 +683,7 @@ Ruční TEST eventy (HUNTING, LAP, …). Write volá `POST /overlay/debug/emit`.
 
 ### GET /overlay/demo
 
-Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1`, auto-scénář (battle, lap, PB, position, incident, HR, final, finish) v loopu. Bez OBS a bez iRacing. Theme se přepíná v UI.
+Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1&renderer=v4` (default), auto-scénář V4 (HUNTING → HUNTED → LAP COMPLETE → PB → POSITION → INCIDENT → HR → FINAL → FINISH) v ~28&nbsp;s loopu. Bez OBS a bez iRacing. Theme a renderer (v4 / legacy v3) se přepínají v UI.
 
 ### GET /config
 
