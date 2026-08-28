@@ -40,7 +40,7 @@ import json
 import logging
 from dataclasses import dataclass, fields, is_dataclass, replace
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypeVar, cast
 
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope
@@ -54,6 +54,8 @@ from irswitch.overlay.settings import OverlaySettings
 logger = logging.getLogger(__name__)
 
 ReplayEvent = tuple[float, str, str]
+
+_D = TypeVar("_D")
 
 
 @dataclass
@@ -262,7 +264,7 @@ def _overlay_from_fixture_flags(
     return _overlay_with_v2(_merge_dataclass(base, merged))
 
 
-def _merge_dataclass(instance: Any, overrides: dict[str, Any]) -> Any:
+def _merge_dataclass(instance: _D, overrides: dict[str, Any]) -> _D:
     if not overrides:
         return instance
     if not is_dataclass(instance):
@@ -277,4 +279,6 @@ def _merge_dataclass(instance: Any, overrides: dict[str, Any]) -> Any:
             updates[key] = _merge_dataclass(current, value)
         else:
             updates[key] = value
-    return replace(instance, **updates)
+    if not updates:
+        return instance
+    return cast(_D, replace(cast(Any, instance), **updates))

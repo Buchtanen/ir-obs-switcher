@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 
 from irswitch.overlay.models import RaceState
-from irswitch.overlay.replay import _race_from_dict
-from irswitch.overlay.replay_input import (  # noqa: I001
+from irswitch.overlay.replay_input import (
     ReplayInputRunner,
     assert_expected_sequence,
     load_fixture,
@@ -118,6 +117,8 @@ def test_emitter_isolation_survives_failure(caplog) -> None:
         "last_lap_time": 95.0,
         "best_lap_time": 94.0,
     }
+    from irswitch.overlay.replay import _race_from_dict
+
     with caplog.at_level(logging.WARNING, logger="irswitch.events.engine"):
         events = runner._tick_once(_race_from_dict(race), 1.0, bio=None, mode="RACE")
 
