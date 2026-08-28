@@ -1,4 +1,4 @@
-/** V4 overlay renderer (S1: timing + battle families). */
+/** V4 overlay renderer (S1: timing + battle + position families). */
 
 const ASSET_BASE = "/overlay/web/";
 const DEFAULT_HOLD_MS = 4000;
@@ -12,6 +12,9 @@ const COPY_EN = {
   "battle.closing_in": "CLOSING IN",
   "battle.approach": "APPROACH",
   "battle.attack_range": "ATTACK RANGE",
+  "position.gained": "POSITION GAINED",
+  "position.lost": "POSITION LOST",
+  "position.overtake": "OVERTAKE",
 };
 
 const TRANSIENT_FAMILIES = new Set([
@@ -56,6 +59,19 @@ function fmtLapTime(seconds) {
 function fmtGap(seconds) {
   if (seconds == null || Number.isNaN(seconds)) return "—";
   return `${fmt(seconds, 2)} s`;
+}
+
+function fmtPositionDelta(delta) {
+  if (delta == null || Number.isNaN(delta)) return "—";
+  const n = Number(delta);
+  if (n > 0) return `+${n} POS`;
+  if (n < 0) return `${n} POS`;
+  return "0 POS";
+}
+
+function fmtPositionRange(oldPos, newPos) {
+  if (oldPos == null || newPos == null) return "—";
+  return `P${oldPos} → P${newPos}`;
 }
 
 function resolveCopy(token) {
@@ -196,6 +212,52 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   }
 }
 
+function fillPositionCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  const delta =
+    metrics.delta ??
+    (metrics.oldPosition != null && metrics.newPosition != null
+      ? metrics.oldPosition - metrics.newPosition
+      : null);
+  if (stateKey === "position_gained") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ORDER UPDATE");
+    text(value, delta != null ? fmtPositionDelta(Math.abs(delta)) : sample.value);
+    text(
+      meta,
+      metrics.oldPosition != null && metrics.newPosition != null
+        ? fmtPositionRange(metrics.oldPosition, metrics.newPosition)
+        : sample.meta,
+    );
+  } else if (stateKey === "position_lost") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "STAY FOCUSED");
+    text(value, delta != null ? fmtPositionDelta(delta) : sample.value);
+    text(
+      meta,
+      metrics.oldPosition != null && metrics.newPosition != null
+        ? fmtPositionRange(metrics.oldPosition, metrics.newPosition)
+        : sample.meta,
+    );
+  } else if (stateKey === "overtake") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE COMPLETE");
+    text(
+      value,
+      metrics.oldPosition != null && metrics.newPosition != null
+        ? fmtPositionRange(metrics.oldPosition, metrics.newPosition)
+        : sample.value,
+    );
+    text(meta, metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, sample.value || fmtPositionDelta(delta));
+    text(meta, sample.meta || fmtPositionRange(metrics.oldPosition, metrics.newPosition));
+  }
+}
+
 function fillCopySlots(node, envelope, stateKey) {
   const sample = manifest?.states?.[stateKey]?.sample || {};
   const metrics = envelope.metrics || {};
@@ -203,6 +265,10 @@ function fillCopySlots(node, envelope, stateKey) {
   const familyName = familyForState(stateKey);
   if (familyName === "battle") {
     fillBattleCopy(node, envelope, stateKey, sample, metrics, copy);
+    return;
+  }
+  if (familyName === "position") {
+    fillPositionCopy(node, envelope, stateKey, sample, metrics, copy);
     return;
   }
   const title = node.querySelector(".title");
@@ -425,6 +491,87 @@ export function v4FixtureHunted(sequence = 2, phase = "ACTIVE") {
       variant: "hunted",
       accent: "warning",
       preferredState: "ACTIVE",
+    },
+  };
+}
+
+export function v4FixturePositionGained(sequence = 1) {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:position:gained",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "POSITION_GAINED",
+    mode: "RACE",
+    phase: "RESULT",
+    priority: 70,
+    dedupeKey: "RACE:POSITION_GAINED:7",
+    correlationId: "position:gain:7",
+    metrics: { direction: "gain", oldPosition: 8, newPosition: 7, delta: 1 },
+    copy: { headlineToken: "position.gained", statusToken: "" },
+    presentation: {
+      widget: "position",
+      zone: "EVENT",
+      variant: "position_gained",
+      accent: "primary",
+      preferredState: "RESULT",
+      minHoldMs: 4000,
+    },
+  };
+}
+
+export function v4FixturePositionLost(sequence = 1) {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:position:lost",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "POSITION_LOST",
+    mode: "RACE",
+    phase: "RESULT",
+    priority: 70,
+    dedupeKey: "RACE:POSITION_LOST:8",
+    correlationId: "position:loss:8",
+    metrics: { direction: "loss", oldPosition: 7, newPosition: 8, delta: -1 },
+    copy: { headlineToken: "position.lost", statusToken: "" },
+    presentation: {
+      widget: "position",
+      zone: "EVENT",
+      variant: "position_lost",
+      accent: "warning",
+      preferredState: "RESULT",
+      minHoldMs: 4000,
+    },
+  };
+}
+
+export function v4FixtureOvertake(sequence = 1) {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:position:overtake",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "OVERTAKE",
+    mode: "RACE",
+    phase: "RESULT",
+    priority: 80,
+    dedupeKey: "RACE:OVERTAKE:6",
+    correlationId: "overtake:6",
+    metrics: { oldPosition: 7, newPosition: 6, targetCarIdx: 17 },
+    copy: { headlineToken: "position.overtake", statusToken: "" },
+    presentation: {
+      widget: "position",
+      zone: "EVENT",
+      variant: "overtake",
+      accent: "primary",
+      preferredState: "RESULT",
+      minHoldMs: 5000,
     },
   };
 }
