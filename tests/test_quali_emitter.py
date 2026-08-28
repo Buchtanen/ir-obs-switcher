@@ -81,3 +81,20 @@ def test_quali_crossing_projection() -> None:
             store.ingest_crossing(ev)
     out = emitter.tick(_quali_state(player_lap_dist_pct=None, current_lap_time=None), 10.0)
     assert any(e.name == "projected_lap" for e in out)
+
+
+def test_quali_silent_when_disconnected() -> None:
+    store = TimingStore()
+    ref = SegmentReferenceTracker()
+    emitter = QualiEmitter(store, ref, EventSettings(), EventPrioritySettings())
+    assert emitter.tick(_quali_state(connected=False), 1.0) == []
+
+
+def test_quali_suppresses_near_duplicate_projections() -> None:
+    store = TimingStore()
+    ref = SegmentReferenceTracker()
+    emitter = QualiEmitter(store, ref, EventSettings(), EventPrioritySettings())
+    first = emitter.tick(_quali_state(), 1.0)
+    assert any(e.name == "projected_lap" for e in first)
+    second = emitter.tick(_quali_state(current_lap_time=46.01), 2.0)
+    assert second == []
