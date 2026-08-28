@@ -156,6 +156,17 @@ def test_v4_copy_uses_absolute_plate_slots() -> None:
     assert "top: 42px" in title_block
 
 
+def test_v4_icons_use_full_canvas_well_alignment() -> None:
+    """V4 icons are 420×140 plates; a 64×64 crop shifts glyphs right of icon_well."""
+    css = display_v4_css()
+    icon_block = css.split(".v4-art .icon {", 1)[1].split("}", 1)[0]
+    assert "width: 420px" in icon_block
+    assert "height: 140px" in icon_block
+    assert "background-size: 420px 140px" in icon_block
+    assert "width: 64px" not in icon_block
+    assert "left: 28px" not in icon_block
+
+
 def test_golden_reduced_motion_paths() -> None:
     js = display_v4_js()
     css = display_v4_css()

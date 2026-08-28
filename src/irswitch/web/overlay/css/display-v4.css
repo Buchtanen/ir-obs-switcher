@@ -105,15 +105,18 @@
   opacity: 1;
 }
 
+/* V4 state icons are authored as full 420×140 canvases (glyph already in the
+   icon-well). Do NOT crop to a 64×64 box — that shifts the glyph right of the well. */
 .v4-art .icon {
   position: absolute;
-  left: 28px;
-  top: 38px;
-  width: 64px;
-  height: 64px;
+  inset: 0;
+  width: 420px;
+  height: 140px;
   background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
+  background-size: 420px 140px;
+  background-position: 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .v4-art video.fx {
