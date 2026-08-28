@@ -14,16 +14,24 @@ function applyTheme(theme) {
 }
 
 function applyPresentation(msg) {
-  if (msg.theme) applyTheme(msg.theme);
+  if (msg.theme) {
+    applyTheme(msg.theme);
+    window.__overlayTheme = msg.theme;
+  }
   if (msg.assets) {
     window.__assets = msg.assets;
-    applyPersistentArt();
     if (window.__renderer === "v4") {
-      window.__v4Display?.refresh?.();
+      window.__v4Display?.refresh?.({ theme: msg.theme || window.__overlayTheme });
     } else {
+      applyPersistentArt();
       DisplayManager.refreshArt();
     }
   }
+}
+
+function updateSysinfo(system, bio) {
+  applySysinfo(system, bio);
+  window.__v4SyncSysinfoGlow?.();
 }
 
 function legacyFromV4(envelope) {
@@ -65,11 +73,11 @@ function createMessageHandler(useV4) {
       if (msg.domain === "race") window.__race = msg.data;
       if (msg.domain === "bio") {
         window.__bio = msg.data;
-        applySysinfo(window.__system || {}, msg.data);
+        updateSysinfo(window.__system || {}, msg.data);
       }
       if (msg.domain === "system") {
         window.__system = msg.data;
-        applySysinfo(msg.data, window.__bio);
+        updateSysinfo(msg.data, window.__bio);
       }
       return;
     }
@@ -96,9 +104,9 @@ function applySnapshot(msg, { events = true } = {}) {
   if (msg.bio) window.__bio = msg.bio;
   if (msg.system) {
     window.__system = msg.system;
-    applySysinfo(msg.system, window.__bio);
+    updateSysinfo(msg.system, window.__bio);
   }
-  if (msg.bio) applySysinfo(window.__system || {}, msg.bio);
+  if (msg.bio) updateSysinfo(window.__system || {}, msg.bio);
   if (!events) return;
   if (window.__renderer === "v4") return;
   (msg.activeEvents || []).forEach((ev) => DisplayManager.show(ev));
@@ -183,6 +191,7 @@ async function startV4Demo(params) {
     v4FixtureHrPressure,
   } = v4;
   window.__v4Display = DisplayV4;
+  window.__v4SyncSysinfoGlow = v4.syncSysinfoGlow;
   const theme = params.get("theme") || window.__overlayTheme || "cyber_racing";
   await initV4({
     theme,
@@ -272,8 +281,9 @@ async function bootstrap() {
   if (useV4) {
     window.__renderer = "v4";
     onMessage = createMessageHandler(true);
-    const { DisplayV4, initV4 } = await import("./display-v4.js");
+    const { DisplayV4, initV4, syncSysinfoGlow } = await import("./display-v4.js");
     window.__v4Display = DisplayV4;
+    window.__v4SyncSysinfoGlow = syncSysinfoGlow;
     await initV4({
       theme: theme || window.__overlayTheme || "cyber_racing",
       language: window.__overlayLanguage || "en",

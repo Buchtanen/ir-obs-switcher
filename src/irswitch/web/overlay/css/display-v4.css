@@ -144,6 +144,37 @@ html.golden-layout #sysinfo-widget {
   display: none;
 }
 
+/* V4 sysinfo bar (1920×72) — layered art in .sysinfo-art */
+#sysinfo-widget.v4-sysinfo .sys-mod .layer.segment {
+  display: none;
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer {
+  background-repeat: no-repeat;
+  background-size: 1920px 72px;
+  background-position: 0 0;
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer.mask {
+  background-color: currentColor;
+  background-image: none;
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer.dividers {
+  color: var(--primary, #3ad7ff);
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer.glow {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#sysinfo-widget.v4-sysinfo[data-glow="normal"] .sysinfo-art .layer.glow[data-glow="normal"],
+#sysinfo-widget.v4-sysinfo[data-glow="warn"] .sysinfo-art .layer.glow[data-glow="warn"],
+#sysinfo-widget.v4-sysinfo[data-glow="critical"] .sysinfo-art .layer.glow[data-glow="critical"] {
+  opacity: 1;
+}
+
 html.golden-gallery #v4-battle-stack,
 html.golden-gallery #v4-event-layer {
   display: none;

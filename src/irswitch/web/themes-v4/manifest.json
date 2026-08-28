@@ -572,6 +572,65 @@
             "final_lap",
             "finish"
           ]
+        },
+        "sysinfo": {
+          "layer_dir": "themes/cyber_racing/sysinfo/layers",
+          "icon_dir": "themes/cyber_racing/sysinfo/icons",
+          "functional_component": "sysinfo_module_segments.png",
+          "layers": [
+            {
+              "file": "sysinfo_shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_material.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_brand_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_module_segments.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_dividers_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_glow_normal.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_glow_warn.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_glow_critical.png",
+              "mode": "image"
+            }
+          ]
         }
       }
     },
@@ -1137,6 +1196,65 @@
           "states": [
             "final_lap",
             "finish"
+          ]
+        },
+        "sysinfo": {
+          "layer_dir": "themes/stealth_graphite/sysinfo/layers",
+          "icon_dir": "themes/stealth_graphite/sysinfo/icons",
+          "functional_component": "sysinfo_module_segments.png",
+          "layers": [
+            {
+              "file": "sysinfo_shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_material.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_brand_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_module_segments.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_dividers_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_glow_normal.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_glow_warn.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_glow_critical.png",
+              "mode": "image"
+            }
           ]
         }
       }
@@ -1704,6 +1822,65 @@
             "final_lap",
             "finish"
           ]
+        },
+        "sysinfo": {
+          "layer_dir": "themes/night_attack/sysinfo/layers",
+          "icon_dir": "themes/night_attack/sysinfo/icons",
+          "functional_component": "sysinfo_module_segments.png",
+          "layers": [
+            {
+              "file": "sysinfo_shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_material.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_brand_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_module_segments.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_dividers_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "sysinfo_glow_normal.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_glow_warn.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_glow_critical.png",
+              "mode": "image"
+            }
+          ]
         }
       }
     }
@@ -1718,7 +1895,7 @@
         "title": "HUNTING",
         "subtitle": "CLOSING IN",
         "value": "0.84 s",
-        "meta": "P7 · target P6"
+        "meta": "P7 \u00b7 target P6"
       }
     },
     "hunted": {
@@ -1765,7 +1942,7 @@
       "sample": {
         "title": "SIDE BY SIDE",
         "subtitle": "META-STATE",
-        "value": "P6 ↔ P7",
+        "value": "P6 \u2194 P7",
         "meta": "overlap active"
       }
     },
@@ -1814,7 +1991,7 @@
         "title": "PROJECTED LAP",
         "subtitle": "CONFIDENCE 0.78",
         "value": "1:51.774",
-        "meta": "range ±0.110"
+        "meta": "range \u00b10.110"
       }
     },
     "pb_attack": {
@@ -1824,7 +2001,7 @@
       "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
       "sample": {
         "title": "PB ATTACK",
-        "subtitle": "S1 · -0.238",
+        "subtitle": "S1 \u00b7 -0.238",
         "value": "1:51.640",
         "meta": "personal best"
       }
@@ -1909,7 +2086,7 @@
       "sample": {
         "title": "OVERTAKE",
         "subtitle": "BATTLE COMPLETE",
-        "value": "P7 → P6",
+        "value": "P7 \u2192 P6",
         "meta": "vs #17"
       }
     },
@@ -1934,7 +2111,7 @@
         "title": "POSITION LOST",
         "subtitle": "STAY FOCUSED",
         "value": "-1 POS",
-        "meta": "P6 → P7"
+        "meta": "P6 \u2192 P7"
       }
     },
     "rival_threat": {
