@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "themeId": "pitwall_race_control",
+  "version": "1.0.0",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "background": "transparent"
+  },
+  "geometry": {
+    "transientWidget": {
+      "width": 420,
+      "height": 140,
+      "cutTopRight": 20,
+      "cutBottomLeft": 20,
+      "safeInset": 20
+    },
+    "statusRail": {
+      "width": 10,
+      "leftAnchor": [
+        0,
+        0
+      ],
+      "rightAnchor": [
+        410,
+        0
+      ]
+    },
+    "content": {
+      "leftRailStartX": 54,
+      "rightRailStartX": 22,
+      "top": 20,
+      "right": 22,
+      "bottom": 18
+    },
+    "sysinfo": {
+      "width": 1920,
+      "height": 72,
+      "brandWidth": 230
+    },
+    "zones": {
+      "session": {
+        "anchor": "top-center",
+        "top": 64,
+        "width": 420
+      },
+      "bioExpanded": {
+        "anchor": "top-right",
+        "top": 120,
+        "right": 48,
+        "width": 420
+      },
+      "battle": {
+        "anchor": "bottom-left",
+        "left": 36,
+        "bottom": 91,
+        "width": 420,
+        "gap": 10,
+        "maxItems": 2
+      },
+      "event": {
+        "anchor": "bottom-right",
+        "right": 48,
+        "bottom": 91,
+        "width": 420,
+        "gap": 10,
+        "maxItems": 1
+      },
+      "sysinfo": {
+        "anchor": "bottom-left",
+        "left": 0,
+        "bottom": 0,
+        "width": 1920,
+        "height": 72
+      }
+    }
+  },
+  "color": {
+    "panel": "rgba(12,18,24,.92)",
+    "surface": "rgba(24,35,44,.82)",
+    "border": "rgba(158,181,192,.38)",
+    "textPrimary": "#EAF3F7",
+    "textMuted": "#8DA2AD",
+    "state": {
+      "active": "#35D7FF",
+      "pressure": "#F4A62A",
+      "critical": "#FF4E5B",
+      "positive": "#36D28A",
+      "neutral": "#8DA2AD"
+    }
+  },
+  "typography": {
+    "family": "Barlow Condensed, Roboto Condensed, Arial Narrow, sans-serif",
+    "label": {
+      "size": 11,
+      "weight": 700,
+      "letterSpacing": 1.8,
+      "transform": "uppercase"
+    },
+    "title": {
+      "size": 23,
+      "weight": 800,
+      "letterSpacing": 0.4,
+      "transform": "uppercase"
+    },
+    "value": {
+      "size": 34,
+      "weight": 800,
+      "letterSpacing": -0.6
+    },
+    "unit": {
+      "size": 12,
+      "weight": 700,
+      "letterSpacing": 1.1
+    }
+  },
+  "motion": {
+    "enterMs": 360,
+    "exitMs": 300,
+    "updateMs": 180,
+    "lcdFlashMs": 300,
+    "railRevealMs": 220,
+    "tickBuildStepMs": 18,
+    "easingEnter": "cubic-bezier(.18,.82,.24,1)",
+    "easingExit": "cubic-bezier(.55,0,.8,.2)",
+    "reducedMotionMaxMs": 160
+  },
+  "rules": {
+    "transientOuterGeometryImmutable": true,
+    "textInAssets": false,
+    "dynamicDataInAssets": false,
+    "centerSafeAreaClear": true
+  }
+}

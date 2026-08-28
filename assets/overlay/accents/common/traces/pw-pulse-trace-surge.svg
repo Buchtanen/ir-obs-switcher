@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" fill="none">
+  <title>Pitwall telemetry pulse trace surge</title>
+  <defs></defs>
+  <path d="M0 72H44L58 66L70 78L82 72H132L146 38L160 108L176 54L190 72H226L240 50L255 94L270 60L284 72H326L340 44L354 102L370 58L384 72H420" stroke="#78909A" stroke-opacity=".22"/>
+  <path d="M0 72H44L58 66L70 78L82 72H132L146 38L160 108L176 54L190 72H226L240 50L255 94L270 60L284 72H326L340 44L354 102L370 58L384 72H420" stroke="#F4A62A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+
+</svg>

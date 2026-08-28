@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" fill="none">
+  <title>Pitwall technical grid left</title>
+  <defs></defs>
+  <path d="M0 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M12 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M24 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M36 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M48 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M60 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M72 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M84 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M96 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M108 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M120 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M132 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M144 0V140" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 8H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 20H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 32H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 44H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 56H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 68H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 80H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 92H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 104H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 116H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 128H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 140H144" stroke="#80A7B5" stroke-opacity=".075"/>
+  <path d="M0 110L110 0" stroke="#35D7FF" stroke-opacity=".08"/>
+</svg>
