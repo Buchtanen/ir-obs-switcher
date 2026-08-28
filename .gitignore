@@ -48,7 +48,6 @@ logs/*.log*
 logs/*.log.*
 data/*.json
 !data/*.example.json
-docs/
 
 # Temporary files
 *.tmp
