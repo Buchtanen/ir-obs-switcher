@@ -37,6 +37,7 @@ GOLDEN_FIXTURES: tuple[str, ...] = (
 )
 
 _FIXTURE_ID_RE = re.compile(r"Fixture id:\s*`([a-z0-9_]+)`")
+_V4_FIXTURE_EXPORT_RE = re.compile(r"export function (v4Fixture\w+)")
 
 
 def _catalog_path() -> Path:
@@ -118,3 +119,11 @@ def test_presentation_payload_includes_v4_when_assets_on(
     assert "v4" in payload
     assert payload["v4"]["assets"] is True
     assert payload["v4"]["manifestUrl"].endswith("themes-v4/manifest.json")
+
+
+def test_display_v4_js_has_unique_fixture_exports() -> None:
+    js = (web_root() / "overlay" / "js" / "display-v4.js").read_text(encoding="utf-8")
+    exports = _V4_FIXTURE_EXPORT_RE.findall(js)
+    assert exports, "expected v4Fixture* exports in display-v4.js"
+    assert len(exports) == len(set(exports)), f"duplicate exports: {exports}"
+    assert "let resolvedStates" in js
