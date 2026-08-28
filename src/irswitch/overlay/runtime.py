@@ -261,15 +261,13 @@ class OverlayRuntime:
         if self.manager_v2 is not None:
             self.manager_v2.set_session_id(self._session_id(state))
             for candidate in candidates:
-                race_event, envelope = self.manager_v2.submit(
+                race_event, envelopes = self.manager_v2.submit(
                     candidate, now, mode=state.overlay_mode
                 )
-                wire = self.manager_v2.publish_wire(envelope, race_event)
-                if wire is not None:
+                for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self.bus.publish_event(wire)
-            for race_event, envelope in self.manager_v2.tick(now, mode=state.overlay_mode):
-                wire = self.manager_v2.publish_wire(envelope, race_event)
-                if wire is not None:
+            for race_event, envelopes in self.manager_v2.tick(now, mode=state.overlay_mode):
+                for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self.bus.publish_event(wire)
             self.bus.set_active_events(self.manager_v2.active_events())
             self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
@@ -317,9 +315,8 @@ class OverlayRuntime:
             if prev in {"connected"} and bio_state.status in {"disconnected", "reconnecting"}:
                 now = time.monotonic()
                 if self.manager_v2 is not None:
-                    race_event, envelope = self.manager_v2.inject("ble_lost", now)
-                    wire = self.manager_v2.publish_wire(envelope, race_event)
-                    if wire is not None:
+                    race_event, envelopes = self.manager_v2.inject("ble_lost", now)
+                    for wire in self.manager_v2.publish_wire(envelopes, race_event):
                         self._pending_envelopes.append(wire)
                     self.bus.set_active_events(self.manager_v2.active_events())
                     self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())

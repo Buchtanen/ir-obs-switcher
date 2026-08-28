@@ -148,6 +148,20 @@ async def handle_debug_emit(request: web.Request) -> web.Response:
     runtime = _overlay_runtime
     bus = get_overlay_bus()
     now = __import__("time").monotonic()
+    manager_v2 = getattr(runtime, "manager_v2", None)
+    if manager_v2 is not None:
+        race_event, envelopes = manager_v2.inject(name, now, body.get("data"))
+        if race_event is None:
+            return web.json_response({"error": "inject rejected"}, status=409)
+        wires = manager_v2.publish_wire(envelopes, race_event)
+        for wire in wires:
+            await bus.publish_event(wire)
+        bus.set_active_events(manager_v2.active_events())
+        bus.set_active_stories_v4(manager_v2.active_stories_v4())
+        await bus.flush_state()
+        return web.json_response(
+            {"status": "ok", "events": wires, "format": "v4" if envelopes else "legacy"}
+        )
     manager = getattr(runtime, "manager", None)
     if manager is None:
         from irswitch.events.manager import EventManager
