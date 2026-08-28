@@ -36,6 +36,7 @@ let theme = "cyber_racing";
 let language = "en";
 let copyCatalog = {};
 let resolvedMotions = {};
+let resolvedStates = {};
 let motionDisabled = false;
 let lastSequence = new Map();
 
@@ -940,9 +941,7 @@ export function v4FixturePitLane(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 50,
     metrics: { position: 7, duration: 41.2, onPitRoad: true },
-    copy: { headlineToken: "pit.entry", statusToken: "" },
-    widget: "pit",
-    variant: "pit_lane",
+    copy: { headlineToken: "pit.lane", statusToken: "" },
     accent: "warning",
     preferredState: "ACTIVE",
   });
@@ -956,7 +955,7 @@ export function v4FixturePitStopped(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 50,
     metrics: { position: 7, duration: 8.4, onPitRoad: true },
-    copy: { headlineToken: "pit.entry", statusToken: "" },
+    copy: { headlineToken: "pit.stopped", statusToken: "" },
     widget: "pit",
     variant: "pit_stopped",
     accent: "warning",
@@ -972,7 +971,7 @@ export function v4FixturePitReleased(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 50,
     metrics: { position: 7, duration: 12.7, onPitRoad: true },
-    copy: { headlineToken: "pit.entry", statusToken: "" },
+    copy: { headlineToken: "pit.released", statusToken: "" },
     widget: "pit",
     variant: "pit_released",
     accent: "primary",
@@ -1004,121 +1003,12 @@ export function v4FixturePitOutcome(sequence = 1) {
     sequence,
     priority: 50,
     metrics: { position: 10, positionDelta: 2, duration: 24.3 },
-    copy: { headlineToken: "pit.exit", statusToken: "" },
+    copy: { headlineToken: "pit.outcome", statusToken: "" },
     widget: "pit",
     variant: "pit_outcome",
     accent: "primary",
     preferredState: "RESULT",
   });
-}
-
-export function v4FixturePitLane(sequence = 2, phase = "ACTIVE") {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:pit:lane",
-    sequence,
-    sessionId: "session:demo",
-    eventType: "PIT_LANE",
-    mode: "RACE",
-    phase,
-    priority: 50,
-    dedupeKey: "RACE:PIT_LANE:7",
-    correlationId: "pit:7",
-    storyKey: "pit:7",
-    metrics: { position: 7, duration: 41.2, onPitRoad: true },
-    copy: { headlineToken: "pit.lane", statusToken: "" },
-    presentation: {
-      widget: "pit",
-      zone: "EVENT",
-      variant: "pit_lane",
-      accent: "warning",
-      preferredState: "ACTIVE",
-    },
-  };
-}
-
-export function v4FixturePitOutcome(sequence = 6) {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:pit:outcome",
-    sequence,
-    sessionId: "session:demo",
-    eventType: "PIT_OUTCOME",
-    mode: "RACE",
-    phase: "RESULT",
-    priority: 50,
-    dedupeKey: "RACE:PIT_OUTCOME:7",
-    correlationId: "pit:7",
-    storyKey: "pit:7",
-    metrics: { position: 10, positionDelta: 2, duration: 24.3, entryPosition: 7, exitPosition: 10 },
-    copy: { headlineToken: "pit.outcome", statusToken: "" },
-    presentation: {
-      widget: "pit",
-      zone: "EVENT",
-      variant: "pit_outcome",
-      accent: "primary",
-      preferredState: "RESULT",
-      minHoldMs: 5000,
-    },
-  };
-}
-
-export function v4FixtureFinalLap(sequence = 1, phase = "RESULT") {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:session:final_lap",
-    sequence,
-    sessionId: "session:demo",
-    eventType: "FINAL_LAP",
-    mode: "RACE",
-    phase,
-    priority: 95,
-    dedupeKey: "RACE:FINAL_LAP",
-    correlationId: "session:final_lap",
-    metrics: { lap: 24, totalLaps: 24 },
-    copy: { headlineToken: "session.final_lap", statusToken: "" },
-    presentation: {
-      widget: "session",
-      zone: "EVENT",
-      variant: "final_lap",
-      accent: "warning",
-      preferredState: "RESULT",
-      minHoldMs: 6000,
-    },
-  };
-}
-
-export function v4FixtureFinish(sequence = 1) {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:session:finish",
-    sequence,
-    sessionId: "session:demo",
-    eventType: "FINISH",
-    mode: "RACE",
-    phase: "RESULT",
-    priority: 100,
-    dedupeKey: "RACE:FINISH",
-    correlationId: "session:finish",
-    metrics: { position: 6, classPosition: 4 },
-    copy: { headlineToken: "session.finish", statusToken: "" },
-    presentation: {
-      widget: "session",
-      zone: "EVENT",
-      variant: "finish",
-      accent: "primary",
-      preferredState: "RESULT",
-      minHoldMs: 8000,
-    },
-  };
 }
 
 export function v4FixtureHrPressure(sequence = 1, phase = "ACTIVE") {
@@ -1129,7 +1019,7 @@ export function v4FixtureHrPressure(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 35,
     metrics: { bpm: 164, deltaBpm: 14, baselineBpm: 150, intensity: 72 },
-    copy: { headlineToken: "bio.hr_high", statusToken: "" },
+    copy: { headlineToken: "bio.hr_pressure", statusToken: "" },
     widget: "bio",
     variant: "hr_pressure",
     accent: "warning",
