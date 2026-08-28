@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Any
+from typing import Any, cast
 
 from irswitch.events.battle import BattleEmitter
 from irswitch.events.incident import IncidentEmitter
 from irswitch.events.lap import LapEmitter
+from irswitch.events.overtake import OvertakeClassifierEmitter
 from irswitch.events.pit import PitEmitter
 from irswitch.events.position import PositionEmitter
 from irswitch.events.session import SessionEmitter
@@ -24,7 +25,12 @@ class EventEngine:
         pri = overlay.events.priorities
         self.battle = BattleEmitter(overlay.battle.hunting, overlay.battle.hunted, pri)
         self.lap = LapEmitter(overlay.events, pri)
-        self.position = PositionEmitter(overlay.battle, pri)
+        position_emitter: PositionEmitter | OvertakeClassifierEmitter
+        if overlay.event_engine.overtake_classifier:
+            position_emitter = OvertakeClassifierEmitter(overlay.battle, pri)
+        else:
+            position_emitter = PositionEmitter(overlay.battle, pri)
+        self.position = position_emitter
         self.incident = IncidentEmitter(overlay.events, pri)
         self.pit: PitEmitter | None
         self.session = SessionEmitter(overlay.events, pri)
@@ -74,9 +80,9 @@ class EventEngine:
         try:
             params = inspect.signature(tick).parameters
         except (TypeError, ValueError):
-            return tick(state, now)
+            return cast(list[CandidateEvent], tick(state, now))
         if "bio" in params:
-            return tick(state, now, bio)
+            return cast(list[CandidateEvent], tick(state, now, bio))
         if len(params) >= 3:
-            return tick(state, now, bio)
-        return tick(state, now)
+            return cast(list[CandidateEvent], tick(state, now, bio))
+        return cast(list[CandidateEvent], tick(state, now))

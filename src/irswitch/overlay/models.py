@@ -98,6 +98,7 @@ class RaceState:
     gap_behind: float | None = None
     closing_rate_ahead: float | None = None
     closing_rate_behind: float | None = None
+    car_idx_on_pit_road: tuple[bool | None, ...] = ()
     fps: float | None = None
     frametime_ms: float | None = None
     session_num: int | None = None

@@ -16,7 +16,7 @@ from irswitch.events.envelope import (
 )
 from irswitch.overlay.protocol import RaceEvent
 
-_BATTLE_STATES = frozenset({"hunting", "hunted", "approach", "attack_range"})
+_BATTLE_STATES = frozenset({"hunting", "hunted", "approach", "attack_range", "side_by_side"})
 
 
 def battle_race_event_to_envelope(
@@ -40,7 +40,9 @@ def battle_race_event_to_envelope(
         if key in event.data
     }
     copy_token = (
-        f"battle.{battle_state}" if battle_state in {"hunting", "hunted"} else "battle.closing_in"
+        f"battle.{battle_state}"
+        if battle_state in {"hunting", "hunted", "approach", "attack_range", "side_by_side"}
+        else "battle.closing_in"
     )
     tone = "warning" if battle_state == "hunted" else "primary"
     return make_envelope(

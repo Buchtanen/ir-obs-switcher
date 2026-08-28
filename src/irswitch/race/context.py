@@ -105,6 +105,7 @@ class RaceContextAnalyzer:
             gap_behind=gap_behind,
             closing_rate_ahead=close_ahead,
             closing_rate_behind=close_behind,
+            car_idx_on_pit_road=snap.car_idx_on_pit_road,
             fps=snap.fps,
             frametime_ms=snap.frametime_ms,
             session_num=snap.session_num,

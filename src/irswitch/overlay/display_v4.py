@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 V4_MANIFEST_REL = "themes-v4/manifest.json"
 
@@ -21,7 +21,10 @@ def v4_manifest_path(web_root: Path) -> Path:
 
 
 def load_v4_manifest(web_root: Path) -> dict[str, Any]:
-    return json.loads(v4_manifest_path(web_root).read_text(encoding="utf-8"))
+    parsed = json.loads(v4_manifest_path(web_root).read_text(encoding="utf-8"))
+    if not isinstance(parsed, dict):
+        raise TypeError("V4 manifest root must be a JSON object")
+    return cast(dict[str, Any], parsed)
 
 
 class V4AssetResolver:
