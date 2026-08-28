@@ -1,0 +1,39 @@
+{
+  "name": "Scenario 1: lap complete then PB preemption",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "expected": [
+    {"eventType": "LAP_COMPLETE", "phase": "RESULT"},
+    {"eventType": "LAP_COMPLETE", "phase": "EXIT"},
+    {"eventType": "PERSONAL_BEST", "phase": "RESULT"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "lap_completed": 10,
+        "last_lap_time": 94.0,
+        "best_lap_time": 94.0
+      }
+    },
+    {
+      "t": 1.0,
+      "race": {
+        "connected": true,
+        "lap_completed": 11,
+        "last_lap_time": 95.0,
+        "best_lap_time": 94.0
+      }
+    },
+    {
+      "t": 1.5,
+      "race": {
+        "connected": true,
+        "lap_completed": 12,
+        "last_lap_time": 93.5,
+        "best_lap_time": 93.5
+      }
+    }
+  ]
+}

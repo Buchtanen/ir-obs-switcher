@@ -1,0 +1,49 @@
+{
+  "name": "Scenario 6: overtake classifier",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "event_engine": {"overtake_classifier": true}
+  },
+  "expected": [
+    {"eventType": "OVERTAKE", "phase": "RESULT"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "class_position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 1.2, "closing_rate": 0.25},
+        "gap_ahead": 1.2,
+        "closing_rate_ahead": 0.25,
+        "car_idx_on_pit_road": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      }
+    },
+    {
+      "t": 0.2,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "class_position": 5,
+        "opponent_ahead": {"car_idx": 22, "position": 5, "gap": 2.0},
+        "opponent_behind": {"car_idx": 17, "position": 7, "gap": 1.0},
+        "gap_ahead": 2.0,
+        "gap_behind": 1.0,
+        "car_idx_on_pit_road": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      }
+    },
+    {
+      "t": 1.2,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "class_position": 5,
+        "opponent_behind": {"car_idx": 17, "position": 7, "gap": 1.0},
+        "gap_behind": 1.0,
+        "car_idx_on_pit_road": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+      }
+    }
+  ]
+}

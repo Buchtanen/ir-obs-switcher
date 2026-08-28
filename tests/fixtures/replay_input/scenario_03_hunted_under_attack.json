@@ -1,0 +1,37 @@
+{
+  "name": "Scenario 3: hunted under attack",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "battle": {
+      "hunted": {"activation_delay": 0.0}
+    }
+  },
+  "expected": [
+    {"eventType": "HUNTED", "phase": "ENTER"},
+    {"eventType": "HUNTED", "phase": "ACTIVE"},
+    {"eventType": "HUNTED", "phase": "UPDATE"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "opponent_behind": {"car_idx": 8, "position": 9, "gap": 0.8, "closing_rate": 0.35},
+        "gap_behind": 0.8,
+        "closing_rate_behind": 0.35
+      }
+    },
+    {
+      "t": 1.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "opponent_behind": {"car_idx": 8, "position": 9, "gap": 0.5, "closing_rate": 0.3},
+        "gap_behind": 0.5,
+        "closing_rate_behind": 0.3
+      }
+    }
+  ]
+}

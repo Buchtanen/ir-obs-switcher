@@ -1,0 +1,51 @@
+{
+  "name": "Scenario 9: HR pressure rising",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "event_engine": {"hr_pressure": true}
+  },
+  "expected": [
+    {"eventType": "HR_PRESSURE_RISING", "phase": "ENTER"},
+    {"eventType": "HR_PRESSURE_RISING", "phase": "ACTIVE"},
+    {"eventType": "HR_PRESSURE_RISING", "phase": "UPDATE"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {"connected": true},
+      "bio": {
+        "connected": true,
+        "status": "connected",
+        "bpm": 115,
+        "baseline_bpm": 110,
+        "delta_bpm": 5,
+        "state": "calm"
+      }
+    },
+    {
+      "t": 1.0,
+      "race": {"connected": true},
+      "bio": {
+        "connected": true,
+        "status": "connected",
+        "bpm": 140,
+        "baseline_bpm": 110,
+        "delta_bpm": 30,
+        "state": "pushing"
+      }
+    },
+    {
+      "t": 1.5,
+      "race": {"connected": true},
+      "bio": {
+        "connected": true,
+        "status": "connected",
+        "bpm": 155,
+        "baseline_bpm": 110,
+        "delta_bpm": 45,
+        "state": "high"
+      }
+    }
+  ]
+}
