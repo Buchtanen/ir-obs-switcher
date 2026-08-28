@@ -26,6 +26,81 @@ def _hash_address(address: str) -> str:
     return hashlib.sha256(address.encode("utf-8")).hexdigest()[:8]
 
 
+def _scan_rows(raw: Any) -> list[tuple[Any, Any | None]]:
+    """Normalize BleakScanner.discover() list or return_adv dict into (device, adv)."""
+    if isinstance(raw, dict):
+        rows: list[tuple[Any, Any | None]] = []
+        for key, val in raw.items():
+            if isinstance(val, tuple) and len(val) == 2:
+                rows.append((val[0], val[1]))
+            else:
+                rows.append((key, val))
+        return rows
+    return [(device, None) for device in (raw or ())]
+
+
+def _device_name(device: Any, adv: Any | None) -> str:
+    name = getattr(device, "name", None) or ""
+    if name:
+        return str(name).strip()
+    if adv is not None:
+        return str(getattr(adv, "local_name", None) or "").strip()
+    return ""
+
+
+def _device_address(device: Any) -> str:
+    return str(getattr(device, "address", None) or "").strip()
+
+
+def _advertised_service_uuids(device: Any, adv: Any | None) -> set[str]:
+    uuids: set[str] = set()
+    if adv is not None:
+        for uid in getattr(adv, "service_uuids", None) or ():
+            uuids.add(str(uid).lower())
+    meta = getattr(device, "metadata", None) or {}
+    for uid in meta.get("uuids", []) or []:
+        uuids.add(str(uid).lower())
+    return uuids
+
+
+def _name_looks_like_hr(name: str) -> bool:
+    lowered = name.lower()
+    if "heart" in lowered:
+        return True
+    tokens = lowered.replace("-", " ").replace("_", " ").split()
+    return "hr" in tokens or "hrm" in tokens
+
+
+def pick_heart_rate_device(rows: list[tuple[Any, Any | None]], wanted: str) -> Any | None:
+    """Pick a scanned BLE device. ``wanted`` is ``auto`` or a name/address substring."""
+    wanted_l = (wanted or "auto").strip().lower()
+    if wanted_l and wanted_l != "auto":
+        for device, adv in rows:
+            name = _device_name(device, adv).lower()
+            address = _device_address(device).lower()
+            if wanted_l in {name, address} or wanted_l in name or wanted_l in address:
+                return device
+        return None
+    for device, adv in rows:
+        if HR_SERVICE in _advertised_service_uuids(device, adv):
+            return device
+    for device, adv in rows:
+        if _name_looks_like_hr(_device_name(device, adv)):
+            return device
+    return None
+
+
+async def pair_if_supported(client: Any) -> None:
+    """Windows HR notify often needs a bond. Fail-soft if already paired or unsupported."""
+    pair = getattr(client, "pair", None)
+    if not callable(pair):
+        return
+    try:
+        await pair()
+    except Exception:
+        logger.debug("BLE pair skipped", exc_info=True)
+
+
 class BleHeartRateProvider:
     """
     Notifications-only HR reader.
@@ -164,8 +239,8 @@ class BleHeartRateProvider:
         device = await self._scan(BleakScanner)
         if device is None:
             raise RuntimeError("no heart-rate device")
-        address = getattr(device, "address", None) or str(device)
-        name = getattr(device, "name", None)
+        address = _device_address(device) or str(device)
+        name = _device_name(device, None) or None
         logger.info("BLE connecting device=%s", _hash_address(str(address)))
         disconnected = asyncio.Event()
 
@@ -173,6 +248,7 @@ class BleHeartRateProvider:
             disconnected.set()
 
         async with BleakClient(device, disconnected_callback=_on_disconnect) as client:
+            await pair_if_supported(client)
             self.set_status("connected", device_name=name)
 
             def _notify(_char: object, data: bytearray) -> None:
@@ -197,20 +273,12 @@ class BleHeartRateProvider:
 
     async def _scan(self, scanner_cls: Any) -> Any:
         wanted = (self._settings.device or "auto").strip()
-        devices = await scanner_cls.discover(timeout=8.0)
-        if wanted and wanted.lower() != "auto":
-            wanted_l = wanted.lower()
-            for device in devices:
-                name = (getattr(device, "name", None) or "").lower()
-                address = (getattr(device, "address", None) or "").lower()
-                if wanted_l in {name, address}:
-                    return device
-            return None
-        for device in devices:
-            uuids = {u.lower() for u in (getattr(device, "metadata", {}) or {}).get("uuids", [])}
-            if HR_SERVICE in uuids:
-                return device
-            name = (getattr(device, "name", None) or "").lower()
-            if "heart" in name or "hr" in name.split():
-                return device
-        return None
+        try:
+            raw = await scanner_cls.discover(timeout=8.0, return_adv=True)
+        except TypeError:
+            raw = await scanner_cls.discover(timeout=8.0)
+        rows = _scan_rows(raw)
+        picked = pick_heart_rate_device(rows, wanted)
+        if picked is None:
+            logger.warning("BLE HR scan matched nothing (devices=%s wanted=%s)", len(rows), wanted)
+        return picked

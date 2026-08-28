@@ -383,7 +383,7 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "auto",
         True,
         "heart_rate.bluetooth",
-        "Device name/address or auto.",
+        "Device name/address, or auto (advertised Heart Rate UUID 0x180D).",
     ),
     FieldSpec(
         "heart_rate.bluetooth.reconnect",

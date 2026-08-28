@@ -1,5 +1,7 @@
 """BLE HR parser and baseline."""
 
+import pytest
+
 from irswitch.bio.history import HeartRateHistory
 from irswitch.bio.parser import classify_hr_state, parse_heart_rate_measurement
 from irswitch.bio.provider import BleHeartRateProvider
@@ -39,3 +41,60 @@ def test_provider_ingest_updates_state() -> None:
     assert state.bpm == 140
     assert seen
     assert provider.sample_hz() == 0.0
+
+
+class _Dev:
+    def __init__(self, name: str | None, address: str, uuids: list[str] | None = None) -> None:
+        self.name = name
+        self.address = address
+        self.metadata = {"uuids": uuids or []}
+
+
+class _Adv:
+    def __init__(self, uuids: list[str], local_name: str | None = None) -> None:
+        self.service_uuids = uuids
+        self.local_name = local_name
+
+
+def test_auto_picks_advertised_hr_uuid_not_metadata() -> None:
+    from irswitch.bio.provider import HR_SERVICE, pick_heart_rate_device
+
+    headphones = _Dev("LE_WH-1000XM4", "AA:AA")
+    think = _Dev("Think 0215360", "BB:BB")
+    rows = [
+        (headphones, _Adv(["0000fe03-0000-1000-8000-00805f9b34fb"])),
+        (think, _Adv([HR_SERVICE])),
+    ]
+    picked = pick_heart_rate_device(rows, "auto")
+    assert picked is think
+
+
+def test_auto_ignores_name_without_hr_uuid() -> None:
+    from irswitch.bio.provider import pick_heart_rate_device
+
+    cammus = _Dev("CAMMUS C12", "CC:CC")
+    rows = [(cammus, _Adv([]))]
+    assert pick_heart_rate_device(rows, "auto") is None
+
+
+def test_wanted_name_substring_wins() -> None:
+    from irswitch.bio.provider import HR_SERVICE, pick_heart_rate_device
+
+    think = _Dev("Think 0215360", "BB:BB")
+    other = _Dev("Polar H10", "DD:DD")
+    rows = [
+        (other, _Adv([HR_SERVICE])),
+        (think, _Adv([HR_SERVICE])),
+    ]
+    assert pick_heart_rate_device(rows, "think") is think
+
+
+@pytest.mark.asyncio
+async def test_pair_if_supported_swallows_errors() -> None:
+    from irswitch.bio.provider import pair_if_supported
+
+    class _Client:
+        async def pair(self) -> None:
+            raise RuntimeError("already bonded")
+
+    await pair_if_supported(_Client())
