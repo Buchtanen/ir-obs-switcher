@@ -127,3 +127,13 @@ def test_display_v4_js_has_unique_fixture_exports() -> None:
     assert exports, "expected v4Fixture* exports in display-v4.js"
     assert len(exports) == len(set(exports)), f"duplicate exports: {exports}"
     assert "let resolvedStates" in js
+
+
+def test_golden_gallery_clips_glow_overflow() -> None:
+    js = _display_v4_js()
+    css = (web_root() / "overlay" / "css" / "display-v4.css").read_text(encoding="utf-8")
+    assert "isGoldenSnapshot" in js
+    assert "glow_" in js
+    assert "isolation: isolate" in css
+    assert "contain: paint" in css
+    assert ".golden-stage .v4-widget" in css

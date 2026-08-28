@@ -182,6 +182,8 @@ html.golden-gallery #v4-event-layer {
   width: 420px;
   height: 140px;
   overflow: hidden;
+  isolation: isolate;
+  contain: paint;
 }
 
 .golden-stage .v4-widget {
@@ -189,6 +191,15 @@ html.golden-gallery #v4-event-layer {
   inset: 0;
   width: 420px;
   height: 140px;
+  overflow: hidden;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.golden-stage .v4-art {
+  isolation: isolate;
+  contain: paint;
 }
 
 .v4-widget.phase-compact .value {
