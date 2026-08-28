@@ -63,6 +63,15 @@
   z-index: 1;
 }
 
+.v4-art.has-plate-mask {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  -webkit-mask-size: 420px 140px;
+  mask-size: 420px 140px;
+}
+
 .v4-art .layer {
   position: absolute;
   inset: 0;
@@ -131,7 +140,7 @@
   position: absolute;
   left: 119px;
   right: 16px;
-  top: 34px;
+  top: 42px;
   margin: 0;
   font-size: 22px;
   line-height: 24px;
@@ -143,7 +152,7 @@
   position: absolute;
   left: 120px;
   right: 16px;
-  top: 58px;
+  top: 66px;
   margin: 0;
   font-size: 11px;
   line-height: 13px;
@@ -155,7 +164,7 @@
   position: absolute;
   left: 120px;
   right: 16px;
-  top: 76px;
+  top: 84px;
   margin: 0;
   font-size: 26px;
   line-height: 28px;
@@ -166,7 +175,7 @@
   position: absolute;
   left: 120px;
   right: 16px;
-  top: 110px;
+  top: 116px;
   margin: 0;
   font-size: 11px;
   line-height: 14px;

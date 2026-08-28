@@ -114,7 +114,6 @@ def test_golden_gallery_clips_glow_overflow() -> None:
     js = display_v4_js()
     css = display_v4_css()
     assert "function isGoldenSnapshot(" in js
-    assert "goldenSnapshot && glowMatch" in js or "goldenSnapshot && /^glow_" in js
     assert "paintPlateMask" in js
     assert "glow_" in js
     assert "isolation: isolate" in css
@@ -124,21 +123,16 @@ def test_golden_gallery_clips_glow_overflow() -> None:
 
 
 def test_v4_live_widget_plate_masks_glow() -> None:
-    """Live V4 cards must plate-mask glow and only show tone-matching bloom."""
+    """Live V4 cards skip glow_* PNGs and plate-mask .v4-art (WebM enter clip)."""
     js = display_v4_js()
     css = display_v4_css()
     assert "function paintPlateMask(" in js
     assert "base_plate.png" in js
-    assert 'el.classList.add("glow")' in js
-    assert "el.dataset.glow" in js
-    assert "paintPlateMask(el, family)" in js
+    assert 'setProperty("-webkit-mask-image"' in js
     assert "paintPlateMask(art, family)" in js
-    assert ".v4-art .layer.glow" in css
-    assert 'data-glow="cyan"' in css
-    assert 'data-glow="amber"' in css
-    assert 'data-glow="red"' in css
+    assert "if (glowMatch) return" in js
+    assert ".v4-art.has-plate-mask" in css
     assert ".v4-widget {" in css
-    # Live widgets (not only golden-stage) clip overflow.
     widget_block = css.split(".v4-widget {", 1)[1].split("}", 1)[0]
     assert "overflow: hidden" in widget_block
     assert "contain: paint" in widget_block
@@ -151,7 +145,7 @@ def test_v4_copy_uses_absolute_plate_slots() -> None:
     assert "align-content: center" not in css
     copy_block = css.split(".v4-copy {", 1)[1].split(".v4-copy .title", 1)[0]
     assert "display: block" in copy_block
-    assert "top: 34px" in css or "top: 38px" in css
+    assert "top: 42px" in css
     assert ".v4-copy .title" in css
     assert ".v4-copy .subtitle" in css
     assert ".v4-copy .value" in css
@@ -159,6 +153,7 @@ def test_v4_copy_uses_absolute_plate_slots() -> None:
     title_block = css.split(".v4-copy .title {", 1)[1].split("}", 1)[0]
     assert "position: absolute" in title_block
     assert "left: 119px" in title_block
+    assert "top: 42px" in title_block
 
 
 def test_golden_reduced_motion_paths() -> None:

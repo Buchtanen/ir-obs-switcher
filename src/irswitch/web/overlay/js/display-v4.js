@@ -259,27 +259,32 @@ function paintLayer(el, url, { mask = false, canvas = [420, 140] } = {}) {
 function paintPlateMask(el, family) {
   if (!el || !family?.layer_dir) {
     if (el) {
-      el.style.webkitMaskImage = "";
-      el.style.maskImage = "";
+      el.style.removeProperty("-webkit-mask-image");
+      el.style.removeProperty("mask-image");
+      el.style.removeProperty("-webkit-mask-size");
+      el.style.removeProperty("mask-size");
+      el.classList.remove("has-plate-mask");
     }
     return;
   }
   const url = manifestDiskPath(`${family.layer_dir}/base_plate.png`);
   if (!url) {
-    el.style.webkitMaskImage = "";
-    el.style.maskImage = "";
+    el.style.removeProperty("-webkit-mask-image");
+    el.style.removeProperty("mask-image");
+    el.classList.remove("has-plate-mask");
     return;
   }
   const mask = `url("${url}")`;
-  el.style.webkitMaskImage = mask;
-  el.style.maskImage = mask;
-  el.style.webkitMaskSize = "420px 140px";
-  el.style.maskSize = "420px 140px";
-  el.style.webkitMaskRepeat = "no-repeat";
-  el.style.maskRepeat = "no-repeat";
-  el.style.webkitMaskPosition = "0 0";
-  el.style.maskPosition = "0 0";
-  el.style.maskMode = "alpha";
+  // Prefer setProperty — plain style.maskImage was computing to none in Chromium.
+  el.style.setProperty("-webkit-mask-image", mask);
+  el.style.setProperty("mask-image", mask);
+  el.style.setProperty("-webkit-mask-size", "420px 140px");
+  el.style.setProperty("mask-size", "420px 140px");
+  el.style.setProperty("-webkit-mask-repeat", "no-repeat");
+  el.style.setProperty("mask-repeat", "no-repeat");
+  el.style.setProperty("-webkit-mask-position", "0 0");
+  el.style.setProperty("mask-position", "0 0");
+  el.classList.add("has-plate-mask");
 }
 
 const SYSINFO_ICON_SLOTS = {
@@ -396,22 +401,16 @@ function rebuildArt(node, stateKey, familyName) {
     return;
   }
   node.classList.remove("fallback");
-  const goldenSnapshot = isGoldenSnapshot(node);
   (family.layers || []).forEach((layer, index) => {
     const glowMatch = /^glow_(cyan|amber|red)\.png$/.exec(layer.file);
-    // Golden gallery skips glow (deterministic, no outer bloom). Live: keep + plate-mask.
-    if (goldenSnapshot && glowMatch) return;
+    // Soft bloom PNGs bleed past the chamfer unless perfectly plate-masked.
+    // Skip them (golden + live); enter WebM stays, clipped by art plate mask.
+    if (glowMatch) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
-    if (glowMatch) {
-      el.classList.add("glow");
-      el.dataset.glow = glowMatch[1];
-    }
     const url = manifestDiskPath(`${family.layer_dir}/${layer.file}`);
     paintLayer(el, url, { mask: layer.mode === "mask" });
-    // Soft bloom PNGs must sit under the plate silhouette (V3 plateMask parity).
-    if (glowMatch) paintPlateMask(el, family);
     art.appendChild(el);
   });
   const icon = document.createElement("div");
