@@ -82,16 +82,31 @@ def _file_response(relative: str) -> web.FileResponse | web.Response:
 def presentation_payload() -> dict[str, Any]:
     """Theme id + resolved asset slots for the overlay HUD. Missing files are null."""
     theme = "cyber_racing"
+    v4_assets = False
+    v4_renderer = False
+    language = "en"
     try:
         from irswitch.server.api import get_app_config
 
         cfg = get_app_config()
         if cfg is not None:
             theme = cfg.overlay.theme or theme
+            v4_assets = bool(cfg.overlay.v4.assets)
+            v4_renderer = bool(cfg.overlay.v4.renderer)
+            language = cfg.overlay.language or language
     except Exception:
         logger.debug("Overlay theme lookup failed", exc_info=True)
     dumped = AssetManifest(theme, web_root()).to_dict()
-    return {"theme": dumped["theme"], "assets": dumped["assets"]}
+    payload: dict[str, Any] = {"theme": dumped["theme"], "assets": dumped["assets"]}
+    if v4_assets or v4_renderer:
+        payload["v4"] = {
+            "assets": v4_assets,
+            "renderer": v4_renderer,
+            "manifestUrl": "/overlay/web/themes-v4/manifest.json",
+            "catalogUrl": "/overlay/web/themes-v4/event_catalog.json",
+            "language": language,
+        }
+    return payload
 
 
 async def handle_overlay_page(request: web.Request) -> web.StreamResponse:

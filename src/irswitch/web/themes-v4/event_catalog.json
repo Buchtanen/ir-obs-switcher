@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "entries": {
+    "LAP_COMPLETE": {
+      "state": "lap_complete",
+      "debug_key": "lap_complete",
+      "family": "timing"
+    },
+    "PERSONAL_BEST": {
+      "state": "personal_best",
+      "debug_key": "personal_best",
+      "family": "timing"
+    },
+    "HUNTING": {
+      "state": "hunting",
+      "debug_key": "hunting",
+      "family": "battle"
+    },
+    "HUNTED": {
+      "state": "hunted",
+      "debug_key": "hunted",
+      "family": "battle"
+    },
+    "APPROACH": {
+      "state": "approach",
+      "debug_key": "hunting",
+      "family": "battle"
+    },
+    "ATTACK_RANGE": {
+      "state": "attack_range",
+      "debug_key": "hunting",
+      "family": "battle"
+    },
+    "OVERTAKE": {
+      "state": "overtake",
+      "debug_key": "overtake",
+      "family": "position"
+    },
+    "POSITION_GAINED": {
+      "state": "position_gained",
+      "debug_key": "position_gain",
+      "family": "position"
+    },
+    "POSITION_LOST": {
+      "state": "position_lost",
+      "debug_key": "position_loss",
+      "family": "position"
+    },
+    "INCIDENT": {
+      "state": "incident",
+      "debug_key": "incident",
+      "family": "exception"
+    },
+    "FINAL_LAP": {
+      "state": "final_lap",
+      "debug_key": "final_lap",
+      "family": "session"
+    },
+    "FINISH": {
+      "state": "finish",
+      "debug_key": "finish",
+      "family": "session"
+    },
+    "HR_PRESSURE_RISING": {
+      "state": "hr_pressure",
+      "debug_key": "hr_high",
+      "family": "bio"
+    },
+    "BLE_LOST": {
+      "state": "ble_reconnecting",
+      "debug_key": "ble_lost",
+      "family": "bio"
+    },
+    "CPU_TEMP_HIGH": {
+      "state": "incident",
+      "debug_key": "cpu_temp_high",
+      "family": "exception"
+    },
+    "GPU_TEMP_HIGH": {
+      "state": "incident",
+      "debug_key": "gpu_temp_high",
+      "family": "exception"
+    },
+    "PIT_ENTRY": {
+      "state": "pit_entry",
+      "debug_key": "pit_entry",
+      "family": "pit"
+    },
+    "PIT_EXIT": {
+      "state": "pit_exit",
+      "debug_key": "pit_exit",
+      "family": "pit"
+    }
+  },
+  "fallbacks": {
+    "TIME_LOST": "gain_found",
+    "SECTOR_BEST": "pb_attack",
+    "NO_IMPROVEMENT": "projected_lap",
+    "OVERTAKEN": "position_lost",
+    "BATTLE_LOST": "hunted",
+    "HEART_RATE": "hr_pressure"
+  }
+}
