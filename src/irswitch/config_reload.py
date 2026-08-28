@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from irswitch.config import AppConfig
 from irswitch.models import DrivingMode
+from irswitch.overlay.schema import overlay_values
 
 # Keys that take effect after POST /config/reload without process restart.
 LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
@@ -23,6 +24,53 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "switching.auto_stop_stream",
         "switching.stop_stream_after_seconds",
         "iracing.poll_hz",
+        "sampling.default_hz",
+        "sampling.race.hz",
+        "sampling.system.hz",
+        "sampling.bio.hz",
+        "overlay.enabled",
+        "overlay.theme",
+        "overlay.debug",
+        "battle.hunting.enter_gap",
+        "battle.hunting.exit_gap",
+        "battle.hunting.min_closing_rate",
+        "battle.hunting.activation_delay",
+        "battle.hunting.exit_delay",
+        "battle.hunted.enter_gap",
+        "battle.hunted.exit_gap",
+        "battle.hunted.min_closing_rate",
+        "battle.hunted.activation_delay",
+        "battle.hunted.exit_delay",
+        "battle.position_stable_seconds",
+        "battle.gap_history_seconds",
+        "heart_rate.enabled",
+        "heart_rate.source",
+        "heart_rate.bluetooth.device",
+        "heart_rate.bluetooth.reconnect",
+        "heart_rate.baseline_window",
+        "heart_rate.calm_delta",
+        "heart_rate.focused_delta",
+        "heart_rate.pushing_delta",
+        "system_info.enabled",
+        "system_info.cpu.enabled",
+        "system_info.gpu.enabled",
+        "system_info.memory.enabled",
+        "system_info.cpu_temp_warn",
+        "system_info.cpu_temp_crit",
+        "system_info.gpu_temp_warn",
+        "system_info.gpu_temp_crit",
+        "events.system_events_on_overlay",
+        "events.incident_min_delta",
+        "events.lap_duration",
+        "events.lap_cooldown",
+        "events.priorities.hunting",
+        "events.priorities.hunted",
+        "events.priorities.lap_complete",
+        "events.priorities.personal_best",
+        "events.priorities.position_change",
+        "events.priorities.incident",
+        "events.priorities.final_lap",
+        "events.priorities.finish",
         "dashboards.dashboard_update_fps",
         "dashboards.dashboard_gr_background_image",
         "dashboards.dashboard_gr_logo_obs",
@@ -49,6 +97,7 @@ RESTART_CONFIG_KEYS: frozenset[str] = frozenset(
         "oauth.client_id",
         "oauth.client_secret",
         "hotkeys.restart_hotkey",
+        "system_info.lhm_dll_path",
     }
 )
 
@@ -87,6 +136,7 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
         "oauth.client_id": config.oauth_client_id,
         "oauth.client_secret": config.oauth_client_secret,
     }
+    values.update(overlay_values(config.overlay))
     for mode in DrivingMode:
         values[f"scenes.{mode.name}"] = config.scenes.get(mode)
     return values

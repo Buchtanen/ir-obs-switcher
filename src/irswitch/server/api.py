@@ -76,6 +76,9 @@ def reset_state() -> None:
     _shutdown_event = None
     _task_registry = TaskRegistry()
     _config_container[0] = None
+    from irswitch.overlay.http import reset_overlay_server
+
+    reset_overlay_server()
 
 
 def set_shutdown_event(event: asyncio.Event) -> None:
@@ -1131,8 +1134,8 @@ def create_app() -> web.Application:
             response = await handler(request)
 
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Requested-With"
         return response
 
     app.middlewares.append(cors_middleware)
@@ -1160,6 +1163,10 @@ def create_app() -> web.Application:
     app.router.add_get("/oauth/callback", handle_oauth_callback)
     app.router.add_get("/oauth/status", handle_oauth_status)
     app.router.add_post("/oauth/revoke", handle_oauth_revoke)
+
+    from irswitch.overlay.http import register_overlay_routes
+
+    register_overlay_routes(app)
 
     # Static asset routes for favicon and app icons
     # Handle both normal execution and PyInstaller bundled EXE

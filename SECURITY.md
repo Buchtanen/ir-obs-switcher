@@ -25,6 +25,13 @@ Tento dokument popisuje security best practices pro projekt iRacing OBS Switcher
    - ✅ Token refresh mechanismus implementován
    - ✅ Token revocation podporováno
 
+4. **Overlay / config write:**
+   - ✅ `PUT /api/config` a `POST /overlay/debug/emit` jen z localhost
+   - ✅ CSRF header `X-Requested-With: irswitch`
+   - ✅ GET `/api/config` redaktuje OBS password
+   - ✅ BLE MAC se v INFO neloguje (hash); LHM DLL se necommituje
+   - ⚠️ Overlay WS nemá auth — spoléhá na bind `127.0.0.1`
+
 ## ⚠️ Doporučení pro zlepšení
 
 ### 1. Secrets Management

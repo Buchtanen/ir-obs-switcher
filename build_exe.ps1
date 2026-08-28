@@ -33,6 +33,9 @@ if ($Core -or $All) {
         --name irswitchd `
         --noconsole `
         --collect-all irswitch `
+        --collect-all bleak `
+        --collect-all psutil `
+        --hidden-import pynvml `
         --add-data "assets;assets" `
         --distpath dist `
         --workpath build `

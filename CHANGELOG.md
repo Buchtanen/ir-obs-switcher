@@ -5,6 +5,22 @@ Všechny významné změny v projektu budou zdokumentovány v tomto souboru.
 Formát je založen na [Keep a Changelog](https://keepachangelog.com/cs/1.0.0/),
 a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 
+## [1.1.0] — 2026-08-25
+
+### Features
+
+* race overlay pipeline: telemetry extract, race context, event manager, HTML OBS overlay
+* overlay BLE heart-rate (`bleak`) and system info (`psutil` / NVML) as core deps; LHM stays extra
+* overlay WebSocket `/ws/overlay`, debug inject, schema-driven `/config` page
+* per-component sampling Hz (global default + override, bio push by default)
+* mock (`--mock`) and JSONL replay (`--replay`) without iRacing
+* overlay theme asset pack (3×37 SVG/PNG) wired into the OBS HUD via snapshot `assets`
+* `/overlay/demo` dry-test stage: auto-play HUD sequence without OBS or iRacing
+
+### Security
+
+* config write and debug emit require localhost + CSRF header; OBS password redacted on GET
+
 ## [1.0.0](https://github.com/Buchtanen/ir-obs-switcher/compare/v0.7.0...v1.0.0) (2026-08-16)
 
 

@@ -5,10 +5,21 @@ from __future__ import annotations
 import configparser
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from irswitch.models import DrivingMode
+from irswitch.overlay.settings import (
+    BattleSettings,
+    EventPrioritySettings,
+    EventSettings,
+    HeartRateSettings,
+    HuntingSettings,
+    OverlaySettings,
+    SamplingSettings,
+    SystemInfoSettings,
+)
+from irswitch.sampling.scheduler import clamp_hz
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +82,9 @@ class AppConfig:
     # [oauth] - Optional OAuth credentials for YouTube API
     oauth_client_id: str | None
     oauth_client_secret: str | None
+
+    # Overlay / race pipeline (optional INI sections, defaults apply)
+    overlay: OverlaySettings = field(default_factory=OverlaySettings)
 
     @classmethod
     def from_file(cls, path: Path | str) -> AppConfig:
@@ -224,6 +238,8 @@ class AppConfig:
                 if not oauth_client_secret:
                     oauth_client_secret = None
 
+        overlay = _load_overlay_settings(parser)
+
         result = cls(
             http_host=http_host,
             http_port=http_port,
@@ -260,5 +276,193 @@ class AppConfig:
             dashboard_event_log_size=dashboard_event_log_size,
             oauth_client_id=oauth_client_id,
             oauth_client_secret=oauth_client_secret,
+            overlay=overlay,
         )
         return result
+
+
+def _optional_float(parser: configparser.ConfigParser, section: str, key: str) -> float | None:
+    if not parser.has_section(section) or not parser.has_option(section, key):
+        return None
+    raw = parser.get(section, key, fallback="").strip()
+    if raw == "":
+        return None
+    return parser.getfloat(section, key)
+
+
+def _get_bool(parser: configparser.ConfigParser, section: str, key: str, fallback: bool) -> bool:
+    if not parser.has_section(section):
+        return fallback
+    return parser.getboolean(section, key, fallback=fallback)
+
+
+def _get_float(parser: configparser.ConfigParser, section: str, key: str, fallback: float) -> float:
+    if not parser.has_section(section):
+        return fallback
+    return parser.getfloat(section, key, fallback=fallback)
+
+
+def _get_int(parser: configparser.ConfigParser, section: str, key: str, fallback: int) -> int:
+    if not parser.has_section(section):
+        return fallback
+    return parser.getint(section, key, fallback=fallback)
+
+
+def _get_str(parser: configparser.ConfigParser, section: str, key: str, fallback: str) -> str:
+    if not parser.has_section(section):
+        return fallback
+    return parser.get(section, key, fallback=fallback).strip() or fallback
+
+
+def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSettings:
+    defaults = HuntingSettings()
+    return HuntingSettings(
+        enter_gap=_get_float(parser, section, "enter_gap", defaults.enter_gap),
+        exit_gap=_get_float(parser, section, "exit_gap", defaults.exit_gap),
+        min_closing_rate=_get_float(parser, section, "min_closing_rate", defaults.min_closing_rate),
+        activation_delay=_get_float(parser, section, "activation_delay", defaults.activation_delay),
+        exit_delay=_get_float(parser, section, "exit_delay", defaults.exit_delay),
+    )
+
+
+def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings:
+    """Parse optional overlay INI sections. Missing keys keep defaults."""
+    defaults = OverlaySettings()
+    default_hz = _get_float(parser, "sampling", "default_hz", defaults.sampling.default_hz)
+    sampling = SamplingSettings(
+        default_hz=clamp_hz(default_hz) if default_hz > 0 else defaults.sampling.default_hz,
+        race_hz=_optional_float(parser, "sampling.race", "hz"),
+        system_hz=_optional_float(parser, "sampling.system", "hz"),
+        bio_hz=_optional_float(parser, "sampling.bio", "hz"),
+    )
+    theme = _get_str(parser, "overlay", "theme", defaults.theme)
+    allowed_themes = {"cyber_racing", "stealth_graphite", "night_attack"}
+    if theme not in allowed_themes:
+        theme = defaults.theme
+
+    lhm_raw = ""
+    if parser.has_section("system_info"):
+        lhm_raw = parser.get("system_info", "lhm_dll_path", fallback="").strip()
+    lhm_path = lhm_raw or None
+    if lhm_path and ".." in lhm_path.replace("\\", "/"):
+        raise ValueError("system_info.lhm_dll_path must not contain path traversal")
+
+    pri = EventPrioritySettings(
+        hunting=_get_int(
+            parser, "events.priorities", "hunting", defaults.events.priorities.hunting
+        ),
+        hunted=_get_int(parser, "events.priorities", "hunted", defaults.events.priorities.hunted),
+        battle_start=_get_int(
+            parser, "events.priorities", "battle_start", defaults.events.priorities.battle_start
+        ),
+        lap_complete=_get_int(
+            parser, "events.priorities", "lap_complete", defaults.events.priorities.lap_complete
+        ),
+        personal_best=_get_int(
+            parser, "events.priorities", "personal_best", defaults.events.priorities.personal_best
+        ),
+        position_change=_get_int(
+            parser,
+            "events.priorities",
+            "position_change",
+            defaults.events.priorities.position_change,
+        ),
+        overtake=_get_int(
+            parser, "events.priorities", "overtake", defaults.events.priorities.overtake
+        ),
+        incident=_get_int(
+            parser, "events.priorities", "incident", defaults.events.priorities.incident
+        ),
+        pit=_get_int(parser, "events.priorities", "pit", defaults.events.priorities.pit),
+        final_lap=_get_int(
+            parser, "events.priorities", "final_lap", defaults.events.priorities.final_lap
+        ),
+        finish=_get_int(parser, "events.priorities", "finish", defaults.events.priorities.finish),
+        bio=_get_int(parser, "events.priorities", "bio", defaults.events.priorities.bio),
+        system=_get_int(parser, "events.priorities", "system", defaults.events.priorities.system),
+    )
+
+    return OverlaySettings(
+        enabled=_get_bool(parser, "overlay", "enabled", defaults.enabled),
+        theme=theme,
+        debug=_get_bool(parser, "overlay", "debug", defaults.debug),
+        sampling=sampling,
+        battle=BattleSettings(
+            hunting=_load_hunting(parser, "battle.hunting"),
+            hunted=_load_hunting(parser, "battle.hunted"),
+            position_stable_seconds=_get_float(
+                parser, "battle", "position_stable_seconds", defaults.battle.position_stable_seconds
+            ),
+            gap_history_seconds=_get_float(
+                parser, "battle", "gap_history_seconds", defaults.battle.gap_history_seconds
+            ),
+        ),
+        heart_rate=HeartRateSettings(
+            enabled=_get_bool(parser, "heart_rate", "enabled", defaults.heart_rate.enabled),
+            source=_get_str(parser, "heart_rate", "source", defaults.heart_rate.source),
+            device=_get_str(parser, "heart_rate.bluetooth", "device", defaults.heart_rate.device),
+            reconnect=_get_bool(
+                parser, "heart_rate.bluetooth", "reconnect", defaults.heart_rate.reconnect
+            ),
+            baseline_window=_get_float(
+                parser, "heart_rate", "baseline_window", defaults.heart_rate.baseline_window
+            ),
+            calm_delta=_get_float(
+                parser, "heart_rate", "calm_delta", defaults.heart_rate.calm_delta
+            ),
+            focused_delta=_get_float(
+                parser, "heart_rate", "focused_delta", defaults.heart_rate.focused_delta
+            ),
+            pushing_delta=_get_float(
+                parser, "heart_rate", "pushing_delta", defaults.heart_rate.pushing_delta
+            ),
+        ),
+        system_info=SystemInfoSettings(
+            enabled=_get_bool(parser, "system_info", "enabled", defaults.system_info.enabled),
+            cpu_enabled=_get_bool(
+                parser, "system_info.cpu", "enabled", defaults.system_info.cpu_enabled
+            ),
+            gpu_enabled=_get_bool(
+                parser, "system_info.gpu", "enabled", defaults.system_info.gpu_enabled
+            ),
+            memory_enabled=_get_bool(
+                parser, "system_info.memory", "enabled", defaults.system_info.memory_enabled
+            ),
+            lhm_dll_path=lhm_path,
+            cpu_temp_warn=_get_float(
+                parser, "system_info", "cpu_temp_warn", defaults.system_info.cpu_temp_warn
+            ),
+            cpu_temp_crit=_get_float(
+                parser, "system_info", "cpu_temp_crit", defaults.system_info.cpu_temp_crit
+            ),
+            gpu_temp_warn=_get_float(
+                parser, "system_info", "gpu_temp_warn", defaults.system_info.gpu_temp_warn
+            ),
+            gpu_temp_crit=_get_float(
+                parser, "system_info", "gpu_temp_crit", defaults.system_info.gpu_temp_crit
+            ),
+        ),
+        events=EventSettings(
+            incident_min_delta=_get_int(
+                parser, "events", "incident_min_delta", defaults.events.incident_min_delta
+            ),
+            lap_duration=_get_float(parser, "events", "lap_duration", defaults.events.lap_duration),
+            lap_cooldown=_get_float(parser, "events", "lap_cooldown", defaults.events.lap_cooldown),
+            alert_duration=_get_float(
+                parser, "events", "alert_duration", defaults.events.alert_duration
+            ),
+            session_duration=_get_float(
+                parser, "events", "session_duration", defaults.events.session_duration
+            ),
+            battle_update_hz=_get_float(
+                parser, "events", "battle_update_hz", defaults.events.battle_update_hz
+            ),
+            system_events_on_overlay=_get_bool(
+                parser,
+                "events",
+                "system_events_on_overlay",
+                defaults.events.system_events_on_overlay,
+            ),
+            priorities=pri,
+        ),
+    )

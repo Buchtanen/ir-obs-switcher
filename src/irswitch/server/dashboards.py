@@ -247,6 +247,24 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             align-items: center;
         }}
 
+        .app-nav {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0 0 12px 0;
+        }}
+        .app-nav a {{
+            color: #9be7ff;
+            text-decoration: none;
+            font-size: 0.8em;
+            padding: 4px 10px;
+            border: 1px solid rgba(155, 231, 255, 0.35);
+            border-radius: 4px;
+        }}
+        .app-nav a:hover {{
+            background: rgba(155, 231, 255, 0.12);
+        }}
+
         .logo {{
             height: 28px;
             width: auto;
@@ -903,6 +921,14 @@ async def handle_gr_status(request: web.Request) -> web.Response:
                 {'<img src="' + logo_app + '" alt="App" class="logo">' if logo_app else ''}
             </div>
         </div>
+
+        <nav class="app-nav" aria-label="App">
+            <a href="/gr-status">Switcher</a>
+            <a href="/overlay">Overlay</a>
+            <a href="/overlay/demo">Overlay demo</a>
+            <a href="/overlay/debug">Overlay debug</a>
+            <a href="/config">Config</a>
+        </nav>
 
         <div id="health-banner" class="{health_banner_class}" role="status" aria-live="polite">
             <h3 id="health-banner-title">{health_banner_title}</h3>

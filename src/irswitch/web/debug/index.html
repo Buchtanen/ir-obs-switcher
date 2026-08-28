@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Overlay debug</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; margin: 0; padding: 16px; }
+    nav a { color: #9be7ff; margin-right: 12px; }
+    pre { background: #1b1b1b; padding: 12px; overflow: auto; max-height: 240px; }
+    button { margin: 4px; padding: 6px 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/gr-status">Switcher</a>
+    <a href="/overlay">Overlay</a>
+    <a href="/overlay/demo">Dry test</a>
+    <a href="/overlay/debug">Overlay debug</a>
+    <a href="/config">Config</a>
+  </nav>
+  <h1>Overlay debug</h1>
+  <div id="buttons"></div>
+  <div class="grid">
+    <section><h2>Race</h2><pre id="race"></pre></section>
+    <section><h2>Bio</h2><pre id="bio"></pre></section>
+    <section><h2>System</h2><pre id="system"></pre></section>
+  </div>
+  <script>
+    const CSRF = { "X-Requested-With": "irswitch", "Content-Type": "application/json" };
+    async function loadCatalog() {
+      const res = await fetch("/api/overlay/debug/events");
+      const data = await res.json();
+      const box = document.getElementById("buttons");
+      (data.events || []).forEach((name) => {
+        const btn = document.createElement("button");
+        btn.textContent = "TEST " + name;
+        btn.onclick = async () => {
+          await fetch("/overlay/debug/emit", { method: "POST", headers: CSRF, body: JSON.stringify({ name }) });
+        };
+        box.appendChild(btn);
+      });
+    }
+    function connect() {
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      const ws = new WebSocket(`${proto}://${location.host}/ws/overlay`);
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === "snapshot") {
+          document.getElementById("race").textContent = JSON.stringify(msg.race, null, 2);
+          document.getElementById("bio").textContent = JSON.stringify(msg.bio, null, 2);
+          document.getElementById("system").textContent = JSON.stringify(msg.system, null, 2);
+        }
+        if (msg.type === "state") {
+          const el = document.getElementById(msg.domain);
+          if (el) el.textContent = JSON.stringify(msg.data, null, 2);
+        }
+      };
+      ws.onclose = () => setTimeout(connect, 2000);
+    }
+    loadCatalog();
+    connect();
+  </script>
+</body>
+</html>

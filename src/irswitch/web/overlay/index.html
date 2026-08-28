@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Buchtanen iRacer Overlay</title>
+  <link rel="stylesheet" href="/overlay/static/css/overlay.css">
+  <link id="theme-css" rel="stylesheet" href="/overlay/static/css/themes/cyber_racing.css">
+  <script>
+    const params = new URLSearchParams(location.search);
+    if (params.has("demo")) document.documentElement.classList.add("is-demo");
+    const layout = params.get("layout");
+    if (layout === "preview" || layout === "golden") {
+      document.documentElement.classList.add("preview-layout");
+    }
+    if (layout === "golden") document.documentElement.classList.add("golden-layout");
+  </script>
+</head>
+<body>
+  <div id="session-layer"></div>
+  <div id="bio-expanded"></div>
+  <div id="event-layer"></div>
+  <div id="battle-stack"></div>
+  <div id="sysinfo-widget">
+    <div class="sysinfo-art">
+      <div class="layer bg" data-slot="sysinfo_background"></div>
+      <div class="layer dividers mask cover" data-slot="sysinfo_dividers"></div>
+    </div>
+    <div class="sys-brand">BUCHTANEN iRACER</div>
+    <div class="sys-mod" id="cpu-load"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="cpu_icon"></span><div class="sys-copy"><div class="label">CPU</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="cpu-temp"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="temp_icon"></span><div class="sys-copy"><div class="label">CPU TEMP</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="cpu-pwr"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="power_icon"></span><div class="sys-copy"><div class="label">CPU PWR</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="gpu-load"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="gpu_icon"></span><div class="sys-copy"><div class="label">GPU</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="gpu-temp"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="temp_icon"></span><div class="sys-copy"><div class="label">GPU TEMP</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="gpu-pwr"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="power_icon"></span><div class="sys-copy"><div class="label">GPU PWR</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="gpu-clk"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="gpu_icon"></span><div class="sys-copy"><div class="label">GPU CLK</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="vram"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="ram_icon"></span><div class="sys-copy"><div class="label">VRAM</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="ram"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="ram_icon"></span><div class="sys-copy"><div class="label">RAM</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="fps"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="fps_icon"></span><div class="sys-copy"><div class="label">FPS</div><div class="value">—</div></div></div>
+    <div class="sys-mod" id="hr"><div class="layer segment" data-slot="sysinfo_module_segment"></div><span class="sys-icon icon mask" data-slot="heart_icon"></span><div class="sys-copy"><div class="label">HR</div><div class="value">—</div></div></div>
+  </div>
+  <script type="module" src="/overlay/static/js/overlay.js"></script>
+</body>
+</html>

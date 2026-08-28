@@ -1,0 +1,312 @@
+{
+  "version": 3,
+  "canvas": [
+    420,
+    140
+  ],
+  "themes": {
+    "cyber_racing": {
+      "accent": [
+        0,
+        226,
+        240
+      ],
+      "warning": [
+        255,
+        151,
+        0
+      ],
+      "alert": [
+        255,
+        66,
+        42
+      ],
+      "layer_dir": "themes/cyber_racing/battle/layers",
+      "motion_dir": "themes/cyber_racing/battle/motion",
+      "layers": [
+        {
+          "file": "battle_shadow.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_base_plate.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_material.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_tech_diagram.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_frame_base.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_frame_highlight.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_state_accent_mask.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_corner_left.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_corner_right.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_icon_well.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_radar_ticks.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_radar_ring_inner.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_radar_ring_outer.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_target_icon.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_pressure_icon.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_micro_details.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_scan_mask.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_glow_cyan.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_glow_amber.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_glow_red.png",
+          "mode": "image"
+        }
+      ]
+    },
+    "stealth_graphite": {
+      "accent": [
+        0,
+        206,
+        224
+      ],
+      "warning": [
+        230,
+        139,
+        0
+      ],
+      "alert": [
+        241,
+        55,
+        47
+      ],
+      "layer_dir": "themes/stealth_graphite/battle/layers",
+      "motion_dir": "themes/stealth_graphite/battle/motion",
+      "layers": [
+        {
+          "file": "battle_shadow.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_base_plate.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_material.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_tech_diagram.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_frame_base.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_frame_highlight.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_state_accent_mask.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_corner_left.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_corner_right.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_icon_well.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_radar_ticks.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_radar_ring_inner.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_radar_ring_outer.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_target_icon.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_pressure_icon.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_micro_details.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_scan_mask.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_glow_cyan.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_glow_amber.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_glow_red.png",
+          "mode": "image"
+        }
+      ]
+    },
+    "night_attack": {
+      "accent": [
+        0,
+        216,
+        231
+      ],
+      "warning": [
+        255,
+        110,
+        0
+      ],
+      "alert": [
+        255,
+        38,
+        25
+      ],
+      "layer_dir": "themes/night_attack/battle/layers",
+      "motion_dir": "themes/night_attack/battle/motion",
+      "layers": [
+        {
+          "file": "battle_shadow.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_base_plate.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_material.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_tech_diagram.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_frame_base.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_frame_highlight.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_state_accent_mask.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_corner_left.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_corner_right.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_icon_well.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_radar_ticks.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_radar_ring_inner.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_radar_ring_outer.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_target_icon.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_pressure_icon.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_micro_details.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_scan_mask.png",
+          "mode": "mask"
+        },
+        {
+          "file": "battle_glow_cyan.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_glow_amber.png",
+          "mode": "image"
+        },
+        {
+          "file": "battle_glow_red.png",
+          "mode": "image"
+        }
+      ]
+    }
+  }
+}

@@ -26,6 +26,16 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /gr-status](#get-gr-status)
   - [GET /vr-status](#get-vr-status)
   - [GET /test](#get-test)
+  - [GET /overlay](#get-overlay)
+  - [GET /overlay/debug](#get-overlaydebug)
+  - [GET /overlay/demo](#get-overlaydemo)
+  - [GET /config](#get-config)
+- [Overlay API](#overlay-api)
+  - [WS /ws/overlay](#ws-wsoverlay)
+  - [GET /api/overlay/snapshot](#get-apioverlaysnapshot)
+  - [POST /overlay/debug/emit](#post-overlaydebugemit)
+  - [GET /api/config](#get-apiconfig)
+  - [PUT /api/config](#put-apiconfig)
 
 ---
 
@@ -647,3 +657,59 @@ Test widget pro ověření JavaScript funkcionality.
 - Zobrazí "JS JEDE" pokud JavaScript funguje správně
 
 **Poznámka**: Tento widget **není určen pro RaceLab VR**, protože RaceLab VR widgety nepodporují JavaScript ani auto-refresh.
+
+---
+
+## Overlay API
+
+Overlay používá **samostatný** WebSocket. Switcher `WS /ws` se nemění.
+
+Envelope:
+
+```json
+{ "type": "event", "name": "battle", "phase": "enter", "channel": "battle", "priority": 20, "timestamp": 0, "data": {} }
+{ "type": "state", "domain": "system", "data": {} }
+{ "type": "snapshot", "race": {}, "bio": {}, "system": {}, "activeEvents": [], "theme": "cyber_racing", "assets": {} }
+```
+
+### GET /overlay
+
+OBS Browser Source, 1920×1080, transparentní pozadí.
+
+### GET /overlay/debug
+
+Ruční TEST eventy (HUNTING, LAP, …). Write volá `POST /overlay/debug/emit`.
+
+### GET /overlay/demo
+
+Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1`, auto-scénář (battle, lap, PB, position, incident, HR, final, finish) v loopu. Bez OBS a bez iRacing. Theme se přepíná v UI.
+
+### GET /config
+
+Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
+
+### WS /ws/overlay
+
+Po connectu okamžitý `snapshot` včetně `theme` a `assets` (relativní cesty pod `/overlay/web/`). State se coalescuje, eventy jdou hned. Reconnect backoff 1/2/5/10 s řeší frontend.
+
+Ikony se stavovou barvou (`currentColor`) se na HUD kreslí přes CSS `mask-image`, ne jako `<img>`.
+
+### GET /api/overlay/snapshot
+
+JSON snapshot + `theme` + `assets` (stejný payload jako první WS zpráva). Chybějící soubor je `null`, overlay spadne na CSS desku.
+
+### POST /overlay/debug/emit
+
+Body: `{ "name": "hunting" }`. Povolené názvy: `GET /api/overlay/debug/events`.
+
+Security: jen localhost + header `X-Requested-With: irswitch`.
+
+### GET /api/config
+
+Vrací `schema`, `overlay` hodnoty a redacted `switcher` (OBS password je `***`).
+
+### PUT /api/config
+
+Body: `{ "values": { "sampling.default_hz": 6 } }`. Atomický zápis INI + `.bak`. Response: `applied`, `applied_live`, `needs_restart`.
+
+Security: localhost + CSRF header. Neznámé klíče a path traversal se odmítnou.

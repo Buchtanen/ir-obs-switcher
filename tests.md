@@ -17,6 +17,7 @@ Projekt obsahuje **84+ unit testů** pokrývající všechny klíčové komponen
 - **Loading Tracker** (9 testů) - sledování doby loadingu
 - **Event Log** (9 testů) - thread-safe event log systém
 - **E2E Main Loop** (7 testů) - end-to-end testy hlavní smyčky
+- **Overlay** — sampling, race context, eventy, BLE parser, sysinfo, config write, overlay WS, theme asset pack, dry-test demo (`tests/test_sampling.py`, `test_race_context.py`, `test_event_*.py`, `test_bio.py`, `test_system_info.py`, `test_overlay_*.py`)
 
 ## Spuštění testů
 

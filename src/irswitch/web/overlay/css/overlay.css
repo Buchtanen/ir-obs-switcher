@@ -1,0 +1,512 @@
+/* Shared OBS overlay layout. Theme tokens live in css/themes/*.css */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Nimbus Sans Narrow", "Arial Narrow", "Eurostile", "Rajdhani", "Segoe UI", sans-serif;
+  color: var(--text-primary, #e8fbff);
+}
+
+/* Dry-test only. OBS Browser Source stays fully transparent. */
+html.is-demo,
+html.is-demo body {
+  background: #04070a;
+}
+
+html.golden-layout #sysinfo-widget,
+html.golden-layout #session-layer,
+html.golden-layout #event-layer,
+html.golden-layout #bio-expanded {
+  display: none;
+}
+
+html.preview-layout .widget {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+#event-layer,
+#session-layer,
+#bio-expanded,
+#battle-stack {
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+}
+
+#battle-stack {
+  left: 36px;
+  /* Preview: hunted bottom at y=989, sysinfo 72px → 19px gap. */
+  bottom: 91px;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#event-layer {
+  right: 48px;
+  /* Same gap as battle-stack above 72px SYSINFO. Compact BPM HUD is gone. */
+  bottom: 91px;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#session-layer {
+  left: 50%;
+  top: 64px;
+  transform: translateX(-50%);
+  width: 420px;
+}
+
+#bio-expanded {
+  right: 48px;
+  top: 120px;
+  width: 420px;
+}
+
+#sysinfo-widget {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1920px;
+  height: 72px;
+  display: grid;
+  /* Brand 230 + 11 modules of 150 = 1880; leftover 40px is the right chamfer. */
+  grid-template-columns: 230px repeat(11, 150px);
+  align-items: stretch;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+#sysinfo-widget.fallback {
+  background: var(--panel-fill, rgba(8, 12, 16, 0.72));
+  border-top: 1px solid var(--border, #3ad7ff);
+  box-shadow: 0 0 18px var(--glow, rgba(58, 215, 255, 0.18));
+}
+
+.sysinfo-art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sysinfo-art .layer {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: 1920px 72px;
+}
+
+.sysinfo-art .layer.dividers {
+  color: var(--primary, #3ad7ff);
+}
+
+.sys-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--text-muted, #7aa0aa);
+}
+
+.sys-mod {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 150px;
+  height: 72px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+  padding: 0 12px 0 14px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sys-mod .layer.segment {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: 150px 72px;
+  background-position: 0 0;
+}
+
+.sys-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--primary, #3ad7ff);
+}
+
+.sys-mod > :not(.layer) {
+  position: relative;
+  z-index: 1;
+}
+
+.sys-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.05;
+}
+
+.sys-mod .label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted, #7aa0aa);
+  white-space: nowrap;
+}
+
+.sys-mod .value {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #e8fbff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sys-mod.empty-metric .value {
+  color: var(--text-muted, #7aa0aa);
+}
+
+.sys-mod.warn .value,
+.sys-mod.warn .sys-icon { color: var(--warning, #ffbf4a); }
+.sys-mod.crit .value,
+.sys-mod.crit .sys-icon { color: var(--alert, #ff5a3d); }
+
+/* Heart beats only while SYSINFO has a live BPM. Period is --hr-beat (60/bpm). */
+#hr {
+  overflow: visible;
+}
+
+#hr:not(.empty-metric) .sys-icon {
+  transform-origin: center;
+  animation: hr-pulse var(--hr-beat, 0.85s) ease-in-out infinite;
+}
+
+@keyframes hr-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.88; }
+  50% { transform: scale(1.14); opacity: 1; }
+}
+
+.widget {
+  position: relative;
+  width: 420px;
+  height: 140px;
+  --copy-pad: 119px;
+  --icon-w: 64px;
+  --icon-h: 64px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  clip-path: none;
+  opacity: 0;
+  transform: translateX(-16px);
+  color: var(--primary, #3ad7ff);
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.widget.fallback {
+  padding: 14px 16px 14px 18px;
+  background: var(--panel-fill, rgba(8, 12, 16, 0.78));
+  border: 1px solid var(--border, #3ad7ff);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+
+.widget.alert { --icon-w: 48px; --icon-h: 48px; }
+.widget.session { --icon-w: 80px; --icon-h: 80px; }
+.widget.session.finish { --icon-w: 96px; --icon-h: 80px; }
+.widget.bio { --icon-w: 56px; --icon-h: 56px; }
+
+.widget.battle {
+  transform: translateX(-36px);
+}
+
+.widget.visible {
+  opacity: 1;
+  transform: none;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.widget.battle.visible {
+  transition: opacity 360ms ease, transform 360ms ease;
+}
+
+.widget.battle.exit {
+  transform: translateX(-22px);
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.widget.exit {
+  opacity: 0;
+  transform: translateX(-12px);
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.widget.hunting { color: var(--primary, #3ad7ff); }
+.widget.hunted { color: var(--warning, #ffbf4a); }
+.widget.alert,
+.widget.incident,
+.widget.ble_lost { color: var(--alert, #ff5a3d); }
+.widget.pb,
+.widget.personal_best { color: var(--warning, #ffbf4a); }
+
+.widget-art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.widget.has-art .widget-art {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  mask-mode: alpha;
+}
+
+.widget-art .layer {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 100% 100%;
+}
+
+.widget-art .layer.empty {
+  display: none;
+}
+
+.widget-art .layer.glow,
+.widget-art .layer.blend-screen {
+  inset: 0;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+
+/* Pre-colored battle glow/highlight match PIL alpha_composite, not CSS screen. */
+.widget.battle .layer.glow,
+.widget.battle .layer.highlight {
+  mix-blend-mode: normal;
+  opacity: 1;
+  filter: none;
+}
+
+.widget.battle .layer.accent,
+.widget.battle .layer.corner-left,
+.widget.battle .layer.corner-right,
+.widget.battle .layer.ticks,
+.widget.battle .layer.ring-inner,
+.widget.battle .layer.ring-outer {
+  opacity: 0.92;
+}
+
+.widget.battle .layer.micro {
+  opacity: 0.56;
+}
+
+/* V3 local glow on small widgets: pre-colored PNG masked to the chamfered
+   plate. No rectangular box-shadow / drop-shadow around the CSS box. */
+.widget:not(.battle):not(.glow-flash) .layer.glow {
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+.widget-art video.fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.widget.battle video.radar-loop,
+.widget.battle video.signal-lock,
+.widget.battle video.scan-enter,
+.widget.battle video.theme-motion,
+.widget video.finish-sweep {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Shared hunting WebM, shifted to the widget warning hue. */
+.widget.hunted video.fx,
+.widget.pb video.fx,
+.widget.personal_best video.fx,
+.widget.lost video.fx {
+  filter: hue-rotate(-150deg) saturate(1.2);
+}
+
+.widget.glow-flash .layer.glow {
+  mix-blend-mode: normal;
+  animation: incident-glow-flash 900ms ease-in-out 1;
+}
+
+@keyframes incident-glow-flash {
+  0%,
+  100% { opacity: 1; }
+  18% { opacity: 0.08; }
+  36% { opacity: 1; }
+  54% { opacity: 0.08; }
+  72% { opacity: 1; }
+}
+
+.widget.bio .layer.deco {
+  inset: auto;
+  left: 119px;
+  right: 18px;
+  top: auto;
+  bottom: 12px;
+  height: 22px;
+  width: auto;
+  opacity: 0.45;
+}
+
+.widget.battle.has-radar-fx .layer.ticks {
+  opacity: 0.55;
+}
+
+.widget-art .layer.icon {
+  inset: auto;
+  /* V3 well centre is (64, 71) on the 420x140 canvas. */
+  left: calc(15.24% - var(--icon-w, 64px) / 2);
+  top: calc(50.7% - var(--icon-h, 64px) / 2);
+  width: var(--icon-w, 64px);
+  height: var(--icon-h, 64px);
+  transform: none;
+  z-index: 2;
+  background-size: contain;
+  background-position: center;
+}
+
+/* V3 plates are authored 420x140. Keep native size on every card so the
+   chamfer does not squash. Battle glyphs stay full-canvas; event icons use
+   the 64px well box. */
+.widget .layer.native {
+  inset: 0;
+  left: auto;
+  top: auto;
+  width: 420px;
+  height: 140px;
+  background-size: 420px 140px;
+  background-position: 0 0;
+  transform: none;
+}
+
+.widget-copy {
+  position: relative;
+  z-index: 3;
+  display: block;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+  color: var(--text-primary, #e8fbff);
+}
+
+.widget .title {
+  position: absolute;
+  left: 119px;
+  top: 38px;
+  margin: 0;
+  font-size: 26px;
+  line-height: 26px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: #ebf1f1;
+}
+
+.widget .kicker {
+  position: absolute;
+  left: 120px;
+  top: 74px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 13px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+
+.widget .meta {
+  position: absolute;
+  left: 120px;
+  top: 94px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: #becdd0;
+  font-variant-numeric: tabular-nums;
+}
+
+.widget .kicker:empty {
+  display: none;
+}
+
+.widget.hunted .kicker,
+.widget.pb .kicker,
+.widget.personal_best .kicker {
+  color: var(--warning, #ffbf4a);
+}
+
+.widget.alert .widget-copy .title,
+.widget.incident .widget-copy .title,
+.widget.ble_lost .widget-copy .title {
+  color: var(--alert, #ff5a3d);
+}
+
+.widget.hunted .meta,
+.widget.pb .meta,
+.widget.personal_best .meta {
+  color: var(--warning, #ffbf4a);
+}
+
+.widget.alert .meta,
+.widget.incident .meta,
+.widget.ble_lost .meta {
+  color: var(--alert, #ff5a3d);
+}
+
+.icon.mask,
+.sys-icon {
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.layer.empty {
+  display: none;
+}

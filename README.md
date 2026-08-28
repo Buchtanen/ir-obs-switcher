@@ -143,6 +143,26 @@ Aplikace poskytuje dva HTML dashboardy:
 - **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics (včetně `errors_total`)
 - **Konfigurovatelné**: Obrázky pozadí a loga
 - **Screenshot**: [GR Dashboard](assets/rg-status-screen.png)
+- **Navigace**: Overlay, Overlay demo, Overlay debug, Config
+
+### Race overlay (OBS Browser Source)
+
+- **URL**: `http://127.0.0.1:17321/overlay` — transparentní 1920×1080 overlay
+- **Dry test**: `http://127.0.0.1:17321/overlay/demo` — tmavé jeviště, auto-scénář HUD bez OBS/iRacing
+- **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
+- **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
+- **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)
+- Tři themes (`cyber_racing`, `stealth_graphite`, `night_attack`) mají shodnou geometrii, 50 PNG + 4 WebM na theme (SYSINFO 1920×72, battle karta 420×140, V3 vrstvy). Popis: `src/irswitch/web/themes/ASSETS.md`. Chybějící soubor = CSS fallback.
+- **Battle golden freeze**: `http://127.0.0.1:17321/overlay?demo=1&layout=golden` (HUNTING + HUNTED, bez SYSINFO). Theme: `&theme=cyber_racing` / `stealth_graphite` / `night_attack`.
+
+Mock / replay (bez iRacing):
+
+```powershell
+irswitchd --config config\config.ini --mock
+irswitchd --config config\config.ini --replay recordings\battle.jsonl
+```
+
+Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. GPU čísla bere NVML. CPU package na Windows: LibreHardwareMonitor 0.9.5+ **zrušil WMI** — overlay čte `http://127.0.0.1:8085/data.json` (Options → Remote Web Server → Run, File → Hardware → CPU zaškrtnuté). Když LHM bindne jen na LAN IP, overlay to vezme z `LibreHardwareMonitor.config`. Starší LHM pořád WMI `root\LibreHardwareMonitor`. Stock Windows **nemá** CPU package power. FPS/FT berou iRacing — mimo 3D zůstanou prázdné.
 
 ### VR Dashboard (pro VR)
 
@@ -214,8 +234,8 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 
 **Řešení**:
 1. Zkontroluj, že config soubor existuje a je validní
-2. Spouštěj přes `.\start_app.ps1` (preferuje `.venv`) nebo přímo `.\.venv\Scripts\irswitchd.exe --config config\config.ini`
-3. Ověř, že závislosti jsou v **tom samém** interpreteru: `.\.venv\Scripts\pip install -e .`
+2. Spouštěj přes `.\start_app.ps1` (preferuje `.venv`, doinstaluje bleak/psutil, spouští `python -m irswitch.main`)
+3. Ověř závislosti **tím samým** interpreterem: `.\.venv\Scripts\python.exe -m pip install -e .`
 4. Zkontroluj, že port 17321 není obsazený jinou aplikací
 5. Podívej se na error message - často obsahuje konkrétní problém
 
