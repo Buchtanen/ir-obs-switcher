@@ -255,6 +255,33 @@ function paintLayer(el, url, { mask = false, canvas = [420, 140] } = {}) {
   }
 }
 
+/** Clip a layer (or .v4-art) to the chamfered plate silhouette — same idea as V3 plateMask. */
+function paintPlateMask(el, family) {
+  if (!el || !family?.layer_dir) {
+    if (el) {
+      el.style.webkitMaskImage = "";
+      el.style.maskImage = "";
+    }
+    return;
+  }
+  const url = manifestDiskPath(`${family.layer_dir}/base_plate.png`);
+  if (!url) {
+    el.style.webkitMaskImage = "";
+    el.style.maskImage = "";
+    return;
+  }
+  const mask = `url("${url}")`;
+  el.style.webkitMaskImage = mask;
+  el.style.maskImage = mask;
+  el.style.webkitMaskSize = "420px 140px";
+  el.style.maskSize = "420px 140px";
+  el.style.webkitMaskRepeat = "no-repeat";
+  el.style.maskRepeat = "no-repeat";
+  el.style.webkitMaskPosition = "0 0";
+  el.style.maskPosition = "0 0";
+  el.style.maskMode = "alpha";
+}
+
 const SYSINFO_ICON_SLOTS = {
   cpu_icon: "cpu.png",
   gpu_icon: "gpu.png",
@@ -364,17 +391,27 @@ function rebuildArt(node, stateKey, familyName) {
   const family = manifest?.themes?.[theme]?.families?.[familyName];
   if (!family) {
     node.classList.add("fallback");
+    art.style.webkitMaskImage = "";
+    art.style.maskImage = "";
     return;
   }
   node.classList.remove("fallback");
   const goldenSnapshot = isGoldenSnapshot(node);
   (family.layers || []).forEach((layer, index) => {
-    if (goldenSnapshot && /^glow_/.test(layer.file)) return;
+    const glowMatch = /^glow_(cyan|amber|red)\.png$/.exec(layer.file);
+    // Golden gallery skips glow (deterministic, no outer bloom). Live: keep + plate-mask.
+    if (goldenSnapshot && glowMatch) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
+    if (glowMatch) {
+      el.classList.add("glow");
+      el.dataset.glow = glowMatch[1];
+    }
     const url = manifestDiskPath(`${family.layer_dir}/${layer.file}`);
     paintLayer(el, url, { mask: layer.mode === "mask" });
+    // Soft bloom PNGs must sit under the plate silhouette (V3 plateMask parity).
+    if (glowMatch) paintPlateMask(el, family);
     art.appendChild(el);
   });
   const icon = document.createElement("div");
@@ -382,6 +419,8 @@ function rebuildArt(node, stateKey, familyName) {
   const iconUrl = manifestDiskPath(`${family.icon_dir}/${stateKey}.png`);
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
+  // Clip enter WebM / residual bloom to the chamfered plate (not the CSS box).
+  paintPlateMask(art, family);
 }
 
 function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
@@ -827,7 +866,7 @@ export const DisplayV4 = {
     node.dataset.phase = phase;
     node.classList.toggle("phase-compact", phase === "COMPACT");
     const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";
-    node.classList.remove("tone-primary", "tone-warning");
+    node.classList.remove("tone-primary", "tone-warning", "tone-alert");
     node.classList.add(`tone-${accent}`);
     fillCopySlots(node, envelope, stateKey);
     syncWidgetMotion(node, envelope, familyName, created);
