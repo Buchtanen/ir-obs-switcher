@@ -1,0 +1,100 @@
+{
+  "themeId": "pitwall_light",
+  "contract": {
+    "transient": [
+      420,
+      140
+    ],
+    "sysinfo": [
+      1920,
+      72
+    ],
+    "bleCompact": [
+      180,
+      72
+    ]
+  },
+  "events": {
+    "HUNTING": {
+      "template": "hunting",
+      "variant": "info",
+      "rail": "blue",
+      "icon": "target",
+      "zone": "BATTLE_AHEAD"
+    },
+    "HUNTED": {
+      "template": "hunted",
+      "variant": "warning",
+      "rail": "amber",
+      "criticalRail": "red",
+      "icon": "shield",
+      "zone": "BATTLE_BEHIND"
+    },
+    "BATTLE_FOR_POSITION": {
+      "template": "battle",
+      "variant": "warning",
+      "rail": "amber",
+      "icon": "radar",
+      "zone": "BATTLE_AHEAD"
+    },
+    "LAP_COMPLETE": {
+      "template": "lap",
+      "variant": "timing",
+      "rail": "cyan",
+      "icon": "stopwatch",
+      "zone": "EVENT"
+    },
+    "PERSONAL_BEST": {
+      "template": "pb",
+      "variant": "positive",
+      "rail": "green",
+      "icon": "stopwatch",
+      "zone": "EVENT",
+      "flash": "surface-soft"
+    },
+    "POSITION_GAINED": {
+      "template": "position",
+      "variant": "positive",
+      "rail": "green",
+      "icon": "position-up",
+      "zone": "EVENT"
+    },
+    "POSITION_LOST": {
+      "template": "position",
+      "variant": "critical",
+      "rail": "red",
+      "icon": "position-down",
+      "zone": "EVENT"
+    },
+    "FINAL_LAP": {
+      "template": "final-lap",
+      "variant": "warning",
+      "rail": "amber",
+      "icon": "flag",
+      "zone": "SESSION"
+    },
+    "FINISH": {
+      "template": "finish",
+      "variant": "positive",
+      "rail": "green",
+      "icon": "finish",
+      "zone": "SESSION"
+    },
+    "HR_PRESSURE_RISING": {
+      "template": "bio",
+      "variant": "bio",
+      "rail": "violet",
+      "warningRail": "amber",
+      "criticalRail": "red",
+      "icon": "heart",
+      "zone": "BIO_EXPANDED"
+    }
+  },
+  "bleConnectionStates": {
+    "CONNECTED": "connected",
+    "PAIRING": "pairing",
+    "RECONNECTING": "reconnecting",
+    "DISCONNECTED": "disconnected",
+    "ERROR": "error"
+  }
+}

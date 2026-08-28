@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "themeId": "pitwall_light",
+  "displayName": "PITWALL LIGHT",
+  "version": "1.0.0",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "background": "transparent"
+  },
+  "geometry": {
+    "transientWidget": {
+      "width": 420,
+      "height": 140,
+      "radius": 26,
+      "safeArea": {
+        "top": 18,
+        "right": 20,
+        "bottom": 18,
+        "left": 118
+      }
+    },
+    "iconWell": {
+      "x": 22,
+      "y": 26,
+      "width": 82,
+      "height": 88,
+      "radius": 22,
+      "iconSize": 50
+    },
+    "bleCompact": {
+      "width": 180,
+      "height": 72
+    },
+    "bleExpanded": {
+      "width": 420,
+      "height": 140
+    },
+    "sysinfo": {
+      "width": 1920,
+      "height": 72,
+      "brandWidth": 230,
+      "standardSegmentWidth": 170,
+      "bioSegmentWidth": 180
+    },
+    "zones": {
+      "SESSION": {
+        "anchor": "top-center",
+        "top": 64,
+        "left": 750,
+        "width": 420
+      },
+      "BIO_EXPANDED": {
+        "anchor": "top-right",
+        "top": 120,
+        "right": 48,
+        "left": 1452,
+        "width": 420
+      },
+      "BATTLE": {
+        "anchor": "bottom-left",
+        "left": 36,
+        "bottom": 91,
+        "width": 420,
+        "gap": 10,
+        "maxItems": 2
+      },
+      "EVENT": {
+        "anchor": "bottom-right",
+        "right": 48,
+        "left": 1452,
+        "bottom": 91,
+        "width": 420,
+        "maxItems": 1
+      },
+      "SYSINFO": {
+        "anchor": "bottom-left",
+        "left": 0,
+        "bottom": 0,
+        "top": 1008,
+        "width": 1920,
+        "height": 72
+      }
+    }
+  },
+  "color": {
+    "ink": "#101B2C",
+    "muted": "#526177",
+    "glassTop": "rgba(255,255,255,.84)",
+    "glassBottom": "rgba(233,243,255,.62)",
+    "glassBorder": "rgba(255,255,255,.94)",
+    "state": {
+      "info": "#1B72FF",
+      "timing": "#17B7DB",
+      "positive": "#15A875",
+      "warning": "#EF9E20",
+      "critical": "#E84C56",
+      "bio": "#795CFF",
+      "neutral": "#6D7B8F"
+    }
+  },
+  "typography": {
+    "family": "Arial Narrow, Roboto Condensed, Segoe UI, Arial, sans-serif",
+    "eyebrow": {
+      "size": 12,
+      "weight": 800,
+      "letterSpacing": 1.8
+    },
+    "title": {
+      "size": 29,
+      "weight": 900
+    },
+    "meta": {
+      "size": 15,
+      "weight": 700
+    },
+    "value": {
+      "size": 28,
+      "weight": 900
+    }
+  },
+  "motion": {
+    "enterMs": 340,
+    "exitMs": 300,
+    "updateMs": 220,
+    "railRevealMs": 220,
+    "radarSweepMs": 900,
+    "pulseSampleMs": 220,
+    "reducedMotionMaxMs": 160
+  },
+  "rules": {
+    "transientOuterGeometryImmutable": true,
+    "compactChangesOuterGeometry": false,
+    "dynamicTextInAssets": false,
+    "dynamicNumbersInAssets": false,
+    "centerSafeAreaClear": true
+  }
+}
