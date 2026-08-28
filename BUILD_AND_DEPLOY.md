@@ -400,7 +400,7 @@ pyinstaller --onefile `
 - `--noconsole` - vytváří silent EXE bez konzole (doporučeno pro background proces)
 - `--collect-all irswitch` - zahrne všechny moduly z balíčku irswitch
 - `--add-data "assets;assets"` - zahrne assets adresář do EXE (favicon, logo, atd.)
-- `--add-data "src/irswitch/web;irswitch/web"` - overlay/debug/config HTML+CSS+JS
+- `--add-data "src/irswitch/web;irswitch/web"` - overlay/debug/config HTML+CSS+JS (includes V3 themes ~1.5 MiB; optional V4 pack `web/themes-v4/` adds ~5.8 MiB when present — gated at runtime by `overlay.v4_assets`)
 - `--distpath dist` - výstupní adresář
 - `--workpath build` - pracovní adresář pro build
 - `--clean` - vyčistí cache před buildem
