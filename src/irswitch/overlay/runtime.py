@@ -260,6 +260,7 @@ class OverlayRuntime:
             return
         if self.manager_v2 is not None:
             self.manager_v2.set_session_id(self._session_id(state))
+            self.manager_v2.update_pit_state(bool(state.on_pit_road), now)
             for candidate in candidates:
                 race_event, envelopes = self.manager_v2.submit(
                     candidate, now, mode=state.overlay_mode
