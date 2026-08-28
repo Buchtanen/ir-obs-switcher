@@ -32,7 +32,9 @@ env/
 *.swp
 *.swo
 *~
-.cursor/
+.cursor/*
+!.cursor/skills/
+!.cursor/skills/**
 !.cursorignore
 !.cursorrules
 
