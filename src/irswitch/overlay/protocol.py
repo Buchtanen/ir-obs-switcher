@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from irswitch.events.envelope import EventEnvelope, legacy_trigger_to_phase
 from irswitch.overlay.models import BioState, RaceState, SystemState
 
 
@@ -75,4 +76,37 @@ def snapshot_envelope(
         "bio": _dump(bio),
         "system": _dump(system),
         "activeEvents": list(active_events),
+    }
+
+
+def state_snapshot_envelope(active_stories: list[dict[str, Any]]) -> dict[str, Any]:
+    """Authoritative active V4 stories for reconnect (Spec §0.5.1)."""
+    return {
+        "type": "STATE_SNAPSHOT",
+        "activeStories": list(active_stories),
+    }
+
+
+def legacy_from_envelope(envelope: EventEnvelope | dict[str, Any]) -> dict[str, Any]:
+    """Down-convert V4 envelope to legacy MVP WS event shape for V3 renderer."""
+    data = envelope.to_dict() if hasattr(envelope, "to_dict") else dict(envelope)
+    event_type = str(data.get("eventType", "")).lower()
+    name = event_type.replace("_", " ")
+    if event_type == "lap_complete":
+        name = "lap_complete"
+    elif event_type == "personal_best":
+        name = "personal_best"
+    phase_raw = data.get("phase", "RESULT")
+    phase = "trigger"
+    mapped = legacy_trigger_to_phase(str(phase_raw), default="RESULT")
+    phase = mapped.lower() if mapped != "RESULT" else "trigger"
+    metrics = data.get("metrics") or {}
+    return {
+        "type": "event",
+        "name": name,
+        "phase": phase,
+        "channel": "lap" if "lap" in name or name == "personal_best" else "alert",
+        "priority": data.get("priority", 0),
+        "timestamp": (data.get("monotonicMs") or 0) / 1000.0,
+        "data": dict(metrics),
     }
