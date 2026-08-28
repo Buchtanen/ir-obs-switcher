@@ -622,6 +622,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `switching.auto_stop_stream`, `stop_stream_after_seconds`
 - většina `[dashboards]` klíčů čtených při requestu
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
+- `overlay.language`, `overlay.v4_*` a všechny `event_engine.*` flagy
 
 ### Vyžaduje restart procesu
 
@@ -638,6 +639,9 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 
 - `[sampling]` `default_hz` — globální vzorkování; `[sampling.race]`, `[sampling.system]`, `[sampling.bio]` můžou přetížit. `bio` 0 / prázdné = BLE notifications (ne poll). Clamp 0.2–30 Hz.
 - `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`) — assety v `src/irswitch/web/themes/<theme>/assets/`
+- `[overlay]` `language` (`en` | `cs`, default `en`) — overlay copy language. Event payloads carry copy tokens; the renderer resolves them via `irswitch.overlay.i18n.resolve_copy()`. English is the base catalog, missing translations fall back to it. Independent of `[app]` `language`, which drives the dashboards.
+- `[overlay]` `v4_assets`, `v4_renderer` (default `false`) — overlay V4 rollout flags.
+- `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (all default `false`) — event-engine rollout flags. All off = current MVP event behaviour.
 - `[battle.hunting]` / `[battle.hunted]` hysteresis
 - `[heart_rate]` + `[heart_rate.bluetooth]`
 - `[system_info]` (+ cpu/gpu/memory enabled). CPU package on Windows: LibreHardwareMonitor 0.9.5+ HTTP `http://127.0.0.1:8085/data.json` (Remote Web Server; File → Hardware → CPU). If LHM binds a LAN NIC, overlay reads `LibreHardwareMonitor.config`. Older LHM WMI `root\LibreHardwareMonitor`. Stock Windows has no CPU package power class. FPS/frametime come from iRacing (empty in the garage).

@@ -10,8 +10,8 @@ Catalogs are plain dicts so they ship inside the wheel without package-data.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Mapping
 
 DEFAULT_LANGUAGE = "en"
 

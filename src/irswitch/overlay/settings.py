@@ -115,9 +115,7 @@ class OverlaySettings:
     debug: bool = False
     language: str = "en"
     v4: OverlayV4Settings = field(default_factory=OverlayV4Settings)
-    event_engine: EventEngineFeatureSettings = field(
-        default_factory=EventEngineFeatureSettings
-    )
+    event_engine: EventEngineFeatureSettings = field(default_factory=EventEngineFeatureSettings)
     sampling: SamplingSettings = field(default_factory=SamplingSettings)
     battle: BattleSettings = field(default_factory=BattleSettings)
     heart_rate: HeartRateSettings = field(default_factory=HeartRateSettings)

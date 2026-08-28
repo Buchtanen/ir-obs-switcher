@@ -343,7 +343,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
     if theme not in allowed_themes:
         theme = defaults.theme
 
-    language = normalize_overlay_language(_get_str(parser, "overlay", "language", defaults.language))
+    language = normalize_overlay_language(
+        _get_str(parser, "overlay", "language", defaults.language)
+    )
 
     v4 = OverlayV4Settings(
         assets=_get_bool(parser, "overlay", "v4_assets", defaults.v4.assets),
