@@ -12,6 +12,8 @@ import pytest
 
 from irswitch.overlay.http import presentation_payload, web_root
 
+GOLDEN_FIXTURE_COUNT = 33
+
 GOLDEN_FIXTURES: tuple[str, ...] = (
     "lap_complete",
     "personal_best",
@@ -50,6 +52,7 @@ GOLDEN_FIXTURES: tuple[str, ...] = (
 
 _FIXTURE_ID_RE = re.compile(r"Fixture id:\s*`([a-z0-9_]+)`")
 _V4_FIXTURE_EXPORT_RE = re.compile(r"export function (v4Fixture\w+)")
+_V4_GOLDEN_CATALOG_ID_RE = re.compile(r'\{ id: "([a-z0-9_]+)"')
 
 
 def _catalog_path() -> Path:
@@ -64,9 +67,37 @@ def _display_v4_js() -> str:
     return (web_root() / "overlay" / "js" / "display-v4.js").read_text(encoding="utf-8")
 
 
+def _display_v4_css() -> str:
+    return (web_root() / "overlay" / "css" / "display-v4.css").read_text(encoding="utf-8")
+
+
+def _v4_golden_catalog_ids(js: str | None = None) -> list[str]:
+    source = js if js is not None else _display_v4_js()
+    start = source.index("export const V4_GOLDEN_CATALOG = [")
+    end = source.index("];", start)
+    return _V4_GOLDEN_CATALOG_ID_RE.findall(source[start:end])
+
+
 def _catalog_states() -> set[str]:
     catalog = json.loads(_catalog_path().read_text(encoding="utf-8"))
     return {entry["state"] for entry in catalog["entries"].values()}
+
+
+def test_golden_fixture_registry_has_33_entries() -> None:
+    assert len(GOLDEN_FIXTURES) == GOLDEN_FIXTURE_COUNT
+
+
+def test_golden_v4_md_documents_33_fixtures() -> None:
+    doc = _golden_doc_path().read_text(encoding="utf-8")
+    documented = _FIXTURE_ID_RE.findall(doc)
+    assert len(documented) == GOLDEN_FIXTURE_COUNT
+    assert len(set(documented)) == GOLDEN_FIXTURE_COUNT
+
+
+def test_v4_golden_catalog_has_33_entries() -> None:
+    catalog_ids = _v4_golden_catalog_ids()
+    assert len(catalog_ids) == GOLDEN_FIXTURE_COUNT
+    assert catalog_ids == list(GOLDEN_FIXTURES)
 
 
 def test_golden_fixture_registry_covers_catalog_states() -> None:
@@ -143,9 +174,24 @@ def test_display_v4_js_has_unique_fixture_exports() -> None:
 
 def test_golden_gallery_clips_glow_overflow() -> None:
     js = _display_v4_js()
-    css = (web_root() / "overlay" / "css" / "display-v4.css").read_text(encoding="utf-8")
-    assert "isGoldenSnapshot" in js
+    css = _display_v4_css()
+    assert "function isGoldenSnapshot(" in js
+    assert "goldenSnapshot && /^glow_/.test(layer.file)" in js
     assert "glow_" in js
     assert "isolation: isolate" in css
     assert "contain: paint" in css
     assert ".golden-stage .v4-widget" in css
+    assert "overflow: hidden" in css
+
+
+def test_golden_reduced_motion_paths() -> None:
+    js = _display_v4_js()
+    css = _display_v4_css()
+    assert "let motionDisabled = false" in js
+    assert "function prefersReducedMotion()" in js
+    assert "motionDisabled = Boolean(options.motionDisabled)" in js
+    assert "prefersReducedMotion() || isGoldenSnapshot(node)" in js
+    assert 'window.matchMedia?.("(prefers-reduced-motion: reduce)")' in js
+    assert ".golden-stage" in css
+    assert ".golden-stage .v4-art" in css
+    assert "@media (prefers-reduced-motion: reduce)" in css

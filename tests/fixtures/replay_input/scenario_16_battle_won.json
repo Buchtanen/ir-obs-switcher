@@ -1,0 +1,88 @@
+{
+  "name": "Scenario 16: battle won after side-by-side exit",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "battle": {
+      "hunting": {"activation_delay": 0.0, "exit_delay": 1.5}
+    }
+  },
+  "expected": [
+    {"eventType": "HUNTING", "phase": "ENTER"},
+    {"eventType": "HUNTING", "phase": "ACTIVE"},
+    {"eventType": "APPROACH", "phase": "ENTER"},
+    {"eventType": "ATTACK_RANGE", "phase": "ENTER"},
+    {"eventType": "SIDE_BY_SIDE", "phase": "ENTER"},
+    {"eventType": "SIDE_BY_SIDE", "phase": "ACTIVE"},
+    {"eventType": "BATTLE_WON", "phase": "RESULT"},
+    {"eventType": "SIDE_BY_SIDE", "phase": "EXIT"}
+  ],
+  "ticks": [
+    {
+      "t": 1.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 2.0, "closing_rate": 0.3},
+        "gap_ahead": 2.0,
+        "closing_rate_ahead": 0.3
+      }
+    },
+    {
+      "t": 2.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 1.2, "closing_rate": 0.25},
+        "gap_ahead": 1.2,
+        "closing_rate_ahead": 0.25
+      }
+    },
+    {
+      "t": 3.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 0.6, "closing_rate": 0.22},
+        "gap_ahead": 0.6,
+        "closing_rate_ahead": 0.22
+      }
+    },
+    {
+      "t": 4.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 0.32, "closing_rate": 0.25},
+        "gap_ahead": 0.32,
+        "closing_rate_ahead": 0.25
+      }
+    },
+    {
+      "t": 5.0,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 5.0, "closing_rate": -0.1},
+        "gap_ahead": 5.0,
+        "closing_rate_ahead": -0.1
+      }
+    },
+    {
+      "t": 6.6,
+      "race": {
+        "connected": true,
+        "player_car_idx": 4,
+        "position": 6,
+        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 5.0, "closing_rate": -0.1},
+        "gap_ahead": 5.0,
+        "closing_rate_ahead": -0.1
+      }
+    }
+  ]
+}
