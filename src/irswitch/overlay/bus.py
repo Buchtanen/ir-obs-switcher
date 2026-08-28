@@ -11,7 +11,7 @@ from typing import Any
 from aiohttp.web_ws import WebSocketResponse
 
 from irswitch.overlay.models import BioState, RaceState, SystemState
-from irswitch.overlay.protocol import snapshot_envelope, state_envelope
+from irswitch.overlay.protocol import snapshot_envelope, state_envelope, state_snapshot_envelope
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ class OverlayBus:
         self.bio = BioState()
         self.system = SystemState()
         self.active_events: list[dict[str, Any]] = []
+        self.active_stories_v4: list[dict[str, Any]] = []
         self._dirty: set[str] = set()
         self._lock = asyncio.Lock()
 
@@ -40,6 +41,8 @@ class OverlayBus:
             if extra:
                 payload.update(extra)
             await ws.send_str(json.dumps(payload))
+            if self.active_stories_v4:
+                await ws.send_str(json.dumps(state_snapshot_envelope(self.active_stories_v4)))
         except Exception:
             logger.debug("Overlay WS snapshot send failed", exc_info=True)
             self._clients.discard(ws)
@@ -62,6 +65,9 @@ class OverlayBus:
     def set_active_events(self, events: list[dict[str, Any]]) -> None:
         self.active_events = list(events)
         self._dirty.add("events")
+
+    def set_active_stories_v4(self, stories: list[dict[str, Any]]) -> None:
+        self.active_stories_v4 = list(stories)
 
     async def publish_event(self, envelope: dict[str, Any]) -> None:
         await self._broadcast(envelope)

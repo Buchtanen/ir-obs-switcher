@@ -12,6 +12,7 @@ from typing import Any, Literal
 from irswitch.config import AppConfig
 from irswitch.events.engine import EventEngine
 from irswitch.events.manager import EventManager
+from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
@@ -44,8 +45,10 @@ class OverlayRuntime:
         self.mode = mode
         self._replay_path = replay_path
         self._registry = registry or TaskRegistry()
-        self.manager = EventManager()
+        self.manager: EventManager = EventManager()
+        self.manager_v2: EventManagerV2 | None = None
         overlay = self._overlay_settings()
+        self._init_managers(overlay)
         self.engine = EventEngine(overlay)
         self._register_timing_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
@@ -63,13 +66,27 @@ class OverlayRuntime:
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
 
+    def _init_managers(self, overlay: OverlaySettings) -> None:
+        if overlay.event_engine.v2_payload:
+            self.manager_v2 = EventManagerV2(overlay.events)
+            self.manager = self.manager_v2.legacy
+        else:
+            self.manager_v2 = None
+            self.manager = EventManager(overlay.events)
+
+    def _session_id(self, state: RaceState) -> str:
+        sid = state.subsession_id or "unknown"
+        num = state.session_num if state.session_num is not None else 0
+        return f"{sid}:{num}"
+
     def _reset_event_pipeline(self) -> None:
         """Drop active overlay stories on session/track change (Spec §21)."""
         overlay = self._overlay_settings()
-        self.manager = EventManager(overlay.events)
+        self._init_managers(overlay)
         self.engine = EventEngine(overlay)
         self._register_timing_emitters(overlay)
         self.bus.set_active_events([])
+        self.bus.set_active_stories_v4([])
 
     def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
         """Attach T2 practice/quali emitters when feature flags are enabled."""
@@ -236,14 +253,26 @@ class OverlayRuntime:
         return TelemetrySnapshot.disconnected(time.monotonic())
 
     async def _emit_from_race(self, state: RaceState, now: float) -> None:
-        overlay = self._overlay_settings()
-        # Recreate engine if settings object identity changed after reload.
-        if overlay is not getattr(self.engine, "_overlay", overlay):
-            pass
         try:
             candidates = self.engine.tick(state, now)
         except Exception:
             logger.warning("EventEngine tick failed", exc_info=True)
+            return
+        if self.manager_v2 is not None:
+            self.manager_v2.set_session_id(self._session_id(state))
+            for candidate in candidates:
+                race_event, envelope = self.manager_v2.submit(
+                    candidate, now, mode=state.overlay_mode
+                )
+                wire = self.manager_v2.publish_wire(envelope, race_event)
+                if wire is not None:
+                    await self.bus.publish_event(wire)
+            for race_event, envelope in self.manager_v2.tick(now, mode=state.overlay_mode):
+                wire = self.manager_v2.publish_wire(envelope, race_event)
+                if wire is not None:
+                    await self.bus.publish_event(wire)
+            self.bus.set_active_events(self.manager_v2.active_events())
+            self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
             return
         for candidate in candidates:
             event = self.manager.submit(candidate, now)
@@ -287,10 +316,18 @@ class OverlayRuntime:
             self.bus.set_bio(bio_state)
             if prev in {"connected"} and bio_state.status in {"disconnected", "reconnecting"}:
                 now = time.monotonic()
-                event = self.manager.inject("ble_lost", now)
-                if event is not None:
-                    self._pending_envelopes.append(event.to_envelope())
-                    self.bus.set_active_events(self.manager.active_events())
+                if self.manager_v2 is not None:
+                    race_event, envelope = self.manager_v2.inject("ble_lost", now)
+                    wire = self.manager_v2.publish_wire(envelope, race_event)
+                    if wire is not None:
+                        self._pending_envelopes.append(wire)
+                    self.bus.set_active_events(self.manager_v2.active_events())
+                    self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
+                else:
+                    event = self.manager.inject("ble_lost", now)
+                    if event is not None:
+                        self._pending_envelopes.append(event.to_envelope())
+                        self.bus.set_active_events(self.manager.active_events())
 
         self._bio = BleHeartRateProvider(overlay.heart_rate, overlay.sampling, on_state=_on_state)
         await self._bio.run()
