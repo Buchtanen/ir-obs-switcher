@@ -1,0 +1,26 @@
+{
+  "name": "Scenario 13: invalid lap on incident",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "expected": [
+    {"eventType": "INVALID_LAP", "phase": "RESULT"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "lap_completed": 3,
+        "incidents": 1
+      }
+    },
+    {
+      "t": 1.0,
+      "race": {
+        "connected": true,
+        "lap_completed": 4,
+        "incidents": 2
+      }
+    }
+  ]
+}

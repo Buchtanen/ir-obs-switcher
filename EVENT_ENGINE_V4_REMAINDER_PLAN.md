@@ -1,7 +1,7 @@
 # Event Engine + Overlay V4 — remainder plan (post S3a/b/c)
 
 **Branch base:** `master`  
-**Status:** planning (2026-08-28, updated)  
+**Status:** in progress on `cursor/ee-v4-remainder-65db` (single branch, merge when whole complete)  
 **Inputs:** `EVENT_ENGINE_V4_PARALLEL_PLAN.md` §7 Definition of done, merged T1–T5 + S3a/b/c  
 **Constraint:** **S3d is last** — no legacy removal until all prior gates are green.
 
@@ -31,16 +31,17 @@
 | S3b | Golden gallery, 21 fixtures, `/overlay/golden` (#108) |
 | S3c | i18n CS + pit/bio renderer polish (#107) |
 | **Done** | **#111** demo JS hotfix merged |
-| **Open** | **#113** R0 golden glow clip |
+| **Done** | **R0** golden glow clip (master) |
+| **Branch** | `cursor/ee-v4-remainder-65db` — 33 golden, catalog, sysinfo V4, replay 1–15 |
 
-**Coverage today**
+**Coverage (branch HEAD)**
 
 | Set | Count |
 | --- | --- |
 | Manifest states | 35 |
-| `event_catalog.json` direct entries | 21 |
-| Catalog + fallbacks | 24 |
-| Golden fixtures | 21 |
+| `event_catalog.json` v1 wired states | 33 |
+| Golden fixtures | 33 |
+| Replay scenarios | 15 |
 | Transient families with renderer + assets | 7/7 |
 
 ---
@@ -306,7 +307,6 @@ Per original plan §2 gate **S3** and §7:
 
 ## 13. Immediate next actions
 
-1. Merge **#113** (R0).  
-2. Start **R4.2** catalog promotion + **R2** P/Q adapters in parallel.  
-3. **R3** sysinfo V4 (required).  
-4. Bio `composure_test` / `high_load` emitters: **post-v1** (§0.1).
+1. **R6** release prep (CHANGELOG, API.md, BUILD_AND_DEPLOY, DoD scorecard).  
+2. **R5** polish scenario 10 + 3-theme golden smoke checklist.  
+3. **S3d** legacy removal — **last**, after R6 + product sign-off.
