@@ -7,16 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from irswitch.overlay.replay_input import (
+from irswitch.overlay.models import RaceState
+from irswitch.overlay.replay import _race_from_dict
+from irswitch.overlay.replay_input import (  # noqa: I001
     ReplayInputRunner,
     assert_expected_sequence,
     load_fixture,
     reset_session,
     run_scenario,
 )
-from irswitch.overlay.models import RaceState
-from irswitch.overlay.protocol import CandidateEvent
-from irswitch.overlay.replay import _race_from_dict
 from irswitch.overlay.settings import OverlaySettings
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "replay_input"
@@ -90,6 +89,8 @@ def test_session_reset_clears_emitter_state() -> None:
 
 
 def test_emitter_isolation_survives_failure(caplog) -> None:
+    from irswitch.overlay.protocol import CandidateEvent
+
     class _FailingEmitter:
         def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
             raise RuntimeError("boom")
