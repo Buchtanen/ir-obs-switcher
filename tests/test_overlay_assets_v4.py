@@ -131,6 +131,37 @@ def test_v4_layer_and_icon_files_exist() -> None:
                 assert fc_path.is_file(), fc_path
 
 
+def test_v4_sysinfo_dividers_match_css_module_grid() -> None:
+    """V4 divider mask must land on the 230 + 11×150 CSS module edges (V3 grid)."""
+    from test_overlay_assets_v3 import _png_rgba
+
+    expected = [230 + 150 * i for i in range(11)]
+    for theme in THEMES:
+        path = V4_ROOT / theme / "sysinfo" / "layers" / "sysinfo_dividers_mask.png"
+        width, height, pixels = _png_rgba(path)
+        assert (width, height) == (1920, 72), path
+        col_max = [0] * width
+        for y in range(height):
+            row = pixels[y * width * 4 : (y + 1) * width * 4]
+            for x in range(width):
+                a = row[x * 4 + 3]
+                if a > col_max[x]:
+                    col_max[x] = a
+        xs = [x for x, a in enumerate(col_max) if a > 80]
+        assert xs, theme
+        clusters: list[float] = []
+        start = prev = xs[0]
+        for x in xs[1:]:
+            if x - prev > 3:
+                clusters.append((start + prev) / 2.0)
+                start = x
+            prev = x
+        clusters.append((start + prev) / 2.0)
+        assert len(clusters) == len(expected), (theme, clusters)
+        for got, want in zip(clusters, expected, strict=True):
+            assert abs(got - want) <= 1.5, f"{theme}: divider {got} vs {want}"
+
+
 def test_v4_sysinfo_manifest_family_matches_layers() -> None:
     manifest = _manifest()
     sysinfo_w, sysinfo_h = manifest["sysinfo_canvas"]

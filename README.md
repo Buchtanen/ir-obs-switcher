@@ -148,12 +148,13 @@ Aplikace poskytuje dva HTML dashboardy:
 ### Race overlay (OBS Browser Source)
 
 - **URL**: `http://127.0.0.1:17321/overlay` — transparentní 1920×1080 overlay
-- **Dry test**: `http://127.0.0.1:17321/overlay/demo` — tmavé jeviště, auto-scénář HUD bez OBS/iRacing
+- **Dry test**: `http://127.0.0.1:17321/overlay/demo` — tmavé jeviště, **V4** cyklický scénář HUD (~28&nbsp;s loop) bez OBS/iRacing; v UI lze přepnout na legacy V3
 - **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
 - **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
 - **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)
 - Tři themes (`cyber_racing`, `stealth_graphite`, `night_attack`) mají shodnou geometrii, 50 PNG + 4 WebM na theme (SYSINFO 1920×72, battle karta 420×140, V3 vrstvy). Popis: `src/irswitch/web/themes/ASSETS.md`. Chybějící soubor = CSS fallback.
 - **Battle golden freeze**: `http://127.0.0.1:17321/overlay?demo=1&layout=golden` (HUNTING + HUNTED, bez SYSINFO). Theme: `&theme=cyber_racing` / `stealth_graphite` / `night_attack`.
+- **V4 cyclic demo (iframe)**: `http://127.0.0.1:17321/overlay?demo=1&renderer=v4` — DisplayV4 envelopes, stejný beat order jako V3 dry test.
 
 Mock / replay (bez iRacing):
 

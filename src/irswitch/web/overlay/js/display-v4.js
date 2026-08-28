@@ -1,6 +1,8 @@
 /** V4 overlay renderer (S1: timing + battle + position families). */
 
 const ASSET_BASE = "/overlay/web/";
+/** Bust browser cache for theme PNGs when wells/icons change. */
+const ASSET_CACHE = "1.2.8";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -186,10 +188,14 @@ function syncWidgetMotion(node, envelope, familyName, created) {
 
 function manifestDiskPath(rel) {
   const themed = rel.replace(/^themes\/[^/]+/, `themes-v4/${theme}`);
+  let path;
   if (themed.startsWith("themes/")) {
-    return ASSET_BASE + themed.replace(/^themes\//, "themes-v4/");
+    path = ASSET_BASE + themed.replace(/^themes\//, "themes-v4/");
+  } else {
+    path = ASSET_BASE + themed;
   }
-  return ASSET_BASE + themed;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}v=${ASSET_CACHE}`;
 }
 
 function familyForState(stateKey) {
@@ -253,6 +259,38 @@ function paintLayer(el, url, { mask = false, canvas = [420, 140] } = {}) {
     el.style.webkitMaskImage = "";
     el.style.maskImage = "";
   }
+}
+
+/** Clip a layer (or .v4-art) to the chamfered plate silhouette — same idea as V3 plateMask. */
+function paintPlateMask(el, family) {
+  if (!el || !family?.layer_dir) {
+    if (el) {
+      el.style.removeProperty("-webkit-mask-image");
+      el.style.removeProperty("mask-image");
+      el.style.removeProperty("-webkit-mask-size");
+      el.style.removeProperty("mask-size");
+      el.classList.remove("has-plate-mask");
+    }
+    return;
+  }
+  const url = manifestDiskPath(`${family.layer_dir}/base_plate.png`);
+  if (!url) {
+    el.style.removeProperty("-webkit-mask-image");
+    el.style.removeProperty("mask-image");
+    el.classList.remove("has-plate-mask");
+    return;
+  }
+  const mask = `url("${url}")`;
+  // Prefer setProperty — plain style.maskImage was computing to none in Chromium.
+  el.style.setProperty("-webkit-mask-image", mask);
+  el.style.setProperty("mask-image", mask);
+  el.style.setProperty("-webkit-mask-size", "420px 140px");
+  el.style.setProperty("mask-size", "420px 140px");
+  el.style.setProperty("-webkit-mask-repeat", "no-repeat");
+  el.style.setProperty("mask-repeat", "no-repeat");
+  el.style.setProperty("-webkit-mask-position", "0 0");
+  el.style.setProperty("mask-position", "0 0");
+  el.classList.add("has-plate-mask");
 }
 
 const SYSINFO_ICON_SLOTS = {
@@ -364,12 +402,16 @@ function rebuildArt(node, stateKey, familyName) {
   const family = manifest?.themes?.[theme]?.families?.[familyName];
   if (!family) {
     node.classList.add("fallback");
+    art.style.webkitMaskImage = "";
+    art.style.maskImage = "";
     return;
   }
   node.classList.remove("fallback");
-  const goldenSnapshot = isGoldenSnapshot(node);
   (family.layers || []).forEach((layer, index) => {
-    if (goldenSnapshot && /^glow_/.test(layer.file)) return;
+    const glowMatch = /^glow_(cyan|amber|red)\.png$/.exec(layer.file);
+    // Soft bloom PNGs bleed past the chamfer unless perfectly plate-masked.
+    // Skip them (golden + live); enter WebM stays, clipped by art plate mask.
+    if (glowMatch) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
@@ -382,6 +424,8 @@ function rebuildArt(node, stateKey, familyName) {
   const iconUrl = manifestDiskPath(`${family.icon_dir}/${stateKey}.png`);
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
+  // Clip enter WebM / residual bloom to the chamfered plate (not the CSS box).
+  paintPlateMask(art, family);
 }
 
 function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
@@ -766,6 +810,9 @@ export async function initV4(options = {}) {
   resolvedMotions = options.resolvedMotions || resolvedMotions;
   resolvedStates = options.resolvedStates || resolvedStates;
   motionDisabled = Boolean(options.motionDisabled);
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = theme;
+  }
   const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
   const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
   const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
@@ -827,7 +874,7 @@ export const DisplayV4 = {
     node.dataset.phase = phase;
     node.classList.toggle("phase-compact", phase === "COMPACT");
     const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";
-    node.classList.remove("tone-primary", "tone-warning");
+    node.classList.remove("tone-primary", "tone-warning", "tone-alert");
     node.classList.add(`tone-${accent}`);
     fillCopySlots(node, envelope, stateKey);
     syncWidgetMotion(node, envelope, familyName, created);
