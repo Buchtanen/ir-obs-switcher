@@ -5,6 +5,77 @@ Všechny významné změny v projektu budou zdokumentovány v tomto souboru.
 Formát je založen na [Keep a Changelog](https://keepachangelog.com/cs/1.0.0/),
 a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 
+## [1.1.0](https://github.com/Buchtanen/ir-obs-switcher/compare/v1.0.0...v1.1.0) (2026-08-28)
+
+
+### Features
+
+* add overlay dry-test demo without OBS or iRacing ([dff0633](https://github.com/Buchtanen/ir-obs-switcher/commit/dff0633267f98c4d5078b8a2b39c5787723146fd))
+* add race overlay pipeline with events, BLE, and sysinfo ([f986648](https://github.com/Buchtanen/ir-obs-switcher/commit/f9866481514896bce6868fc75d77ed6c04616e03))
+* add V4 overlay theme pack and asset CI tests ([36a61fa](https://github.com/Buchtanen/ir-obs-switcher/commit/36a61fad64b1212c404b3448525cc09686acf70b))
+* color SYSINFO HR at 128 warn and 138 crit ([bea28bd](https://github.com/Buchtanen/ir-obs-switcher/commit/bea28bd3a74b11de7291424b81ca4b85167cee51))
+* compose battle HUD from V3 golden-master layers ([76ef0ff](https://github.com/Buchtanen/ir-obs-switcher/commit/76ef0ff9269f5ae041a15edfed08cfe96f24b11f))
+* Event Engine T1 platform foundation ([ac88b2e](https://github.com/Buchtanen/ir-obs-switcher/commit/ac88b2eaa3c8350053e7e8a679fd988943695785))
+* Event Engine T1 platform foundation ([d8318e6](https://github.com/Buchtanen/ir-obs-switcher/commit/d8318e62a18328bf5a885286c93ee18c3ed85889))
+* Event Engine T1 platform foundation ([#87](https://github.com/Buchtanen/ir-obs-switcher/issues/87)) ([ac88b2e](https://github.com/Buchtanen/ir-obs-switcher/commit/ac88b2eaa3c8350053e7e8a679fd988943695785))
+* extend EventEnvelope with mode whitelist, from_dict, stamp ([4b44504](https://github.com/Buchtanen/ir-obs-switcher/commit/4b445041db0310c961d136e0edb257a93daf4bb2))
+* flash incident plate glow on enter ([7c1d155](https://github.com/Buchtanen/ir-obs-switcher/commit/7c1d155f4ab5f2860aa24648d2c8defeb7b21a65))
+* import Overlay V4 production assets (additive) ([84c0b47](https://github.com/Buchtanen/ir-obs-switcher/commit/84c0b474e0c38da4309109fcc7e1af82c6988278))
+* import Overlay V4 production assets (additive) ([#89](https://github.com/Buchtanen/ir-obs-switcher/issues/89)) ([84c0b47](https://github.com/Buchtanen/ir-obs-switcher/commit/84c0b474e0c38da4309109fcc7e1af82c6988278))
+* play enter gloss on event cards and tile sysinfo modules ([ab22ad6](https://github.com/Buchtanen/ir-obs-switcher/commit/ab22ad67c9b5df8df1ef7a6ecbf61ec38614ea31))
+* practice and quali timing emitters on timing store ([6ffce15](https://github.com/Buchtanen/ir-obs-switcher/commit/6ffce1528e4eb4fb9d2831c8520ae9c9d2639fcb))
+* pulse SYSINFO heart icon with live BPM ([623a4da](https://github.com/Buchtanen/ir-obs-switcher/commit/623a4dadcf52dba230a677c09e8d7d5dbdc8acd9))
+* ship overlay theme assets and wire HUD layers ([363be40](https://github.com/Buchtanen/ir-obs-switcher/commit/363be404676806fc25b4d1df7cb89689286c3144))
+* ship raster overlay pack (PNG masks + VP9 alpha WebM) ([fed2dee](https://github.com/Buchtanen/ir-obs-switcher/commit/fed2dee0a3f02f558641af5791409e8d4d56543e))
+* timing store + practice/quali emitters (T2) ([82b0bde](https://github.com/Buchtanen/ir-obs-switcher/commit/82b0bdea3d03aa93fa491cdc7103e9209e18eb5b))
+* timing store + practice/quali emitters (T2) ([#88](https://github.com/Buchtanen/ir-obs-switcher/issues/88)) ([82b0bde](https://github.com/Buchtanen/ir-obs-switcher/commit/82b0bdea3d03aa93fa491cdc7103e9209e18eb5b))
+* timing store and minisector crossing detection ([4cb5b94](https://github.com/Buchtanen/ir-obs-switcher/commit/4cb5b949ef7f323a82bb1c9e88944b141f31cc5c))
+
+
+### Bug Fixes
+
+* access ctypes.windll in a way mypy accepts on Windows ([5e4a280](https://github.com/Buchtanen/ir-obs-switcher/commit/5e4a28017012dc0f45d3ab4b60ae3a0f10ff653b))
+* add HUD glow on lap/PB/bio/session and solid white final-lap flag ([22e080a](https://github.com/Buchtanen/ir-obs-switcher/commit/22e080adcfeccabb9eefa09c19402f9d1ad47b57))
+* align overlay HUD layers to raster preview ([af183cd](https://github.com/Buchtanen/ir-obs-switcher/commit/af183cd0f9a41e6619a4b7e96f56277c85186694))
+* align SYSINFO grid and read CPU package sensors ([8b69e16](https://github.com/Buchtanen/ir-obs-switcher/commit/8b69e16dc519790554cf509d54f666c4f53f7cf1))
+* compose small HUD widgets from V3 battle plates ([c1986e4](https://github.com/Buchtanen/ir-obs-switcher/commit/c1986e4cd098a560767505b7223574d101646fbf))
+* drop redundant compact BPM widget ([12c3c88](https://github.com/Buchtanen/ir-obs-switcher/commit/12c3c8837349851774d2b0e5fa41cd225730238d))
+* drop unused mypy ignore on optional psutil import ([c583449](https://github.com/Buchtanen/ir-obs-switcher/commit/c58344915436bc3ce71b62407d3dd71daa06266e))
+* drop urllib.urlopen from LHM HTTP reader (Bandit B310) ([1f56767](https://github.com/Buchtanen/ir-obs-switcher/commit/1f5676762488fcd1413f196a76e0c12849c903f6))
+* flash incident inner glow after the card appears ([db4bcf5](https://github.com/Buchtanen/ir-obs-switcher/commit/db4bcf5aa20ebac889f1b85dc08bd86e09c846ee))
+* ignore false GARAGE after session load ([f1d2d63](https://github.com/Buchtanen/ir-obs-switcher/commit/f1d2d631f2b1775600664074e0c496044c951bf3))
+* ignore false GARAGE after session load ([737aa22](https://github.com/Buchtanen/ir-obs-switcher/commit/737aa220d69fcfe1bbf088aec107bb8855e3ead8)), closes [#75](https://github.com/Buchtanen/ir-obs-switcher/issues/75)
+* ignore false GARAGE after session load ([#76](https://github.com/Buchtanen/ir-obs-switcher/issues/76)) ([f1d2d63](https://github.com/Buchtanen/ir-obs-switcher/commit/f1d2d631f2b1775600664074e0c496044c951bf3))
+* install overlay BLE and sysinfo backends by default ([9f93a18](https://github.com/Buchtanen/ir-obs-switcher/commit/9f93a18471a787c59bcfc93162e24fa06c54f519))
+* install overlay deps into the Python that actually runs ([82b34ba](https://github.com/Buchtanen/ir-obs-switcher/commit/82b34ba9b936b1f276566a2aae7adb799ceeba5e))
+* keep V3 plates on small HUD widgets without a square halo ([00cc9bd](https://github.com/Buchtanen/ir-obs-switcher/commit/00cc9bd34acb3cb338f9f632abe1960545c22913))
+* match BleakClient.start_notify callback types ([9ac395c](https://github.com/Buchtanen/ir-obs-switcher/commit/9ac395cdb5519651567adb74d4310da13c481465))
+* match V3 battle text slots and radar motion ([eb6f3cf](https://github.com/Buchtanen/ir-obs-switcher/commit/eb6f3cfbc3ea1a87499360b1bb29c78ec9bca91f))
+* reach LHM web server on bound NIC, gzip, and /metrics ([bcd16da](https://github.com/Buchtanen/ir-obs-switcher/commit/bcd16dabd7e33e0df95c167a439f41af74efc21f))
+* read checkout version from pyproject.toml ([8d92124](https://github.com/Buchtanen/ir-obs-switcher/commit/8d9212487470219332c411128f3fe10f02a0e526))
+* read checkout version from pyproject.toml ([f8827b5](https://github.com/Buchtanen/ir-obs-switcher/commit/f8827b564075e84274ef5c110e0583441cd4bb01)), closes [#77](https://github.com/Buchtanen/ir-obs-switcher/issues/77)
+* read checkout version from pyproject.toml ([#78](https://github.com/Buchtanen/ir-obs-switcher/issues/78)) ([8d92124](https://github.com/Buchtanen/ir-obs-switcher/commit/8d9212487470219332c411128f3fe10f02a0e526))
+* read CPU package sensors from WMI only ([06d2fac](https://github.com/Buchtanen/ir-obs-switcher/commit/06d2facda0511301de9d87d2a02e54633cc92ab9))
+* read CPU temp from Windows PDH thermal zones ([4ad6124](https://github.com/Buchtanen/ir-obs-switcher/commit/4ad61242d2af8477ef5d360759c570cee52eff3f))
+* read LibreHardwareMonitor 0.9.5+ via localhost HTTP ([d2df911](https://github.com/Buchtanen/ir-obs-switcher/commit/d2df911cf0cb83c5e4a50e01701f03441f016c0a))
+* retrigger battle icon lock animation on HUNTED ([d47878a](https://github.com/Buchtanen/ir-obs-switcher/commit/d47878a6617cf94ea41f31f7ad1e04f358ef6aa0))
+* satisfy black and mypy on LHM HTTP reader ([09b7d2d](https://github.com/Buchtanen/ir-obs-switcher/commit/09b7d2d6ea95374024a2fad586c799797486fd0d))
+* satisfy overlay mypy and black CI checks ([81f5265](https://github.com/Buchtanen/ir-obs-switcher/commit/81f526589d2d5ade049918cf6e085a332da6b3fc))
+* size every HUD card to the 420x140 battle plate ([88961f5](https://github.com/Buchtanen/ir-obs-switcher/commit/88961f55c30ea0571239315b1de22eec1406c375))
+* stop drop-shadow from lighting plate mesh and icon well ([9843ff4](https://github.com/Buchtanen/ir-obs-switcher/commit/9843ff40c720d97c623ce42b210724ba0d2c1add))
+* tint hunted motion amber and clip glow to plate alpha ([257ca28](https://github.com/Buchtanen/ir-obs-switcher/commit/257ca280dcaa98a06da42788428a7ce50416dd87))
+
+
+### Documentation
+
+* add graphics agent brief for overlay SVG/PNG assets ([a43755e](https://github.com/Buchtanen/ir-obs-switcher/commit/a43755e2739eac157988e03a23ffe394e5fda29b))
+* document overlay language and event_engine flags in CONFIG.md ([6f3e37a](https://github.com/Buchtanen/ir-obs-switcher/commit/6f3e37af0f410da8b1fcf5b392d96001cb967807))
+* Event Engine + Overlay V4 parallel implementation plan ([8a3458e](https://github.com/Buchtanen/ir-obs-switcher/commit/8a3458e4336ea388aa82724e805e1606875786ff))
+* Event Engine + Overlay V4 parallel implementation plan ([#86](https://github.com/Buchtanen/ir-obs-switcher/issues/86)) ([8a3458e](https://github.com/Buchtanen/ir-obs-switcher/commit/8a3458e4336ea388aa82724e805e1606875786ff))
+* lock §0.5 product decisions into Event Engine plan ([8b2237b](https://github.com/Buchtanen/ir-obs-switcher/commit/8b2237b595efe27ec7a580f7fc36ceb361fc2a5b))
+* parallel plan for Event Engine + Overlay V4 ([acbe411](https://github.com/Buchtanen/ir-obs-switcher/commit/acbe411f12084c98f50612742d22532a0d8e7368))
+* revise Event Engine plan after dual red-team review ([ff74117](https://github.com/Buchtanen/ir-obs-switcher/commit/ff74117453e98d8a4153934c4dc2386c19201dfe))
+
 ## [1.1.0] — 2026-08-25
 
 ### Features
