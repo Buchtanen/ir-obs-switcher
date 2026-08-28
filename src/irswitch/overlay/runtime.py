@@ -15,6 +15,7 @@ from irswitch.events.manager import EventManager
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
+from irswitch.overlay.session import SessionCoordinator, build_session_key
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.race.context import RaceContextAnalyzer
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
@@ -46,11 +47,20 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         self.engine = EventEngine(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
+        self.session = SessionCoordinator()
+        self.session.add_reset_hook(self.analyzer.reset)
+        self.session.add_reset_hook(self._reset_event_pipeline)
         self._bio: Any = None
         self._system: Any = None
         self._origin = time.monotonic()
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
+
+    def _reset_event_pipeline(self) -> None:
+        """Drop active overlay stories on session/track change (Spec §21)."""
+        self.manager = EventManager(self._overlay_settings().events)
+        self.engine = EventEngine(self._overlay_settings())
+        self.bus.set_active_events([])
 
     def _overlay_settings(self) -> OverlaySettings:
         cfg = self._get_config()
@@ -116,14 +126,36 @@ class OverlayRuntime:
         if self.mode == "mock":
             state = mock_race_state(now - self._origin)
             self.bus.set_bio(mock_bio_state(now - self._origin))
+            self.session.observe(
+                session_key=build_session_key(
+                    subsession_id="mock",
+                    session_num=0,
+                    track_id="mock",
+                ),
+                connected=True,
+                now=now,
+            )
         else:
             snap = await self._read_telemetry()
+            self.session.observe(
+                session_key=build_session_key(
+                    subsession_id=snap.subsession_id,
+                    session_num=snap.session_num,
+                    track_id=snap.track_id,
+                ),
+                connected=snap.connected,
+                now=now,
+            )
             try:
                 state = self.analyzer.analyze(snap)
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
         self.bus.set_race(state)
+        if self.session.in_warmup(now):
+            # Suppress trend/semantic emitters during reconnect warm-up; still publish state.
+            self.bus.set_active_events(self.manager.active_events())
+            return
         await self._emit_from_race(state, now)
 
     async def _read_telemetry(self) -> TelemetrySnapshot:

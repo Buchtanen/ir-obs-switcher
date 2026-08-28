@@ -53,10 +53,20 @@ class TelemetrySnapshot:
     car_idx_on_pit_road: tuple[bool | None, ...] = ()
     car_idx_est_time: tuple[float | None, ...] = ()
     car_idx_track_surface: tuple[int | None, ...] = ()
+    # Session / quality (Event Engine normalized input — optional until adapter fills them)
+    session_num: int | None = None
+    subsession_id: str | None = None
+    session_type: str | None = None  # Practice/Qualify/Race/...
+    track_id: str | None = None
+    session_time: float | None = None
+    session_flags: int | None = None
+    player_lap_dist_pct: float | None = None
+    stale_for_ms: float | None = None
+    data_quality: str = "ok"  # ok/degraded/stale
 
     @classmethod
     def disconnected(cls, timestamp: float = 0.0) -> TelemetrySnapshot:
-        return cls(connected=False, timestamp=timestamp)
+        return cls(connected=False, timestamp=timestamp, data_quality="stale")
 
     def to_dict(self) -> dict[str, Any]:
         data = _asdict(self)
@@ -90,6 +100,15 @@ class RaceState:
     closing_rate_behind: float | None = None
     fps: float | None = None
     frametime_ms: float | None = None
+    session_num: int | None = None
+    subsession_id: str | None = None
+    session_type: str | None = None
+    track_id: str | None = None
+    session_time: float | None = None
+    overlay_mode: str = "GENERIC"  # PRACTICE/QUALIFYING/RACE/GENERIC
+    player_lap_dist_pct: float | None = None
+    stale_for_ms: float | None = None
+    data_quality: str = "ok"
 
     def to_dict(self) -> dict[str, Any]:
         data = _asdict(self)

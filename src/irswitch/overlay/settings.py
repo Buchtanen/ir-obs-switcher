@@ -87,12 +87,37 @@ class EventSettings:
 
 
 @dataclass(frozen=True)
+class EventEngineFeatureSettings:
+    """Event-engine rollout flags. All OFF until the matching track lands."""
+
+    v2_payload: bool = False
+    practice: bool = False
+    quali_projection: bool = False
+    overtake_classifier: bool = False
+    pit_story: bool = False
+    hr_pressure: bool = False
+
+
+@dataclass(frozen=True)
+class OverlayV4Settings:
+    """Overlay V4 rollout flags. All OFF until the matching track lands."""
+
+    assets: bool = False
+    renderer: bool = False
+
+
+@dataclass(frozen=True)
 class OverlaySettings:
     """Feature flags and overlay presentation."""
 
     enabled: bool = True
     theme: str = "cyber_racing"
     debug: bool = False
+    language: str = "en"
+    v4: OverlayV4Settings = field(default_factory=OverlayV4Settings)
+    event_engine: EventEngineFeatureSettings = field(
+        default_factory=EventEngineFeatureSettings
+    )
     sampling: SamplingSettings = field(default_factory=SamplingSettings)
     battle: BattleSettings = field(default_factory=BattleSettings)
     heart_rate: HeartRateSettings = field(default_factory=HeartRateSettings)

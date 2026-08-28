@@ -21,9 +21,13 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "OnPitRoad",
     "SessionLapsRemain",
     "SessionState",
+    "SessionTime",
+    "SessionFlags",
+    "SessionNum",
     "FrameRate",
     "CarDistAhead",
     "CarDistBehind",
+    "LapDistPct",
     "CarIdxLapDistPct",
     "CarIdxLapCompleted",
     "CarIdxClass",
@@ -84,10 +88,28 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
     """Build a TelemetrySnapshot from SDK var dict. Missing keys stay None."""
     fps = as_float(data.get("FrameRate"))
     frametime = (1000.0 / fps) if fps and fps > 0 else None
+    player_idx = as_int(data.get("PlayerCarIdx"))
+    lap_dist_pcts = _float_tuple(data.get("CarIdxLapDistPct"))
+    player_lap_dist = as_float(data.get("LapDistPct"))
+    if player_lap_dist is None and player_idx is not None and 0 <= player_idx < len(lap_dist_pcts):
+        player_lap_dist = lap_dist_pcts[player_idx]
+    subsession = data.get("SubSessionID")
+    if subsession is None:
+        subsession = data.get("subsession_id")
+    track = data.get("TrackID")
+    if track is None:
+        track = data.get("track_id")
+    session_type = data.get("SessionType")
+    session_type_str = str(session_type) if session_type is not None else None
+    # Numeric SessionType in live telemetry is rare; string may come from merged session info.
+    if session_type_str is not None and session_type_str.isdigit():
+        from irswitch.iracing.extractors import extract_session_type
+
+        session_type_str = extract_session_type({"SessionType": session_type}) or session_type_str
     return TelemetrySnapshot(
         connected=True,
         timestamp=timestamp,
-        player_car_idx=as_int(data.get("PlayerCarIdx")),
+        player_car_idx=player_idx,
         position=as_int(data.get("PlayerCarPosition")),
         class_position=as_int(data.get("PlayerCarClassPosition")),
         lap=as_int(data.get("Lap")),
@@ -104,7 +126,7 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         car_dist_ahead=as_float(data.get("CarDistAhead")),
         car_dist_behind=as_float(data.get("CarDistBehind")),
         player_car_class=as_int(data.get("PlayerCarClass")),
-        car_idx_lap_dist_pct=_float_tuple(data.get("CarIdxLapDistPct")),
+        car_idx_lap_dist_pct=lap_dist_pcts,
         car_idx_lap_completed=_int_tuple(data.get("CarIdxLapCompleted")),
         car_idx_class=_int_tuple(data.get("CarIdxClass")),
         car_idx_class_position=_int_tuple(data.get("CarIdxClassPosition")),
@@ -112,4 +134,13 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         car_idx_on_pit_road=_bool_tuple(data.get("CarIdxOnPitRoad")),
         car_idx_est_time=_float_tuple(data.get("CarIdxEstTime")),
         car_idx_track_surface=_int_tuple(data.get("CarIdxTrackSurface")),
+        session_num=as_int(data.get("SessionNum")),
+        subsession_id=str(subsession) if subsession is not None else None,
+        session_type=session_type_str,
+        track_id=str(track) if track is not None else None,
+        session_time=as_float(data.get("SessionTime")),
+        session_flags=as_int(data.get("SessionFlags")),
+        player_lap_dist_pct=player_lap_dist,
+        stale_for_ms=as_float(data.get("stale_for_ms")),
+        data_quality=str(data.get("data_quality") or "ok"),
     )

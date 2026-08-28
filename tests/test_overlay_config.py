@@ -2,10 +2,18 @@
 
 from pathlib import Path
 
+import pytest
+
 from irswitch.config import AppConfig
+from irswitch.config_reload import LIVE_CONFIG_KEYS
 from irswitch.overlay.bus import strip_secrets
 from irswitch.overlay.config_io import apply_overlay_values
-from irswitch.overlay.schema import coerce_value, field_by_key, overlay_values
+from irswitch.overlay.schema import (
+    OVERLAY_FIELDS,
+    coerce_value,
+    field_by_key,
+    overlay_values,
+)
 
 
 def _minimal_ini(tmp_path: Path) -> Path:
@@ -44,6 +52,91 @@ def test_overlay_defaults_when_sections_missing(tmp_path: Path) -> None:
     assert cfg.overlay.theme == "cyber_racing"
     assert cfg.overlay.sampling.default_hz == 5.0
     assert cfg.overlay.sampling.bio_hz is None
+
+
+def test_feature_flags_default_off_and_language_en(tmp_path: Path) -> None:
+    cfg = AppConfig.from_file(_minimal_ini(tmp_path))
+    assert cfg.overlay.language == "en"
+    assert cfg.overlay.v4.assets is False
+    assert cfg.overlay.v4.renderer is False
+    ee = cfg.overlay.event_engine
+    assert (
+        ee.v2_payload
+        or ee.practice
+        or ee.quali_projection
+        or ee.overtake_classifier
+        or ee.pit_story
+        or ee.hr_pressure
+    ) is False
+    values = overlay_values(cfg.overlay)
+    flag_keys = [k for k in values if k.startswith("event_engine.") or k.startswith("overlay.v4_")]
+    assert len(flag_keys) == 8
+    assert all(values[key] is False for key in flag_keys)
+
+
+def test_feature_flags_and_language_load_from_ini(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("""
+[overlay]
+language = cs
+v4_assets = true
+[event_engine]
+v2_payload = true
+pit_story = true
+""")
+    cfg = AppConfig.from_file(path)
+    assert cfg.overlay.language == "cs"
+    assert cfg.overlay.v4.assets is True
+    assert cfg.overlay.v4.renderer is False
+    assert cfg.overlay.event_engine.v2_payload is True
+    assert cfg.overlay.event_engine.pit_story is True
+    assert cfg.overlay.event_engine.practice is False
+
+
+def test_unknown_language_falls_back_to_en(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("\n[overlay]\nlanguage = klingon\n")
+    assert AppConfig.from_file(path).overlay.language == "en"
+
+
+def test_feature_flag_put_roundtrip(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+    applied = apply_overlay_values(
+        path,
+        {
+            "overlay.language": "cs",
+            "overlay.v4_renderer": True,
+            "event_engine.overtake_classifier": True,
+        },
+    )
+    assert applied == [
+        "event_engine.overtake_classifier",
+        "overlay.language",
+        "overlay.v4_renderer",
+    ]
+    cfg = AppConfig.from_file(path)
+    assert cfg.overlay.language == "cs"
+    assert cfg.overlay.v4.renderer is True
+    assert cfg.overlay.event_engine.overtake_classifier is True
+    values = overlay_values(cfg.overlay)
+    assert values["overlay.language"] == "cs"
+    assert values["event_engine.overtake_classifier"] is True
+
+
+def test_live_overlay_fields_are_hot_reloadable() -> None:
+    live_keys = {spec.key for spec in OVERLAY_FIELDS if spec.live}
+    assert live_keys <= LIVE_CONFIG_KEYS
+
+
+def test_language_choice_is_validated() -> None:
+    spec = field_by_key("overlay.language")
+    assert spec is not None
+    assert spec.choices == ("en", "cs")
+    assert coerce_value(spec, "cs") == "cs"
+    with pytest.raises(ValueError):
+        coerce_value(spec, "klingon")
 
 
 def test_overlay_sections_load(tmp_path: Path) -> None:

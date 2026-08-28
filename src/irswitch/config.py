@@ -9,13 +9,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from irswitch.models import DrivingMode
+from irswitch.overlay.i18n import normalize_language as normalize_overlay_language
 from irswitch.overlay.settings import (
     BattleSettings,
+    EventEngineFeatureSettings,
     EventPrioritySettings,
     EventSettings,
     HeartRateSettings,
     HuntingSettings,
     OverlaySettings,
+    OverlayV4Settings,
     SamplingSettings,
     SystemInfoSettings,
 )
@@ -340,6 +343,27 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
     if theme not in allowed_themes:
         theme = defaults.theme
 
+    language = normalize_overlay_language(_get_str(parser, "overlay", "language", defaults.language))
+
+    v4 = OverlayV4Settings(
+        assets=_get_bool(parser, "overlay", "v4_assets", defaults.v4.assets),
+        renderer=_get_bool(parser, "overlay", "v4_renderer", defaults.v4.renderer),
+    )
+
+    ee_defaults = defaults.event_engine
+    event_engine = EventEngineFeatureSettings(
+        v2_payload=_get_bool(parser, "event_engine", "v2_payload", ee_defaults.v2_payload),
+        practice=_get_bool(parser, "event_engine", "practice", ee_defaults.practice),
+        quali_projection=_get_bool(
+            parser, "event_engine", "quali_projection", ee_defaults.quali_projection
+        ),
+        overtake_classifier=_get_bool(
+            parser, "event_engine", "overtake_classifier", ee_defaults.overtake_classifier
+        ),
+        pit_story=_get_bool(parser, "event_engine", "pit_story", ee_defaults.pit_story),
+        hr_pressure=_get_bool(parser, "event_engine", "hr_pressure", ee_defaults.hr_pressure),
+    )
+
     lhm_raw = ""
     if parser.has_section("system_info"):
         lhm_raw = parser.get("system_info", "lhm_dll_path", fallback="").strip()
@@ -386,6 +410,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         enabled=_get_bool(parser, "overlay", "enabled", defaults.enabled),
         theme=theme,
         debug=_get_bool(parser, "overlay", "debug", defaults.debug),
+        language=language,
+        v4=v4,
+        event_engine=event_engine,
         sampling=sampling,
         battle=BattleSettings(
             hunting=_load_hunting(parser, "battle.hunting"),
