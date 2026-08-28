@@ -74,9 +74,7 @@ def position_race_event_to_envelope(
 
     phase = legacy_trigger_to_phase(event.phase, default="RESULT")
     new_position = event.data.get("newPosition")
-    metrics = {
-        key: event.data[key] for key in _POSITION_METRIC_KEYS if key in event.data
-    }
+    metrics = {key: event.data[key] for key in _POSITION_METRIC_KEYS if key in event.data}
     return make_envelope(
         event_type=event_type,
         phase=phase,
