@@ -154,6 +154,8 @@ async function startV4Demo(params) {
     v4FixtureOvertake,
     v4FixturePositionGained,
     v4FixturePositionLost,
+    v4FixturePitEntry,
+    v4FixtureHrPressure,
   } = await import("./display-v4.js");
   window.__v4Display = DisplayV4;
   const theme = params.get("theme") || window.__overlayTheme || "cyber_racing";
@@ -162,6 +164,9 @@ async function startV4Demo(params) {
     language: window.__overlayLanguage || "en",
     manifestUrl: window.__v4ManifestUrl,
     catalogUrl: window.__v4CatalogUrl,
+    copyCatalog: window.__v4CopyCatalog,
+    resolvedMotions: window.__v4ResolvedMotions,
+    motionDisabled: params.get("motion") === "off",
   });
   const layout = params.get("layout");
   const fixture = params.get("fixture") || "lap_complete";
@@ -192,6 +197,16 @@ async function startV4Demo(params) {
     DisplayV4.show(v4FixtureOvertake());
     return;
   }
+  if (fixture === "pit_entry") {
+    DisplayV4.show(v4FixturePitEntry(1, "ENTER"));
+    DisplayV4.show(v4FixturePitEntry(2, "ACTIVE"));
+    return;
+  }
+  if (fixture === "hr_pressure") {
+    DisplayV4.show(v4FixtureHrPressure(1, "ENTER"));
+    DisplayV4.show(v4FixtureHrPressure(2, "ACTIVE"));
+    return;
+  }
   if (layout === "golden" || layout === "preview" || fixture === "lap_complete") {
     DisplayV4.show(v4FixtureLapComplete());
     return;
@@ -220,6 +235,8 @@ async function bootstrap() {
         window.__v4ManifestUrl = snap.v4.manifestUrl;
         window.__v4CatalogUrl = snap.v4.catalogUrl;
         window.__overlayLanguage = snap.v4.language;
+        window.__v4CopyCatalog = snap.v4.copyCatalog;
+        window.__v4ResolvedMotions = snap.v4.resolved?.motions;
         if (snap.v4.renderer) useV4 = true;
       }
       applySnapshot(snap, { events: !demo });
@@ -238,6 +255,9 @@ async function bootstrap() {
       language: window.__overlayLanguage || "en",
       manifestUrl: window.__v4ManifestUrl,
       catalogUrl: window.__v4CatalogUrl,
+      copyCatalog: window.__v4CopyCatalog,
+      resolvedMotions: window.__v4ResolvedMotions,
+      motionDisabled: params.get("motion") === "off",
     });
     if (demo) {
       await startV4Demo(params);
