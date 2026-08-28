@@ -119,6 +119,14 @@
   pointer-events: none;
 }
 
+/*
+ * cyber_racing icon_well art is visually left-weighted vs glyph centers (~5px).
+ * Nudge icons left so they sit in the rameček; other themes stay native.
+ */
+html[data-theme="cyber_racing"] .v4-art .icon {
+  transform: translateX(-5px);
+}
+
 .v4-art video.fx {
   position: absolute;
   inset: 0;

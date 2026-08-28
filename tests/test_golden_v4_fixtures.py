@@ -167,6 +167,16 @@ def test_v4_icons_use_full_canvas_well_alignment() -> None:
     assert "left: 28px" not in icon_block
 
 
+def test_cyber_racing_icon_nudge_toward_well() -> None:
+    """cyber_racing well art is left-weighted; icons need a small left nudge."""
+    css = display_v4_css()
+    assert 'html[data-theme="cyber_racing"] .v4-art .icon' in css
+    nudge = css.split('html[data-theme="cyber_racing"] .v4-art .icon {', 1)[1].split("}", 1)[0]
+    assert "translateX(-5px)" in nudge
+    overlay_js = (web_root() / "overlay" / "js" / "overlay.js").read_text(encoding="utf-8")
+    assert "dataset.theme" in overlay_js
+
+
 def test_golden_reduced_motion_paths() -> None:
     js = display_v4_js()
     css = display_v4_css()

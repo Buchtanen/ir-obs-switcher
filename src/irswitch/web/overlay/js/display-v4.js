@@ -804,6 +804,9 @@ export async function initV4(options = {}) {
   resolvedMotions = options.resolvedMotions || resolvedMotions;
   resolvedStates = options.resolvedStates || resolvedStates;
   motionDisabled = Boolean(options.motionDisabled);
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = theme;
+  }
   const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
   const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
   const tasks = [fetch(manifestUrl), fetch(catalogUrl)];

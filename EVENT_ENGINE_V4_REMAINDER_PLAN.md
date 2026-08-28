@@ -298,12 +298,15 @@ Per original plan §2 gate **S3** and §7:
 
 ## 12. Out of scope (unchanged from original plan)
 
-- YAML config migration (§0.5.2 track B)
-- `raceMomentum` advanced storytelling
-- Hand-authored track corner labels
-- Full SUSPEND/RESUME polish
-- Preview packs in `web/` tree
-- **Bio emitters `composure_test`, `high_load`** — deferred beyond v1 (§0.1); assets remain in manifest for future wiring
+- Live OBS Browser Source QA matrix beyond golden + replay CI  
+- Hand-authored corner label packs / track corner labels  
+- Full INI→YAML config migration (§0.5.2 track B)  
+- Removing V3 assets before S3d gate  
+- `raceMomentum` advanced storytelling  
+- Full SUSPEND/RESUME polish  
+- Preview packs in `web/` tree  
+- **Bio emitters `composure_test`, `high_load`** — deferred beyond v1 (§0.1); assets remain in manifest for future wiring  
+- **Follow-up (spec only):** SoF card + race remaining — `EVENT_ENGINE_V4_SOF_REMAIN_SPEC.md` (not part of this branch)
 
 ---
 

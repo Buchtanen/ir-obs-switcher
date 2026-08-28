@@ -11,6 +11,7 @@ function applyTheme(theme) {
   const id = theme || "cyber_racing";
   const link = document.getElementById("theme-css");
   if (link) link.href = `/overlay/static/css/themes/${id}.css`;
+  document.documentElement.dataset.theme = id;
 }
 
 function applyPresentation(msg) {
