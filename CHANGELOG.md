@@ -5,6 +5,21 @@ Všechny významné změny v projektu budou zdokumentovány v tomto souboru.
 Formát je založen na [Keep a Changelog](https://keepachangelog.com/cs/1.0.0/),
 a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 
+## [1.2.0] — 2026-08-28
+
+### Features
+
+* Event Engine V4 remainder: 33 golden fixtures aligned with v1 event catalog (35 manifest states; `composure_test` / `high_load` deferred)
+* V4 sysinfo renderer — 1920×72 layered module bar across 3 themes (`overlay.v4_renderer=true`)
+* `event_catalog.json` v1 wiring for all shipped transient families (timing, battle, position, pit, bio, session, exception)
+* Input-replay harness scenarios 1–15 (lap/PB, battle ladder, overtake, pit FSM, HR pressure, P/Q timing, invalid lap, link drop, mixed race beat)
+* Practice / quali / race emitters and adapters behind `[event_engine]` flags; V4 WebSocket envelopes when `v2_payload=true` (phases ENTER / ACTIVE / UPDATE / RESULT / EXIT; `STATE_SNAPSHOT` on reconnect)
+
+### Documentation
+
+* API.md — V4 overlay envelope wire format and event catalog reference
+* BUILD_AND_DEPLOY.md — `themes-v4/` package size (~5.8 MiB) and `overlay.v4_assets` runtime gate
+
 ## [1.1.0](https://github.com/Buchtanen/ir-obs-switcher/compare/v1.0.0...v1.1.0) (2026-08-28)
 
 

@@ -204,12 +204,12 @@ Plus promote from fallback-only to direct entries where emitters exist:
 
 **Not S3d** — prepares v1 without removing legacy.
 
-- [ ] Walk §7 Definition of done — mark each item pass / waiver / open
-- [ ] Version bump (`semver:minor` — new feature surface behind flags)
-- [ ] CHANGELOG.md — Event Engine V4 section
-- [ ] CONFIG.md — recommended “full V4 demo” flag block (already used in agent testing)
-- [ ] API.md — `STATE_SNAPSHOT`, envelope shape when `v2_payload=true`
-- [ ] BUILD_AND_DEPLOY.md — package size note (~5.8 MiB themes-v4)
+- [x] Walk §9 Definition of done — scorecard updated on branch
+- [x] Version bump (`1.1.0` → `1.2.0` in `pyproject.toml`)
+- [x] CHANGELOG.md — Event Engine V4 remainder section
+- [x] CONFIG.md — recommended “full V4 demo” flag block (already used in agent testing)
+- [x] API.md — `STATE_SNAPSHOT`, envelope shape when `v2_payload=true`
+- [x] BUILD_AND_DEPLOY.md — package size note (~5.8 MiB themes-v4)
 - [ ] Product sign-off: enable flag profile for one internal session
 
 **Branch:** `cursor/ee-v1-release-prep-65db`
@@ -222,7 +222,7 @@ Per original plan §2 gate **S3** and §7:
 
 **Preconditions (all required):**
 
-1. #111 merged; golden glow fixed — **#113** merge pending
+1. #111 merged; golden glow fixed — **done on branch** (R0)
 2. R4 catalog + golden **33** v1 states (bio pair excluded per §0.1)
 3. R2 P/Q path green behind flags
 4. Replay scenarios 1–12+ green
@@ -249,20 +249,22 @@ Per original plan §2 gate **S3** and §7:
 | Criterion | Status |
 | --- | --- |
 | Flags in schema, default off, CONFIG.md | pass |
-| v2 envelope on WS with ACTIVE | pass (behind flag) |
-| Practice / Quali / Race behind flags | **partial** — emitters exist; V4 adapter path incomplete |
+| v2 envelope on WS with ACTIVE | pass (behind `event_engine.v2_payload`) |
+| Practice / Quali / Race behind flags | pass — emitters + V4 adapters + replay 11–12 |
 | i18n EN + CS | pass (#107) |
 | Overtake ≠ silent position; pit suppression | pass (#105, #104, S2 tests) |
-| V4 layered render; motion vibe | **partial** — #113 R0 pending merge |
-| SYSINFO geometry | **open** — full V4 required (§0.1) |
-| Replay scenarios 1–10 | pass (#109) |
+| V4 layered render; motion vibe | pass — R0 golden glow clip on branch |
+| SYSINFO geometry | pass — V4 1920×72 renderer + asset CI |
+| Golden fixtures (33 v1 states) | pass — catalog-aligned registry + gallery |
+| Replay scenarios 1–15 | pass — parametric harness green |
 | DecisionLog suppressions | pass (manager v2 tests) |
-| Reduced-motion | **partial** — needs golden verification |
-| Golden URL deterministic `motion=off` | **partial** — #113 pending |
+| Reduced-motion | partial — `motion=off` golden deterministic; 3-theme manual smoke optional |
+| Golden URL deterministic `motion=off` | pass |
 | Asset size CI | pass |
 | Per-emitter fail-soft + reset | pass |
-| Legacy removal scheduled | **this plan — S3d last** |
-| Docs API / theme / BUILD | **partial** |
+| Legacy removal (S3d) | **separate track — not in this branch** |
+| Docs API / theme / BUILD (R6) | pass — CHANGELOG, API, BUILD_AND_DEPLOY updated; semver 1.2.0 |
+| Product sign-off (full V4 session) | open |
 
 ---
 

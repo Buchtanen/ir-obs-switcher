@@ -57,6 +57,17 @@ dist/
 
 **Důležité**: Celý `dist/` adresář je samostatná distribuce - můžeš ho zkopírovat kamkoliv a spustit.
 
+### Overlay V4 asset pack (`themes-v4/`)
+
+Adresář `src/irswitch/web/themes-v4/` přidá do distribuce přibližně **5.8 MiB** (PNG vrstvy + manifest pro 3 theme, transientní rodiny a sysinfo 1920×72). V3 theme pack (`web/themes/`) zůstává ~1.5 MiB.
+
+| Flag | Výchozí | Efekt |
+|------|---------|--------|
+| `overlay.v4_assets` | `false` | Snapshot / WS `assets` mapuje cesty pod `themes-v4/`; bez flagu V4 soubory nejsou v payloadu |
+| `overlay.v4_renderer` | `false` | Transientní HUD + sysinfo používají V4 layer renderer (`display-v4.js`) |
+
+Oba flagy jsou **runtime** — build může V4 pack zahrnout, ale klient ho načte jen při `v4_assets=true`. Doporučený „full V4 demo“ blok je v [CONFIG.md](CONFIG.md).
+
 ---
 
 ## Instalace a provoz

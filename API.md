@@ -32,6 +32,7 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /config](#get-config)
 - [Overlay API](#overlay-api)
   - [WS /ws/overlay](#ws-wsoverlay)
+  - [V4 event envelopes (`v2_payload=true`)](#v4-event-envelopes-v2_payloadtrue)
   - [GET /api/overlay/snapshot](#get-apioverlaysnapshot)
   - [POST /overlay/debug/emit](#post-overlaydebugemit)
   - [GET /api/config](#get-apiconfig)
@@ -693,6 +694,92 @@ Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 Po connectu okamžitý `snapshot` včetně `theme` a `assets` (relativní cesty pod `/overlay/web/`). State se coalescuje, eventy jdou hned. Reconnect backoff 1/2/5/10 s řeší frontend.
 
 Ikony se stavovou barvou (`currentColor`) se na HUD kreslí přes CSS `mask-image`, ne jako `<img>`.
+
+### V4 event envelopes (`v2_payload=true`)
+
+Když je v `config.ini` zapnuto `[event_engine] v2_payload = true`, transientní overlay eventy na `WS /ws/overlay` používají **V4 obálku** místo legacy `{type, name, phase, channel, …}`. Legacy tvar zůstává, dokud je flag vypnutý (výchozí).
+
+**Zprávy na stejném socketu**
+
+| `type` | Kdy | Účel |
+|--------|-----|------|
+| `snapshot` | hned po connectu | race / bio / system + `activeEvents` (legacy aktivní eventy) |
+| `STATE_SNAPSHOT` | po connectu, pokud běží V4 stories | autoritativní seznam aktivních V4 příběhů (`activeStories`) |
+| `state` | coalesced | doménový patch (`race`, `bio`, `system`) |
+| `event` | okamžitě | transientní událost — legacy nebo V4 podle flagu |
+
+**Fáze (`phase`) — v1 wire**
+
+| Phase | Význam |
+|-------|--------|
+| `ENTER` | začátek příběhu / widgetu |
+| `ACTIVE` | držení persistentního widgetu (manager může poslat hned po `ENTER`, např. battle / pit) |
+| `UPDATE` | in-place refresh metrik / copy |
+| `RESULT` | jednorázový výsledek (lap complete, finish, battle won, …) |
+| `EXIT` | ukončení příběhu (expirace, preemption, session reset) |
+
+Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposílá.
+
+**V4 event tvar** (`format: "v4"`):
+
+```json
+{
+  "type": "event",
+  "format": "v4",
+  "schemaVersion": "1.0",
+  "eventId": "subsession:0:LAP_COMPLETE:42",
+  "sequence": 42,
+  "sessionId": "subsession:0",
+  "eventType": "LAP_COMPLETE",
+  "mode": "RACE",
+  "phase": "RESULT",
+  "monotonicMs": 120000,
+  "priority": 10,
+  "dedupeKey": "lap:12",
+  "correlationId": "lap:12",
+  "storyKey": "lap:12",
+  "subject": { "carId": "player" },
+  "metrics": { "lap": 12, "lapTimeSec": 92.4 },
+  "copy": { "headlineToken": "lap.headline", "statusToken": "lap.status" },
+  "presentation": {
+    "widget": "lap_complete",
+    "zone": "EVENT",
+    "preferredState": "RESULT",
+    "minHoldMs": 2500,
+    "maxHoldMs": 12000
+  },
+  "reason": { "detector": "lap", "rules": [], "suppressedAlternatives": [] }
+}
+```
+
+**`STATE_SNAPSHOT`** — druhá zpráva po reconnectu, pokud manager drží aktivní V4 stories:
+
+```json
+{
+  "type": "STATE_SNAPSHOT",
+  "activeStories": [
+    {
+      "eventType": "HUNTING",
+      "phase": "ACTIVE",
+      "sequence": 7,
+      "correlationId": "battle:hunting:17"
+    }
+  ]
+}
+```
+
+Frontend (`overlay.js`) aplikuje `activeStories` před live streamem, aby reconnect obnovil persistentní battle / pit widgety.
+
+**Event catalog**
+
+Mapování `eventType` → renderer state, debug inject key a family:
+
+- soubor: [`src/irswitch/web/themes-v4/event_catalog.json`](src/irswitch/web/themes-v4/event_catalog.json)
+- golden acceptance URLs: [`src/irswitch/web/overlay/GOLDEN_V4.md`](src/irswitch/web/overlay/GOLDEN_V4.md)
+
+V1 catalog: **33** wired states (manifest 35; `composure_test` / `high_load` deferred). Povolené debug názvy: `GET /api/overlay/debug/events`.
+
+Související flagy: viz [CONFIG.md](CONFIG.md) — `[event_engine]` (`v2_payload`, `practice`, `quali_projection`, …) a `[overlay]` (`v4_assets`, `v4_renderer`).
 
 ### GET /api/overlay/snapshot
 
