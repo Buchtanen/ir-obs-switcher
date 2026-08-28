@@ -1,0 +1,30 @@
+---
+description: PR policy (semver labels) + Release PR model
+alwaysApply: true
+---
+
+## PR policy (master)
+
+Repo uses **Release PR model** (release-please). Key rules:
+
+- `master` is protected → changes only via **PR + human review**
+- every normal PR to `master` must have **exactly one** semver label:
+  - `semver:major` / `semver:minor` / `semver:patch` / `semver:none`
+- label is authoritative; conventional title is recommended for readability
+
+Breaking change rule:
+- if label is `semver:major`, PR must clearly indicate breaking change via:
+  - title with `!` (e.g. `feat!: ...`), or
+  - body containing `BREAKING CHANGE: ...`
+
+Release PR:
+- you don’t create it manually
+- release PR updates `pyproject.toml` version + `CHANGELOG.md` (+ manifest)
+- merging release PR creates tag `vX.Y.Z` and runs release pipeline
+
+Do not:
+- tag manually
+- bump version in normal PRs (version bump happens in release PR)
+
+Reference: `RELEASE_POLICY.md`
+

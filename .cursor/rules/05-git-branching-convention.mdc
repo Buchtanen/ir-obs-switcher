@@ -1,0 +1,43 @@
+---
+description: Branch naming convention for this repo
+alwaysApply: true
+---
+
+## Branch naming convention
+
+Format:
+- **`<type>/<short-description-in-kebab-case>`**
+- optional: **`<type>/<scope>-<short-description>`**
+
+Allowed `type` (short whitelist):
+- **`feat/`** – feature (typically PR `semver:minor`)
+- **`fix/`** – bugfix (typically PR `semver:patch`)
+- **`ci/`** – pipelines, workflows, caching, release automation
+- **`chore/`** – maintenance (deps, tooling, repo housekeeping)
+- **`docs/`** – documentation
+- **`refactor/`** – refactor w/o behavior change (typically PR `semver:none`)
+- **`test/`** – tests only
+
+Style:
+- lowercase only, numbers ok
+- separator **`-`**
+- no diacritics, no spaces, no `_`
+- keep it short (≈ 50–70 chars max)
+
+Breaking change:
+- do **not** use `!` in branch names
+- use `feat/breaking-...` / `refactor/breaking-...` if you want
+- breaking is defined in the **PR**: title `feat!:` or `BREAKING CHANGE:` + label `semver:major`
+
+Automation reservation:
+- do not use prefix **`release-please--...`** (reserved for release-please)
+
+Parallel agents: one branch per independent task; use git worktrees (see `parallel-worktrees.mdc`). GitHub issue numbers are optional in the name; do not invent GitLab/Jira ticket prefixes.
+
+Examples:
+- `feat/obs-scene-autoswitch`
+- `fix/obs-connection-timeout`
+- `ci/release-please-workflow`
+- `docs/release-policy-clarify`
+- `refactor/state-machine-cleanup`
+

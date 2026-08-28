@@ -1,0 +1,20 @@
+---
+description: Async/runtime rules (no blocking, task ownership, time)
+globs: src/**/*.py
+alwaysApply: false
+---
+
+## Async rules
+
+- **No blocking calls inside async loops** (sleep, IO, heavy CPU).
+- Avoid `asyncio.create_task()` without ownership:
+  - background tasks must be **tracked**, **cancellable**, and shut down cleanly.
+- Retries for external systems (OBS/network) must use **backoff**.
+- Use **monotonic time** for cooldown/debounce logic.
+- Never “sleep blindly”; any sleep should have a reason (rate limit, backoff, etc.).
+
+## Failure model
+
+- iRacing disconnected is a **normal state** (do not log as error).
+- OBS disconnect should **retry**, and main loop must keep running.
+

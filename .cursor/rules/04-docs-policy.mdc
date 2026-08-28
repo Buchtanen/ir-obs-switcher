@@ -1,0 +1,28 @@
+---
+description: Documentation policy (feature implies doc updates)
+alwaysApply: true
+---
+
+## Docs policy (strict)
+
+Every change must consider docs. For any work item:
+
+- **If user-facing behavior changes** → docs must be updated.
+- If docs truly don’t change → explicitly state **“Docs: no change (reason …)”**.
+
+## What “docs updated” means here
+
+Update **all relevant docs in this repo** (not just one file). Typical mapping:
+
+- **Config keys / behavior** → `CONFIG.md` + `config/config.example.ini`
+- **CLI / run instructions / dashboards** → `README.md` (+ `BUILD_AND_DEPLOY.md` if distribution impacted)
+- **API endpoints / payloads** → `API.md`
+- **Build / distribution / installer** → `BUILD_AND_DEPLOY.md`
+- **Release process / semver labeling** → `RELEASE_POLICY.md` (and related docs)
+- **VR / dashboard specifics** → `VR_SUPPORT.md`, `RACELAB_VR_SETUP.md`
+- **Cursor automation** → `.cursor/README.md` (and the changed rule/skill/command files)
+
+## PR requirement
+
+PR description must include **Docs impact** checklist (see `02-work-item-definition.mdc`).
+

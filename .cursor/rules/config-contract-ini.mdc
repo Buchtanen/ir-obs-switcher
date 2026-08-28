@@ -1,0 +1,14 @@
+---
+description: Configuration contract rules for INI examples
+globs: config/**/*.ini
+alwaysApply: false
+---
+
+## Config contract (INI files)
+
+INI example files are part of the public contract.
+
+If you change config keys/meaning/defaults:
+- keep `config/config.example.ini` aligned with `CONFIG.md`
+- preserve backwards compatibility when possible; otherwise document migration
+

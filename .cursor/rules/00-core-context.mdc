@@ -1,0 +1,25 @@
+---
+description: Core project context (app + tech stack)
+alwaysApply: true
+---
+
+## irswitch – core context
+
+- **What**: iRacing → OBS auto scene switcher (long-running service) + web dashboards.
+- **Why**: VR use-case (no monitor/keyboard) → automate OBS scenes/stream flow based on iRacing state.
+- **Runtime**: Windows-first, Python **3.11+**, async-first (`aiohttp`), OBS via `obsws-python` (obs-websocket v5), iRacing via `pyirsdk`.
+- **Hosting**: GitHub `Buchtanen/ir-obs-switcher` (not GitLab). Dashboards: `http://127.0.0.1:17321/gr-status` and `/vr-status`.
+
+## Engineering posture
+
+- **Stability > elegance**, **determinism > cleverness**.
+- External systems (iRacing/OBS/network) are unreliable: **never crash main loop** because of them.
+- Treat “iRacing disconnected” as **normal state**, not an exception.
+
+## Primary docs
+
+- `README.md` (how to run, dashboards)
+- `CONFIG.md` + `config/config.example.ini` (configuration contract)
+- `API.md` (REST/WS)
+- `RELEASE_POLICY.md` (Release PR model; semver labels on PRs)
+

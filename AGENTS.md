@@ -1,4 +1,4 @@
-# Cursor Rules — irswitch (index)
+# Codex Rules — irswitch (index)
 
 This file is intentionally short to avoid duplicating the canonical rules.
 
@@ -10,7 +10,6 @@ Task skills (start/restart, YouTube OAuth) live in:
 - `.cursor/skills/*/SKILL.md`
 
 ## Core expectations (summary)
-- **PRs to `master`:** always add exactly one `semver:*` label immediately after create — see `.cursor/skills/pr-semver-label/SKILL.md`.
 - Stability > elegance; determinism > cleverness.
 - External systems (iRacing/OBS/network) are unreliable: **never crash the main loop**.
 - Respect layer boundaries: `iracing/` extraction only, `obs/` thin client, `logic/` decisions+state machine, `server/` glue only.

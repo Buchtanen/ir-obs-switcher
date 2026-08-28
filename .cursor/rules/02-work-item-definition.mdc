@@ -1,0 +1,45 @@
+---
+description: Work item definition (AC + test plan + docs/config impact)
+alwaysApply: true
+---
+
+## Work item definition (feature / fix / CI change)
+
+Before implementing, the work item must define:
+
+- **Acceptance criteria (AC)**: testable, checkbox list.
+- **Test plan**: how we prove AC is met (unit/integration/manual + evidence).
+- **Docs impact**: which docs must be updated (or “no docs change” with reason).
+- **Config impact**: if config keys/behavior changes, define the config delta + migration note.
+
+### Minimal template (issue / PR description)
+
+```markdown
+## Context
+<why, what problem>
+
+## Acceptance criteria
+- [ ] AC1 ...
+- [ ] AC2 ...
+
+## Test plan
+- [ ] Unit: ...
+- [ ] Integration/E2E: ...
+- [ ] Manual verification: ...
+
+## Docs impact
+- [ ] README.md
+- [ ] CONFIG.md + config/config.example.ini
+- [ ] API.md
+- [ ] BUILD_AND_DEPLOY.md
+- [ ] VR_SUPPORT.md / RACELAB_VR_SETUP.md
+- [ ] .cursor/README.md (if rules/skills/commands change)
+- [ ] Other: ...
+
+## Config impact (if any)
+Changed keys:
+- `<section>.<key>`: <what changed>
+Migration:
+- <how existing users update>
+```
+

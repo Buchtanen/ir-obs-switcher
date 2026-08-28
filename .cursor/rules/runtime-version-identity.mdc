@@ -1,0 +1,24 @@
+---
+description: How irswitch.__version__ is resolved (pyproject vs metadata vs EXE)
+globs: src/irswitch/__init__.py,pyproject.toml,src/irswitch/server/dashboards.py
+alwaysApply: false
+---
+
+## Version identity
+
+`irswitch.__version__` comes from `resolve_version()`:
+
+- **Source checkout** (not frozen): `pyproject.toml` first — stale wheel `dist-info` is ignored
+- **Frozen EXE**: `BUILD_INFO.txt`, then package metadata
+- **Installed wheel, no checkout**: package metadata
+
+Do **not** bump version in normal PRs (release-please / `RELEASE_POLICY.md`).
+
+Dashboard showing an old version is usually:
+
+- stale **frozen** `BUILD_INFO.txt` / old `dist/` EXE, or
+- running a wheel install without the checkout (metadata-only)
+
+`POST /restart` respawns the same binary/install. It does **not** regenerate metadata or rebuild the EXE.
+
+After checkout/merge, verify `GET /health` (or dashboard) version. For a new EXE, rebuild; for venv source, `pip install -e .` is only needed when package metadata itself must change.
