@@ -49,6 +49,7 @@ from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.events.pit_story import PitStoryEmitter
 from irswitch.events.practice import PracticeEmitter
 from irswitch.events.quali import QualiEmitter
+from irswitch.events.target_locked import TargetLockedEmitter
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.overlay.replay import _bio_from_dict, _race_from_dict
 from irswitch.overlay.settings import OverlaySettings
@@ -153,6 +154,9 @@ class ReplayInputRunner:
                     overlay.events,
                     pri,
                 )
+            )
+            self._engine.register(
+                TargetLockedEmitter(overlay.events, pri),
             )
         if overlay.event_engine.quali_projection:
             self._engine.register(
