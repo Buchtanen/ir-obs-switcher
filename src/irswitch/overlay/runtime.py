@@ -18,6 +18,7 @@ from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import SessionCoordinator, build_session_key
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.race.context import RaceContextAnalyzer
+from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
 from irswitch.server.task_registry import TaskRegistry
 
@@ -46,10 +47,16 @@ class OverlayRuntime:
         self.manager = EventManager()
         overlay = self._overlay_settings()
         self.engine = EventEngine(overlay)
+        self._register_timing_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
         self.session = SessionCoordinator()
         self.session.add_reset_hook(self.analyzer.reset)
         self.session.add_reset_hook(self._reset_event_pipeline)
+        self.session.add_reset_hook(self._reset_timing)
+        self._timing_detector = CrossingDetector()
+        self._timing_store = TimingStore()
+        self._segment_ref = SegmentReferenceTracker()
+        self.session.add_reset_hook(self._segment_ref.reset)
         self._bio: Any = None
         self._system: Any = None
         self._origin = time.monotonic()
@@ -58,9 +65,60 @@ class OverlayRuntime:
 
     def _reset_event_pipeline(self) -> None:
         """Drop active overlay stories on session/track change (Spec §21)."""
-        self.manager = EventManager(self._overlay_settings().events)
-        self.engine = EventEngine(self._overlay_settings())
+        overlay = self._overlay_settings()
+        self.manager = EventManager(overlay.events)
+        self.engine = EventEngine(overlay)
+        self._register_timing_emitters(overlay)
         self.bus.set_active_events([])
+
+    def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
+        """Attach T2 practice/quali emitters when feature flags are enabled."""
+        if overlay.event_engine.practice:
+            from irswitch.events.practice import PracticeEmitter
+
+            self.engine.register(
+                PracticeEmitter(
+                    self._timing_store,
+                    self._segment_ref,
+                    overlay.events,
+                    overlay.events.priorities,
+                )
+            )
+        if overlay.event_engine.quali_projection:
+            from irswitch.events.quali import QualiEmitter
+
+            self.engine.register(
+                QualiEmitter(
+                    self._timing_store,
+                    self._segment_ref,
+                    overlay.events,
+                    overlay.events.priorities,
+                )
+            )
+
+    def _reset_timing(self) -> None:
+        self._timing_detector.reset()
+        self._timing_store.reset()
+
+    def _observe_timing(self, snap: TelemetrySnapshot) -> None:
+        """Ingest player crossings into the timing store (no semantic events yet)."""
+        if snap.player_car_idx is None or snap.player_lap_dist_pct is None:
+            return
+        lap_number = snap.lap_completed if snap.lap_completed is not None else snap.lap
+        quality = snap.data_quality if snap.data_quality else "ok"
+        valid = quality == "ok" and snap.connected
+        for event in self._timing_detector.update(
+            car_id="player",
+            lap_number=lap_number,
+            lap_dist_pct=snap.player_lap_dist_pct,
+            timestamp=snap.timestamp,
+        ):
+            self._timing_store.ingest_crossing(
+                event,
+                cumulative_lap_time=snap.current_lap_time,
+                valid_at_crossing=valid,
+                data_quality=quality,
+            )
 
     def _overlay_settings(self) -> OverlaySettings:
         cfg = self._get_config()
@@ -146,6 +204,7 @@ class OverlayRuntime:
                 connected=snap.connected,
                 now=now,
             )
+            self._observe_timing(snap)
             try:
                 state = self.analyzer.analyze(snap)
             except Exception:
