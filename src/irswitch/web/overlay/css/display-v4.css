@@ -31,6 +31,9 @@
   transition: opacity 0.28s ease, transform 0.28s ease;
   color: var(--primary, #3ad7ff);
   box-sizing: border-box;
+  overflow: hidden;
+  isolation: isolate;
+  contain: paint;
 }
 
 .v4-widget.visible {
@@ -55,6 +58,18 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  isolation: isolate;
+  contain: paint;
+  z-index: 1;
+}
+
+.v4-art.has-plate-mask {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  -webkit-mask-size: 420px 140px;
+  mask-size: 420px 140px;
 }
 
 .v4-art .layer {
@@ -70,15 +85,38 @@
   background-image: none;
 }
 
+/* Only the tone-matching glow is visible; plate CSS mask is applied in JS. */
+.v4-art .layer.glow {
+  opacity: 0;
+  mix-blend-mode: normal;
+  pointer-events: none;
+}
+
+.v4-widget.tone-primary .v4-art .layer.glow[data-glow="cyan"],
+.v4-widget:not(.tone-warning):not(.tone-alert) .v4-art .layer.glow[data-glow="cyan"] {
+  opacity: 1;
+}
+
+.v4-widget.tone-warning .v4-art .layer.glow[data-glow="amber"] {
+  opacity: 1;
+}
+
+.v4-widget.tone-alert .v4-art .layer.glow[data-glow="red"] {
+  opacity: 1;
+}
+
+/* V4 state icons are authored as full 420×140 canvases (glyph already in the
+   icon-well). Do NOT crop to a 64×64 box — that shifts the glyph right of the well. */
 .v4-art .icon {
   position: absolute;
-  left: 28px;
-  top: 38px;
-  width: 64px;
-  height: 64px;
+  inset: 0;
+  width: 420px;
+  height: 140px;
   background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
+  background-size: 420px 140px;
+  background-position: 0 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .v4-art video.fx {
@@ -88,41 +126,62 @@
   height: 140px;
   object-fit: fill;
   pointer-events: none;
+  z-index: 1;
 }
 
+/* Absolute slots aligned to V3 plate geometry (title ~38px) — not a centered grid. */
 .v4-copy {
   position: absolute;
-  left: 119px;
-  right: 16px;
-  top: 0;
-  bottom: 0;
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  align-content: center;
-  gap: 2px;
-  line-height: 1.05;
+  inset: 0;
+  z-index: 3;
+  display: block;
   pointer-events: none;
+  line-height: 1.05;
 }
 
 .v4-copy .title {
+  position: absolute;
+  left: 119px;
+  right: 16px;
+  top: 38px;
+  margin: 0;
   font-size: 22px;
+  line-height: 24px;
   letter-spacing: 0.08em;
   font-weight: 700;
 }
 
 .v4-copy .subtitle {
+  position: absolute;
+  left: 120px;
+  right: 16px;
+  top: 62px;
+  margin: 0;
   font-size: 11px;
+  line-height: 13px;
   letter-spacing: 0.14em;
   color: var(--text-muted, #7aa0aa);
 }
 
 .v4-copy .value {
-  font-size: 28px;
+  position: absolute;
+  left: 120px;
+  right: 16px;
+  top: 80px;
+  margin: 0;
+  font-size: 26px;
+  line-height: 28px;
   font-variant-numeric: tabular-nums;
 }
 
 .v4-copy .meta {
+  position: absolute;
+  left: 120px;
+  right: 16px;
+  top: 112px;
+  margin: 0;
   font-size: 11px;
+  line-height: 14px;
   letter-spacing: 0.1em;
   color: var(--text-muted, #7aa0aa);
 }
@@ -142,6 +201,37 @@ html.golden-layout .v4-widget {
 
 html.golden-layout #sysinfo-widget {
   display: none;
+}
+
+/* V4 sysinfo bar (1920×72) — layered art in .sysinfo-art */
+#sysinfo-widget.v4-sysinfo .sys-mod .layer.segment {
+  display: none;
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer {
+  background-repeat: no-repeat;
+  background-size: 1920px 72px;
+  background-position: 0 0;
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer.mask {
+  background-color: currentColor;
+  background-image: none;
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer.dividers {
+  color: var(--primary, #3ad7ff);
+}
+
+#sysinfo-widget.v4-sysinfo .sysinfo-art .layer.glow {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#sysinfo-widget.v4-sysinfo[data-glow="normal"] .sysinfo-art .layer.glow[data-glow="normal"],
+#sysinfo-widget.v4-sysinfo[data-glow="warn"] .sysinfo-art .layer.glow[data-glow="warn"],
+#sysinfo-widget.v4-sysinfo[data-glow="critical"] .sysinfo-art .layer.glow[data-glow="critical"] {
+  opacity: 1;
 }
 
 html.golden-gallery #v4-battle-stack,
@@ -203,7 +293,8 @@ html.golden-gallery #v4-event-layer {
 }
 
 .v4-widget.phase-compact .value {
-  font-size: 24px;
+  font-size: 22px;
+  line-height: 24px;
 }
 
 .v4-widget.phase-compact .subtitle {

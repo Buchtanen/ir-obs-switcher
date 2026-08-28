@@ -36,6 +36,55 @@ Deterministic acceptance views for the V4 renderer. All URLs require `demo=1` (i
 - Phase: `RESULT`
 - URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=personal_best&theme=cyber_racing&motion=off`
 
+### target
+
+- Fixture id: `target`
+- Event type: `TARGET_LOCKED`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=target&theme=cyber_racing&motion=off`
+
+### projected_lap
+
+- Fixture id: `projected_lap`
+- Event type: `PROJECTED_LAP`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=projected_lap&theme=cyber_racing&motion=off`
+
+### pb_attack
+
+- Fixture id: `pb_attack`
+- Event type: `SECTOR_BEST`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=pb_attack&theme=cyber_racing&motion=off`
+
+### hot_lap
+
+- Fixture id: `hot_lap`
+- Event type: `HOT_LAP`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=hot_lap&theme=cyber_racing&motion=off`
+
+### position_attack
+
+- Fixture id: `position_attack`
+- Event type: `POSITION_ATTACK`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=position_attack&theme=cyber_racing&motion=off`
+
+### gain_found
+
+- Fixture id: `gain_found`
+- Event type: `GAIN_FOUND`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=gain_found&theme=cyber_racing&motion=off`
+
+### clean_streak
+
+- Fixture id: `clean_streak`
+- Event type: `CLEAN_STREAK`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=clean_streak&theme=cyber_racing&motion=off`
+
 ---
 
 ## Battle
@@ -75,6 +124,20 @@ Deterministic acceptance views for the V4 renderer. All URLs require `demo=1` (i
 - Phase: `ACTIVE`
 - URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=side_by_side&theme=cyber_racing&motion=off`
 
+### battle_for_position
+
+- Fixture id: `battle_for_position`
+- Event type: `BATTLE_FOR_POSITION`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=battle_for_position&theme=cyber_racing&motion=off`
+
+### battle_won
+
+- Fixture id: `battle_won`
+- Event type: `BATTLE_WON`
+- Phase: `RESULT`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=battle_won&theme=cyber_racing&motion=off`
+
 ### battle_stack (combo)
 
 - Shows hunting + hunted together (not a catalog state)
@@ -104,6 +167,13 @@ Deterministic acceptance views for the V4 renderer. All URLs require `demo=1` (i
 - Event type: `OVERTAKE`
 - Phase: `RESULT`
 - URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=overtake&theme=cyber_racing&motion=off`
+
+### rival_threat
+
+- Fixture id: `rival_threat`
+- Event type: `RIVAL_THREAT`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=rival_threat&theme=cyber_racing&motion=off`
 
 ---
 
@@ -197,6 +267,20 @@ Deterministic acceptance views for the V4 renderer. All URLs require `demo=1` (i
 - Event type: `INCIDENT`
 - Phase: `ACTIVE`
 - URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=incident&theme=cyber_racing&motion=off`
+
+### invalid_lap
+
+- Fixture id: `invalid_lap`
+- Event type: `INVALID_LAP`
+- Phase: `RESULT`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=invalid_lap&theme=cyber_racing&motion=off`
+
+### link_drop
+
+- Fixture id: `link_drop`
+- Event type: `LINK_DROP`
+- Phase: `ACTIVE`
+- URL: `/overlay?demo=1&renderer=v4&layout=golden&fixture=link_drop&theme=cyber_racing&motion=off`
 
 ---
 

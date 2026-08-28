@@ -2,70 +2,51 @@
 
 from __future__ import annotations
 
-import json
-import re
 from dataclasses import replace
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from golden_v4_shared import (
+    GOLDEN_FIXTURE_COUNT,
+    GOLDEN_FIXTURES,
+    catalog_states,
+    display_v4_css,
+    display_v4_js,
+    fixture_export_pattern,
+    fixture_id_pattern,
+    golden_doc_path,
+    v4_golden_catalog_ids,
+)
 
 from irswitch.overlay.http import presentation_payload, web_root
 
-GOLDEN_FIXTURES: tuple[str, ...] = (
-    "lap_complete",
-    "personal_best",
-    "hunting",
-    "hunted",
-    "approach",
-    "attack_range",
-    "side_by_side",
-    "position_gained",
-    "position_lost",
-    "overtake",
-    "pit_entry",
-    "pit_lane",
-    "pit_stopped",
-    "pit_released",
-    "pit_exit",
-    "pit_outcome",
-    "hr_pressure",
-    "ble_reconnecting",
-    "final_lap",
-    "finish",
-    "incident",
-)
 
-_FIXTURE_ID_RE = re.compile(r"Fixture id:\s*`([a-z0-9_]+)`")
-_V4_FIXTURE_EXPORT_RE = re.compile(r"export function (v4Fixture\w+)")
+def test_golden_fixture_registry_has_33_entries() -> None:
+    assert len(GOLDEN_FIXTURES) == GOLDEN_FIXTURE_COUNT
 
 
-def _catalog_path() -> Path:
-    return web_root() / "themes-v4" / "event_catalog.json"
+def test_golden_v4_md_documents_33_fixtures() -> None:
+    doc = golden_doc_path().read_text(encoding="utf-8")
+    documented = fixture_id_pattern().findall(doc)
+    assert len(documented) == GOLDEN_FIXTURE_COUNT
+    assert len(set(documented)) == GOLDEN_FIXTURE_COUNT
 
 
-def _golden_doc_path() -> Path:
-    return web_root() / "overlay" / "GOLDEN_V4.md"
-
-
-def _display_v4_js() -> str:
-    return (web_root() / "overlay" / "js" / "display-v4.js").read_text(encoding="utf-8")
-
-
-def _catalog_states() -> set[str]:
-    catalog = json.loads(_catalog_path().read_text(encoding="utf-8"))
-    return {entry["state"] for entry in catalog["entries"].values()}
+def test_v4_golden_catalog_has_33_entries() -> None:
+    catalog_ids = v4_golden_catalog_ids()
+    assert len(catalog_ids) == GOLDEN_FIXTURE_COUNT
+    assert catalog_ids == list(GOLDEN_FIXTURES)
 
 
 def test_golden_fixture_registry_covers_catalog_states() -> None:
-    catalog_states = _catalog_states()
+    catalog_states_set = catalog_states()
     fixture_states = set(GOLDEN_FIXTURES)
-    missing = catalog_states - fixture_states
+    missing = catalog_states_set - fixture_states
     assert not missing, f"catalog states missing golden fixtures: {sorted(missing)}"
 
 
 def test_golden_fixtures_exported_in_display_v4_js() -> None:
-    js = _display_v4_js()
+    js = display_v4_js()
     for fixture_id in GOLDEN_FIXTURES:
         assert f'id: "{fixture_id}"' in js, f"missing V4_GOLDEN_CATALOG entry for {fixture_id}"
     assert "export function v4FixtureLapComplete" in js
@@ -73,8 +54,8 @@ def test_golden_fixtures_exported_in_display_v4_js() -> None:
 
 
 def test_golden_v4_md_lists_all_fixture_ids() -> None:
-    doc = _golden_doc_path().read_text(encoding="utf-8")
-    documented = set(_FIXTURE_ID_RE.findall(doc))
+    doc = golden_doc_path().read_text(encoding="utf-8")
+    documented = set(fixture_id_pattern().findall(doc))
     missing = set(GOLDEN_FIXTURES) - documented
     extra = documented - set(GOLDEN_FIXTURES)
     assert not missing, f"GOLDEN_V4.md missing fixture ids: {sorted(missing)}"
@@ -82,14 +63,14 @@ def test_golden_v4_md_lists_all_fixture_ids() -> None:
 
 
 def test_golden_v4_md_has_gallery_url() -> None:
-    doc = _golden_doc_path().read_text(encoding="utf-8")
+    doc = golden_doc_path().read_text(encoding="utf-8")
     assert "fixture=all" in doc
     assert "layout=golden" in doc
     assert "renderer=v4" in doc
 
 
 def test_golden_overlay_assets_present() -> None:
-    js = _display_v4_js()
+    js = display_v4_js()
     css = (web_root() / "overlay" / "css" / "display-v4.css").read_text(encoding="utf-8")
     overlay_js = (web_root() / "overlay" / "js" / "overlay.js").read_text(encoding="utf-8")
     assert "V4_GOLDEN_CATALOG" in js
@@ -123,17 +104,116 @@ def test_presentation_payload_includes_v4_when_assets_on(
 
 def test_display_v4_js_has_unique_fixture_exports() -> None:
     js = (web_root() / "overlay" / "js" / "display-v4.js").read_text(encoding="utf-8")
-    exports = _V4_FIXTURE_EXPORT_RE.findall(js)
+    exports = fixture_export_pattern().findall(js)
     assert exports, "expected v4Fixture* exports in display-v4.js"
     assert len(exports) == len(set(exports)), f"duplicate exports: {exports}"
     assert "let resolvedStates" in js
 
 
 def test_golden_gallery_clips_glow_overflow() -> None:
-    js = _display_v4_js()
-    css = (web_root() / "overlay" / "css" / "display-v4.css").read_text(encoding="utf-8")
-    assert "isGoldenSnapshot" in js
+    js = display_v4_js()
+    css = display_v4_css()
+    assert "function isGoldenSnapshot(" in js
+    assert "paintPlateMask" in js
     assert "glow_" in js
     assert "isolation: isolate" in css
     assert "contain: paint" in css
     assert ".golden-stage .v4-widget" in css
+    assert "overflow: hidden" in css
+
+
+def test_v4_live_widget_plate_masks_glow() -> None:
+    """Live V4 cards skip glow_* PNGs and plate-mask .v4-art (WebM enter clip)."""
+    js = display_v4_js()
+    css = display_v4_css()
+    assert "function paintPlateMask(" in js
+    assert "base_plate.png" in js
+    assert 'setProperty("-webkit-mask-image"' in js
+    assert "paintPlateMask(art, family)" in js
+    assert "if (glowMatch) return" in js
+    assert ".v4-art.has-plate-mask" in css
+    assert ".v4-widget {" in css
+    widget_block = css.split(".v4-widget {", 1)[1].split("}", 1)[0]
+    assert "overflow: hidden" in widget_block
+    assert "contain: paint" in widget_block
+
+
+def test_v4_copy_uses_absolute_plate_slots() -> None:
+    """Copy must use V3-aligned absolute slots — not a centered 1fr grid (text too high)."""
+    css = display_v4_css()
+    assert "grid-template-rows: auto auto 1fr auto" not in css
+    assert "align-content: center" not in css
+    copy_block = css.split(".v4-copy {", 1)[1].split(".v4-copy .title", 1)[0]
+    assert "display: block" in copy_block
+    assert "top: 38px" in css
+    assert ".v4-copy .title" in css
+    assert ".v4-copy .subtitle" in css
+    assert ".v4-copy .value" in css
+    assert ".v4-copy .meta" in css
+    title_block = css.split(".v4-copy .title {", 1)[1].split("}", 1)[0]
+    assert "position: absolute" in title_block
+    assert "left: 119px" in title_block
+    assert "top: 38px" in title_block
+
+
+def test_v4_icons_use_full_canvas_well_alignment() -> None:
+    """V4 icons are 420×140 plates; a 64×64 crop shifts glyphs right of icon_well."""
+    css = display_v4_css()
+    icon_block = css.split(".v4-art .icon {", 1)[1].split("}", 1)[0]
+    assert "width: 420px" in icon_block
+    assert "height: 140px" in icon_block
+    assert "background-size: 420px 140px" in icon_block
+    assert "width: 64px" not in icon_block
+    assert "left: 28px" not in icon_block
+
+
+def test_cyber_racing_icon_wells_centered_on_glyph() -> None:
+    """cyber_racing icon_well fill+rim must be concentric on the glyph center."""
+    from test_overlay_assets_v3 import _png_rgba
+
+    root = web_root() / "themes-v4" / "cyber_racing"
+    wells = sorted(root.rglob("icon_well.png"))
+    assert wells, "expected cyber_racing icon_well assets"
+    target_x, target_y = 62.0, 70.0
+    for path in wells:
+        width, height, pixels = _png_rgba(path)
+        fill_xs: list[int] = []
+        fill_ys: list[int] = []
+        rim_xs: list[int] = []
+        rim_ys: list[int] = []
+        for y in range(height):
+            row = pixels[y * width * 4 : (y + 1) * width * 4]
+            for x in range(width):
+                a = row[x * 4 + 3]
+                if a <= 100:
+                    continue
+                r, g, b = row[x * 4], row[x * 4 + 1], row[x * 4 + 2]
+                lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+                if lum <= 40:
+                    fill_xs.append(x)
+                    fill_ys.append(y)
+                else:
+                    rim_xs.append(x)
+                    rim_ys.append(y)
+        assert fill_xs and rim_xs, path.name
+        fill_mx = (min(fill_xs) + max(fill_xs)) / 2.0
+        fill_my = (min(fill_ys) + max(fill_ys)) / 2.0
+        rim_mx = (min(rim_xs) + max(rim_xs)) / 2.0
+        rim_my = (min(rim_ys) + max(rim_ys)) / 2.0
+        assert abs(fill_mx - rim_mx) <= 1.0, f"{path}: fill/rim x {fill_mx} vs {rim_mx}"
+        assert abs(fill_my - rim_my) <= 1.0, f"{path}: fill/rim y {fill_my} vs {rim_my}"
+        assert abs(fill_mx - target_x) <= 1.0, f"{path}: fill_mid_x={fill_mx}"
+        assert abs(fill_my - target_y) <= 1.5, f"{path}: fill_mid_y={fill_my}"
+
+
+def test_golden_reduced_motion_paths() -> None:
+    js = display_v4_js()
+    css = display_v4_css()
+    assert "let motionDisabled = false" in js
+    assert "function prefersReducedMotion()" in js
+    assert "motionDisabled = Boolean(options.motionDisabled)" in js
+    assert "prefersReducedMotion() || isGoldenSnapshot(node)" in js
+    assert 'window.matchMedia?.("(prefers-reduced-motion: reduce)")' in js
+    assert ".golden-stage" in css
+    assert ".golden-stage .v4-art" in css
+    assert "@media (prefers-reduced-motion: reduce)" in css

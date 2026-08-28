@@ -84,7 +84,13 @@
       <a href="/config">Config</a>
     </nav>
     <h1>DRY TEST</h1>
-    <span class="hint">Bez OBS, bez iRacing, bez streamu. Scénář se točí dokola.</span>
+    <span class="hint">Bez OBS, bez iRacing. V4 scénář se točí dokola (~28&nbsp;s).</span>
+    <label>Renderer
+      <select id="renderer">
+        <option value="v4" selected>v4</option>
+        <option value="v3">v3 (legacy)</option>
+      </select>
+    </label>
     <label>Theme
       <select id="theme">
         <option value="cyber_racing">cyber_racing</option>
@@ -96,15 +102,16 @@
     <span id="cue"></span>
   </header>
   <div class="stage">
-    <div class="badge">1920 × 1080 · transparent HUD na tmavém jevišti</div>
+    <div class="badge">1920 × 1080 · V4 cyclic demo · transparent HUD</div>
     <div class="frame-wrap" id="wrap">
-      <iframe id="hud" title="Overlay HUD" src="/overlay?demo=1"></iframe>
+      <iframe id="hud" title="Overlay HUD" src="/overlay?demo=1&amp;renderer=v4"></iframe>
     </div>
   </div>
   <script>
     const wrap = document.getElementById("wrap");
     const hud = document.getElementById("hud");
     const theme = document.getElementById("theme");
+    const renderer = document.getElementById("renderer");
     const cue = document.getElementById("cue");
 
     function scale() {
@@ -118,15 +125,21 @@
     }
 
     function hudSrc() {
-      return `/overlay?demo=1&theme=${encodeURIComponent(theme.value)}`;
+      const params = new URLSearchParams({
+        demo: "1",
+        theme: theme.value,
+      });
+      if (renderer.value === "v4") params.set("renderer", "v4");
+      return `/overlay?${params.toString()}`;
     }
 
-    document.getElementById("replay").onclick = () => {
+    function reloadHud() {
       hud.src = hudSrc();
-    };
-    theme.onchange = () => {
-      hud.src = hudSrc();
-    };
+    }
+
+    document.getElementById("replay").onclick = reloadHud;
+    theme.onchange = reloadHud;
+    renderer.onchange = reloadHud;
     window.addEventListener("message", (ev) => {
       if (!ev.data || ev.data.type !== "overlay-demo-cue") return;
       cue.textContent = ev.data.label || "";

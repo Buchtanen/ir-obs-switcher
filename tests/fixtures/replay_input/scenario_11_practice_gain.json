@@ -1,0 +1,46 @@
+{
+  "name": "Scenario 11: practice gain found",
+  "mode": "PRACTICE",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "event_engine": {
+      "v2_payload": true,
+      "practice": true
+    }
+  },
+  "expected": [
+    {"eventType": "GAIN_FOUND", "phase": "RESULT"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "overlay_mode": "PRACTICE"
+      },
+      "timing": [
+        {
+          "timing_point_id": "MS01",
+          "lap_number": 1,
+          "crossing_timestamp": 0.0,
+          "segment_time": 10.0
+        }
+      ]
+    },
+    {
+      "t": 1.0,
+      "race": {
+        "connected": true,
+        "overlay_mode": "PRACTICE"
+      },
+      "timing": [
+        {
+          "timing_point_id": "MS01",
+          "lap_number": 2,
+          "crossing_timestamp": 1.0,
+          "segment_time": 9.35
+        }
+      ]
+    }
+  ]
+}

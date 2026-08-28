@@ -47,9 +47,14 @@ from irswitch.events.envelope import EventEnvelope
 from irswitch.events.hr_pressure import HrPressureEmitter
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.events.pit_story import PitStoryEmitter
+from irswitch.events.practice import PracticeEmitter
+from irswitch.events.quali import QualiEmitter
+from irswitch.events.target_locked import TargetLockedEmitter
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.overlay.replay import _bio_from_dict, _race_from_dict
 from irswitch.overlay.settings import OverlaySettings
+from irswitch.race.timing.reference import SegmentReferenceTracker
+from irswitch.race.timing.store import TimingRecord, TimingStore
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +85,8 @@ class ReplayInputRunner:
 
     def __post_init__(self) -> None:
         self._overlay = self.overlay or OverlaySettings()
+        self._timing_store = TimingStore()
+        self._segment_ref = SegmentReferenceTracker()
         self._engine: EventEngine | None = None
         self._manager: EventManagerV2 | None = None
         self._build_pipeline()
@@ -88,6 +95,8 @@ class ReplayInputRunner:
         """Reset emitters and manager state between scenarios."""
         if session_id is not None:
             self.session_id = session_id
+        self._timing_store.reset()
+        self._segment_ref.reset()
         self._build_pipeline()
 
     def run_fixture(self, fixture: dict[str, Any]) -> ReplayResult:
@@ -110,6 +119,7 @@ class ReplayInputRunner:
             if "overlay_mode" not in race_raw:
                 state = replace(state, overlay_mode=mode)
             bio = _bio_from_dict(bio_raw) if bio_raw else None
+            self._ingest_timing_rows(tick.get("timing"))
 
             try:
                 events.extend(self._tick_once(state, now, bio=bio, mode=mode))
@@ -136,10 +146,51 @@ class ReplayInputRunner:
     def _register_optional_emitters(self, overlay: OverlaySettings) -> None:
         assert self._engine is not None
         pri = overlay.events.priorities
+        if overlay.event_engine.practice:
+            self._engine.register(
+                PracticeEmitter(
+                    self._timing_store,
+                    self._segment_ref,
+                    overlay.events,
+                    pri,
+                )
+            )
+            self._engine.register(
+                TargetLockedEmitter(overlay.events, pri),
+            )
+        if overlay.event_engine.quali_projection:
+            self._engine.register(
+                QualiEmitter(
+                    self._timing_store,
+                    self._segment_ref,
+                    overlay.events,
+                    pri,
+                )
+            )
         if overlay.event_engine.pit_story:
             self._engine.register(PitStoryEmitter(pri))
         if overlay.event_engine.hr_pressure:
             self._engine.register(HrPressureEmitter(pri))
+
+    def _ingest_timing_rows(self, rows: Any) -> None:
+        if not rows:
+            return
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            point = str(row.get("timing_point_id") or row.get("timingPointId") or "")
+            if not point:
+                continue
+            segment_time = row.get("segment_time", row.get("segmentTime"))
+            record = TimingRecord(
+                car_id=str(row.get("car_id") or row.get("carId") or "player"),
+                lap_number=int(row.get("lap_number") or row.get("lapNumber") or 1),
+                timing_point_id=point,
+                crossing_timestamp=float(row.get("crossing_timestamp") or row.get("t") or 0.0),
+                segment_time=float(segment_time) if segment_time is not None else None,
+                valid_at_crossing=bool(row.get("valid_at_crossing", row.get("valid", True))),
+            )
+            self._timing_store.append_record(record)
 
     def _tick_once(
         self,

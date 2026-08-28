@@ -1,0 +1,27 @@
+{
+  "name": "Scenario 12: quali projected lap",
+  "mode": "QUALIFYING",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "event_engine": {
+      "v2_payload": true,
+      "quali_projection": true
+    }
+  },
+  "expected": [
+    {"eventType": "PROJECTED_LAP", "phase": "ENTER"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "overlay_mode": "QUALIFYING",
+        "player_lap_dist_pct": 0.25,
+        "current_lap_time": 23.0,
+        "best_lap_time": 92.0,
+        "position": 7
+      }
+    }
+  ]
+}

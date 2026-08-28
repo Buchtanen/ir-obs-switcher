@@ -156,8 +156,12 @@ async def test_overlay_page_served(app: web.Application) -> None:
             assert demo.status == 200
             demo_html = await demo.text()
             assert "/overlay?demo=1" in demo_html
+            assert "renderer=v4" in demo_html
             assert "cyber_racing" in demo_html
             script = await client.get("/overlay/static/js/demo.js")
             assert script.status == 200
+            script_v4 = await client.get("/overlay/static/js/demo-v4.js")
+            assert script_v4.status == 200
+            assert b"startV4DemoLoop" in await script_v4.read()
             cfg = await client.get("/config")
             assert cfg.status == 200

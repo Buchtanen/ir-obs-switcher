@@ -1,0 +1,25 @@
+{
+  "name": "Scenario 14: telemetry link drop",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "expected": [
+    {"eventType": "LINK_DROP", "phase": "ENTER"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "data_quality": "ok"
+      }
+    },
+    {
+      "t": 1.0,
+      "race": {
+        "connected": false,
+        "data_quality": "stale",
+        "stale_for_ms": 1500
+      }
+    }
+  ]
+}

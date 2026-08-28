@@ -1,0 +1,25 @@
+{
+  "name": "Scenario 15: practice target locked",
+  "mode": "PRACTICE",
+  "time_tolerance_ms": 0,
+  "flags": {
+    "event_engine": {
+      "v2_payload": true,
+      "practice": true
+    }
+  },
+  "expected": [
+    {"eventType": "TARGET_LOCKED", "phase": "ENTER"}
+  ],
+  "ticks": [
+    {
+      "t": 0.0,
+      "race": {
+        "connected": true,
+        "overlay_mode": "PRACTICE",
+        "best_lap_time": 91.9,
+        "lap_completed": 2
+      }
+    }
+  ]
+}

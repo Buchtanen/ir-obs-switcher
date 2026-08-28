@@ -29,6 +29,7 @@ class QualiEmitter:
         self._cursor = 0
         self._active = False
         self._last_projected: float | None = None
+        self._hot_lap_lap: int | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:  # noqa: ARG002
         if state.overlay_mode != "QUALIFYING" or not state.connected:
@@ -44,7 +45,39 @@ class QualiEmitter:
         if pending:
             out.extend(self._from_crossings(pending, state))
         out.extend(self._from_lap_progress(state))
+        out.extend(self._hot_lap(state))
         return out
+
+    def _hot_lap(self, state: RaceState) -> list[CandidateEvent]:
+        dist = state.player_lap_dist_pct
+        lap_time = state.current_lap_time
+        best = state.best_lap_time
+        lap = state.lap_completed
+        if dist is None or lap_time is None or best is None or dist < 0.35 or lap is None:
+            return []
+        projected = lap_time / dist
+        if projected >= best - 0.05:
+            return []
+        if self._hot_lap_lap == lap:
+            return []
+        self._hot_lap_lap = lap
+        return [
+            CandidateEvent(
+                name="hot_lap",
+                channel="timing",
+                priority=self._priorities.position_attack,
+                phase="enter",
+                data={
+                    "hotLapIndex": 1,
+                    "position": state.position,
+                    "projectedTime": round(projected, 3),
+                    "sectorDelta": round(best - projected, 3),
+                    "lap": lap,
+                },
+                duration=self._events.lap_duration,
+                cooldown=self._events.lap_cooldown,
+            )
+        ]
 
     def _from_crossings(
         self, pending: list[TimingRecord], state: RaceState

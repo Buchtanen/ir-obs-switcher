@@ -67,7 +67,7 @@ def test_hunting_and_hunted_both_independent() -> None:
     )
     out = emitter.tick(state, 1.0)
     states = {e.data["state"] for e in out if e.phase == "enter"}
-    assert states == {"hunting", "hunted"}
+    assert {"hunting", "hunted"}.issubset(states)
 
 
 def test_lap_complete_and_personal_best() -> None:

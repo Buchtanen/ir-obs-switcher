@@ -94,6 +94,7 @@ class OverlayRuntime:
         """Attach T2 practice/quali emitters when feature flags are enabled."""
         if overlay.event_engine.practice:
             from irswitch.events.practice import PracticeEmitter
+            from irswitch.events.target_locked import TargetLockedEmitter
 
             self.engine.register(
                 PracticeEmitter(
@@ -102,6 +103,9 @@ class OverlayRuntime:
                     overlay.events,
                     overlay.events.priorities,
                 )
+            )
+            self.engine.register(
+                TargetLockedEmitter(overlay.events, overlay.events.priorities),
             )
         if overlay.event_engine.quali_projection:
             from irswitch.events.quali import QualiEmitter

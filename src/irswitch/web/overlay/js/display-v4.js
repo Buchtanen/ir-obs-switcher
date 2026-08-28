@@ -1,6 +1,8 @@
 /** V4 overlay renderer (S1: timing + battle + position families). */
 
 const ASSET_BASE = "/overlay/web/";
+/** Bust browser cache for theme PNGs when wells/icons change. */
+const ASSET_CACHE = "1.2.8";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -186,10 +188,14 @@ function syncWidgetMotion(node, envelope, familyName, created) {
 
 function manifestDiskPath(rel) {
   const themed = rel.replace(/^themes\/[^/]+/, `themes-v4/${theme}`);
+  let path;
   if (themed.startsWith("themes/")) {
-    return ASSET_BASE + themed.replace(/^themes\//, "themes-v4/");
+    path = ASSET_BASE + themed.replace(/^themes\//, "themes-v4/");
+  } else {
+    path = ASSET_BASE + themed;
   }
-  return ASSET_BASE + themed;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}v=${ASSET_CACHE}`;
 }
 
 function familyForState(stateKey) {
@@ -225,28 +231,158 @@ function isStale(envelope) {
   return false;
 }
 
-function paintLayer(el, url, { mask = false } = {}) {
+function paintLayer(el, url, { mask = false, canvas = [420, 140] } = {}) {
   if (!el || !url) {
     el?.classList.add("empty");
     return;
   }
   el.classList.remove("empty");
+  const [cw, ch] = canvas;
+  const size = `${cw}px ${ch}px`;
   if (mask) {
     el.style.backgroundImage = "";
     el.style.backgroundColor = "currentColor";
     const maskUrl = `url("${url}")`;
     el.style.webkitMaskImage = maskUrl;
     el.style.maskImage = maskUrl;
-    el.style.webkitMaskSize = "420px 140px";
-    el.style.maskSize = "420px 140px";
+    el.style.webkitMaskSize = size;
+    el.style.maskSize = size;
     el.style.webkitMaskRepeat = "no-repeat";
     el.style.maskRepeat = "no-repeat";
+    el.style.webkitMaskPosition = "0 0";
+    el.style.maskPosition = "0 0";
   } else {
     el.style.backgroundColor = "";
     el.style.backgroundImage = `url("${url}")`;
+    el.style.backgroundSize = size;
+    el.style.backgroundPosition = "0 0";
     el.style.webkitMaskImage = "";
     el.style.maskImage = "";
   }
+}
+
+/** Clip a layer (or .v4-art) to the chamfered plate silhouette — same idea as V3 plateMask. */
+function paintPlateMask(el, family) {
+  if (!el || !family?.layer_dir) {
+    if (el) {
+      el.style.removeProperty("-webkit-mask-image");
+      el.style.removeProperty("mask-image");
+      el.style.removeProperty("-webkit-mask-size");
+      el.style.removeProperty("mask-size");
+      el.classList.remove("has-plate-mask");
+    }
+    return;
+  }
+  const url = manifestDiskPath(`${family.layer_dir}/base_plate.png`);
+  if (!url) {
+    el.style.removeProperty("-webkit-mask-image");
+    el.style.removeProperty("mask-image");
+    el.classList.remove("has-plate-mask");
+    return;
+  }
+  const mask = `url("${url}")`;
+  // Prefer setProperty — plain style.maskImage was computing to none in Chromium.
+  el.style.setProperty("-webkit-mask-image", mask);
+  el.style.setProperty("mask-image", mask);
+  el.style.setProperty("-webkit-mask-size", "420px 140px");
+  el.style.setProperty("mask-size", "420px 140px");
+  el.style.setProperty("-webkit-mask-repeat", "no-repeat");
+  el.style.setProperty("mask-repeat", "no-repeat");
+  el.style.setProperty("-webkit-mask-position", "0 0");
+  el.style.setProperty("mask-position", "0 0");
+  el.classList.add("has-plate-mask");
+}
+
+const SYSINFO_ICON_SLOTS = {
+  cpu_icon: "cpu.png",
+  gpu_icon: "gpu.png",
+  temp_icon: "temp.png",
+  power_icon: "power.png",
+  ram_icon: "ram.png",
+  fps_icon: "fps.png",
+  heart_icon: "heart.png",
+};
+
+function sysinfoCanvas() {
+  return manifest?.sysinfo_canvas || [1920, 72];
+}
+
+function sysinfoFamily() {
+  return manifest?.themes?.[theme]?.families?.sysinfo;
+}
+
+function paintSysinfoIcon(el, url) {
+  if (!el || !url) {
+    el?.classList.add("empty");
+    el.style.webkitMaskImage = "";
+    el.style.maskImage = "";
+    return;
+  }
+  el.classList.remove("empty");
+  el.style.backgroundImage = "";
+  el.style.backgroundColor = "currentColor";
+  const maskUrl = `url("${url}")`;
+  el.style.webkitMaskImage = maskUrl;
+  el.style.maskImage = maskUrl;
+  el.style.webkitMaskSize = "contain";
+  el.style.maskSize = "contain";
+  el.style.webkitMaskRepeat = "no-repeat";
+  el.style.maskRepeat = "no-repeat";
+  el.style.webkitMaskPosition = "center";
+  el.style.maskPosition = "center";
+}
+
+export function syncSysinfoGlow(widget = document.getElementById("sysinfo-widget")) {
+  if (!widget?.classList.contains("v4-sysinfo")) return;
+  let tone = "normal";
+  if (widget.querySelector(".sys-mod.crit")) tone = "critical";
+  else if (widget.querySelector(".sys-mod.warn")) tone = "warn";
+  widget.dataset.glow = tone;
+}
+
+function renderSysinfoIcons(family) {
+  document.querySelectorAll("#sysinfo-widget .sys-icon[data-slot]").forEach((el) => {
+    const iconFile = SYSINFO_ICON_SLOTS[el.dataset.slot];
+    if (!iconFile) return;
+    const url = manifestDiskPath(`${family.icon_dir}/${iconFile}`);
+    paintSysinfoIcon(el, url);
+  });
+}
+
+export function renderSysinfo() {
+  const widget = document.getElementById("sysinfo-widget");
+  if (!widget) return;
+  const family = sysinfoFamily();
+  const art = widget.querySelector(".sysinfo-art");
+  if (!art || !family?.layers?.length) {
+    widget.classList.remove("v4-sysinfo", "has-art");
+    widget.classList.add("fallback");
+    return;
+  }
+  widget.classList.remove("fallback");
+  widget.classList.add("v4-sysinfo", "has-art");
+  const canvas = sysinfoCanvas();
+  art.replaceChildren();
+  (family.layers || []).forEach((layer, index) => {
+    const el = document.createElement("div");
+    el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
+    if (layer.file.includes("dividers")) el.classList.add("dividers");
+    const glowMatch = /^sysinfo_glow_(.+)\.png$/.exec(layer.file);
+    if (glowMatch) {
+      el.classList.add("glow");
+      el.dataset.glow = glowMatch[1];
+    }
+    el.dataset.index = String(index);
+    const url = manifestDiskPath(`${family.layer_dir}/${layer.file}`);
+    paintLayer(el, url, { mask: layer.mode === "mask", canvas });
+    art.appendChild(el);
+  });
+  renderSysinfoIcons(family);
+  syncSysinfoGlow(widget);
+}
+
+export function initV4Sysinfo() {
+  renderSysinfo();
 }
 
 function ensureLayer(id) {
@@ -266,12 +402,16 @@ function rebuildArt(node, stateKey, familyName) {
   const family = manifest?.themes?.[theme]?.families?.[familyName];
   if (!family) {
     node.classList.add("fallback");
+    art.style.webkitMaskImage = "";
+    art.style.maskImage = "";
     return;
   }
   node.classList.remove("fallback");
-  const goldenSnapshot = isGoldenSnapshot(node);
   (family.layers || []).forEach((layer, index) => {
-    if (goldenSnapshot && /^glow_/.test(layer.file)) return;
+    const glowMatch = /^glow_(cyan|amber|red)\.png$/.exec(layer.file);
+    // Soft bloom PNGs bleed past the chamfer unless perfectly plate-masked.
+    // Skip them (golden + live); enter WebM stays, clipped by art plate mask.
+    if (glowMatch) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
@@ -284,6 +424,8 @@ function rebuildArt(node, stateKey, familyName) {
   const iconUrl = manifestDiskPath(`${family.icon_dir}/${stateKey}.png`);
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
+  // Clip enter WebM / residual bloom to the chamfered plate (not the CSS box).
+  paintPlateMask(art, family);
 }
 
 function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
@@ -316,6 +458,19 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "WHEEL TO WHEEL");
     text(value, fmtGap(metrics.gap));
     text(meta, metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
+  } else if (stateKey === "battle_for_position") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "AHEAD + BEHIND");
+    text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
+    text(meta, sample.meta || "stack centre");
+  } else if (stateKey === "battle_won") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "GAP STABILISED");
+    text(
+      value,
+      metrics.delta != null
+        ? fmtPositionDelta(Math.abs(Number(metrics.delta)))
+        : sample.value,
+    );
+    text(meta, sample.meta || "story result");
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || fmtGap(metrics.gap));
@@ -362,6 +517,10 @@ function fillPositionCopy(node, envelope, stateKey, sample, metrics, copy) {
         : sample.value,
     );
     text(meta, metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
+  } else if (stateKey === "rival_threat") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "FAST LAP");
+    text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
+    text(meta, sample.meta || "projected ahead");
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || fmtPositionDelta(delta));
@@ -502,6 +661,82 @@ function fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(subtitle, resolveCopy("incident") || sample.subtitle || "COALESCED UPDATE");
     text(value, metrics.value != null ? `+${metrics.value} INC` : sample.value);
     text(meta, metrics.total != null ? `total ${metrics.total}` : sample.meta);
+  } else if (stateKey === "invalid_lap") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "PROJECTION CANCELLED");
+    text(value, metrics.lap != null ? `LAP ${metrics.lap}` : sample.value);
+    text(meta, sample.meta || "");
+  } else if (stateKey === "link_drop") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "DATA STALE");
+    text(value, sample.value || "--");
+    text(meta, sample.meta || "reconnecting");
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, sample.value || "");
+    text(meta, sample.meta || "");
+  }
+}
+
+function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  if (stateKey === "target") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ME VS TARGET");
+    text(value, metrics.targetTime != null ? fmtLapTime(metrics.targetTime) : sample.value);
+    text(meta, metrics.referenceType ? `${metrics.referenceType} reference` : sample.meta);
+  } else if (stateKey === "projected_lap") {
+    text(
+      subtitle,
+      metrics.confidence != null ? `CONFIDENCE ${fmt(metrics.confidence, 2)}` : sample.subtitle,
+    );
+    text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
+    text(meta, metrics.range != null ? `range ±${fmt(metrics.range, 3)}` : sample.meta);
+  } else if (stateKey === "pb_attack") {
+    const sectorLabel = metrics.sector || metrics.timingPointId || "S1";
+    const delta = metrics.delta ?? metrics.deltaToBest;
+    text(subtitle, delta != null ? `${sectorLabel} · ${fmt(delta, 3)}` : sample.subtitle);
+    text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
+    text(meta, sample.meta || "personal best");
+  } else if (stateKey === "hot_lap") {
+    const idx = metrics.hotLapIndex ?? 1;
+    const total = metrics.hotLapTotal ?? 2;
+    if (idx != null && total != null) text(title, `HOT LAP ${idx}/${total}`);
+    text(subtitle, metrics.position != null ? `CURRENT P${metrics.position}` : sample.subtitle);
+    text(
+      value,
+      metrics.sectorDelta != null ? `S1 ${fmt(metrics.sectorDelta, 3)}` : sample.value,
+    );
+    text(
+      meta,
+      metrics.targetPosition != null ? `target P${metrics.targetPosition}` : sample.meta,
+    );
+  } else if (stateKey === "position_attack") {
+    if (metrics.targetPosition != null) text(title, `P${metrics.targetPosition} IN RANGE`);
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ME VS GRID");
+    text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
+    text(meta, metrics.confidence != null ? `confidence ${fmt(metrics.confidence, 2)}` : sample.meta);
+  } else if (stateKey === "gain_found") {
+    text(
+      subtitle,
+      metrics.timingPointId ? `${metrics.timingPointId} EXIT` : sample.subtitle,
+    );
+    text(value, metrics.delta != null ? fmt(metrics.delta, 3) : sample.value);
+    text(meta, sample.meta || "clean minisector");
+  } else if (stateKey === "clean_streak") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "CONSISTENT PACE");
+    text(value, metrics.streak != null ? `${metrics.streak} LAPS` : sample.value);
+    text(meta, metrics.spread != null ? `spread ${fmt(metrics.spread, 2)}` : sample.meta);
+  } else if (stateKey === "lap_complete") {
+    text(subtitle, metrics.personalBest ? "PERSONAL BEST" : "CLEAN LAP");
+    text(value, fmtLapTime(metrics.lapTime));
+    text(meta, metrics.lap != null ? `lap ${metrics.lap}` : sample.meta);
+  } else if (stateKey === "personal_best") {
+    text(subtitle, sample.subtitle || "NEW REFERENCE");
+    text(value, fmtLapTime(metrics.lapTime));
+    text(meta, fmt(metrics.deltaToBest, 3));
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || "");
@@ -538,24 +773,8 @@ function fillCopySlots(node, envelope, stateKey) {
     fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy);
     return;
   }
-  const title = node.querySelector(".title");
-  const subtitle = node.querySelector(".subtitle");
-  const value = node.querySelector(".value");
-  const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
-  text(title, headline);
-  if (stateKey === "lap_complete") {
-    text(subtitle, metrics.personalBest ? "PERSONAL BEST" : "CLEAN LAP");
-    text(value, fmtLapTime(metrics.lapTime));
-    text(meta, metrics.lap != null ? `lap ${metrics.lap}` : sample.meta);
-  } else if (stateKey === "personal_best") {
-    text(subtitle, sample.subtitle || "NEW REFERENCE");
-    text(value, fmtLapTime(metrics.lapTime));
-    text(meta, fmt(metrics.deltaToBest, 3));
-  } else {
-    text(subtitle, sample.subtitle || "");
-    text(value, sample.value || "");
-    text(meta, sample.meta || "");
+  if (familyName === "timing") {
+    fillTimingCopy(node, envelope, stateKey, sample, metrics, copy);
   }
 }
 
@@ -591,6 +810,9 @@ export async function initV4(options = {}) {
   resolvedMotions = options.resolvedMotions || resolvedMotions;
   resolvedStates = options.resolvedStates || resolvedStates;
   motionDisabled = Boolean(options.motionDisabled);
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = theme;
+  }
   const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
   const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
   const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
@@ -606,10 +828,20 @@ export async function initV4(options = {}) {
     copyCatalog = i18n.copyCatalog || copyCatalog;
     language = i18n.language || language;
   }
+  if (options.sysinfo !== false) renderSysinfo();
+}
+
+export function refreshV4Presentation(options = {}) {
+  if (options.theme) theme = options.theme;
+  renderSysinfo();
 }
 
 export const DisplayV4 = {
   active: new Map(),
+
+  refresh(options = {}) {
+    refreshV4Presentation(options);
+  },
 
   show(envelope, options = {}) {
     if (!envelope || envelope.format !== "v4") return null;
@@ -642,7 +874,7 @@ export const DisplayV4 = {
     node.dataset.phase = phase;
     node.classList.toggle("phase-compact", phase === "COMPACT");
     const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";
-    node.classList.remove("tone-primary", "tone-warning");
+    node.classList.remove("tone-primary", "tone-warning", "tone-alert");
     node.classList.add(`tone-${accent}`);
     fillCopySlots(node, envelope, stateKey);
     syncWidgetMotion(node, envelope, familyName, created);
@@ -794,6 +1026,124 @@ export function v4FixturePersonalBest(sequence = 1) {
   });
 }
 
+export function v4FixtureTarget(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "TARGET_LOCKED",
+    phase,
+    correlationId: "golden:target",
+    sequence,
+    priority: 45,
+    metrics: { targetTime: 111.9, referenceType: "session" },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "target",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureProjectedLap(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "PROJECTED_LAP",
+    phase,
+    correlationId: "golden:projected_lap",
+    sequence,
+    priority: 42,
+    metrics: { projectedTime: 111.774, confidence: 0.78, range: 0.11, bestLap: 112.402 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "projected_lap",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixturePbAttack(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "SECTOR_BEST",
+    phase,
+    correlationId: "golden:pb_attack",
+    sequence,
+    priority: 55,
+    metrics: { sector: "S1", delta: -0.238, projectedTime: 111.64, bestLap: 111.682 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "pb_attack",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureHotLap(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "HOT_LAP",
+    phase,
+    correlationId: "golden:hot_lap",
+    sequence,
+    priority: 50,
+    metrics: {
+      hotLapIndex: 1,
+      hotLapTotal: 2,
+      position: 7,
+      targetPosition: 6,
+      sectorDelta: -0.117,
+    },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "hot_lap",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixturePositionAttack(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "POSITION_ATTACK",
+    phase,
+    correlationId: "golden:position_attack",
+    sequence,
+    priority: 48,
+    metrics: { targetPosition: 5, projectedTime: 111.774, confidence: 0.78, bestLap: 112.402 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "position_attack",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureGainFound(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "GAIN_FOUND",
+    phase,
+    correlationId: "golden:gain_found",
+    sequence,
+    priority: 44,
+    metrics: { timingPointId: "T5", delta: -0.11, lap: 12, segmentTime: 18.42 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "gain_found",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureCleanStreak(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "CLEAN_STREAK",
+    phase,
+    correlationId: "golden:clean_streak",
+    sequence,
+    priority: 38,
+    metrics: { streak: 5, spread: 0.31 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "timing",
+    variant: "clean_streak",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
 export function v4FixtureHunting(sequence = 1, phase = "ACTIVE") {
   return v4FixtureEnvelope({
     eventType: "HUNTING",
@@ -874,6 +1224,39 @@ export function v4FixtureSideBySide(sequence = 1, phase = "ACTIVE") {
   });
 }
 
+export function v4FixtureBattleForPosition(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "BATTLE_FOR_POSITION",
+    phase,
+    correlationId: "golden:battle_for_position",
+    sequence,
+    priority: 25,
+    metrics: { position: 7, gapAhead: 0.42, gapBehind: 0.38 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "battle",
+    variant: "battle_for_position",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureBattleWon(sequence = 1) {
+  return v4FixtureEnvelope({
+    eventType: "BATTLE_WON",
+    phase: "RESULT",
+    correlationId: "golden:battle_won",
+    sequence,
+    priority: 85,
+    metrics: { delta: 1, oldPosition: 8, newPosition: 7 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "battle",
+    variant: "battle_won",
+    accent: "primary",
+    preferredState: "RESULT",
+    presentation: { minHoldMs: 5000 },
+  });
+}
+
 export function v4FixturePositionGained(sequence = 1) {
   return v4FixtureEnvelope({
     eventType: "POSITION_GAINED",
@@ -922,6 +1305,22 @@ export function v4FixtureOvertake(sequence = 1) {
     accent: "primary",
     preferredState: "RESULT",
     presentation: { minHoldMs: 5000 },
+  });
+}
+
+export function v4FixtureRivalThreat(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "RIVAL_THREAT",
+    phase,
+    correlationId: "golden:rival_threat",
+    sequence,
+    priority: 65,
+    metrics: { position: 8, rivalPosition: 7, projectedGap: 0.24 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "position",
+    variant: "rival_threat",
+    accent: "warning",
+    preferredState: "ACTIVE",
   });
 }
 
@@ -1099,18 +1498,60 @@ export function v4FixtureIncident(sequence = 1, phase = "ACTIVE") {
   });
 }
 
+export function v4FixtureInvalidLap(sequence = 1) {
+  return v4FixtureEnvelope({
+    eventType: "INVALID_LAP",
+    phase: "RESULT",
+    correlationId: "golden:invalid_lap",
+    sequence,
+    priority: 88,
+    metrics: { lap: 4 },
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "exception",
+    variant: "invalid_lap",
+    accent: "alert",
+    preferredState: "RESULT",
+  });
+}
+
+export function v4FixtureLinkDrop(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "LINK_DROP",
+    phase,
+    correlationId: "golden:link_drop",
+    sequence,
+    priority: 92,
+    metrics: {},
+    copy: { headlineToken: "", statusToken: "" },
+    widget: "exception",
+    variant: "link_drop",
+    accent: "alert",
+    preferredState: "ACTIVE",
+  });
+}
+
 /** Ordered golden catalog: fixture id → frozen demo envelope factory. */
 export const V4_GOLDEN_CATALOG = [
   { id: "lap_complete", eventType: "LAP_COMPLETE", family: "timing", phase: "RESULT", factory: () => v4FixtureLapComplete() },
   { id: "personal_best", eventType: "PERSONAL_BEST", family: "timing", phase: "RESULT", factory: () => v4FixturePersonalBest() },
+  { id: "target", eventType: "TARGET_LOCKED", family: "timing", phase: "ACTIVE", factory: () => v4FixtureTarget(1, "ACTIVE") },
+  { id: "projected_lap", eventType: "PROJECTED_LAP", family: "timing", phase: "ACTIVE", factory: () => v4FixtureProjectedLap(1, "ACTIVE") },
+  { id: "pb_attack", eventType: "SECTOR_BEST", family: "timing", phase: "ACTIVE", factory: () => v4FixturePbAttack(1, "ACTIVE") },
+  { id: "hot_lap", eventType: "HOT_LAP", family: "timing", phase: "ACTIVE", factory: () => v4FixtureHotLap(1, "ACTIVE") },
+  { id: "position_attack", eventType: "POSITION_ATTACK", family: "timing", phase: "ACTIVE", factory: () => v4FixturePositionAttack(1, "ACTIVE") },
+  { id: "gain_found", eventType: "GAIN_FOUND", family: "timing", phase: "ACTIVE", factory: () => v4FixtureGainFound(1, "ACTIVE") },
+  { id: "clean_streak", eventType: "CLEAN_STREAK", family: "timing", phase: "ACTIVE", factory: () => v4FixtureCleanStreak(1, "ACTIVE") },
   { id: "hunting", eventType: "HUNTING", family: "battle", phase: "ACTIVE", factory: () => v4FixtureHunting(1, "ACTIVE") },
   { id: "hunted", eventType: "HUNTED", family: "battle", phase: "ACTIVE", factory: () => v4FixtureHunted(1, "ACTIVE") },
   { id: "approach", eventType: "APPROACH", family: "battle", phase: "ACTIVE", factory: () => v4FixtureApproach(1, "ACTIVE") },
   { id: "attack_range", eventType: "ATTACK_RANGE", family: "battle", phase: "ACTIVE", factory: () => v4FixtureAttackRange(1, "ACTIVE") },
   { id: "side_by_side", eventType: "SIDE_BY_SIDE", family: "battle", phase: "ACTIVE", factory: () => v4FixtureSideBySide(1, "ACTIVE") },
+  { id: "battle_for_position", eventType: "BATTLE_FOR_POSITION", family: "battle", phase: "ACTIVE", factory: () => v4FixtureBattleForPosition(1, "ACTIVE") },
+  { id: "battle_won", eventType: "BATTLE_WON", family: "battle", phase: "RESULT", factory: () => v4FixtureBattleWon() },
   { id: "position_gained", eventType: "POSITION_GAINED", family: "position", phase: "RESULT", factory: () => v4FixturePositionGained() },
   { id: "position_lost", eventType: "POSITION_LOST", family: "position", phase: "RESULT", factory: () => v4FixturePositionLost() },
   { id: "overtake", eventType: "OVERTAKE", family: "position", phase: "RESULT", factory: () => v4FixtureOvertake() },
+  { id: "rival_threat", eventType: "RIVAL_THREAT", family: "position", phase: "ACTIVE", factory: () => v4FixtureRivalThreat(1, "ACTIVE") },
   { id: "pit_entry", eventType: "PIT_ENTRY", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitEntry(1, "ACTIVE") },
   { id: "pit_lane", eventType: "PIT_LANE", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitLane(1, "ACTIVE") },
   { id: "pit_stopped", eventType: "PIT_STOPPED", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitStopped(1, "ACTIVE") },
@@ -1122,6 +1563,8 @@ export const V4_GOLDEN_CATALOG = [
   { id: "final_lap", eventType: "FINAL_LAP", family: "session", phase: "ACTIVE", factory: () => v4FixtureFinalLap(1, "ACTIVE") },
   { id: "finish", eventType: "FINISH", family: "session", phase: "RESULT", factory: () => v4FixtureFinish() },
   { id: "incident", eventType: "INCIDENT", family: "exception", phase: "ACTIVE", factory: () => v4FixtureIncident(1, "ACTIVE") },
+  { id: "invalid_lap", eventType: "INVALID_LAP", family: "exception", phase: "RESULT", factory: () => v4FixtureInvalidLap() },
+  { id: "link_drop", eventType: "LINK_DROP", family: "exception", phase: "ACTIVE", factory: () => v4FixtureLinkDrop(1, "ACTIVE") },
 ];
 
 const V4_GOLDEN_BY_ID = Object.fromEntries(V4_GOLDEN_CATALOG.map((entry) => [entry.id, entry]));

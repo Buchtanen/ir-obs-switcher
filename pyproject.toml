@@ -1,6 +1,6 @@
 [project]
 name = "irswitch"
-version = "1.1.0"
+version = "1.2.0"
 description = "iRacing to OBS auto scene switcher"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -67,7 +67,7 @@ include = ["irswitch*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
 
 [tool.ruff]
 line-length = 100

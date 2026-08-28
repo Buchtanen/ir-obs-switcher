@@ -103,6 +103,13 @@ class TimingStore:
             local = 0
         return list(self._records)[local:]
 
+    def append_record(self, record: TimingRecord) -> None:
+        """Test/replay helper: append a pre-built record (dedupe applies)."""
+        if record.dedupe_key in self._seen_keys:
+            return
+        self._append(record)
+        self._last_crossing[record.car_id] = record
+
     def _append(self, record: TimingRecord) -> None:
         self._seen_keys.add(record.dedupe_key)
         self._records.append(record)

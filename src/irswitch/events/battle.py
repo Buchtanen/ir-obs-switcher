@@ -26,6 +26,8 @@ class BattleEmitter:
     priorities: EventPrioritySettings = field(default_factory=EventPrioritySettings)
     hunting: _Track = field(default_factory=_Track)
     hunted: _Track = field(default_factory=_Track)
+    _battle_for_position_active: bool = False
+    _hunting_peak: str = "hunting"
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
         events: list[CandidateEvent] = []
@@ -34,6 +36,7 @@ class BattleEmitter:
                 track=self.hunting,
                 cfg=self.hunting_cfg,
                 now=now,
+                state=state,
                 connected=state.connected,
                 target=state.opponent_ahead,
                 gap=state.gap_ahead,
@@ -49,6 +52,7 @@ class BattleEmitter:
                 track=self.hunted,
                 cfg=self.hunted_cfg,
                 now=now,
+                state=state,
                 connected=state.connected,
                 target=state.opponent_behind,
                 gap=state.gap_behind,
@@ -59,13 +63,76 @@ class BattleEmitter:
                 intensity_ladder=False,
             )
         )
+        events.extend(self._meta_battle_events(state, now))
         return events
+
+    def _meta_battle_events(self, state: RaceState, now: float) -> list[CandidateEvent]:
+        events: list[CandidateEvent] = []
+        both = self.hunting.state == "ACTIVE" and self.hunted.state == "ACTIVE"
+        if both and not self._battle_for_position_active:
+            self._battle_for_position_active = True
+            events.append(
+                CandidateEvent(
+                    name="battle",
+                    channel="battle",
+                    priority=self.priorities.battle_start,
+                    phase="enter",
+                    data={
+                        "state": "battle_for_position",
+                        "position": state.position,
+                        "gap": state.gap_ahead,
+                        "targetPosition": getattr(state.opponent_ahead, "position", None),
+                    },
+                )
+            )
+        elif not both and self._battle_for_position_active:
+            self._battle_for_position_active = False
+            events.append(
+                CandidateEvent(
+                    name="battle",
+                    channel="battle",
+                    priority=self.priorities.battle_start,
+                    phase="exit",
+                    data={"state": "battle_for_position"},
+                )
+            )
+        if self.hunting.state == "ACTIVE" and self.hunting.intensity in {
+            "attack_range",
+            "side_by_side",
+        }:
+            self._hunting_peak = self.hunting.intensity
+        return events
+
+    def _maybe_battle_won(self, exit_intensity: str, state: RaceState) -> CandidateEvent | None:
+        if exit_intensity not in {"attack_range", "side_by_side"}:
+            return None
+        self._hunting_peak = "hunting"
+        return CandidateEvent(
+            name="battle",
+            channel="battle",
+            priority=self.priorities.battle_start,
+            phase="trigger",
+            data={
+                "state": "battle_won",
+                "position": state.position,
+                "oldPosition": (state.position + 1) if state.position else None,
+                "newPosition": state.position,
+            },
+            duration=4.0,
+        )
+
+    def reset(self) -> None:
+        self.hunting = _Track()
+        self.hunted = _Track()
+        self._battle_for_position_active = False
+        self._hunting_peak = "hunting"
 
     def _tick_direction(
         self,
         track: _Track,
         cfg: HuntingSettings,
         now: float,
+        state: RaceState,
         connected: bool,
         target: object,
         gap: float | None,
@@ -196,6 +263,10 @@ class BattleEmitter:
                     track.fail_since = now
                 elif now - track.fail_since >= cfg.exit_delay:
                     exit_state = track.intensity if intensity_ladder else battle_state
+                    if intensity_ladder and battle_state == "hunting":
+                        won = self._maybe_battle_won(exit_state, state)
+                        if won is not None:
+                            events.append(won)
                     events.append(
                         CandidateEvent(
                             name=event_name,

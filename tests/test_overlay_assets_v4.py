@@ -105,16 +105,22 @@ def test_v4_theme_file_parity() -> None:
 def test_v4_layer_and_icon_files_exist() -> None:
     manifest = _manifest()
     transient_w, transient_h = manifest["transient_canvas"]
+    sysinfo_w, sysinfo_h = manifest["sysinfo_canvas"]
     for theme in THEMES:
         families = manifest["themes"][theme]["families"]
-        for family in families.values():
+        for family_name, family in families.items():
             for layer in family["layers"]:
                 path = _manifest_path_to_disk(f"{family['layer_dir']}/{layer['file']}")
                 assert path.is_file(), path
                 if path.suffix == ".png":
                     w, h = _png_size(path)
-                    assert [w, h] == [transient_w, transient_h], path
-            for state in family["states"]:
+                    expected = (
+                        [sysinfo_w, sysinfo_h]
+                        if family_name == "sysinfo"
+                        else [transient_w, transient_h]
+                    )
+                    assert [w, h] == expected, path
+            for state in family.get("states", ()):
                 icon_path = _manifest_path_to_disk(f"{family['icon_dir']}/{state}.png")
                 assert icon_path.is_file(), icon_path
                 w, h = _png_size(icon_path)
@@ -125,13 +131,74 @@ def test_v4_layer_and_icon_files_exist() -> None:
                 assert fc_path.is_file(), fc_path
 
 
+def test_v4_sysinfo_dividers_match_css_module_grid() -> None:
+    """V4 divider mask must land on the 230 + 11×150 CSS module edges (V3 grid)."""
+    from test_overlay_assets_v3 import _png_rgba
+
+    expected = [230 + 150 * i for i in range(11)]
+    for theme in THEMES:
+        path = V4_ROOT / theme / "sysinfo" / "layers" / "sysinfo_dividers_mask.png"
+        width, height, pixels = _png_rgba(path)
+        assert (width, height) == (1920, 72), path
+        col_max = [0] * width
+        for y in range(height):
+            row = pixels[y * width * 4 : (y + 1) * width * 4]
+            for x in range(width):
+                a = row[x * 4 + 3]
+                if a > col_max[x]:
+                    col_max[x] = a
+        xs = [x for x, a in enumerate(col_max) if a > 80]
+        assert xs, theme
+        clusters: list[float] = []
+        start = prev = xs[0]
+        for x in xs[1:]:
+            if x - prev > 3:
+                clusters.append((start + prev) / 2.0)
+                start = x
+            prev = x
+        clusters.append((start + prev) / 2.0)
+        assert len(clusters) == len(expected), (theme, clusters)
+        for got, want in zip(clusters, expected, strict=True):
+            assert abs(got - want) <= 1.5, f"{theme}: divider {got} vs {want}"
+
+
+def test_v4_sysinfo_manifest_family_matches_layers() -> None:
+    manifest = _manifest()
+    sysinfo_w, sysinfo_h = manifest["sysinfo_canvas"]
+    expected_icons = {
+        "ble.png",
+        "cpu.png",
+        "fps.png",
+        "frametime.png",
+        "gpu.png",
+        "heart.png",
+        "power.png",
+        "ram.png",
+        "temp.png",
+        "vram.png",
+    }
+    for theme in THEMES:
+        family = manifest["themes"][theme]["families"]["sysinfo"]
+        layer_dir = V4_ROOT / theme / "sysinfo" / "layers"
+        icon_dir = V4_ROOT / theme / "sysinfo" / "icons"
+        manifest_files = {layer["file"] for layer in family["layers"]}
+        disk_files = {p.name for p in layer_dir.glob("*.png")}
+        assert manifest_files == disk_files, theme
+        assert family["functional_component"] == "sysinfo_module_segments.png"
+        assert {p.name for p in icon_dir.glob("*.png")} == expected_icons, theme
+        for layer in family["layers"]:
+            path = _manifest_path_to_disk(f"{family['layer_dir']}/{layer['file']}")
+            assert path.is_file(), path
+            assert list(_png_size(path)) == [sysinfo_w, sysinfo_h], path
+
+
 def test_v4_state_catalog_matches_families() -> None:
     manifest = _manifest()
     catalog = manifest["states"]
     assigned: set[str] = set()
     for theme in THEMES:
         for family in manifest["themes"][theme]["families"].values():
-            assigned.update(family["states"])
+            assigned.update(family.get("states", ()))
     assert assigned == set(catalog)
     for state, meta in catalog.items():
         assert meta["family"] in {

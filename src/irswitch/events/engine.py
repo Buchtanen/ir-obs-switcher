@@ -7,11 +7,15 @@ import logging
 from typing import Any, cast
 
 from irswitch.events.battle import BattleEmitter
+from irswitch.events.clean_streak import CleanStreakEmitter
 from irswitch.events.incident import IncidentEmitter
+from irswitch.events.invalid_lap import InvalidLapEmitter
 from irswitch.events.lap import LapEmitter
+from irswitch.events.link_drop import LinkDropEmitter
 from irswitch.events.overtake import OvertakeClassifierEmitter
 from irswitch.events.pit import PitEmitter
 from irswitch.events.position import PositionEmitter
+from irswitch.events.rival_threat import RivalThreatEmitter
 from irswitch.events.session import SessionEmitter
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.overlay.protocol import CandidateEvent
@@ -40,6 +44,10 @@ class EventEngine:
             self.position,
             self.incident,
             self.session,
+            LinkDropEmitter(pri),
+            InvalidLapEmitter(overlay.events, pri),
+            CleanStreakEmitter(overlay.events, pri),
+            RivalThreatEmitter(overlay.events, pri),
         ]
         if not overlay.event_engine.pit_story:
             self.pit = PitEmitter(pri)
