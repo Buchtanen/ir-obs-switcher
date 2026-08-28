@@ -135,14 +135,19 @@ function playOnceFromStart(video) {
   if (playPromise?.catch) playPromise.catch(() => {});
 }
 
+function isGoldenSnapshot(node) {
+  return (
+    document.documentElement.classList.contains("golden-layout") ||
+    document.documentElement.classList.contains("golden-gallery") ||
+    Boolean(node?.closest?.(".golden-stage"))
+  );
+}
+
 function syncWidgetMotion(node, envelope, familyName, created) {
-  if (prefersReducedMotion()) return;
+  if (prefersReducedMotion() || isGoldenSnapshot(node)) return;
   const art = node.querySelector(".v4-art");
   if (!art) return;
-  const preview =
-    document.documentElement.classList.contains("preview-layout") ||
-    document.documentElement.classList.contains("golden-layout");
-  if (preview) return;
+  if (document.documentElement.classList.contains("preview-layout")) return;
 
   const phase = String(envelope.phase || "RESULT").toUpperCase();
   const isEnter = created || phase === "ENTER";
@@ -264,7 +269,9 @@ function rebuildArt(node, stateKey, familyName) {
     return;
   }
   node.classList.remove("fallback");
+  const goldenSnapshot = isGoldenSnapshot(node);
   (family.layers || []).forEach((layer, index) => {
+    if (goldenSnapshot && /^glow_/.test(layer.file)) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
@@ -640,7 +647,8 @@ export const DisplayV4 = {
     fillCopySlots(node, envelope, stateKey);
     syncWidgetMotion(node, envelope, familyName, created);
     node.classList.remove("exit");
-    if (created) requestAnimationFrame(() => node.classList.add("visible"));
+    if (created && golden) node.classList.add("visible");
+    else if (created) requestAnimationFrame(() => node.classList.add("visible"));
     else node.classList.add("visible");
     if (phase === "RESULT" && !golden && !isGoldenLayout()) {
       const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
