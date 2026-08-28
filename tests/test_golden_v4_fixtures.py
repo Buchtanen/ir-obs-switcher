@@ -145,7 +145,7 @@ def test_v4_copy_uses_absolute_plate_slots() -> None:
     assert "align-content: center" not in css
     copy_block = css.split(".v4-copy {", 1)[1].split(".v4-copy .title", 1)[0]
     assert "display: block" in copy_block
-    assert "top: 40px" in css
+    assert "top: 38px" in css
     assert ".v4-copy .title" in css
     assert ".v4-copy .subtitle" in css
     assert ".v4-copy .value" in css
@@ -153,7 +153,7 @@ def test_v4_copy_uses_absolute_plate_slots() -> None:
     title_block = css.split(".v4-copy .title {", 1)[1].split("}", 1)[0]
     assert "position: absolute" in title_block
     assert "left: 119px" in title_block
-    assert "top: 40px" in title_block
+    assert "top: 38px" in title_block
 
 
 def test_v4_icons_use_full_canvas_well_alignment() -> None:
