@@ -144,19 +144,44 @@ function demoParams() {
   return new URLSearchParams(location.search);
 }
 
+async function startV4Golden(params, v4) {
+  const {
+    DisplayV4,
+    getV4GoldenFixture,
+    renderV4GoldenGallery,
+    v4FixtureHunted,
+    v4FixtureHunting,
+  } = v4;
+  const fixture = params.get("fixture");
+  const showGallery = !fixture || fixture === "all";
+  if (showGallery) {
+    renderV4GoldenGallery(DisplayV4);
+    return;
+  }
+  if (fixture === "battle_stack") {
+    DisplayV4.show(v4FixtureHunting(1, "ACTIVE"));
+    DisplayV4.show(v4FixtureHunted(1, "ACTIVE"));
+    return;
+  }
+  const envelope = getV4GoldenFixture(fixture);
+  if (envelope) {
+    DisplayV4.show(envelope);
+    return;
+  }
+  DisplayV4.show(getV4GoldenFixture("lap_complete"));
+}
+
 async function startV4Demo(params) {
+  const v4 = await import("./display-v4.js");
   const {
     DisplayV4,
     initV4,
+    getV4GoldenFixture,
     v4FixtureHunted,
     v4FixtureHunting,
-    v4FixtureLapComplete,
-    v4FixtureOvertake,
-    v4FixturePositionGained,
-    v4FixturePositionLost,
     v4FixturePitEntry,
     v4FixtureHrPressure,
-  } = await import("./display-v4.js");
+  } = v4;
   window.__v4Display = DisplayV4;
   const theme = params.get("theme") || window.__overlayTheme || "cyber_racing";
   await initV4({
@@ -170,6 +195,10 @@ async function startV4Demo(params) {
     motionDisabled: params.get("motion") === "off",
   });
   const layout = params.get("layout");
+  if (layout === "golden") {
+    await startV4Golden(params, v4);
+    return;
+  }
   const fixture = params.get("fixture") || "lap_complete";
   if (fixture === "hunting") {
     DisplayV4.show(v4FixtureHunting(1, "ENTER"));
@@ -183,19 +212,16 @@ async function startV4Demo(params) {
   }
   if (fixture === "battle_stack") {
     DisplayV4.show(v4FixtureHunting(1, "ACTIVE"));
-    DisplayV4.show(v4FixtureHunted(2, "ACTIVE"));
+    DisplayV4.show(v4FixtureHunted(1, "ACTIVE"));
     return;
   }
-  if (fixture === "position_gained") {
-    DisplayV4.show(v4FixturePositionGained());
+  const envelope = getV4GoldenFixture(fixture);
+  if (envelope) {
+    DisplayV4.show(envelope);
     return;
   }
-  if (fixture === "position_lost") {
-    DisplayV4.show(v4FixturePositionLost());
-    return;
-  }
-  if (fixture === "overtake") {
-    DisplayV4.show(v4FixtureOvertake());
+  if (layout === "preview" || fixture === "lap_complete") {
+    DisplayV4.show(getV4GoldenFixture("lap_complete"));
     return;
   }
   if (fixture === "pit_entry") {
@@ -206,10 +232,6 @@ async function startV4Demo(params) {
   if (fixture === "hr_pressure") {
     DisplayV4.show(v4FixtureHrPressure(1, "ENTER"));
     DisplayV4.show(v4FixtureHrPressure(2, "ACTIVE"));
-    return;
-  }
-  if (layout === "golden" || layout === "preview" || fixture === "lap_complete") {
-    DisplayV4.show(v4FixtureLapComplete());
     return;
   }
   const mod = await import("./demo.js");
