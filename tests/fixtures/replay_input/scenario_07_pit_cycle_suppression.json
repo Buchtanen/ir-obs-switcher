@@ -1,0 +1,14 @@
+{
+  "name": "Scenario 7: pit-cycle suppression",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "expected": [],
+  "forbidden": [
+    {"eventType": "POSITION_GAINED", "phase": "RESULT"}
+  ],
+  "ticks": [
+    {"t": 0.0, "race": {"connected": true, "class_position": 8, "on_pit_road": false}},
+    {"t": 0.2, "race": {"connected": true, "class_position": 7, "on_pit_road": true}},
+    {"t": 1.2, "race": {"connected": true, "class_position": 7, "on_pit_road": true}}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Scenario 5: position gain",
+  "mode": "RACE",
+  "time_tolerance_ms": 0,
+  "expected": [
+    {"eventType": "POSITION_GAINED", "phase": "RESULT"}
+  ],
+  "ticks": [
+    {"t": 0.0, "race": {"connected": true, "class_position": 8, "position": 10}},
+    {"t": 0.2, "race": {"connected": true, "class_position": 7, "position": 9}},
+    {"t": 1.2, "race": {"connected": true, "class_position": 7, "position": 9}}
+  ]
+}
