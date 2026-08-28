@@ -124,6 +124,14 @@ def test_state_resolution(event_type: str, state: str) -> None:
     assert state_for_event_type(event_type) == state
 
 
+def test_battle_catalog_states_are_battle_family() -> None:
+    states = _manifest_states()
+    for event_type in ("HUNTING", "HUNTED", "APPROACH", "ATTACK_RANGE"):
+        state = state_for_event_type(event_type)
+        assert state is not None
+        assert states[state]["family"] == "battle"
+
+
 def test_catalog_manifest_sample_slots() -> None:
     states = _manifest_states()
     for entry in catalog_entries().values():

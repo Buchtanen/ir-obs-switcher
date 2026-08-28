@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from irswitch.overlay.http import web_root
 
@@ -23,12 +23,14 @@ def manifest_path() -> Path:
 
 @lru_cache(maxsize=1)
 def load_event_catalog() -> dict[str, Any]:
-    return json.loads(catalog_path().read_text(encoding="utf-8"))
+    data = json.loads(catalog_path().read_text(encoding="utf-8"))
+    return cast(dict[str, Any], data)
 
 
 @lru_cache(maxsize=1)
 def load_v4_manifest() -> dict[str, Any]:
-    return json.loads(manifest_path().read_text(encoding="utf-8"))
+    data = json.loads(manifest_path().read_text(encoding="utf-8"))
+    return cast(dict[str, Any], data)
 
 
 def catalog_entries() -> dict[str, dict[str, Any]]:

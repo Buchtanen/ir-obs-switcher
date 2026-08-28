@@ -145,7 +145,8 @@ function demoParams() {
 }
 
 async function startV4Demo(params) {
-  const { DisplayV4, initV4, v4FixtureLapComplete } = await import("./display-v4.js");
+  const { DisplayV4, initV4, v4FixtureHunted, v4FixtureHunting, v4FixtureLapComplete } =
+    await import("./display-v4.js");
   window.__v4Display = DisplayV4;
   const theme = params.get("theme") || window.__overlayTheme || "cyber_racing";
   await initV4({
@@ -156,6 +157,21 @@ async function startV4Demo(params) {
   });
   const layout = params.get("layout");
   const fixture = params.get("fixture") || "lap_complete";
+  if (fixture === "hunting") {
+    DisplayV4.show(v4FixtureHunting(1, "ENTER"));
+    DisplayV4.show(v4FixtureHunting(2, "ACTIVE"));
+    return;
+  }
+  if (fixture === "hunted") {
+    DisplayV4.show(v4FixtureHunted(1, "ENTER"));
+    DisplayV4.show(v4FixtureHunted(2, "ACTIVE"));
+    return;
+  }
+  if (fixture === "battle_stack") {
+    DisplayV4.show(v4FixtureHunting(1, "ACTIVE"));
+    DisplayV4.show(v4FixtureHunted(2, "ACTIVE"));
+    return;
+  }
   if (layout === "golden" || layout === "preview" || fixture === "lap_complete") {
     DisplayV4.show(v4FixtureLapComplete());
     return;
