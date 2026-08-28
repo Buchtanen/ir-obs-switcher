@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Any
+from typing import Any, cast
 
 from irswitch.events.battle import BattleEmitter
 from irswitch.events.incident import IncidentEmitter
@@ -74,9 +74,9 @@ class EventEngine:
         try:
             params = inspect.signature(tick).parameters
         except (TypeError, ValueError):
-            return tick(state, now)
+            return cast(list[CandidateEvent], tick(state, now))
         if "bio" in params:
-            return tick(state, now, bio)
+            return cast(list[CandidateEvent], tick(state, now, bio))
         if len(params) >= 3:
-            return tick(state, now, bio)
-        return tick(state, now)
+            return cast(list[CandidateEvent], tick(state, now, bio))
+        return cast(list[CandidateEvent], tick(state, now))
