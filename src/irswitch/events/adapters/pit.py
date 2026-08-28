@@ -29,8 +29,11 @@ _PHASE_TO_EVENT_TYPE: dict[str, str] = {
 
 _COPY_TOKENS: dict[str, str] = {
     "entry": "pit.entry",
+    "lane": "pit.lane",
+    "stopped": "pit.stopped",
+    "released": "pit.released",
     "exit": "pit.exit",
-    "outcome": "pit.exit",
+    "outcome": "pit.outcome",
 }
 
 

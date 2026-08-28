@@ -286,24 +286,28 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "hunting") {
-    text(subtitle, "CLOSING IN");
+    text(subtitle, resolveCopy("battle.closing_in") || sample.subtitle || "CLOSING IN");
     text(value, fmtGap(metrics.gap));
     text(
       meta,
       metrics.targetPosition != null ? `P${metrics.targetPosition} · target` : sample.meta,
     );
   } else if (stateKey === "hunted") {
-    text(subtitle, "UNDER PRESSURE");
+    text(subtitle, sample.subtitle || resolveCopy("battle.hunted") || "UNDER PRESSURE");
     text(value, fmtGap(metrics.gap));
     text(meta, metrics.targetPosition != null ? `P${metrics.targetPosition} behind` : sample.meta);
   } else if (stateKey === "approach") {
-    text(subtitle, sample.subtitle || "BATTLE BUILDING");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE BUILDING");
     text(value, metrics.closingRate != null ? fmt(metrics.closingRate, 2) : sample.value);
     text(meta, sample.meta);
   } else if (stateKey === "attack_range") {
-    text(subtitle, sample.subtitle || "MOVE POSSIBLE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "MOVE POSSIBLE");
     text(value, fmtGap(metrics.gap));
     text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)}` : sample.meta);
+  } else if (stateKey === "side_by_side") {
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "WHEEL TO WHEEL");
+    text(value, fmtGap(metrics.gap));
+    text(meta, metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || fmtGap(metrics.gap));
@@ -364,20 +368,62 @@ function fillPitCopy(node, envelope, stateKey, sample, metrics, copy) {
   const meta = node.querySelector(".meta");
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
+  const duration =
+    metrics.pitDurationProxy ?? metrics.duration ?? metrics.lapTime ?? sample.value ?? null;
   if (stateKey === "pit_entry") {
     text(subtitle, resolveCopy("pit.entry") || sample.subtitle || "STORY START");
     text(
       value,
-      metrics.position != null ? `P${metrics.position}` : metrics.lapTime ?? sample.value,
+      metrics.entryPosition != null
+        ? `P${metrics.entryPosition}`
+        : metrics.position != null
+          ? `P${metrics.position}`
+          : sample.value,
     );
-    text(meta, sample.meta || "lane detected");
+    text(meta, sample.meta || "");
+  } else if (stateKey === "pit_lane") {
+    text(subtitle, resolveCopy("pit.lane") || sample.subtitle || "LIMITER ACTIVE");
+    text(value, duration != null ? `${fmt(duration, 1)} s` : sample.value);
+    text(meta, metrics.onPitRoad ? "on pit road" : sample.meta || "");
+  } else if (stateKey === "pit_stopped") {
+    text(subtitle, resolveCopy("pit.stopped") || sample.subtitle || "SERVICE");
+    text(value, duration != null ? `${fmt(duration, 1)} s` : sample.value);
+    text(meta, sample.meta || "");
+  } else if (stateKey === "pit_released") {
+    text(subtitle, resolveCopy("pit.released") || sample.subtitle || "GO GO GO");
+    text(value, duration != null ? `${fmt(duration, 1)} s` : sample.value);
+    text(meta, sample.meta || "");
   } else if (stateKey === "pit_exit") {
     text(subtitle, resolveCopy("pit.exit") || sample.subtitle || "BACK ON TRACK");
-    text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
+    text(
+      value,
+      metrics.exitPosition != null
+        ? `P${metrics.exitPosition}`
+        : metrics.position != null
+          ? `P${metrics.position}`
+          : sample.value,
+    );
     text(meta, sample.meta || "");
+  } else if (stateKey === "pit_outcome") {
+    text(subtitle, resolveCopy("pit.outcome") || sample.subtitle || "STORY COMPLETE");
+    const delta = metrics.positionDelta;
+    text(
+      value,
+      delta != null
+        ? fmtPositionDelta(Number(delta))
+        : metrics.position != null
+          ? `P${metrics.position}`
+          : sample.value,
+    );
+    text(
+      meta,
+      metrics.entryPosition != null && metrics.exitPosition != null
+        ? fmtPositionRange(metrics.entryPosition, metrics.exitPosition)
+        : sample.meta || "",
+    );
   } else {
     text(subtitle, sample.subtitle || "");
-    text(value, metrics.duration != null ? fmt(metrics.duration, 1) + " s" : sample.value || "");
+    text(value, duration != null ? `${fmt(duration, 1)} s` : sample.value || "");
     text(meta, sample.meta || "");
   }
 }
@@ -390,7 +436,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "hr_pressure") {
-    text(subtitle, resolveCopy("bio.hr_high") || sample.subtitle || "HR PRESSURE");
+    text(subtitle, resolveCopy("bio.hr_pressure") || sample.subtitle || "HR PRESSURE");
     text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value);
     text(
       meta,
@@ -405,6 +451,52 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value || "");
+    text(meta, sample.meta || "");
+  }
+}
+
+function fillSessionCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const phase = String(envelope.phase || "RESULT").toUpperCase();
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  if (stateKey === "final_lap") {
+    text(subtitle, resolveCopy("session.final_lap") || sample.subtitle || "ONE MORE PUSH");
+    text(
+      value,
+      metrics.lap != null && metrics.totalLaps != null
+        ? `LAP ${metrics.lap}/${metrics.totalLaps}`
+        : sample.value,
+    );
+    text(meta, phase === "RESULT" ? resolveCopy("session.finish") || sample.meta : sample.meta || "major event");
+  } else if (stateKey === "finish") {
+    text(subtitle, resolveCopy("session.finish") || sample.subtitle || "RACE COMPLETE");
+    text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
+    text(meta, metrics.classPosition != null ? `P${metrics.classPosition} in class` : sample.meta);
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, sample.value || "");
+    text(meta, sample.meta || "");
+  }
+}
+
+function fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  if (stateKey === "incident") {
+    text(subtitle, resolveCopy("incident") || sample.subtitle || "COALESCED UPDATE");
+    text(value, metrics.value != null ? `+${metrics.value} INC` : sample.value);
+    text(meta, metrics.total != null ? `total ${metrics.total}` : sample.meta);
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, sample.value || "");
     text(meta, sample.meta || "");
   }
 }
@@ -430,6 +522,14 @@ function fillCopySlots(node, envelope, stateKey) {
     fillBioCopy(node, envelope, stateKey, sample, metrics, copy);
     return;
   }
+  if (familyName === "session") {
+    fillSessionCopy(node, envelope, stateKey, sample, metrics, copy);
+    return;
+  }
+  if (familyName === "exception") {
+    fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy);
+    return;
+  }
   const title = node.querySelector(".title");
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
@@ -452,7 +552,13 @@ function fillCopySlots(node, envelope, stateKey) {
 }
 
 function widgetKey(envelope, stateKey) {
-  const cid = envelope.correlationId || envelope.storyKey || envelope.eventId || stateKey;
+  const familyName = familyForState(stateKey);
+  const persistent = familyName === "pit" || familyName === "bio";
+  const cid =
+    (persistent ? envelope.storyKey || envelope.correlationId : envelope.correlationId) ||
+    envelope.storyKey ||
+    envelope.eventId ||
+    stateKey;
   return `v4:${cid}`;
 }
 
@@ -471,6 +577,7 @@ export async function initV4(options = {}) {
   language = options.language || language;
   copyCatalog = options.copyCatalog || copyCatalog;
   resolvedMotions = options.resolvedMotions || resolvedMotions;
+  resolvedStates = options.resolvedStates || resolvedStates;
   motionDisabled = Boolean(options.motionDisabled);
   const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
   const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
@@ -514,12 +621,16 @@ export const DisplayV4 = {
       node.dataset.state = stateKey;
       rebuildArt(node, stateKey, familyName);
       const meta = manifest?.states?.[stateKey] || {};
-      node.className = `v4-widget tone-${meta.tone || "primary"}`;
+      const accent = envelope.presentation?.accent || meta.tone || "primary";
+      node.className = `v4-widget tone-${accent}`;
       node.classList.add("visible");
     }
     node.dataset.state = stateKey;
     node.dataset.phase = phase;
     node.classList.toggle("phase-compact", phase === "COMPACT");
+    const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";
+    node.classList.remove("tone-primary", "tone-warning");
+    node.classList.add(`tone-${accent}`);
     fillCopySlots(node, envelope, stateKey);
     syncWidgetMotion(node, envelope, familyName, created);
     node.classList.remove("exit");
@@ -763,6 +874,7 @@ export function v4FixturePitEntry(sequence = 1, phase = "ENTER") {
     priority: 50,
     dedupeKey: "RACE:PIT_ENTRY:7",
     correlationId: "pit:7",
+    storyKey: "pit:7",
     metrics: { position: 7 },
     copy: { headlineToken: "pit.entry", statusToken: "" },
     presentation: {
@@ -772,6 +884,115 @@ export function v4FixturePitEntry(sequence = 1, phase = "ENTER") {
       accent: "warning",
       preferredState: "ENTER",
       minHoldMs: 5000,
+    },
+  };
+}
+
+export function v4FixturePitLane(sequence = 2, phase = "ACTIVE") {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:pit:lane",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "PIT_LANE",
+    mode: "RACE",
+    phase,
+    priority: 50,
+    dedupeKey: "RACE:PIT_LANE:7",
+    correlationId: "pit:7",
+    storyKey: "pit:7",
+    metrics: { position: 7, duration: 41.2, onPitRoad: true },
+    copy: { headlineToken: "pit.lane", statusToken: "" },
+    presentation: {
+      widget: "pit",
+      zone: "EVENT",
+      variant: "pit_lane",
+      accent: "warning",
+      preferredState: "ACTIVE",
+    },
+  };
+}
+
+export function v4FixturePitOutcome(sequence = 6) {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:pit:outcome",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "PIT_OUTCOME",
+    mode: "RACE",
+    phase: "RESULT",
+    priority: 50,
+    dedupeKey: "RACE:PIT_OUTCOME:7",
+    correlationId: "pit:7",
+    storyKey: "pit:7",
+    metrics: { position: 10, positionDelta: 2, duration: 24.3, entryPosition: 7, exitPosition: 10 },
+    copy: { headlineToken: "pit.outcome", statusToken: "" },
+    presentation: {
+      widget: "pit",
+      zone: "EVENT",
+      variant: "pit_outcome",
+      accent: "primary",
+      preferredState: "RESULT",
+      minHoldMs: 5000,
+    },
+  };
+}
+
+export function v4FixtureFinalLap(sequence = 1, phase = "RESULT") {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:session:final_lap",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "FINAL_LAP",
+    mode: "RACE",
+    phase,
+    priority: 95,
+    dedupeKey: "RACE:FINAL_LAP",
+    correlationId: "session:final_lap",
+    metrics: { lap: 24, totalLaps: 24 },
+    copy: { headlineToken: "session.final_lap", statusToken: "" },
+    presentation: {
+      widget: "session",
+      zone: "EVENT",
+      variant: "final_lap",
+      accent: "warning",
+      preferredState: "RESULT",
+      minHoldMs: 6000,
+    },
+  };
+}
+
+export function v4FixtureFinish(sequence = 1) {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:session:finish",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "FINISH",
+    mode: "RACE",
+    phase: "RESULT",
+    priority: 100,
+    dedupeKey: "RACE:FINISH",
+    correlationId: "session:finish",
+    metrics: { position: 6, classPosition: 4 },
+    copy: { headlineToken: "session.finish", statusToken: "" },
+    presentation: {
+      widget: "session",
+      zone: "EVENT",
+      variant: "finish",
+      accent: "primary",
+      preferredState: "RESULT",
+      minHoldMs: 8000,
     },
   };
 }
@@ -789,7 +1010,8 @@ export function v4FixtureHrPressure(sequence = 1, phase = "ACTIVE") {
     phase,
     priority: 35,
     dedupeKey: "RACE:HR_PRESSURE",
-    correlationId: "bio:hr",
+    correlationId: "bio:hr_pressure",
+    storyKey: "bio:hr_pressure",
     metrics: { bpm: 164, deltaBpm: 14, intensity: 72 },
     copy: { headlineToken: "bio.hr_high", statusToken: "" },
     presentation: {

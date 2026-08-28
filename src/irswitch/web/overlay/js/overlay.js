@@ -166,6 +166,7 @@ async function startV4Demo(params) {
     catalogUrl: window.__v4CatalogUrl,
     copyCatalog: window.__v4CopyCatalog,
     resolvedMotions: window.__v4ResolvedMotions,
+    resolvedStates: window.__v4ResolvedStates,
     motionDisabled: params.get("motion") === "off",
   });
   const layout = params.get("layout");
@@ -237,6 +238,7 @@ async function bootstrap() {
         window.__overlayLanguage = snap.v4.language;
         window.__v4CopyCatalog = snap.v4.copyCatalog;
         window.__v4ResolvedMotions = snap.v4.resolved?.motions;
+        window.__v4ResolvedStates = snap.v4.resolved?.states;
         if (snap.v4.renderer) useV4 = true;
       }
       applySnapshot(snap, { events: !demo });
@@ -257,6 +259,7 @@ async function bootstrap() {
       catalogUrl: window.__v4CatalogUrl,
       copyCatalog: window.__v4CopyCatalog,
       resolvedMotions: window.__v4ResolvedMotions,
+      resolvedStates: window.__v4ResolvedStates,
       motionDisabled: params.get("motion") === "off",
     });
     if (demo) {

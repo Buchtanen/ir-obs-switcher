@@ -78,6 +78,25 @@ def test_hr_pressure_envelope_maps_catalog() -> None:
     assert envelope.copy.headline_token == "bio.hr_high"
 
 
+def test_pit_story_lane_envelope_uses_lane_token() -> None:
+    envelope = pit_race_event_to_envelope(
+        RaceEvent(
+            name="pit_story",
+            channel="session",
+            priority=50,
+            phase="update",
+            timestamp=1.5,
+            data={"state": "lane", "correlationId": "pit:sub:1:2", "position": 5},
+        ),
+        session_id="sub:1",
+        mode="RACE",
+        now=11.0,
+    )
+    assert envelope is not None
+    assert envelope.event_type == "PIT_LANE"
+    assert envelope.copy.headline_token == "pit.lane"
+
+
 def test_manager_v2_submit_pit_story_emits_v4() -> None:
     mgr = EventManagerV2(session_id="sub:1")
     _, envelopes = mgr.submit(
