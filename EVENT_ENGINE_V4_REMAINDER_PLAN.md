@@ -32,7 +32,7 @@
 | S3c | i18n CS + pit/bio renderer polish (#107) |
 | **Done** | **#111** demo JS hotfix merged |
 | **Done** | **R0** golden glow clip (master) |
-| **Branch** | `cursor/ee-v4-remainder-65db` — 33 golden, catalog, sysinfo V4, replay 1–15 |
+| **Branch** | `cursor/ee-v4-remainder-65db` — 33 golden, catalog, sysinfo V4, replay 1–16 |
 
 **Coverage (branch HEAD)**
 
@@ -41,7 +41,7 @@
 | Manifest states | 35 |
 | `event_catalog.json` v1 wired states | 33 |
 | Golden fixtures | 33 |
-| Replay scenarios | 15 |
+| Replay scenarios | 16 |
 | Transient families with renderer + assets | 7/7 |
 
 ---
@@ -256,9 +256,9 @@ Per original plan §2 gate **S3** and §7:
 | V4 layered render; motion vibe | pass — R0 golden glow clip on branch |
 | SYSINFO geometry | pass — V4 1920×72 renderer + asset CI |
 | Golden fixtures (33 v1 states) | pass — catalog-aligned registry + gallery |
-| Replay scenarios 1–15 | pass — parametric harness green |
+| Replay scenarios 1–16 | pass — parametric harness green |
 | DecisionLog suppressions | pass (manager v2 tests) |
-| Reduced-motion | partial — `motion=off` golden deterministic; 3-theme manual smoke optional |
+| Reduced-motion | pass — `motion=off` golden deterministic; 3-theme + prefers-reduced-motion CI |
 | Golden URL deterministic `motion=off` | pass |
 | Asset size CI | pass |
 | Per-emitter fail-soft + reset | pass |
