@@ -17,9 +17,9 @@ from irswitch.overlay.settings import (
     EventSettings,
     HeartRateSettings,
     HuntingSettings,
-    OvertakeClassifierSettings,
     OverlaySettings,
     OverlayV4Settings,
+    OvertakeClassifierSettings,
     SamplingSettings,
     SystemInfoSettings,
 )

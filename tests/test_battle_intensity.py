@@ -70,9 +70,17 @@ def test_intensity_hysteresis_prevents_oscillation() -> None:
         ),
         3.0,
     )
+    emitter.tick(
+        _state(
+            opponent_ahead=OpponentInfo(car_idx=17, position=6, gap=0.32, closing_rate=0.25),
+            gap_ahead=0.32,
+            closing_rate_ahead=0.25,
+        ),
+        4.0,
+    )
     assert emitter.hunting.intensity == "side_by_side"
 
-    for step, gap in enumerate([0.40, 0.38, 0.42, 0.36], start=4):
+    for step, gap in enumerate([0.40, 0.38, 0.42, 0.36], start=5):
         emitter.tick(
             _state(
                 opponent_ahead=OpponentInfo(car_idx=17, position=6, gap=gap, closing_rate=0.25),

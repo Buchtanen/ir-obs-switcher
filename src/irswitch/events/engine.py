@@ -9,6 +9,7 @@ from typing import Any, cast
 from irswitch.events.battle import BattleEmitter
 from irswitch.events.incident import IncidentEmitter
 from irswitch.events.lap import LapEmitter
+from irswitch.events.overtake import OvertakeClassifierEmitter
 from irswitch.events.pit import PitEmitter
 from irswitch.events.position import PositionEmitter
 from irswitch.events.session import SessionEmitter
@@ -24,12 +25,12 @@ class EventEngine:
         pri = overlay.events.priorities
         self.battle = BattleEmitter(overlay.battle.hunting, overlay.battle.hunted, pri)
         self.lap = LapEmitter(overlay.events, pri)
+        position_emitter: PositionEmitter | OvertakeClassifierEmitter
         if overlay.event_engine.overtake_classifier:
-            from irswitch.events.overtake import OvertakeClassifierEmitter
-
-            self.position = OvertakeClassifierEmitter(overlay.battle, pri)
+            position_emitter = OvertakeClassifierEmitter(overlay.battle, pri)
         else:
-            self.position = PositionEmitter(overlay.battle, pri)
+            position_emitter = PositionEmitter(overlay.battle, pri)
+        self.position = position_emitter
         self.incident = IncidentEmitter(overlay.events, pri)
         self.pit: PitEmitter | None
         self.session = SessionEmitter(overlay.events, pri)
