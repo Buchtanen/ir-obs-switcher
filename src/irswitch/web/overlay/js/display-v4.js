@@ -551,15 +551,19 @@ function fillCopySlots(node, envelope, stateKey) {
   }
 }
 
-function widgetKey(envelope, stateKey) {
+function widgetKey(envelope, stateKey, { golden = false } = {}) {
   const familyName = familyForState(stateKey);
-  const persistent = familyName === "pit" || familyName === "bio";
+  const persistent = !golden && (familyName === "pit" || familyName === "bio");
   const cid =
     (persistent ? envelope.storyKey || envelope.correlationId : envelope.correlationId) ||
     envelope.storyKey ||
     envelope.eventId ||
     stateKey;
-  return `v4:${cid}`;
+  return golden ? `golden:${cid}` : `v4:${cid}`;
+}
+
+function isGoldenLayout() {
+  return document.documentElement.classList.contains("golden-layout");
 }
 
 function enforceFamilyCap(familyName) {
@@ -599,23 +603,24 @@ export async function initV4(options = {}) {
 export const DisplayV4 = {
   active: new Map(),
 
-  show(envelope) {
+  show(envelope, options = {}) {
     if (!envelope || envelope.format !== "v4") return null;
-    if (isStale(envelope)) return null;
+    const golden = Boolean(options.golden || options.container);
+    if (!golden && isStale(envelope)) return null;
     const phase = String(envelope.phase || "RESULT").toUpperCase();
     if (phase === "EXIT") {
-      this.hide(widgetKey(envelope, resolveStateKey(envelope)));
+      this.hide(widgetKey(envelope, resolveStateKey(envelope), { golden }));
       return null;
     }
     const stateKey = resolveStateKey(envelope);
     const familyName = familyForState(stateKey);
     if (!TRANSIENT_FAMILIES.has(familyName)) return null;
-    const key = widgetKey(envelope, stateKey);
+    const key = widgetKey(envelope, stateKey, { golden });
     let node = this.active.get(key);
     const created = !node;
     if (!node) {
-      enforceFamilyCap(familyName);
-      node = this._create(stateKey, familyName);
+      if (!golden) enforceFamilyCap(familyName);
+      node = this._create(stateKey, familyName, options.container);
       this.active.set(key, node);
     } else if (node.dataset.state !== stateKey) {
       node.dataset.state = stateKey;
@@ -636,7 +641,7 @@ export const DisplayV4 = {
     node.classList.remove("exit");
     if (created) requestAnimationFrame(() => node.classList.add("visible"));
     else node.classList.add("visible");
-    if (phase === "RESULT") {
+    if (phase === "RESULT" && !golden && !isGoldenLayout()) {
       const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
       clearTimeout(node._exitTimer);
       node._exitTimer = setTimeout(() => this.hide(key), hold);
@@ -644,6 +649,11 @@ export const DisplayV4 = {
       clearTimeout(node._exitTimer);
     }
     return node;
+  },
+
+  showInContainer(envelope, container) {
+    if (!container) return null;
+    return this.show(envelope, { golden: true, container });
   },
 
   hide(key) {
@@ -669,7 +679,7 @@ export const DisplayV4 = {
     (stories || []).forEach((story) => this.show({ ...story, format: "v4" }));
   },
 
-  _create(stateKey, familyName) {
+  _create(stateKey, familyName, parent) {
     const meta = manifest?.states?.[stateKey] || {};
     const node = document.createElement("div");
     node.className = `v4-widget tone-${meta.tone || "primary"}`;
@@ -682,7 +692,7 @@ export const DisplayV4 = {
     const art = document.createElement("div");
     art.className = "v4-art";
     node.append(art, copy);
-    layerRootForFamily(familyName).appendChild(node);
+    (parent || layerRootForFamily(familyName)).appendChild(node);
     rebuildArt(node, stateKey, familyName);
     return node;
   },
@@ -700,192 +710,306 @@ export function clearV4() {
   DisplayV4.clear();
 }
 
-export function v4FixtureLapComplete(sequence = 1) {
+function v4FixtureEnvelope({
+  eventType,
+  phase = "RESULT",
+  correlationId,
+  eventId,
+  metrics = {},
+  copy = {},
+  presentation = {},
+  priority = 50,
+  sequence = 1,
+  dedupeKey,
+  accent,
+  widget,
+  variant,
+  preferredState,
+}) {
   return {
     type: "event",
     format: "v4",
     schemaVersion: "1.0",
-    eventId: "demo:lap:1",
+    eventId: eventId || `demo:${correlationId}`,
     sequence,
     sessionId: "session:demo",
-    eventType: "LAP_COMPLETE",
+    eventType,
     mode: "RACE",
-    phase: "RESULT",
-    priority: 40,
-    dedupeKey: "RACE:LAP_COMPLETE:12",
-    correlationId: "lap:12",
-    metrics: { lap: 12, lapTime: 112.084, bestLap: 112.402, deltaToBest: -0.318 },
-    copy: { headlineToken: "lap.complete", statusToken: "" },
+    phase,
+    priority,
+    dedupeKey: dedupeKey || `RACE:${eventType}:${correlationId}`,
+    correlationId,
+    metrics,
+    copy,
     presentation: {
-      widget: "timing",
       zone: "EVENT",
-      variant: "lap_complete",
-      accent: "primary",
-      preferredState: "RESULT",
+      accent: accent || "primary",
+      preferredState: preferredState || phase,
       minHoldMs: 6000,
+      widget,
+      variant,
+      ...presentation,
     },
   };
+}
+
+export function v4FixtureLapComplete(sequence = 1) {
+  return v4FixtureEnvelope({
+    eventType: "LAP_COMPLETE",
+    phase: "RESULT",
+    correlationId: "golden:lap_complete",
+    sequence,
+    priority: 40,
+    metrics: { lap: 12, lapTime: 112.084, bestLap: 112.402, deltaToBest: -0.318 },
+    copy: { headlineToken: "lap.complete", statusToken: "" },
+    widget: "timing",
+    variant: "lap_complete",
+    accent: "primary",
+    preferredState: "RESULT",
+  });
+}
+
+export function v4FixturePersonalBest(sequence = 1) {
+  return v4FixtureEnvelope({
+    eventType: "PERSONAL_BEST",
+    phase: "RESULT",
+    correlationId: "golden:personal_best",
+    sequence,
+    priority: 60,
+    metrics: { lap: 14, lapTime: 111.682, bestLap: 111.682, deltaToBest: -0.418 },
+    copy: { headlineToken: "lap.personal_best", statusToken: "" },
+    widget: "timing",
+    variant: "personal_best",
+    accent: "primary",
+    preferredState: "RESULT",
+  });
 }
 
 export function v4FixtureHunting(sequence = 1, phase = "ACTIVE") {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:battle:hunting",
-    sequence,
-    sessionId: "session:demo",
+  return v4FixtureEnvelope({
     eventType: "HUNTING",
-    mode: "RACE",
     phase,
+    correlationId: "golden:hunting",
+    sequence,
     priority: 20,
-    dedupeKey: "RACE:battle:hunting",
-    correlationId: "battle:hunting",
     metrics: { gap: 0.84, closingRate: 0.34, targetPosition: 7, targetCarIdx: 17 },
     copy: { headlineToken: "battle.hunting", statusToken: "" },
-    presentation: {
-      widget: "battle",
-      zone: "EVENT",
-      variant: "hunting",
-      accent: "primary",
-      preferredState: "ACTIVE",
-    },
-  };
+    widget: "battle",
+    variant: "hunting",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
 }
 
-export function v4FixtureHunted(sequence = 2, phase = "ACTIVE") {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:battle:hunted",
-    sequence,
-    sessionId: "session:demo",
+export function v4FixtureHunted(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
     eventType: "HUNTED",
-    mode: "RACE",
     phase,
+    correlationId: "golden:hunted",
+    sequence,
     priority: 20,
-    dedupeKey: "RACE:battle:hunted",
-    correlationId: "battle:hunted",
     metrics: { gap: 0.62, closingRate: 0.21, targetPosition: 8, targetCarIdx: 23 },
     copy: { headlineToken: "battle.hunted", statusToken: "" },
-    presentation: {
-      widget: "battle",
-      zone: "EVENT",
-      variant: "hunted",
-      accent: "warning",
-      preferredState: "ACTIVE",
-    },
-  };
+    widget: "battle",
+    variant: "hunted",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureApproach(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "APPROACH",
+    phase,
+    correlationId: "golden:approach",
+    sequence,
+    priority: 20,
+    metrics: { gap: 1.12, closingRate: 0.28, targetPosition: 6, targetCarIdx: 14 },
+    copy: { headlineToken: "battle.approach", statusToken: "" },
+    widget: "battle",
+    variant: "approach",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureAttackRange(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "ATTACK_RANGE",
+    phase,
+    correlationId: "golden:attack_range",
+    sequence,
+    priority: 20,
+    metrics: { gap: 0.38, closingRate: 0.41, targetPosition: 6, targetCarIdx: 14 },
+    copy: { headlineToken: "battle.attack_range", statusToken: "" },
+    widget: "battle",
+    variant: "attack_range",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureSideBySide(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "SIDE_BY_SIDE",
+    phase,
+    correlationId: "golden:side_by_side",
+    sequence,
+    priority: 20,
+    metrics: { gap: 0.04, closingRate: 0.0, targetPosition: 6, targetCarIdx: 14 },
+    copy: { headlineToken: "battle.side_by_side", statusToken: "" },
+    widget: "battle",
+    variant: "side_by_side",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
 }
 
 export function v4FixturePositionGained(sequence = 1) {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:position:gained",
-    sequence,
-    sessionId: "session:demo",
+  return v4FixtureEnvelope({
     eventType: "POSITION_GAINED",
-    mode: "RACE",
     phase: "RESULT",
+    correlationId: "golden:position_gained",
+    sequence,
     priority: 70,
-    dedupeKey: "RACE:POSITION_GAINED:7",
-    correlationId: "position:gain:7",
     metrics: { direction: "gain", oldPosition: 8, newPosition: 7, delta: 1 },
     copy: { headlineToken: "position.gained", statusToken: "" },
-    presentation: {
-      widget: "position",
-      zone: "EVENT",
-      variant: "position_gained",
-      accent: "primary",
-      preferredState: "RESULT",
-      minHoldMs: 4000,
-    },
-  };
+    widget: "position",
+    variant: "position_gained",
+    accent: "primary",
+    preferredState: "RESULT",
+    presentation: { minHoldMs: 4000 },
+  });
 }
 
 export function v4FixturePositionLost(sequence = 1) {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:position:lost",
-    sequence,
-    sessionId: "session:demo",
+  return v4FixtureEnvelope({
     eventType: "POSITION_LOST",
-    mode: "RACE",
     phase: "RESULT",
+    correlationId: "golden:position_lost",
+    sequence,
     priority: 70,
-    dedupeKey: "RACE:POSITION_LOST:8",
-    correlationId: "position:loss:8",
     metrics: { direction: "loss", oldPosition: 7, newPosition: 8, delta: -1 },
     copy: { headlineToken: "position.lost", statusToken: "" },
-    presentation: {
-      widget: "position",
-      zone: "EVENT",
-      variant: "position_lost",
-      accent: "warning",
-      preferredState: "RESULT",
-      minHoldMs: 4000,
-    },
-  };
+    widget: "position",
+    variant: "position_lost",
+    accent: "warning",
+    preferredState: "RESULT",
+    presentation: { minHoldMs: 4000 },
+  });
 }
 
 export function v4FixtureOvertake(sequence = 1) {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:position:overtake",
-    sequence,
-    sessionId: "session:demo",
+  return v4FixtureEnvelope({
     eventType: "OVERTAKE",
-    mode: "RACE",
     phase: "RESULT",
+    correlationId: "golden:overtake",
+    sequence,
     priority: 80,
-    dedupeKey: "RACE:OVERTAKE:6",
-    correlationId: "overtake:6",
     metrics: { oldPosition: 7, newPosition: 6, targetCarIdx: 17 },
     copy: { headlineToken: "position.overtake", statusToken: "" },
-    presentation: {
-      widget: "position",
-      zone: "EVENT",
-      variant: "overtake",
-      accent: "primary",
-      preferredState: "RESULT",
-      minHoldMs: 5000,
-    },
-  };
+    widget: "position",
+    variant: "overtake",
+    accent: "primary",
+    preferredState: "RESULT",
+    presentation: { minHoldMs: 5000 },
+  });
 }
 
-export function v4FixturePitEntry(sequence = 1, phase = "ENTER") {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:pit:entry",
-    sequence,
-    sessionId: "session:demo",
+export function v4FixturePitEntry(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
     eventType: "PIT_ENTRY",
-    mode: "RACE",
     phase,
+    correlationId: "golden:pit_entry",
+    sequence,
     priority: 50,
-    dedupeKey: "RACE:PIT_ENTRY:7",
-    correlationId: "pit:7",
-    storyKey: "pit:7",
-    metrics: { position: 7 },
+    metrics: { position: 7, onPitRoad: true },
     copy: { headlineToken: "pit.entry", statusToken: "" },
-    presentation: {
-      widget: "pit",
-      zone: "EVENT",
-      variant: "pit_entry",
-      accent: "warning",
-      preferredState: "ENTER",
-      minHoldMs: 5000,
-    },
-  };
+    widget: "pit",
+    variant: "pit_entry",
+    accent: "warning",
+    preferredState: "ENTER",
+  });
+}
+
+export function v4FixturePitLane(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "PIT_LANE",
+    phase,
+    correlationId: "golden:pit_lane",
+    sequence,
+    priority: 50,
+    metrics: { position: 7, duration: 41.2, onPitRoad: true },
+    copy: { headlineToken: "pit.entry", statusToken: "" },
+    widget: "pit",
+    variant: "pit_lane",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixturePitStopped(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "PIT_STOPPED",
+    phase,
+    correlationId: "golden:pit_stopped",
+    sequence,
+    priority: 50,
+    metrics: { position: 7, duration: 8.4, onPitRoad: true },
+    copy: { headlineToken: "pit.entry", statusToken: "" },
+    widget: "pit",
+    variant: "pit_stopped",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixturePitReleased(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "PIT_RELEASED",
+    phase,
+    correlationId: "golden:pit_released",
+    sequence,
+    priority: 50,
+    metrics: { position: 7, duration: 12.7, onPitRoad: true },
+    copy: { headlineToken: "pit.entry", statusToken: "" },
+    widget: "pit",
+    variant: "pit_released",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixturePitExit(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "PIT_EXIT",
+    phase,
+    correlationId: "golden:pit_exit",
+    sequence,
+    priority: 50,
+    metrics: { position: 12, onPitRoad: false },
+    copy: { headlineToken: "pit.exit", statusToken: "" },
+    widget: "pit",
+    variant: "pit_exit",
+    accent: "primary",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixturePitOutcome(sequence = 1) {
+  return v4FixtureEnvelope({
+    eventType: "PIT_OUTCOME",
+    phase: "RESULT",
+    correlationId: "golden:pit_outcome",
+    sequence,
+    priority: 50,
+    metrics: { position: 10, positionDelta: 2, duration: 24.3 },
+    copy: { headlineToken: "pit.exit", statusToken: "" },
+    widget: "pit",
+    variant: "pit_outcome",
+    accent: "primary",
+    preferredState: "RESULT",
+  });
 }
 
 export function v4FixturePitLane(sequence = 2, phase = "ACTIVE") {
@@ -998,28 +1122,137 @@ export function v4FixtureFinish(sequence = 1) {
 }
 
 export function v4FixtureHrPressure(sequence = 1, phase = "ACTIVE") {
-  return {
-    type: "event",
-    format: "v4",
-    schemaVersion: "1.0",
-    eventId: "demo:bio:hr",
-    sequence,
-    sessionId: "session:demo",
+  return v4FixtureEnvelope({
     eventType: "HR_PRESSURE_RISING",
-    mode: "RACE",
     phase,
+    correlationId: "golden:hr_pressure",
+    sequence,
     priority: 35,
-    dedupeKey: "RACE:HR_PRESSURE",
-    correlationId: "bio:hr_pressure",
-    storyKey: "bio:hr_pressure",
-    metrics: { bpm: 164, deltaBpm: 14, intensity: 72 },
+    metrics: { bpm: 164, deltaBpm: 14, baselineBpm: 150, intensity: 72 },
     copy: { headlineToken: "bio.hr_high", statusToken: "" },
-    presentation: {
-      widget: "bio",
-      zone: "EVENT",
-      variant: "hr_pressure",
-      accent: "warning",
-      preferredState: "ACTIVE",
-    },
-  };
+    widget: "bio",
+    variant: "hr_pressure",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureBleReconnecting(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "BLE_LOST",
+    phase,
+    correlationId: "golden:ble_reconnecting",
+    sequence,
+    priority: 35,
+    metrics: {},
+    copy: { headlineToken: "ble.lost", statusToken: "" },
+    widget: "bio",
+    variant: "ble_reconnecting",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureFinalLap(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "FINAL_LAP",
+    phase,
+    correlationId: "golden:final_lap",
+    sequence,
+    priority: 95,
+    metrics: { lap: 24, totalLaps: 24 },
+    copy: { headlineToken: "session.final_lap", statusToken: "" },
+    widget: "session",
+    variant: "final_lap",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+export function v4FixtureFinish(sequence = 1) {
+  return v4FixtureEnvelope({
+    eventType: "FINISH",
+    phase: "RESULT",
+    correlationId: "golden:finish",
+    sequence,
+    priority: 100,
+    metrics: { position: 6, classPosition: 4 },
+    copy: { headlineToken: "session.finish", statusToken: "" },
+    widget: "session",
+    variant: "finish",
+    accent: "primary",
+    preferredState: "RESULT",
+  });
+}
+
+export function v4FixtureIncident(sequence = 1, phase = "ACTIVE") {
+  return v4FixtureEnvelope({
+    eventType: "INCIDENT",
+    phase,
+    correlationId: "golden:incident",
+    sequence,
+    priority: 90,
+    metrics: { value: 2, total: 5 },
+    copy: { headlineToken: "incident", statusToken: "" },
+    widget: "exception",
+    variant: "incident",
+    accent: "warning",
+    preferredState: "ACTIVE",
+  });
+}
+
+/** Ordered golden catalog: fixture id → frozen demo envelope factory. */
+export const V4_GOLDEN_CATALOG = [
+  { id: "lap_complete", eventType: "LAP_COMPLETE", family: "timing", phase: "RESULT", factory: () => v4FixtureLapComplete() },
+  { id: "personal_best", eventType: "PERSONAL_BEST", family: "timing", phase: "RESULT", factory: () => v4FixturePersonalBest() },
+  { id: "hunting", eventType: "HUNTING", family: "battle", phase: "ACTIVE", factory: () => v4FixtureHunting(1, "ACTIVE") },
+  { id: "hunted", eventType: "HUNTED", family: "battle", phase: "ACTIVE", factory: () => v4FixtureHunted(1, "ACTIVE") },
+  { id: "approach", eventType: "APPROACH", family: "battle", phase: "ACTIVE", factory: () => v4FixtureApproach(1, "ACTIVE") },
+  { id: "attack_range", eventType: "ATTACK_RANGE", family: "battle", phase: "ACTIVE", factory: () => v4FixtureAttackRange(1, "ACTIVE") },
+  { id: "side_by_side", eventType: "SIDE_BY_SIDE", family: "battle", phase: "ACTIVE", factory: () => v4FixtureSideBySide(1, "ACTIVE") },
+  { id: "position_gained", eventType: "POSITION_GAINED", family: "position", phase: "RESULT", factory: () => v4FixturePositionGained() },
+  { id: "position_lost", eventType: "POSITION_LOST", family: "position", phase: "RESULT", factory: () => v4FixturePositionLost() },
+  { id: "overtake", eventType: "OVERTAKE", family: "position", phase: "RESULT", factory: () => v4FixtureOvertake() },
+  { id: "pit_entry", eventType: "PIT_ENTRY", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitEntry(1, "ACTIVE") },
+  { id: "pit_lane", eventType: "PIT_LANE", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitLane(1, "ACTIVE") },
+  { id: "pit_stopped", eventType: "PIT_STOPPED", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitStopped(1, "ACTIVE") },
+  { id: "pit_released", eventType: "PIT_RELEASED", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitReleased(1, "ACTIVE") },
+  { id: "pit_exit", eventType: "PIT_EXIT", family: "pit", phase: "ACTIVE", factory: () => v4FixturePitExit(1, "ACTIVE") },
+  { id: "pit_outcome", eventType: "PIT_OUTCOME", family: "pit", phase: "RESULT", factory: () => v4FixturePitOutcome() },
+  { id: "hr_pressure", eventType: "HR_PRESSURE_RISING", family: "bio", phase: "ACTIVE", factory: () => v4FixtureHrPressure(1, "ACTIVE") },
+  { id: "ble_reconnecting", eventType: "BLE_LOST", family: "bio", phase: "ACTIVE", factory: () => v4FixtureBleReconnecting(1, "ACTIVE") },
+  { id: "final_lap", eventType: "FINAL_LAP", family: "session", phase: "ACTIVE", factory: () => v4FixtureFinalLap(1, "ACTIVE") },
+  { id: "finish", eventType: "FINISH", family: "session", phase: "RESULT", factory: () => v4FixtureFinish() },
+  { id: "incident", eventType: "INCIDENT", family: "exception", phase: "ACTIVE", factory: () => v4FixtureIncident(1, "ACTIVE") },
+];
+
+const V4_GOLDEN_BY_ID = Object.fromEntries(V4_GOLDEN_CATALOG.map((entry) => [entry.id, entry]));
+
+export function getV4GoldenFixture(fixtureId) {
+  const entry = V4_GOLDEN_BY_ID[fixtureId];
+  if (!entry) return null;
+  return entry.factory();
+}
+
+export function renderV4GoldenGallery(DisplayV4) {
+  document.documentElement.classList.add("golden-gallery");
+  let gallery = document.getElementById("v4-golden-gallery");
+  if (!gallery) {
+    gallery = document.createElement("div");
+    gallery.id = "v4-golden-gallery";
+    document.body.appendChild(gallery);
+  }
+  gallery.replaceChildren();
+  V4_GOLDEN_CATALOG.forEach((entry) => {
+    const cell = document.createElement("div");
+    cell.className = "golden-cell";
+    const label = document.createElement("div");
+    label.className = "golden-label";
+    label.textContent = `${entry.id} · ${entry.eventType} · ${entry.phase}`;
+    const stage = document.createElement("div");
+    stage.className = "golden-stage";
+    cell.append(label, stage);
+    gallery.appendChild(cell);
+    DisplayV4.showInContainer(entry.factory(), stage);
+  });
 }
