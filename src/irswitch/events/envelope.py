@@ -6,7 +6,8 @@ Emitters produce EventEnvelope-shaped payloads. The manager may still stamp
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass, field, fields
 from typing import Any, Literal
 
 SCHEMA_VERSION = "1.0"
@@ -25,6 +26,11 @@ EventPhase = Literal[
 WIRE_PHASES: frozenset[str] = frozenset(
     {"ENTER", "ACTIVE", "UPDATE", "COMPACT", "SUSPEND", "RESUME", "EXIT", "RESULT"}
 )
+
+EventMode = Literal["PRACTICE", "QUALIFYING", "RACE", "GENERIC", "unknown"]
+
+WIRE_MODES: frozenset[str] = frozenset({"PRACTICE", "QUALIFYING", "RACE", "GENERIC", "unknown"})
+UNKNOWN_MODE = "unknown"
 
 _LEGACY_PHASE_MAP: dict[str, str] = {
     "enter": "ENTER",
@@ -50,6 +56,14 @@ _REQUIRED_TOP_LEVEL: tuple[str, ...] = (
     "dedupeKey",
     "correlationId",
 )
+
+
+def _snake(name: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+
+def _snake_keys(data: dict[str, Any]) -> dict[str, Any]:
+    return {_snake(key): value for key, value in data.items()}
 
 
 @dataclass(frozen=True)
@@ -162,25 +176,51 @@ class EventEnvelope:
             "correlationId": self.correlation_id,
             "storyKey": self.story_key or self.correlation_id,
             "subject": self.subject.to_dict(),
+            "target": self.target.to_dict() if self.target is not None else None,
             "metrics": dict(self.metrics),
             "copy": self.copy.to_dict(),
             "presentation": self.presentation.to_dict(),
             "reason": self.reason.to_dict(),
         }
-        if self.target is not None:
-            payload["target"] = self.target.to_dict()
         return payload
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> EventEnvelope:
+        """Rebuild an envelope from its wire form. Unknown keys are ignored."""
+        payload = _snake_keys(data)
+        known = {f.name for f in fields(cls)}
+        return make_envelope(**{key: value for key, value in payload.items() if key in known})
 
-def legacy_trigger_to_phase(phase: str) -> str:
-    """Map legacy MVP phases (enter/update/exit/trigger) to wire phases."""
-    key = (phase or "").strip()
-    if key in WIRE_PHASES:
-        return key
+    def stamp(self, event_id: str, sequence: int) -> EventEnvelope:
+        """Manager-side identity stamp applied after arbitration. Returns self."""
+        self.event_id = event_id
+        self.sequence = sequence
+        return self
+
+
+def legacy_trigger_to_phase(phase: str, default: str | None = None) -> str:
+    """Map legacy MVP phases (enter/update/exit/trigger) to wire phases.
+
+    Raises ValueError on unknown input so mapping bugs surface in tests. Hot-path
+    callers pass ``default`` to stay fail-soft instead.
+    """
+    key = (phase or "").strip() if isinstance(phase, str) else ""
+    if key.upper() in WIRE_PHASES:
+        return key.upper()
     mapped = _LEGACY_PHASE_MAP.get(key.lower())
     if mapped is None:
+        if default is not None:
+            return default
         raise ValueError(f"unknown event phase: {phase!r}")
     return mapped
+
+
+def normalize_mode(mode: Any) -> str:
+    """Map a session mode onto the wire whitelist. Anything else becomes ``unknown``."""
+    if not isinstance(mode, str):
+        return UNKNOWN_MODE
+    candidate = mode.strip().upper()
+    return candidate if candidate in WIRE_MODES else UNKNOWN_MODE
 
 
 def validate_envelope(value: EventEnvelope | dict[str, Any]) -> list[str]:
@@ -197,6 +237,9 @@ def validate_envelope(value: EventEnvelope | dict[str, Any]) -> list[str]:
     phase = data.get("phase")
     if phase is not None and phase not in WIRE_PHASES:
         errors.append(f"invalid phase: {phase!r}")
+    mode = data.get("mode")
+    if mode is not None and mode not in WIRE_MODES:
+        errors.append(f"invalid mode: {mode!r}")
     confidence = data.get("confidence")
     if confidence is not None:
         try:
@@ -240,7 +283,9 @@ def make_envelope(**kwargs: Any) -> EventEnvelope:
         if isinstance(presentation_raw, EventPresentation)
         else EventPresentation(**(presentation_raw or {}))
     )
-    reason = reason_raw if isinstance(reason_raw, EventReason) else EventReason(**(reason_raw or {}))
+    reason = (
+        reason_raw if isinstance(reason_raw, EventReason) else EventReason(**(reason_raw or {}))
+    )
 
     env = EventEnvelope(
         event_type=event_type,

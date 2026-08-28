@@ -41,9 +41,7 @@ class DecisionLog:
         timestamp = (
             int(monotonic_ms)
             if monotonic_ms is not None
-            else int(now * 1000)
-            if now is not None
-            else now_ms()
+            else int(now * 1000) if now is not None else now_ms()
         )
         self._entries.append(
             {
