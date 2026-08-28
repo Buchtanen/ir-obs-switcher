@@ -251,41 +251,38 @@ def validate_envelope(value: EventEnvelope | dict[str, Any]) -> list[str]:
     return errors
 
 
+def _coerce_section(value: Any, section: type) -> Any:
+    """Accept a dataclass instance, a snake_case dict or a camelCase wire dict."""
+    if isinstance(value, section):
+        return value
+    payload = _snake_keys(value or {})
+    allowed = {f.name for f in fields(section)}
+    kept = {key: val for key, val in payload.items() if key in allowed}
+    if section is EventReason:
+        for key in ("rules", "suppressed_alternatives"):
+            if key in kept:
+                kept[key] = tuple(kept[key])
+    return section(**kept)
+
+
 def make_envelope(**kwargs: Any) -> EventEnvelope:
-    """Test/helper factory with sensible defaults for a valid envelope."""
-    if "eventType" in kwargs and "event_type" not in kwargs:
-        kwargs["event_type"] = kwargs.pop("eventType")
+    """Test/helper factory with sensible defaults for a valid envelope.
+
+    Accepts camelCase or snake_case keys at the top level and inside the nested
+    sections, so a wire dict can be fed straight back in.
+    """
+    kwargs = _snake_keys(kwargs)
     event_type = str(kwargs.pop("event_type", "LAP_COMPLETE"))
-    phase_raw = kwargs.pop("phase", "ENTER")
-    phase = legacy_trigger_to_phase(str(phase_raw))
+    phase = legacy_trigger_to_phase(str(kwargs.pop("phase", "ENTER")))
+    if "mode" in kwargs:
+        kwargs["mode"] = normalize_mode(kwargs["mode"])
 
-    subject_raw = kwargs.pop("subject", None)
     target_raw = kwargs.pop("target", None)
-    copy_raw = kwargs.pop("copy", None)
-    presentation_raw = kwargs.pop("presentation", None)
-    reason_raw = kwargs.pop("reason", None)
-
-    subject = (
-        subject_raw
-        if isinstance(subject_raw, EventSubject)
-        else EventSubject(**(subject_raw or {}))
-    )
-    target: EventSubject | None
-    if target_raw is None:
-        target = None
-    elif isinstance(target_raw, EventSubject):
-        target = target_raw
-    else:
-        target = EventSubject(**target_raw)
-    copy = copy_raw if isinstance(copy_raw, EventCopy) else EventCopy(**(copy_raw or {}))
-    presentation = (
-        presentation_raw
-        if isinstance(presentation_raw, EventPresentation)
-        else EventPresentation(**(presentation_raw or {}))
-    )
-    reason = (
-        reason_raw if isinstance(reason_raw, EventReason) else EventReason(**(reason_raw or {}))
-    )
+    subject = _coerce_section(kwargs.pop("subject", None), EventSubject)
+    target = None if target_raw is None else _coerce_section(target_raw, EventSubject)
+    copy = _coerce_section(kwargs.pop("copy", None), EventCopy)
+    presentation = _coerce_section(kwargs.pop("presentation", None), EventPresentation)
+    reason = _coerce_section(kwargs.pop("reason", None), EventReason)
 
     env = EventEnvelope(
         event_type=event_type,
