@@ -15,14 +15,24 @@ from irswitch.overlay.http import presentation_payload, web_root
 GOLDEN_FIXTURES: tuple[str, ...] = (
     "lap_complete",
     "personal_best",
+    "target",
+    "projected_lap",
+    "pb_attack",
+    "hot_lap",
+    "position_attack",
+    "gain_found",
+    "clean_streak",
     "hunting",
     "hunted",
     "approach",
     "attack_range",
     "side_by_side",
+    "battle_for_position",
+    "battle_won",
     "position_gained",
     "position_lost",
     "overtake",
+    "rival_threat",
     "pit_entry",
     "pit_lane",
     "pit_stopped",
@@ -34,6 +44,8 @@ GOLDEN_FIXTURES: tuple[str, ...] = (
     "final_lap",
     "finish",
     "incident",
+    "invalid_lap",
+    "link_drop",
 )
 
 _FIXTURE_ID_RE = re.compile(r"Fixture id:\s*`([a-z0-9_]+)`")
