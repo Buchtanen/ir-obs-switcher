@@ -1,0 +1,21 @@
+---
+description: Logging/observability conventions for Python code
+globs: src/**/*.py
+alwaysApply: false
+---
+
+## Logging conventions
+
+Prefer **structured, intent-based** logs over noisy traces.
+
+Core event types to keep consistent (examples):
+- `state_changed`
+- `scene_switch`
+- `override_applied`
+- `connection_lost` / `connection_restored`
+
+Rules:
+- log **why** a decision happened (reason, inputs), not just “what”
+- avoid per-frame/per-poll spam
+- errors should be actionable; expected states should be info/debug
+

@@ -1,0 +1,26 @@
+---
+description: iRacing SDK flag semantics for garage vs lobby and post-load grace
+globs: src/irswitch/iracing/**/*.py,src/irswitch/logic/**/*.py,tests/test_extractors.py,tests/test_state_machine.py,tests/test_reader.py
+alwaysApply: false
+---
+
+## iRacing SDK semantics (do not guess flags)
+
+GARAGE is the garage **UI**, not car-in-stall physics.
+
+| Flag | Means | After session load (lobby) |
+|------|--------|----------------------------|
+| `IsGarageVisible` | Garage screen visible | false |
+| `IsInGarage` / `PlayerCarInGarage` | Car physics in stall | **true** (false GARAGE) |
+| `CamCameraState` bit 0 | Session screen / menu | often set |
+
+Rules:
+
+- `extract_mode()`: GARAGE from `IsGarageVisible`. Stall flags alone are not GARAGE (fallback: stall **and** not session screen).
+- After LOADING/CONNECTING, keep **LOBBY and GARAGE** in grace (`GRACE_PERIOD_MS`, 3000). Do **not** skip grace for GARAGE.
+- Stable GARAGE for the full grace window still switches (real garage).
+- RACE/REPLAY switch after debounce only (no extra post-load delay).
+- Do not invent telemetry names; check official iRacing vars.
+- Scene switches go through `logic/` only. Log **why** (`decision_inputs`), not just the scene.
+
+Symptom of a regression: first switch after load is garage scene (`Back`) then lobby (`VR`) ~3s later.

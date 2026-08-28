@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeReadFile": [
+      {
+        "command": "python .cursor/hooks/block_sensitive_reads.py"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "python .cursor/hooks/shell_guard.py"
+      }
+    ]
+  }
+}
+

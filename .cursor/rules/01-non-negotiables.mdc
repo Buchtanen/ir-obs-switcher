@@ -1,0 +1,22 @@
+---
+description: Non-negotiables (safety, scope, change control)
+alwaysApply: true
+---
+
+## Non‑negotiables
+
+- **No direct changes to `master`**: everything goes via PR + human review.
+- **No “speculative refactors”**: refactor only when explicitly requested/approved.
+- **No secrets in repo**: never commit tokens/keys/passwords; use CI/CD vars or user env vars.
+- **No new dependencies by default**: add deps only when explicitly requested **and** after security review.
+
+## Change discipline
+
+- Prefer **minimal diff**; keep changes scoped to the requested outcome.
+- If you can’t guarantee safety, **stop and ask** (don’t push risky changes).
+
+## Quality gates (baseline)
+
+- New/changed behavior must have **evidence**: tests, or an explicit “exception” with alternative verification.
+- When behavior changes, **update documentation** (see `04-docs-policy.mdc`).
+

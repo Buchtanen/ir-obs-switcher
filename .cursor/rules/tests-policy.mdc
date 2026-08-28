@@ -1,0 +1,21 @@
+---
+description: Tests policy (pytest, freezegun, mocking external systems)
+globs: tests/**/*.py
+alwaysApply: false
+---
+
+## Tests policy
+
+- Use **pytest** only.
+- Use **freezegun** for time-based logic (cooldowns/debounce).
+- Mock iRacing (`pyirsdk` / shared memory) and OBS client: **never use real connections** in tests.
+- Prefer testing `logic/` independently of IO layers.
+- Tests that bind the real HTTP port (`17321`) **fail if irswitch is already running**. That is an occupied-port environment issue, not a regression of the change under test. Stop the service, use another port in the test, or skip that case — do not “fix” production code to make the collision pass.
+
+## What to test (priority)
+
+- state machine transitions
+- policy decisions (scene selection) including reasons
+- cooldown/debounce behavior (monotonic time assumptions)
+- error handling around external failures (no crash)
+

@@ -1,0 +1,45 @@
+---
+description: Issue workflow + development diary in comments
+alwaysApply: true
+---
+
+## Issue-driven development + dev diary
+
+Work happens in an **issue** (feature/fix/ci/docs). The issue is the “source of truth”.
+
+Required:
+- issue contains **AC + test plan + docs impact** (see `02-work-item-definition.mdc`)
+- development progress is tracked in **issue comments** (dev diary)
+
+### Dev diary comment template
+
+```markdown
+## Dev diary – YYYY-MM-DD
+What changed:
+- ...
+
+Why:
+- ...
+
+Evidence:
+- Tests: <local/CI output>
+- Manual: <steps + result>
+
+Docs:
+- Updated: <files>
+- Pending: <files>
+
+Next:
+- ...
+
+Risks:
+- ...
+```
+
+### Minimal cadence
+
+- Add a diary entry when you:
+  - push a meaningful chunk of work
+  - discover a blocker/root cause
+  - change the plan/AC
+

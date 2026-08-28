@@ -32,11 +32,8 @@ env/
 *.swp
 *.swo
 *~
-.cursor/*
-!.cursor/skills/
-!.cursor/skills/**
-!.cursorignore
-!.cursorrules
+.cursor/hooks.json
+.cursor/debug.log
 
 # Testing
 .pytest_cache/

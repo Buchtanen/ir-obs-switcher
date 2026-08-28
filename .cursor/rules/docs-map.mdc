@@ -1,0 +1,38 @@
+---
+description: Docs impact map (what to update when X changes)
+alwaysApply: true
+---
+
+## Docs impact map (quick lookup)
+
+When you change… you must review/update…
+
+- **Config keys / defaults / behavior**
+  - `CONFIG.md`
+  - `config/config.example.ini`
+  - (if distro impacted) `BUILD_AND_DEPLOY.md`
+
+- **CLI flags / run instructions / startup scripts**
+  - `README.md`
+  - `start_app.ps1` / `run_tests.*` references (if changed)
+
+- **API endpoints / payloads / dashboards’ JS calls**
+  - `API.md`
+
+- **Build / distribution / installer / shortcuts / autostart**
+  - `BUILD_AND_DEPLOY.md`
+  - `README.md` (Quick Start section if user-facing)
+
+- **Release process / versioning / tags**
+  - `RELEASE_POLICY.md`
+  - `VERSIONING.md` / `README_VERSIONING.md` (if relevant)
+
+- **VR dashboards / RaceLab setup**
+  - `VR_SUPPORT.md`
+  - `RACELAB_VR_SETUP.md`
+
+- **Cursor automation (rules / skills / commands / agents)**
+  - `.cursor/README.md`
+
+PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`).
+

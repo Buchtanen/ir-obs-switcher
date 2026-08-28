@@ -1,0 +1,23 @@
+---
+description: GitHub Actions workflow conventions and safety
+globs: .github/workflows/**/*.yml
+alwaysApply: false
+---
+
+## GitHub Actions policy
+
+This repo’s CI is **GitHub Actions** (`.github/workflows/`). There is no GitLab CI.
+
+Goals:
+- keep workflows deterministic and reviewable
+- avoid brittle automation; prefer explicit steps
+
+Rules:
+- avoid duplicating logic across workflows; prefer reusable workflows when it helps
+- keep permissions minimal (`permissions:` scoped per job when possible)
+- prefer pinned major versions of actions (`@v4`, `@v5`) and update via PRs
+- ensure CI changes include a clear verification plan (what should pass, what to watch)
+
+Release process:
+- respect Release PR model (release-please). Do not reintroduce manual tagging as default.
+

@@ -1,0 +1,24 @@
+---
+description: Definition of Done checklist for PRs
+alwaysApply: true
+---
+
+## Definition of Done (PR gate)
+
+Before merge:
+
+- **AC**: all acceptance criteria checked and verified
+- **Tests**:
+  - added/updated for behavior changes, or
+  - explicit `TDD-exception` + alternative verification (see `03-tdd-test-drive-policy.mdc`)
+- **Docs**:
+  - updated relevant docs (see `04-docs-policy.mdc`)
+  - PR includes Docs impact checklist
+- **Config**:
+  - if config changed: `CONFIG.md` + `config/config.example.ini` updated
+  - migration note included when needed
+- **Release policy**:
+  - PR has exactly one `semver:*` label (normal PR)
+- **CI**: checks green (lint/tests/security/type-check as applicable)
+- **Local run** (if the change is meant to run on this machine): checkout the merged branch, restart via `/restart-service`, confirm `GET /health` version matches the intended source (`runtime-version-identity.mdc`)
+

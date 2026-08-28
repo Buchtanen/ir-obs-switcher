@@ -1,0 +1,22 @@
+---
+description: Parallel agents/worktrees; GitHub hosting (not GitLab)
+alwaysApply: true
+---
+
+## Hosting
+
+Origin is **GitHub** `Buchtanen/ir-obs-switcher`. Issues, PRs, and CI go through `gh` + GitHub MCP. Do not assume a GitLab remote or GitLab CI.
+
+## Parallel work
+
+Use multiple agents and git worktrees only when tasks are **independent**:
+
+- different files (do not split overlapping `logic/` + `iracing/` + API in one burst)
+- each task: own branch (see `05-git-branching-convention.mdc`) + own GitHub issue
+- one worktree per branch; never commit on `master`
+
+Do **not** parallelize overlapping edits. Stopped subagents, stash ping-pong, and surprise CI lint after a burst mean the work should have been sequential.
+
+After an agent finishes: return diff + evidence. Push/PR/merge only with user approval.
+
+Command: `/parallel-plan` to split a backlog before launching agents.

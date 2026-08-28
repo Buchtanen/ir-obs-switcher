@@ -1,0 +1,19 @@
+---
+description: Documentation standards and expectations
+globs: **/*.md
+alwaysApply: false
+---
+
+## Docs standards
+
+Docs must be:
+
+- **accurate** for current behavior
+- **actionable** (commands, paths, examples)
+- kept **close to reality** (no aspirational text without status)
+
+When updating docs:
+- prefer minimal changes but keep them complete
+- include migration notes when config/API behavior changes
+- avoid duplicating the same truth in 3 files; use links where possible
+

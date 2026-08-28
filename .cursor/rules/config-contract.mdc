@@ -1,0 +1,18 @@
+---
+description: Configuration contract rules (INI keys, CONFIG.md, examples)
+globs: CONFIG.md
+alwaysApply: false
+---
+
+## Config contract (INI)
+
+If you change configuration behavior (new key, rename, default change, semantics):
+
+- update **`CONFIG.md`** (authoritative description)
+- update **`config/config.example.ini`** (example reflects reality)
+- add a **migration note** when the change can break existing setups
+
+Rules:
+- config changes must be reflected in **acceptance criteria** and **test plan**
+- avoid “silent behavior changes” without docs and verification
+

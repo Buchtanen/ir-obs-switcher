@@ -1,0 +1,34 @@
+---
+description: Test-drive development policy (with exceptions)
+alwaysApply: true
+---
+
+## Test‑drive development (default)
+
+- Prefer **test-first** for logic/state transitions/policies.
+- Any behavior change must have **evidence**:
+  - ideally a test that fails before and passes after
+  - otherwise an explicit exception (below)
+
+## Allowed exceptions (must be explicit)
+
+If you cannot reasonably write a test, you must document:
+
+- **TDD-exception: <reason>**
+- **Alternative verification** (what replaces the test)
+- **Risk & mitigation** (what could break; how we detect it)
+
+Allowed exception categories:
+- **Docs-only / CI-only** change
+- **Pure wiring** where unit test gives no value (but regression risk must be covered)
+- **External-system limitation** (iRacing/OBS specifics not testable locally)
+
+### Minimal “exception” snippet (issue/PR)
+
+```markdown
+TDD-exception: <why no automated test>
+Verification: <manual steps + expected evidence>
+Risk: <what could break>
+Mitigation: <logging/guards/rollback>
+```
+

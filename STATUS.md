@@ -111,10 +111,7 @@
 **Priorita**: Nízká  
 **Důvod**: Automatické spouštění testů
 
-**Možnosti**:
-- GitHub Actions workflow
-- GitLab CI config
-- Automatické testy při push/PR
+**Stav**: GitHub Actions (`.github/workflows/`). GitLab CI se nepoužívá.
 
 #### 10. CHANGELOG.md
 **Priorita**: Nízká  
