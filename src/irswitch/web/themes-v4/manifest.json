@@ -1,0 +1,2150 @@
+{
+  "version": 4,
+  "transient_canvas": [
+    420,
+    140
+  ],
+  "sysinfo_canvas": [
+    1920,
+    72
+  ],
+  "themes": {
+    "cyber_racing": {
+      "primary": [
+        0,
+        226,
+        240
+      ],
+      "warning": [
+        255,
+        151,
+        0
+      ],
+      "alert": [
+        255,
+        61,
+        35
+      ],
+      "motion_style": "circuit_scan",
+      "families": {
+        "battle": {
+          "layer_dir": "themes/cyber_racing/battle/layers",
+          "icon_dir": "themes/cyber_racing/battle/icons",
+          "functional_component": "battle_intensity_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "battle_intensity_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "hunting",
+            "hunted",
+            "approach",
+            "attack_range",
+            "side_by_side",
+            "battle_for_position",
+            "battle_won"
+          ]
+        },
+        "timing": {
+          "layer_dir": "themes/cyber_racing/timing/layers",
+          "icon_dir": "themes/cyber_racing/timing/icons",
+          "functional_component": "timing_confidence_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "timing_confidence_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "target",
+            "projected_lap",
+            "pb_attack",
+            "lap_complete",
+            "personal_best",
+            "hot_lap",
+            "position_attack",
+            "gain_found",
+            "clean_streak"
+          ]
+        },
+        "position": {
+          "layer_dir": "themes/cyber_racing/position/layers",
+          "icon_dir": "themes/cyber_racing/position/icons",
+          "functional_component": "position_direction_marks.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "position_direction_marks.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "overtake",
+            "position_gained",
+            "position_lost",
+            "rival_threat"
+          ]
+        },
+        "exception": {
+          "layer_dir": "themes/cyber_racing/exception/layers",
+          "icon_dir": "themes/cyber_racing/exception/icons",
+          "functional_component": "exception_fracture.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "exception_fracture.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "invalid_lap",
+            "incident",
+            "link_drop"
+          ]
+        },
+        "pit": {
+          "layer_dir": "themes/cyber_racing/pit/layers",
+          "icon_dir": "themes/cyber_racing/pit/icons",
+          "functional_component": "pit_phase_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "pit_phase_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "pit_entry",
+            "pit_lane",
+            "pit_stopped",
+            "pit_released",
+            "pit_exit",
+            "pit_outcome"
+          ]
+        },
+        "bio": {
+          "layer_dir": "themes/cyber_racing/bio/layers",
+          "icon_dir": "themes/cyber_racing/bio/icons",
+          "functional_component": "bio_pulse_trace.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "bio_pulse_trace.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "hr_pressure",
+            "composure_test",
+            "high_load",
+            "ble_reconnecting"
+          ]
+        },
+        "session": {
+          "layer_dir": "themes/cyber_racing/session/layers",
+          "icon_dir": "themes/cyber_racing/session/icons",
+          "functional_component": "session_flag_pattern.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "session_flag_pattern.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "final_lap",
+            "finish"
+          ]
+        }
+      }
+    },
+    "stealth_graphite": {
+      "primary": [
+        0,
+        197,
+        216
+      ],
+      "warning": [
+        222,
+        140,
+        25
+      ],
+      "alert": [
+        230,
+        59,
+        47
+      ],
+      "motion_style": "mask_reveal",
+      "families": {
+        "battle": {
+          "layer_dir": "themes/stealth_graphite/battle/layers",
+          "icon_dir": "themes/stealth_graphite/battle/icons",
+          "functional_component": "battle_intensity_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "battle_intensity_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "hunting",
+            "hunted",
+            "approach",
+            "attack_range",
+            "side_by_side",
+            "battle_for_position",
+            "battle_won"
+          ]
+        },
+        "timing": {
+          "layer_dir": "themes/stealth_graphite/timing/layers",
+          "icon_dir": "themes/stealth_graphite/timing/icons",
+          "functional_component": "timing_confidence_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "timing_confidence_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "target",
+            "projected_lap",
+            "pb_attack",
+            "lap_complete",
+            "personal_best",
+            "hot_lap",
+            "position_attack",
+            "gain_found",
+            "clean_streak"
+          ]
+        },
+        "position": {
+          "layer_dir": "themes/stealth_graphite/position/layers",
+          "icon_dir": "themes/stealth_graphite/position/icons",
+          "functional_component": "position_direction_marks.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "position_direction_marks.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "overtake",
+            "position_gained",
+            "position_lost",
+            "rival_threat"
+          ]
+        },
+        "exception": {
+          "layer_dir": "themes/stealth_graphite/exception/layers",
+          "icon_dir": "themes/stealth_graphite/exception/icons",
+          "functional_component": "exception_fracture.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "exception_fracture.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "invalid_lap",
+            "incident",
+            "link_drop"
+          ]
+        },
+        "pit": {
+          "layer_dir": "themes/stealth_graphite/pit/layers",
+          "icon_dir": "themes/stealth_graphite/pit/icons",
+          "functional_component": "pit_phase_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "pit_phase_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "pit_entry",
+            "pit_lane",
+            "pit_stopped",
+            "pit_released",
+            "pit_exit",
+            "pit_outcome"
+          ]
+        },
+        "bio": {
+          "layer_dir": "themes/stealth_graphite/bio/layers",
+          "icon_dir": "themes/stealth_graphite/bio/icons",
+          "functional_component": "bio_pulse_trace.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "bio_pulse_trace.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "hr_pressure",
+            "composure_test",
+            "high_load",
+            "ble_reconnecting"
+          ]
+        },
+        "session": {
+          "layer_dir": "themes/stealth_graphite/session/layers",
+          "icon_dir": "themes/stealth_graphite/session/icons",
+          "functional_component": "session_flag_pattern.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "session_flag_pattern.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "final_lap",
+            "finish"
+          ]
+        }
+      }
+    },
+    "night_attack": {
+      "primary": [
+        0,
+        205,
+        224
+      ],
+      "warning": [
+        255,
+        105,
+        0
+      ],
+      "alert": [
+        255,
+        38,
+        23
+      ],
+      "motion_style": "slash_tear",
+      "families": {
+        "battle": {
+          "layer_dir": "themes/night_attack/battle/layers",
+          "icon_dir": "themes/night_attack/battle/icons",
+          "functional_component": "battle_intensity_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "battle_intensity_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "hunting",
+            "hunted",
+            "approach",
+            "attack_range",
+            "side_by_side",
+            "battle_for_position",
+            "battle_won"
+          ]
+        },
+        "timing": {
+          "layer_dir": "themes/night_attack/timing/layers",
+          "icon_dir": "themes/night_attack/timing/icons",
+          "functional_component": "timing_confidence_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "timing_confidence_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "target",
+            "projected_lap",
+            "pb_attack",
+            "lap_complete",
+            "personal_best",
+            "hot_lap",
+            "position_attack",
+            "gain_found",
+            "clean_streak"
+          ]
+        },
+        "position": {
+          "layer_dir": "themes/night_attack/position/layers",
+          "icon_dir": "themes/night_attack/position/icons",
+          "functional_component": "position_direction_marks.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "position_direction_marks.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "overtake",
+            "position_gained",
+            "position_lost",
+            "rival_threat"
+          ]
+        },
+        "exception": {
+          "layer_dir": "themes/night_attack/exception/layers",
+          "icon_dir": "themes/night_attack/exception/icons",
+          "functional_component": "exception_fracture.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "exception_fracture.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "invalid_lap",
+            "incident",
+            "link_drop"
+          ]
+        },
+        "pit": {
+          "layer_dir": "themes/night_attack/pit/layers",
+          "icon_dir": "themes/night_attack/pit/icons",
+          "functional_component": "pit_phase_track.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "pit_phase_track.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "pit_entry",
+            "pit_lane",
+            "pit_stopped",
+            "pit_released",
+            "pit_exit",
+            "pit_outcome"
+          ]
+        },
+        "bio": {
+          "layer_dir": "themes/night_attack/bio/layers",
+          "icon_dir": "themes/night_attack/bio/icons",
+          "functional_component": "bio_pulse_trace.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "bio_pulse_trace.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "hr_pressure",
+            "composure_test",
+            "high_load",
+            "ble_reconnecting"
+          ]
+        },
+        "session": {
+          "layer_dir": "themes/night_attack/session/layers",
+          "icon_dir": "themes/night_attack/session/icons",
+          "functional_component": "session_flag_pattern.png",
+          "layers": [
+            {
+              "file": "shadow.png",
+              "mode": "image"
+            },
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "state_accent_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "mask"
+            },
+            {
+              "file": "corner_right.png",
+              "mode": "mask"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "mask"
+            },
+            {
+              "file": "scan_mask.png",
+              "mode": "mask"
+            },
+            {
+              "file": "glow_cyan.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_amber.png",
+              "mode": "image"
+            },
+            {
+              "file": "glow_red.png",
+              "mode": "image"
+            },
+            {
+              "file": "session_flag_pattern.png",
+              "mode": "mask"
+            }
+          ],
+          "states": [
+            "final_lap",
+            "finish"
+          ]
+        }
+      }
+    }
+  },
+  "states": {
+    "hunting": {
+      "family": "battle",
+      "icon": "target",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "HUNTING",
+        "subtitle": "CLOSING IN",
+        "value": "0.84 s",
+        "meta": "P7 · target P6"
+      }
+    },
+    "hunted": {
+      "family": "battle",
+      "icon": "shield",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "HUNTED",
+        "subtitle": "UNDER PRESSURE",
+        "value": "0.62 s",
+        "meta": "P8 behind"
+      }
+    },
+    "approach": {
+      "family": "battle",
+      "icon": "approach",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "APPROACH",
+        "subtitle": "BATTLE BUILDING",
+        "value": "34 / 100",
+        "meta": "closing trend"
+      }
+    },
+    "attack_range": {
+      "family": "battle",
+      "icon": "attack",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "ATTACK RANGE",
+        "subtitle": "MOVE POSSIBLE",
+        "value": "0.38 s",
+        "meta": "intensity 72"
+      }
+    },
+    "side_by_side": {
+      "family": "battle",
+      "icon": "side_by_side",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "SIDE BY SIDE",
+        "subtitle": "META-STATE",
+        "value": "P6 ↔ P7",
+        "meta": "overlap active"
+      }
+    },
+    "battle_for_position": {
+      "family": "battle",
+      "icon": "duel",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "BATTLE FOR POSITION",
+        "subtitle": "AHEAD + BEHIND",
+        "value": "P7",
+        "meta": "stack centre"
+      }
+    },
+    "battle_won": {
+      "family": "battle",
+      "icon": "trophy",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "BATTLE WON",
+        "subtitle": "GAP STABILISED",
+        "value": "+1 POS",
+        "meta": "story result"
+      }
+    },
+    "target": {
+      "family": "timing",
+      "icon": "target",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "TARGET LOCKED",
+        "subtitle": "ME VS TARGET",
+        "value": "1:51.900",
+        "meta": "session reference"
+      }
+    },
+    "projected_lap": {
+      "family": "timing",
+      "icon": "projection",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "PROJECTED LAP",
+        "subtitle": "CONFIDENCE 0.78",
+        "value": "1:51.774",
+        "meta": "range ±0.110"
+      }
+    },
+    "pb_attack": {
+      "family": "timing",
+      "icon": "stopwatch",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "PB ATTACK",
+        "subtitle": "S1 · -0.238",
+        "value": "1:51.640",
+        "meta": "personal best"
+      }
+    },
+    "lap_complete": {
+      "family": "timing",
+      "icon": "lap_flag",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "LAP COMPLETE",
+        "subtitle": "CLEAN LAP",
+        "value": "1:52.084",
+        "meta": "lap 12 / 24"
+      }
+    },
+    "personal_best": {
+      "family": "timing",
+      "icon": "pb_star",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "PERSONAL BEST",
+        "subtitle": "NEW REFERENCE",
+        "value": "1:51.682",
+        "meta": "-0.418"
+      }
+    },
+    "hot_lap": {
+      "family": "timing",
+      "icon": "hot",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "HOT LAP 1/2",
+        "subtitle": "CURRENT P7",
+        "value": "S1 -0.117",
+        "meta": "target P6"
+      }
+    },
+    "position_attack": {
+      "family": "timing",
+      "icon": "grid_attack",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "P5 IN RANGE",
+        "subtitle": "ME VS GRID",
+        "value": "1:51.774",
+        "meta": "confidence 0.78"
+      }
+    },
+    "gain_found": {
+      "family": "timing",
+      "icon": "gain",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "GAIN FOUND",
+        "subtitle": "T5 EXIT",
+        "value": "-0.110",
+        "meta": "clean minisector"
+      }
+    },
+    "clean_streak": {
+      "family": "timing",
+      "icon": "clean",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "CLEAN STREAK",
+        "subtitle": "CONSISTENT PACE",
+        "value": "5 LAPS",
+        "meta": "spread 0.31"
+      }
+    },
+    "overtake": {
+      "family": "position",
+      "icon": "overtake",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "OVERTAKE",
+        "subtitle": "BATTLE COMPLETE",
+        "value": "P7 → P6",
+        "meta": "vs #17"
+      }
+    },
+    "position_gained": {
+      "family": "position",
+      "icon": "up",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "POSITION GAINED",
+        "subtitle": "ORDER UPDATE",
+        "value": "+1 POS",
+        "meta": "opponent incident"
+      }
+    },
+    "position_lost": {
+      "family": "position",
+      "icon": "down",
+      "tone": "warning",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "POSITION LOST",
+        "subtitle": "STAY FOCUSED",
+        "value": "-1 POS",
+        "meta": "P6 → P7"
+      }
+    },
+    "rival_threat": {
+      "family": "position",
+      "icon": "rival",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "RIVAL THREAT",
+        "subtitle": "FAST LAP",
+        "value": "P8",
+        "meta": "projected ahead"
+      }
+    },
+    "invalid_lap": {
+      "family": "exception",
+      "icon": "invalid",
+      "tone": "alert",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "INVALID LAP",
+        "subtitle": "PROJECTION CANCELLED",
+        "value": "LAP 4",
+        "meta": "incident delta"
+      }
+    },
+    "incident": {
+      "family": "exception",
+      "icon": "incident",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "INCIDENT",
+        "subtitle": "COALESCED UPDATE",
+        "value": "+2 INC",
+        "meta": "type unknown"
+      }
+    },
+    "link_drop": {
+      "family": "exception",
+      "icon": "link_break",
+      "tone": "alert",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "SIGNAL LOST",
+        "subtitle": "DATA STALE",
+        "value": "--",
+        "meta": "reconnecting"
+      }
+    },
+    "pit_entry": {
+      "family": "pit",
+      "icon": "pit_entry",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "PIT ENTRY",
+        "subtitle": "STORY START",
+        "value": "P7",
+        "meta": "lane detected"
+      }
+    },
+    "pit_lane": {
+      "family": "pit",
+      "icon": "pit_lane",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "PIT LANE",
+        "subtitle": "LIMITER ACTIVE",
+        "value": "41.2 s",
+        "meta": "live timer"
+      }
+    },
+    "pit_stopped": {
+      "family": "pit",
+      "icon": "pit_stop",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "PIT STOP",
+        "subtitle": "SERVICE",
+        "value": "8.4 s",
+        "meta": "stationary"
+      }
+    },
+    "pit_released": {
+      "family": "pit",
+      "icon": "pit_release",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "RELEASED",
+        "subtitle": "BOX CLEAR",
+        "value": "12.7 s",
+        "meta": "merge check"
+      }
+    },
+    "pit_exit": {
+      "family": "pit",
+      "icon": "pit_exit",
+      "tone": "primary",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "PIT EXIT",
+        "subtitle": "BACK ON TRACK",
+        "value": "P12",
+        "meta": "cold tyres"
+      }
+    },
+    "pit_outcome": {
+      "family": "pit",
+      "icon": "pit_outcome",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "PIT OUTCOME",
+        "subtitle": "CYCLE COMPLETE",
+        "value": "NET P10",
+        "meta": "+2 effective"
+      }
+    },
+    "hr_pressure": {
+      "family": "bio",
+      "icon": "heart",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "HR PRESSURE",
+        "subtitle": "BATTLE INTENSITY 72",
+        "value": "164 BPM",
+        "meta": "+14 vs baseline"
+      }
+    },
+    "composure_test": {
+      "family": "bio",
+      "icon": "composure",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "COMPOSURE TEST",
+        "subtitle": "BATTLE ENDED",
+        "value": "171 BPM",
+        "meta": "still elevated"
+      }
+    },
+    "high_load": {
+      "family": "bio",
+      "icon": "pulse",
+      "tone": "alert",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "HIGH LOAD",
+        "subtitle": "RELATIVE SURGE",
+        "value": "178 BPM",
+        "meta": "+22 vs baseline"
+      }
+    },
+    "ble_reconnecting": {
+      "family": "bio",
+      "icon": "bluetooth",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "BLE RECONNECTING",
+        "subtitle": "SENSOR DATA PAUSED",
+        "value": "-- BPM",
+        "meta": "overlay continues"
+      }
+    },
+    "final_lap": {
+      "family": "session",
+      "icon": "final_flag",
+      "tone": "warning",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "sample": {
+        "title": "FINAL LAP",
+        "subtitle": "ONE MORE PUSH",
+        "value": "LAP 24/24",
+        "meta": "major event"
+      }
+    },
+    "finish": {
+      "family": "session",
+      "icon": "finish_flag",
+      "tone": "primary",
+      "lifecycle": "RESULT_EXIT",
+      "sample": {
+        "title": "FINISH",
+        "subtitle": "RACE COMPLETE",
+        "value": "P6",
+        "meta": "P4 in class"
+      }
+    }
+  },
+  "motions": [
+    "enter_reveal",
+    "active_pulse",
+    "compact_mask",
+    "suspend_dim",
+    "resume_reacquire",
+    "result_burst",
+    "exit_trace",
+    "theme_glitch",
+    "battle_signal_lock",
+    "timing_projection_sweep",
+    "position_chevron_hit",
+    "exception_link_drop",
+    "pit_stop_ring",
+    "bio_pulse",
+    "session_finish_burst"
+  ]
+}
