@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from irswitch.overlay.models import OpponentInfo, RaceState, TelemetrySnapshot
+from irswitch.overlay.session import overlay_mode_from_session_type
 from irswitch.overlay.settings import BattleSettings
 from irswitch.race.history import GapHistory
 from irswitch.race.opponents import (
@@ -106,4 +107,13 @@ class RaceContextAnalyzer:
             closing_rate_behind=close_behind,
             fps=snap.fps,
             frametime_ms=snap.frametime_ms,
+            session_num=snap.session_num,
+            subsession_id=snap.subsession_id,
+            session_type=snap.session_type,
+            track_id=snap.track_id,
+            session_time=snap.session_time,
+            overlay_mode=overlay_mode_from_session_type(snap.session_type),
+            player_lap_dist_pct=snap.player_lap_dist_pct,
+            stale_for_ms=snap.stale_for_ms,
+            data_quality=snap.data_quality,
         )
