@@ -64,6 +64,10 @@ class EventPrioritySettings:
     battle_start: int = 30
     lap_complete: int = 40
     personal_best: int = 60
+    gain_found: int = 45
+    time_lost: int = 45
+    projected_lap: int = 42
+    position_attack: int = 55
     position_change: int = 70
     overtake: int = 80
     incident: int = 90

@@ -85,6 +85,12 @@ class TimingStore:
                 return record
         return None
 
+    def records_since(self, offset: int) -> list[TimingRecord]:
+        """Return records appended after ``offset`` (for emitter polling)."""
+        if offset < 0:
+            offset = 0
+        return list(self._records)[offset:]
+
     def _append(self, record: TimingRecord) -> None:
         self._seen_keys.add(record.dedupe_key)
         self._records.append(record)
