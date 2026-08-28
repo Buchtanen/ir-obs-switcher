@@ -2,6 +2,8 @@
 
 Tento dokument je implementační kontrakt pro V4 overlay renderer (browser source) a art pack. Neřeší konkrétní sadu velikostí a rodin (to dodá grafik a následně se z toho nastaví parametry v manifestu).
 
+Review tohoto kontraktu (rozpory, implementovatelnost, gates): `docs/overlay_v4_layout_sizing_motion_spec_review.md`.
+
 ### Cíle
 
 - Overlay canvas je fixně **FullHD 1920×1080** (OBS Browser Source).
