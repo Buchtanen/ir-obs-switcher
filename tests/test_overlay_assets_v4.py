@@ -14,6 +14,10 @@ SNAKE_STEM = re.compile(r"^[a-z0-9_]+$")
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 V4_ROOT = web_root() / "themes-v4"
 MAX_PACK_BYTES = 8 * 1024 * 1024  # production ~5.8 MiB; headroom for CI
+TRANSIENT_FAMILIES = ("battle", "timing", "position", "exception", "pit", "bio", "session")
+FAMILY_DIRS = (*TRANSIENT_FAMILIES, "motion", "sysinfo")
+STATE_COUNT = 35
+MOTION_COUNT = 15
 
 
 def _manifest() -> dict:
@@ -40,6 +44,8 @@ def test_v4_manifest_version_and_canvas() -> None:
     assert manifest["transient_canvas"] == [420, 140]
     assert manifest["sysinfo_canvas"] == [1920, 72]
     assert set(manifest["themes"]) == set(THEMES)
+    assert len(manifest["motions"]) == MOTION_COUNT
+    assert len(manifest["states"]) == STATE_COUNT
     assert set(manifest["states"]) >= {
         "lap_complete",
         "hunting",
@@ -48,6 +54,31 @@ def test_v4_manifest_version_and_canvas() -> None:
         "hr_pressure",
         "final_lap",
     }
+
+
+def test_v4_themes_have_expected_family_dirs() -> None:
+    themes = sorted(p.name for p in V4_ROOT.iterdir() if p.is_dir())
+    assert themes == sorted(THEMES)
+    for theme in THEMES:
+        for family in FAMILY_DIRS:
+            assert (V4_ROOT / theme / family).is_dir(), f"{theme}/{family}"
+        for family in TRANSIENT_FAMILIES:
+            assert (V4_ROOT / theme / family / "layers").is_dir(), f"{theme}/{family}"
+            assert (V4_ROOT / theme / family / "icons").is_dir(), f"{theme}/{family}"
+
+
+def test_v4_sysinfo_keeps_its_own_canvas() -> None:
+    manifest = _manifest()
+    for theme in THEMES:
+        sysinfo = V4_ROOT / theme / "sysinfo"
+        for layer in (sysinfo / "layers").glob("*.png"):
+            assert list(_png_size(layer)) == manifest["sysinfo_canvas"], layer
+        icons = sorted((sysinfo / "icons").glob("*.png"))
+        assert icons
+        for icon in icons:
+            width, height = _png_size(icon)
+            assert height == manifest["sysinfo_canvas"][1], icon
+            assert width < manifest["sysinfo_canvas"][0], icon
 
 
 def test_v4_theme_file_parity() -> None:
@@ -76,7 +107,7 @@ def test_v4_layer_and_icon_files_exist() -> None:
     transient_w, transient_h = manifest["transient_canvas"]
     for theme in THEMES:
         families = manifest["themes"][theme]["families"]
-        for family_name, family in families.items():
+        for family in families.values():
             for layer in family["layers"]:
                 path = _manifest_path_to_disk(f"{family['layer_dir']}/{layer['file']}")
                 assert path.is_file(), path
@@ -127,6 +158,7 @@ def test_v4_motion_reels_per_theme() -> None:
         motion_dir = V4_ROOT / theme / "motion"
         found = sorted(p.name for p in motion_dir.iterdir() if p.suffix == ".webm")
         assert found == expected, theme
+        assert len(found) == MOTION_COUNT, theme
 
 
 def test_v4_pack_size_budget() -> None:
