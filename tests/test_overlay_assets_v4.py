@@ -115,7 +115,9 @@ def test_v4_layer_and_icon_files_exist() -> None:
                 if path.suffix == ".png":
                     w, h = _png_size(path)
                     expected = (
-                        [sysinfo_w, sysinfo_h] if family_name == "sysinfo" else [transient_w, transient_h]
+                        [sysinfo_w, sysinfo_h]
+                        if family_name == "sysinfo"
+                        else [transient_w, transient_h]
                     )
                     assert [w, h] == expected, path
             for state in family.get("states", ()):

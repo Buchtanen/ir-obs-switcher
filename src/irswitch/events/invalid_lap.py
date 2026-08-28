@@ -27,7 +27,9 @@ class InvalidLapEmitter:
             return []
         if lap <= self._last_lap:
             return []
-        start_incidents = self._incidents_at_lap_start if self._incidents_at_lap_start is not None else 0
+        start_incidents = (
+            self._incidents_at_lap_start if self._incidents_at_lap_start is not None else 0
+        )
         self._last_lap = lap
         self._incidents_at_lap_start = incidents
         if incidents <= start_incidents:

@@ -53,13 +53,7 @@ class QualiEmitter:
         lap_time = state.current_lap_time
         best = state.best_lap_time
         lap = state.lap_completed
-        if (
-            dist is None
-            or lap_time is None
-            or best is None
-            or dist < 0.35
-            or lap is None
-        ):
+        if dist is None or lap_time is None or best is None or dist < 0.35 or lap is None:
             return []
         projected = lap_time / dist
         if projected >= best - 0.05:

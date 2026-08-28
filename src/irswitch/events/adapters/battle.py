@@ -60,9 +60,7 @@ def battle_race_event_to_envelope(
         f"battle.{battle_state}"
         if battle_state
         in {"hunting", "hunted", "approach", "attack_range", "side_by_side", "battle_for_position"}
-        else "battle.won"
-        if battle_state == "battle_won"
-        else "battle.closing_in"
+        else "battle.won" if battle_state == "battle_won" else "battle.closing_in"
     )
     tone = "warning" if battle_state in {"hunted", "battle_for_position"} else "primary"
     preferred = "RESULT" if battle_state == "battle_won" else "ACTIVE"
