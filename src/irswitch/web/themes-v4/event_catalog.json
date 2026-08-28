@@ -31,6 +31,11 @@
       "debug_key": "hunting",
       "family": "battle"
     },
+    "SIDE_BY_SIDE": {
+      "state": "side_by_side",
+      "debug_key": "hunting",
+      "family": "battle"
+    },
     "OVERTAKE": {
       "state": "overtake",
       "debug_key": "overtake",

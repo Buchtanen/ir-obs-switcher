@@ -24,7 +24,12 @@ class EventEngine:
         pri = overlay.events.priorities
         self.battle = BattleEmitter(overlay.battle.hunting, overlay.battle.hunted, pri)
         self.lap = LapEmitter(overlay.events, pri)
-        self.position = PositionEmitter(overlay.battle, pri)
+        if overlay.event_engine.overtake_classifier:
+            from irswitch.events.overtake import OvertakeClassifierEmitter
+
+            self.position = OvertakeClassifierEmitter(overlay.battle, pri)
+        else:
+            self.position = PositionEmitter(overlay.battle, pri)
         self.incident = IncidentEmitter(overlay.events, pri)
         self.pit: PitEmitter | None
         self.session = SessionEmitter(overlay.events, pri)

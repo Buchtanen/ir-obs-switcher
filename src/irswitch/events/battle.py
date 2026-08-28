@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from irswitch.events.battle_intensity import resolve_hunting_intensity
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import CandidateEvent
 from irswitch.overlay.settings import EventPrioritySettings, HuntingSettings
@@ -15,6 +16,7 @@ class _Track:
     since: float = 0.0
     fail_since: float | None = None
     target_car_idx: int | None = None
+    intensity: str = "hunting"
 
 
 @dataclass
@@ -36,10 +38,10 @@ class BattleEmitter:
                 target=state.opponent_ahead,
                 gap=state.gap_ahead,
                 closing=state.closing_rate_ahead,
-                name="hunting",
                 event_name="battle",
                 battle_state="hunting",
                 priority=self.priorities.hunting,
+                intensity_ladder=True,
             )
         )
         events.extend(
@@ -51,10 +53,10 @@ class BattleEmitter:
                 target=state.opponent_behind,
                 gap=state.gap_behind,
                 closing=state.closing_rate_behind,
-                name="hunted",
                 event_name="battle",
                 battle_state="hunted",
                 priority=self.priorities.hunted,
+                intensity_ladder=False,
             )
         )
         return events
@@ -68,10 +70,11 @@ class BattleEmitter:
         target: object,
         gap: float | None,
         closing: float | None,
-        name: str,
         event_name: str,
         battle_state: str,
         priority: int,
+        *,
+        intensity_ladder: bool,
     ) -> list[CandidateEvent]:
         events: list[CandidateEvent] = []
         car_idx = getattr(target, "car_idx", None) if target is not None else None
@@ -94,8 +97,14 @@ class BattleEmitter:
             and closing >= 0.0
         )
 
+        active_state = (
+            resolve_hunting_intensity(gap, closing, track.intensity, cfg)
+            if intensity_ladder and track.state == "ACTIVE"
+            else battle_state
+        )
+
         payload = {
-            "state": battle_state,
+            "state": active_state,
             "targetCarIdx": car_idx,
             "targetPosition": position,
             "gap": gap,
@@ -110,10 +119,15 @@ class BattleEmitter:
                         channel="battle",
                         priority=priority,
                         phase="exit",
-                        data={**payload, "state": battle_state, "reason": "target_change"},
+                        data={
+                            **payload,
+                            "state": track.intensity if intensity_ladder else battle_state,
+                            "reason": "target_change",
+                        },
                     )
                 )
             track.state = "NONE"
+            track.intensity = battle_state
             track.target_car_idx = car_idx
             track.since = now
             track.fail_since = None
@@ -123,6 +137,7 @@ class BattleEmitter:
                 track.state = "CANDIDATE"
                 track.since = now
                 track.target_car_idx = car_idx
+                track.intensity = battle_state
                 track.fail_since = None
                 if cfg.activation_delay <= 0:
                     track.state = "ACTIVE"
@@ -138,9 +153,11 @@ class BattleEmitter:
         elif track.state == "CANDIDATE":
             if not enter_ok:
                 track.state = "NONE"
+                track.intensity = battle_state
                 track.fail_since = None
             elif now - track.since >= cfg.activation_delay:
                 track.state = "ACTIVE"
+                track.intensity = battle_state
                 track.fail_since = None
                 events.append(
                     CandidateEvent(
@@ -154,29 +171,84 @@ class BattleEmitter:
         elif track.state == "ACTIVE":
             if stay_ok:
                 track.fail_since = None
-                events.append(
-                    CandidateEvent(
-                        name=event_name,
-                        channel="battle",
-                        priority=priority,
-                        phase="update",
-                        data=payload,
+                if intensity_ladder:
+                    events.extend(
+                        self._apply_intensity_change(
+                            track=track,
+                            event_name=event_name,
+                            priority=priority,
+                            payload=payload,
+                            next_state=active_state,
+                        )
                     )
-                )
+                else:
+                    events.append(
+                        CandidateEvent(
+                            name=event_name,
+                            channel="battle",
+                            priority=priority,
+                            phase="update",
+                            data=payload,
+                        )
+                    )
             else:
                 if track.fail_since is None:
                     track.fail_since = now
                 elif now - track.fail_since >= cfg.exit_delay:
+                    exit_state = track.intensity if intensity_ladder else battle_state
                     events.append(
                         CandidateEvent(
                             name=event_name,
                             channel="battle",
                             priority=priority,
                             phase="exit",
-                            data=payload,
+                            data={**payload, "state": exit_state},
                         )
                     )
                     track.state = "NONE"
+                    track.intensity = battle_state
                     track.fail_since = None
                     track.target_car_idx = None
+        return events
+
+    @staticmethod
+    def _apply_intensity_change(
+        *,
+        track: _Track,
+        event_name: str,
+        priority: int,
+        payload: dict,
+        next_state: str,
+    ) -> list[CandidateEvent]:
+        events: list[CandidateEvent] = []
+        if next_state != track.intensity:
+            events.append(
+                CandidateEvent(
+                    name=event_name,
+                    channel="battle",
+                    priority=priority,
+                    phase="exit",
+                    data={**payload, "state": track.intensity},
+                )
+            )
+            track.intensity = next_state
+            events.append(
+                CandidateEvent(
+                    name=event_name,
+                    channel="battle",
+                    priority=priority,
+                    phase="enter",
+                    data={**payload, "state": next_state},
+                )
+            )
+            return events
+        events.append(
+            CandidateEvent(
+                name=event_name,
+                channel="battle",
+                priority=priority,
+                phase="update",
+                data={**payload, "state": track.intensity},
+            )
+        )
         return events

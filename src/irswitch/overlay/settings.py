@@ -22,6 +22,19 @@ class HuntingSettings:
     min_closing_rate: float = 0.10
     activation_delay: float = 2.0
     exit_delay: float = 1.5
+    approach_enter_gap: float = 1.5
+    approach_exit_gap: float = 1.8
+    attack_enter_gap: float = 0.8
+    attack_exit_gap: float = 1.0
+    side_by_side_enter_gap: float = 0.35
+    side_by_side_exit_gap: float = 0.45
+    intensity_min_closing_rate: float = 0.15
+
+
+@dataclass(frozen=True)
+class OvertakeClassifierSettings:
+    max_gap: float = 2.5
+    min_closing_rate: float = 0.08
 
 
 @dataclass(frozen=True)
@@ -30,6 +43,7 @@ class BattleSettings:
     hunted: HuntingSettings = field(default_factory=HuntingSettings)
     position_stable_seconds: float = 1.0
     gap_history_seconds: float = 3.0
+    overtake: OvertakeClassifierSettings = field(default_factory=OvertakeClassifierSettings)
 
 
 @dataclass(frozen=True)

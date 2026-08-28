@@ -17,6 +17,7 @@ from irswitch.overlay.settings import (
     EventSettings,
     HeartRateSettings,
     HuntingSettings,
+    OvertakeClassifierSettings,
     OverlaySettings,
     OverlayV4Settings,
     SamplingSettings,
@@ -325,6 +326,23 @@ def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSet
         min_closing_rate=_get_float(parser, section, "min_closing_rate", defaults.min_closing_rate),
         activation_delay=_get_float(parser, section, "activation_delay", defaults.activation_delay),
         exit_delay=_get_float(parser, section, "exit_delay", defaults.exit_delay),
+        approach_enter_gap=_get_float(
+            parser, section, "approach_enter_gap", defaults.approach_enter_gap
+        ),
+        approach_exit_gap=_get_float(
+            parser, section, "approach_exit_gap", defaults.approach_exit_gap
+        ),
+        attack_enter_gap=_get_float(parser, section, "attack_enter_gap", defaults.attack_enter_gap),
+        attack_exit_gap=_get_float(parser, section, "attack_exit_gap", defaults.attack_exit_gap),
+        side_by_side_enter_gap=_get_float(
+            parser, section, "side_by_side_enter_gap", defaults.side_by_side_enter_gap
+        ),
+        side_by_side_exit_gap=_get_float(
+            parser, section, "side_by_side_exit_gap", defaults.side_by_side_exit_gap
+        ),
+        intensity_min_closing_rate=_get_float(
+            parser, section, "intensity_min_closing_rate", defaults.intensity_min_closing_rate
+        ),
     )
 
 
@@ -424,6 +442,20 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             ),
             gap_history_seconds=_get_float(
                 parser, "battle", "gap_history_seconds", defaults.battle.gap_history_seconds
+            ),
+            overtake=OvertakeClassifierSettings(
+                max_gap=_get_float(
+                    parser,
+                    "battle.overtake",
+                    "max_gap",
+                    defaults.battle.overtake.max_gap,
+                ),
+                min_closing_rate=_get_float(
+                    parser,
+                    "battle.overtake",
+                    "min_closing_rate",
+                    defaults.battle.overtake.min_closing_rate,
+                ),
             ),
         ),
         heart_rate=HeartRateSettings(
