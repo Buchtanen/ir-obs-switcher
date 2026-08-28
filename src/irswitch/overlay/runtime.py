@@ -51,6 +51,7 @@ class OverlayRuntime:
         self._init_managers(overlay)
         self.engine = EventEngine(overlay)
         self._register_timing_emitters(overlay)
+        self._register_t4_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
         self.session = SessionCoordinator()
         self.session.add_reset_hook(self.analyzer.reset)
@@ -85,6 +86,7 @@ class OverlayRuntime:
         self._init_managers(overlay)
         self.engine = EventEngine(overlay)
         self._register_timing_emitters(overlay)
+        self._register_t4_emitters(overlay)
         self.bus.set_active_events([])
         self.bus.set_active_stories_v4([])
 
@@ -112,6 +114,18 @@ class OverlayRuntime:
                     overlay.events.priorities,
                 )
             )
+
+    def _register_t4_emitters(self, overlay: OverlaySettings) -> None:
+        """Attach T4 pit story / HR pressure emitters when feature flags are enabled."""
+        pri = overlay.events.priorities
+        if overlay.event_engine.pit_story:
+            from irswitch.events.pit_story import PitStoryEmitter
+
+            self.engine.register(PitStoryEmitter(pri))
+        if overlay.event_engine.hr_pressure:
+            from irswitch.events.hr_pressure import HrPressureEmitter
+
+            self.engine.register(HrPressureEmitter(pri))
 
     def _reset_timing(self) -> None:
         self._timing_detector.reset()
@@ -254,7 +268,7 @@ class OverlayRuntime:
 
     async def _emit_from_race(self, state: RaceState, now: float) -> None:
         try:
-            candidates = self.engine.tick(state, now)
+            candidates = self.engine.tick(state, now, self.bus.bio)
         except Exception:
             logger.warning("EventEngine tick failed", exc_info=True)
             return

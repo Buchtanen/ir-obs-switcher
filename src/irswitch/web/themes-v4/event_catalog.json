@@ -86,8 +86,28 @@
       "debug_key": "pit_entry",
       "family": "pit"
     },
+    "PIT_LANE": {
+      "state": "pit_lane",
+      "debug_key": "pit_entry",
+      "family": "pit"
+    },
+    "PIT_STOPPED": {
+      "state": "pit_stopped",
+      "debug_key": "pit_entry",
+      "family": "pit"
+    },
+    "PIT_RELEASED": {
+      "state": "pit_released",
+      "debug_key": "pit_entry",
+      "family": "pit"
+    },
     "PIT_EXIT": {
       "state": "pit_exit",
+      "debug_key": "pit_exit",
+      "family": "pit"
+    },
+    "PIT_OUTCOME": {
+      "state": "pit_outcome",
       "debug_key": "pit_exit",
       "family": "pit"
     }
