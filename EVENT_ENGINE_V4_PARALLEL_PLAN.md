@@ -31,18 +31,45 @@ iRacing SDK → TelemetrySnapshot → RaceContextAnalyzer → RaceState
 
 ---
 
-## 0.5 Blocking decisions (must answer before any implementation PR)
+## 0.5 Blocking decisions (product sign-off 2026-08-28)
 
-One sentence each; change only via explicit plan amendment.
+Change only via explicit plan amendment.
 
-1. **Emitters emit `SemanticIntent`; `EventManager` builds published `EventEnvelope`.** Emitters never invent WS shape.
-2. **Types live in `events/payload.py` (intent) + `events/envelope.py` (wire).** `overlay/protocol.py` stays transport helpers / legacy shim.
-3. **`ACTIVE` is renderer-local** after successful `ENTER`, not a wire phase. Wire phases: `ENTER | UPDATE | COMPACT | SUSPEND | RESUME | EXIT | RESULT`. Map legacy `trigger` → `RESULT` (short-lived) unless story is persistent.
-4. **V3 battle golden-master look ends in v1 cutover** (no radar rings / tech diagram shim). V4 uses `family_detail` + functional track + state icons. Product sign-off required before A5 lands in `master`.
-5. **Rule thresholds stay in INI + `FieldSpec`** (existing `schema.py` / `config_io.py`). **No YAML parser, no new runtime dependency.** Optional JSON track profiles are data files only (stdlib `json`).
-6. **Default copy token language for v1 = Czech** (token catalog owned by Platform; strings not baked into PNG).
-7. **Dual protocol: one canonical internal V4 event; legacy WS shape is a down-converter only.** Renderer chosen once at bootstrap (`overlay.v4_renderer`), never per-event mix. Legacy path removal has an explicit merge gate (see §7).
-8. **Preview packs never under `src/irswitch/web/`** (breaks EXE size + `test_web_tree_has_no_review_previews`). Store outside package data or omit from repo.
+1. **Emitters produce `EventEnvelope`-shaped payloads** (not a separate `SemanticIntent` type). Manager still owns arbitration: may suppress, preempt, rewrite `phase` (`COMPACT`/`SUSPEND`/`RESUME`/`EXIT`), stamp `sequence`/`eventId` if missing, and publish. Emitters must not invent ad-hoc WS keys outside the frozen envelope schema.
+2. **Types live in `events/envelope.py` (+ shared enums/helpers).** `overlay/protocol.py` stays transport helpers / legacy down-converter. (No parallel Intent dataclass.)
+3. **`ACTIVE` is a first-class wire phase** (product choice). Desync mitigation is mandatory — see §0.5.1. Full wire phases: `ENTER | ACTIVE | UPDATE | COMPACT | SUSPEND | RESUME | EXIT | RESULT`. Map legacy `trigger` → short `RESULT` unless story is persistent.
+4. **V4 is the cohesive presentation approach** — proceed. Constraint: preserve the **animation grammar and overall look/vibe** of the overlay the product owner already approved (motion timing, accent behaviour, readability). V3 radar/tech-diagram slot shim is not required; fidelity is judged against approved V4 preview + prior happy vibe, not pixel-identical V3 layers.
+5. **Config format for event-engine v1 stays INI + `FieldSpec` + existing `/config` UI.** Full INI→YAML migration is a **separate optional track** (see §0.5.2) — not mixed into T1–T5 and not as a second parallel source of truth. Track-specific data files may use stdlib JSON only.
+6. **i18n from day one:** base catalog = **English**; **Czech** locale prepared; active language selected via config. Payload carries `copy.*Token` keys; renderer resolves via locale tables. No baked text in PNG.
+7. **Dual protocol: canonical internal V4 envelope; legacy WS shape is a down-converter only.** Renderer chosen once at bootstrap (`overlay.v4_renderer`), never per-event mix. Legacy removal has an explicit merge gate (see §7).
+8. **Preview packs never under `src/irswitch/web/`** (EXE size + `test_web_tree_has_no_review_previews`). Outside package data or omit from repo.
+
+### 0.5.1 ACTIVE on the wire — how desync is solved
+
+Yes, desync is solvable if server phase is authoritative:
+
+| Rule | Behaviour |
+| --- | --- |
+| Source of truth | Server `phase` + `sequence` + `correlationId`. FE never invents a “more advanced” phase than last applied message. |
+| Apply order | FE buffers by `sequence`; ignore stale (`sequence <= lastApplied` for same `correlationId`). |
+| Reconnect | `STATE_SNAPSHOT` of active stories replaces local DOM stories for that renderer; orphans removed. |
+| Animation vs phase | CSS/WebM are **effects of** phase transitions, not a parallel state machine. If `COMPACT` arrives mid-ENTER animation, cut to COMPACT; do not finish ENTER then disagree. |
+| ACTIVE emission | Manager emits `ACTIVE` once when story is established (after ENTER hold / immediately if `preferredState` says so). Later metric churn is `UPDATE`, not repeated `ACTIVE`. |
+| Dual-tab / late join | Snapshot + sequence, same as reconnect. |
+
+Without these rules, ACTIVE-on-WS is worse than renderer-local ACTIVE. With them, ACTIVE-on-WS is fine and helps debug/replay.
+
+### 0.5.2 INI vs YAML (config edit UI constraint)
+
+Today: INI + `FieldSpec` → auto-generated `/config` form + `PUT /api/config` + hot-reload classify live/restart. ~46 editable overlay fields; UI does **not** parse INI directly — it speaks dotted keys.
+
+| Option | Verdict |
+| --- | --- |
+| **A. Keep INI for event-engine work** | Default. Zero migration risk; UI/reload untouched; new thresholds = new `FieldSpec` rows. |
+| **B. Full migrate INI→YAML including reload + UI backend** | Possible: UI forms survive if dotted-key API stays. Cost: new dep (`PyYAML` or `ruamel.yaml` for comments), rewrite `config.py` / `config_io.py`, user `config.ini` migrator, rewrite many tests, CONFIG.md. **Separate approved track**, not inside T1. |
+| **C. INI + YAML thresholds side-by-side** | **Rejected.** Two sources of truth vs `/config` writer = silent fights. |
+
+**Product note:** wanting YAML “because Spec showed YAML trees” is cosmetic — nested INI sections (`[battle.hunting]`) already exist. Approve B only if nested authoring / comment policy is worth the migration; otherwise stay on A.
 
 ---
 
@@ -90,8 +117,8 @@ Old A8 (threshold tuning) is **not** a standalone track: calibration happens ins
 
 | Gate | Definition | Unblocks |
 | --- | --- | --- |
-| **S0** | `SemanticIntent` + `EventEnvelope` frozen; phase map; rule FieldSpecs + flags (default off); session reset API stub; DecisionLog interface; input-replay fixture format; canonical event↔V4 state catalog test | T2–T5 start |
-| **S1** | Vertical slice: one `LAP_COMPLETE` path adapter → intent → manager → reconnect `STATE_SNAPSHOT` → V4 renderer (legacy = down-converter only). Demo inject uses same catalog | T5 renderer mergeable; confidence for more emitters |
+| **S0** | `EventEnvelope` schema frozen (incl. `ACTIVE` wire phase); phase map; rule FieldSpecs + flags (default off); i18n EN+CS catalogs + language config key; session reset API stub; DecisionLog interface; input-replay fixture format; canonical event↔V4 state catalog test | T2–T5 start |
+| **S1** | Vertical slice: one `LAP_COMPLETE` path adapter → envelope → manager → reconnect `STATE_SNAPSHOT` → V4 renderer (legacy = down-converter only). Demo inject uses same catalog | T5 renderer mergeable; confidence for more emitters |
 | **S2** | Battle + position/overtake pass preemption + correlation tests; pit-cycle suppression works | **T4** may start |
 | **S3** | Spec §23 scenarios 1–10 (or waived with reason); 3 themes; golden URL; asset size budget; then **legacy converter + V3 battle path removed** in a dedicated PR | v1 done |
 
@@ -102,13 +129,14 @@ Old A8 (threshold tuning) is **not** a standalone track: calibration happens ins
 ### T1 — Platform (blocks everything useful)
 
 **Owns (sole writer):**  
-`events/payload.py`, `events/envelope.py`, `events/manager.py` (v2 skeleton), `events/engine.py` (registry fan-out), `events/decision_log.py`, `overlay/models.py` (normalized fields), `iracing/telemetry.py` + extractors for new vars, `overlay/runtime.py` (session key / reset / warm-up hooks), `overlay/bus.py`, `overlay/protocol.py` (legacy down-converter), `overlay/http.py` (snapshot + inject), `overlay/settings.py`, `overlay/schema.py`, `config.example.ini`, `CONFIG.md` flag docs, `overlay/replay_input.py` (normalized-input harness — **not** today’s bus-only `replay.py`)
+`events/envelope.py`, `events/manager.py` (v2 skeleton), `events/engine.py` (registry fan-out), `events/decision_log.py`, `overlay/models.py` (normalized fields), `iracing/telemetry.py` + extractors for new vars, `overlay/runtime.py` (session key / reset / warm-up hooks), `overlay/bus.py`, `overlay/protocol.py` (legacy down-converter), `overlay/http.py` (snapshot + inject), `overlay/settings.py`, `overlay/schema.py`, `config.example.ini`, `CONFIG.md` flag docs, i18n locale tables (EN base + CS), `overlay/replay_input.py` (normalized-input harness — **not** today’s bus-only `replay.py`)
 
 **Must deliver:**
 - Normalized snapshot fields from Spec §4: `sessionId`/`subsessionId`, `sessionType`, `trackId`, flags, driver display identity, lap times where available, `quality`/`staleForMs`
 - Session coordinator: atomic reset of timing dedupe / lap validity / active stories on track/session change; detector warm-up 3–5 s after telemetry reconnect; `GENERIC` safe profile (lap/incident/pit/finish only — Spec §21)
-- `SemanticIntent` fields (minimum): `eventType`, `action` (`enter|update|exit|result|…`), `storyKey`, `correlationId`, `dedupeKey`, subject/target, metrics, confidence, relevance deadline, reason facts, priority hint
-- Arbitration skeleton: zones + P0–P5 table, story correlation, anti-spam budget hook, preemption stubs, fail-soft **per emitter** (one emitter exception must not abort the whole `tick()` — finish must still emit)
+- Frozen `EventEnvelope` (minimum): `schemaVersion`, `eventId`, `sequence`, `sessionId`, `eventType`, `mode`, `phase` (incl. `ACTIVE`), `occurredAt`, `monotonicMs`, `priority`, `severity`, `confidence`, `dedupeKey`, `correlationId`/`storyKey`, subject/target, metrics, `copy` tokens, `presentation`, `reason`; relevance/expiry fields as needed
+- Arbitration skeleton: zones + P0–P5 table, story correlation, anti-spam budget hook, preemption stubs, ACTIVE-once-then-UPDATE rule (§0.5.1), fail-soft **per emitter** (one emitter exception must not abort the whole `tick()` — finish must still emit)
+- i18n: EN catalog canonical; CS catalog complete for v1 event tokens; `overlay.language` (or existing locale key) in FieldSpec + `/config` UI
 - Feature flags (all default **off**), introduced in **one** T1 PR so later tracks do not fight over schema:  
   `event_engine.v2_payload`, `event_engine.practice`, `event_engine.quali_projection`, `event_engine.overtake_classifier`, `event_engine.pit_story`, `event_engine.hr_pressure`, `overlay.v4_assets`, `overlay.v4_renderer`
 - Debug/demo catalog becomes **one data file** validated against V4 `manifest.json` states (CI). Explicit fallbacks for Spec events without a dedicated V4 state (`TIME_LOST`, `SECTOR_BEST`, `NO_IMPROVEMENT`, `OVERTAKEN`, `BATTLE_LOST`, …)
@@ -188,7 +216,7 @@ Old A8 (threshold tuning) is **not** a standalone track: calibration happens ins
 
 | File / area | Owner track |
 | --- | --- |
-| `events/payload.py`, `events/envelope.py`, `events/decision_log.py` | T1 |
+| `events/envelope.py`, `events/decision_log.py`, i18n catalogs | T1 |
 | `events/manager.py`, `events/engine.py` (registry) | T1 |
 | `iracing/telemetry.py`, extractors, `overlay/models.py` | T1 |
 | `overlay/runtime.py`, `bus.py`, `protocol.py`, `http.py` | T1 |
@@ -223,7 +251,7 @@ If a track needs a change in another track’s file: open a small owned PR or ex
 
 ## 6. Integration order (actually Spec §24 aligned)
 
-1. **T1** — normalized adapter, session reset, DecisionLog, intent/envelope, arbitration skeleton, flags, input-replay harness, WS down-converter  
+1. **T1** — normalized adapter, session reset, DecisionLog, envelope schema, arbitration skeleton, flags, i18n EN+CS, input-replay harness, WS down-converter  
 2. **T2 timing** ∥ **T5 asset import** ∥ **T3 race core** (battle/position; not waiting on minisectors)  
 3. Practice/Quali stories inside T2 as timing lands  
 4. **S2** then **T4** pit + HR  
@@ -238,10 +266,11 @@ Deferred beyond v1 (explicit): `raceMomentum` storytelling, advanced traffic, ha
 ## 7. Definition of done (v1) — enforceable
 
 - [ ] Flags exist in schema; default off; documented in CONFIG.md  
-- [ ] With v2 flags on: envelope v1 on WS with wire phases; `ACTIVE` only in renderer  
+- [ ] With v2 flags on: envelope v1 on WS with wire phases including authoritative `ACTIVE` (§0.5.1)  
 - [ ] Practice / Quali / Race paths behind their flags  
+- [ ] i18n: EN default + CS switchable via config; tokens resolve in renderer  
 - [ ] Overtake ≠ silent position change; pit-cycle suppression  
-- [ ] V4 layered render for enabled theme(s); SYSINFO geometry unchanged  
+- [ ] V4 layered render preserves approved motion/vibe; SYSINFO geometry unchanged  
 - [ ] Input-replay scenarios 1–10: expected `(eventType, phase)` sequences with documented time tolerance — or written waiver  
 - [ ] DecisionLog explains suppressions (`cooldown`, `lower_priority`, `stale_data`, `pit_cycle`, …)  
 - [ ] Reduced-motion verified  
@@ -279,7 +308,8 @@ Review tree (local, gitignored): `.grafika-v4-review/`
 
 ## 10. Immediate next actions
 
-1. Product sign-off on §0.5 decisions (especially #4 V3 golden retirement and #6 Czech tokens).  
+1. §0.5 signed off (2026-08-28): Envelope, ACTIVE-on-WS + desync rules, INI for v1 (YAML only as separate track), V4 with vibe fidelity, i18n EN+CS, legacy converter, preview out of `web/`.  
 2. Start **T1 Platform** only.  
-3. Kick **T5 asset import** (additive, no renderer) once decision #4 is accepted.  
-4. Do not start T4 until S2. Do not mix V3/V4 renderers per event.
+3. Kick **T5 asset import** (additive) in parallel once vibe-acceptance criteria for V4 previews are noted.  
+4. Do not start T4 until S2. Do not mix V3/V4 renderers per event.  
+5. YAML config migration: **not started** unless explicitly approved as track B (§0.5.2).
