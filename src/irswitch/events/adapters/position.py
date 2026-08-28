@@ -18,6 +18,7 @@ from irswitch.overlay.protocol import RaceEvent
 
 _POSITION_EVENT = "position_change"
 _OVERTAKE_EVENT = "overtake"
+_RIVAL_THREAT_EVENT = "rival_threat"
 
 _POSITION_METRIC_KEYS = ("direction", "oldPosition", "newPosition", "delta")
 
@@ -42,6 +43,8 @@ def _copy_token(event_type: str) -> str:
         return "position.lost"
     if event_type == "OVERTAKE":
         return "position.overtake"
+    if event_type == "RIVAL_THREAT":
+        return "position.rival_threat"
     return ""
 
 
@@ -65,6 +68,8 @@ def position_race_event_to_envelope(
             return None
     elif event.name == _OVERTAKE_EVENT:
         event_type = "OVERTAKE"
+    elif event.name == _RIVAL_THREAT_EVENT:
+        event_type = "RIVAL_THREAT"
     else:
         return None
 

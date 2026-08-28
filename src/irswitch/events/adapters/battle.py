@@ -16,7 +16,22 @@ from irswitch.events.envelope import (
 )
 from irswitch.overlay.protocol import RaceEvent
 
-_BATTLE_STATES = frozenset({"hunting", "hunted", "approach", "attack_range", "side_by_side"})
+_BATTLE_STATES = frozenset(
+    {
+        "hunting",
+        "hunted",
+        "approach",
+        "attack_range",
+        "side_by_side",
+        "battle_for_position",
+        "battle_won",
+    }
+)
+
+_EVENT_TYPE_FOR_STATE = {
+    "battle_for_position": "BATTLE_FOR_POSITION",
+    "battle_won": "BATTLE_WON",
+}
 
 
 def battle_race_event_to_envelope(
@@ -31,22 +46,28 @@ def battle_race_event_to_envelope(
     battle_state = str(event.data.get("state") or "").lower()
     if battle_state not in _BATTLE_STATES:
         return None
-    phase = legacy_trigger_to_phase(event.phase, default="ENTER")
+    event_type = _EVENT_TYPE_FOR_STATE.get(battle_state, battle_state.upper())
+    default_phase = "RESULT" if battle_state == "battle_won" else "ENTER"
+    phase = legacy_trigger_to_phase(event.phase, default=default_phase)
     target_idx = event.data.get("targetCarIdx")
     target_pos = event.data.get("targetPosition")
     metrics = {
         key: event.data[key]
-        for key in ("gap", "closingRate", "targetCarIdx", "targetPosition")
+        for key in ("gap", "closingRate", "targetCarIdx", "targetPosition", "position")
         if key in event.data
     }
     copy_token = (
         f"battle.{battle_state}"
-        if battle_state in {"hunting", "hunted", "approach", "attack_range", "side_by_side"}
+        if battle_state
+        in {"hunting", "hunted", "approach", "attack_range", "side_by_side", "battle_for_position"}
+        else "battle.won"
+        if battle_state == "battle_won"
         else "battle.closing_in"
     )
-    tone = "warning" if battle_state == "hunted" else "primary"
+    tone = "warning" if battle_state in {"hunted", "battle_for_position"} else "primary"
+    preferred = "RESULT" if battle_state == "battle_won" else "ACTIVE"
     return make_envelope(
-        event_type=battle_state.upper(),
+        event_type=event_type,
         phase=phase,
         mode=normalize_mode(mode),
         session_id=session_id or "session:unknown",
@@ -65,6 +86,6 @@ def battle_race_event_to_envelope(
             zone="EVENT",
             variant=battle_state,
             accent=tone,
-            preferred_state="ACTIVE",
+            preferred_state=preferred,
         ),
     )

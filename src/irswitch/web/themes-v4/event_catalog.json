@@ -11,6 +11,41 @@
       "debug_key": "personal_best",
       "family": "timing"
     },
+    "GAIN_FOUND": {
+      "state": "gain_found",
+      "debug_key": "gain_found",
+      "family": "timing"
+    },
+    "PROJECTED_LAP": {
+      "state": "projected_lap",
+      "debug_key": "projected_lap",
+      "family": "timing"
+    },
+    "POSITION_ATTACK": {
+      "state": "position_attack",
+      "debug_key": "position_attack",
+      "family": "timing"
+    },
+    "SECTOR_BEST": {
+      "state": "pb_attack",
+      "debug_key": "sector_best",
+      "family": "timing"
+    },
+    "TARGET_LOCKED": {
+      "state": "target",
+      "debug_key": "target_locked",
+      "family": "timing"
+    },
+    "HOT_LAP": {
+      "state": "hot_lap",
+      "debug_key": "hot_lap",
+      "family": "timing"
+    },
+    "CLEAN_STREAK": {
+      "state": "clean_streak",
+      "debug_key": "clean_streak",
+      "family": "timing"
+    },
     "HUNTING": {
       "state": "hunting",
       "debug_key": "hunting",
@@ -36,6 +71,16 @@
       "debug_key": "hunting",
       "family": "battle"
     },
+    "BATTLE_FOR_POSITION": {
+      "state": "battle_for_position",
+      "debug_key": "battle_for_position",
+      "family": "battle"
+    },
+    "BATTLE_WON": {
+      "state": "battle_won",
+      "debug_key": "battle_won",
+      "family": "battle"
+    },
     "OVERTAKE": {
       "state": "overtake",
       "debug_key": "overtake",
@@ -51,9 +96,24 @@
       "debug_key": "position_loss",
       "family": "position"
     },
+    "RIVAL_THREAT": {
+      "state": "rival_threat",
+      "debug_key": "rival_threat",
+      "family": "position"
+    },
     "INCIDENT": {
       "state": "incident",
       "debug_key": "incident",
+      "family": "exception"
+    },
+    "INVALID_LAP": {
+      "state": "invalid_lap",
+      "debug_key": "invalid_lap",
+      "family": "exception"
+    },
+    "LINK_DROP": {
+      "state": "link_drop",
+      "debug_key": "link_drop",
       "family": "exception"
     },
     "FINAL_LAP": {
@@ -119,7 +179,6 @@
   },
   "fallbacks": {
     "TIME_LOST": "gain_found",
-    "SECTOR_BEST": "pb_attack",
     "NO_IMPROVEMENT": "projected_lap",
     "OVERTAKEN": "position_lost",
     "BATTLE_LOST": "hunted",
