@@ -167,14 +167,30 @@ def test_v4_icons_use_full_canvas_well_alignment() -> None:
     assert "left: 28px" not in icon_block
 
 
-def test_cyber_racing_icon_nudge_toward_well() -> None:
-    """cyber_racing well art is left-weighted; icons need a small left nudge."""
-    css = display_v4_css()
-    assert 'html[data-theme="cyber_racing"] .v4-art .icon' in css
-    nudge = css.split('html[data-theme="cyber_racing"] .v4-art .icon {', 1)[1].split("}", 1)[0]
-    assert "translateX(-5px)" in nudge
-    overlay_js = (web_root() / "overlay" / "js" / "overlay.js").read_text(encoding="utf-8")
-    assert "dataset.theme" in overlay_js
+def test_cyber_racing_icon_wells_centered_on_glyph() -> None:
+    """cyber_racing icon_well frame mid must sit on the 420×140 glyph center."""
+    from test_overlay_assets_v3 import _png_rgba
+
+    root = web_root() / "themes-v4" / "cyber_racing"
+    wells = sorted(root.rglob("icon_well.png"))
+    assert wells, "expected cyber_racing icon_well assets"
+    # hunting.png glyph bbox center (shared across themes)
+    target_x, target_y = 62.0, 70.0
+    for path in wells:
+        width, height, pixels = _png_rgba(path)
+        xs: list[int] = []
+        ys: list[int] = []
+        for y in range(height):
+            row = pixels[y * width * 4 : (y + 1) * width * 4]
+            for x in range(width):
+                if row[x * 4 + 3] > 100:
+                    xs.append(x)
+                    ys.append(y)
+        assert xs, path.name
+        mx = (min(xs) + max(xs)) / 2.0
+        my = (min(ys) + max(ys)) / 2.0
+        assert abs(mx - target_x) <= 1.0, f"{path}: frame_mid_x={mx}"
+        assert abs(my - target_y) <= 1.0, f"{path}: frame_mid_y={my}"
 
 
 def test_golden_reduced_motion_paths() -> None:

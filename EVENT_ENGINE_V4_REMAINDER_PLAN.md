@@ -306,7 +306,7 @@ Per original plan §2 gate **S3** and §7:
 - Full SUSPEND/RESUME polish  
 - Preview packs in `web/` tree  
 - **Bio emitters `composure_test`, `high_load`** — deferred beyond v1 (§0.1); assets remain in manifest for future wiring  
-- **Follow-up (spec only):** SoF card + race remaining — `EVENT_ENGINE_V4_SOF_REMAIN_SPEC.md` (not part of this branch)
+- **Follow-up (spec + plan):** SoF card + race remaining — `EVENT_ENGINE_V4_SOF_REMAIN_SPEC.md` + `EVENT_ENGINE_V4_SOF_REMAIN_PLAN.md` (not part of this branch)
 
 ---
 

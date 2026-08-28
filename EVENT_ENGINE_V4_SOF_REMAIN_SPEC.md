@@ -2,6 +2,7 @@
 
 **Status:** draft — implement **after** Event Engine V4 remainder (#114)  
 **Branch suggestion:** `cursor/ee-sof-remain-65db`  
+**Implementation plan:** [`EVENT_ENGINE_V4_SOF_REMAIN_PLAN.md`](EVENT_ENGINE_V4_SOF_REMAIN_PLAN.md)  
 **Out of scope for #114:** no code from this spec lands in the remainder PR.
 
 ---
