@@ -1,7 +1,8 @@
-/** V4 overlay renderer (S1: timing family / LAP_COMPLETE). */
+/** V4 overlay renderer (S1: timing + battle families). */
 
 const ASSET_BASE = "/overlay/web/";
 const DEFAULT_HOLD_MS = 4000;
+const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
 const COPY_EN = {
   "lap.complete": "LAP COMPLETE",
@@ -9,7 +10,19 @@ const COPY_EN = {
   "battle.hunting": "HUNTING",
   "battle.hunted": "UNDER ATTACK",
   "battle.closing_in": "CLOSING IN",
+  "battle.approach": "APPROACH",
+  "battle.attack_range": "ATTACK RANGE",
 };
+
+const TRANSIENT_FAMILIES = new Set([
+  "battle",
+  "timing",
+  "position",
+  "exception",
+  "pit",
+  "bio",
+  "session",
+]);
 
 let manifest = null;
 let catalog = null;
@@ -38,6 +51,11 @@ function fmtLapTime(seconds) {
     return `${mins}:${String(whole).padStart(2, "0")}.${String(frac).padStart(3, "0")}`;
   }
   return `${whole}.${String(frac).padStart(3, "0")}`;
+}
+
+function fmtGap(seconds) {
+  if (seconds == null || Number.isNaN(seconds)) return "—";
+  return `${fmt(seconds, 2)} s`;
 }
 
 function resolveCopy(token) {
@@ -69,6 +87,11 @@ function resolveStateKey(envelope) {
   const fallback = catalog?.fallbacks?.[eventType];
   if (fallback) return fallback;
   return variant || eventType.toLowerCase();
+}
+
+function layerRootForFamily(familyName) {
+  if (familyName === "battle") return ensureLayer("v4-battle-stack");
+  return ensureLayer("v4-event-layer");
 }
 
 function isStale(envelope) {
@@ -105,24 +128,26 @@ function paintLayer(el, url, { mask = false } = {}) {
   }
 }
 
-function ensureLayer(root) {
-  let layer = document.getElementById("v4-event-layer");
+function ensureLayer(id) {
+  let layer = document.getElementById(id);
   if (!layer) {
     layer = document.createElement("div");
-    layer.id = "v4-event-layer";
+    layer.id = id;
     document.body.appendChild(layer);
   }
   return layer;
 }
 
-function buildArt(stateKey, familyName) {
-  const art = document.createElement("div");
-  art.className = "v4-art";
+function rebuildArt(node, stateKey, familyName) {
+  const art = node.querySelector(".v4-art");
+  if (!art) return;
+  art.replaceChildren();
   const family = manifest?.themes?.[theme]?.families?.[familyName];
   if (!family) {
-    art.closest?.(".v4-widget")?.classList.add("fallback");
-    return art;
+    node.classList.add("fallback");
+    return;
   }
+  node.classList.remove("fallback");
   (family.layers || []).forEach((layer, index) => {
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
@@ -136,13 +161,50 @@ function buildArt(stateKey, familyName) {
   const iconUrl = manifestDiskPath(`${family.icon_dir}/${stateKey}.png`);
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
-  return art;
+}
+
+function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
+  const title = node.querySelector(".title");
+  const subtitle = node.querySelector(".subtitle");
+  const value = node.querySelector(".value");
+  const meta = node.querySelector(".meta");
+  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  text(title, headline);
+  if (stateKey === "hunting") {
+    text(subtitle, "CLOSING IN");
+    text(value, fmtGap(metrics.gap));
+    text(
+      meta,
+      metrics.targetPosition != null ? `P${metrics.targetPosition} · target` : sample.meta,
+    );
+  } else if (stateKey === "hunted") {
+    text(subtitle, "UNDER PRESSURE");
+    text(value, fmtGap(metrics.gap));
+    text(meta, metrics.targetPosition != null ? `P${metrics.targetPosition} behind` : sample.meta);
+  } else if (stateKey === "approach") {
+    text(subtitle, sample.subtitle || "BATTLE BUILDING");
+    text(value, metrics.closingRate != null ? fmt(metrics.closingRate, 2) : sample.value);
+    text(meta, sample.meta);
+  } else if (stateKey === "attack_range") {
+    text(subtitle, sample.subtitle || "MOVE POSSIBLE");
+    text(value, fmtGap(metrics.gap));
+    text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)}` : sample.meta);
+  } else {
+    text(subtitle, sample.subtitle || "");
+    text(value, sample.value || fmtGap(metrics.gap));
+    text(meta, sample.meta || "");
+  }
 }
 
 function fillCopySlots(node, envelope, stateKey) {
   const sample = manifest?.states?.[stateKey]?.sample || {};
   const metrics = envelope.metrics || {};
   const copy = envelope.copy || {};
+  const familyName = familyForState(stateKey);
+  if (familyName === "battle") {
+    fillBattleCopy(node, envelope, stateKey, sample, metrics, copy);
+    return;
+  }
   const title = node.querySelector(".title");
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
@@ -169,6 +231,16 @@ function widgetKey(envelope, stateKey) {
   return `v4:${cid}`;
 }
 
+function enforceFamilyCap(familyName) {
+  const cap = FAMILY_CAPS[familyName];
+  if (!cap) return;
+  const entries = [...DisplayV4.active.entries()].filter(([, node]) => node.dataset.family === familyName);
+  while (entries.length >= cap) {
+    const [oldestKey] = entries.shift();
+    DisplayV4.hide(oldestKey);
+  }
+}
+
 export async function initV4(options = {}) {
   theme = options.theme || theme;
   language = options.language || language;
@@ -192,21 +264,34 @@ export const DisplayV4 = {
     }
     const stateKey = resolveStateKey(envelope);
     const familyName = familyForState(stateKey);
+    if (!TRANSIENT_FAMILIES.has(familyName)) return null;
     const key = widgetKey(envelope, stateKey);
     let node = this.active.get(key);
+    const created = !node;
     if (!node) {
+      enforceFamilyCap(familyName);
       node = this._create(stateKey, familyName);
       this.active.set(key, node);
+    } else if (node.dataset.state !== stateKey) {
+      node.dataset.state = stateKey;
+      rebuildArt(node, stateKey, familyName);
+      const meta = manifest?.states?.[stateKey] || {};
+      node.className = `v4-widget tone-${meta.tone || "primary"}`;
+      node.classList.add("visible");
     }
     node.dataset.state = stateKey;
     node.dataset.phase = phase;
+    node.classList.toggle("phase-compact", phase === "COMPACT");
     fillCopySlots(node, envelope, stateKey);
     node.classList.remove("exit");
-    requestAnimationFrame(() => node.classList.add("visible"));
+    if (created) requestAnimationFrame(() => node.classList.add("visible"));
+    else node.classList.add("visible");
     if (phase === "RESULT") {
       const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
       clearTimeout(node._exitTimer);
       node._exitTimer = setTimeout(() => this.hide(key), hold);
+    } else {
+      clearTimeout(node._exitTimer);
     }
     return node;
   },
@@ -238,13 +323,17 @@ export const DisplayV4 = {
     const meta = manifest?.states?.[stateKey] || {};
     const node = document.createElement("div");
     node.className = `v4-widget tone-${meta.tone || "primary"}`;
+    node.dataset.family = familyName;
+    node.dataset.state = stateKey;
     const copy = document.createElement("div");
     copy.className = "v4-copy";
     copy.innerHTML =
       '<div class="title"></div><div class="subtitle"></div><div class="value"></div><div class="meta"></div>';
-    const art = buildArt(stateKey, familyName);
+    const art = document.createElement("div");
+    art.className = "v4-art";
     node.append(art, copy);
-    ensureLayer().appendChild(node);
+    layerRootForFamily(familyName).appendChild(node);
+    rebuildArt(node, stateKey, familyName);
     return node;
   },
 };
@@ -284,6 +373,58 @@ export function v4FixtureLapComplete(sequence = 1) {
       accent: "primary",
       preferredState: "RESULT",
       minHoldMs: 6000,
+    },
+  };
+}
+
+export function v4FixtureHunting(sequence = 1, phase = "ACTIVE") {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:battle:hunting",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "HUNTING",
+    mode: "RACE",
+    phase,
+    priority: 20,
+    dedupeKey: "RACE:battle:hunting",
+    correlationId: "battle:hunting",
+    metrics: { gap: 0.84, closingRate: 0.34, targetPosition: 7, targetCarIdx: 17 },
+    copy: { headlineToken: "battle.hunting", statusToken: "" },
+    presentation: {
+      widget: "battle",
+      zone: "EVENT",
+      variant: "hunting",
+      accent: "primary",
+      preferredState: "ACTIVE",
+    },
+  };
+}
+
+export function v4FixtureHunted(sequence = 2, phase = "ACTIVE") {
+  return {
+    type: "event",
+    format: "v4",
+    schemaVersion: "1.0",
+    eventId: "demo:battle:hunted",
+    sequence,
+    sessionId: "session:demo",
+    eventType: "HUNTED",
+    mode: "RACE",
+    phase,
+    priority: 20,
+    dedupeKey: "RACE:battle:hunted",
+    correlationId: "battle:hunted",
+    metrics: { gap: 0.62, closingRate: 0.21, targetPosition: 8, targetCarIdx: 23 },
+    copy: { headlineToken: "battle.hunted", statusToken: "" },
+    presentation: {
+      widget: "battle",
+      zone: "EVENT",
+      variant: "hunted",
+      accent: "warning",
+      preferredState: "ACTIVE",
     },
   };
 }

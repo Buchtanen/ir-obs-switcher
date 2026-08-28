@@ -1,5 +1,16 @@
 /* V4 transient widget (420×140). Scoped under .v4-widget. */
 
+#v4-battle-stack {
+  position: absolute;
+  left: 36px;
+  bottom: 91px;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
 #v4-event-layer {
   position: absolute;
   right: 48px;
@@ -118,6 +129,14 @@ html.golden-layout .v4-widget {
   opacity: 1;
   transform: none;
   transition: none;
+}
+
+.v4-widget.phase-compact .value {
+  font-size: 24px;
+}
+
+.v4-widget.phase-compact .subtitle {
+  letter-spacing: 0.1em;
 }
 
 @media (prefers-reduced-motion: reduce) {
