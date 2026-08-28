@@ -38,7 +38,7 @@ class QualiEmitter:
             for r in self._store.records_since(self._cursor)
             if r.car_id == "player" and r.valid_at_crossing
         ]
-        self._cursor = len(self._store)
+        self._cursor = self._store.append_count
 
         out: list[CandidateEvent] = []
         if pending:

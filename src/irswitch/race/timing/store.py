@@ -34,14 +34,23 @@ class TimingStore:
     _records: deque[TimingRecord] = field(default_factory=deque, repr=False)
     _seen_keys: set[str] = field(default_factory=set, repr=False)
     _last_crossing: dict[str, TimingRecord] = field(default_factory=dict, repr=False)
+    _append_count: int = field(default=0, repr=False)
+    _evicted_count: int = field(default=0, repr=False)
 
     def reset(self) -> None:
         self._records.clear()
         self._seen_keys.clear()
         self._last_crossing.clear()
+        self._append_count = 0
+        self._evicted_count = 0
 
     def __len__(self) -> int:
         return len(self._records)
+
+    @property
+    def append_count(self) -> int:
+        """Monotonic append sequence (for emitter polling; survives eviction)."""
+        return self._append_count
 
     def ingest_crossing(
         self,
@@ -89,11 +98,26 @@ class TimingStore:
         """Return records appended after ``offset`` (for emitter polling)."""
         if offset < 0:
             offset = 0
-        return list(self._records)[offset:]
+        local = offset - self._evicted_count
+        if local < 0:
+            local = 0
+        return list(self._records)[local:]
 
     def _append(self, record: TimingRecord) -> None:
         self._seen_keys.add(record.dedupe_key)
         self._records.append(record)
+        self._append_count += 1
         while len(self._records) > self.max_records:
             evicted = self._records.popleft()
             self._seen_keys.discard(evicted.dedupe_key)
+            self._evicted_count += 1
+            if self._last_crossing.get(evicted.car_id) == evicted:
+                replacement: TimingRecord | None = None
+                for kept in reversed(self._records):
+                    if kept.car_id == evicted.car_id:
+                        replacement = kept
+                        break
+                if replacement is not None:
+                    self._last_crossing[evicted.car_id] = replacement
+                else:
+                    del self._last_crossing[evicted.car_id]
