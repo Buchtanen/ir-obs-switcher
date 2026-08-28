@@ -129,7 +129,7 @@
   z-index: 1;
 }
 
-/* Absolute slots aligned to V3 plate geometry (title ~38px) — not a centered grid. */
+/* Absolute slots aligned to V3 plate geometry (title ~38–40px) — not a centered grid. */
 .v4-copy {
   position: absolute;
   inset: 0;
@@ -143,7 +143,7 @@
   position: absolute;
   left: 119px;
   right: 16px;
-  top: 42px;
+  top: 40px;
   margin: 0;
   font-size: 22px;
   line-height: 24px;
@@ -155,7 +155,7 @@
   position: absolute;
   left: 120px;
   right: 16px;
-  top: 66px;
+  top: 64px;
   margin: 0;
   font-size: 11px;
   line-height: 13px;
@@ -167,7 +167,7 @@
   position: absolute;
   left: 120px;
   right: 16px;
-  top: 84px;
+  top: 82px;
   margin: 0;
   font-size: 26px;
   line-height: 28px;
@@ -178,7 +178,7 @@
   position: absolute;
   left: 120px;
   right: 16px;
-  top: 116px;
+  top: 114px;
   margin: 0;
   font-size: 11px;
   line-height: 14px;
