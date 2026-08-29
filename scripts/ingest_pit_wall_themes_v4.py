@@ -351,7 +351,11 @@ def ingest_theme(theme_id: str) -> None:
     _ingest_motion(theme_id)
     # empty family/layers dirs expected by tests (plates hold real layers)
     for family in ("battle", "timing", "position", "exception", "pit", "bio", "session"):
-        (V4_ROOT / theme_id / family / "layers").mkdir(parents=True, exist_ok=True)
+        layer_dir = V4_ROOT / theme_id / family / "layers"
+        layer_dir.mkdir(parents=True, exist_ok=True)
+        placeholder = layer_dir / "placeholder.png"
+        if not placeholder.is_file():
+            placeholder.write_bytes(_png_rgba(1, 1))
 
 
 def check_theme(theme_id: str) -> list[str]:

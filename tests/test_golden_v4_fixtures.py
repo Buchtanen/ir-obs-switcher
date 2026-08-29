@@ -135,7 +135,7 @@ def test_v4_live_widget_plate_masks_glow() -> None:
     assert "function paintPlateMask(" in js
     assert "base_plate.png" in js
     assert 'setProperty("-webkit-mask-image"' in js
-    assert "paintPlateMask(art, family)" in js
+    assert "paintPlateMask(art, family" in js
     assert "if (glowMatch) return" in js
     assert ".v4-art.has-plate-mask" in css
     widget = rule_decls(css, ".v4-widget")

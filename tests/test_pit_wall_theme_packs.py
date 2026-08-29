@@ -354,6 +354,9 @@ def test_motion_reels_and_pack_manifests_are_self_consistent(theme_name: str) ->
         path = root / relative
         assert path.is_file(), relative
         data = path.read_bytes()
+        # Windows CI may check out text files as CRLF; normalize before size/hash.
+        if path.suffix.lower() in {".md", ".txt", ".json", ".css", ".html", ".svg"}:
+            data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         assert entry["bytes"] == len(data), relative
         assert entry["sha256"] == hashlib.sha256(data).hexdigest(), relative
 
