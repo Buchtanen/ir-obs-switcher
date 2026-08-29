@@ -396,17 +396,15 @@ async def _get_status_dict(state: SwitchState) -> dict:
         if cfg is not None:
             _stream_chapter_tracker.apply_settings(cfg.stream_chapters)
 
-        duration_current = status.get("stream_duration_current_session_seconds")
-        if duration_current is None:
-            from irswitch.server.metrics import get_metrics as _gm
-
-            _, duration_current = _gm().get_stream_duration_seconds()
+        duration_current: float | None
+        _, duration_current = get_metrics().get_stream_duration_seconds()
+        raw_duration = status.get("stream_duration_current_session_seconds")
+        if isinstance(raw_duration, (int, float)):
+            duration_current = float(raw_duration)
 
         _stream_chapter_tracker.update(
             streaming=bool(status.get("streaming")),
-            duration_current_seconds=(
-                float(duration_current) if duration_current is not None else None
-            ),
+            duration_current_seconds=duration_current,
             session_type=state.session_type,
         )
         if _stream_chapter_tracker.settings.enabled:
