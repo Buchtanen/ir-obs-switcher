@@ -111,6 +111,14 @@ def test_extract_session_type_from_numeric() -> None:
     assert extract_session_type(data) == "Test"
 
 
+def test_extract_session_type_from_string_session_type() -> None:
+    """YAML / pyirsdk often expose SessionType as Practice/Qualify/Race text."""
+    assert extract_session_type({"SessionType": "Practice"}) == "Practice"
+    assert extract_session_type({"SessionType": "Qualify"}) == "Qualify"
+    assert extract_session_type({"SessionType": "Race"}) == "Race"
+    assert extract_session_type({"SessionType": "Lone Qualify"}) == "Qualify"
+
+
 def test_extract_session_type_from_session_name() -> None:
     """Test extracting session type from SessionName string."""
     data = {"SessionName": "Practice Session"}

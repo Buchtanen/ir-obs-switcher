@@ -95,3 +95,27 @@ def test_analyzer_passes_overlay_mode() -> None:
     state = RaceContextAnalyzer().analyze(snap)
     assert state.overlay_mode == MODE_PRACTICE
     assert state.session_type == "Practice"
+
+
+def test_extract_telemetry_session_type_from_session_name() -> None:
+    """Live overlay vars often omit SessionType; SessionName must still set overlay_mode."""
+    snap = extract_telemetry({"PlayerCarIdx": 0, "SessionName": "Race", "SessionNum": 2}, 1.0)
+    assert snap.session_type == "Race"
+    assert RaceContextAnalyzer().analyze(snap).overlay_mode == MODE_RACE
+
+
+def test_extract_telemetry_session_ids_from_weekend_info() -> None:
+    snap = extract_telemetry(
+        {"WeekendInfo": {"SubSessionID": 777, "TrackID": 123, "EventType": "Race"}},
+        1.0,
+    )
+    assert snap.subsession_id == "777"
+    assert snap.track_id == "123"
+    assert snap.session_type == "Race"
+
+
+def test_telemetry_vars_include_session_identity() -> None:
+    from irswitch.iracing.telemetry import TELEMETRY_VARS
+
+    for name in ("SessionType", "SessionName", "SubSessionID", "TrackID", "WeekendInfo"):
+        assert name in TELEMETRY_VARS
