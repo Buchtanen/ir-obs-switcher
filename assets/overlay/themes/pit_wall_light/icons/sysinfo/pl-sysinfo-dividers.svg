@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="72" viewBox="0 0 1920 72" fill="none">
+  <title>Pit Wall Light SYSINFO runtime-grid dividers</title>
+  <!-- Runtime grid: brand 230 px + 11 modules x 150 px; x=1880..1920 is trailing safe area. -->
+  <path d="M230 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M380 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M530 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M680 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M830 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M980 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1130 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1280 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1430 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1580 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1730 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1880 15V61" stroke="#315579" stroke-opacity=".14"/>
+</svg>

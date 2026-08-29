@@ -47,6 +47,11 @@ def mock_race_state(elapsed: float) -> RaceState:
         closing_rate_behind=-0.05,
         fps=90.0,
         frametime_ms=11.1,
+        session_time=elapsed,
+        session_state=4,
+        overlay_mode="RACE",
+        subsession_id="mock",
+        session_num=0,
     )
 
 

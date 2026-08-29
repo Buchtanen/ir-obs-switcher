@@ -125,6 +125,14 @@ class OverlayV4Settings:
 
 
 @dataclass(frozen=True)
+class OverlayTapeSettings:
+    """Session HUD JSONL tape. Default ON; set session_tape=false to disable."""
+
+    enabled: bool = True
+    directory: str = "recordings"
+
+
+@dataclass(frozen=True)
 class OverlaySettings:
     """Feature flags and overlay presentation."""
 
@@ -133,6 +141,7 @@ class OverlaySettings:
     debug: bool = False
     language: str = "en"
     v4: OverlayV4Settings = field(default_factory=OverlayV4Settings)
+    tape: OverlayTapeSettings = field(default_factory=OverlayTapeSettings)
     event_engine: EventEngineFeatureSettings = field(default_factory=EventEngineFeatureSettings)
     sampling: SamplingSettings = field(default_factory=SamplingSettings)
     battle: BattleSettings = field(default_factory=BattleSettings)

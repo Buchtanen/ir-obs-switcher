@@ -1,8 +1,10 @@
 /** V4 overlay renderer (S1: timing + battle + position families). */
 
+import { fmtDelta, fmtGap, fmtLapTime } from "./timing-format.js";
+
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.8";
+const ASSET_CACHE = "1.2.13";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -32,6 +34,12 @@ const TRANSIENT_FAMILIES = new Set([
   "session",
 ]);
 
+/** Last-resort canvas sizes when manifest/aliases are missing or invalid. */
+const DEFAULT_CANVAS = {
+  transient: [420, 140],
+  sysinfo: [1920, 72],
+};
+
 let manifest = null;
 let catalog = null;
 let theme = "cyber_racing";
@@ -50,24 +58,6 @@ function text(el, value) {
 function fmt(n, digits) {
   if (n == null || Number.isNaN(n)) return "—";
   return Number(n).toFixed(digits);
-}
-
-function fmtLapTime(seconds) {
-  if (seconds == null || Number.isNaN(seconds)) return "—";
-  const total = Number(seconds);
-  const mins = Math.floor(total / 60);
-  const secs = total - mins * 60;
-  const whole = Math.floor(secs);
-  const frac = Math.round((secs - whole) * 1000);
-  if (mins > 0) {
-    return `${mins}:${String(whole).padStart(2, "0")}.${String(frac).padStart(3, "0")}`;
-  }
-  return `${whole}.${String(frac).padStart(3, "0")}`;
-}
-
-function fmtGap(seconds) {
-  if (seconds == null || Number.isNaN(seconds)) return "—";
-  return `${fmt(seconds, 2)} s`;
 }
 
 function fmtPositionDelta(delta) {
@@ -217,8 +207,118 @@ function resolveStateKey(envelope) {
 }
 
 function layerRootForFamily(familyName) {
-  if (familyName === "battle") return ensureLayer("v4-battle-stack");
+  const family = manifest?.themes?.[theme]?.families?.[familyName];
+  const zone = String(family?.zone || (familyName === "battle" ? "battle" : "event")).toLowerCase();
+  if (zone === "battle") return ensureLayer("v4-battle-stack");
   return ensureLayer("v4-event-layer");
+}
+
+function isPositiveIntPair(value) {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    Number.isInteger(value[0]) &&
+    Number.isInteger(value[1]) &&
+    value[0] > 0 &&
+    value[1] > 0
+  );
+}
+
+/** Read order: theme canvases override → root canvases → legacy alias → DEFAULT. */
+function resolveThemeCanvas(canvasId) {
+  const root = manifest?.canvases?.[canvasId] || {};
+  const override = manifest?.themes?.[theme]?.canvases?.[canvasId] || {};
+  return { ...root, ...override };
+}
+
+function canvasSize(canvasId) {
+  const cfg = resolveThemeCanvas(canvasId);
+  if (isPositiveIntPair(cfg.size)) return [cfg.size[0], cfg.size[1]];
+  if (canvasId === "transient" && isPositiveIntPair(manifest?.transient_canvas)) {
+    return [manifest.transient_canvas[0], manifest.transient_canvas[1]];
+  }
+  if (canvasId === "sysinfo" && isPositiveIntPair(manifest?.sysinfo_canvas)) {
+    return [manifest.sysinfo_canvas[0], manifest.sysinfo_canvas[1]];
+  }
+  return DEFAULT_CANVAS[canvasId] || DEFAULT_CANVAS.transient;
+}
+
+function setPxVar(root, name, value, fallback) {
+  const n = Number(value);
+  const px = Number.isFinite(n) ? n : fallback;
+  root.style.setProperty(name, `${px}px`);
+}
+
+function applyThemeTextAndIconVars(root, cfg) {
+  const safe = cfg.safe_box || {};
+  setPxVar(root, "--v4-safe-l", safe.left, 119);
+  setPxVar(root, "--v4-safe-t", safe.top, 14);
+  setPxVar(root, "--v4-safe-r", safe.right, 16);
+  setPxVar(root, "--v4-safe-b", safe.bottom, 10);
+
+  const slots = cfg.text_slots || {};
+  const title = slots.title || {};
+  const subtitle = slots.subtitle || {};
+  const value = slots.value || {};
+  const meta = slots.meta || {};
+  setPxVar(root, "--v4-title-x", title.left, 119);
+  setPxVar(root, "--v4-title-y", title.top, 38);
+  setPxVar(root, "--v4-subtitle-x", subtitle.left, 120);
+  setPxVar(root, "--v4-subtitle-y", subtitle.top, 62);
+  setPxVar(root, "--v4-value-x", value.left, 120);
+  setPxVar(root, "--v4-value-y", value.top, 80);
+  setPxVar(root, "--v4-meta-x", meta.left, 120);
+  setPxVar(root, "--v4-meta-y", meta.top, 112);
+
+  if (cfg.icon_mode === "glyph" && Array.isArray(cfg.icon_box) && cfg.icon_box.length === 4) {
+    const [x, y, w, h] = cfg.icon_box;
+    setPxVar(root, "--v4-icon-x", x, 0);
+    setPxVar(root, "--v4-icon-y", y, 0);
+    setPxVar(root, "--v4-icon-w", w, 64);
+    setPxVar(root, "--v4-icon-h", h, 64);
+    root.dataset.v4IconMode = "glyph";
+  } else {
+    root.dataset.v4IconMode = "full_canvas";
+  }
+}
+
+function applyManifestGeometry(target) {
+  if (typeof document === "undefined") return;
+  const root = target || document.documentElement;
+  const [tw, th] = canvasSize("transient");
+  const [sw, sh] = canvasSize("sysinfo");
+  root.style.setProperty("--v4-canvas-w", `${tw}px`);
+  root.style.setProperty("--v4-canvas-h", `${th}px`);
+  root.style.setProperty("--v4-sysinfo-w", `${sw}px`);
+  root.style.setProperty("--v4-sysinfo-h", `${sh}px`);
+  root.style.setProperty("--v4-gallery-col", `${tw}px`);
+
+  applyThemeTextAndIconVars(root, resolveThemeCanvas("transient"));
+
+  const battle = manifest?.zones?.battle || {};
+  const event = manifest?.zones?.event || {};
+  const battleOffset = Array.isArray(battle.offset) ? battle.offset : [36, 19];
+  const eventOffset = Array.isArray(event.offset) ? event.offset : [48, 19];
+  const sysH = sh;
+  const battleY = sysH + (Number(battleOffset[1]) || 19);
+  const eventY = sysH + (Number(eventOffset[1]) || 19);
+  root.style.setProperty("--v4-zone-battle-x", `${Number(battleOffset[0]) || 36}px`);
+  root.style.setProperty("--v4-zone-battle-y", `${battleY}px`);
+  root.style.setProperty("--v4-zone-battle-gap", `${Number(battle.gap) || 10}px`);
+  root.style.setProperty("--v4-zone-event-x", `${Number(eventOffset[0]) || 48}px`);
+  root.style.setProperty("--v4-zone-event-y", `${eventY}px`);
+  root.style.setProperty("--v4-zone-event-gap", `${Number(event.gap) || 10}px`);
+
+  // Eager zone containers (existing ids) so geometry vars apply before first event.
+  ensureLayer("v4-battle-stack");
+  ensureLayer("v4-event-layer");
+}
+
+function applyIconMode(iconEl) {
+  if (!iconEl) return;
+  const mode = resolveThemeCanvas("transient").icon_mode || "full_canvas";
+  iconEl.classList.toggle("mode-glyph", mode === "glyph");
+  iconEl.classList.toggle("mode-full-canvas", mode !== "glyph");
 }
 
 function isStale(envelope) {
@@ -231,61 +331,93 @@ function isStale(envelope) {
   return false;
 }
 
-function paintLayer(el, url, { mask = false, canvas = [420, 140] } = {}) {
+function paintLayer(el, url, { mask = false, canvas = null } = {}) {
   if (!el || !url) {
     el?.classList.add("empty");
     return;
   }
   el.classList.remove("empty");
-  const [cw, ch] = canvas;
-  const size = `${cw}px ${ch}px`;
+  // Prefer CSS vars on the widget/zone. Only pin inline size for explicit canvases
+  // (e.g. SYSINFO) that differ from the transient defaults.
+  const explicit = isPositiveIntPair(canvas);
+  const size = explicit ? `${canvas[0]}px ${canvas[1]}px` : "";
   if (mask) {
     el.style.backgroundImage = "";
     el.style.backgroundColor = "currentColor";
     const maskUrl = `url("${url}")`;
     el.style.webkitMaskImage = maskUrl;
     el.style.maskImage = maskUrl;
-    el.style.webkitMaskSize = size;
-    el.style.maskSize = size;
-    el.style.webkitMaskRepeat = "no-repeat";
-    el.style.maskRepeat = "no-repeat";
-    el.style.webkitMaskPosition = "0 0";
-    el.style.maskPosition = "0 0";
+    if (explicit) {
+      el.style.webkitMaskSize = size;
+      el.style.maskSize = size;
+      el.style.webkitMaskRepeat = "no-repeat";
+      el.style.maskRepeat = "no-repeat";
+      el.style.webkitMaskPosition = "0 0";
+      el.style.maskPosition = "0 0";
+    } else {
+      el.style.webkitMaskSize = "";
+      el.style.maskSize = "";
+      el.style.webkitMaskRepeat = "";
+      el.style.maskRepeat = "";
+      el.style.webkitMaskPosition = "";
+      el.style.maskPosition = "";
+    }
   } else {
     el.style.backgroundColor = "";
     el.style.backgroundImage = `url("${url}")`;
     el.style.backgroundSize = size;
-    el.style.backgroundPosition = "0 0";
+    el.style.backgroundPosition = size ? "0 0" : "";
     el.style.webkitMaskImage = "";
     el.style.maskImage = "";
   }
 }
 
-/** Clip a layer (or .v4-art) to the chamfered plate silhouette — same idea as V3 plateMask. */
-function paintPlateMask(el, family) {
-  if (!el || !family?.layer_dir) {
-    if (el) {
-      el.style.removeProperty("-webkit-mask-image");
-      el.style.removeProperty("mask-image");
-      el.style.removeProperty("-webkit-mask-size");
-      el.style.removeProperty("mask-size");
-      el.classList.remove("has-plate-mask");
-    }
+/** Resolve plate layer_dir, honoring per-state pack template overrides. */
+function familyLayerDir(family, stateKey) {
+  if (!family) return "";
+  const overrides = family.state_layer_dirs || {};
+  const override = stateKey && overrides[stateKey];
+  return override || family.layer_dir || "";
+}
+
+function clearPlateMask(el) {
+  if (!el) return;
+  el.style.removeProperty("-webkit-mask-image");
+  el.style.removeProperty("mask-image");
+  el.style.removeProperty("-webkit-mask-size");
+  el.style.removeProperty("mask-size");
+  el.style.removeProperty("mask-mode");
+  el.style.removeProperty("mask-composite");
+  el.style.removeProperty("-webkit-mask-composite");
+  el.classList.remove("has-plate-mask");
+}
+
+/** Clip .v4-art to the chamfered plate. Union base_plate + material: Light packs
+ *  ship base_plate as a hollow rim, so masking with it alone clips the glass fill. */
+function paintPlateMask(el, family, stateKey) {
+  const layerDir = familyLayerDir(family, stateKey);
+  if (!el || !layerDir) {
+    clearPlateMask(el);
     return;
   }
-  const url = manifestDiskPath(`${family.layer_dir}/base_plate.png`);
-  if (!url) {
-    el.style.removeProperty("-webkit-mask-image");
-    el.style.removeProperty("mask-image");
-    el.classList.remove("has-plate-mask");
+  const files = ["base_plate.png"];
+  if ((family.layers || []).some((layer) => layer.file === "material.png")) {
+    files.push("material.png");
+  }
+  const urls = files.map((file) => manifestDiskPath(`${layerDir}/${file}`)).filter(Boolean);
+  if (!urls.length) {
+    clearPlateMask(el);
     return;
   }
-  const mask = `url("${url}")`;
+  const mask = urls.map((url) => `url("${url}")`).join(", ");
   // Prefer setProperty — plain style.maskImage was computing to none in Chromium.
   el.style.setProperty("-webkit-mask-image", mask);
   el.style.setProperty("mask-image", mask);
-  el.style.setProperty("-webkit-mask-size", "420px 140px");
-  el.style.setProperty("mask-size", "420px 140px");
+  el.style.setProperty("mask-mode", "alpha");
+  el.style.setProperty("mask-composite", "add");
+  el.style.setProperty("-webkit-mask-composite", "source-over");
+  el.style.removeProperty("-webkit-mask-size");
+  el.style.removeProperty("mask-size");
   el.style.setProperty("-webkit-mask-repeat", "no-repeat");
   el.style.setProperty("mask-repeat", "no-repeat");
   el.style.setProperty("-webkit-mask-position", "0 0");
@@ -304,7 +436,7 @@ const SYSINFO_ICON_SLOTS = {
 };
 
 function sysinfoCanvas() {
-  return manifest?.sysinfo_canvas || [1920, 72];
+  return canvasSize("sysinfo");
 }
 
 function sysinfoFamily() {
@@ -407,25 +539,28 @@ function rebuildArt(node, stateKey, familyName) {
     return;
   }
   node.classList.remove("fallback");
+  const layerDir = familyLayerDir(family, stateKey);
   (family.layers || []).forEach((layer, index) => {
     const glowMatch = /^glow_(cyan|amber|red)\.png$/.exec(layer.file);
     // Soft bloom PNGs bleed past the chamfer unless perfectly plate-masked.
     // Skip them (golden + live); enter WebM stays, clipped by art plate mask.
     if (glowMatch) return;
+    const url = manifestDiskPath(`${layerDir}/${layer.file}`);
+    if (!url) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
-    const url = manifestDiskPath(`${family.layer_dir}/${layer.file}`);
     paintLayer(el, url, { mask: layer.mode === "mask" });
     art.appendChild(el);
   });
   const icon = document.createElement("div");
   icon.className = "icon";
+  applyIconMode(icon);
   const iconUrl = manifestDiskPath(`${family.icon_dir}/${stateKey}.png`);
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
   // Clip enter WebM / residual bloom to the chamfered plate (not the CSS box).
-  paintPlateMask(art, family);
+  paintPlateMask(art, family, stateKey);
 }
 
 function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
@@ -448,12 +583,12 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(meta, metrics.targetPosition != null ? `P${metrics.targetPosition} behind` : sample.meta);
   } else if (stateKey === "approach") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE BUILDING");
-    text(value, metrics.closingRate != null ? fmt(metrics.closingRate, 2) : sample.value);
+    text(value, metrics.closingRate != null ? `${fmt(metrics.closingRate, 2)} s/s` : sample.value);
     text(meta, sample.meta);
   } else if (stateKey === "attack_range") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "MOVE POSSIBLE");
     text(value, fmtGap(metrics.gap));
-    text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)}` : sample.meta);
+    text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)} s/s` : sample.meta);
   } else if (stateKey === "side_by_side") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "WHEEL TO WHEEL");
     text(value, fmtGap(metrics.gap));
@@ -603,7 +738,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "hr_pressure") {
-    text(subtitle, resolveCopy("bio.hr_pressure") || sample.subtitle || "HR PRESSURE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE INTENSITY");
     text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value);
     text(
       meta,
@@ -612,7 +747,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
         : sample.meta,
     );
   } else if (stateKey === "ble_reconnecting") {
-    text(subtitle, resolveCopy("ble.lost") || sample.subtitle || "DATA STALE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "SENSOR DATA PAUSED");
     text(value, sample.value || "--");
     text(meta, sample.meta || "reconnecting");
   } else {
@@ -631,7 +766,7 @@ function fillSessionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "final_lap") {
-    text(subtitle, resolveCopy("session.final_lap") || sample.subtitle || "ONE MORE PUSH");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ONE MORE PUSH");
     text(
       value,
       metrics.lap != null && metrics.totalLaps != null
@@ -640,7 +775,7 @@ function fillSessionCopy(node, envelope, stateKey, sample, metrics, copy) {
     );
     text(meta, phase === "RESULT" ? resolveCopy("session.finish") || sample.meta : sample.meta || "major event");
   } else if (stateKey === "finish") {
-    text(subtitle, resolveCopy("session.finish") || sample.subtitle || "RACE COMPLETE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "RACE COMPLETE");
     text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
     text(meta, metrics.classPosition != null ? `P${metrics.classPosition} in class` : sample.meta);
   } else {
@@ -658,7 +793,7 @@ function fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "incident") {
-    text(subtitle, resolveCopy("incident") || sample.subtitle || "COALESCED UPDATE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "COALESCED UPDATE");
     text(value, metrics.value != null ? `+${metrics.value} INC` : sample.value);
     text(meta, metrics.total != null ? `total ${metrics.total}` : sample.meta);
   } else if (stateKey === "invalid_lap") {
@@ -697,7 +832,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else if (stateKey === "pb_attack") {
     const sectorLabel = metrics.sector || metrics.timingPointId || "S1";
     const delta = metrics.delta ?? metrics.deltaToBest;
-    text(subtitle, delta != null ? `${sectorLabel} · ${fmt(delta, 3)}` : sample.subtitle);
+    text(subtitle, delta != null ? `${sectorLabel} · ${fmtDelta(delta)}` : sample.subtitle);
     text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
     text(meta, sample.meta || "personal best");
   } else if (stateKey === "hot_lap") {
@@ -707,7 +842,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(subtitle, metrics.position != null ? `CURRENT P${metrics.position}` : sample.subtitle);
     text(
       value,
-      metrics.sectorDelta != null ? `S1 ${fmt(metrics.sectorDelta, 3)}` : sample.value,
+      metrics.sectorDelta != null ? `S1 ${fmtDelta(metrics.sectorDelta)}` : sample.value,
     );
     text(
       meta,
@@ -723,7 +858,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
       subtitle,
       metrics.timingPointId ? `${metrics.timingPointId} EXIT` : sample.subtitle,
     );
-    text(value, metrics.delta != null ? fmt(metrics.delta, 3) : sample.value);
+    text(value, metrics.delta != null ? fmtDelta(metrics.delta) : sample.value);
     text(meta, sample.meta || "clean minisector");
   } else if (stateKey === "clean_streak") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "CONSISTENT PACE");
@@ -736,7 +871,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else if (stateKey === "personal_best") {
     text(subtitle, sample.subtitle || "NEW REFERENCE");
     text(value, fmtLapTime(metrics.lapTime));
-    text(meta, fmt(metrics.deltaToBest, 3));
+    text(meta, fmtDelta(metrics.deltaToBest));
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || "");
@@ -813,26 +948,72 @@ export async function initV4(options = {}) {
   if (typeof document !== "undefined") {
     document.documentElement.dataset.theme = theme;
   }
-  const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
-  const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
-  const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
-  if (!Object.keys(copyCatalog).length) {
-    tasks.push(fetch("/api/overlay/i18n"));
+  let manifestOk = false;
+  try {
+    const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
+    const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
+    const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
+    if (!Object.keys(copyCatalog).length) {
+      tasks.push(fetch("/api/overlay/i18n"));
+    }
+    const results = await Promise.all(tasks);
+    const [manifestRes, catalogRes, i18nRes] = results;
+    if (manifestRes.ok) {
+      try {
+        manifest = await manifestRes.json();
+        manifestOk = Boolean(manifest && typeof manifest === "object");
+      } catch (err) {
+        console.error("v4 manifest parse failed", err);
+        manifest = null;
+        manifestOk = false;
+      }
+    }
+    if (catalogRes.ok) {
+      try {
+        catalog = await catalogRes.json();
+      } catch (err) {
+        console.error("v4 catalog parse failed", err);
+        catalog = null;
+      }
+    }
+    if (i18nRes?.ok) {
+      try {
+        const i18n = await i18nRes.json();
+        copyCatalog = i18n.copyCatalog || copyCatalog;
+        language = i18n.language || language;
+      } catch (err) {
+        console.error("v4 i18n parse failed", err);
+      }
+    }
+  } catch (err) {
+    console.error("initV4 failed", err);
+    manifest = null;
+    manifestOk = false;
+  } finally {
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.v4Manifest = manifestOk ? "ok" : "fallback";
+      if (!manifestOk) {
+        document.getElementById("sysinfo-widget")?.classList.add("fallback");
+      } else {
+        applyManifestGeometry();
+      }
+    }
   }
-  const results = await Promise.all(tasks);
-  const [manifestRes, catalogRes, i18nRes] = results;
-  if (manifestRes.ok) manifest = await manifestRes.json();
-  if (catalogRes.ok) catalog = await catalogRes.json();
-  if (i18nRes?.ok) {
-    const i18n = await i18nRes.json();
-    copyCatalog = i18n.copyCatalog || copyCatalog;
-    language = i18n.language || language;
+  if (options.sysinfo !== false) {
+    try {
+      renderSysinfo();
+    } catch (err) {
+      console.error("renderSysinfo failed", err);
+    }
   }
-  if (options.sysinfo !== false) renderSysinfo();
 }
 
 export function refreshV4Presentation(options = {}) {
   if (options.theme) theme = options.theme;
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = theme;
+    if (manifest) applyManifestGeometry();
+  }
   renderSysinfo();
 }
 

@@ -49,6 +49,10 @@ logs/*.log.*
 data/*.json
 !data/*.example.json
 
+# Overlay session tapes (gitignored jsonl)
+recordings/*.jsonl
+!recordings/.gitkeep
+
 # Temporary files
 *.tmp
 *.bak

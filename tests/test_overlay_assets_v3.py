@@ -112,6 +112,7 @@ def test_overlay_css_plate_fill_is_fallback_only() -> None:
     assert ".widget.fallback" in css
     assert "#sysinfo-widget.fallback" in css
     assert "html.is-demo" in css
+    assert 'html.is-demo[data-theme="pit_wall_light"]' in css
     assert "bottom: 91px" in css
     assert "bottom: 140px" not in css
     assert "position: absolute" in css
