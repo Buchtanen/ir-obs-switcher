@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from irswitch.commentary.graph import (
+    COMMENTARY_ONLY_EVENTS,
     load_sequence_graph,
     parse_sequence_graph,
     validate_graph_document,
@@ -24,7 +25,7 @@ def test_default_graph_loads_and_is_unfilled() -> None:
 
 def test_graph_event_types_are_in_catalog() -> None:
     graph = load_sequence_graph()
-    known = set(catalog_entries()) | set(catalog_fallbacks())
+    known = set(catalog_entries()) | set(catalog_fallbacks()) | COMMENTARY_ONLY_EVENTS
     for node in graph.nodes.values():
         for event_type in node.event_types:
             assert event_type in known, event_type

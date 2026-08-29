@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import xml.etree.ElementTree as ET
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -12,19 +11,16 @@ from irswitch.commentary.graph import GraphNode, TtsLimits
 _TERMINAL = re.compile(r"[.!?…][\"')\]]*$")
 _MULTI_PUNCT = re.compile(r"[!?]{2,}|\.{3,}|…{2,}")
 _ALL_CAPS = re.compile(r"\b[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]{4,}\b")
-_EMOJI = re.compile(
-    "[" "\U0001f300-\U0001faff" "\U00002700-\U000027bf" "\U0001f000-\U0001f0ff" "]+"
-)
 _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
 _LONG_DIGIT = re.compile(r"\d{4,}")
 _SLOT = re.compile(r"\{([a-z0-9_]+)\}")
+_BREAK_TIME = re.compile(r'time="(\d+)ms"')
+_ALLOWED_TAGS = frozenset({"speak", "break", "emphasis", "prosody"})
 _CHARS_PER_SECOND = 13.0
 _MAX_BREAK_MS = 500
+_MAX_TAG_CHARS = 80
 _ALLOWED_EMPHASIS = frozenset({"reduced", "moderate", "strong"})
 _ALLOWED_RATE = frozenset({"slow", "medium", "fast", "x-slow", "x-fast"})
-
-# Tags we may wrap around authored text. Author-visible allow-list is narrower.
-_TREE_TAGS = frozenset({"speak", "break", "emphasis", "prosody"})
 
 
 @dataclass(frozen=True)
@@ -49,11 +45,13 @@ def validate_utterance(
         issues.append(ValidationIssue("empty", "utterance is empty"))
         return issues
 
-    if _EMOJI.search(stripped):
+    if _has_emoji(stripped):
         issues.append(ValidationIssue("emoji", "emoji is not speakable"))
     if _URL.search(stripped):
         issues.append(ValidationIssue("url", "URLs are not speakable"))
-    if _MULTI_PUNCT.search(_plain_text(stripped)):
+
+    spoken = _plain_text(stripped)
+    if _MULTI_PUNCT.search(spoken):
         issues.append(
             ValidationIssue(
                 "multi_punct",
@@ -73,16 +71,13 @@ def validate_utterance(
 
     if _is_ssml(stripped):
         issues.extend(_validate_ssml(stripped, tts))
-        spoken = _plain_text(stripped)
-    else:
-        spoken = stripped
-        if "&" in spoken and "&amp;" not in raw and "&lt;" not in raw:
-            issues.append(
-                ValidationIssue(
-                    "ampersand",
-                    "raw '&' is unsafe for TTS/SSML; write 'and' / 'a' or an entity",
-                )
+    elif "&" in spoken and "&amp;" not in raw and "&lt;" not in raw:
+        issues.append(
+            ValidationIssue(
+                "ampersand",
+                "raw '&' is unsafe for TTS/SSML; write 'and' / 'a' or an entity",
             )
+        )
 
     if tts.require_terminal_punct and spoken and not _TERMINAL.search(spoken):
         issues.append(
@@ -133,9 +128,9 @@ def estimate_seconds(spoken: str, *, ssml: str | None = None) -> float:
     base = max(0.4, len(spoken) / _CHARS_PER_SECOND)
     extra = 0.0
     if ssml:
-        for match in re.finditer(r'time="(\d+)ms"', ssml):
+        for match in _BREAK_TIME.finditer(ssml):
             extra += int(match.group(1)) / 1000.0
-        extra += 0.12 * len(re.findall(r"<break\b", ssml))
+        extra += 0.12 * ssml.lower().count("<break")
     return base + extra
 
 
@@ -149,65 +144,118 @@ def fill_slots(text: str, values: dict[str, object]) -> str:
     return _SLOT.sub(repl, text)
 
 
+def leftover_slots(text: str) -> list[str]:
+    return _SLOT.findall(text)
+
+
 def _is_ssml(text: str) -> bool:
     return "<" in text and ">" in text
+
+
+def _has_emoji(text: str) -> bool:
+    for char in text:
+        code = ord(char)
+        if 0x1F300 <= code <= 0x1FAFF or 0x2700 <= code <= 0x27BF or 0x1F000 <= code <= 0x1F0FF:
+            return True
+    return False
 
 
 def _plain_text(text: str) -> str:
     if not _is_ssml(text):
         return text
-    try:
-        root = ET.fromstring(_wrap_speak(text))
-    except ET.ParseError:
-        return re.sub(r"<[^>]+>", " ", text)
-    chunks = ["".join(root.itertext())]
-    return re.sub(r"\s+", " ", " ".join(chunks)).strip()
+    return " ".join(_strip_tags(text).split())
 
 
-def _wrap_speak(text: str) -> str:
-    trimmed = text.strip()
-    if trimmed.startswith("<speak"):
-        return trimmed
-    return f"<speak>{trimmed}</speak>"
+def _strip_tags(text: str) -> str:
+    out: list[str] = []
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char != "<":
+            out.append(char)
+            index += 1
+            continue
+        end = text.find(">", index + 1)
+        if end == -1 or (end - index) > _MAX_TAG_CHARS:
+            out.append(char)
+            index += 1
+            continue
+        if out and out[-1] != " ":
+            out.append(" ")
+        index = end + 1
+    return "".join(out)
 
 
 def _validate_ssml(text: str, tts: TtsLimits) -> list[ValidationIssue]:
-    issues: list[ValidationIssue] = []
+    lowered = text.lower()
+    if "<!doctype" in lowered or "<!entity" in lowered or "<?xml" in lowered:
+        return [ValidationIssue("ssml_parse", "SSML declarations are not allowed")]
     allowed = set(tts.ssml_allowed) | {"speak"}
-    try:
-        root = ET.fromstring(_wrap_speak(text))
-    except ET.ParseError as exc:
-        issues.append(ValidationIssue("ssml_parse", f"SSML is not well-formed: {exc}"))
-        return issues
-
-    for element in root.iter():
-        tag = _local(element.tag)
-        if tag not in _TREE_TAGS:
-            issues.append(ValidationIssue("ssml_tag", f"unsupported SSML tag <{tag}>"))
+    issues: list[ValidationIssue] = []
+    index = 0
+    length = len(text)
+    while index < length:
+        if text[index] != "<":
+            index += 1
             continue
-        if tag not in allowed and tag != "speak":
-            issues.append(ValidationIssue("ssml_tag", f"tag <{tag}> is not allowed on this node"))
-        if tag == "break":
-            issues.extend(_check_break(element))
-        if tag == "emphasis":
-            level = (element.get("level") or "moderate").lower()
-            if level not in _ALLOWED_EMPHASIS:
+        end = text.find(">", index + 1)
+        if end == -1 or (end - index) > _MAX_TAG_CHARS:
+            issues.append(ValidationIssue("ssml_parse", "unclosed or oversized SSML tag"))
+            break
+        raw = text[index + 1 : end].strip()
+        index = end + 1
+        if raw.startswith("/"):
+            name = raw[1:].split(None, 1)[0].lower() if raw[1:] else ""
+            if name not in _ALLOWED_TAGS:
+                issues.append(ValidationIssue("ssml_tag", f"unsupported SSML tag <{name}>"))
+            continue
+        name, attrs = _split_tag(raw)
+        if name not in _ALLOWED_TAGS:
+            issues.append(ValidationIssue("ssml_tag", f"unsupported SSML tag <{name}>"))
+            continue
+        if name not in allowed and name != "speak":
+            issues.append(ValidationIssue("ssml_tag", f"tag <{name}> is not allowed on this node"))
+        if name == "break":
+            issues.extend(_check_break_attrs(attrs))
+        if name == "emphasis":
+            level = _attr(attrs, "level") or "moderate"
+            if level.lower() not in _ALLOWED_EMPHASIS:
                 issues.append(
                     ValidationIssue("ssml_emphasis", f"emphasis level {level!r} is not allowed")
                 )
-        if tag == "prosody":
-            issues.extend(_check_prosody(element, allowed))
+        if name == "prosody":
+            issues.extend(_check_prosody_attrs(attrs, allowed))
     return issues
 
 
-def _check_break(element: ET.Element) -> list[ValidationIssue]:
-    time_raw = element.get("time")
+def _split_tag(raw: str) -> tuple[str, str]:
+    body = raw[:-1].strip() if raw.endswith("/") else raw
+    parts = body.split(None, 1)
+    name = parts[0].lower() if parts else ""
+    attrs = parts[1] if len(parts) > 1 else ""
+    return name, attrs
+
+
+def _attr(attrs: str, key: str) -> str | None:
+    token = f'{key}="'
+    start = attrs.lower().find(token)
+    if start < 0:
+        return None
+    begin = start + len(token)
+    end = attrs.find('"', begin)
+    if end < 0:
+        return None
+    return attrs[begin:end]
+
+
+def _check_break_attrs(attrs: str) -> list[ValidationIssue]:
+    time_raw = _attr(attrs, "time")
     if not time_raw:
         return []
-    match = re.fullmatch(r"(\d+)ms", time_raw.strip())
-    if match is None:
+    if not re.fullmatch(r"\d+ms", time_raw.strip()):
         return [ValidationIssue("ssml_break", "break time must look like 200ms")]
-    if int(match.group(1)) > _MAX_BREAK_MS:
+    if int(time_raw.strip()[:-2]) > _MAX_BREAK_MS:
         return [
             ValidationIssue(
                 "ssml_break",
@@ -217,24 +265,17 @@ def _check_break(element: ET.Element) -> list[ValidationIssue]:
     return []
 
 
-def _check_prosody(element: ET.Element, allowed: Iterable[str]) -> list[ValidationIssue]:
-    issues: list[ValidationIssue] = []
+def _check_prosody_attrs(attrs: str, allowed: Iterable[str]) -> list[ValidationIssue]:
     if "prosody" not in set(allowed):
-        issues.append(ValidationIssue("ssml_tag", "tag <prosody> is not allowed on this node"))
-        return issues
-    rate = element.get("rate")
+        return [ValidationIssue("ssml_tag", "tag <prosody> is not allowed on this node")]
+    issues: list[ValidationIssue] = []
+    rate = _attr(attrs, "rate")
     if rate and rate.lower() not in _ALLOWED_RATE:
         issues.append(ValidationIssue("ssml_prosody", f"prosody rate {rate!r} is not allowed"))
-    pitch = element.get("pitch")
+    pitch = _attr(attrs, "pitch")
     if pitch and not re.fullmatch(r"[+-]?\d{1,2}%", pitch.strip()):
         issues.append(ValidationIssue("ssml_prosody", "prosody pitch must be like +5% or -8%"))
     return issues
-
-
-def _local(tag: str) -> str:
-    if "}" in tag:
-        return tag.rsplit("}", 1)[-1]
-    return tag
 
 
 def issues_as_codes(issues: list[ValidationIssue]) -> list[str]:

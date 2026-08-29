@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import logging
+import random
 from dataclasses import dataclass, field
 
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
 from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink, TtsSink, build_tts_sink
-from irswitch.commentary.validator import estimate_seconds, fill_slots, validate_utterance
+from irswitch.commentary.validator import (
+    estimate_seconds,
+    fill_slots,
+    leftover_slots,
+    validate_utterance,
+)
 from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
@@ -37,6 +43,7 @@ class CommentaryDirector:
     settings: CommentarySettings = field(default_factory=CommentarySettings)
     sink: TtsSink = field(default_factory=NullTtsSink)
     language: str = "en"
+    rng: random.Random = field(default_factory=random.Random)
     _cooldowns: dict[str, float] = field(default_factory=dict)
     _busy_until: float = 0.0
     _last: _LastSpoken | None = None
@@ -111,8 +118,10 @@ class CommentaryDirector:
         if not texts:
             return None
         bindings = slot_bindings(envelope, emotion)
-        chosen = fill_slots(texts[0], bindings)
-        issues = validate_utterance(chosen, node)
+        spoken = choose_filled_line(texts, bindings, self.rng)
+        if spoken is None:
+            return None
+        issues = validate_utterance(spoken, node)
         if issues:
             logger.info(
                 "commentary rejected node=%s codes=%s",
@@ -120,7 +129,6 @@ class CommentaryDirector:
                 [item.code for item in issues],
             )
             return None
-        spoken = fill_slots(chosen, bindings)
         duration = min(
             node.tts.max_seconds,
             max(estimate_seconds(spoken, ssml=spoken if "<" in spoken else None), 0.6),
@@ -178,6 +186,19 @@ def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: floa
     if edge.same_correlation and last_corr and incoming_corr and last_corr != incoming_corr:
         return False
     return True
+
+
+def choose_filled_line(
+    texts: tuple[str, ...],
+    bindings: dict[str, object],
+    rng: random.Random,
+) -> str | None:
+    """Pick one fully-bound line at random. Leftover {slots} are skipped."""
+    ready = [fill_slots(text, bindings) for text in texts]
+    ready = [line for line in ready if line.strip() and not leftover_slots(line)]
+    if not ready:
+        return None
+    return rng.choice(ready)
 
 
 def resolve_emotion(bio: BioState | None, use_hr: bool) -> str:

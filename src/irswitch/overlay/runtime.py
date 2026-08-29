@@ -9,7 +9,9 @@ import time
 from collections.abc import Callable
 from typing import Any, Literal
 
+from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_from_race_event
 from irswitch.commentary.director import CommentaryDirector
+from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.tts import build_tts_sink
 from irswitch.config import AppConfig
 from irswitch.events.engine import EventEngine
@@ -70,7 +72,9 @@ class OverlayRuntime:
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
         self.commentary = self._build_commentary(overlay)
+        self.in_car = InCarDetector()
         self.session.add_reset_hook(self._reset_commentary)
+        self.session.add_reset_hook(self.in_car.reset)
 
     def _init_managers(self, overlay: OverlaySettings) -> None:
         if overlay.event_engine.v2_payload:
@@ -160,6 +164,7 @@ class OverlayRuntime:
         self.commentary.settings = overlay.commentary
         self.commentary.language = overlay.language
         self.commentary.reset()
+        self.in_car.reset()
 
     def _observe_commentary(self, envelopes: list[EventEnvelope], now: float) -> None:
         if not envelopes or self.commentary is None:
@@ -175,6 +180,15 @@ class OverlayRuntime:
             )
         except Exception:
             logger.warning("commentary observe failed", exc_info=True)
+
+    def _observe_in_car(self, state: RaceState, now: float) -> None:
+        try:
+            envelope = self.in_car.tick(state, now)
+        except Exception:
+            logger.warning("in-car detector failed", exc_info=True)
+            return
+        if envelope is not None:
+            self._observe_commentary([envelope], now)
 
     def _observe_timing(self, snap: TelemetrySnapshot) -> None:
         """Ingest player crossings into the timing store (no semantic events yet)."""
@@ -317,6 +331,7 @@ class OverlayRuntime:
         except Exception:
             logger.warning("EventEngine tick failed", exc_info=True)
             return
+        self._observe_in_car(state, now)
         if self.manager_v2 is not None:
             self.manager_v2.set_session_id(self._session_id(state))
             self.manager_v2.update_pit_state(bool(state.on_pit_road), now)
@@ -326,7 +341,10 @@ class OverlayRuntime:
                 )
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self.bus.publish_event(wire)
-                self._observe_commentary(envelopes, now)
+                self._observe_commentary(
+                    merge_speech_envelopes(race_event, envelopes, now=now, mode=state.overlay_mode),
+                    now,
+                )
             for race_event, envelopes in self.manager_v2.tick(now, mode=state.overlay_mode):
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self.bus.publish_event(wire)
@@ -338,6 +356,9 @@ class OverlayRuntime:
             event = self.manager.submit(candidate, now)
             if event is not None:
                 await self.bus.publish_event(event.to_envelope())
+                speech = speech_envelope_from_race_event(event, now=now, mode=state.overlay_mode)
+                if speech is not None:
+                    self._observe_commentary([speech], now)
         for expired in self.manager.tick(now):
             await self.bus.publish_event(expired.to_envelope())
         self.bus.set_active_events(self.manager.active_events())

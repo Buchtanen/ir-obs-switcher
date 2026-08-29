@@ -19,7 +19,17 @@
         {"name": "lap_time", "type": "time", "example": "1:32.4"}
       ],
       "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
-      "notes": "One sentence after an accepted lap. Do not read tenths unless they matter. No overlay-style shouting."
+      "notes": "Mock EN until the text model fills variants. Generic lap line; do not read tenths.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Lap complete.",
+            "That's a lap.",
+            "Another lap done.",
+            "Lap in the books."
+          ]
+        }
+      }
     },
     "personal_best": {
       "family": "timing",
@@ -285,7 +295,63 @@
         {"name": "position", "type": "int", "example": 8}
       ],
       "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Start of pit correlation. Do not call position changes during the pit cycle."
+      "notes": "Mock EN. Pit-road entry only — not getting into the car.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "In the pits.",
+            "Coming in.",
+            "Box this time.",
+            "Down the pit lane."
+          ]
+        }
+      }
+    },
+    "back_on_track": {
+      "family": "pit",
+      "event_types": ["PIT_EXIT"],
+      "phases": ["RESULT", "ENTER", "EXIT"],
+      "speak_priority": 62,
+      "cooldown_s": 16,
+      "slots": [
+        {"name": "position", "type": "int", "example": 11}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Mock EN. Leaving pit road, back on track. Not a car-entry line.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Back on track.",
+            "Out of the pits.",
+            "Rolling again.",
+            "We're back out."
+          ]
+        }
+      }
+    },
+    "in_car": {
+      "family": "session",
+      "event_types": ["ENTER_CAR"],
+      "phases": ["RESULT", "ENTER"],
+      "speak_priority": 38,
+      "cooldown_s": 45,
+      "slots": [],
+      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
+      "notes": "Mock EN matrix. Seated in-car once per stint. Random pick. Not pit entry.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "In the car.",
+            "Belted in.",
+            "Ready to go.",
+            "Seats in.",
+            "Let's go to work.",
+            "We're in.",
+            "Strapped in.",
+            "Car is live."
+          ]
+        }
+      }
     },
     "pit_outcome": {
       "family": "pit",
@@ -322,6 +388,7 @@
     {"from": "rival_threat", "to": "hunted", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 40}},
     {"from": "gain_found", "to": "target_locked", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 60}},
     {"from": "hot_lap", "to": "projected_lap", "when": {"same_correlation": false, "min_gap_s": 1.0, "max_gap_s": 20}},
+    {"from": "pit_entry", "to": "back_on_track", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 90}},
     {"from": "pit_entry", "to": "pit_outcome", "when": {"same_correlation": true, "min_gap_s": 4.0, "max_gap_s": 90}},
     {"from": "final_lap", "to": "finish", "when": {"same_correlation": false, "min_gap_s": 5.0, "max_gap_s": 240}},
     {"from": "incident", "to": "invalid_lap", "when": {"same_correlation": false, "min_gap_s": 0.2, "max_gap_s": 8}}

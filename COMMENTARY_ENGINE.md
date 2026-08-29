@@ -1,7 +1,7 @@
 # Commentary engine (Phase 0)
 
-**Status:** structure + TTS call + `/commentary` test page. Default **off** for the live race feed.  
-**Branch base:** `master` (Event Engine + BLE HR already there). Independent of Pit Wall theme pack (`6611`).
+**Status:** structure + TTS + `/commentary` test page + **English mock lines** on four events. Default **off** for the live race feed.  
+**Branch base:** `master`. Mock texts are placeholders until another model fills the graph.
 
 ## Why
 
@@ -24,9 +24,10 @@ iRacing / BLE HR
 Rules:
 
 - Hook **accepted envelopes only**. Raw candidates are too noisy.
-- Requires `event_engine.v2_payload=true` (V4 envelopes). Legacy WS events are ignored.
+- Works with **legacy** EventManager (`v2_payload=false`, default) via a speech map for `lap_complete` / `pit_entry` / `pit_exit`. V2 envelopes are used when present; the map fills gaps (basic pit has no V2 adapter).
+- `in_car` is a commentary sidecar (`player_car_idx` rising, event type `ENTER_CAR`). It is **not** an overlay HUD catalog entry and is **not** pit entry.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
-- BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Never invent BPM.
+- BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
 - Fail-soft: graph load / observe errors must not break the race loop.
 
 ## Sequence graph (not Neo4j)
@@ -39,7 +40,7 @@ Rules:
 | `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`) |
 | `slots` | `{position}`, `{gap}`, … bound from envelope metrics |
 | `hr_states` | Which BLE bands may pick this node |
-| `variants.{locale}.{emotion}` | Spoken lines — **empty in Phase 0** |
+| `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
 | `edges` | Preferred next line (e.g. hunting → side_by_side → overtake) |
 
 Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDATE`s) are **not** in the speak graph.
@@ -96,6 +97,19 @@ tts_rate = 0
 
 Migration: new optional section. Existing `config.ini` keeps defaults (off). No user action required.
 
+## English mock (until the text model)
+
+Spoken language is English. The director picks **one random fully-bound line** from the node matrix (`rng.choice`).
+
+| Node | Trigger | Not |
+| --- | --- | --- |
+| `in_car` | First seated snapshot this stint (`player_car_idx` set) | Pit entry |
+| `lap_complete` | Existing lap emitter | — |
+| `pit_entry` | Existing pit-road rising edge | Getting into the car |
+| `back_on_track` | Existing pit-road falling edge (`PIT_EXIT`) | Car entry |
+
+Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
+
 ## Later (not this PR)
 
 - Author fills `variants` (EN + CS, per emotion)
@@ -109,3 +123,4 @@ Migration: new optional section. Existing `config.ini` keeps defaults (off). No 
 - `tests/test_commentary_validator.py`
 - `tests/test_commentary_assignments.py`
 - `tests/test_commentary_director.py`
+- `tests/test_commentary_mock.py`

@@ -10,6 +10,8 @@ from typing import Any
 from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 GRAPH_VERSION = 1
+# Speech-only event types. Not overlay HUD catalog entries.
+COMMENTARY_ONLY_EVENTS = frozenset({"ENTER_CAR"})
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})
 ALLOWED_SLOT_TYPES = frozenset({"int", "time", "delta", "gap", "name", "label"})
 ALLOWED_SSML = frozenset({"break", "emphasis"})
@@ -59,13 +61,21 @@ class GraphNode:
 
     def variant_bucket(self, locale: str, emotion: str) -> tuple[str, ...]:
         locale_map = self.variants.get(locale) or {}
+        picked = self._bucket_from(locale_map, emotion)
+        if picked:
+            return picked
+        if locale != "en":
+            return self._bucket_from(self.variants.get("en") or {}, emotion)
+        return ()
+
+    @staticmethod
+    def _bucket_from(locale_map: dict[str, tuple[str, ...]], emotion: str) -> tuple[str, ...]:
         if emotion in locale_map and locale_map[emotion]:
             return locale_map[emotion]
-        if emotion == "calm" and locale_map.get("neutral"):
+        # Mock / unfilled emotion cells fall back to neutral instead of silence.
+        if locale_map.get("neutral"):
             return locale_map["neutral"]
-        if emotion == "unknown" and locale_map.get("neutral"):
-            return locale_map["neutral"]
-        return locale_map.get(emotion, ())
+        return ()
 
 
 @dataclass
@@ -166,7 +176,7 @@ def validate_graph_document(raw: dict[str, Any]) -> list[str]:
         for locale in locales:
             if locale not in SUPPORTED_LOCALES:
                 errors.append(f"unsupported locale: {locale!r}")
-    known_events = set(catalog_entries()) | set(catalog_fallbacks())
+    known_events = set(catalog_entries()) | set(catalog_fallbacks()) | COMMENTARY_ONLY_EVENTS
     nodes = raw.get("nodes")
     if not isinstance(nodes, dict) or not nodes:
         errors.append("nodes must be a non-empty object")
