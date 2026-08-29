@@ -194,16 +194,21 @@ async function startV4Demo(params) {
   window.__v4Display = DisplayV4;
   window.__v4SyncSysinfoGlow = v4.syncSysinfoGlow;
   const theme = params.get("theme") || window.__overlayTheme || "cyber_racing";
-  await initV4({
-    theme,
-    language: window.__overlayLanguage || "en",
-    manifestUrl: window.__v4ManifestUrl,
-    catalogUrl: window.__v4CatalogUrl,
-    copyCatalog: window.__v4CopyCatalog,
-    resolvedMotions: window.__v4ResolvedMotions,
-    resolvedStates: window.__v4ResolvedStates,
-    motionDisabled: params.get("motion") === "off",
-  });
+  try {
+    await initV4({
+      theme,
+      language: window.__overlayLanguage || "en",
+      manifestUrl: window.__v4ManifestUrl,
+      catalogUrl: window.__v4CatalogUrl,
+      copyCatalog: window.__v4CopyCatalog,
+      resolvedMotions: window.__v4ResolvedMotions,
+      resolvedStates: window.__v4ResolvedStates,
+      motionDisabled: params.get("motion") === "off",
+    });
+  } catch (err) {
+    console.error("v4 demo init failed", err);
+    document.documentElement.dataset.v4Manifest = "fallback";
+  }
   const layout = params.get("layout");
   if (layout === "golden") {
     await startV4Golden(params, v4);
@@ -291,21 +296,36 @@ async function bootstrap() {
     const { DisplayV4, initV4, syncSysinfoGlow } = await import("./display-v4.js");
     window.__v4Display = DisplayV4;
     window.__v4SyncSysinfoGlow = syncSysinfoGlow;
-    await initV4({
-      theme: theme || window.__overlayTheme || "cyber_racing",
-      language: window.__overlayLanguage || "en",
-      manifestUrl: window.__v4ManifestUrl,
-      catalogUrl: window.__v4CatalogUrl,
-      copyCatalog: window.__v4CopyCatalog,
-      resolvedMotions: window.__v4ResolvedMotions,
-      resolvedStates: window.__v4ResolvedStates,
-      motionDisabled: params.get("motion") === "off",
-    });
+    try {
+      await initV4({
+        theme: theme || window.__overlayTheme || "cyber_racing",
+        language: window.__overlayLanguage || "en",
+        manifestUrl: window.__v4ManifestUrl,
+        catalogUrl: window.__v4CatalogUrl,
+        copyCatalog: window.__v4CopyCatalog,
+        resolvedMotions: window.__v4ResolvedMotions,
+        resolvedStates: window.__v4ResolvedStates,
+        motionDisabled: params.get("motion") === "off",
+      });
+    } catch (err) {
+      console.error("v4 init failed", err);
+      document.documentElement.dataset.v4Manifest = "fallback";
+      document.getElementById("sysinfo-widget")?.classList.add("fallback");
+    } finally {
+      if (demo) {
+        // Demo path: startV4Demo may re-init; do not open live WS.
+      } else {
+        connectOverlay();
+      }
+    }
     if (demo) {
-      await startV4Demo(params);
+      try {
+        await startV4Demo(params);
+      } catch (err) {
+        console.error("v4 demo failed", err);
+      }
       return;
     }
-    connectOverlay();
     return;
   }
   if (demo) {

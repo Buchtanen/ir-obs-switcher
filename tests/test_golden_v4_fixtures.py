@@ -107,23 +107,29 @@ def test_display_v4_js_has_unique_fixture_exports() -> None:
     exports = fixture_export_pattern().findall(js)
     assert exports, "expected v4Fixture* exports in display-v4.js"
     assert len(exports) == len(set(exports)), f"duplicate exports: {exports}"
-    assert "let resolvedStates" in js
+    # Boot contract (Phase 0): init marks manifest status for fallback UI.
+    assert "dataset.v4Manifest" in js
 
 
 def test_golden_gallery_clips_glow_overflow() -> None:
+    from v4_css_geometry import rule_decls
+
     js = display_v4_js()
     css = display_v4_css()
     assert "function isGoldenSnapshot(" in js
     assert "paintPlateMask" in js
     assert "glow_" in js
-    assert "isolation: isolate" in css
-    assert "contain: paint" in css
+    widget = rule_decls(css, ".v4-widget")
+    assert widget.get("isolation") == "isolate"
+    assert widget.get("contain") == "paint"
     assert ".golden-stage .v4-widget" in css
     assert "overflow: hidden" in css
 
 
 def test_v4_live_widget_plate_masks_glow() -> None:
     """Live V4 cards skip glow_* PNGs and plate-mask .v4-art (WebM enter clip)."""
+    from v4_css_geometry import rule_decls
+
     js = display_v4_js()
     css = display_v4_css()
     assert "function paintPlateMask(" in js
@@ -132,39 +138,42 @@ def test_v4_live_widget_plate_masks_glow() -> None:
     assert "paintPlateMask(art, family)" in js
     assert "if (glowMatch) return" in js
     assert ".v4-art.has-plate-mask" in css
-    assert ".v4-widget {" in css
-    widget_block = css.split(".v4-widget {", 1)[1].split("}", 1)[0]
-    assert "overflow: hidden" in widget_block
-    assert "contain: paint" in widget_block
+    widget = rule_decls(css, ".v4-widget")
+    assert widget.get("overflow") == "hidden"
+    assert widget.get("contain") == "paint"
 
 
 def test_v4_copy_uses_absolute_plate_slots() -> None:
     """Copy must use V3-aligned absolute slots — not a centered 1fr grid (text too high)."""
+    from v4_css_geometry import assert_rule_px, css_rule_block, rule_decls
+
     css = display_v4_css()
-    assert "grid-template-rows: auto auto 1fr auto" not in css
-    assert "align-content: center" not in css
-    copy_block = css.split(".v4-copy {", 1)[1].split(".v4-copy .title", 1)[0]
+    copy_block = css_rule_block(css, ".v4-copy")
+    assert "grid-template-rows: auto auto 1fr auto" not in copy_block
+    assert "align-content: center" not in copy_block
     assert "display: block" in copy_block
-    assert "top: 38px" in css
     assert ".v4-copy .title" in css
     assert ".v4-copy .subtitle" in css
     assert ".v4-copy .value" in css
     assert ".v4-copy .meta" in css
-    title_block = css.split(".v4-copy .title {", 1)[1].split("}", 1)[0]
-    assert "position: absolute" in title_block
-    assert "left: 119px" in title_block
-    assert "top: 38px" in title_block
+    title = rule_decls(css, ".v4-copy .title")
+    assert title.get("position") == "absolute"
+    assert_rule_px(css, ".v4-copy .title", {"left": 119.0, "top": 38.0})
 
 
 def test_v4_icons_use_full_canvas_well_alignment() -> None:
     """V4 icons are 420×140 plates; a 64×64 crop shifts glyphs right of icon_well."""
+    from v4_css_geometry import assert_rule_px, css_rule_block, resolve_px, rule_decls
+
     css = display_v4_css()
-    icon_block = css.split(".v4-art .icon {", 1)[1].split("}", 1)[0]
-    assert "width: 420px" in icon_block
-    assert "height: 140px" in icon_block
-    assert "background-size: 420px 140px" in icon_block
-    assert "width: 64px" not in icon_block
-    assert "left: 28px" not in icon_block
+    icon_block = css_rule_block(css, ".v4-art .icon")
+    assert_rule_px(css, ".v4-art .icon", {"width": 420.0, "height": 140.0})
+    decls = rule_decls(css, ".v4-art .icon")
+    sizes = decls["background-size"].split()
+    assert resolve_px(sizes[0]) == 420.0
+    assert resolve_px(sizes[1]) == 140.0
+    assert "64px" not in icon_block
+    assert "28px" not in icon_block
 
 
 def test_cyber_racing_icon_wells_centered_on_glyph() -> None:

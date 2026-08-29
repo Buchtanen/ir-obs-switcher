@@ -813,22 +813,62 @@ export async function initV4(options = {}) {
   if (typeof document !== "undefined") {
     document.documentElement.dataset.theme = theme;
   }
-  const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
-  const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
-  const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
-  if (!Object.keys(copyCatalog).length) {
-    tasks.push(fetch("/api/overlay/i18n"));
+  let manifestOk = false;
+  try {
+    const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
+    const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
+    const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
+    if (!Object.keys(copyCatalog).length) {
+      tasks.push(fetch("/api/overlay/i18n"));
+    }
+    const results = await Promise.all(tasks);
+    const [manifestRes, catalogRes, i18nRes] = results;
+    if (manifestRes.ok) {
+      try {
+        manifest = await manifestRes.json();
+        manifestOk = Boolean(manifest && typeof manifest === "object");
+      } catch (err) {
+        console.error("v4 manifest parse failed", err);
+        manifest = null;
+        manifestOk = false;
+      }
+    }
+    if (catalogRes.ok) {
+      try {
+        catalog = await catalogRes.json();
+      } catch (err) {
+        console.error("v4 catalog parse failed", err);
+        catalog = null;
+      }
+    }
+    if (i18nRes?.ok) {
+      try {
+        const i18n = await i18nRes.json();
+        copyCatalog = i18n.copyCatalog || copyCatalog;
+        language = i18n.language || language;
+      } catch (err) {
+        console.error("v4 i18n parse failed", err);
+      }
+    }
+  } catch (err) {
+    console.error("initV4 failed", err);
+    manifest = null;
+    manifestOk = false;
+  } finally {
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.v4Manifest = manifestOk ? "ok" : "fallback";
+      if (!manifestOk) {
+        document.getElementById("sysinfo-widget")?.classList.add("fallback");
+      }
+    }
   }
-  const results = await Promise.all(tasks);
-  const [manifestRes, catalogRes, i18nRes] = results;
-  if (manifestRes.ok) manifest = await manifestRes.json();
-  if (catalogRes.ok) catalog = await catalogRes.json();
-  if (i18nRes?.ok) {
-    const i18n = await i18nRes.json();
-    copyCatalog = i18n.copyCatalog || copyCatalog;
-    language = i18n.language || language;
+  if (options.sysinfo !== false) {
+    try {
+      renderSysinfo();
+    } catch (err) {
+      console.error("renderSysinfo failed", err);
+    }
   }
-  if (options.sysinfo !== false) renderSysinfo();
 }
 
 export function refreshV4Presentation(options = {}) {

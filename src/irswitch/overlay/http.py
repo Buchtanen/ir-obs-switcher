@@ -101,16 +101,24 @@ def presentation_payload() -> dict[str, Any]:
     dumped = AssetManifest(theme, web_root()).to_dict()
     payload: dict[str, Any] = {"theme": dumped["theme"], "assets": dumped["assets"]}
     if v4_assets or v4_renderer:
-        resolver = V4AssetResolver.load(theme, web_root())
-        payload["v4"] = {
+        v4_block: dict[str, Any] = {
             "assets": v4_assets,
             "renderer": v4_renderer,
             "manifestUrl": "/overlay/web/themes-v4/manifest.json",
             "catalogUrl": "/overlay/web/themes-v4/event_catalog.json",
             "language": language,
             "copyCatalog": copy_catalog_for_renderer(language),
-            "resolved": resolver.to_dict(),
+            "resolved": None,
+            "manifestError": None,
         }
+        try:
+            resolver = V4AssetResolver.load(theme, web_root())
+            v4_block["resolved"] = resolver.to_dict()
+        except Exception as exc:
+            # Broken/missing V4 manifest must not take down snapshot or WS boot.
+            logger.warning("V4 manifest resolve failed: %s", exc)
+            v4_block["manifestError"] = str(exc) or exc.__class__.__name__
+        payload["v4"] = v4_block
     return payload
 
 
