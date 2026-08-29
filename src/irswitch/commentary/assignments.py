@@ -56,12 +56,14 @@ def render_assignments(
 def _emotions_for(node: GraphNode, locale: str, *, only_unfilled: bool) -> list[str]:
     wanted: list[str] = []
     seen: set[str] = set()
+    locale_map = node.variants.get(locale) or {}
     for hr_state in node.hr_states:
         bucket = "neutral" if hr_state == "unknown" else hr_state
         if bucket in seen:
             continue
         seen.add(bucket)
-        filled = bool(node.variant_bucket(locale, hr_state) or node.variant_bucket(locale, bucket))
+        # Authored cell only — do not treat EN/neutral playback fallback as filled.
+        filled = bool(locale_map.get(bucket) or locale_map.get(hr_state))
         if only_unfilled and filled:
             continue
         wanted.append(bucket)

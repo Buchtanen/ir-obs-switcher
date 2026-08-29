@@ -20,3 +20,9 @@ def test_assignments_can_filter_locale() -> None:
     text = render_assignments(locale="cs")
     assert " — cs / " in text
     assert " — en / " not in text
+
+
+def test_assignments_still_ask_for_cs_on_english_mock_nodes() -> None:
+    text = render_assignments(locale="cs")
+    for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
+        assert f"`{node_id}`" in text
