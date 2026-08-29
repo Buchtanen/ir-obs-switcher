@@ -28,6 +28,7 @@ Proto je `.cursor/hooks.json` **gitignored** (lokální opt-in). V repu je jen t
 - `restart-irswitch` — start/stop/restart služby, port 17321, SSLKEYLOGFILE, `/health`
 - `youtube-oauth` — volitelný YouTube title (ne scene switch)
 - `iracing-sdk-display-format` — iRSDK jednotky, sentinely (`-1`, 32767) a HUD formát časů (`m:ss.fff`)
+- `subagents` — kdy spouštět Task subagenty vs práci v parentovi; `/flow` typy a worktrees
 
 ### Doporučené workflow
 - `/flow` → provede celý proces (issue → diary → docs → QA → PR popis)
