@@ -149,6 +149,7 @@ Aplikace poskytuje dva HTML dashboardy:
 
 - **URL**: `http://127.0.0.1:17321/overlay` — transparentní 1920×1080 overlay
 - **Dry test**: `http://127.0.0.1:17321/overlay/demo` — tmavé jeviště, **V4** cyklický scénář HUD (~28&nbsp;s loop) bez OBS/iRacing; v UI lze přepnout na legacy V3
+- **Časy na HUD**: iRSDK posílá sekundy (invalid často `-1`). Overlay je formátuje jako iRacing F3 / SimHub (`m:ss.fff`, delta `+0.318`). WS `metrics` zůstávají čísla.
 - **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
 - **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
 - **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)

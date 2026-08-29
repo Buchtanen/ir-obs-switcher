@@ -739,7 +739,7 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
   "correlationId": "lap:12",
   "storyKey": "lap:12",
   "subject": { "carId": "player" },
-  "metrics": { "lap": 12, "lapTimeSec": 92.4 },
+  "metrics": { "lap": 12, "lapTime": 92.4 },
   "copy": { "headlineToken": "lap.headline", "statusToken": "lap.status" },
   "presentation": {
     "widget": "lap_complete",
@@ -751,6 +751,8 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
   "reason": { "detector": "lap", "rules": [], "suppressedAlternatives": [] }
 }
 ```
+
+Časy v `metrics` jsou **sekundy** (iRSDK float). HUD je formátuje jako `m:ss.fff` a delty jako `+0.318` / `-0.418`. Do WS neposílej předformátované stringy.
 
 **`STATE_SNAPSHOT`** — druhá zpráva po reconnectu, pokud manager drží aktivní V4 stories:
 

@@ -1,8 +1,10 @@
 /** V4 overlay renderer (S1: timing + battle + position families). */
 
+import { fmtDelta, fmtGap, fmtLapTime } from "./timing-format.js";
+
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.11";
+const ASSET_CACHE = "1.2.12";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -56,24 +58,6 @@ function text(el, value) {
 function fmt(n, digits) {
   if (n == null || Number.isNaN(n)) return "—";
   return Number(n).toFixed(digits);
-}
-
-function fmtLapTime(seconds) {
-  if (seconds == null || Number.isNaN(seconds)) return "—";
-  const total = Number(seconds);
-  const mins = Math.floor(total / 60);
-  const secs = total - mins * 60;
-  const whole = Math.floor(secs);
-  const frac = Math.round((secs - whole) * 1000);
-  if (mins > 0) {
-    return `${mins}:${String(whole).padStart(2, "0")}.${String(frac).padStart(3, "0")}`;
-  }
-  return `${whole}.${String(frac).padStart(3, "0")}`;
-}
-
-function fmtGap(seconds) {
-  if (seconds == null || Number.isNaN(seconds)) return "—";
-  return `${fmt(seconds, 2)} s`;
 }
 
 function fmtPositionDelta(delta) {
@@ -599,12 +583,12 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(meta, metrics.targetPosition != null ? `P${metrics.targetPosition} behind` : sample.meta);
   } else if (stateKey === "approach") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE BUILDING");
-    text(value, metrics.closingRate != null ? fmt(metrics.closingRate, 2) : sample.value);
+    text(value, metrics.closingRate != null ? `${fmt(metrics.closingRate, 2)} s/s` : sample.value);
     text(meta, sample.meta);
   } else if (stateKey === "attack_range") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "MOVE POSSIBLE");
     text(value, fmtGap(metrics.gap));
-    text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)}` : sample.meta);
+    text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)} s/s` : sample.meta);
   } else if (stateKey === "side_by_side") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "WHEEL TO WHEEL");
     text(value, fmtGap(metrics.gap));
@@ -848,7 +832,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else if (stateKey === "pb_attack") {
     const sectorLabel = metrics.sector || metrics.timingPointId || "S1";
     const delta = metrics.delta ?? metrics.deltaToBest;
-    text(subtitle, delta != null ? `${sectorLabel} · ${fmt(delta, 3)}` : sample.subtitle);
+    text(subtitle, delta != null ? `${sectorLabel} · ${fmtDelta(delta)}` : sample.subtitle);
     text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
     text(meta, sample.meta || "personal best");
   } else if (stateKey === "hot_lap") {
@@ -858,7 +842,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(subtitle, metrics.position != null ? `CURRENT P${metrics.position}` : sample.subtitle);
     text(
       value,
-      metrics.sectorDelta != null ? `S1 ${fmt(metrics.sectorDelta, 3)}` : sample.value,
+      metrics.sectorDelta != null ? `S1 ${fmtDelta(metrics.sectorDelta)}` : sample.value,
     );
     text(
       meta,
@@ -874,7 +858,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
       subtitle,
       metrics.timingPointId ? `${metrics.timingPointId} EXIT` : sample.subtitle,
     );
-    text(value, metrics.delta != null ? fmt(metrics.delta, 3) : sample.value);
+    text(value, metrics.delta != null ? fmtDelta(metrics.delta) : sample.value);
     text(meta, sample.meta || "clean minisector");
   } else if (stateKey === "clean_streak") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "CONSISTENT PACE");
@@ -887,7 +871,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else if (stateKey === "personal_best") {
     text(subtitle, sample.subtitle || "NEW REFERENCE");
     text(value, fmtLapTime(metrics.lapTime));
-    text(meta, fmt(metrics.deltaToBest, 3));
+    text(meta, fmtDelta(metrics.deltaToBest));
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || "");

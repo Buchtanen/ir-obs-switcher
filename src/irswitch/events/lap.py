@@ -17,9 +17,15 @@ class LapEmitter:
         if not state.connected or state.lap_completed is None:
             return []
         prev = self._last_completed
-        self._last_completed = state.lap_completed
-        if prev is None or state.lap_completed <= prev:
+        if prev is None or state.lap_completed < prev:
+            self._last_completed = state.lap_completed
             return []
+        if state.lap_completed == prev:
+            return []
+        # iRSDK often holds LapLastLapTime at -1 until the lap is scored.
+        if state.last_lap_time is None:
+            return []
+        self._last_completed = state.lap_completed
 
         personal_best = False
         if (

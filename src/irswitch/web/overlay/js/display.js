@@ -1,3 +1,5 @@
+import { fmtDelta, fmtGap, fmtLapTime } from "./timing-format.js";
+
 const CHANNELS = {
   battle: { cap: 2, layer: "battle-stack" },
   lap: { cap: 1, layer: "event-layer" },
@@ -461,19 +463,19 @@ export const DisplayManager = {
     if (name === "battle" && state === "hunting") {
       text(kicker, "CLOSING IN");
       text(title, "HUNTING");
-      text(meta, `P${data.targetPosition ?? "—"}  +${fmt(data.gap, 3)}`);
+      text(meta, `P${data.targetPosition ?? "—"}  ${fmtGap(data.gap)}`);
     } else if (name === "battle" && state === "hunted") {
       text(kicker, "UNDER PRESSURE");
       text(title, "HUNTED");
-      text(meta, `P${data.targetPosition ?? "—"}  -${fmt(data.gap, 3)}`);
+      text(meta, `P${data.targetPosition ?? "—"}  ${fmtGap(data.gap)}`);
     } else if (name === "lap_complete") {
       text(kicker, `LAP ${data.lap ?? ""}`);
       text(title, "LAP COMPLETE");
-      text(meta, `${fmt(data.lapTime, 3)}  ${fmt(data.deltaToBest, 3)}`);
+      text(meta, `${fmtLapTime(data.lapTime)}  ${fmtDelta(data.deltaToBest)}`);
     } else if (name === "personal_best") {
       text(kicker, "STOPWATCH");
       text(title, "PERSONAL BEST");
-      text(meta, `${fmt(data.lapTime, 3)}`);
+      text(meta, fmtLapTime(data.lapTime));
     } else if (name === "position_change") {
       text(kicker, data.direction === "gain" ? "POSITION GAINED" : "POSITION LOST");
       text(title, data.direction === "gain" ? `+${Math.abs(data.delta || 1)} POS` : `${data.delta} POS`);
