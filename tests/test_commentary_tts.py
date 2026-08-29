@@ -15,7 +15,9 @@ from irswitch.commentary.tts import (
 from irswitch.overlay.settings import CommentarySettings
 
 
-def _ok_run(argv: list[str], env: dict[str, str], timeout_s: float) -> subprocess.CompletedProcess[str]:
+def _ok_run(
+    argv: list[str], env: dict[str, str], timeout_s: float
+) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
 
 
@@ -34,11 +36,15 @@ def test_speak_text_espeak_uses_runner(monkeypatch: Any) -> None:
     monkeypatch.setattr("irswitch.commentary.tts._espeak_bin", lambda: "/usr/bin/espeak-ng")
     seen: list[list[str]] = []
 
-    def runner(argv: list[str], env: dict[str, str], timeout_s: float) -> subprocess.CompletedProcess[str]:
+    def runner(
+        argv: list[str], env: dict[str, str], timeout_s: float
+    ) -> subprocess.CompletedProcess[str]:
         seen.append(argv)
         return _ok_run(argv, env, timeout_s)
 
-    result = speak_text("You take P5 from Rossi.", locale="en", rate=0, backend="espeak", runner=runner)
+    result = speak_text(
+        "You take P5 from Rossi.", locale="en", rate=0, backend="espeak", runner=runner
+    )
     assert result.spoken is True
     assert result.backend == "espeak"
     assert seen[0][0] == "/usr/bin/espeak-ng"
@@ -49,7 +55,9 @@ def test_speak_text_sapi_passes_base64_env(monkeypatch: Any) -> None:
     monkeypatch.setattr("irswitch.commentary.tts.detect_backend", lambda _pref="auto": "sapi")
     seen_env: dict[str, str] = {}
 
-    def runner(argv: list[str], env: dict[str, str], timeout_s: float) -> subprocess.CompletedProcess[str]:
+    def runner(
+        argv: list[str], env: dict[str, str], timeout_s: float
+    ) -> subprocess.CompletedProcess[str]:
         seen_env.update(env)
         assert "-Command" in argv
         return _ok_run(argv, env, timeout_s)

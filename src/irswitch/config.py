@@ -400,9 +400,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         use_hr_emotion=_get_bool(
             parser, "commentary", "use_hr_emotion", commentary_defaults.use_hr_emotion
         ),
-        cooldown_s=_get_float(
-            parser, "commentary", "cooldown_s", commentary_defaults.cooldown_s
-        ),
+        cooldown_s=_get_float(parser, "commentary", "cooldown_s", commentary_defaults.cooldown_s),
         max_utterance_s=_get_float(
             parser, "commentary", "max_utterance_s", commentary_defaults.max_utterance_s
         ),

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
 
@@ -13,11 +13,7 @@ _TERMINAL = re.compile(r"[.!?…][\"')\]]*$")
 _MULTI_PUNCT = re.compile(r"[!?]{2,}|\.{3,}|…{2,}")
 _ALL_CAPS = re.compile(r"\b[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]{4,}\b")
 _EMOJI = re.compile(
-    "["
-    "\U0001f300-\U0001faff"
-    "\U00002700-\U000027bf"
-    "\U0001f000-\U0001f0ff"
-    "]+"
+    "[" "\U0001f300-\U0001faff" "\U00002700-\U000027bf" "\U0001f000-\U0001f0ff" "]+"
 )
 _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
 _LONG_DIGIT = re.compile(r"\d{4,}")

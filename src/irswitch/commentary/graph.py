@@ -280,7 +280,9 @@ def _parse_variants(
 def _tts_limits(raw: dict[str, Any], base: TtsLimits | None = None) -> TtsLimits:
     seed = base or TtsLimits()
     allowed = tuple(
-        str(item) for item in raw.get("ssml_allowed", seed.ssml_allowed) if str(item) in ALLOWED_SSML
+        str(item)
+        for item in raw.get("ssml_allowed", seed.ssml_allowed)
+        if str(item) in ALLOWED_SSML
     )
     return TtsLimits(
         max_chars=int(raw.get("max_chars", seed.max_chars)),

@@ -10,8 +10,9 @@ import shutil
 import subprocess
 import sys
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Protocol
+from typing import Protocol
 
 from irswitch.commentary.graph import GraphNode
 from irswitch.overlay.settings import CommentarySettings
@@ -227,7 +228,15 @@ def _speak_sapi(
     env["IRSWITCH_TTS_VOICE"] = voice or ""
     exe = shutil.which("powershell") or shutil.which("pwsh") or "powershell"
     completed = _run(
-        [exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", _SAPI_SCRIPT],
+        [
+            exe,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            _SAPI_SCRIPT,
+        ],
         env=env,
         timeout_s=timeout_s,
         runner=runner,
@@ -265,7 +274,15 @@ def _speak_espeak(
 def _list_sapi_voices() -> list[str]:
     exe = shutil.which("powershell") or shutil.which("pwsh") or "powershell"
     completed = subprocess.run(
-        [exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", _SAPI_VOICES_SCRIPT],
+        [
+            exe,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            _SAPI_VOICES_SCRIPT,
+        ],
         check=False,
         capture_output=True,
         text=True,

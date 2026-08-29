@@ -74,9 +74,12 @@ def _render_node(
     locale: str,
     emotions: list[str],
 ) -> str:
-    slots = "\n".join(
-        f"- `{{{slot.name}}}` ({slot.type}) example: {slot.example}" for slot in node.slots
-    ) or "- (no slots)"
+    slots = (
+        "\n".join(
+            f"- `{{{slot.name}}}` ({slot.type}) example: {slot.example}" for slot in node.slots
+        )
+        or "- (no slots)"
+    )
     prev = ", ".join(edge.source for edge in graph.incoming(node.id)) or "(start)"
     nxt = ", ".join(edge.target for edge in graph.outgoing(node.id)) or "(end)"
     overlay = _overlay_hints(node.family, locale)

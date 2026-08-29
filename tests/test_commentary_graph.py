@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from irswitch.commentary.graph import load_sequence_graph, parse_sequence_graph, validate_graph_document
+from irswitch.commentary.graph import (
+    load_sequence_graph,
+    parse_sequence_graph,
+    validate_graph_document,
+)
 from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 

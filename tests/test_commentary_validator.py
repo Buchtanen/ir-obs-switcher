@@ -50,9 +50,7 @@ def test_ssml_break_and_bad_tag() -> None:
     assert ok == []
     codes = issues_as_codes(validate_utterance("<audio src='x.wav'/> Hello.", node))
     assert "ssml_tag" in codes or "ssml_parse" in codes
-    long_break = issues_as_codes(
-        validate_utterance('Wait. <break time="900ms"/> Now.', node)
-    )
+    long_break = issues_as_codes(validate_utterance('Wait. <break time="900ms"/> Now.', node))
     assert "ssml_break" in long_break
 
 
