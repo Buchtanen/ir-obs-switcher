@@ -19,3 +19,7 @@
 - BIO: trace posun pouze při novém BLE sample; nepředstírat EKG frekvenci.
 
 Při `prefers-reduced-motion` vypněte tick build, trace scrolling a flash; zkraťte opacity transition na max 160 ms.
+
+## WebM delivery status
+
+No repeatable WebM authoring pipeline is established in this pack. `motion/manifest.json` therefore declares CSS fallback as authoritative. Reels may be added later only when alpha-VP9 export and deterministic verification are available; no placeholder WebM is included.

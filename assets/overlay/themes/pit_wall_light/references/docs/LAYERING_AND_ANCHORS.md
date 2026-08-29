@@ -8,6 +8,9 @@
 | Battle stack | 420 x 140 každý | x 36, bottom 91, gap 10 | max 2 |
 | Event | 420 x 140 | x 1452, bottom 91 | max 1 |
 | BLE/HR compact | 180 x 72 | poslední SYSINFO segment | x 12-168, y 10-62 |
-| SYSINFO | 1920 x 72 | x 0, y 1008 | brand 230; data x 246-1902 |
+| SYSINFO | 1920 x 72 | x 0, y 1008 | brand 230; 11 data modules x 150; trailing safe area 40|
 
 Z-index a animační role každého souboru jsou také v `manifests/asset-manifest.json` a `.csv`.
+
+
+Authoritative icon box: `[39, 46, 48, 48]` (`[x,y,w,h]`).

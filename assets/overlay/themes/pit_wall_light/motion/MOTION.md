@@ -13,3 +13,7 @@
 - BLE/HR: trace se aktualizuje jen při novém sample; nesimuluje EKG.
 
 Při `prefers-reduced-motion` vypněte sweep, scrolling trace a flash; opacity transition nejvýše 160 ms.
+
+## WebM delivery status
+
+No repeatable WebM authoring pipeline is established in this pack. `motion/manifest.json` therefore declares CSS fallback as authoritative. Reels may be added later only when alpha-VP9 export and deterministic verification are available; no placeholder WebM is included.

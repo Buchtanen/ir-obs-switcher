@@ -10,3 +10,5 @@ Formát: `pw-{scope}-{layer-or-element}-{variant}-{state}.{ext}`.
 - master je vždy SVG; PNG a WebP jsou odvozené exporty se stejným stemem.
 
 Příklady: `pw-hunting-04-status-rail-cyan.svg`, `pw-icon-stopwatch.svg`, `pw-sysinfo-bus-line.svg`, `pw-mask-wipe-left.svg`.
+
+Added semantic scopes: `pit`, `exception`; state glyphs use the complete state stem, for example `pw-icon-pit-entry.svg` / `pl-icon-invalid-lap.svg`.

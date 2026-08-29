@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "themeId": "pitwall_light",
   "displayName": "Pit Wall Light",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "canvas": {
     "width": 1920,
     "height": 1080,
@@ -26,7 +26,12 @@
       "width": 82,
       "height": 88,
       "radius": 22,
-      "iconSize": 50
+      "iconBox": [
+        39,
+        46,
+        48,
+        48
+      ]
     },
     "bleCompact": {
       "width": 180,
@@ -40,8 +45,27 @@
       "width": 1920,
       "height": 72,
       "brandWidth": 230,
-      "standardSegmentWidth": 170,
-      "bioSegmentWidth": 180
+      "grid": {
+        "brandWidth": 230,
+        "moduleWidth": 150,
+        "moduleCount": 11,
+        "positions": [
+          230,
+          380,
+          530,
+          680,
+          830,
+          980,
+          1130,
+          1280,
+          1430,
+          1580,
+          1730,
+          1880
+        ],
+        "dataEndX": 1880,
+        "trailingSafeWidth": 40
+      }
     },
     "zones": {
       "SESSION": {
@@ -81,7 +105,13 @@
         "width": 1920,
         "height": 72
       }
-    }
+    },
+    "iconBox": [
+      39,
+      46,
+      48,
+      48
+    ]
   },
   "color": {
     "ink": "#101B2C",

@@ -8,3 +8,5 @@ Formát: `pl-{scope}-{order}-{layer}-{variant}.{ext}`.
 - stavová barva je v názvu jen u samostatné state vrstvy;
 - rozlišení je adresář `1x` nebo `2x`, ne suffix souboru;
 - SVG je master, PNG/WebP jsou odvozené exporty se stejným stemem.
+
+Added semantic scopes: `pit`, `exception`; state glyphs use the complete state stem, for example `pw-icon-pit-entry.svg` / `pl-icon-invalid-lap.svg`.

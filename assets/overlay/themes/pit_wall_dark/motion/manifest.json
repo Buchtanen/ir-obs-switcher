@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "themeId": "pitwall_race_control",
+  "pipeline": "not-established",
+  "fallback": "css",
+  "webm": [],
+  "reels": {
+    "enter": {
+      "durationMs": 360,
+      "intent": "rail reveal plus horizontal timing wipe"
+    },
+    "active": {
+      "durationMs": 220,
+      "intent": "one local data pulse; no looping full-card motion"
+    },
+    "pit-phase": {
+      "durationMs": 260,
+      "intent": "advance only the six-step pit phase track"
+    },
+    "exception-alert": {
+      "durationMs": 260,
+      "intent": "single fracture accent reveal; no repeating flash"
+    },
+    "session-sweep": {
+      "durationMs": 420,
+      "intent": "one edge or bus sweep, then static"
+    },
+    "result": {
+      "durationMs": 320,
+      "intent": "short local accent hit; plate geometry remains fixed"
+    },
+    "exit": {
+      "durationMs": 300,
+      "intent": "reverse timing wipe or slide; no scale-out"
+    }
+  },
+  "reducedMotion": {
+    "maxDurationMs": 160,
+    "disable": [
+      "sweep",
+      "trace-scroll",
+      "flash"
+    ]
+  }
+}

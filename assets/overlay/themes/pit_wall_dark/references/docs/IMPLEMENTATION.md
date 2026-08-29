@@ -2,7 +2,7 @@
 
 ## 1. Výběr assetu
 
-Frontend přečte `tokens/event-visual-map.json`, vybere semantic template a stavovou barvu. Každá template složka obsahuje samostatné vrstvy ve správném pořadí. Společné vrstvy jsou navíc v `assets/vector/common/` pro deduplikovanou implementaci.
+Frontend přečte `accents/event-visual-map.json`, vybere semantic template a stavovou barvu. Každá template složka obsahuje samostatné vrstvy ve správném pořadí. Společné vrstvy jsou navíc v `assets/vector/common/` pro deduplikovanou implementaci.
 
 ## 2. SVG, PNG a WebP
 
@@ -37,3 +37,13 @@ Barva se mění lokálně na railu, ikoně, krátké value underline nebo konkr�
 ## 6. CSS/OBS
 
 Použijte pevný 1920 x 1080 overlay root a `transform: scale(...)` až na celé kořenové vrstvě, ne na jednotlivých kartách. V OBS nastavte Browser Source na 1920 x 1080, transparentní background a 60 FPS jen pokud jsou animované trace/ticks; pro statickou scénu postačuje 30 FPS.
+
+
+## V4 art-pack completion (1.1.0)
+
+- The authoritative 35-state map is `accents/event-visual-map.json`; the readable table is `references/docs/STATE_VISUAL_MAP.md`.
+- `pit` and `exception` are real family templates with independent SVG layers and 1x/2x alpha raster exports in packages 03-05.
+- Native transient geometry is 420 x 140. Individual cards must not be enlarged with CSS scale.
+- Event glyph masters are 64 x 64 SVG. The exact icon box is `[54, 50, 40, 40]` (`[x,y,w,h]`).
+- SYSINFO uses the runtime grid `brand 230 + 11 x 150`; x=1880..1920 stays as a trailing safe area.
+- No repeatable WebM authoring pipeline exists in this pack. `motion/manifest.json` is authoritative and selects CSS fallback intent; no placeholder video is shipped.

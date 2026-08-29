@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="72" viewBox="0 0 1920 72" fill="none">
-  <title>Pitwall sysinfo dividers</title>
-  <defs><linearGradient id="sb" x1="0" y1="0" x2="0" y2="72"><stop stop-color="#111A22" stop-opacity=".95"/><stop offset="1" stop-color="#080E14" stop-opacity=".92"/></linearGradient></defs>
-  <path d="M230 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M410 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M590 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M770 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M950 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1130 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1310 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1490 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1680 14V62" stroke="#A7BBC4" stroke-opacity=".18"/>
-
+  <title>Pit Wall Dark SYSINFO runtime-grid dividers</title>
+  <!-- Runtime grid: brand 230 px + 11 modules x 150 px; x=1880..1920 is trailing safe area. -->
+  <path d="M230 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M380 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M530 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M680 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M830 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M980 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1130 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1280 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1430 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1580 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1730 14V62" stroke="#A7BBC4" stroke-opacity=".18"/><path d="M1880 14V62" stroke="#A7BBC4" stroke-opacity=".18"/>
 </svg>

@@ -1,14 +1,38 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "theme_id": "pit-wall-light",
   "display_name": "Pit Wall Light",
-  "asset_root": "assets/overlay/themes/pit_wall_light",
   "base_commit": "6b7d969",
+  "asset_root": "assets/overlay/themes/pit_wall_light",
+  "renderer_contract": {
+    "version": 4,
+    "event_visual_map": "accents/event-visual-map.json",
+    "theme_tokens": "theme-tokens.json",
+    "motion": "motion/manifest.json",
+    "transient_canvas": [
+      420,
+      140
+    ],
+    "sysinfo_canvas": [
+      1920,
+      72
+    ],
+    "icon_canvas": [
+      64,
+      64
+    ],
+    "icon_box": [
+      39,
+      46,
+      48,
+      48
+    ]
+  },
   "files": [
     {
       "path": "README.md",
-      "bytes": 1257,
-      "sha256": "48c09e6a0d7497548a8aa49ffeebb2ee4f5af989f53d72016a49eaed71a32da4"
+      "bytes": 1794,
+      "sha256": "226216167a960767ca12d9f6833bb1ebbbeac08bdd3acb101157efa5b699e12b"
     },
     {
       "path": "accents/common/accents/pl-state-rail-left-amber.svg",
@@ -277,8 +301,8 @@
     },
     {
       "path": "accents/event-visual-map.json",
-      "bytes": 2086,
-      "sha256": "4916c5980d89dbda08531090e34e4eaaab4c78359162477e135a577b2390e648"
+      "bytes": 29910,
+      "sha256": "b55b20d35837693aa545980363b94290732877569844eccb15e061f25b631f2e"
     },
     {
       "path": "backgrounds/README.md",
@@ -504,6 +528,66 @@
       "path": "frames/templates/bio/pl-bio-12-pulse-trace-surge.svg",
       "bytes": 526,
       "sha256": "c589dea745455f5620ec00d1d26f6e0d426f9e82c552d1c771eb7cfbdfb501d5"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-07-state-rail-left-amber.svg",
+      "bytes": 1314,
+      "sha256": "de241175e059056f218a6507005d191258a63754c829c48f5d9f6a7316d2b08a"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-07-state-rail-left-red.svg",
+      "bytes": 1312,
+      "sha256": "867fb98b17cf98a3723dbe490ca35e6e4ec31e263f28472cac4fb078d8ba7fc8"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-11-exception-fracture.svg",
+      "bytes": 443,
+      "sha256": "232a016a33637bb0f81d60e126f2726956d4aba397ab127189f9cf2f18e33894"
     },
     {
       "path": "frames/templates/final-lap/pl-final-lap-01-plate-base.svg",
@@ -856,6 +940,71 @@
       "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
     },
     {
+      "path": "frames/templates/pit/pl-pit-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-07-state-rail-left-amber.svg",
+      "bytes": 1308,
+      "sha256": "1615c9314559a5e3e677970b3a319c82971a11b75f3fca5c8583492f14304ac1"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-07-state-rail-left-blue.svg",
+      "bytes": 1307,
+      "sha256": "e660d681847abf554ce643b443fc557c1b43752138f3203b58f4e9eb4bd74472"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-07-state-rail-left-green.svg",
+      "bytes": 1308,
+      "sha256": "082d742dcd2cbc2ffd6dad57ad27b7ce9f766976a397fa7929383a977c7acce8"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-11-pit-phase-track.svg",
+      "bytes": 676,
+      "sha256": "1a6b4b00b09d00d6d4584d930cd233e537e79bb026a33554dcfdf1bfee0453e4"
+    },
+    {
       "path": "frames/templates/position/pl-position-01-plate-base.svg",
       "bytes": 1345,
       "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
@@ -976,14 +1125,59 @@
       "sha256": "cd5106f2bfc6c9f6a0a19f15f3ddef4b578a703474692c51f974bb8a6b42012c"
     },
     {
+      "path": "icons/event/pl-icon-approach.svg",
+      "bytes": 321,
+      "sha256": "413d1d77225335c01fd1a266ad40b020c74cd1d0fe3bdcab96225670c540332f"
+    },
+    {
+      "path": "icons/event/pl-icon-attack-range.svg",
+      "bytes": 354,
+      "sha256": "eed78b3de95eed722190be94c0cf0f43bdd55383a0c7eae8465efdd25b5e4830"
+    },
+    {
+      "path": "icons/event/pl-icon-battle-for-position.svg",
+      "bytes": 362,
+      "sha256": "66feb90e5666147486e0c4946737f043a666d2ac3e7cee69d9f511c1c8cb6d33"
+    },
+    {
+      "path": "icons/event/pl-icon-battle-won.svg",
+      "bytes": 410,
+      "sha256": "83611adb4c37ad587798783e7361d00b62c6669e1e1b1f81a884f4c2a48ce98f"
+    },
+    {
+      "path": "icons/event/pl-icon-ble-reconnecting.svg",
+      "bytes": 437,
+      "sha256": "090dd5516ab5f07c0c155b4e6081edde0dcfcde8f527581439711d7c3806436b"
+    },
+    {
       "path": "icons/event/pl-icon-ble.svg",
       "bytes": 344,
       "sha256": "84504e4398d41d153f460ad6e0ffa31cff0466abad2dbb749ac1f5e171624119"
     },
     {
+      "path": "icons/event/pl-icon-clean-streak.svg",
+      "bytes": 354,
+      "sha256": "d6d4a0c192edf35e719a34976cebd95c09c87797a89894675badbbe951e09bcb"
+    },
+    {
+      "path": "icons/event/pl-icon-composure-test.svg",
+      "bytes": 390,
+      "sha256": "a35bcc802412043ae2326cc3d14653a6bff39ecac45571508032b2c252895eea"
+    },
+    {
+      "path": "icons/event/pl-icon-cpu-temp-high.svg",
+      "bytes": 468,
+      "sha256": "3c840e434fde582725a13f5d9a84293187686a3cbd134a875ae6650f587de7b1"
+    },
+    {
       "path": "icons/event/pl-icon-cpu.svg",
       "bytes": 473,
       "sha256": "ff32ac1fbeb9d90f2164c456c65bb589f1b9778c0ac2f94dee7c1fb9013e489f"
+    },
+    {
+      "path": "icons/event/pl-icon-final-lap.svg",
+      "bytes": 349,
+      "sha256": "602b6bc3b93b107eaa47d80a60ca8275c7c9f72ceddd566361b3b82fb3add40e"
     },
     {
       "path": "icons/event/pl-icon-finish.svg",
@@ -1001,6 +1195,16 @@
       "sha256": "4d337a77af10747fbc7a25e828b37df299c6b1feb0b73dbfc2765c7c0ca617f1"
     },
     {
+      "path": "icons/event/pl-icon-gain-found.svg",
+      "bytes": 323,
+      "sha256": "5cc61aa3498c5e080a74561fca12a72a3df51ca779eb37bf550b37979162824c"
+    },
+    {
+      "path": "icons/event/pl-icon-gpu-temp-high.svg",
+      "bytes": 390,
+      "sha256": "bda460cfe75e0d7f0eab1b207a947c5580230ebe22ce98120eb89c2276bf56fe"
+    },
+    {
       "path": "icons/event/pl-icon-gpu.svg",
       "bytes": 548,
       "sha256": "d2fdb2e07231f91b4119749a3b1ab4907c42cbf08dd9d5773cb5a6de6d13ae4c"
@@ -1011,9 +1215,114 @@
       "sha256": "f3cecf5fe9bcd15820081c8a653f14dbe9b1f6772d3da6b629c450a348b3cfb5"
     },
     {
+      "path": "icons/event/pl-icon-high-load.svg",
+      "bytes": 405,
+      "sha256": "ef4c2e94385b01934f4587d12f8210d031d3deb79fbccef2dd5dcc843efcc3a7"
+    },
+    {
+      "path": "icons/event/pl-icon-hot-lap.svg",
+      "bytes": 408,
+      "sha256": "d004eedb7d93654536947a9d391f0719fb61d8da2937bf85fe3394031e92366a"
+    },
+    {
+      "path": "icons/event/pl-icon-hr-pressure.svg",
+      "bytes": 379,
+      "sha256": "575807bdb912e6ff6a3cbc5c1b9881db216ef3713b4607ea5fb6fe0f4b6b4c8e"
+    },
+    {
+      "path": "icons/event/pl-icon-hunted.svg",
+      "bytes": 375,
+      "sha256": "292f04c078896ca94fcb27a8f5891d8b54084db1684043c66d065eab5e12d8b7"
+    },
+    {
+      "path": "icons/event/pl-icon-hunting.svg",
+      "bytes": 362,
+      "sha256": "d497ad97b32d9e39739ad04522b89458dfe3a5bfa7e2a2ef6159fe7cd7c2daa6"
+    },
+    {
+      "path": "icons/event/pl-icon-incident.svg",
+      "bytes": 312,
+      "sha256": "f9c234f7db1d8fcecf9c3a6f10140ed361ee665deab3c3a1dfda647b8ec0c944"
+    },
+    {
+      "path": "icons/event/pl-icon-invalid-lap.svg",
+      "bytes": 341,
+      "sha256": "a540e22e6100dba930eb4734c5c40f43811f72035c218872bddedcbe435acb66"
+    },
+    {
+      "path": "icons/event/pl-icon-lap-complete.svg",
+      "bytes": 368,
+      "sha256": "aaa52962b71d84bc869527c773a4ea00013ce9a1a38d02d48594cafc2a27f35c"
+    },
+    {
+      "path": "icons/event/pl-icon-link-drop.svg",
+      "bytes": 430,
+      "sha256": "2c199e4e6da3ddb6747d9e1b9880e527a24e844c68cbbc159ec1a85242f3fd27"
+    },
+    {
+      "path": "icons/event/pl-icon-overtake.svg",
+      "bytes": 406,
+      "sha256": "b8e91b162885de1867c5ab9a7632029c3643ccd7aa64f4da0336be0f8e8098a3"
+    },
+    {
+      "path": "icons/event/pl-icon-pb-attack.svg",
+      "bytes": 345,
+      "sha256": "02765af3a2636e7f2c2f59aa15881ae457012f5bea9c0b3ec514cf3f1bfbea9d"
+    },
+    {
+      "path": "icons/event/pl-icon-personal-best.svg",
+      "bytes": 394,
+      "sha256": "149e61848fc3fd6cb101730f8e4fd9fa44c0b50720f6932bafa47ee606824aa7"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-entry.svg",
+      "bytes": 354,
+      "sha256": "00721452d56ba8b04166d9873123aff399ad649f79e3af03e3c19fe6fcf4813e"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-exit.svg",
+      "bytes": 353,
+      "sha256": "f0cec3ac542d85ca6884e6757c69827aa4f0e193ee6783073280b8b5636a8912"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-lane.svg",
+      "bytes": 370,
+      "sha256": "54cdb61eae5a5e41927d0c728be20ad86aa2004de39eab56404765eddd4e6ac4"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-outcome.svg",
+      "bytes": 340,
+      "sha256": "7d0e131f8631c8f6a8e8772573ccf99ce5d5a1a35cfdda2b584153d5ac1cf4a7"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-released.svg",
+      "bytes": 321,
+      "sha256": "f24d0eeee61000bf5ac97bdbab16063ad5130018764c46629f76e3a89abe0911"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-stopped.svg",
+      "bytes": 343,
+      "sha256": "6425f588c2fe06e31d8985ef08b273c16c5c6134a3a01787a62724fdb9fa0676"
+    },
+    {
+      "path": "icons/event/pl-icon-position-attack.svg",
+      "bytes": 350,
+      "sha256": "4c0f0a4d5f2ed106c9419a8dfddbad5cac86f270080ba5677e267862876639fa"
+    },
+    {
       "path": "icons/event/pl-icon-position-down.svg",
       "bytes": 333,
       "sha256": "2d17802d431e5f4e50dc1cd2c5b2ef708f87cb896f0198a2ea14b05a50d596d8"
+    },
+    {
+      "path": "icons/event/pl-icon-position-gained.svg",
+      "bytes": 321,
+      "sha256": "fea94ebbc3dbddee2928a154f7975ef97c6100b0f353007cfc86f7f7905fbf6b"
+    },
+    {
+      "path": "icons/event/pl-icon-position-lost.svg",
+      "bytes": 318,
+      "sha256": "39980396c725a4662436708e732083e5e2272550a101e0066e04040012ac9eb0"
     },
     {
       "path": "icons/event/pl-icon-position-up.svg",
@@ -1026,6 +1335,11 @@
       "sha256": "57099bccd7a10ca4d3a1c7551692c25cb04d1cd5e221d0322a4073f178590e30"
     },
     {
+      "path": "icons/event/pl-icon-projected-lap.svg",
+      "bytes": 365,
+      "sha256": "546fb532d4e9efa2391129e19e997d8ff7fc899fe1a1fb3069ff9df5546e3cf4"
+    },
+    {
       "path": "icons/event/pl-icon-radar.svg",
       "bytes": 438,
       "sha256": "8d1d4a41fd858f63107e2ca2483388fa96c7f4c8b19b562810343088eb11d787"
@@ -1036,9 +1350,19 @@
       "sha256": "9faea0f3ebff0b25c320cec7f3bbeac1c1c0e62eb6c8233130f1a47ad599ab99"
     },
     {
+      "path": "icons/event/pl-icon-rival-threat.svg",
+      "bytes": 371,
+      "sha256": "2b5c1da216c95a21097f7678d178ded76ecb8098e2c75698ccdf55161a3f88b8"
+    },
+    {
       "path": "icons/event/pl-icon-shield.svg",
       "bytes": 377,
       "sha256": "8dd5757fb6c60cd4b0c898395e02e1974bc3cc1950d6390f3bd4ee362c1c89a4"
+    },
+    {
+      "path": "icons/event/pl-icon-side-by-side.svg",
+      "bytes": 408,
+      "sha256": "bcea2bb083b2fac0ab93c32356ac4ba7db76caf98f234f5ae112563774a99ec9"
     },
     {
       "path": "icons/event/pl-icon-stopwatch.svg",
@@ -1082,8 +1406,8 @@
     },
     {
       "path": "icons/sysinfo/pl-sysinfo-dividers.svg",
-      "bytes": 954,
-      "sha256": "ab072dbf8be47041f055b770eaf29c5c6d3602d88d74ba2228d8e65816c890f3"
+      "bytes": 995,
+      "sha256": "68f7d9e435e307b9523ab0f4ee55e6c97d9ad63199ad6bea4dc61cf56220be12"
     },
     {
       "path": "icons/sysinfo/pl-sysinfo-edge-light.svg",
@@ -1177,33 +1501,38 @@
     },
     {
       "path": "motion/MOTION.md",
-      "bytes": 919,
-      "sha256": "6ed38da9f55b739cbd025d8b77e85b8211e3f3b1cd8c92758231b7477ac193a1"
+      "bytes": 1216,
+      "sha256": "bff8a3bc6186a44d9dd6348628148738779faca2a2b448272aee328f8adfa6c3"
+    },
+    {
+      "path": "motion/manifest.json",
+      "bytes": 1053,
+      "sha256": "1eb8f96f6bec8a52a189cf8dd7751fcdc42e0f863114eeb3e6909605a752ad40"
     },
     {
       "path": "packages/01_Pitwall_Light_Core_Vector_and_Tokens.zip",
-      "bytes": 44137,
-      "sha256": "e6e02aa5ebe89baa088f0d4cd0a8493f82e302d392acadb1d627ea328e47c350"
+      "bytes": 47781,
+      "sha256": "60963e8b1ed1294be8e5c8b5f227941c763f8b3109e15512e98372deee257e48"
     },
     {
       "path": "packages/02_Pitwall_Light_Icons_BLE_and_Status.zip",
-      "bytes": 199361,
-      "sha256": "4064a375bd59cdf19c983e5a1a4f9374ca755c39ab6724ef8bc1b3ba2146ada2"
+      "bytes": 756372,
+      "sha256": "80067b3b25a189bd0cedbf8594adb5d5b8dbfcc9a5d33582bf07f595eb7a95f8"
     },
     {
       "path": "packages/03_Pitwall_Light_Transient_Templates_Vector.zip",
-      "bytes": 66979,
-      "sha256": "54b29a10ed4f8865b840b622cadb025461322d24ced4136a73a51d0d46851f6a"
+      "bytes": 82586,
+      "sha256": "1a791357cafee24277110624c40f3bbd74b1d1eddd4a5442ed327e01c4d7c181"
     },
     {
       "path": "packages/04_Pitwall_Light_Transient_Raster_1x.zip",
-      "bytes": 351052,
-      "sha256": "400a074ec1caaafd13bb165b2023bb6940821e4d02015862de9ff699d3e23633"
+      "bytes": 423476,
+      "sha256": "20339c89e372d863d83438dc962621c188dc6464b9f0280905f64954658c66fa"
     },
     {
       "path": "packages/05_Pitwall_Light_Transient_Raster_2x.zip",
-      "bytes": 643961,
-      "sha256": "6cd602f234f08fb2da3aa2a9e41c1b302755899d8428652037fb1b0b6f755692"
+      "bytes": 896909,
+      "sha256": "fb06c1688c36ff039219712126f05585c89dff5a653f0799dc2224ef770e804f"
     },
     {
       "path": "packages/06_Pitwall_Light_Common_Raster_1x.zip",
@@ -1217,43 +1546,48 @@
     },
     {
       "path": "packages/08_Pitwall_Light_SYSINFO_All_Formats.zip",
-      "bytes": 85068,
-      "sha256": "259c6ace106323ed8397d4de0d8053b27c771b021b2491a53927c45dc4a5e280"
+      "bytes": 85134,
+      "sha256": "ea7a6b0954b8ddd461324d5a4e6e1df75c58e03a6489abd01172d941f55de9ce"
     },
     {
       "path": "packages/09_Pitwall_Light_Documentation_Examples_Manifests.zip",
-      "bytes": 295985,
-      "sha256": "c4d2b6c7319923f6fe7dcbe69dadad30cbd2851b6a6c30ea02af77082259c11b"
+      "bytes": 345769,
+      "sha256": "6fba6637af45ce4c45f4b0ffc4c7beb5a1a4ef5ef57e1256a21ddaecac0abce0"
     },
     {
       "path": "packages/archive-index.json",
       "bytes": 3661,
-      "sha256": "477cc80da7da23a6074f9a3751a2d671c54947d263516b368caeab8c5d34d0cb"
+      "sha256": "18bfa8d3c311b3b0dd4067541d7a853f1c2afa7e6910fd03bac13c43af619c45"
     },
     {
       "path": "references/docs/IMPLEMENTATION.md",
-      "bytes": 2040,
-      "sha256": "b2410811ef452ed071d373e9ff748ed1d1c5bb740bf6bb6539a79dee82b92768"
+      "bytes": 2786,
+      "sha256": "006b20f1ea24358e6be541544578e4ef1e52c7b638d9c94b7b4bf5c98518126d"
     },
     {
       "path": "references/docs/LAYERING_AND_ANCHORS.md",
-      "bytes": 673,
-      "sha256": "12875c64c3578187eed3b3279e5c64c14429651ccf78fde2454337b807fe7219"
+      "bytes": 761,
+      "sha256": "61fbd55dd620d7c1c35a9366d074532c77817af2fdf30ffd5b188f6449b31a05"
     },
     {
       "path": "references/docs/MOTION.md",
-      "bytes": 919,
-      "sha256": "6ed38da9f55b739cbd025d8b77e85b8211e3f3b1cd8c92758231b7477ac193a1"
+      "bytes": 1216,
+      "sha256": "bff8a3bc6186a44d9dd6348628148738779faca2a2b448272aee328f8adfa6c3"
     },
     {
       "path": "references/docs/NAMING_CONVENTION.md",
-      "bytes": 472,
-      "sha256": "134239cc3578f8f1e71c17dca3c55bd99cf650bbd6b00aaf3593dca70dc09796"
+      "bytes": 623,
+      "sha256": "50c9306e0d2a0b719186d18d5145e37c7b09abffdcfb9e6148c968aa24508ebe"
     },
     {
       "path": "references/docs/OBS_BROWSER_SOURCE.md",
       "bytes": 910,
       "sha256": "eb1b334038226ae6f6c421c34d3d6fc8137a52331d3e6298b0df2b2a621fa5c6"
+    },
+    {
+      "path": "references/docs/STATE_VISUAL_MAP.md",
+      "bytes": 5039,
+      "sha256": "3e21293d05442a88f9fbc48176790c8cc35020fc71eeaadf1c078784d7ad8def"
     },
     {
       "path": "references/examples/compositions/pitwall-light-event-catalog-1920x1080.png",
@@ -1267,8 +1601,8 @@
     },
     {
       "path": "references/examples/css/pitwall-light.css",
-      "bytes": 3516,
-      "sha256": "4c1633d6f20f426e45eb73cb665dd0ff9bd8004ef1aadb5f5ba4f01c77014936"
+      "bytes": 3508,
+      "sha256": "d7646b56f93949a7b135eee3656a1fd642dbe3e56d7ad4328d1afd3202b1b627"
     },
     {
       "path": "references/examples/html/sysinfo-composition.html",
@@ -1282,8 +1616,8 @@
     },
     {
       "path": "references/source-asset-manifest.json",
-      "bytes": 750599,
-      "sha256": "342aa3d7ab974c13eb531d9654614a9c3943c14a664143692e6a3928924bd4a9"
+      "bytes": 930801,
+      "sha256": "8b258d581324b42a917555f5bfb09c69456cc3b824bb6dc214738164faeecbfc"
     },
     {
       "path": "textures/pl-data-surface-battle.svg",
@@ -1312,8 +1646,8 @@
     },
     {
       "path": "theme-tokens.json",
-      "bytes": 2841,
-      "sha256": "df25c9069a82504529ccda49bc36b29d781dfe7a9c7a4794351cc8983e4e9a11"
+      "bytes": 3276,
+      "sha256": "6c5ed0ade6e6ed168bae5de9e75f75f32cbad37b5abc102f9610dec7efd4daf1"
     }
   ]
 }
