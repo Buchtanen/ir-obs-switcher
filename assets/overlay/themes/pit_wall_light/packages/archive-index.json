@@ -1,0 +1,138 @@
+{
+  "package": "Pitwall_Light_Asset_Package",
+  "themeId": "pitwall_light",
+  "limitBytes": 9000000,
+  "archives": [
+    {
+      "file": "01_Pitwall_Light_Core_Vector_and_Tokens.zip",
+      "bytes": 49048,
+      "sizeMiB": 0.047,
+      "files": 77,
+      "sha256": "ffcd14bc61f25eb958c5556196b55400c77e0ac5e9c1f9d8e7e1898982fb3b62",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/common",
+        "tokens"
+      ]
+    },
+    {
+      "file": "02_Pitwall_Light_Icons_BLE_and_Status.zip",
+      "bytes": 756372,
+      "sizeMiB": 0.721,
+      "files": 316,
+      "sha256": "80067b3b25a189bd0cedbf8594adb5d5b8dbfcc9a5d33582bf07f595eb7a95f8",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/icons",
+        "assets/vector/ble-hr",
+        "assets/raster/png/1x/icons",
+        "assets/raster/png/2x/icons",
+        "assets/raster/webp/1x/icons",
+        "assets/raster/webp/2x/icons",
+        "assets/raster/png/1x/ble-hr",
+        "assets/raster/png/2x/ble-hr",
+        "assets/raster/webp/1x/ble-hr",
+        "assets/raster/webp/2x/ble-hr"
+      ]
+    },
+    {
+      "file": "03_Pitwall_Light_Transient_Templates_Vector.zip",
+      "bytes": 82586,
+      "sizeMiB": 0.079,
+      "files": 136,
+      "sha256": "1a791357cafee24277110624c40f3bbd74b1d1eddd4a5442ed327e01c4d7c181",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/templates"
+      ]
+    },
+    {
+      "file": "04_Pitwall_Light_Transient_Raster_1x.zip",
+      "bytes": 423476,
+      "sizeMiB": 0.404,
+      "files": 272,
+      "sha256": "20339c89e372d863d83438dc962621c188dc6464b9f0280905f64954658c66fa",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/1x/templates",
+        "assets/raster/webp/1x/templates"
+      ]
+    },
+    {
+      "file": "05_Pitwall_Light_Transient_Raster_2x.zip",
+      "bytes": 896909,
+      "sizeMiB": 0.855,
+      "files": 272,
+      "sha256": "fb06c1688c36ff039219712126f05585c89dff5a653f0799dc2224ef770e804f",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/2x/templates",
+        "assets/raster/webp/2x/templates"
+      ]
+    },
+    {
+      "file": "06_Pitwall_Light_Common_Raster_1x.zip",
+      "bytes": 270089,
+      "sizeMiB": 0.258,
+      "files": 148,
+      "sha256": "066caa159735b6eb479db065c7f0f16a9ec1eea4229333b66498e0a521ec9f53",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/1x/common",
+        "assets/raster/webp/1x/common"
+      ]
+    },
+    {
+      "file": "07_Pitwall_Light_Common_Raster_2x.zip",
+      "bytes": 486983,
+      "sizeMiB": 0.464,
+      "files": 148,
+      "sha256": "600298f30f5bd343714eafe90dd3d3c1a534f396f28e7d3e7f7db139cbf1cebc",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/2x/common",
+        "assets/raster/webp/2x/common"
+      ]
+    },
+    {
+      "file": "08_Pitwall_Light_SYSINFO_All_Formats.zip",
+      "bytes": 85134,
+      "sizeMiB": 0.081,
+      "files": 110,
+      "sha256": "ea7a6b0954b8ddd461324d5a4e6e1df75c58e03a6489abd01172d941f55de9ce",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/sysinfo",
+        "assets/raster/png/1x/sysinfo",
+        "assets/raster/png/2x/sysinfo",
+        "assets/raster/webp/1x/sysinfo",
+        "assets/raster/webp/2x/sysinfo"
+      ]
+    },
+    {
+      "file": "09_Pitwall_Light_Documentation_Examples_Manifests.zip",
+      "bytes": 351654,
+      "sizeMiB": 0.335,
+      "files": 17,
+      "sha256": "9b56326beef205cdda5d2fc9296ad4c9b5c997459a0288c5e9af712fcc411060",
+      "integrity": "ok",
+      "contents": [
+        "README.md",
+        "docs",
+        "examples",
+        "manifests"
+      ]
+    },
+    {
+      "file": "10_Pitwall_Light_Motion_Alpha_VP9.zip",
+      "contents": [
+        "assets/motion"
+      ],
+      "bytes": 405525,
+      "sizeMiB": 0.387,
+      "files": 17,
+      "sha256": "aace39b67d7db92fab260fac88e5e9b703604debebf31ff5c54f7c56f0162672",
+      "integrity": "ok"
+    }
+  ]
+}

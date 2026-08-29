@@ -106,6 +106,7 @@ class RaceState:
     session_type: str | None = None
     track_id: str | None = None
     session_time: float | None = None
+    session_state: int | None = None
     overlay_mode: str = "GENERIC"  # PRACTICE/QUALIFYING/RACE/GENERIC
     player_lap_dist_pct: float | None = None
     stale_for_ms: float | None = None

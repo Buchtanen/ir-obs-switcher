@@ -11,10 +11,25 @@ html, body {
   color: var(--text-primary, #e8fbff);
 }
 
+/* Live OBS: hide SYSINFO + widgets when iRacing telemetry is down (link drop / quit). */
+html.overlay-idle #sysinfo-widget,
+html.overlay-idle #event-layer,
+html.overlay-idle #battle-stack,
+html.overlay-idle #session-layer,
+html.overlay-idle #bio-expanded {
+  display: none !important;
+}
+
 /* Dry-test only. OBS Browser Source stays fully transparent. */
 html.is-demo,
 html.is-demo body {
   background: #04070a;
+}
+
+/* Light glass plates read as dark frost on #04070a; give Light a pale stage. */
+html.is-demo[data-theme="pit_wall_light"],
+html.is-demo[data-theme="pit_wall_light"] body {
+  background: #d7dee4;
 }
 
 html.golden-layout #sysinfo-widget,

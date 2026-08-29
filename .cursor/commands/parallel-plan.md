@@ -2,6 +2,8 @@
 
 Rozděl backlog na nezávislé úkoly před spuštěním více agentů / worktrees.
 
+Kdy který subagent (a kdy vůbec): skill `subagents`.
+
 ## Pravidla
 - Hosting je **GitHub** (`Buchtanen/ir-obs-switcher`), ne GitLab.
 - Paralelně jen to, co nesdílí soubory a nemá společný state machine / API kontrakt.

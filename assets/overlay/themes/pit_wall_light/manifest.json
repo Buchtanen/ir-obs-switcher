@@ -1,0 +1,1738 @@
+{
+  "schema_version": 2,
+  "theme_id": "pit-wall-light",
+  "display_name": "Pit Wall Light",
+  "base_commit": "6b7d969",
+  "asset_root": "assets/overlay/themes/pit_wall_light",
+  "renderer_contract": {
+    "version": 4,
+    "event_visual_map": "accents/event-visual-map.json",
+    "theme_tokens": "theme-tokens.json",
+    "motion": "motion/manifest.json",
+    "transient_canvas": [
+      420,
+      140
+    ],
+    "sysinfo_canvas": [
+      1920,
+      72
+    ],
+    "icon_canvas": [
+      64,
+      64
+    ],
+    "icon_box": [
+      39,
+      46,
+      48,
+      48
+    ]
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1884,
+      "sha256": "f945cb51370d6c4ca001541119b538ac480607d5fc314e08baf9e7296b931d7e"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-amber.svg",
+      "bytes": 1304,
+      "sha256": "f9f92f44b27785b156f9c9f3f8c80d06572f9aed22b6bcc602057d807d01075f"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-blue.svg",
+      "bytes": 1303,
+      "sha256": "efeb4654e6e79a235c89ca4fe1161131b6411f67b059879833af3f31b1ad7529"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-cyan.svg",
+      "bytes": 1303,
+      "sha256": "835bbae0c3d7919531a925d6cbcbe0cb469a6906667f3ad5f561c0f345ca49a8"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-green.svg",
+      "bytes": 1304,
+      "sha256": "8c43b52c3542dfccdb3eb02e89517d58d375de43be1164027017edecd996f954"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-neutral.svg",
+      "bytes": 1306,
+      "sha256": "2b8cea1161b88dc7c93c1f0b941aaab6a02cc87c06bc29888abdd416c3ce0deb"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-red.svg",
+      "bytes": 1302,
+      "sha256": "36b66824c75a1d97b6ce726b7908032792a704448168fdc1a926da2a99f9c6df"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-left-violet.svg",
+      "bytes": 1305,
+      "sha256": "f3792d28fea11f19ed405d2854800955b7a54c4ec9c6b3e3f2fb531706f52823"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-amber.svg",
+      "bytes": 1309,
+      "sha256": "031d03973abe8869bca82b86bf7ad7b3a38bdbd997caddd2f81b5c73571aa335"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-blue.svg",
+      "bytes": 1308,
+      "sha256": "23cf7fe9563915c717aa885963771a7ec1c937d717a28748f7433f8a9903db57"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-cyan.svg",
+      "bytes": 1308,
+      "sha256": "dbfb9a3f600291c0438427d2775a11f36f918e94e76c3a72540b4ed70f8bc48f"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-green.svg",
+      "bytes": 1309,
+      "sha256": "22a75cefc1d4f13bb202da91f9eb892ebe7ad72e848dc9cd3b0588afd65735bc"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-neutral.svg",
+      "bytes": 1311,
+      "sha256": "029a40035d8d0aeea72e16bf54fe9941a93c0eab0397722c8942fdb2021ed80a"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-red.svg",
+      "bytes": 1307,
+      "sha256": "9a01e92dac0f02f9499ac8154722c9f1374982291c010f1e719f2a0bcc31ed47"
+    },
+    {
+      "path": "accents/common/accents/pl-state-rail-right-violet.svg",
+      "bytes": 1310,
+      "sha256": "0dc7302deb9fa429abbccf4a6a83d56a31c6c172a5ab700328b73c1eb103c491"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-down-amber.svg",
+      "bytes": 451,
+      "sha256": "7d76f612ebe22c16fae0d75828cbb4c1b4eb0c91a498378d056633431b17f6be"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-down-blue.svg",
+      "bytes": 450,
+      "sha256": "743c6f2ceea78efb4a6f2b3f6e4724bd71f1c765cedd563b6ce1abef5e616f30"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-down-cyan.svg",
+      "bytes": 450,
+      "sha256": "4b59d51c93ef19ddf28597c736faf614d8a8cc6918e227aee18725727d7810e9"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-down-green.svg",
+      "bytes": 451,
+      "sha256": "24cc9256b2924d5ccc914cc52ccb49ee9a3e883159efb436af07e1eb22cb6451"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-down-red.svg",
+      "bytes": 449,
+      "sha256": "5347d8235ee4ec48614b89fd30865a2ba82522ae1a4674b8ad6994a0bd394076"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-down-violet.svg",
+      "bytes": 452,
+      "sha256": "7817a509e4779e38a832ca081806bfe640c6cd2af25aeaecc8a6e898cf5326f5"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-left-amber.svg",
+      "bytes": 450,
+      "sha256": "bfe6db5e0288b632ebaf9bbcd48952f6d727c2a3ee5f8dc9b03fa7a5e0c1ec06"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-left-blue.svg",
+      "bytes": 449,
+      "sha256": "f18179cf20b6447459740143398f24297bb912f0fe96e582622f74b7eef83e88"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-left-cyan.svg",
+      "bytes": 449,
+      "sha256": "0ef7ff95af5ad1ccc9d8a2ffb5aa48481e2e8d84515696faae1fb99f92a45859"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-left-green.svg",
+      "bytes": 450,
+      "sha256": "4c9e9daa408726de68438c04ea48615e175d070769fe7a634af461e8441f6d5f"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-left-red.svg",
+      "bytes": 448,
+      "sha256": "9fa439f725f84ae265b5910851d1da5847a667164085ecc0e99ef981b1b3b12e"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-left-violet.svg",
+      "bytes": 451,
+      "sha256": "65189b97259ecc766a9c645363fcee1b041aec5c91a4cc69d5cebf084a5c0424"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-right-amber.svg",
+      "bytes": 451,
+      "sha256": "e923383668ce1d520edb608c4935e9183d03b25697d8c1f41e024c5dca5e68ac"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-right-blue.svg",
+      "bytes": 450,
+      "sha256": "659ea623a03e6b62bb2c61535344043e159cc253560487ed8e7730d920c0d574"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-right-cyan.svg",
+      "bytes": 450,
+      "sha256": "a4db28904bd47535753141b5f723a5cb7e3d91dfaac57fa2adfef1649afc2bae"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-right-green.svg",
+      "bytes": 451,
+      "sha256": "6309258abd9b406b78a9a5d80eb3d5bf1cdf3fccb7e62901b2c232591eadd36e"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-right-red.svg",
+      "bytes": 449,
+      "sha256": "020230346b3ec641aeb0092536c394f1a50f1a75628a59584207099cfb79af87"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-right-violet.svg",
+      "bytes": 452,
+      "sha256": "f66c44d0e2d8b348f824fe42223e0f040b8a33e42b1c705faf04bcf1ee85362e"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-up-amber.svg",
+      "bytes": 448,
+      "sha256": "88ae554ecf350c1c391bb1fcd383ec2bebb440544e2fcff8caf747d35d517713"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-up-blue.svg",
+      "bytes": 447,
+      "sha256": "3892c1a6ea60a548bbff4b11efc5a1dcd0c22331bb7c05aa1cc27599e0274bd3"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-up-cyan.svg",
+      "bytes": 447,
+      "sha256": "e5c1e05388c34810545129603460775d0d8ceff69c2db9cd5db80743fca446e4"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-up-green.svg",
+      "bytes": 448,
+      "sha256": "04d2d5f0ab19fc25b473101db38bafd6314eb0a23876e12d8ab26f1cdc002b92"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-up-red.svg",
+      "bytes": 446,
+      "sha256": "c5373e65f83f2e9726d9404a37d7e7d1c6f3f21def2cf123caed99b2101805ec"
+    },
+    {
+      "path": "accents/common/chevrons/pl-chevrons-up-violet.svg",
+      "bytes": 449,
+      "sha256": "17a61d89b2f58f72cf5e96086ca3d4b5349d7c9341bc7d8609684274e913692c"
+    },
+    {
+      "path": "accents/common/edge-lights/pl-transient-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "accents/common/grids/pl-technical-grid-left.svg",
+      "bytes": 1260,
+      "sha256": "9759bb81f78dfa2cec41db09bd2f7c1a7f4bf4df8a18f68f36185066dab6fc45"
+    },
+    {
+      "path": "accents/common/grids/pl-technical-grid-right.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "accents/common/radar/pl-radar-rings-active.svg",
+      "bytes": 408,
+      "sha256": "57174cba3eb9e6a4f39f6e0de54eee036be2a0e188a007dd7238106becb17808"
+    },
+    {
+      "path": "accents/common/radar/pl-radar-rings-idle.svg",
+      "bytes": 346,
+      "sha256": "f45e51bb67c87a736b0342389368bb5445e10365413294b13d47ed9e0197f00e"
+    },
+    {
+      "path": "accents/common/radar/pl-radar-sweep.svg",
+      "bytes": 361,
+      "sha256": "ecd3c49d4fd28e7a979a9e4d93644e8746e31424bc37b20f5e474d3d9a70c907"
+    },
+    {
+      "path": "accents/common/radar/pl-radar-target.svg",
+      "bytes": 359,
+      "sha256": "853e6579a32d1aa38622a581ba8a4b5faa83f424593173a01d33e85513df640a"
+    },
+    {
+      "path": "accents/common/ticks/pl-timing-ticks-bottom.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "accents/common/ticks/pl-timing-ticks-top.svg",
+      "bytes": 1620,
+      "sha256": "324b64bfd655f0acba18b9d10eab5d2c49f7f2830d2fa869cdcd0c2ff8196f48"
+    },
+    {
+      "path": "accents/common/traces/pl-pulse-trace-active.svg",
+      "bytes": 461,
+      "sha256": "90557fc067bfdb60bf09136d2875598f97773a35f3ab568e29f9df795acc9785"
+    },
+    {
+      "path": "accents/common/traces/pl-pulse-trace-idle.svg",
+      "bytes": 393,
+      "sha256": "24b585381909c94b7bf96677d726e95805013625a6dace58a684c460b71f1eb3"
+    },
+    {
+      "path": "accents/common/traces/pl-pulse-trace-surge.svg",
+      "bytes": 526,
+      "sha256": "c589dea745455f5620ec00d1d26f6e0d426f9e82c552d1c771eb7cfbdfb501d5"
+    },
+    {
+      "path": "accents/common/wireframe/pl-wireframe-car-top.svg",
+      "bytes": 423,
+      "sha256": "a9776bfafc6fd7d1dba97f47f3c686815d2c961d30ed2413371460d3d2e036bf"
+    },
+    {
+      "path": "accents/common/wireframe/pl-wireframe-perspective-grid.svg",
+      "bytes": 310,
+      "sha256": "95b8f095383cce061a7334bb3b08187f79495f4ea1b0f03e647b266c2df2d262"
+    },
+    {
+      "path": "accents/common/wireframe/pl-wireframe-slashes.svg",
+      "bytes": 286,
+      "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
+    },
+    {
+      "path": "accents/event-visual-map.json",
+      "bytes": 33050,
+      "sha256": "d9f3fbdcdb6e2e0f146785aea1c24e281cdea3dd2871366c28a41011e37f0c37"
+    },
+    {
+      "path": "backgrounds/README.md",
+      "bytes": 230,
+      "sha256": "1c952c54235f9ed34ce3490998e2ca441c5bce6529b675505566f8d68ef20bf1"
+    },
+    {
+      "path": "frames/common/borders/pl-transient-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/common/corners/pl-corner-bottom-left.svg",
+      "bytes": 308,
+      "sha256": "ca53067fb365efce715142373b43cd5357b07265e235be8ce2b4d5a1e266d4a7"
+    },
+    {
+      "path": "frames/common/corners/pl-corner-bottom-right.svg",
+      "bytes": 312,
+      "sha256": "8227625c46ee4b29f3ae268755d955bb29bdbc7e575487c63aeed4fe4df3b0b2"
+    },
+    {
+      "path": "frames/common/corners/pl-corner-top-left.svg",
+      "bytes": 302,
+      "sha256": "1d549b1c95edd87ec98708f7ed87cbfdaecabb1932aa8cc410b012ced347d7cd"
+    },
+    {
+      "path": "frames/common/corners/pl-corner-top-right.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/common/dividers/pl-divider-bottom.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/common/dividers/pl-divider-pivot.svg",
+      "bytes": 356,
+      "sha256": "017fd38a771070fd6e50f13761273a129066f47f49d09b216828b4f4171fbdb3"
+    },
+    {
+      "path": "frames/common/dividers/pl-divider-vertical.svg",
+      "bytes": 312,
+      "sha256": "cf645cedec6d0060a11d04b88c3214b348be1e4b382145971d4fa4fbfe183ca9"
+    },
+    {
+      "path": "frames/common/masks/pl-mask-data-window.svg",
+      "bytes": 249,
+      "sha256": "00f9ad1bc7daa7033c95a8babef116fa5d0cc2dd9ac3e58f184289deaa65c176"
+    },
+    {
+      "path": "frames/common/masks/pl-mask-rail-left.svg",
+      "bytes": 223,
+      "sha256": "1e8e08a5f21d3cd3c95454dd88fa9c99d4bb6f83df91ab2dca3cf955a6ebac92"
+    },
+    {
+      "path": "frames/common/masks/pl-mask-rail-right.svg",
+      "bytes": 232,
+      "sha256": "d35b4673266b1f42e2074dededf2330a023edcecc5973e67842a65c578ace32f"
+    },
+    {
+      "path": "frames/common/masks/pl-mask-vertical-reveal.svg",
+      "bytes": 405,
+      "sha256": "ca36510b4377838e0996fa43907e18be007904a29f1e0a43134560d7b3ab39f5"
+    },
+    {
+      "path": "frames/common/masks/pl-mask-wipe-left.svg",
+      "bytes": 384,
+      "sha256": "4d7492c6532f90fe50ab3ae8eed616f0811ab056046e8f75ee2d382bc5849d06"
+    },
+    {
+      "path": "frames/common/masks/pl-mask-wipe-right.svg",
+      "bytes": 385,
+      "sha256": "095402779e46fc522eba1f6752aee9ffd756fbb0bd80a5346d6a4bbee0bb8a60"
+    },
+    {
+      "path": "frames/common/plates/pl-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/common/plates/pl-transient-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-02-data-surface.svg",
+      "bytes": 1308,
+      "sha256": "b230dd657e8477742a8da1f79a09c3c79a9081421843388dc8b938af5a6b124a"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-07-state-rail-left-blue.svg",
+      "bytes": 1303,
+      "sha256": "efeb4654e6e79a235c89ca4fe1161131b6411f67b059879833af3f31b1ad7529"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-07-state-rail-right-amber.svg",
+      "bytes": 1309,
+      "sha256": "031d03973abe8869bca82b86bf7ad7b3a38bdbd997caddd2f81b5c73571aa335"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-07-state-rail-right-red.svg",
+      "bytes": 1307,
+      "sha256": "9a01e92dac0f02f9499ac8154722c9f1374982291c010f1e719f2a0bcc31ed47"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-10-pivot-divider.svg",
+      "bytes": 356,
+      "sha256": "017fd38a771070fd6e50f13761273a129066f47f49d09b216828b4f4171fbdb3"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-11-radar-rings.svg",
+      "bytes": 408,
+      "sha256": "57174cba3eb9e6a4f39f6e0de54eee036be2a0e188a007dd7238106becb17808"
+    },
+    {
+      "path": "frames/templates/battle/pl-battle-12-radar-sweep.svg",
+      "bytes": 361,
+      "sha256": "ecd3c49d4fd28e7a979a9e4d93644e8746e31424bc37b20f5e474d3d9a70c907"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-07-state-rail-left-amber.svg",
+      "bytes": 1304,
+      "sha256": "f9f92f44b27785b156f9c9f3f8c80d06572f9aed22b6bcc602057d807d01075f"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-07-state-rail-left-red.svg",
+      "bytes": 1302,
+      "sha256": "36b66824c75a1d97b6ce726b7908032792a704448168fdc1a926da2a99f9c6df"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-07-state-rail-left-violet.svg",
+      "bytes": 1305,
+      "sha256": "f3792d28fea11f19ed405d2854800955b7a54c4ec9c6b3e3f2fb531706f52823"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-11-pulse-trace-active.svg",
+      "bytes": 461,
+      "sha256": "90557fc067bfdb60bf09136d2875598f97773a35f3ab568e29f9df795acc9785"
+    },
+    {
+      "path": "frames/templates/bio/pl-bio-12-pulse-trace-surge.svg",
+      "bytes": 526,
+      "sha256": "c589dea745455f5620ec00d1d26f6e0d426f9e82c552d1c771eb7cfbdfb501d5"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-07-state-rail-left-amber.svg",
+      "bytes": 1314,
+      "sha256": "de241175e059056f218a6507005d191258a63754c829c48f5d9f6a7316d2b08a"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-07-state-rail-left-red.svg",
+      "bytes": 1312,
+      "sha256": "867fb98b17cf98a3723dbe490ca35e6e4ec31e263f28472cac4fb078d8ba7fc8"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/exception/pl-exception-11-exception-fracture.svg",
+      "bytes": 443,
+      "sha256": "232a016a33637bb0f81d60e126f2726956d4aba397ab127189f9cf2f18e33894"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-02-data-surface.svg",
+      "bytes": 1308,
+      "sha256": "f2458f7230616772672c66c7a2be74eddcd73cf6b1fa110b5d15f8f723b33c37"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-07-state-rail-left-amber.svg",
+      "bytes": 1304,
+      "sha256": "f9f92f44b27785b156f9c9f3f8c80d06572f9aed22b6bcc602057d807d01075f"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/final-lap/pl-final-lap-11-wireframe-detail.svg",
+      "bytes": 286,
+      "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-02-data-surface.svg",
+      "bytes": 1308,
+      "sha256": "f2458f7230616772672c66c7a2be74eddcd73cf6b1fa110b5d15f8f723b33c37"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-07-state-rail-left-cyan.svg",
+      "bytes": 1303,
+      "sha256": "835bbae0c3d7919531a925d6cbcbe0cb469a6906667f3ad5f561c0f345ca49a8"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-07-state-rail-left-green.svg",
+      "bytes": 1304,
+      "sha256": "8c43b52c3542dfccdb3eb02e89517d58d375de43be1164027017edecd996f954"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/finish/pl-finish-11-wireframe-detail.svg",
+      "bytes": 286,
+      "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "9b7c6bf4a123eb3364e84451df52784615ab792e9711ca57230271acd1254f11"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-03-technical-grid.svg",
+      "bytes": 1260,
+      "sha256": "9759bb81f78dfa2cec41db09bd2f7c1a7f4bf4df8a18f68f36185066dab6fc45"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-07-state-rail-right-amber.svg",
+      "bytes": 1309,
+      "sha256": "031d03973abe8869bca82b86bf7ad7b3a38bdbd997caddd2f81b5c73571aa335"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-07-state-rail-right-red.svg",
+      "bytes": 1307,
+      "sha256": "9a01e92dac0f02f9499ac8154722c9f1374982291c010f1e719f2a0bcc31ed47"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-09-corner-accent.svg",
+      "bytes": 302,
+      "sha256": "1d549b1c95edd87ec98708f7ed87cbfdaecabb1932aa8cc410b012ced347d7cd"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-11-radar-rings.svg",
+      "bytes": 408,
+      "sha256": "57174cba3eb9e6a4f39f6e0de54eee036be2a0e188a007dd7238106becb17808"
+    },
+    {
+      "path": "frames/templates/hunted/pl-hunted-12-radar-sweep.svg",
+      "bytes": 361,
+      "sha256": "ecd3c49d4fd28e7a979a9e4d93644e8746e31424bc37b20f5e474d3d9a70c907"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "afb233d21281bbe06a15b1a103c1d2d0d5795a03f0e65b10a0f6ba5a3b66867c"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-07-state-rail-left-blue.svg",
+      "bytes": 1303,
+      "sha256": "efeb4654e6e79a235c89ca4fe1161131b6411f67b059879833af3f31b1ad7529"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-11-radar-rings.svg",
+      "bytes": 408,
+      "sha256": "57174cba3eb9e6a4f39f6e0de54eee036be2a0e188a007dd7238106becb17808"
+    },
+    {
+      "path": "frames/templates/hunting/pl-hunting-12-radar-sweep.svg",
+      "bytes": 361,
+      "sha256": "ecd3c49d4fd28e7a979a9e4d93644e8746e31424bc37b20f5e474d3d9a70c907"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-07-state-rail-left-cyan.svg",
+      "bytes": 1303,
+      "sha256": "835bbae0c3d7919531a925d6cbcbe0cb469a6906667f3ad5f561c0f345ca49a8"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/lap/pl-lap-11-wireframe-detail.svg",
+      "bytes": 286,
+      "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-07-state-rail-left-green.svg",
+      "bytes": 1304,
+      "sha256": "8c43b52c3542dfccdb3eb02e89517d58d375de43be1164027017edecd996f954"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/pb/pl-pb-11-wireframe-detail.svg",
+      "bytes": 286,
+      "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-07-state-rail-left-amber.svg",
+      "bytes": 1308,
+      "sha256": "1615c9314559a5e3e677970b3a319c82971a11b75f3fca5c8583492f14304ac1"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-07-state-rail-left-blue.svg",
+      "bytes": 1307,
+      "sha256": "e660d681847abf554ce643b443fc557c1b43752138f3203b58f4e9eb4bd74472"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-07-state-rail-left-green.svg",
+      "bytes": 1308,
+      "sha256": "082d742dcd2cbc2ffd6dad57ad27b7ce9f766976a397fa7929383a977c7acce8"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/pit/pl-pit-11-pit-phase-track.svg",
+      "bytes": 676,
+      "sha256": "1a6b4b00b09d00d6d4584d930cd233e537e79bb026a33554dcfdf1bfee0453e4"
+    },
+    {
+      "path": "frames/templates/position/pl-position-01-plate-base.svg",
+      "bytes": 1345,
+      "sha256": "f97a0c16ac128a566324efa83ab80c3840f938b3c019faa35510941867734b0d"
+    },
+    {
+      "path": "frames/templates/position/pl-position-02-data-surface.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "frames/templates/position/pl-position-03-technical-grid.svg",
+      "bytes": 1284,
+      "sha256": "9575b203836aa1d5a4bb688033d9789835a73dbd953c4bce67656c4a053ce1dd"
+    },
+    {
+      "path": "frames/templates/position/pl-position-04-icon-well.svg",
+      "bytes": 416,
+      "sha256": "357caddf5610e07b788438d5627babca0bd373b75e56ebfb6f4977d9be8c8c19"
+    },
+    {
+      "path": "frames/templates/position/pl-position-05-border.svg",
+      "bytes": 391,
+      "sha256": "c385103b82ebffc66f33be4d0a89ab44163e07af5c8ab0349388cf8d34eecce8"
+    },
+    {
+      "path": "frames/templates/position/pl-position-06-edge-light.svg",
+      "bytes": 442,
+      "sha256": "f372ce7af38eb1952bf99be01955aa6e9b494993cd102209eda44789f99ca4b8"
+    },
+    {
+      "path": "frames/templates/position/pl-position-07-state-rail-left-amber.svg",
+      "bytes": 1304,
+      "sha256": "f9f92f44b27785b156f9c9f3f8c80d06572f9aed22b6bcc602057d807d01075f"
+    },
+    {
+      "path": "frames/templates/position/pl-position-07-state-rail-left-green.svg",
+      "bytes": 1304,
+      "sha256": "8c43b52c3542dfccdb3eb02e89517d58d375de43be1164027017edecd996f954"
+    },
+    {
+      "path": "frames/templates/position/pl-position-07-state-rail-left-red.svg",
+      "bytes": 1302,
+      "sha256": "36b66824c75a1d97b6ce726b7908032792a704448168fdc1a926da2a99f9c6df"
+    },
+    {
+      "path": "frames/templates/position/pl-position-08-timing-ticks.svg",
+      "bytes": 1692,
+      "sha256": "481244752556b15d934106829dea1a83b1f459c37545087c99ba3f7e81c16d3c"
+    },
+    {
+      "path": "frames/templates/position/pl-position-09-corner-accent.svg",
+      "bytes": 306,
+      "sha256": "26213b70e0782e524349d40085293daf043e6afa52371d7d9356a992859172d0"
+    },
+    {
+      "path": "frames/templates/position/pl-position-10-bottom-divider.svg",
+      "bytes": 313,
+      "sha256": "8fedd1ed18902506adfbcc55a7bdb14db150e387cf7d3c22992fffb692458e3a"
+    },
+    {
+      "path": "frames/templates/position/pl-position-11-wireframe-detail.svg",
+      "bytes": 286,
+      "sha256": "a7139937c5e8807b94c56e537812c559b6122258aa2507b2cfe10878ff3cfc5d"
+    },
+    {
+      "path": "icons/ble-hr/compact/pl-ble-compact-base.svg",
+      "bytes": 489,
+      "sha256": "055ec107388d7c68f8223664b244a10663a787431949086e9fc97bdb74501b1b"
+    },
+    {
+      "path": "icons/ble-hr/compact/pl-ble-compact-border.svg",
+      "bytes": 293,
+      "sha256": "24a555306d1da1c40ffee07b03692457fa8cfaa42c739b74317578c3061ffc6d"
+    },
+    {
+      "path": "icons/ble-hr/compact/pl-ble-compact-critical.svg",
+      "bytes": 240,
+      "sha256": "8a2149efe649399b6f0b1121b3c636c77c641bee45991c77ff9cd72851da109f"
+    },
+    {
+      "path": "icons/ble-hr/compact/pl-ble-compact-normal.svg",
+      "bytes": 238,
+      "sha256": "522eb62924254b5d8fc62c4c6f74efdb71ed1f01e6c94256085ed9cfe3337574"
+    },
+    {
+      "path": "icons/ble-hr/compact/pl-ble-compact-pulse.svg",
+      "bytes": 304,
+      "sha256": "6007b2e7a429d5c459659f98ce15eda15bd4db36cfbe2365e7ae7b6bbaa7e972"
+    },
+    {
+      "path": "icons/ble-hr/compact/pl-ble-compact-warning.svg",
+      "bytes": 239,
+      "sha256": "8affc4c8339779385c6a75f41251e56f780443d4adb9d50d9698a23c83e77354"
+    },
+    {
+      "path": "icons/ble-hr/connection-states/pl-ble-state-connected.svg",
+      "bytes": 357,
+      "sha256": "cf28ccf852ef739200a5ffa9f03990b81b284d6cce29bac3a121dc86f5b57183"
+    },
+    {
+      "path": "icons/ble-hr/connection-states/pl-ble-state-disconnected.svg",
+      "bytes": 430,
+      "sha256": "9227fef6a5bc2c902f3d5f9b358f290e1b6abd99daa65c29c2d72e825ee1dca8"
+    },
+    {
+      "path": "icons/ble-hr/connection-states/pl-ble-state-error.svg",
+      "bytes": 423,
+      "sha256": "62525cb200bc01fada836baf9054aba36764d2e15022a24055c6d8bfe1e41c4c"
+    },
+    {
+      "path": "icons/ble-hr/connection-states/pl-ble-state-pairing.svg",
+      "bytes": 355,
+      "sha256": "abcee2623a4fb1e2a8098e3e658f33ec0eff7aa210018b0a35fbc3f8694199e4"
+    },
+    {
+      "path": "icons/ble-hr/connection-states/pl-ble-state-reconnecting.svg",
+      "bytes": 360,
+      "sha256": "cd5106f2bfc6c9f6a0a19f15f3ddef4b578a703474692c51f974bb8a6b42012c"
+    },
+    {
+      "path": "icons/event/pl-icon-approach.svg",
+      "bytes": 321,
+      "sha256": "413d1d77225335c01fd1a266ad40b020c74cd1d0fe3bdcab96225670c540332f"
+    },
+    {
+      "path": "icons/event/pl-icon-attack-range.svg",
+      "bytes": 354,
+      "sha256": "eed78b3de95eed722190be94c0cf0f43bdd55383a0c7eae8465efdd25b5e4830"
+    },
+    {
+      "path": "icons/event/pl-icon-battle-for-position.svg",
+      "bytes": 362,
+      "sha256": "66feb90e5666147486e0c4946737f043a666d2ac3e7cee69d9f511c1c8cb6d33"
+    },
+    {
+      "path": "icons/event/pl-icon-battle-won.svg",
+      "bytes": 410,
+      "sha256": "83611adb4c37ad587798783e7361d00b62c6669e1e1b1f81a884f4c2a48ce98f"
+    },
+    {
+      "path": "icons/event/pl-icon-ble-reconnecting.svg",
+      "bytes": 437,
+      "sha256": "090dd5516ab5f07c0c155b4e6081edde0dcfcde8f527581439711d7c3806436b"
+    },
+    {
+      "path": "icons/event/pl-icon-ble.svg",
+      "bytes": 344,
+      "sha256": "84504e4398d41d153f460ad6e0ffa31cff0466abad2dbb749ac1f5e171624119"
+    },
+    {
+      "path": "icons/event/pl-icon-clean-streak.svg",
+      "bytes": 354,
+      "sha256": "d6d4a0c192edf35e719a34976cebd95c09c87797a89894675badbbe951e09bcb"
+    },
+    {
+      "path": "icons/event/pl-icon-composure-test.svg",
+      "bytes": 390,
+      "sha256": "a35bcc802412043ae2326cc3d14653a6bff39ecac45571508032b2c252895eea"
+    },
+    {
+      "path": "icons/event/pl-icon-cpu-temp-high.svg",
+      "bytes": 468,
+      "sha256": "3c840e434fde582725a13f5d9a84293187686a3cbd134a875ae6650f587de7b1"
+    },
+    {
+      "path": "icons/event/pl-icon-cpu.svg",
+      "bytes": 473,
+      "sha256": "ff32ac1fbeb9d90f2164c456c65bb589f1b9778c0ac2f94dee7c1fb9013e489f"
+    },
+    {
+      "path": "icons/event/pl-icon-final-lap.svg",
+      "bytes": 349,
+      "sha256": "602b6bc3b93b107eaa47d80a60ca8275c7c9f72ceddd566361b3b82fb3add40e"
+    },
+    {
+      "path": "icons/event/pl-icon-finish.svg",
+      "bytes": 363,
+      "sha256": "6b1b2d001d40fd20dbba7577c156cf36ee3f4672476728a577897ac3ccfac3b2"
+    },
+    {
+      "path": "icons/event/pl-icon-flag.svg",
+      "bytes": 426,
+      "sha256": "69c2ab6de28e7acdc334de1325ec24ee8ffc7c77589ede88c73907adb4c8a11b"
+    },
+    {
+      "path": "icons/event/pl-icon-fps.svg",
+      "bytes": 362,
+      "sha256": "4d337a77af10747fbc7a25e828b37df299c6b1feb0b73dbfc2765c7c0ca617f1"
+    },
+    {
+      "path": "icons/event/pl-icon-gain-found.svg",
+      "bytes": 323,
+      "sha256": "5cc61aa3498c5e080a74561fca12a72a3df51ca779eb37bf550b37979162824c"
+    },
+    {
+      "path": "icons/event/pl-icon-gpu-temp-high.svg",
+      "bytes": 390,
+      "sha256": "bda460cfe75e0d7f0eab1b207a947c5580230ebe22ce98120eb89c2276bf56fe"
+    },
+    {
+      "path": "icons/event/pl-icon-gpu.svg",
+      "bytes": 548,
+      "sha256": "d2fdb2e07231f91b4119749a3b1ab4907c42cbf08dd9d5773cb5a6de6d13ae4c"
+    },
+    {
+      "path": "icons/event/pl-icon-heart.svg",
+      "bytes": 396,
+      "sha256": "f3cecf5fe9bcd15820081c8a653f14dbe9b1f6772d3da6b629c450a348b3cfb5"
+    },
+    {
+      "path": "icons/event/pl-icon-high-load.svg",
+      "bytes": 405,
+      "sha256": "ef4c2e94385b01934f4587d12f8210d031d3deb79fbccef2dd5dcc843efcc3a7"
+    },
+    {
+      "path": "icons/event/pl-icon-hot-lap.svg",
+      "bytes": 408,
+      "sha256": "d004eedb7d93654536947a9d391f0719fb61d8da2937bf85fe3394031e92366a"
+    },
+    {
+      "path": "icons/event/pl-icon-hr-pressure.svg",
+      "bytes": 379,
+      "sha256": "575807bdb912e6ff6a3cbc5c1b9881db216ef3713b4607ea5fb6fe0f4b6b4c8e"
+    },
+    {
+      "path": "icons/event/pl-icon-hunted.svg",
+      "bytes": 375,
+      "sha256": "292f04c078896ca94fcb27a8f5891d8b54084db1684043c66d065eab5e12d8b7"
+    },
+    {
+      "path": "icons/event/pl-icon-hunting.svg",
+      "bytes": 362,
+      "sha256": "d497ad97b32d9e39739ad04522b89458dfe3a5bfa7e2a2ef6159fe7cd7c2daa6"
+    },
+    {
+      "path": "icons/event/pl-icon-incident.svg",
+      "bytes": 312,
+      "sha256": "f9c234f7db1d8fcecf9c3a6f10140ed361ee665deab3c3a1dfda647b8ec0c944"
+    },
+    {
+      "path": "icons/event/pl-icon-invalid-lap.svg",
+      "bytes": 341,
+      "sha256": "a540e22e6100dba930eb4734c5c40f43811f72035c218872bddedcbe435acb66"
+    },
+    {
+      "path": "icons/event/pl-icon-lap-complete.svg",
+      "bytes": 368,
+      "sha256": "aaa52962b71d84bc869527c773a4ea00013ce9a1a38d02d48594cafc2a27f35c"
+    },
+    {
+      "path": "icons/event/pl-icon-link-drop.svg",
+      "bytes": 430,
+      "sha256": "2c199e4e6da3ddb6747d9e1b9880e527a24e844c68cbbc159ec1a85242f3fd27"
+    },
+    {
+      "path": "icons/event/pl-icon-overtake.svg",
+      "bytes": 406,
+      "sha256": "b8e91b162885de1867c5ab9a7632029c3643ccd7aa64f4da0336be0f8e8098a3"
+    },
+    {
+      "path": "icons/event/pl-icon-pb-attack.svg",
+      "bytes": 345,
+      "sha256": "02765af3a2636e7f2c2f59aa15881ae457012f5bea9c0b3ec514cf3f1bfbea9d"
+    },
+    {
+      "path": "icons/event/pl-icon-personal-best.svg",
+      "bytes": 394,
+      "sha256": "149e61848fc3fd6cb101730f8e4fd9fa44c0b50720f6932bafa47ee606824aa7"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-entry.svg",
+      "bytes": 354,
+      "sha256": "00721452d56ba8b04166d9873123aff399ad649f79e3af03e3c19fe6fcf4813e"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-exit.svg",
+      "bytes": 353,
+      "sha256": "f0cec3ac542d85ca6884e6757c69827aa4f0e193ee6783073280b8b5636a8912"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-lane.svg",
+      "bytes": 370,
+      "sha256": "54cdb61eae5a5e41927d0c728be20ad86aa2004de39eab56404765eddd4e6ac4"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-outcome.svg",
+      "bytes": 340,
+      "sha256": "7d0e131f8631c8f6a8e8772573ccf99ce5d5a1a35cfdda2b584153d5ac1cf4a7"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-released.svg",
+      "bytes": 321,
+      "sha256": "f24d0eeee61000bf5ac97bdbab16063ad5130018764c46629f76e3a89abe0911"
+    },
+    {
+      "path": "icons/event/pl-icon-pit-stopped.svg",
+      "bytes": 343,
+      "sha256": "6425f588c2fe06e31d8985ef08b273c16c5c6134a3a01787a62724fdb9fa0676"
+    },
+    {
+      "path": "icons/event/pl-icon-position-attack.svg",
+      "bytes": 350,
+      "sha256": "4c0f0a4d5f2ed106c9419a8dfddbad5cac86f270080ba5677e267862876639fa"
+    },
+    {
+      "path": "icons/event/pl-icon-position-down.svg",
+      "bytes": 333,
+      "sha256": "2d17802d431e5f4e50dc1cd2c5b2ef708f87cb896f0198a2ea14b05a50d596d8"
+    },
+    {
+      "path": "icons/event/pl-icon-position-gained.svg",
+      "bytes": 321,
+      "sha256": "fea94ebbc3dbddee2928a154f7975ef97c6100b0f353007cfc86f7f7905fbf6b"
+    },
+    {
+      "path": "icons/event/pl-icon-position-lost.svg",
+      "bytes": 318,
+      "sha256": "39980396c725a4662436708e732083e5e2272550a101e0066e04040012ac9eb0"
+    },
+    {
+      "path": "icons/event/pl-icon-position-up.svg",
+      "bytes": 332,
+      "sha256": "c4f7c211a9f39d3548229db8498a22bcd9250aba9310ba08a7fd8446f679b855"
+    },
+    {
+      "path": "icons/event/pl-icon-power.svg",
+      "bytes": 313,
+      "sha256": "57099bccd7a10ca4d3a1c7551692c25cb04d1cd5e221d0322a4073f178590e30"
+    },
+    {
+      "path": "icons/event/pl-icon-projected-lap.svg",
+      "bytes": 365,
+      "sha256": "546fb532d4e9efa2391129e19e997d8ff7fc899fe1a1fb3069ff9df5546e3cf4"
+    },
+    {
+      "path": "icons/event/pl-icon-radar.svg",
+      "bytes": 438,
+      "sha256": "8d1d4a41fd858f63107e2ca2483388fa96c7f4c8b19b562810343088eb11d787"
+    },
+    {
+      "path": "icons/event/pl-icon-ram.svg",
+      "bytes": 506,
+      "sha256": "9faea0f3ebff0b25c320cec7f3bbeac1c1c0e62eb6c8233130f1a47ad599ab99"
+    },
+    {
+      "path": "icons/event/pl-icon-rival-threat.svg",
+      "bytes": 371,
+      "sha256": "2b5c1da216c95a21097f7678d178ded76ecb8098e2c75698ccdf55161a3f88b8"
+    },
+    {
+      "path": "icons/event/pl-icon-shield.svg",
+      "bytes": 377,
+      "sha256": "8dd5757fb6c60cd4b0c898395e02e1974bc3cc1950d6390f3bd4ee362c1c89a4"
+    },
+    {
+      "path": "icons/event/pl-icon-side-by-side.svg",
+      "bytes": 408,
+      "sha256": "bcea2bb083b2fac0ab93c32356ac4ba7db76caf98f234f5ae112563774a99ec9"
+    },
+    {
+      "path": "icons/event/pl-icon-stopwatch.svg",
+      "bytes": 419,
+      "sha256": "d9882c49770d8244b66cacd85f3d2e51dace4d5731fcd99d6470edbbb7ab02ac"
+    },
+    {
+      "path": "icons/event/pl-icon-target.svg",
+      "bytes": 376,
+      "sha256": "8c6f9674515c3f9e5566328ea33c497bdcee7fa556429089aa859898d07b60c8"
+    },
+    {
+      "path": "icons/event/pl-icon-temp.svg",
+      "bytes": 464,
+      "sha256": "c2969c3596e867cc6fd35614c6804d2119afca2fbb3003b837bccca3f469ef55"
+    },
+    {
+      "path": "icons/event/pl-icon-vram.svg",
+      "bytes": 477,
+      "sha256": "8eac43f78050f83b5e6165c4e1e322c96ef8a15ffe5bbedbee623bff03548ef1"
+    },
+    {
+      "path": "icons/event/pl-icons-sprite.svg",
+      "bytes": 5210,
+      "sha256": "1a138cc73a192ffa76a88decc7e080f8ad7c45a4b180fa48a534d62cc2818f48"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-base.svg",
+      "bytes": 452,
+      "sha256": "d0ba2964c0dc7ee83577c12ea5455888b431dedf959f8502f3d50ab6cd96bc07"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-brand-surface.svg",
+      "bytes": 481,
+      "sha256": "69b7d5abeb118904f735fd543ed57b9d74f5a3b1f4f2b82ae42ab19b1cb25c9e"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-bus-line.svg",
+      "bytes": 473,
+      "sha256": "3f2eb9fee032553a62dfce67e8b13bbf9a7000d2e0b0537a9f1bf9dadb56cfc3"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-dividers.svg",
+      "bytes": 995,
+      "sha256": "68f7d9e435e307b9523ab0f4ee55e6c97d9ad63199ad6bea4dc61cf56220be12"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-edge-light.svg",
+      "bytes": 467,
+      "sha256": "4357cf70994b9bdb054a0d97698e66e2a0b4e0c00eb088980f53d271472d8ca3"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-footer-accent.svg",
+      "bytes": 494,
+      "sha256": "eff16364892f271a1e63b00d37c8cfa33eb4e0fd76899113641b7dd9f2b62064"
+    },
+    {
+      "path": "icons/sysinfo/pl-sysinfo-ticks.svg",
+      "bytes": 8570,
+      "sha256": "efff29692cd325a3656d3aedb82ad63ed916073404ced19087a8df43bb7750bd"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-bio.svg",
+      "bytes": 415,
+      "sha256": "bec038e5d8b6463c1a8f4eb31d8befa8448a6f7dcf309276bb23d279defbfe01"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-brand.svg",
+      "bytes": 417,
+      "sha256": "3617ab87aba6419b339046bd550fdea39450d36c56b52a2bfc4ae501b5805310"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-cpu.svg",
+      "bytes": 415,
+      "sha256": "fe0dc42f68f9b0aae3d14c3c028aed6eb80e1d62423350b576f43d6af7e94e8f"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-fps.svg",
+      "bytes": 415,
+      "sha256": "28f6558acbe2c0faad82882c35292c073f70ca9f474d5cc1a8a3d7dcd64a3116"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-frametime.svg",
+      "bytes": 421,
+      "sha256": "4256d6343f2aed134869d9348cb5f7689839bf67e8b4c42bd9ef3b6dc2e26126"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-gpu.svg",
+      "bytes": 415,
+      "sha256": "d31d99ecb5d04de1aac4576c1d6c2ca5cd7a716a25536487f18023f93fe935b7"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-power.svg",
+      "bytes": 417,
+      "sha256": "a2ff71d91c9028d85191f35105e58457f42a78a75e2a2793b340d8f3a66b1ad5"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-ram.svg",
+      "bytes": 415,
+      "sha256": "b026a611cc50137745dae0a1799ca99a4560db7f9f98119f680e4981002a4ac0"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-temperature.svg",
+      "bytes": 423,
+      "sha256": "ffa43fe109fbe097c27b89146e8570135e2b1043fe2676ee255064f3570ca3cf"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-segment-vram.svg",
+      "bytes": 416,
+      "sha256": "040fcc062aa88578a110a3bd856101842eda574efa10e21e2cfc7112bc558010"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-state-amber.svg",
+      "bytes": 249,
+      "sha256": "0cd14065a02b69d2bfd8b1c6fca1c23c747037792141d7aeeaaa30e3862c2dfc"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-state-blue.svg",
+      "bytes": 248,
+      "sha256": "1f9cb5110d8034bad33311cffe1052c5b75ce2bde0c94f97cfeba622b0430a48"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-state-green.svg",
+      "bytes": 249,
+      "sha256": "9765b66e8067e383381007fbb39406803bdfd25e89d8944f1b1750b07f9fdd37"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-state-neutral.svg",
+      "bytes": 251,
+      "sha256": "055cf9e22277edbbefd4dff07200cc53d486d499ef9d1eab6ef800e0361c6824"
+    },
+    {
+      "path": "icons/sysinfo/segments/pl-sysinfo-state-red.svg",
+      "bytes": 247,
+      "sha256": "654d512d65d32df1889552466f8eb4dcb5c6419aa49bade4b440c3031d878476"
+    },
+    {
+      "path": "motion/MOTION.md",
+      "bytes": 1371,
+      "sha256": "9cbbe87d9df3605a32e1b31e78d0594f8f197c5e1271645f45a6ea149e79bf5e"
+    },
+    {
+      "path": "motion/active_pulse.webm",
+      "bytes": 16455,
+      "sha256": "aa31fbeb0b6b66a6393c92ed0e2f58efa353e60a04982262a0a2f6831f91c584"
+    },
+    {
+      "path": "motion/battle_signal_lock.webm",
+      "bytes": 26555,
+      "sha256": "19551a7b5029261713c2739f6fae8c8e32d0d63d2e2932b5fe7e28bf4c7a6a19"
+    },
+    {
+      "path": "motion/bio_pulse.webm",
+      "bytes": 23675,
+      "sha256": "8e9ce5f1a2cac6bfa4ac6cfc1953103e9baeae8e1d754ea6d4ccc3e966a23ba2"
+    },
+    {
+      "path": "motion/compact_mask.webm",
+      "bytes": 8660,
+      "sha256": "680473b399856eb0db932cba9e0931426176e79683821bc4d101f242395c3c8a"
+    },
+    {
+      "path": "motion/enter_reveal.webm",
+      "bytes": 16689,
+      "sha256": "b2b7fd0277b9d644fb26662e02ddea32df66b8d2ccd4568403b3a61424dea402"
+    },
+    {
+      "path": "motion/exception_link_drop.webm",
+      "bytes": 17472,
+      "sha256": "f4179e2eb29abb6d419820b0efca5e0de2e45f269f6e8c4a9218a20dc9dea60e"
+    },
+    {
+      "path": "motion/exit_trace.webm",
+      "bytes": 6617,
+      "sha256": "30b925d2934b128e76bb02be89c1688ab0e2fb09195678b817b05ffe491b3d80"
+    },
+    {
+      "path": "motion/manifest.json",
+      "bytes": 4658,
+      "sha256": "b96a954c120b76d78d3874b5b40223dfc32e958582b052baf66ac464c4bf615a"
+    },
+    {
+      "path": "motion/pit_stop_ring.webm",
+      "bytes": 30940,
+      "sha256": "04a891f0f87a5d92c33ec03c2767e4e32b901ef5269b5c9fca80c88d4c84fe9b"
+    },
+    {
+      "path": "motion/position_chevron_hit.webm",
+      "bytes": 20912,
+      "sha256": "59f7b45ab50fc20c74f221f6e81c99036740cd13e5d1684ca9feb4dabb4c110a"
+    },
+    {
+      "path": "motion/result_burst.webm",
+      "bytes": 29059,
+      "sha256": "763bcdaeda554eb6e707bf3d73bc1b1e84beea41a97b012582636c809f61ac8d"
+    },
+    {
+      "path": "motion/resume_reacquire.webm",
+      "bytes": 35564,
+      "sha256": "1c891336f85e0de4101ccd7024e891312dda61734be2eb7a98828d6804806a4a"
+    },
+    {
+      "path": "motion/session_finish_burst.webm",
+      "bytes": 11972,
+      "sha256": "bd4bbef4107090de5be0b6a600ed787bc41f27639a84998d6cc69f97833da452"
+    },
+    {
+      "path": "motion/suspend_dim.webm",
+      "bytes": 112022,
+      "sha256": "fe636130b5eb7110a7609b926f695596254797042592a27fca9f63d32777a0eb"
+    },
+    {
+      "path": "motion/theme_glitch.webm",
+      "bytes": 31767,
+      "sha256": "b9c9e4c2d6238abe675f99e365251a14ed057a0a59ef4f09e787c2fa8d7dff5b"
+    },
+    {
+      "path": "motion/timing_projection_sweep.webm",
+      "bytes": 17253,
+      "sha256": "9ea40ef2b9eff8447f0b33e7d294f1b037135ab3ed4f12d332169346de0d94f0"
+    },
+    {
+      "path": "packages/01_Pitwall_Light_Core_Vector_and_Tokens.zip",
+      "bytes": 49048,
+      "sha256": "ffcd14bc61f25eb958c5556196b55400c77e0ac5e9c1f9d8e7e1898982fb3b62"
+    },
+    {
+      "path": "packages/02_Pitwall_Light_Icons_BLE_and_Status.zip",
+      "bytes": 756372,
+      "sha256": "80067b3b25a189bd0cedbf8594adb5d5b8dbfcc9a5d33582bf07f595eb7a95f8"
+    },
+    {
+      "path": "packages/03_Pitwall_Light_Transient_Templates_Vector.zip",
+      "bytes": 82586,
+      "sha256": "1a791357cafee24277110624c40f3bbd74b1d1eddd4a5442ed327e01c4d7c181"
+    },
+    {
+      "path": "packages/04_Pitwall_Light_Transient_Raster_1x.zip",
+      "bytes": 423476,
+      "sha256": "20339c89e372d863d83438dc962621c188dc6464b9f0280905f64954658c66fa"
+    },
+    {
+      "path": "packages/05_Pitwall_Light_Transient_Raster_2x.zip",
+      "bytes": 896909,
+      "sha256": "fb06c1688c36ff039219712126f05585c89dff5a653f0799dc2224ef770e804f"
+    },
+    {
+      "path": "packages/06_Pitwall_Light_Common_Raster_1x.zip",
+      "bytes": 270089,
+      "sha256": "066caa159735b6eb479db065c7f0f16a9ec1eea4229333b66498e0a521ec9f53"
+    },
+    {
+      "path": "packages/07_Pitwall_Light_Common_Raster_2x.zip",
+      "bytes": 486983,
+      "sha256": "600298f30f5bd343714eafe90dd3d3c1a534f396f28e7d3e7f7db139cbf1cebc"
+    },
+    {
+      "path": "packages/08_Pitwall_Light_SYSINFO_All_Formats.zip",
+      "bytes": 85134,
+      "sha256": "ea7a6b0954b8ddd461324d5a4e6e1df75c58e03a6489abd01172d941f55de9ce"
+    },
+    {
+      "path": "packages/09_Pitwall_Light_Documentation_Examples_Manifests.zip",
+      "bytes": 351654,
+      "sha256": "9b56326beef205cdda5d2fc9296ad4c9b5c997459a0288c5e9af712fcc411060"
+    },
+    {
+      "path": "packages/10_Pitwall_Light_Motion_Alpha_VP9.zip",
+      "bytes": 405525,
+      "sha256": "aace39b67d7db92fab260fac88e5e9b703604debebf31ff5c54f7c56f0162672"
+    },
+    {
+      "path": "packages/archive-index.json",
+      "bytes": 3957,
+      "sha256": "973b5fb1e90276bd3f3a8caa9825e60201420ecf0360d941d200f07861203d54"
+    },
+    {
+      "path": "references/docs/IMPLEMENTATION.md",
+      "bytes": 3119,
+      "sha256": "490fe51c54674d1a55b10b9668499989b930e884f6024261ffb5167cfe00e666"
+    },
+    {
+      "path": "references/docs/LAYERING_AND_ANCHORS.md",
+      "bytes": 761,
+      "sha256": "61fbd55dd620d7c1c35a9366d074532c77817af2fdf30ffd5b188f6449b31a05"
+    },
+    {
+      "path": "references/docs/MOTION.md",
+      "bytes": 1371,
+      "sha256": "9cbbe87d9df3605a32e1b31e78d0594f8f197c5e1271645f45a6ea149e79bf5e"
+    },
+    {
+      "path": "references/docs/MOTION_QA.md",
+      "bytes": 2493,
+      "sha256": "efe73e9d4a8b54070f20b4eda00f6aeb59e243db0f192eef739e2e1b83f6536e"
+    },
+    {
+      "path": "references/docs/NAMING_CONVENTION.md",
+      "bytes": 973,
+      "sha256": "a2b46a47062b2d455620b2496e132e09de70e552b9a31578fc7efc8527c77ecc"
+    },
+    {
+      "path": "references/docs/OBS_BROWSER_SOURCE.md",
+      "bytes": 910,
+      "sha256": "eb1b334038226ae6f6c421c34d3d6fc8137a52331d3e6298b0df2b2a621fa5c6"
+    },
+    {
+      "path": "references/docs/STATE_VISUAL_MAP.md",
+      "bytes": 6077,
+      "sha256": "037cd33e528184e5369c9fa3d2abc77bf6e9ef8afdd4d02dd4f0e5d9c02f93d5"
+    },
+    {
+      "path": "references/examples/compositions/pitwall-light-event-catalog-1920x1080.png",
+      "bytes": 173201,
+      "sha256": "53c80aa2dd42a747bc5a17c3060a1237fe270cd08217a44243b80f137f02e141"
+    },
+    {
+      "path": "references/examples/compositions/pitwall-light-event-catalog.html",
+      "bytes": 9879,
+      "sha256": "2a88866fac4b50b3096de44476c42ac0c18b54acaf353fd405b6aba0303b4c9c"
+    },
+    {
+      "path": "references/examples/css/pitwall-light.css",
+      "bytes": 3508,
+      "sha256": "d7646b56f93949a7b135eee3656a1fd642dbe3e56d7ad4328d1afd3202b1b627"
+    },
+    {
+      "path": "references/examples/html/sysinfo-composition.html",
+      "bytes": 1843,
+      "sha256": "6b17f4ed728339e3ab78d7158e737587d3501118aaffe99aedf3be75758f9d24"
+    },
+    {
+      "path": "references/examples/html/widget-composition.html",
+      "bytes": 1653,
+      "sha256": "e74a875af2dd393ae91ac2d0ee88e5630988b87291f7656e88a50aef2634591c"
+    },
+    {
+      "path": "references/source-asset-manifest.json",
+      "bytes": 941292,
+      "sha256": "7568c0d58199194b44214cbd8ce44943878777a9e493229a5e50d7054db3b2fd"
+    },
+    {
+      "path": "textures/pl-data-surface-battle.svg",
+      "bytes": 1308,
+      "sha256": "b230dd657e8477742a8da1f79a09c3c79a9081421843388dc8b938af5a6b124a"
+    },
+    {
+      "path": "textures/pl-data-surface-full.svg",
+      "bytes": 1307,
+      "sha256": "6bea5634fa91f93d9b58f7ac0d22d4f3e1764b437eaf891cde5cc5ffa1c14d22"
+    },
+    {
+      "path": "textures/pl-data-surface-left.svg",
+      "bytes": 1307,
+      "sha256": "afb233d21281bbe06a15b1a103c1d2d0d5795a03f0e65b10a0f6ba5a3b66867c"
+    },
+    {
+      "path": "textures/pl-data-surface-major.svg",
+      "bytes": 1308,
+      "sha256": "f2458f7230616772672c66c7a2be74eddcd73cf6b1fa110b5d15f8f723b33c37"
+    },
+    {
+      "path": "textures/pl-data-surface-right.svg",
+      "bytes": 1307,
+      "sha256": "9b7c6bf4a123eb3364e84451df52784615ab792e9711ca57230271acd1254f11"
+    },
+    {
+      "path": "theme-tokens.json",
+      "bytes": 3276,
+      "sha256": "6c5ed0ade6e6ed168bae5de9e75f75f32cbad37b5abc102f9610dec7efd4daf1"
+    }
+  ]
+}

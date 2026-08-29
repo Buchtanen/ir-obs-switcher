@@ -79,6 +79,15 @@ def test_lap_complete_and_personal_best() -> None:
     assert out[0].name == "lap_complete"
 
 
+def test_lap_complete_waits_for_valid_sdk_time() -> None:
+    emitter = LapEmitter(EventSettings(), EventPrioritySettings())
+    emitter.tick(_state(lap_completed=10, last_lap_time=95.0), 1.0)
+    assert emitter.tick(_state(lap_completed=11, last_lap_time=None), 2.0) == []
+    out = emitter.tick(_state(lap_completed=11, last_lap_time=94.2, best_lap_time=94.0), 3.0)
+    assert out[0].name == "lap_complete"
+    assert out[0].data["lapTime"] == 94.2
+
+
 def test_position_requires_stability() -> None:
     emitter = PositionEmitter(BattleSettings(position_stable_seconds=1.0), EventPrioritySettings())
     emitter.tick(_state(class_position=8), 0.0)

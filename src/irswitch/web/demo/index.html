@@ -44,11 +44,15 @@
     }
     .stage {
       position: relative;
-      overflow: auto;
+      overflow: hidden;
       background:
         radial-gradient(ellipse at center, rgba(20, 40, 48, 0.55), #050607 72%),
         repeating-linear-gradient(0deg, #101214 0 2px, #0b0d0f 2px 48px),
         repeating-linear-gradient(90deg, #101214 0 2px, #0b0d0f 2px 48px);
+    }
+    .frame-slot {
+      margin: 8px;
+      overflow: hidden;
     }
     .frame-wrap {
       width: 1920px;
@@ -97,6 +101,8 @@
         <option value="cyber_racing">cyber_racing</option>
         <option value="stealth_graphite">stealth_graphite</option>
         <option value="night_attack">night_attack</option>
+        <option value="pit_wall_dark">pit_wall_dark</option>
+        <option value="pit_wall_light">pit_wall_light</option>
       </select>
     </label>
     <button id="replay" type="button">Replay</button>
@@ -104,8 +110,10 @@
   </header>
   <div class="stage">
     <div class="badge">1920 × 1080 · V4 cyclic demo · transparent HUD</div>
-    <div class="frame-wrap" id="wrap">
-      <iframe id="hud" title="Overlay HUD" src="/overlay?demo=1&amp;renderer=v4"></iframe>
+    <div class="frame-slot" id="slot">
+      <div class="frame-wrap" id="wrap">
+        <iframe id="hud" title="Overlay HUD" src="/overlay?demo=1&amp;renderer=v4"></iframe>
+      </div>
     </div>
   </div>
   <script>
@@ -122,7 +130,9 @@
       const availH = Math.max(180, window.innerHeight - header - pad * 2);
       const s = Math.min(availW / 1920, availH / 1080, 1);
       wrap.style.transform = `scale(${s})`;
-      wrap.style.margin = `${pad}px`;
+      const slot = document.getElementById("slot");
+      slot.style.width = `${Math.round(1920 * s)}px`;
+      slot.style.height = `${Math.round(1080 * s)}px`;
     }
 
     function hudSrc() {

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" fill="none">
+  <title>Pitwall battle data surface</title>
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="420" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111A22" stop-opacity=".94"/><stop offset="1" stop-color="#080E14" stop-opacity=".90"/>
+    </linearGradient>
+    <linearGradient id="surface" x1="52" y1="24" x2="396" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A2833" stop-opacity=".86"/><stop offset="1" stop-color="#101A22" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="railCyan" x1="0" y1="0" x2="0" y2="140"><stop stop-color="#7BE8FF"/><stop offset=".56" stop-color="#35D7FF"/><stop offset="1" stop-color="#168EAA"/></linearGradient>
+    <filter id="railGlow" x="-100%" y="-30%" width="300%" height="160%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="plateClip"><path d="M0 0H400L420 20V140H20L0 120Z"/></clipPath>
+</defs>
+  <path d="M20 18H400V122H20Z" fill="url(#surface)"/>
+  <path d="M20 18H400V122H20Z" stroke="#A9CAD7" stroke-opacity=".11"/>
+
+</svg>

@@ -82,15 +82,23 @@ class V4AssetResolver:
             }
 
         layer_dir = str(family_cfg.get("layer_dir", ""))
+        state_dirs = family_cfg.get("state_layer_dirs") or {}
+        if isinstance(state_dirs, dict) and state in state_dirs:
+            override = str(state_dirs[state] or "").strip()
+            if override:
+                layer_dir = override
         layers: list[dict[str, Any]] = []
         for layer in family_cfg.get("layers") or []:
             file_name = str(layer.get("file", ""))
             rel = f"{layer_dir}/{file_name}"
+            path = self._resolve_file(rel)
+            if path is None:
+                continue
             layers.append(
                 {
                     "file": file_name,
                     "mode": str(layer.get("mode", "image")),
-                    "path": self._resolve_file(rel),
+                    "path": path,
                 }
             )
 
@@ -126,9 +134,16 @@ class V4AssetResolver:
         for motion in self._manifest.get("motions") or []:
             motions[str(motion)] = self.resolve_motion(str(motion))
 
+        theme_block = (self._manifest.get("themes") or {}).get(self.theme) or {}
         return {
             "theme": self.theme,
+            "manifest_schema": self._manifest.get("manifest_schema"),
             "transient_canvas": self._manifest.get("transient_canvas"),
+            "sysinfo_canvas": self._manifest.get("sysinfo_canvas"),
+            "canvases": self._manifest.get("canvases"),
+            "theme_canvases": theme_block.get("canvases"),
+            "zones": self._manifest.get("zones"),
+            "transitions": self._manifest.get("transitions"),
             "states": states,
             "motions": motions,
         }

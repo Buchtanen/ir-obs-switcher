@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" fill="none">
+  <title>Pitwall pivot divider</title>
+  <defs></defs>
+  <path d="M26 70H394" stroke="#A7BBC4" stroke-opacity=".25"/>
+  <path d="M167 70H253" stroke="#35D7FF" stroke-width="2"/>
+  <path d="M210 60V80" stroke="#EAF3F7" stroke-opacity=".82"/>
+  <circle cx="210" cy="70" r="4" fill="#35D7FF"/>
+
+</svg>

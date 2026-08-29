@@ -34,6 +34,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "overlay.language",
         "overlay.v4_assets",
         "overlay.v4_renderer",
+        "overlay.session_tape",
         "event_engine.v2_payload",
         "event_engine.practice",
         "event_engine.quali_projection",
@@ -123,6 +124,7 @@ RESTART_CONFIG_KEYS: frozenset[str] = frozenset(
         "oauth.client_secret",
         "hotkeys.restart_hotkey",
         "system_info.lhm_dll_path",
+        "overlay.session_tape_dir",
     }
 )
 
