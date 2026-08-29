@@ -17,7 +17,14 @@ Each pack includes:
 - HTML/CSS composition examples
 - `packages/*.zip` export archives + `archive-index.json`
 
-Start with each pack's `README.md` and `references/docs/IMPLEMENTATION.md`.
+Shared implementation contract for upcoming renderer work (from PR #115):
+
+- `docs/overlay_v4_layout_sizing_motion_spec.md` — layout / sizing / motion contract
+- `docs/overlay_v4_layout_sizing_motion_spec_review.md` — CDP review notes
+- `docs/V4_RENDERER_SIZING_SPEC_REVIEW.md` — renderer sizing review (root cause)
+
+Start with each pack's `README.md` and `references/docs/IMPLEMENTATION.md`, plus
+the shared layout/sizing/motion spec above.
 
 Do **not** place theme files directly under `assets/overlay/` — always use a
 namespaced directory under `assets/overlay/themes/<theme_id>/`.
