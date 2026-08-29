@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <title>Pitwall status dot warning</title>
+  <defs></defs>
+  <circle cx="32" cy="32" r="15" fill="#F4A62A" fill-opacity=".18"/>
+  <circle cx="32" cy="32" r="7" fill="#F4A62A"/>
+  <circle cx="32" cy="32" r="14.5" stroke="#F4A62A" stroke-opacity=".46"/>
+
+
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140" fill="none">
+  <title>PITWALL LIGHT technical grid left</title>
+  <defs></defs>
+  <path d="M8 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M24 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M40 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M56 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M72 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M88 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M104 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M120 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M136 15V125" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 18H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 34H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 50H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 66H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 82H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 98H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 114H136" stroke="#1B72FF" stroke-opacity=".055"/>
+  <path d="M8 112L114 18" stroke="#17B7DB" stroke-opacity=".10"/>
+</svg>

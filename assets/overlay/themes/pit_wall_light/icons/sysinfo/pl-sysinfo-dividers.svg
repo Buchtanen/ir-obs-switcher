@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="72" viewBox="0 0 1920 72" fill="none">
+  <title>PITWALL LIGHT SYSINFO dividers</title>
+  <defs><linearGradient id="sb" x1="0" y1="0" x2="0" y2="72"><stop stop-color="#FFFFFF" stop-opacity=".84"/><stop offset="1" stop-color="#E1EEF9" stop-opacity=".68"/></linearGradient></defs>
+  <path d="M230 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M400 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M570 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M740 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M910 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1080 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1250 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1420 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1590 15V61" stroke="#315579" stroke-opacity=".14"/><path d="M1760 15V61" stroke="#315579" stroke-opacity=".14"/>
+</svg>

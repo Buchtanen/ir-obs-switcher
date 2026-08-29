@@ -1,0 +1,80 @@
+{
+  "themeId": "pitwall_race_control",
+  "contract": {
+    "transient": [
+      420,
+      140
+    ],
+    "sysinfo": [
+      1920,
+      72
+    ]
+  },
+  "events": {
+    "HUNTING": {
+      "template": "hunting",
+      "rail": "cyan",
+      "icon": "target",
+      "zone": "BATTLE_AHEAD"
+    },
+    "HUNTED": {
+      "template": "hunted",
+      "rail": "amber",
+      "criticalRail": "red",
+      "icon": "pressure",
+      "zone": "BATTLE_BEHIND"
+    },
+    "BATTLE_FOR_POSITION": {
+      "template": "battle",
+      "rail": "cyan",
+      "secondaryRail": "amber",
+      "icon": "radar",
+      "zone": "BATTLE_AHEAD"
+    },
+    "LAP_COMPLETE": {
+      "template": "lap",
+      "rail": "cyan",
+      "icon": "stopwatch",
+      "zone": "EVENT"
+    },
+    "PERSONAL_BEST": {
+      "template": "pb",
+      "rail": "green",
+      "icon": "stopwatch",
+      "zone": "EVENT",
+      "flash": "lcd"
+    },
+    "POSITION_GAINED": {
+      "template": "position",
+      "rail": "green",
+      "icon": "position-up",
+      "zone": "EVENT"
+    },
+    "POSITION_LOST": {
+      "template": "position",
+      "rail": "amber",
+      "criticalRail": "red",
+      "icon": "position-down",
+      "zone": "EVENT"
+    },
+    "FINAL_LAP": {
+      "template": "final-lap",
+      "rail": "amber",
+      "icon": "flag",
+      "zone": "SESSION"
+    },
+    "FINISH": {
+      "template": "finish",
+      "rail": "green",
+      "icon": "finish",
+      "zone": "SESSION"
+    },
+    "HR_PRESSURE_RISING": {
+      "template": "bio",
+      "rail": "amber",
+      "criticalRail": "red",
+      "icon": "heart",
+      "zone": "BIO_EXPANDED"
+    }
+  }
+}

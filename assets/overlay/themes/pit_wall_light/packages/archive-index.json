@@ -1,0 +1,127 @@
+{
+  "package": "Pitwall_Light_Asset_Package",
+  "themeId": "pitwall_light",
+  "limitBytes": 9000000,
+  "archives": [
+    {
+      "file": "01_Pitwall_Light_Core_Vector_and_Tokens.zip",
+      "bytes": 44137,
+      "sizeMiB": 0.042,
+      "files": 76,
+      "sha256": "e6e02aa5ebe89baa088f0d4cd0a8493f82e302d392acadb1d627ea328e47c350",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/common",
+        "tokens"
+      ]
+    },
+    {
+      "file": "02_Pitwall_Light_Icons_BLE_and_Status.zip",
+      "bytes": 199361,
+      "sizeMiB": 0.19,
+      "files": 141,
+      "sha256": "4064a375bd59cdf19c983e5a1a4f9374ca755c39ab6724ef8bc1b3ba2146ada2",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/icons",
+        "assets/vector/ble-hr",
+        "assets/raster/png/1x/icons",
+        "assets/raster/png/2x/icons",
+        "assets/raster/webp/1x/icons",
+        "assets/raster/webp/2x/icons",
+        "assets/raster/png/1x/ble-hr",
+        "assets/raster/png/2x/ble-hr",
+        "assets/raster/webp/1x/ble-hr",
+        "assets/raster/webp/2x/ble-hr"
+      ]
+    },
+    {
+      "file": "03_Pitwall_Light_Transient_Templates_Vector.zip",
+      "bytes": 66979,
+      "sizeMiB": 0.064,
+      "files": 111,
+      "sha256": "54b29a10ed4f8865b840b622cadb025461322d24ced4136a73a51d0d46851f6a",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/templates"
+      ]
+    },
+    {
+      "file": "04_Pitwall_Light_Transient_Raster_1x.zip",
+      "bytes": 351052,
+      "sizeMiB": 0.335,
+      "files": 222,
+      "sha256": "400a074ec1caaafd13bb165b2023bb6940821e4d02015862de9ff699d3e23633",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/1x/templates",
+        "assets/raster/webp/1x/templates"
+      ]
+    },
+    {
+      "file": "05_Pitwall_Light_Transient_Raster_2x.zip",
+      "bytes": 643961,
+      "sizeMiB": 0.614,
+      "files": 222,
+      "sha256": "6cd602f234f08fb2da3aa2a9e41c1b302755899d8428652037fb1b0b6f755692",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/2x/templates",
+        "assets/raster/webp/2x/templates"
+      ]
+    },
+    {
+      "file": "06_Pitwall_Light_Common_Raster_1x.zip",
+      "bytes": 270089,
+      "sizeMiB": 0.258,
+      "files": 148,
+      "sha256": "066caa159735b6eb479db065c7f0f16a9ec1eea4229333b66498e0a521ec9f53",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/1x/common",
+        "assets/raster/webp/1x/common"
+      ]
+    },
+    {
+      "file": "07_Pitwall_Light_Common_Raster_2x.zip",
+      "bytes": 486983,
+      "sizeMiB": 0.464,
+      "files": 148,
+      "sha256": "600298f30f5bd343714eafe90dd3d3c1a534f396f28e7d3e7f7db139cbf1cebc",
+      "integrity": "ok",
+      "contents": [
+        "assets/raster/png/2x/common",
+        "assets/raster/webp/2x/common"
+      ]
+    },
+    {
+      "file": "08_Pitwall_Light_SYSINFO_All_Formats.zip",
+      "bytes": 85068,
+      "sizeMiB": 0.081,
+      "files": 110,
+      "sha256": "259c6ace106323ed8397d4de0d8053b27c771b021b2491a53927c45dc4a5e280",
+      "integrity": "ok",
+      "contents": [
+        "assets/vector/sysinfo",
+        "assets/raster/png/1x/sysinfo",
+        "assets/raster/png/2x/sysinfo",
+        "assets/raster/webp/1x/sysinfo",
+        "assets/raster/webp/2x/sysinfo"
+      ]
+    },
+    {
+      "file": "09_Pitwall_Light_Documentation_Examples_Manifests.zip",
+      "bytes": 295985,
+      "sizeMiB": 0.282,
+      "files": 14,
+      "sha256": "c4d2b6c7319923f6fe7dcbe69dadad30cbd2851b6a6c30ea02af77082259c11b",
+      "integrity": "ok",
+      "contents": [
+        "README.md",
+        "docs",
+        "examples",
+        "manifests"
+      ]
+    }
+  ]
+}

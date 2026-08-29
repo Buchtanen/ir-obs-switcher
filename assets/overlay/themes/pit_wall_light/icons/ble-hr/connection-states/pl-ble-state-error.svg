@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <title>PITWALL LIGHT BLE state error</title>
+  <defs></defs>
+  <circle cx="32" cy="32" r="15" fill="#E84C56" fill-opacity=".16"/><circle cx="32" cy="32" r="7" fill="#E84C56"/><circle cx="32" cy="32" r="14.5" stroke="#E84C56" stroke-opacity=".55"/><path d="M21 21L43 43M43 21L21 43" stroke="#101B2C" stroke-width="3"/>
+</svg>
