@@ -140,10 +140,7 @@ def test_event_visual_map_covers_v4_states_and_events(theme_name: str) -> None:
         route["icon"] for route in visual_map["events"].values() if "icon" in route
     }
     assert icon_policy["crossThemeUtilityNameParityRequired"] is False
-    assert not (
-        set(icon_policy["utilityLibrary"])
-        & set(icon_policy["stateGlyphs"])
-    )
+    assert not (set(icon_policy["utilityLibrary"]) & set(icon_policy["stateGlyphs"]))
 
     resolution = visual_map["rendererPolicy"]["templateResolution"]
     assert resolution["runtimeFamilyMayOverride"] is False
@@ -196,9 +193,9 @@ def test_sysinfo_grid_matches_runtime_contract(theme_name: str) -> None:
     root = PACKS_ROOT / theme_name
     prefix = THEMES[theme_name]["prefix"]
     tokens = _load(root / "theme-tokens.json")
-    divider_svg = (
-        root / "icons" / "sysinfo" / f"{prefix}-sysinfo-dividers.svg"
-    ).read_text(encoding="utf-8")
+    divider_svg = (root / "icons" / "sysinfo" / f"{prefix}-sysinfo-dividers.svg").read_text(
+        encoding="utf-8"
+    )
 
     grid = tokens["geometry"]["sysinfo"]["grid"]
     assert grid == {
@@ -299,9 +296,7 @@ def test_motion_reels_and_pack_manifests_are_self_consistent(theme_name: str) ->
             assert any(name.endswith(f"/assets/motion/{reel_name}.webm") for name in names)
         assert any(name.endswith("/assets/motion/manifest.json") for name in names)
 
-    assert manifest["renderer_contract"]["event_visual_map"] == (
-        "accents/event-visual-map.json"
-    )
+    assert manifest["renderer_contract"]["event_visual_map"] == ("accents/event-visual-map.json")
     assert manifest["renderer_contract"]["theme_tokens"] == "theme-tokens.json"
     assert manifest["renderer_contract"]["motion"] == "motion/manifest.json"
 
@@ -334,9 +329,7 @@ def test_motion_reels_and_pack_manifests_are_self_consistent(theme_name: str) ->
         assert archive_entry["sha256"] == hashlib.sha256(archive.read_bytes()).hexdigest()
         with zipfile.ZipFile(archive) as zf:
             assert zf.testzip() is None
-            assert archive_entry["files"] == sum(
-                not name.endswith("/") for name in zf.namelist()
-            )
+            assert archive_entry["files"] == sum(not name.endswith("/") for name in zf.namelist())
 
 
 def test_dark_and_light_motion_reels_are_theme_specific() -> None:
