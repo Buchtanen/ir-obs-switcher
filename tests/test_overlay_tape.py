@@ -169,3 +169,35 @@ def test_overlay_runtime_disconnect_clears_stories() -> None:
     assert bus.active_events == []
     assert runtime._idle_when_disconnected(_race(connected=True)) is False
     assert runtime._hud_live is True
+
+
+def test_tape_opens_when_session_type_comes_from_session_name(tmp_path: Path) -> None:
+    """Live overlay omitted SessionType; tape must still open in Race."""
+    from irswitch.iracing.telemetry import extract_telemetry
+    from irswitch.race.context import RaceContextAnalyzer
+
+    tape = OverlaySessionTape(
+        get_stream_origin_mono=lambda: None,
+        get_obs_scene=lambda: None,
+        get_driving_mode=lambda: None,
+        get_version=lambda: "test",
+    )
+    snap = extract_telemetry(
+        {
+            "PlayerCarIdx": 0,
+            "SessionName": "Race",
+            "SessionNum": 0,
+            "SessionState": 4,
+        },
+        1.0,
+    )
+    state = RaceContextAnalyzer().analyze(snap)
+    tape.observe(state, 10.0, _settings(tmp_path))
+    assert tape.path is not None
+    assert tape.path.parent == tmp_path
+
+    warmup = RaceContextAnalyzer().analyze(
+        extract_telemetry({"PlayerCarIdx": 0, "SessionName": "Warmup"}, 1.0)
+    )
+    tape.observe(warmup, 11.0, _settings(tmp_path))
+    assert tape.path is None

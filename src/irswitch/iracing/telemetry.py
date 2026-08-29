@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from irswitch.iracing.extractors import as_bool, as_int
+from irswitch.iracing.extractors import as_bool, as_int, extract_session_type
 from irswitch.iracing.sdk_units import (
     as_completed_lap_time,
     as_current_lap_time,
@@ -34,6 +34,11 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "SessionTime",
     "SessionFlags",
     "SessionNum",
+    "SessionType",
+    "SessionName",
+    "SubSessionID",
+    "TrackID",
+    "WeekendInfo",
     "FrameRate",
     "CarDistAhead",
     "CarDistBehind",
@@ -106,6 +111,17 @@ def _bool_tuple(value: object) -> tuple[bool | None, ...]:
     return tuple(items)
 
 
+def _weekend_value(data: Mapping[str, object], key: str) -> object:
+    weekend = data.get("WeekendInfo")
+    if isinstance(weekend, dict):
+        return weekend.get(key)
+    if weekend is None:
+        return None
+    if hasattr(weekend, "__dict__"):
+        return weekend.__dict__.get(key)
+    return getattr(weekend, key, None)
+
+
 def extract_telemetry(data: Mapping[str, object], timestamp: float) -> TelemetrySnapshot:
     """Build a TelemetrySnapshot from SDK var dict. Missing keys stay None."""
     fps = as_float(data.get("FrameRate"))
@@ -118,16 +134,14 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
     subsession = data.get("SubSessionID")
     if subsession is None:
         subsession = data.get("subsession_id")
+    if subsession is None:
+        subsession = _weekend_value(data, "SubSessionID")
     track = data.get("TrackID")
     if track is None:
         track = data.get("track_id")
-    session_type = data.get("SessionType")
-    session_type_str = str(session_type) if session_type is not None else None
-    # Numeric SessionType in live telemetry is rare; string may come from merged session info.
-    if session_type_str is not None and session_type_str.isdigit():
-        from irswitch.iracing.extractors import extract_session_type
-
-        session_type_str = extract_session_type({"SessionType": session_type}) or session_type_str
+    if track is None:
+        track = _weekend_value(data, "TrackID")
+    session_type_str = extract_session_type(data)
     return TelemetrySnapshot(
         connected=True,
         timestamp=timestamp,

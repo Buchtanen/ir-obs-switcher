@@ -774,7 +774,7 @@ Frontend (`overlay.js`) aplikuje `activeStories` před live streamem, aby reconn
 
 ### Overlay session tape (JSONL)
 
-Když je `[overlay] session_tape = true` (výchozí), při PRACTICE/QUALIFYING/RACE vzniká soubor `recordings/overlay-<utc>-<subsession>-<sessionNum>.jsonl`.
+Když je `[overlay] session_tape = true` (výchozí), při PRACTICE/QUALIFYING/RACE vzniká soubor `recordings/overlay-<utc>-<subsession>-<sessionNum>.jsonl`. Overlay `overlay_mode` bere z téhož `extract_session_type()` jako switcher (live `SessionType` / `SessionName` / `WeekendInfo`), ne jen z numeric SessionType v race vars.
 
 Každý řádek má hodiny v sekundách:
 

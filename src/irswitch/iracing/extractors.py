@@ -112,6 +112,24 @@ def extract_mode(data: Mapping[str, object]) -> DrivingMode:
     return mode
 
 
+def _session_type_from_label(raw: object) -> str | None:
+    """Map a session type / name / event string to Practice/Qualify/Race/Warmup/Test."""
+    name = str(raw).strip().lower()
+    if not name:
+        return None
+    if "practice" in name or name == "practise":
+        return "Practice"
+    if "qualify" in name:
+        return "Qualify"
+    if "race" in name:
+        return "Race"
+    if "warmup" in name:
+        return "Warmup"
+    if "test" in name:
+        return "Test"
+    return None
+
+
 def extract_session_type(data: Mapping[str, object]) -> str | None:
     """
     Extract session type from iRacing SDK data.
@@ -121,7 +139,6 @@ def extract_session_type(data: Mapping[str, object]) -> str | None:
     """
     session_type = data.get("SessionType")
     session_name = data.get("SessionName")
-    result: str | None = None
 
     # Try SessionType first (numeric: 0=test, 1=practice, 2=qualify, 3=warmup, 4=race)
     if session_type is not None:
@@ -136,25 +153,15 @@ def extract_session_type(data: Mapping[str, object]) -> str | None:
             }
             if st in type_map:
                 return type_map[st]
+        labeled = _session_type_from_label(session_type)
+        if labeled:
+            return labeled
 
     # Fallback: try to parse SessionName
     if session_name is not None:
-        name = str(session_name).lower()
-        if "practice" in name:
-            result = "Practice"
-        elif "qualify" in name or "qualifying" in name:
-            result = "Qualify"
-        elif "race" in name:
-            result = "Race"
-        elif "warmup" in name:
-            result = "Warmup"
-        elif "test" in name:
-            result = "Test"
-        else:
-            result = None
-
-        if result:
-            return result
+        labeled = _session_type_from_label(session_name)
+        if labeled:
+            return labeled
 
     # Try WeekendInfo.EventType as fallback
     weekend_info = data.get("WeekendInfo")
@@ -169,23 +176,12 @@ def extract_session_type(data: Mapping[str, object]) -> str | None:
             event_type = None
 
         if event_type is not None:
-            event_type_str = str(event_type)
-            # Map common event types
-            if event_type_str.lower() in ["practice", "practise"]:
-                result = "Practice"
-            elif event_type_str.lower() in ["qualify", "qualifying"]:
-                result = "Qualify"
-            elif event_type_str.lower() == "race":
-                result = "Race"
-            elif event_type_str.lower() == "warmup":
-                result = "Warmup"
-            elif event_type_str.lower() == "test":
-                result = "Test"
-            else:
-                result = event_type_str  # Return as-is if not recognized
-
-            if result:
-                return result
+            labeled = _session_type_from_label(event_type)
+            if labeled:
+                return labeled
+            event_type_str = str(event_type).strip()
+            if event_type_str:
+                return event_type_str
 
     return None
 
