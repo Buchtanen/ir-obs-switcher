@@ -1,37 +1,184 @@
 {
   "schemaVersion": 1,
   "themeId": "pitwall_light",
-  "pipeline": "not-established",
+  "pipeline": "alpha-vp9",
   "fallback": "css",
-  "webm": [],
-  "reels": {
+  "webmNaming": "stem-without-extension",
+  "webm": [
+    "enter_reveal",
+    "theme_glitch",
+    "active_pulse",
+    "compact_mask",
+    "suspend_dim",
+    "resume_reacquire",
+    "result_burst",
+    "exit_trace",
+    "battle_signal_lock",
+    "timing_projection_sweep",
+    "position_chevron_hit",
+    "exception_link_drop",
+    "pit_stop_ring",
+    "bio_pulse",
+    "session_finish_burst"
+  ],
+  "intents": {
     "enter": {
-      "durationMs": 340,
-      "intent": "24 px soft slide with blur-to-sharp"
+      "reels": [
+        "enter_reveal",
+        "theme_glitch"
+      ]
     },
     "active": {
-      "durationMs": 220,
-      "intent": "one local data pulse; no looping full-card motion"
-    },
-    "pit-phase": {
-      "durationMs": 260,
-      "intent": "advance only the six-step pit phase track"
-    },
-    "exception-alert": {
-      "durationMs": 260,
-      "intent": "single fracture accent reveal; no repeating flash"
-    },
-    "session-sweep": {
-      "durationMs": 420,
-      "intent": "one edge or bus sweep, then static"
+      "reels": [
+        "active_pulse"
+      ]
     },
     "result": {
-      "durationMs": 320,
-      "intent": "short local accent hit; plate geometry remains fixed"
+      "reels": [
+        "result_burst"
+      ]
     },
     "exit": {
+      "reels": [
+        "exit_trace"
+      ]
+    },
+    "pit-phase": {
+      "reels": [
+        "pit_stop_ring"
+      ]
+    },
+    "exception-alert": {
+      "reels": [
+        "exception_link_drop"
+      ]
+    },
+    "session-sweep": {
+      "reels": [
+        "session_finish_burst"
+      ]
+    }
+  },
+  "reels": {
+    "enter_reveal": {
+      "file": "enter_reveal.webm",
+      "durationMs": 333,
+      "intent": "native plate reveal with rail and timing sweep",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "theme_glitch": {
+      "file": "theme_glitch.webm",
       "durationMs": 300,
-      "intent": "reverse timing wipe or slide; no scale-out"
+      "intent": "single theme-character accent; segmented telemetry for Dark, soft optical reacquire for Light",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "active_pulse": {
+      "file": "active_pulse.webm",
+      "durationMs": 266,
+      "intent": "one local data pulse without full-card looping",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "compact_mask": {
+      "file": "compact_mask.webm",
+      "durationMs": 233,
+      "intent": "secondary detail retracts while native plate geometry stays fixed",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "suspend_dim": {
+      "file": "suspend_dim.webm",
+      "durationMs": 300,
+      "intent": "one masked neutral dim pass inside the plate silhouette",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "resume_reacquire": {
+      "file": "resume_reacquire.webm",
+      "durationMs": 300,
+      "intent": "short locator reacquire and rail return",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "result_burst": {
+      "file": "result_burst.webm",
+      "durationMs": 333,
+      "intent": "short icon-well result accent with no baked content",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "exit_trace": {
+      "file": "exit_trace.webm",
+      "durationMs": 300,
+      "intent": "reverse trace wipe without scale-out",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "battle_signal_lock": {
+      "file": "battle_signal_lock.webm",
+      "durationMs": 366,
+      "intent": "single target acquisition and pressure-rail lock",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "timing_projection_sweep": {
+      "file": "timing_projection_sweep.webm",
+      "durationMs": 333,
+      "intent": "one timing projection trace across the data surface",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "position_chevron_hit": {
+      "file": "position_chevron_hit.webm",
+      "durationMs": 266,
+      "intent": "directional chevron reveal for position results",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "exception_link_drop": {
+      "file": "exception_link_drop.webm",
+      "durationMs": 266,
+      "intent": "single fracture reveal with no repeated flash",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "pit_stop_ring": {
+      "file": "pit_stop_ring.webm",
+      "durationMs": 300,
+      "intent": "six-step pit phase track accent only",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "bio_pulse": {
+      "file": "bio_pulse.webm",
+      "durationMs": 333,
+      "intent": "single sample-driven biometric trace pulse",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
+    },
+    "session_finish_burst": {
+      "file": "session_finish_burst.webm",
+      "durationMs": 433,
+      "intent": "one edge-bus sweep for final lap or finish",
+      "canvas": "transient",
+      "fps": 30,
+      "alpha": true
     }
   },
   "reducedMotion": {

@@ -30,7 +30,8 @@ vrstvy skladane nad OBS scenou; zive hodnoty a text renderuje HTML.
 - state-specific 64 x 64 glyphs in `icons/event/`;
 - one authoritative Light icon well `[22, 26, 82, 88]` and glyph box `[39, 46, 48, 48]`;
 - SYSINFO grid: brand 230 + 11 modules x 150, with a 40 px trailing safe area;
-- motion is CSS fallback by design until an alpha-WebM pipeline is established.
+- 15 authoritative 420 x 140 alpha-VP9 motion reels in `motion/`; CSS remains a missing-file fallback only;
+- ffprobe verification sheet: `references/docs/MOTION_QA.md`.
 
 Pro implementaci zacnete v
 `references/docs/IMPLEMENTATION.md` a

@@ -2,8 +2,8 @@
 """Build the Pit Wall Dark/Light V4 art-pack additions.
 
 The script deliberately uses only the standard library plus ImageMagick's
-``convert`` command. SVG remains the source of truth; PNG/WebP files in the
-tracked export archives are deterministic derivatives.
+``convert`` and FFmpeg commands. SVG remains the source of truth; PNG/WebP and
+alpha-VP9 files in the tracked export archives are deterministic derivatives.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import re
 import shutil
 import struct
@@ -27,6 +28,26 @@ V4_MANIFEST = REPO / "src" / "irswitch" / "web" / "themes-v4" / "manifest.json"
 V4_CATALOG = REPO / "src" / "irswitch" / "web" / "themes-v4" / "event_catalog.json"
 ZIP_TIME = (2026, 8, 29, 0, 0, 0)
 DIVIDERS = [230 + 150 * index for index in range(12)]
+
+MOTION_REELS: OrderedDict[str, dict[str, Any]] = OrderedDict(
+    [
+        ("enter_reveal", {"frames": {"pw": 11, "pl": 10}, "intent": "native plate reveal with rail and timing sweep"}),
+        ("theme_glitch", {"frames": 9, "intent": "single theme-character accent; segmented telemetry for Dark, soft optical reacquire for Light"}),
+        ("active_pulse", {"frames": 8, "intent": "one local data pulse without full-card looping"}),
+        ("compact_mask", {"frames": 7, "intent": "secondary detail retracts while native plate geometry stays fixed"}),
+        ("suspend_dim", {"frames": 9, "intent": "one masked neutral dim pass inside the plate silhouette"}),
+        ("resume_reacquire", {"frames": 9, "intent": "short locator reacquire and rail return"}),
+        ("result_burst", {"frames": 10, "intent": "short icon-well result accent with no baked content"}),
+        ("exit_trace", {"frames": 9, "intent": "reverse trace wipe without scale-out"}),
+        ("battle_signal_lock", {"frames": 11, "intent": "single target acquisition and pressure-rail lock"}),
+        ("timing_projection_sweep", {"frames": 10, "intent": "one timing projection trace across the data surface"}),
+        ("position_chevron_hit", {"frames": 8, "intent": "directional chevron reveal for position results"}),
+        ("exception_link_drop", {"frames": 8, "intent": "single fracture reveal with no repeated flash"}),
+        ("pit_stop_ring", {"frames": 9, "intent": "six-step pit phase track accent only"}),
+        ("bio_pulse", {"frames": 10, "intent": "single sample-driven biometric trace pulse"}),
+        ("session_finish_burst", {"frames": 13, "intent": "one edge-bus sweep for final lap or finish"}),
+    ]
+)
 
 
 THEMES: dict[str, dict[str, Any]] = {
@@ -47,6 +68,7 @@ THEMES: dict[str, dict[str, Any]] = {
             "common_2x": "07_Pitwall_Common_Raster_2x.zip",
             "sysinfo": "08_Pitwall_SYSINFO_All_Formats.zip",
             "docs": "09_Pitwall_Documentation_Examples_Manifests.zip",
+            "motion": "10_Pitwall_Motion_Alpha_VP9.zip",
         },
         "tones": {
             "primary": {"rail": "cyan", "color": "#35D7FF"},
@@ -75,6 +97,7 @@ THEMES: dict[str, dict[str, Any]] = {
             "common_2x": "07_Pitwall_Light_Common_Raster_2x.zip",
             "sysinfo": "08_Pitwall_Light_SYSINFO_All_Formats.zip",
             "docs": "09_Pitwall_Light_Documentation_Examples_Manifests.zip",
+            "motion": "10_Pitwall_Light_Motion_Alpha_VP9.zip",
         },
         "tones": {
             "primary": {"rail": "blue", "color": "#1B72FF"},
@@ -489,6 +512,18 @@ def build_event_map(root: Path, config: dict[str, Any]) -> None:
             event_route["icon"] = f"icons/event/{prefix}-icon-gpu-temp-high.svg"
         events[event_name] = event_route
 
+    state_glyphs = sorted({state["icon"] for state in states.values()})
+    event_override_glyphs = sorted(
+        {route["icon"] for route in events.values() if "icon" in route}
+    )
+    covered_glyphs = set(state_glyphs) | set(event_override_glyphs)
+    utility_library = sorted(
+        path.relative_to(root).as_posix()
+        for path in (root / "icons" / "event").glob(f"{prefix}-icon-*.svg")
+        if path.relative_to(root).as_posix() not in covered_glyphs
+        and not path.name.endswith("-sprite.svg")
+    )
+
     visual_map = {
         "schemaVersion": 2,
         "themeId": config["theme_id"],
@@ -507,6 +542,33 @@ def build_event_map(root: Path, config: dict[str, Any]) -> None:
             },
         },
         "tones": config["tones"],
+        "iconPolicy": {
+            "coverageContract": "state-map-exact",
+            "requiredStateGlyphCount": 35,
+            "stateGlyphs": state_glyphs,
+            "eventOverrideGlyphs": event_override_glyphs,
+            "utilityLibrary": utility_library,
+            "crossThemeUtilityNameParityRequired": False,
+            "coverageNote": "Only stateGlyphs satisfy the 35-state coverage contract. Event overrides and utilityLibrary are intentional extras and do not indicate a coverage gap.",
+        },
+        "rendererPolicy": {
+            "templateResolution": {
+                "precedence": [
+                    "events.<event>.template",
+                    "states.<state>.template",
+                    "fallbacks.<family>",
+                ],
+                "runtimeFamilyMayOverride": False,
+                "runtimeFamilyRole": "routing and lifecycle metadata only",
+                "knownRuntimeFamilyExceptions": [
+                    {
+                        "state": "position_attack",
+                        "runtimeFamily": "timing",
+                        "packTemplate": "position",
+                    }
+                ],
+            }
+        },
         "zones": {
             "BATTLE_AHEAD": {
                 "layout": "BATTLE",
@@ -537,26 +599,313 @@ def build_event_map(root: Path, config: dict[str, Any]) -> None:
     )
 
 
+def motion_frame_svg(
+    reel: str, frame: int, frame_count: int, config: dict[str, Any]
+) -> str:
+    is_dark = config["prefix"] == "pw"
+    p = frame / max(frame_count - 1, 1)
+    eased = p * p * (3 - (2 * p))
+    pulse = math.sin(math.pi * p)
+    opacity = max(0.0, pulse)
+    primary = config["tones"]["primary"]["color"]
+    timing = config["tones"]["timing"]["color"]
+    warning = config["tones"]["warning"]["color"]
+    critical = config["tones"]["critical"]["color"]
+    positive = config["tones"]["positive"]["color"]
+    bio = config["tones"]["bio"]["color"]
+    neutral = config["tones"]["neutral"]["color"]
+    icon_x, icon_y, icon_w, icon_h = config["icon_box"]
+    cx = icon_x + (icon_w / 2)
+    cy = icon_y + (icon_h / 2)
+    silhouette = (
+        "M12 8H394L412 26V114L394 132H12L4 124V16Z"
+        if is_dark
+        else "M22 8H388Q406 8 412 26V114Q406 132 388 132H22Q8 132 8 118V22Q8 8 22 8Z"
+    )
+    elements: list[str] = []
+
+    def line(x1: float, y1: float, x2: float, y2: float, color: str, alpha: float, width: float = 2) -> None:
+        elements.append(
+            f'<line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}" stroke="{color}" stroke-opacity="{max(0, min(alpha, 1)):.3f}" stroke-width="{width:.2f}" stroke-linecap="round"/>'
+        )
+
+    def circle(x: float, y: float, radius: float, color: str, alpha: float, width: float = 2, fill: str = "none") -> None:
+        elements.append(
+            f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{max(radius, 0.1):.2f}" fill="{fill}" fill-opacity="{max(0, min(alpha * .18, 1)):.3f}" stroke="{color}" stroke-opacity="{max(0, min(alpha, 1)):.3f}" stroke-width="{width:.2f}"/>'
+        )
+
+    def rect(x: float, y: float, width: float, height: float, color: str, alpha: float, radius: float = 0) -> None:
+        elements.append(
+            f'<rect x="{x:.2f}" y="{y:.2f}" width="{max(width, .1):.2f}" height="{max(height, .1):.2f}" rx="{radius:.2f}" fill="{color}" fill-opacity="{max(0, min(alpha, 1)):.3f}"/>'
+        )
+
+    if reel == "enter_reveal":
+        x = 10 + (400 * eased)
+        line(x, 10, x, 130, primary, opacity * .95, 3 if is_dark else 2)
+        line(12, 11, x, 11, primary, opacity * .55, 1.5)
+        line(12, 129, x, 129, timing, opacity * .42, 1)
+        rect(8, 130 - (120 * eased), 4 if is_dark else 3, 120 * eased, primary, opacity * .85, 1)
+        for tick_x in range(24, 410, 24):
+            if tick_x <= x:
+                line(tick_x, 17, tick_x, 22 if is_dark else 20, primary, opacity * .48, 1)
+        if not is_dark:
+            rect(max(8, x - 24), 14, 24, 112, primary, opacity * .08, 12)
+    elif reel == "theme_glitch":
+        if is_dark:
+            jitter = math.sin(frame * 2.7) * 9
+            for index, y in enumerate((24, 46, 92, 116)):
+                start = 112 + ((index * 57 + frame * 23) % 230) + jitter
+                line(start, y, min(start + 34 + index * 7, 404), y, primary if index != 2 else warning, opacity * (.75 - index * .08), 2)
+            rect(18 + ((frame * 31) % 62), 18, 2, 104, primary, opacity * .45)
+        else:
+            radius = 14 + (22 * eased)
+            circle(cx, cy, radius, primary, opacity * .52, 1.5)
+            circle(cx, cy, radius + 8, timing, opacity * .22, 1)
+            for index, y in enumerate((22, 118)):
+                start = 126 + ((frame * 37 + index * 73) % 210)
+                line(start, y, min(start + 28, 400), y, primary, opacity * .30, 1.5)
+    elif reel == "active_pulse":
+        if is_dark:
+            end = 120 + (250 * eased)
+            line(120, 101, end, 101, timing, opacity * .65, 1.5)
+            for index in range(5):
+                x = 138 + (index * 48)
+                if x < end:
+                    line(x, 96, x, 106, primary, opacity * .38, 1)
+            circle(end, 101, 3 + 3 * pulse, primary, opacity * .75, 1.5, primary)
+        else:
+            circle(cx, cy, 12 + (24 * eased), primary, opacity * .50, 1.5)
+            rect(126, 103, 236 * eased, 2, timing, opacity * .18, 1)
+    elif reel == "compact_mask":
+        retract = 1 - eased
+        for index, y in enumerate((27, 39, 112)):
+            width = (188 - index * 22) * retract
+            line(394 - width, y, 394, y, neutral, opacity * (.42 - index * .06), 1.5)
+        for index in range(4):
+            x = 132 + index * 17
+            line(x, 112 - (10 * retract), x + 8, 102 - (10 * retract), primary, opacity * .26, 1)
+    elif reel == "suspend_dim":
+        rect(4, 8, 408, 124, neutral, opacity * (.16 if is_dark else .10), 10 if not is_dark else 0)
+        for x in range(-60, 460, 26):
+            line(x + (30 * eased), 132, x + 78 + (30 * eased), 8, neutral, opacity * .10, 1)
+        line(10, 128, 410, 128, neutral, opacity * .26, 2)
+    elif reel == "resume_reacquire":
+        radius = 34 - (18 * eased)
+        circle(cx, cy, radius, primary, opacity * .68, 2)
+        circle(cx, cy, radius + 8, timing, opacity * .24, 1)
+        x = 12 + (398 * eased)
+        line(x, 16, x, 124, primary, opacity * .50, 1.5)
+        rect(8, 106 - (88 * eased), 3, 88 * eased, primary, opacity * .70, 1)
+    elif reel == "result_burst":
+        radius = 10 + (36 * eased)
+        ray_count = 12 if is_dark else 8
+        for index in range(ray_count):
+            angle = (math.tau * index / ray_count) + (0.12 if is_dark else 0)
+            inner = radius * .68
+            outer = radius
+            line(cx + math.cos(angle) * inner, cy + math.sin(angle) * inner, cx + math.cos(angle) * outer, cy + math.sin(angle) * outer, positive if index % 3 == 0 else primary, opacity * .72, 1.5)
+        circle(cx, cy, radius * .62, primary, opacity * (.52 if is_dark else .30), 2)
+        if not is_dark:
+            circle(cx, cy, radius * .86, positive, opacity * .18, 1)
+    elif reel == "exit_trace":
+        x = 410 - (400 * eased)
+        line(x, 10, x, 130, primary, opacity * .82, 2.5 if is_dark else 1.5)
+        line(x, 11, 408, 11, primary, opacity * .38, 1.5)
+        line(x, 129, 408, 129, timing, opacity * .30, 1)
+        rect(408, 18, 3, 104 * (1 - eased), primary, opacity * .46, 1)
+    elif reel == "battle_signal_lock":
+        radius = 30 - (14 * eased)
+        circle(cx, cy, radius, primary, opacity * .58, 1.5)
+        gap = 18 + (12 * (1 - eased))
+        for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+            bx = cx + sx * gap
+            by = cy + sy * gap
+            line(bx, by, bx - sx * 9, by, warning if sx > 0 else primary, opacity * .78, 2)
+            line(bx, by, bx, by - sy * 9, warning if sx > 0 else primary, opacity * .78, 2)
+        rect(398, 24 + (72 * (1 - eased)), 4, 72 * eased, warning, opacity * .70, 1)
+    elif reel == "timing_projection_sweep":
+        reveal = 116 + (282 * eased)
+        points = [(116, 101), (154, 88), (192, 94), (232, 70), (276, 77), (322, 48), (398, 56)]
+        visible = [point for point in points if point[0] <= reveal]
+        for first, second in zip(visible, visible[1:], strict=False):
+            line(first[0], first[1], second[0], second[1], timing, opacity * .74, 1.8)
+        line(reveal, 24, reveal, 116, primary, opacity * .42, 1)
+        for x, y in visible:
+            circle(x, y, 2.5, primary, opacity * .72, 1, primary)
+    elif reel == "position_chevron_hit":
+        travel = 18 * (1 - eased)
+        for index in range(3):
+            x = 154 + index * 54 + travel
+            alpha = opacity * (.42 + index * .16)
+            elements.append(f'<path d="M{x:.2f} 48L{x + 20:.2f} 70L{x:.2f} 92" fill="none" stroke="{positive}" stroke-opacity="{alpha:.3f}" stroke-width="{3 if is_dark else 2.2}" stroke-linecap="round" stroke-linejoin="round"/>')
+        line(126, 112, 352 * eased, 112, primary, opacity * .30, 1.5)
+    elif reel == "exception_link_drop":
+        dash = 220 * (1 - eased)
+        fracture = "M112 22L160 49L144 67L218 82L203 112L266 96L306 122L350 88L402 112"
+        elements.append(f'<path d="{fracture}" fill="none" stroke="{critical}" stroke-opacity="{opacity * .82:.3f}" stroke-width="{2.4 if is_dark else 1.8}" stroke-dasharray="220" stroke-dashoffset="{dash:.2f}" stroke-linecap="round" stroke-linejoin="round"/>')
+        for index, y in enumerate((36, 104)):
+            start = 248 + ((frame * 29 + index * 61) % 118)
+            line(start, y, min(start + 22, 405), y, critical, opacity * .38, 1.5)
+    elif reel == "pit_stop_ring":
+        active_step = min(5, int(eased * 6))
+        for index in range(6):
+            x = 142 + index * 43
+            alpha = opacity * (.82 if index == active_step else .24)
+            color = positive if index <= active_step else warning
+            circle(x, 112, 4 if index != active_step else 7, color, alpha, 1.5, color if index <= active_step else "none")
+            if index < 5:
+                line(x + 8, 112, x + 35, 112, positive if index < active_step else neutral, opacity * .28, 1.5)
+        circle(cx, cy, 14 + (10 * pulse), warning, opacity * .38, 1.5)
+    elif reel == "bio_pulse":
+        reveal = 118 + (278 * eased)
+        points = [(118, 78), (160, 78), (178, 62), (194, 98), (214, 48), (234, 78), (282, 78), (326, 69), (350, 78), (396, 78)]
+        visible = [point for point in points if point[0] <= reveal]
+        for first, second in zip(visible, visible[1:], strict=False):
+            line(first[0], first[1], second[0], second[1], bio, opacity * .72, 1.8)
+        circle(cx, cy, 12 + (14 * pulse), bio, opacity * .42, 1.5)
+    elif reel == "session_finish_burst":
+        path = "M12 10H394L410 26V114L394 130H12"
+        dash_offset = 116 - (116 * eased)
+        elements.append(f'<path d="{path}" pathLength="116" fill="none" stroke="{positive}" stroke-opacity="{opacity * .76:.3f}" stroke-width="{2.6 if is_dark else 2}" stroke-dasharray="22 94" stroke-dashoffset="{dash_offset:.2f}" stroke-linecap="round"/>')
+        line(116, 118, 116 + (278 * eased), 118, primary, opacity * .24, 1.5)
+    else:
+        raise ValueError(f"Unknown motion reel: {reel}")
+
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="420" height="140" viewBox="0 0 420 140">
+<defs><clipPath id="plate"><path d="{silhouette}"/></clipPath></defs>
+<g clip-path="url(#plate)">{''.join(elements)}</g>
+</svg>'''
+
+
+def probe_webm(path: Path) -> dict[str, Any]:
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=codec_name,width,height,pix_fmt,r_frame_rate:stream_tags=alpha_mode:format=duration",
+            "-of", "json", str(path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    payload = json.loads(result.stdout)
+    stream = payload["streams"][0]
+    return {
+        "codec": stream["codec_name"],
+        "width": stream["width"],
+        "height": stream["height"],
+        "pixelFormat": stream["pix_fmt"],
+        "fps": stream["r_frame_rate"],
+        "alphaMode": stream.get("tags", {}).get("ALPHA_MODE"),
+        "durationMs": round(float(payload["format"]["duration"]) * 1000),
+    }
+
+
+def build_motion_reels(root: Path, config: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    output_dir = root / "motion"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    metadata: dict[str, dict[str, Any]] = OrderedDict()
+    with tempfile.TemporaryDirectory(prefix=f"{config['prefix']}-motion-") as raw_temp:
+        temp = Path(raw_temp)
+        for reel_name, reel_spec in MOTION_REELS.items():
+            frame_spec = reel_spec["frames"]
+            frame_count = frame_spec[config["prefix"]] if isinstance(frame_spec, dict) else frame_spec
+            frame_dir = temp / reel_name
+            frame_dir.mkdir()
+            for frame in range(frame_count):
+                svg = frame_dir / f"frame-{frame:03d}.svg"
+                png = frame_dir / f"frame-{frame:03d}.png"
+                write_text(svg, motion_frame_svg(reel_name, frame, frame_count, config))
+                subprocess.run(
+                    ["convert", "-background", "none", str(svg), "-strip", "PNG32:" + str(png)],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            output = output_dir / f"{reel_name}.webm"
+            subprocess.run(
+                [
+                    "ffmpeg", "-loglevel", "error", "-y", "-framerate", "30",
+                    "-i", str(frame_dir / "frame-%03d.png"), "-an", "-c:v", "libvpx-vp9",
+                    "-lossless", "1", "-pix_fmt", "yuva420p", "-auto-alt-ref", "0",
+                    "-row-mt", "0", "-threads", "1", "-deadline", "good", "-cpu-used", "0",
+                    "-fflags", "+bitexact", "-map_metadata", "-1",
+                    "-metadata:s:v:0", "alpha_mode=1",
+                    str(output),
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            probe = probe_webm(output)
+            if probe != {
+                "codec": "vp9",
+                "width": 420,
+                "height": 140,
+                "pixelFormat": "yuv420p",
+                "fps": "30/1",
+                "alphaMode": "1",
+                "durationMs": probe["durationMs"],
+            }:
+                raise RuntimeError(f"Invalid motion reel contract for {output}: {probe}")
+            metadata[reel_name] = {
+                "file": output.name,
+                "durationMs": probe["durationMs"],
+                "intent": reel_spec["intent"],
+                "canvas": "transient",
+                "fps": 30,
+                "alpha": True,
+            }
+    return metadata
+
+
+def build_motion_qa(root: Path, config: dict[str, Any], reels: dict[str, dict[str, Any]]) -> None:
+    lines = [
+        f'# {config["display_name"]} motion QA',
+        "",
+        "Generated and verified by `scripts/build_pit_wall_theme_additions.py`.",
+        "",
+        "| Reel | Size | Codec | Pixel format | Alpha | FPS | Duration | SHA-256 |",
+        "|---|---:|---|---|---:|---:|---:|---|",
+    ]
+    for reel in reels.values():
+        path = root / "motion" / reel["file"]
+        probe = probe_webm(path)
+        lines.append(
+            f'| `{reel["file"]}` | {probe["width"]} x {probe["height"]} | {probe["codec"]} | {probe["pixelFormat"]} | {probe["alphaMode"]} | {probe["fps"]} | {probe["durationMs"]} ms | `{sha256(path)}` |'
+        )
+    lines.extend(
+        [
+            "",
+            "All reels are one-shot, contain no text or numbers, and end on a transparent frame so the static plate remains authoritative.",
+        ]
+    )
+    write_text(root / "references" / "docs" / "MOTION_QA.md", "\n".join(lines))
+
+
 def build_motion(root: Path, config: dict[str, Any]) -> None:
-    enter_ms = 360 if config["prefix"] == "pw" else 340
+    reels = build_motion_reels(root, config)
     motion = {
         "schemaVersion": 1,
         "themeId": config["theme_id"],
-        "pipeline": "not-established",
+        "pipeline": "alpha-vp9",
         "fallback": "css",
-        "webm": [],
-        "reels": {
-            "enter": {"durationMs": enter_ms, "intent": "rail reveal plus horizontal timing wipe" if config["prefix"] == "pw" else "24 px soft slide with blur-to-sharp"},
-            "active": {"durationMs": 220, "intent": "one local data pulse; no looping full-card motion"},
-            "pit-phase": {"durationMs": 260, "intent": "advance only the six-step pit phase track"},
-            "exception-alert": {"durationMs": 260, "intent": "single fracture accent reveal; no repeating flash"},
-            "session-sweep": {"durationMs": 420, "intent": "one edge or bus sweep, then static"},
-            "result": {"durationMs": 320, "intent": "short local accent hit; plate geometry remains fixed"},
-            "exit": {"durationMs": 300, "intent": "reverse timing wipe or slide; no scale-out"},
+        "webmNaming": "stem-without-extension",
+        "webm": list(reels),
+        "intents": {
+            "enter": {"reels": ["enter_reveal", "theme_glitch"]},
+            "active": {"reels": ["active_pulse"]},
+            "result": {"reels": ["result_burst"]},
+            "exit": {"reels": ["exit_trace"]},
+            "pit-phase": {"reels": ["pit_stop_ring"]},
+            "exception-alert": {"reels": ["exception_link_drop"]},
+            "session-sweep": {"reels": ["session_finish_burst"]},
         },
+        "reels": reels,
         "reducedMotion": {"maxDurationMs": 160, "disable": ["sweep", "trace-scroll", "flash"]},
     }
     write_text(root / "motion" / "manifest.json", json.dumps(motion, indent=2))
+    build_motion_qa(root, config, reels)
 
 
 def build_state_map_doc(root: Path, config: dict[str, Any]) -> None:
@@ -585,16 +934,49 @@ def build_state_map_doc(root: Path, config: dict[str, Any]) -> None:
             "The same JSON also contains all 35 uppercase event routes from `themes-v4/event_catalog.json`. `BATTLE_AHEAD` and `BATTLE_BEHIND` are explicit aliases of the `BATTLE` layout; they differ only by semantic direction and stack order.",
             "",
             "CPU/GPU thermal events route to the `incident` state and override only the glyph (`cpu-temp-high` / `gpu-temp-high`).",
+            "",
+            "## Template resolution precedence",
+            "",
+            "The pack map, not the runtime family label, is authoritative for plate selection. Resolution order is an explicit event template override, then `states.<state>.template`, then the declared family fallback. Runtime family is routing/lifecycle metadata and must not replace a resolved pack template.",
+            "",
+            "`position_attack` is the known cross-family case: runtime family `timing`, pack template `position`. The renderer must render the POSITION plate and the state-specific glyph.",
+            "",
+            "## Icon coverage and utility library",
+            "",
+            "The 35-state coverage gate counts only `iconPolicy.stateGlyphs`. CPU/GPU temperature glyphs are event overrides. The remaining BLE, system, telemetry and generic status glyphs are an optional utility library and do not represent missing V4 states.",
+            "",
+            "Utility naming is theme-local by design. Dark may expose `memory` / `pressure`, while Light may expose `ram` / `vram` / `shield`; cross-theme utility-name parity is not required. State glyph naming remains exact and complete in both packs.",
         ]
     )
     write_text(root / "references" / "docs" / "STATE_VISUAL_MAP.md", "\n".join(lines))
 
 
 def update_docs(root: Path, config: dict[str, Any]) -> None:
+    readme = root / "README.md"
+    readme_text = readme.read_text(encoding="utf-8")
+    readme_text = readme_text.replace(
+        "- motion is CSS fallback by design until an alpha-WebM pipeline is established.",
+        "- 15 authoritative 420 x 140 alpha-VP9 motion reels in `motion/`; CSS remains a missing-file fallback only.",
+    )
+    if "MOTION_QA.md" not in readme_text:
+        readme_text = readme_text.replace(
+            "- 15 authoritative 420 x 140 alpha-VP9 motion reels in `motion/`; CSS remains a missing-file fallback only.",
+            "- 15 authoritative 420 x 140 alpha-VP9 motion reels in `motion/`; CSS remains a missing-file fallback only;\n- ffprobe verification sheet: `references/docs/MOTION_QA.md`.",
+        )
+    write_text(readme, readme_text)
+
     implementation = root / "references" / "docs" / "IMPLEMENTATION.md"
     text = implementation.read_text(encoding="utf-8")
     text = text.replace("`tokens/event-visual-map.json`", "`accents/event-visual-map.json`")
     text = text.replace("assets/vector/ble-hr", "icons/ble-hr")
+    text = text.replace(
+        "- No repeatable WebM authoring pipeline exists in this pack. `motion/manifest.json` is authoritative and selects CSS fallback intent; no placeholder video is shipped.",
+        "- All 15 V4 motion reels are authoritative 420 x 140 alpha-VP9 assets generated by the deterministic build script. CSS remains a missing-file fallback only.\n- State glyph coverage and the optional utility icon library are separate contracts. Utility names may differ between themes and do not count as a 35-state coverage gap.\n- Plate selection follows the pack map, not runtime family. In particular, `position_attack` resolves to the `position` template even though its runtime family is `timing`.",
+    )
+    text = text.replace(
+        "- The repository contains compiled reference WebM reels for existing V4 themes, but no source motion project or deterministic export recipe for either Pit Wall theme. `motion/manifest.json` therefore selects the CSS fallback by design; unrelated compiled reels are not copied into this pack.",
+        "- All 15 V4 motion reels are authoritative 420 x 140 alpha-VP9 assets generated by the deterministic build script. CSS remains a missing-file fallback only.",
+    )
     appendix = f'''
 
 ## V4 art-pack completion (1.1.0)
@@ -604,7 +986,9 @@ def update_docs(root: Path, config: dict[str, Any]) -> None:
 - Native transient geometry is 420 x 140. Individual cards must not be enlarged with CSS scale.
 - Event glyph masters are 64 x 64 SVG. The exact icon box is `{config["icon_box"]}` (`[x,y,w,h]`).
 - SYSINFO uses the runtime grid `brand 230 + 11 x 150`; x=1880..1920 stays as a trailing safe area.
-- No repeatable WebM authoring pipeline exists in this pack. `motion/manifest.json` is authoritative and selects CSS fallback intent; no placeholder video is shipped.
+- All 15 V4 motion reels are authoritative 420 x 140 alpha-VP9 assets generated by the deterministic build script. CSS remains a missing-file fallback only.
+- State glyph coverage and the optional utility icon library are separate contracts. Utility names may differ between themes and do not count as a 35-state coverage gap.
+- Plate selection follows the pack map, not runtime family. In particular, `position_attack` resolves to the `position` template even though its runtime family is `timing`.
 '''
     if "## V4 art-pack completion (1.1.0)" not in text:
         text += appendix
@@ -625,12 +1009,20 @@ def update_docs(root: Path, config: dict[str, Any]) -> None:
     naming_text = naming.read_text(encoding="utf-8")
     if "`pit`" not in naming_text:
         naming_text += "\nAdded semantic scopes: `pit`, `exception`; state glyphs use the complete state stem, for example `pw-icon-pit-entry.svg` / `pl-icon-invalid-lap.svg`.\n"
+    if "Utility icon parity" not in naming_text:
+        naming_text += "\n## Utility icon parity\n\nExact cross-theme naming applies to the 35 state glyphs, not to the optional utility library. Dark-specific `memory` / `pressure` and Light-specific `ram` / `vram` / `shield` are intentional theme-local utilities. `iconPolicy` in the event visual map is authoritative for classifying state, event-override and utility icons.\n"
     write_text(naming, naming_text)
 
     for motion_doc in (root / "motion" / "MOTION.md", root / "references" / "docs" / "MOTION.md"):
         motion_text = motion_doc.read_text(encoding="utf-8")
+        old_status = "No repeatable WebM authoring pipeline is established in this pack. `motion/manifest.json` therefore declares CSS fallback as authoritative. Reels may be added later only when alpha-VP9 export and deterministic verification are available; no placeholder WebM is included."
+        interim_status = "This is a deliberate CSS fallback, not an accidental omission. The repository contains compiled alpha-VP9 reels for existing V4 themes, but no authoring sources or deterministic export script for either Pit Wall theme. Copying another theme's compiled motion would violate the Pit Wall visual language. `motion/manifest.json` records the decision and the gate for future WebM delivery: approved Pit Wall motion masters plus a reproducible alpha-VP9 exporter."
+        new_status = "The 15 theme-specific reels in this directory are authoritative alpha-VP9 motion assets. They are generated reproducibly by `scripts/build_pit_wall_theme_additions.py`, use the native 420 x 140 canvas, contain no baked text or numbers, and end transparent so the static plate remains authoritative. CSS is retained only as a missing-file and reduced-motion fallback. See `references/docs/MOTION_QA.md` for the ffprobe matrix."
         if "WebM delivery status" not in motion_text:
-            motion_text += "\n## WebM delivery status\n\nNo repeatable WebM authoring pipeline is established in this pack. `motion/manifest.json` therefore declares CSS fallback as authoritative. Reels may be added later only when alpha-VP9 export and deterministic verification are available; no placeholder WebM is included.\n"
+            motion_text += f"\n## WebM delivery status\n\n{new_status}\n"
+        else:
+            motion_text = motion_text.replace(old_status, new_status)
+            motion_text = motion_text.replace(interim_status, new_status)
         write_text(motion_doc, motion_text)
 
     build_state_map_doc(root, config)
@@ -762,6 +1154,23 @@ def update_export_archives(root: Path, config: dict[str, Any]) -> None:
                 run_convert(divider, destination, *size)
         deterministic_zip(sysinfo_dir, packages_dir / archives["sysinfo"])
 
+        # Authoritative alpha-VP9 motion reel package.
+        motion_dir = temp_root / "motion"
+        for reel in sorted((root / "motion").glob("*.webm")):
+            shutil.copy2(
+                reel,
+                package_path(motion_dir, config, f"assets/motion/{reel.name}"),
+            )
+        shutil.copy2(
+            root / "motion" / "manifest.json",
+            package_path(motion_dir, config, "assets/motion/manifest.json"),
+        )
+        shutil.copy2(
+            root / "motion" / "MOTION.md",
+            package_path(motion_dir, config, "assets/motion/MOTION.md"),
+        )
+        deterministic_zip(motion_dir, packages_dir / archives["motion"])
+
         # Documentation bundle and full source-package manifest.
         docs_dir = temp_root / "docs"
         extract_archive(packages_dir / archives["docs"], docs_dir)
@@ -779,6 +1188,7 @@ def update_export_archives(root: Path, config: dict[str, Any]) -> None:
             "common_1x",
             "common_2x",
             "sysinfo",
+            "motion",
         ):
             extract_archive(packages_dir / archives[key], union_dir)
         # Include docs/examples but ignore stale manifests before rebuilding them.
@@ -810,10 +1220,15 @@ def svg_dimensions(path: Path) -> tuple[int | None, int | None]:
         data = path.read_bytes()[:26]
         if data[:8] == b"\x89PNG\r\n\x1a\n":
             return struct.unpack(">II", data[16:24])
+    if path.suffix.lower() == ".webm":
+        probe = probe_webm(path)
+        return probe["width"], probe["height"]
     return None, None
 
 
 def category_for(path: str) -> str:
+    if path.startswith("assets/motion"):
+        return "motion"
     if path.startswith("assets/vector/templates"):
         return "template-layer"
     if "/icons" in path or path.startswith("assets/vector/icons"):
@@ -847,7 +1262,7 @@ def rebuild_source_manifest(
                 "category": entry.get("category", category_for(relative)),
                 "bytes": path.stat().st_size,
                 "sha256": sha256(path),
-                "transparent": path.suffix.lower() in {".svg", ".png", ".webp"},
+                "transparent": path.suffix.lower() in {".svg", ".png", ".webp", ".webm"},
             }
         )
         if width is not None:
@@ -909,6 +1324,14 @@ def write_source_sums(path: Path, package_root: Path) -> None:
 def update_archive_index(root: Path) -> None:
     index_path = root / "packages" / "archive-index.json"
     index = json.loads(index_path.read_text(encoding="utf-8"))
+    motion_archive = THEMES[root.name]["archives"]["motion"]
+    if not any(entry["file"] == motion_archive for entry in index["archives"]):
+        index["archives"].append(
+            {
+                "file": motion_archive,
+                "contents": ["assets/motion"],
+            }
+        )
     for entry in index["archives"]:
         archive = root / "packages" / entry["file"]
         entry["bytes"] = archive.stat().st_size
@@ -988,6 +1411,8 @@ def build_theme(theme_name: str, config: dict[str, Any]) -> None:
 def main() -> None:
     if shutil.which("convert") is None:
         raise SystemExit("ImageMagick 'convert' is required to build raster derivatives")
+    if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
+        raise SystemExit("FFmpeg and ffprobe are required to build and verify motion reels")
     for theme_name, config in THEMES.items():
         build_theme(theme_name, config)
     print("Built Pit Wall Dark/Light V4 additions")

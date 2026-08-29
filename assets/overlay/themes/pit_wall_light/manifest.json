@@ -31,8 +31,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 1794,
-      "sha256": "226216167a960767ca12d9f6833bb1ebbbeac08bdd3acb101157efa5b699e12b"
+      "bytes": 1884,
+      "sha256": "f945cb51370d6c4ca001541119b538ac480607d5fc314e08baf9e7296b931d7e"
     },
     {
       "path": "accents/common/accents/pl-state-rail-left-amber.svg",
@@ -301,8 +301,8 @@
     },
     {
       "path": "accents/event-visual-map.json",
-      "bytes": 29910,
-      "sha256": "b55b20d35837693aa545980363b94290732877569844eccb15e061f25b631f2e"
+      "bytes": 33050,
+      "sha256": "d9f3fbdcdb6e2e0f146785aea1c24e281cdea3dd2871366c28a41011e37f0c37"
     },
     {
       "path": "backgrounds/README.md",
@@ -1501,18 +1501,93 @@
     },
     {
       "path": "motion/MOTION.md",
-      "bytes": 1216,
-      "sha256": "bff8a3bc6186a44d9dd6348628148738779faca2a2b448272aee328f8adfa6c3"
+      "bytes": 1371,
+      "sha256": "9cbbe87d9df3605a32e1b31e78d0594f8f197c5e1271645f45a6ea149e79bf5e"
+    },
+    {
+      "path": "motion/active_pulse.webm",
+      "bytes": 16455,
+      "sha256": "aa31fbeb0b6b66a6393c92ed0e2f58efa353e60a04982262a0a2f6831f91c584"
+    },
+    {
+      "path": "motion/battle_signal_lock.webm",
+      "bytes": 26555,
+      "sha256": "19551a7b5029261713c2739f6fae8c8e32d0d63d2e2932b5fe7e28bf4c7a6a19"
+    },
+    {
+      "path": "motion/bio_pulse.webm",
+      "bytes": 23675,
+      "sha256": "8e9ce5f1a2cac6bfa4ac6cfc1953103e9baeae8e1d754ea6d4ccc3e966a23ba2"
+    },
+    {
+      "path": "motion/compact_mask.webm",
+      "bytes": 8660,
+      "sha256": "680473b399856eb0db932cba9e0931426176e79683821bc4d101f242395c3c8a"
+    },
+    {
+      "path": "motion/enter_reveal.webm",
+      "bytes": 16689,
+      "sha256": "b2b7fd0277b9d644fb26662e02ddea32df66b8d2ccd4568403b3a61424dea402"
+    },
+    {
+      "path": "motion/exception_link_drop.webm",
+      "bytes": 17472,
+      "sha256": "f4179e2eb29abb6d419820b0efca5e0de2e45f269f6e8c4a9218a20dc9dea60e"
+    },
+    {
+      "path": "motion/exit_trace.webm",
+      "bytes": 6617,
+      "sha256": "30b925d2934b128e76bb02be89c1688ab0e2fb09195678b817b05ffe491b3d80"
     },
     {
       "path": "motion/manifest.json",
-      "bytes": 1053,
-      "sha256": "1eb8f96f6bec8a52a189cf8dd7751fcdc42e0f863114eeb3e6909605a752ad40"
+      "bytes": 4658,
+      "sha256": "b96a954c120b76d78d3874b5b40223dfc32e958582b052baf66ac464c4bf615a"
+    },
+    {
+      "path": "motion/pit_stop_ring.webm",
+      "bytes": 30940,
+      "sha256": "04a891f0f87a5d92c33ec03c2767e4e32b901ef5269b5c9fca80c88d4c84fe9b"
+    },
+    {
+      "path": "motion/position_chevron_hit.webm",
+      "bytes": 20912,
+      "sha256": "59f7b45ab50fc20c74f221f6e81c99036740cd13e5d1684ca9feb4dabb4c110a"
+    },
+    {
+      "path": "motion/result_burst.webm",
+      "bytes": 29059,
+      "sha256": "763bcdaeda554eb6e707bf3d73bc1b1e84beea41a97b012582636c809f61ac8d"
+    },
+    {
+      "path": "motion/resume_reacquire.webm",
+      "bytes": 35564,
+      "sha256": "1c891336f85e0de4101ccd7024e891312dda61734be2eb7a98828d6804806a4a"
+    },
+    {
+      "path": "motion/session_finish_burst.webm",
+      "bytes": 11972,
+      "sha256": "bd4bbef4107090de5be0b6a600ed787bc41f27639a84998d6cc69f97833da452"
+    },
+    {
+      "path": "motion/suspend_dim.webm",
+      "bytes": 112022,
+      "sha256": "fe636130b5eb7110a7609b926f695596254797042592a27fca9f63d32777a0eb"
+    },
+    {
+      "path": "motion/theme_glitch.webm",
+      "bytes": 31767,
+      "sha256": "b9c9e4c2d6238abe675f99e365251a14ed057a0a59ef4f09e787c2fa8d7dff5b"
+    },
+    {
+      "path": "motion/timing_projection_sweep.webm",
+      "bytes": 17253,
+      "sha256": "9ea40ef2b9eff8447f0b33e7d294f1b037135ab3ed4f12d332169346de0d94f0"
     },
     {
       "path": "packages/01_Pitwall_Light_Core_Vector_and_Tokens.zip",
-      "bytes": 47781,
-      "sha256": "60963e8b1ed1294be8e5c8b5f227941c763f8b3109e15512e98372deee257e48"
+      "bytes": 49048,
+      "sha256": "ffcd14bc61f25eb958c5556196b55400c77e0ac5e9c1f9d8e7e1898982fb3b62"
     },
     {
       "path": "packages/02_Pitwall_Light_Icons_BLE_and_Status.zip",
@@ -1551,18 +1626,23 @@
     },
     {
       "path": "packages/09_Pitwall_Light_Documentation_Examples_Manifests.zip",
-      "bytes": 345769,
-      "sha256": "6fba6637af45ce4c45f4b0ffc4c7beb5a1a4ef5ef57e1256a21ddaecac0abce0"
+      "bytes": 351654,
+      "sha256": "9b56326beef205cdda5d2fc9296ad4c9b5c997459a0288c5e9af712fcc411060"
+    },
+    {
+      "path": "packages/10_Pitwall_Light_Motion_Alpha_VP9.zip",
+      "bytes": 405525,
+      "sha256": "aace39b67d7db92fab260fac88e5e9b703604debebf31ff5c54f7c56f0162672"
     },
     {
       "path": "packages/archive-index.json",
-      "bytes": 3661,
-      "sha256": "18bfa8d3c311b3b0dd4067541d7a853f1c2afa7e6910fd03bac13c43af619c45"
+      "bytes": 3957,
+      "sha256": "973b5fb1e90276bd3f3a8caa9825e60201420ecf0360d941d200f07861203d54"
     },
     {
       "path": "references/docs/IMPLEMENTATION.md",
-      "bytes": 2786,
-      "sha256": "006b20f1ea24358e6be541544578e4ef1e52c7b638d9c94b7b4bf5c98518126d"
+      "bytes": 3119,
+      "sha256": "490fe51c54674d1a55b10b9668499989b930e884f6024261ffb5167cfe00e666"
     },
     {
       "path": "references/docs/LAYERING_AND_ANCHORS.md",
@@ -1571,13 +1651,18 @@
     },
     {
       "path": "references/docs/MOTION.md",
-      "bytes": 1216,
-      "sha256": "bff8a3bc6186a44d9dd6348628148738779faca2a2b448272aee328f8adfa6c3"
+      "bytes": 1371,
+      "sha256": "9cbbe87d9df3605a32e1b31e78d0594f8f197c5e1271645f45a6ea149e79bf5e"
+    },
+    {
+      "path": "references/docs/MOTION_QA.md",
+      "bytes": 2493,
+      "sha256": "efe73e9d4a8b54070f20b4eda00f6aeb59e243db0f192eef739e2e1b83f6536e"
     },
     {
       "path": "references/docs/NAMING_CONVENTION.md",
-      "bytes": 623,
-      "sha256": "50c9306e0d2a0b719186d18d5145e37c7b09abffdcfb9e6148c968aa24508ebe"
+      "bytes": 973,
+      "sha256": "a2b46a47062b2d455620b2496e132e09de70e552b9a31578fc7efc8527c77ecc"
     },
     {
       "path": "references/docs/OBS_BROWSER_SOURCE.md",
@@ -1586,8 +1671,8 @@
     },
     {
       "path": "references/docs/STATE_VISUAL_MAP.md",
-      "bytes": 5039,
-      "sha256": "3e21293d05442a88f9fbc48176790c8cc35020fc71eeaadf1c078784d7ad8def"
+      "bytes": 6077,
+      "sha256": "037cd33e528184e5369c9fa3d2abc77bf6e9ef8afdd4d02dd4f0e5d9c02f93d5"
     },
     {
       "path": "references/examples/compositions/pitwall-light-event-catalog-1920x1080.png",
@@ -1616,8 +1701,8 @@
     },
     {
       "path": "references/source-asset-manifest.json",
-      "bytes": 930801,
-      "sha256": "8b258d581324b42a917555f5bfb09c69456cc3b824bb6dc214738164faeecbfc"
+      "bytes": 941292,
+      "sha256": "7568c0d58199194b44214cbd8ce44943878777a9e493229a5e50d7054db3b2fd"
     },
     {
       "path": "textures/pl-data-surface-battle.svg",

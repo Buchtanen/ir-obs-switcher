@@ -72,6 +72,87 @@
       "color": "#8DA2AD"
     }
   },
+  "iconPolicy": {
+    "coverageContract": "state-map-exact",
+    "requiredStateGlyphCount": 35,
+    "stateGlyphs": [
+      "icons/event/pw-icon-approach.svg",
+      "icons/event/pw-icon-attack-range.svg",
+      "icons/event/pw-icon-battle-for-position.svg",
+      "icons/event/pw-icon-battle-won.svg",
+      "icons/event/pw-icon-ble-reconnecting.svg",
+      "icons/event/pw-icon-clean-streak.svg",
+      "icons/event/pw-icon-composure-test.svg",
+      "icons/event/pw-icon-final-lap.svg",
+      "icons/event/pw-icon-finish.svg",
+      "icons/event/pw-icon-gain-found.svg",
+      "icons/event/pw-icon-high-load.svg",
+      "icons/event/pw-icon-hot-lap.svg",
+      "icons/event/pw-icon-hr-pressure.svg",
+      "icons/event/pw-icon-hunted.svg",
+      "icons/event/pw-icon-hunting.svg",
+      "icons/event/pw-icon-incident.svg",
+      "icons/event/pw-icon-invalid-lap.svg",
+      "icons/event/pw-icon-lap-complete.svg",
+      "icons/event/pw-icon-link-drop.svg",
+      "icons/event/pw-icon-overtake.svg",
+      "icons/event/pw-icon-pb-attack.svg",
+      "icons/event/pw-icon-personal-best.svg",
+      "icons/event/pw-icon-pit-entry.svg",
+      "icons/event/pw-icon-pit-exit.svg",
+      "icons/event/pw-icon-pit-lane.svg",
+      "icons/event/pw-icon-pit-outcome.svg",
+      "icons/event/pw-icon-pit-released.svg",
+      "icons/event/pw-icon-pit-stopped.svg",
+      "icons/event/pw-icon-position-attack.svg",
+      "icons/event/pw-icon-position-gained.svg",
+      "icons/event/pw-icon-position-lost.svg",
+      "icons/event/pw-icon-projected-lap.svg",
+      "icons/event/pw-icon-rival-threat.svg",
+      "icons/event/pw-icon-side-by-side.svg",
+      "icons/event/pw-icon-target.svg"
+    ],
+    "eventOverrideGlyphs": [
+      "icons/event/pw-icon-cpu-temp-high.svg",
+      "icons/event/pw-icon-gpu-temp-high.svg"
+    ],
+    "utilityLibrary": [
+      "icons/event/pw-icon-ble.svg",
+      "icons/event/pw-icon-cpu.svg",
+      "icons/event/pw-icon-flag.svg",
+      "icons/event/pw-icon-fps.svg",
+      "icons/event/pw-icon-gpu.svg",
+      "icons/event/pw-icon-heart.svg",
+      "icons/event/pw-icon-memory.svg",
+      "icons/event/pw-icon-position-down.svg",
+      "icons/event/pw-icon-position-up.svg",
+      "icons/event/pw-icon-power.svg",
+      "icons/event/pw-icon-pressure.svg",
+      "icons/event/pw-icon-radar.svg",
+      "icons/event/pw-icon-stopwatch.svg",
+      "icons/event/pw-icon-temp.svg"
+    ],
+    "crossThemeUtilityNameParityRequired": false,
+    "coverageNote": "Only stateGlyphs satisfy the 35-state coverage contract. Event overrides and utilityLibrary are intentional extras and do not indicate a coverage gap."
+  },
+  "rendererPolicy": {
+    "templateResolution": {
+      "precedence": [
+        "events.<event>.template",
+        "states.<state>.template",
+        "fallbacks.<family>"
+      ],
+      "runtimeFamilyMayOverride": false,
+      "runtimeFamilyRole": "routing and lifecycle metadata only",
+      "knownRuntimeFamilyExceptions": [
+        {
+          "state": "position_attack",
+          "runtimeFamily": "timing",
+          "packTemplate": "position"
+        }
+      ]
+    }
+  },
   "zones": {
     "BATTLE_AHEAD": {
       "layout": "BATTLE",

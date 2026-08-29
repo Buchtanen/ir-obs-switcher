@@ -19,6 +19,20 @@ without theme-specific hardcoding.
   assets inside the tracked export archives.
 - [x] Event maps, theme tokens, motion manifests, file manifests, checksums,
   package indexes and implementation docs are synchronized.
+- [x] State glyph coverage is explicitly separated from event overrides and the
+  optional theme-local utility icon library; utility naming parity is not a
+  renderer coverage requirement.
+- [x] Pack template resolution takes precedence over runtime family metadata;
+  `position_attack` is explicitly locked to the `position` template.
+
+## WebM decision
+
+The supplied motion brief supersedes the earlier intent-only fallback. Both
+themes now deliver all 15 V4 reels as theme-specific 420 x 140 alpha-VP9 WebM at
+30 fps. The deterministic generator is part of this branch, each pack includes
+a dedicated motion ZIP, and `references/docs/MOTION_QA.md` records ffprobe data
+and SHA-256 for every reel. CSS remains a missing-file/reduced-motion fallback,
+not the final delivery.
 
 ## Test plan
 

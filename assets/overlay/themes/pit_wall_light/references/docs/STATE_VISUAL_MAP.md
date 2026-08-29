@@ -45,3 +45,15 @@ This is the human-readable mirror of `accents/event-visual-map.json`. The JSON f
 The same JSON also contains all 35 uppercase event routes from `themes-v4/event_catalog.json`. `BATTLE_AHEAD` and `BATTLE_BEHIND` are explicit aliases of the `BATTLE` layout; they differ only by semantic direction and stack order.
 
 CPU/GPU thermal events route to the `incident` state and override only the glyph (`cpu-temp-high` / `gpu-temp-high`).
+
+## Template resolution precedence
+
+The pack map, not the runtime family label, is authoritative for plate selection. Resolution order is an explicit event template override, then `states.<state>.template`, then the declared family fallback. Runtime family is routing/lifecycle metadata and must not replace a resolved pack template.
+
+`position_attack` is the known cross-family case: runtime family `timing`, pack template `position`. The renderer must render the POSITION plate and the state-specific glyph.
+
+## Icon coverage and utility library
+
+The 35-state coverage gate counts only `iconPolicy.stateGlyphs`. CPU/GPU temperature glyphs are event overrides. The remaining BLE, system, telemetry and generic status glyphs are an optional utility library and do not represent missing V4 states.
+
+Utility naming is theme-local by design. Dark may expose `memory` / `pressure`, while Light may expose `ram` / `vram` / `shield`; cross-theme utility-name parity is not required. State glyph naming remains exact and complete in both packs.

@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import struct
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -21,6 +22,7 @@ THEMES = {
         "icon_box": [54, 50, 40, 40],
         "raster_1x": "04_Pitwall_Transient_Raster_1x.zip",
         "raster_2x": "05_Pitwall_Transient_Raster_2x.zip",
+        "motion": "10_Pitwall_Motion_Alpha_VP9.zip",
     },
     "pit_wall_light": {
         "prefix": "pl",
@@ -28,6 +30,7 @@ THEMES = {
         "icon_box": [39, 46, 48, 48],
         "raster_1x": "04_Pitwall_Light_Transient_Raster_1x.zip",
         "raster_2x": "05_Pitwall_Light_Transient_Raster_2x.zip",
+        "motion": "10_Pitwall_Light_Motion_Alpha_VP9.zip",
     },
 }
 
@@ -43,6 +46,51 @@ def _png_header(data: bytes) -> tuple[int, int, int]:
     assert data[12:16] == b"IHDR"
     width, height, _depth, color_type = struct.unpack(">IIBB", data[16:26])
     return width, height, color_type
+
+
+def _ffprobe(path: Path) -> dict[str, object]:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=codec_name,width,height,pix_fmt,r_frame_rate:stream_tags=alpha_mode:format=duration",
+            "-of",
+            "json",
+            str(path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
+def _decoded_alpha(path: Path) -> bytes:
+    result = subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-c:v",
+            "libvpx-vp9",
+            "-i",
+            str(path),
+            "-vf",
+            "alphaextract",
+            "-pix_fmt",
+            "gray",
+            "-f",
+            "rawvideo",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    return result.stdout
 
 
 @pytest.mark.parametrize("theme_name", THEMES)
@@ -80,6 +128,38 @@ def test_event_visual_map_covers_v4_states_and_events(theme_name: str) -> None:
     assert visual_map["zones"]["BATTLE_BEHIND"]["layout"] == "BATTLE"
     assert visual_map["zones"]["BATTLE_AHEAD"]["template"] == "battle"
     assert visual_map["zones"]["BATTLE_BEHIND"]["template"] == "battle"
+
+    icon_policy = visual_map["iconPolicy"]
+    assert icon_policy["coverageContract"] == "state-map-exact"
+    assert icon_policy["requiredStateGlyphCount"] == 35
+    assert len(icon_policy["stateGlyphs"]) == 35
+    assert set(icon_policy["stateGlyphs"]) == {
+        state["icon"] for state in visual_map["states"].values()
+    }
+    assert set(icon_policy["eventOverrideGlyphs"]) == {
+        route["icon"] for route in visual_map["events"].values() if "icon" in route
+    }
+    assert icon_policy["crossThemeUtilityNameParityRequired"] is False
+    assert not (
+        set(icon_policy["utilityLibrary"])
+        & set(icon_policy["stateGlyphs"])
+    )
+
+    resolution = visual_map["rendererPolicy"]["templateResolution"]
+    assert resolution["runtimeFamilyMayOverride"] is False
+    assert resolution["precedence"] == [
+        "events.<event>.template",
+        "states.<state>.template",
+        "fallbacks.<family>",
+    ]
+    assert visual_map["states"]["position_attack"]["template"] == "position"
+    assert resolution["knownRuntimeFamilyExceptions"] == [
+        {
+            "state": "position_attack",
+            "runtimeFamily": "timing",
+            "packTemplate": "position",
+        }
+    ]
 
 
 @pytest.mark.parametrize("theme_name", THEMES)
@@ -161,18 +241,63 @@ def test_new_family_rasters_are_individual_alpha_assets(theme_name: str) -> None
 
 
 @pytest.mark.parametrize("theme_name", THEMES)
-def test_motion_fallback_and_pack_manifests_are_self_consistent(theme_name: str) -> None:
+def test_motion_reels_and_pack_manifests_are_self_consistent(theme_name: str) -> None:
     root = PACKS_ROOT / theme_name
     motion = _load(root / "motion" / "manifest.json")
     manifest = _load(root / "manifest.json")
     archive_index = _load(root / "packages" / "archive-index.json")
     source_manifest = _load(root / "references" / "source-asset-manifest.json")
 
-    assert motion["pipeline"] == "not-established"
+    expected_reels = set(_load(V4_MANIFEST)["motions"])
+    assert len(expected_reels) == 15
+    assert motion["pipeline"] == "alpha-vp9"
     assert motion["fallback"] == "css"
-    assert motion["webm"] == []
-    assert not list((root / "motion").glob("*.webm"))
-    assert set(motion["reels"]) >= {"enter", "active", "result", "exit"}
+    assert set(motion["webm"]) == expected_reels
+    assert set(motion["reels"]) == expected_reels
+    assert set(motion["intents"]) >= {
+        "enter",
+        "active",
+        "result",
+        "exit",
+        "pit-phase",
+        "exception-alert",
+        "session-sweep",
+    }
+
+    reel_hashes = set()
+    for reel_name in sorted(expected_reels):
+        reel = motion["reels"][reel_name]
+        assert reel["file"] == f"{reel_name}.webm"
+        assert reel["canvas"] == "transient"
+        assert reel["fps"] == 30
+        assert reel["alpha"] is True
+        assert 0 < reel["durationMs"] <= 500
+        assert reel["intent"]
+
+        reel_path = root / "motion" / reel["file"]
+        assert reel_path.is_file()
+        assert reel_path.stat().st_size > 1000
+        reel_hashes.add(hashlib.sha256(reel_path.read_bytes()).hexdigest())
+        probe = _ffprobe(reel_path)
+        stream = probe["streams"][0]
+        assert stream["codec_name"] == "vp9"
+        assert (stream["width"], stream["height"]) == (420, 140)
+        assert stream["pix_fmt"] == "yuv420p"
+        assert stream["r_frame_rate"] == "30/1"
+        assert stream["tags"]["ALPHA_MODE"] == "1"
+        alpha = _decoded_alpha(reel_path)
+        assert alpha
+        assert max(alpha) > 0, f"empty alpha reel: {reel_name}"
+        assert min(alpha) == 0, f"full-bleed alpha reel: {reel_name}"
+        duration_ms = round(float(probe["format"]["duration"]) * 1000)
+        assert abs(duration_ms - reel["durationMs"]) <= 2
+    assert len(reel_hashes) == 15
+
+    with zipfile.ZipFile(root / "packages" / THEMES[theme_name]["motion"]) as zf:
+        names = set(zf.namelist())
+        for reel_name in expected_reels:
+            assert any(name.endswith(f"/assets/motion/{reel_name}.webm") for name in names)
+        assert any(name.endswith("/assets/motion/manifest.json") for name in names)
 
     assert manifest["renderer_contract"]["event_visual_map"] == (
         "accents/event-visual-map.json"
@@ -200,6 +325,8 @@ def test_motion_fallback_and_pack_manifests_are_self_consistent(theme_name: str)
     assert "tokens/design-tokens.json" in source_paths
     assert any("assets/vector/templates/pit/" in path for path in source_paths)
     assert any("assets/vector/templates/exception/" in path for path in source_paths)
+    for reel_name in expected_reels:
+        assert f"assets/motion/{reel_name}.webm" in source_paths
 
     for archive_entry in archive_index["archives"]:
         archive = root / "packages" / archive_entry["file"]
@@ -210,3 +337,13 @@ def test_motion_fallback_and_pack_manifests_are_self_consistent(theme_name: str)
             assert archive_entry["files"] == sum(
                 not name.endswith("/") for name in zf.namelist()
             )
+
+
+def test_dark_and_light_motion_reels_are_theme_specific() -> None:
+    dark = PACKS_ROOT / "pit_wall_dark" / "motion"
+    light = PACKS_ROOT / "pit_wall_light" / "motion"
+    expected_reels = set(_load(V4_MANIFEST)["motions"])
+    for reel_name in expected_reels:
+        dark_hash = hashlib.sha256((dark / f"{reel_name}.webm").read_bytes()).hexdigest()
+        light_hash = hashlib.sha256((light / f"{reel_name}.webm").read_bytes()).hexdigest()
+        assert dark_hash != light_hash, reel_name

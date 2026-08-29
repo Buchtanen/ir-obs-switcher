@@ -4,10 +4,10 @@
   "archives": [
     {
       "file": "01_Pitwall_Core_Vector_and_Tokens.zip",
-      "bytes": 37158,
-      "sizeMiB": 0.035,
+      "bytes": 38414,
+      "sizeMiB": 0.037,
       "files": 59,
-      "sha256": "26a5d7a402f34448590b2a14fc57c3fe0ed7cb7ceadb66e748e534d099a46b20",
+      "sha256": "009208fabc44b6ea8351097d26898b3fe9f26e57e1c5ffcd3df7c877f62c7aa1",
       "integrity": "ok",
       "contents": [
         "assets/vector/common",
@@ -110,10 +110,10 @@
     },
     {
       "file": "09_Pitwall_Documentation_Examples_Manifests.zip",
-      "bytes": 119449,
-      "sizeMiB": 0.114,
-      "files": 14,
-      "sha256": "0a7509a7ed438b6ef410b2350bb421c38e6dd4fdbf294c5e8752b065a17deb51",
+      "bytes": 125420,
+      "sizeMiB": 0.12,
+      "files": 15,
+      "sha256": "5882a67adc48c2457e75787f600e5607c82247bcd9dabba1a662268c5f42d037",
       "integrity": "ok",
       "contents": [
         "README.md",
@@ -121,6 +121,17 @@
         "examples",
         "manifests"
       ]
+    },
+    {
+      "file": "10_Pitwall_Motion_Alpha_VP9.zip",
+      "contents": [
+        "assets/motion"
+      ],
+      "bytes": 368159,
+      "sizeMiB": 0.351,
+      "files": 17,
+      "sha256": "2b7ba13218f1a0bc461aba558548861a09e8c945b2158bd78c3f8bfef46e8d7f",
+      "integrity": "ok"
     }
   ]
 }

@@ -16,4 +16,4 @@ Při `prefers-reduced-motion` vypněte sweep, scrolling trace a flash; opacity t
 
 ## WebM delivery status
 
-No repeatable WebM authoring pipeline is established in this pack. `motion/manifest.json` therefore declares CSS fallback as authoritative. Reels may be added later only when alpha-VP9 export and deterministic verification are available; no placeholder WebM is included.
+The 15 theme-specific reels in this directory are authoritative alpha-VP9 motion assets. They are generated reproducibly by `scripts/build_pit_wall_theme_additions.py`, use the native 420 x 140 canvas, contain no baked text or numbers, and end transparent so the static plate remains authoritative. CSS is retained only as a missing-file and reduced-motion fallback. See `references/docs/MOTION_QA.md` for the ffprobe matrix.
