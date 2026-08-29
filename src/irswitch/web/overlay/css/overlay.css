@@ -17,6 +17,12 @@ html.is-demo body {
   background: #04070a;
 }
 
+/* Light glass plates read as dark frost on #04070a; give Light a pale stage. */
+html.is-demo[data-theme="pit_wall_light"],
+html.is-demo[data-theme="pit_wall_light"] body {
+  background: #d7dee4;
+}
+
 html.golden-layout #sysinfo-widget,
 html.golden-layout #session-layer,
 html.golden-layout #event-layer,

@@ -71,3 +71,13 @@ def test_demo_stage_defaults_to_v4_renderer() -> None:
     assert "renderer=v4" in html
     assert 'option value="v4" selected' in html
     assert "v3 (legacy)" in html
+
+
+def test_demo_stage_scale_does_not_create_scrollbars() -> None:
+    """transform:scale leaves the layout box at 1920×1080; slot must clip to scaled size."""
+    html = _demo_html()
+    assert 'id="slot"' in html
+    assert "overflow: hidden" in html
+    assert "overflow: auto" not in html
+    assert "slot.style.width" in html
+    assert "slot.style.height" in html

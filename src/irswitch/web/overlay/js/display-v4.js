@@ -2,7 +2,7 @@
 
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.8";
+const ASSET_CACHE = "1.2.11";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -396,30 +396,42 @@ function familyLayerDir(family, stateKey) {
   return override || family.layer_dir || "";
 }
 
-/** Clip a layer (or .v4-art) to the chamfered plate silhouette — same idea as V3 plateMask. */
+function clearPlateMask(el) {
+  if (!el) return;
+  el.style.removeProperty("-webkit-mask-image");
+  el.style.removeProperty("mask-image");
+  el.style.removeProperty("-webkit-mask-size");
+  el.style.removeProperty("mask-size");
+  el.style.removeProperty("mask-mode");
+  el.style.removeProperty("mask-composite");
+  el.style.removeProperty("-webkit-mask-composite");
+  el.classList.remove("has-plate-mask");
+}
+
+/** Clip .v4-art to the chamfered plate. Union base_plate + material: Light packs
+ *  ship base_plate as a hollow rim, so masking with it alone clips the glass fill. */
 function paintPlateMask(el, family, stateKey) {
   const layerDir = familyLayerDir(family, stateKey);
   if (!el || !layerDir) {
-    if (el) {
-      el.style.removeProperty("-webkit-mask-image");
-      el.style.removeProperty("mask-image");
-      el.style.removeProperty("-webkit-mask-size");
-      el.style.removeProperty("mask-size");
-      el.classList.remove("has-plate-mask");
-    }
+    clearPlateMask(el);
     return;
   }
-  const url = manifestDiskPath(`${layerDir}/base_plate.png`);
-  if (!url) {
-    el.style.removeProperty("-webkit-mask-image");
-    el.style.removeProperty("mask-image");
-    el.classList.remove("has-plate-mask");
+  const files = ["base_plate.png"];
+  if ((family.layers || []).some((layer) => layer.file === "material.png")) {
+    files.push("material.png");
+  }
+  const urls = files.map((file) => manifestDiskPath(`${layerDir}/${file}`)).filter(Boolean);
+  if (!urls.length) {
+    clearPlateMask(el);
     return;
   }
-  const mask = `url("${url}")`;
+  const mask = urls.map((url) => `url("${url}")`).join(", ");
   // Prefer setProperty — plain style.maskImage was computing to none in Chromium.
   el.style.setProperty("-webkit-mask-image", mask);
   el.style.setProperty("mask-image", mask);
+  el.style.setProperty("mask-mode", "alpha");
+  el.style.setProperty("mask-composite", "add");
+  el.style.setProperty("-webkit-mask-composite", "source-over");
   el.style.removeProperty("-webkit-mask-size");
   el.style.removeProperty("mask-size");
   el.style.setProperty("-webkit-mask-repeat", "no-repeat");
@@ -742,7 +754,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "hr_pressure") {
-    text(subtitle, resolveCopy("bio.hr_pressure") || sample.subtitle || "HR PRESSURE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE INTENSITY");
     text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value);
     text(
       meta,
@@ -751,7 +763,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
         : sample.meta,
     );
   } else if (stateKey === "ble_reconnecting") {
-    text(subtitle, resolveCopy("ble.lost") || sample.subtitle || "DATA STALE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "SENSOR DATA PAUSED");
     text(value, sample.value || "--");
     text(meta, sample.meta || "reconnecting");
   } else {
@@ -770,7 +782,7 @@ function fillSessionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "final_lap") {
-    text(subtitle, resolveCopy("session.final_lap") || sample.subtitle || "ONE MORE PUSH");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ONE MORE PUSH");
     text(
       value,
       metrics.lap != null && metrics.totalLaps != null
@@ -779,7 +791,7 @@ function fillSessionCopy(node, envelope, stateKey, sample, metrics, copy) {
     );
     text(meta, phase === "RESULT" ? resolveCopy("session.finish") || sample.meta : sample.meta || "major event");
   } else if (stateKey === "finish") {
-    text(subtitle, resolveCopy("session.finish") || sample.subtitle || "RACE COMPLETE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "RACE COMPLETE");
     text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
     text(meta, metrics.classPosition != null ? `P${metrics.classPosition} in class` : sample.meta);
   } else {
@@ -797,7 +809,7 @@ function fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
   text(title, headline);
   if (stateKey === "incident") {
-    text(subtitle, resolveCopy("incident") || sample.subtitle || "COALESCED UPDATE");
+    text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "COALESCED UPDATE");
     text(value, metrics.value != null ? `+${metrics.value} INC` : sample.value);
     text(meta, metrics.total != null ? `total ${metrics.total}` : sample.meta);
   } else if (stateKey === "invalid_lap") {

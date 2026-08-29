@@ -134,6 +134,9 @@ def test_v4_live_widget_plate_masks_glow() -> None:
     css = display_v4_css()
     assert "function paintPlateMask(" in js
     assert "base_plate.png" in js
+    assert "material.png" in js
+    assert 'setProperty("mask-composite", "add")' in js
+    assert 'setProperty("-webkit-mask-composite", "source-over")' in js
     assert 'setProperty("-webkit-mask-image"' in js
     assert "paintPlateMask(art, family" in js
     assert "if (glowMatch) return" in js
@@ -141,6 +144,18 @@ def test_v4_live_widget_plate_masks_glow() -> None:
     widget = rule_decls(css, ".v4-widget")
     assert widget.get("overflow") == "hidden"
     assert widget.get("contain") == "paint"
+
+
+def test_session_bio_exception_subtitles_do_not_reuse_headline_tokens() -> None:
+    """Headline tokens on subtitle collapse to FINAL LAP / FINAL LAP in the dry test."""
+    js = display_v4_js()
+    assert 'resolveCopy("session.final_lap") || sample.subtitle' not in js
+    assert 'resolveCopy("session.finish") || sample.subtitle' not in js
+    assert 'resolveCopy("bio.hr_pressure") || sample.subtitle' not in js
+    assert 'resolveCopy("ble.lost") || sample.subtitle' not in js
+    assert 'resolveCopy("incident") || sample.subtitle' not in js
+    assert 'resolveCopy(copy.statusToken) || sample.subtitle || "ONE MORE PUSH"' in js
+    assert 'resolveCopy(copy.statusToken) || sample.subtitle || "RACE COMPLETE"' in js
 
 
 def test_v4_copy_uses_absolute_plate_slots() -> None:

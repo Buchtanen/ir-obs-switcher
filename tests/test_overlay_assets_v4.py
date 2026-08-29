@@ -245,6 +245,32 @@ def test_v4_state_catalog_matches_families() -> None:
             assert slot in sample, state
 
 
+def _interior_opaque_ratio(path: Path, inset: int = 20, alpha_min: int = 16) -> float:
+    from test_overlay_assets_v3 import _png_rgba
+
+    width, height, pixels = _png_rgba(path)
+    opaque = total = 0
+    for y in range(inset, height - inset):
+        for x in range(inset, width - inset):
+            total += 1
+            if pixels[(y * width + x) * 4 + 3] > alpha_min:
+                opaque += 1
+    return opaque / total if total else 0.0
+
+
+def test_pit_wall_light_transient_base_plate_is_hollow_rim() -> None:
+    """Light transient base_plate is a stroke; SYSINFO base is a filled bar.
+
+    paintPlateMask must union material.png or Light cards clip to the rim and
+    the dark stage shows through the glass fill.
+    """
+    hunting = V4_ROOT / "pit_wall_light" / "plates" / "hunting" / "layers"
+    sysinfo = V4_ROOT / "pit_wall_light" / "sysinfo" / "layers"
+    assert _interior_opaque_ratio(hunting / "base_plate.png") < 0.1
+    assert _interior_opaque_ratio(hunting / "material.png") > 0.5
+    assert _interior_opaque_ratio(sysinfo / "sysinfo_base_plate.png") > 0.9
+
+
 def test_v4_motion_reels_per_theme() -> None:
     manifest = _manifest()
     expected = sorted(f"{name}.webm" for name in manifest["motions"])

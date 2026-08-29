@@ -70,6 +70,9 @@
   mask-position: 0 0;
   -webkit-mask-size: var(--v4-canvas-w, 420px) var(--v4-canvas-h, 140px);
   mask-size: var(--v4-canvas-w, 420px) var(--v4-canvas-h, 140px);
+  mask-mode: alpha;
+  mask-composite: add;
+  -webkit-mask-composite: source-over;
 }
 
 .v4-art .layer {
