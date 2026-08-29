@@ -388,9 +388,18 @@ function paintLayer(el, url, { mask = false, canvas = null } = {}) {
   }
 }
 
+/** Resolve plate layer_dir, honoring per-state pack template overrides. */
+function familyLayerDir(family, stateKey) {
+  if (!family) return "";
+  const overrides = family.state_layer_dirs || {};
+  const override = stateKey && overrides[stateKey];
+  return override || family.layer_dir || "";
+}
+
 /** Clip a layer (or .v4-art) to the chamfered plate silhouette — same idea as V3 plateMask. */
-function paintPlateMask(el, family) {
-  if (!el || !family?.layer_dir) {
+function paintPlateMask(el, family, stateKey) {
+  const layerDir = familyLayerDir(family, stateKey);
+  if (!el || !layerDir) {
     if (el) {
       el.style.removeProperty("-webkit-mask-image");
       el.style.removeProperty("mask-image");
@@ -400,7 +409,7 @@ function paintPlateMask(el, family) {
     }
     return;
   }
-  const url = manifestDiskPath(`${family.layer_dir}/base_plate.png`);
+  const url = manifestDiskPath(`${layerDir}/base_plate.png`);
   if (!url) {
     el.style.removeProperty("-webkit-mask-image");
     el.style.removeProperty("mask-image");
@@ -534,15 +543,17 @@ function rebuildArt(node, stateKey, familyName) {
     return;
   }
   node.classList.remove("fallback");
+  const layerDir = familyLayerDir(family, stateKey);
   (family.layers || []).forEach((layer, index) => {
     const glowMatch = /^glow_(cyan|amber|red)\.png$/.exec(layer.file);
     // Soft bloom PNGs bleed past the chamfer unless perfectly plate-masked.
     // Skip them (golden + live); enter WebM stays, clipped by art plate mask.
     if (glowMatch) return;
+    const url = manifestDiskPath(`${layerDir}/${layer.file}`);
+    if (!url) return;
     const el = document.createElement("div");
     el.className = `layer ${layer.mode === "mask" ? "mask" : "image"}`;
     el.dataset.index = String(index);
-    const url = manifestDiskPath(`${family.layer_dir}/${layer.file}`);
     paintLayer(el, url, { mask: layer.mode === "mask" });
     art.appendChild(el);
   });
@@ -553,7 +564,7 @@ function rebuildArt(node, stateKey, familyName) {
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
   // Clip enter WebM / residual bloom to the chamfered plate (not the CSS box).
-  paintPlateMask(art, family);
+  paintPlateMask(art, family, stateKey);
 }
 
 function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {

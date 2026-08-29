@@ -8,12 +8,21 @@ Deterministic acceptance views for the V4 renderer. All URLs require `demo=1` (i
 /overlay?demo=1&renderer=v4&layout=golden&fixture=<id>&theme=<theme>&motion=off
 ```
 
-**Themes:** `cyber_racing` (default), `stealth_graphite`, `night_attack`
+**Themes:** `cyber_racing` (default), `stealth_graphite`, `night_attack`, `pit_wall_dark`, `pit_wall_light`
 
 **Gallery (all fixtures):** omit `fixture` or use `fixture=all`
 
 ```
 /overlay?demo=1&renderer=v4&layout=golden&fixture=all&theme=cyber_racing&motion=off
+```
+
+Theme variants (same gallery, swap `theme=`):
+
+```
+/overlay?demo=1&renderer=v4&layout=golden&fixture=all&theme=stealth_graphite&motion=off
+/overlay?demo=1&renderer=v4&layout=golden&fixture=all&theme=night_attack&motion=off
+/overlay?demo=1&renderer=v4&layout=golden&fixture=all&theme=pit_wall_dark&motion=off
+/overlay?demo=1&renderer=v4&layout=golden&fixture=all&theme=pit_wall_light&motion=off
 ```
 
 **Shortcut:** `/overlay/golden` redirects to the gallery URL above.

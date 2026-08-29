@@ -2121,6 +2121,992 @@
           }
         }
       }
+    },
+    "pit_wall_dark": {
+      "primary": [
+        53,
+        215,
+        255
+      ],
+      "warning": [
+        244,
+        166,
+        42
+      ],
+      "alert": [
+        255,
+        78,
+        91
+      ],
+      "motion_style": "timing_wipe",
+      "canvases": {
+        "transient": {
+          "icon_mode": "glyph",
+          "icon_box": [
+            54,
+            50,
+            40,
+            40
+          ],
+          "safe_box": {
+            "left": 100,
+            "top": 20,
+            "right": 22,
+            "bottom": 18
+          },
+          "text_slots": {
+            "title": {
+              "left": 100,
+              "top": 36,
+              "right": 22,
+              "font_px": 22
+            },
+            "subtitle": {
+              "left": 100,
+              "top": 60,
+              "right": 22,
+              "font_px": 11
+            },
+            "value": {
+              "left": 100,
+              "top": 78,
+              "right": 22,
+              "font_px": 26
+            },
+            "meta": {
+              "left": 100,
+              "top": 110,
+              "right": 22,
+              "font_px": 11
+            }
+          }
+        }
+      },
+      "families": {
+        "battle": {
+          "layer_dir": "themes/pit_wall_dark/plates/battle/layers",
+          "icon_dir": "themes/pit_wall_dark/battle/icons",
+          "state_layer_dirs": {
+            "hunting": "themes/pit_wall_dark/plates/hunting/layers",
+            "hunted": "themes/pit_wall_dark/plates/hunted/layers",
+            "approach": "themes/pit_wall_dark/plates/hunting/layers",
+            "attack_range": "themes/pit_wall_dark/plates/battle/layers",
+            "side_by_side": "themes/pit_wall_dark/plates/battle/layers",
+            "battle_for_position": "themes/pit_wall_dark/plates/battle/layers",
+            "battle_won": "themes/pit_wall_dark/plates/battle/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "hunting",
+            "hunted",
+            "approach",
+            "attack_range",
+            "side_by_side",
+            "battle_for_position",
+            "battle_won"
+          ],
+          "canvas": "transient",
+          "zone": "battle"
+        },
+        "timing": {
+          "layer_dir": "themes/pit_wall_dark/plates/lap/layers",
+          "icon_dir": "themes/pit_wall_dark/timing/icons",
+          "state_layer_dirs": {
+            "target": "themes/pit_wall_dark/plates/lap/layers",
+            "projected_lap": "themes/pit_wall_dark/plates/lap/layers",
+            "pb_attack": "themes/pit_wall_dark/plates/pb/layers",
+            "lap_complete": "themes/pit_wall_dark/plates/lap/layers",
+            "personal_best": "themes/pit_wall_dark/plates/pb/layers",
+            "hot_lap": "themes/pit_wall_dark/plates/lap/layers",
+            "position_attack": "themes/pit_wall_dark/plates/position/layers",
+            "gain_found": "themes/pit_wall_dark/plates/pb/layers",
+            "clean_streak": "themes/pit_wall_dark/plates/pb/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "target",
+            "projected_lap",
+            "pb_attack",
+            "lap_complete",
+            "personal_best",
+            "hot_lap",
+            "position_attack",
+            "gain_found",
+            "clean_streak"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "position": {
+          "layer_dir": "themes/pit_wall_dark/plates/position/layers",
+          "icon_dir": "themes/pit_wall_dark/position/icons",
+          "state_layer_dirs": {
+            "overtake": "themes/pit_wall_dark/plates/position/layers",
+            "position_gained": "themes/pit_wall_dark/plates/position/layers",
+            "position_lost": "themes/pit_wall_dark/plates/position/layers",
+            "rival_threat": "themes/pit_wall_dark/plates/position/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "overtake",
+            "position_gained",
+            "position_lost",
+            "rival_threat"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "exception": {
+          "layer_dir": "themes/pit_wall_dark/plates/exception/layers",
+          "icon_dir": "themes/pit_wall_dark/exception/icons",
+          "state_layer_dirs": {
+            "invalid_lap": "themes/pit_wall_dark/plates/exception/layers",
+            "incident": "themes/pit_wall_dark/plates/exception/layers",
+            "link_drop": "themes/pit_wall_dark/plates/exception/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "exception_fracture.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "invalid_lap",
+            "incident",
+            "link_drop"
+          ],
+          "canvas": "transient",
+          "zone": "event",
+          "functional_component": "exception_fracture.png"
+        },
+        "pit": {
+          "layer_dir": "themes/pit_wall_dark/plates/pit/layers",
+          "icon_dir": "themes/pit_wall_dark/pit/icons",
+          "state_layer_dirs": {
+            "pit_entry": "themes/pit_wall_dark/plates/pit/layers",
+            "pit_lane": "themes/pit_wall_dark/plates/pit/layers",
+            "pit_stopped": "themes/pit_wall_dark/plates/pit/layers",
+            "pit_released": "themes/pit_wall_dark/plates/pit/layers",
+            "pit_exit": "themes/pit_wall_dark/plates/pit/layers",
+            "pit_outcome": "themes/pit_wall_dark/plates/pit/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "pit_phase_track.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "pit_entry",
+            "pit_lane",
+            "pit_stopped",
+            "pit_released",
+            "pit_exit",
+            "pit_outcome"
+          ],
+          "canvas": "transient",
+          "zone": "event",
+          "functional_component": "pit_phase_track.png"
+        },
+        "bio": {
+          "layer_dir": "themes/pit_wall_dark/plates/bio/layers",
+          "icon_dir": "themes/pit_wall_dark/bio/icons",
+          "state_layer_dirs": {
+            "hr_pressure": "themes/pit_wall_dark/plates/bio/layers",
+            "composure_test": "themes/pit_wall_dark/plates/bio/layers",
+            "high_load": "themes/pit_wall_dark/plates/bio/layers",
+            "ble_reconnecting": "themes/pit_wall_dark/plates/bio/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "hr_pressure",
+            "composure_test",
+            "high_load",
+            "ble_reconnecting"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "session": {
+          "layer_dir": "themes/pit_wall_dark/plates/final-lap/layers",
+          "icon_dir": "themes/pit_wall_dark/session/icons",
+          "state_layer_dirs": {
+            "final_lap": "themes/pit_wall_dark/plates/final-lap/layers",
+            "finish": "themes/pit_wall_dark/plates/finish/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "final_lap",
+            "finish"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "sysinfo": {
+          "layer_dir": "themes/pit_wall_dark/sysinfo/layers",
+          "icon_dir": "themes/pit_wall_dark/sysinfo/icons",
+          "functional_component": "sysinfo_module_segments.png",
+          "layers": [
+            {
+              "file": "sysinfo_base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_brand_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_module_segments.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_dividers_mask.png",
+              "mode": "mask"
+            }
+          ],
+          "canvas": "sysinfo"
+        }
+      }
+    },
+    "pit_wall_light": {
+      "primary": [
+        27,
+        114,
+        255
+      ],
+      "warning": [
+        239,
+        158,
+        32
+      ],
+      "alert": [
+        232,
+        76,
+        86
+      ],
+      "motion_style": "soft_slide",
+      "canvases": {
+        "transient": {
+          "icon_mode": "glyph",
+          "icon_box": [
+            39,
+            46,
+            48,
+            48
+          ],
+          "safe_box": {
+            "left": 118,
+            "top": 18,
+            "right": 20,
+            "bottom": 18
+          },
+          "text_slots": {
+            "title": {
+              "left": 118,
+              "top": 34,
+              "right": 20,
+              "font_px": 22
+            },
+            "subtitle": {
+              "left": 118,
+              "top": 58,
+              "right": 20,
+              "font_px": 11
+            },
+            "value": {
+              "left": 118,
+              "top": 76,
+              "right": 20,
+              "font_px": 26
+            },
+            "meta": {
+              "left": 118,
+              "top": 108,
+              "right": 20,
+              "font_px": 11
+            }
+          }
+        }
+      },
+      "families": {
+        "battle": {
+          "layer_dir": "themes/pit_wall_light/plates/battle/layers",
+          "icon_dir": "themes/pit_wall_light/battle/icons",
+          "state_layer_dirs": {
+            "hunting": "themes/pit_wall_light/plates/hunting/layers",
+            "hunted": "themes/pit_wall_light/plates/hunted/layers",
+            "approach": "themes/pit_wall_light/plates/hunting/layers",
+            "attack_range": "themes/pit_wall_light/plates/battle/layers",
+            "side_by_side": "themes/pit_wall_light/plates/battle/layers",
+            "battle_for_position": "themes/pit_wall_light/plates/battle/layers",
+            "battle_won": "themes/pit_wall_light/plates/battle/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "hunting",
+            "hunted",
+            "approach",
+            "attack_range",
+            "side_by_side",
+            "battle_for_position",
+            "battle_won"
+          ],
+          "canvas": "transient",
+          "zone": "battle"
+        },
+        "timing": {
+          "layer_dir": "themes/pit_wall_light/plates/lap/layers",
+          "icon_dir": "themes/pit_wall_light/timing/icons",
+          "state_layer_dirs": {
+            "target": "themes/pit_wall_light/plates/lap/layers",
+            "projected_lap": "themes/pit_wall_light/plates/lap/layers",
+            "pb_attack": "themes/pit_wall_light/plates/pb/layers",
+            "lap_complete": "themes/pit_wall_light/plates/lap/layers",
+            "personal_best": "themes/pit_wall_light/plates/pb/layers",
+            "hot_lap": "themes/pit_wall_light/plates/lap/layers",
+            "position_attack": "themes/pit_wall_light/plates/position/layers",
+            "gain_found": "themes/pit_wall_light/plates/pb/layers",
+            "clean_streak": "themes/pit_wall_light/plates/pb/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "target",
+            "projected_lap",
+            "pb_attack",
+            "lap_complete",
+            "personal_best",
+            "hot_lap",
+            "position_attack",
+            "gain_found",
+            "clean_streak"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "position": {
+          "layer_dir": "themes/pit_wall_light/plates/position/layers",
+          "icon_dir": "themes/pit_wall_light/position/icons",
+          "state_layer_dirs": {
+            "overtake": "themes/pit_wall_light/plates/position/layers",
+            "position_gained": "themes/pit_wall_light/plates/position/layers",
+            "position_lost": "themes/pit_wall_light/plates/position/layers",
+            "rival_threat": "themes/pit_wall_light/plates/position/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "overtake",
+            "position_gained",
+            "position_lost",
+            "rival_threat"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "exception": {
+          "layer_dir": "themes/pit_wall_light/plates/exception/layers",
+          "icon_dir": "themes/pit_wall_light/exception/icons",
+          "state_layer_dirs": {
+            "invalid_lap": "themes/pit_wall_light/plates/exception/layers",
+            "incident": "themes/pit_wall_light/plates/exception/layers",
+            "link_drop": "themes/pit_wall_light/plates/exception/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "exception_fracture.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "invalid_lap",
+            "incident",
+            "link_drop"
+          ],
+          "canvas": "transient",
+          "zone": "event",
+          "functional_component": "exception_fracture.png"
+        },
+        "pit": {
+          "layer_dir": "themes/pit_wall_light/plates/pit/layers",
+          "icon_dir": "themes/pit_wall_light/pit/icons",
+          "state_layer_dirs": {
+            "pit_entry": "themes/pit_wall_light/plates/pit/layers",
+            "pit_lane": "themes/pit_wall_light/plates/pit/layers",
+            "pit_stopped": "themes/pit_wall_light/plates/pit/layers",
+            "pit_released": "themes/pit_wall_light/plates/pit/layers",
+            "pit_exit": "themes/pit_wall_light/plates/pit/layers",
+            "pit_outcome": "themes/pit_wall_light/plates/pit/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "pit_phase_track.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "pit_entry",
+            "pit_lane",
+            "pit_stopped",
+            "pit_released",
+            "pit_exit",
+            "pit_outcome"
+          ],
+          "canvas": "transient",
+          "zone": "event",
+          "functional_component": "pit_phase_track.png"
+        },
+        "bio": {
+          "layer_dir": "themes/pit_wall_light/plates/bio/layers",
+          "icon_dir": "themes/pit_wall_light/bio/icons",
+          "state_layer_dirs": {
+            "hr_pressure": "themes/pit_wall_light/plates/bio/layers",
+            "composure_test": "themes/pit_wall_light/plates/bio/layers",
+            "high_load": "themes/pit_wall_light/plates/bio/layers",
+            "ble_reconnecting": "themes/pit_wall_light/plates/bio/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "hr_pressure",
+            "composure_test",
+            "high_load",
+            "ble_reconnecting"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "session": {
+          "layer_dir": "themes/pit_wall_light/plates/final-lap/layers",
+          "icon_dir": "themes/pit_wall_light/session/icons",
+          "state_layer_dirs": {
+            "final_lap": "themes/pit_wall_light/plates/final-lap/layers",
+            "finish": "themes/pit_wall_light/plates/finish/layers"
+          },
+          "layers": [
+            {
+              "file": "base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "material.png",
+              "mode": "image"
+            },
+            {
+              "file": "icon_well.png",
+              "mode": "image"
+            },
+            {
+              "file": "family_detail.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "status_rail.png",
+              "mode": "image"
+            },
+            {
+              "file": "micro_details.png",
+              "mode": "image"
+            },
+            {
+              "file": "corner_left.png",
+              "mode": "image"
+            },
+            {
+              "file": "frame_highlight.png",
+              "mode": "image"
+            }
+          ],
+          "states": [
+            "final_lap",
+            "finish"
+          ],
+          "canvas": "transient",
+          "zone": "event"
+        },
+        "sysinfo": {
+          "layer_dir": "themes/pit_wall_light/sysinfo/layers",
+          "icon_dir": "themes/pit_wall_light/sysinfo/icons",
+          "functional_component": "sysinfo_module_segments.png",
+          "layers": [
+            {
+              "file": "sysinfo_base_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_brand_plate.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_base.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_frame_highlight.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_module_segments.png",
+              "mode": "image"
+            },
+            {
+              "file": "sysinfo_dividers_mask.png",
+              "mode": "mask"
+            }
+          ],
+          "canvas": "sysinfo"
+        }
+      }
     }
   },
   "states": {
@@ -2133,7 +3119,7 @@
         "title": "HUNTING",
         "subtitle": "CLOSING IN",
         "value": "0.84 s",
-        "meta": "P7 · target P6"
+        "meta": "P7 \u00b7 target P6"
       }
     },
     "hunted": {
@@ -2180,7 +3166,7 @@
       "sample": {
         "title": "SIDE BY SIDE",
         "subtitle": "META-STATE",
-        "value": "P6 ↔ P7",
+        "value": "P6 \u2194 P7",
         "meta": "overlap active"
       }
     },
@@ -2229,7 +3215,7 @@
         "title": "PROJECTED LAP",
         "subtitle": "CONFIDENCE 0.78",
         "value": "1:51.774",
-        "meta": "range ±0.110"
+        "meta": "range \u00b10.110"
       }
     },
     "pb_attack": {
@@ -2239,7 +3225,7 @@
       "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
       "sample": {
         "title": "PB ATTACK",
-        "subtitle": "S1 · -0.238",
+        "subtitle": "S1 \u00b7 -0.238",
         "value": "1:51.640",
         "meta": "personal best"
       }
@@ -2324,7 +3310,7 @@
       "sample": {
         "title": "OVERTAKE",
         "subtitle": "BATTLE COMPLETE",
-        "value": "P7 → P6",
+        "value": "P7 \u2192 P6",
         "meta": "vs #17"
       }
     },
@@ -2349,7 +3335,7 @@
         "title": "POSITION LOST",
         "subtitle": "STAY FOCUSED",
         "value": "-1 POS",
-        "meta": "P6 → P7"
+        "meta": "P6 \u2192 P7"
       }
     },
     "rival_threat": {

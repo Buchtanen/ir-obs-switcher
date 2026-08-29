@@ -1,13 +1,13 @@
-# Overlay theme packs (future)
+# Overlay theme packs (source)
 
-These directories hold **implementation-ready graphic packs** for upcoming
-overlay themes. They are intentionally isolated from production runtime
-themes under `src/irswitch/web/themes-v4/`.
+Art-source packs for Pit Wall themes. Runtime ships curated copies under
+`src/irswitch/web/themes-v4/pit_wall_{dark,light}/` (ingest:
+`scripts/ingest_pit_wall_themes_v4.py`).
 
-| Directory | Display name | Source branch | Status |
-|-----------|--------------|---------------|--------|
-| `pit_wall_dark/` | Pit Wall Dark | `art/pitwall-theme` | V4 art pack complete (35 states); not wired into app yet |
-| `pit_wall_light/` | Pit Wall Light | `art/light-minimal-theme` | V4 art pack complete (35 states); not wired into app yet |
+| Directory | Display name | Runtime theme id | Status |
+|-----------|--------------|------------------|--------|
+| `pit_wall_dark/` | Pit Wall Dark | `pit_wall_dark` | Wired into V4 (glyph + plates + motion) |
+| `pit_wall_light/` | Pit Wall Light | `pit_wall_light` | Wired into V4 (glyph + plates + motion) |
 
 Each pack includes:
 

@@ -9,15 +9,22 @@ from pathlib import Path
 
 from irswitch.overlay.http import web_root
 
-THEMES = ("cyber_racing", "stealth_graphite", "night_attack")
+THEMES = (
+    "cyber_racing",
+    "stealth_graphite",
+    "night_attack",
+    "pit_wall_dark",
+    "pit_wall_light",
+)
 SNAKE_STEM = re.compile(r"^[a-z0-9_]+$")
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 V4_ROOT = web_root() / "themes-v4"
-MAX_PACK_BYTES = 8 * 1024 * 1024  # production ~5.8 MiB; headroom for CI
+MAX_PACK_BYTES = 8 * 1024 * 1024  # production ~5.5 MiB with Pit Wall; headroom for CI
 TRANSIENT_FAMILIES = ("battle", "timing", "position", "exception", "pit", "bio", "session")
 FAMILY_DIRS = (*TRANSIENT_FAMILIES, "motion", "sysinfo")
 STATE_COUNT = 35
 MOTION_COUNT = 15
+CLASSIC_FILE_COUNT = 185
 
 
 def _manifest() -> dict:
@@ -91,8 +98,10 @@ def test_v4_sysinfo_keeps_its_own_canvas() -> None:
         assert icons
         for icon in icons:
             width, height = _png_size(icon)
-            assert height == manifest["sysinfo_canvas"][1], icon
+            # Classic themes use 64×72 strip icons; Pit Wall uses 64×64 glyphs.
+            assert height <= manifest["sysinfo_canvas"][1], icon
             assert width < manifest["sysinfo_canvas"][0], icon
+            assert width > 0 and height > 0, icon
 
 
 def test_v4_theme_file_parity() -> None:
@@ -112,8 +121,12 @@ def test_v4_theme_file_parity() -> None:
             assert SNAKE_STEM.fullmatch(stem), rel
             assert suffix in {".png", ".webm"}, rel
         names[theme] = files
+    # Classic full-canvas themes stay byte-path identical.
     assert names["cyber_racing"] == names["stealth_graphite"] == names["night_attack"]
-    assert len(names["cyber_racing"]) == 185
+    assert len(names["cyber_racing"]) == CLASSIC_FILE_COUNT
+    # Pit Wall pair: same relative layout (plates + glyph icons + motion).
+    assert names["pit_wall_dark"] == names["pit_wall_light"]
+    assert len(names["pit_wall_dark"]) > 100
 
 
 def test_v4_layer_and_icon_files_exist() -> None:

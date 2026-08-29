@@ -41,7 +41,13 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         True,
         "overlay",
         "Theme id (same widget geometry, different tokens).",
-        choices=("cyber_racing", "stealth_graphite", "night_attack"),
+        choices=(
+            "cyber_racing",
+            "stealth_graphite",
+            "night_attack",
+            "pit_wall_dark",
+            "pit_wall_light",
+        ),
     ),
     FieldSpec("overlay.debug", "bool", False, True, "overlay", "Verbose overlay debug logging."),
     FieldSpec(

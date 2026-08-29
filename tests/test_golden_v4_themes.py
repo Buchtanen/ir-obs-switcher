@@ -14,7 +14,13 @@ from golden_v4_shared import (
 
 from irswitch.overlay.http import web_root
 
-GOLDEN_THEMES: tuple[str, ...] = ("cyber_racing", "stealth_graphite", "night_attack")
+GOLDEN_THEMES: tuple[str, ...] = (
+    "cyber_racing",
+    "stealth_graphite",
+    "night_attack",
+    "pit_wall_dark",
+    "pit_wall_light",
+)
 _V4_GOLDEN_FAMILY_RE = re.compile(r'family: "([a-z_]+)"')
 
 

@@ -638,12 +638,12 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče jsou v [`config/config.example.ini`](config/config.example.ini).
 
 - `[sampling]` `default_hz` — globální vzorkování; `[sampling.race]`, `[sampling.system]`, `[sampling.bio]` můžou přetížit. `bio` 0 / prázdné = BLE notifications (ne poll). Clamp 0.2–30 Hz.
-- `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack`) — assety v `src/irswitch/web/themes/<theme>/assets/`
+- `[overlay]` theme (`cyber_racing` | `stealth_graphite` | `night_attack` | `pit_wall_dark` | `pit_wall_light`) — V4 packs in `src/irswitch/web/themes-v4/<theme>/` (V3 legacy assets for the classic three remain under `src/irswitch/web/themes/<theme>/assets/`)
 - `[overlay]` `language` (`en` | `cs`, default `en`) — overlay copy language. Event payloads carry copy tokens; the renderer resolves them via `irswitch.overlay.i18n.resolve_copy()`. English is the base catalog, missing translations fall back to it. Independent of `[app]` `language`, which drives the dashboards.
-- `[overlay]` `v4_assets`, `v4_renderer` (default `false`) — overlay V4 rollout flags. With `v4_renderer=true`, transient widgets use the V4 layer renderer and sysinfo uses V4 layered assets from `themes-v4/`.
-- `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (all default `false`) — event-engine rollout flags. All off = current MVP event behaviour. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` enables practice minisector stories (`GAIN_FOUND`, `TIME_LOST`, `TARGET_LOCKED`). `quali_projection` enables qualifying projected lap / position attack / hot lap stories.
+- `[overlay]` `v4_assets`, `v4_renderer` (`config.example.ini` defaults `true` for the full V4 demo profile; keep `false` in production until you want V4 live) — overlay V4 rollout flags. With `v4_renderer=true`, transient widgets use the V4 layer renderer and sysinfo uses V4 layered assets from `themes-v4/`.
+- `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. All off = current MVP event behaviour. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` enables practice minisector stories (`GAIN_FOUND`, `TIME_LOST`, `TARGET_LOCKED`). `quali_projection` enables qualifying projected lap / position attack / hot lap stories.
 
-**Full V4 demo profile** (local testing only; all flags default off in production):
+**Full V4 demo profile** (mirrored in `config/config.example.ini`; production code defaults stay off until you opt in):
 
 ```ini
 [overlay]

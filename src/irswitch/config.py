@@ -357,7 +357,13 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         bio_hz=_optional_float(parser, "sampling.bio", "hz"),
     )
     theme = _get_str(parser, "overlay", "theme", defaults.theme)
-    allowed_themes = {"cyber_racing", "stealth_graphite", "night_attack"}
+    allowed_themes = {
+        "cyber_racing",
+        "stealth_graphite",
+        "night_attack",
+        "pit_wall_dark",
+        "pit_wall_light",
+    }
     if theme not in allowed_themes:
         theme = defaults.theme
 

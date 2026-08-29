@@ -82,15 +82,23 @@ class V4AssetResolver:
             }
 
         layer_dir = str(family_cfg.get("layer_dir", ""))
+        state_dirs = family_cfg.get("state_layer_dirs") or {}
+        if isinstance(state_dirs, dict) and state in state_dirs:
+            override = str(state_dirs[state] or "").strip()
+            if override:
+                layer_dir = override
         layers: list[dict[str, Any]] = []
         for layer in family_cfg.get("layers") or []:
             file_name = str(layer.get("file", ""))
             rel = f"{layer_dir}/{file_name}"
+            path = self._resolve_file(rel)
+            if path is None:
+                continue
             layers.append(
                 {
                     "file": file_name,
                     "mode": str(layer.get("mode", "image")),
-                    "path": self._resolve_file(rel),
+                    "path": path,
                 }
             )
 
