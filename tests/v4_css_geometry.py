@@ -67,6 +67,26 @@ def resolve_px(value: str) -> float:
     return float(match.group(1))
 
 
+_TWO_LENGTHS_RE = re.compile(
+    r"^(?P<a>var\(\s*--[\w-]+\s*,\s*[^)]+\)|-?[\d.]+px)"
+    r"\s+"
+    r"(?P<b>var\(\s*--[\w-]+\s*,\s*[^)]+\)|-?[\d.]+px)$",
+    re.IGNORECASE,
+)
+
+
+def resolve_two_px(value: str) -> tuple[float, float]:
+    """Resolve ``W H`` background/mask sizes with optional var() fallbacks."""
+    text = value.strip()
+    match = _TWO_LENGTHS_RE.match(text)
+    if not match:
+        parts = text.split()
+        if len(parts) == 2:
+            return resolve_px(parts[0]), resolve_px(parts[1])
+        raise AssertionError(f"Expected two CSS lengths, got {value!r}")
+    return resolve_px(match.group("a")), resolve_px(match.group("b"))
+
+
 def rule_decls(css: str, selector: str) -> dict[str, str]:
     return css_declarations(css_rule_block(css, selector))
 

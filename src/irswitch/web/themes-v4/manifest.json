@@ -1,4 +1,8 @@
 {
+  "manifest_schema": [
+    2,
+    0
+  ],
   "version": 4,
   "transient_canvas": [
     420,
@@ -8,6 +12,84 @@
     1920,
     72
   ],
+  "canvases": {
+    "transient": {
+      "size": [
+        420,
+        140
+      ],
+      "icon_mode": "full_canvas"
+    },
+    "sysinfo": {
+      "size": [
+        1920,
+        72
+      ],
+      "icon_mode": "glyph",
+      "icon_box": [
+        0,
+        0,
+        32,
+        32
+      ]
+    }
+  },
+  "zones": {
+    "battle": {
+      "anchor": "bottom-left",
+      "offset_from": "sysinfo",
+      "offset": [
+        36,
+        19
+      ],
+      "direction": "up",
+      "gap": 10,
+      "max": 2,
+      "align": "start",
+      "display_scale": 1.0,
+      "transition": "swipe_fade"
+    },
+    "event": {
+      "anchor": "bottom-right",
+      "offset_from": "sysinfo",
+      "offset": [
+        48,
+        19
+      ],
+      "direction": "up",
+      "gap": 10,
+      "max": 6,
+      "align": "end",
+      "display_scale": 1.0,
+      "transition": "swipe_fade"
+    }
+  },
+  "transitions": {
+    "swipe_fade": {
+      "enter": {
+        "duration_ms": 280,
+        "delay_ms": 0,
+        "easing": "ease"
+      },
+      "exit": {
+        "duration_ms": 280,
+        "delay_ms": 0,
+        "easing": "ease"
+      }
+    },
+    "fade": {
+      "enter": {
+        "duration_ms": 280,
+        "delay_ms": 0,
+        "easing": "ease"
+      },
+      "exit": {
+        "duration_ms": 280,
+        "delay_ms": 0,
+        "easing": "ease"
+      }
+    }
+  },
   "themes": {
     "cyber_racing": {
       "primary": [
@@ -105,7 +187,9 @@
             "side_by_side",
             "battle_for_position",
             "battle_won"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "battle"
         },
         "timing": {
           "layer_dir": "themes/cyber_racing/timing/layers",
@@ -187,7 +271,9 @@
             "position_attack",
             "gain_found",
             "clean_streak"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "position": {
           "layer_dir": "themes/cyber_racing/position/layers",
@@ -264,7 +350,9 @@
             "position_gained",
             "position_lost",
             "rival_threat"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "exception": {
           "layer_dir": "themes/cyber_racing/exception/layers",
@@ -340,7 +428,9 @@
             "invalid_lap",
             "incident",
             "link_drop"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "pit": {
           "layer_dir": "themes/cyber_racing/pit/layers",
@@ -419,7 +509,9 @@
             "pit_released",
             "pit_exit",
             "pit_outcome"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "bio": {
           "layer_dir": "themes/cyber_racing/bio/layers",
@@ -496,7 +588,9 @@
             "composure_test",
             "high_load",
             "ble_reconnecting"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "session": {
           "layer_dir": "themes/cyber_racing/session/layers",
@@ -571,7 +665,9 @@
           "states": [
             "final_lap",
             "finish"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "sysinfo": {
           "layer_dir": "themes/cyber_racing/sysinfo/layers",
@@ -630,7 +726,8 @@
               "file": "sysinfo_glow_critical.png",
               "mode": "image"
             }
-          ]
+          ],
+          "canvas": "sysinfo"
         }
       }
     },
@@ -730,7 +827,9 @@
             "side_by_side",
             "battle_for_position",
             "battle_won"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "battle"
         },
         "timing": {
           "layer_dir": "themes/stealth_graphite/timing/layers",
@@ -812,7 +911,9 @@
             "position_attack",
             "gain_found",
             "clean_streak"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "position": {
           "layer_dir": "themes/stealth_graphite/position/layers",
@@ -889,7 +990,9 @@
             "position_gained",
             "position_lost",
             "rival_threat"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "exception": {
           "layer_dir": "themes/stealth_graphite/exception/layers",
@@ -965,7 +1068,9 @@
             "invalid_lap",
             "incident",
             "link_drop"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "pit": {
           "layer_dir": "themes/stealth_graphite/pit/layers",
@@ -1044,7 +1149,9 @@
             "pit_released",
             "pit_exit",
             "pit_outcome"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "bio": {
           "layer_dir": "themes/stealth_graphite/bio/layers",
@@ -1121,7 +1228,9 @@
             "composure_test",
             "high_load",
             "ble_reconnecting"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "session": {
           "layer_dir": "themes/stealth_graphite/session/layers",
@@ -1196,7 +1305,9 @@
           "states": [
             "final_lap",
             "finish"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "sysinfo": {
           "layer_dir": "themes/stealth_graphite/sysinfo/layers",
@@ -1255,7 +1366,8 @@
               "file": "sysinfo_glow_critical.png",
               "mode": "image"
             }
-          ]
+          ],
+          "canvas": "sysinfo"
         }
       }
     },
@@ -1355,7 +1467,9 @@
             "side_by_side",
             "battle_for_position",
             "battle_won"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "battle"
         },
         "timing": {
           "layer_dir": "themes/night_attack/timing/layers",
@@ -1437,7 +1551,9 @@
             "position_attack",
             "gain_found",
             "clean_streak"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "position": {
           "layer_dir": "themes/night_attack/position/layers",
@@ -1514,7 +1630,9 @@
             "position_gained",
             "position_lost",
             "rival_threat"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "exception": {
           "layer_dir": "themes/night_attack/exception/layers",
@@ -1590,7 +1708,9 @@
             "invalid_lap",
             "incident",
             "link_drop"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "pit": {
           "layer_dir": "themes/night_attack/pit/layers",
@@ -1669,7 +1789,9 @@
             "pit_released",
             "pit_exit",
             "pit_outcome"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "bio": {
           "layer_dir": "themes/night_attack/bio/layers",
@@ -1746,7 +1868,9 @@
             "composure_test",
             "high_load",
             "ble_reconnecting"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "session": {
           "layer_dir": "themes/night_attack/session/layers",
@@ -1821,7 +1945,9 @@
           "states": [
             "final_lap",
             "finish"
-          ]
+          ],
+          "canvas": "transient",
+          "zone": "event"
         },
         "sysinfo": {
           "layer_dir": "themes/night_attack/sysinfo/layers",
@@ -1880,7 +2006,8 @@
               "file": "sysinfo_glow_critical.png",
               "mode": "image"
             }
-          ]
+          ],
+          "canvas": "sysinfo"
         }
       }
     }
@@ -1895,7 +2022,7 @@
         "title": "HUNTING",
         "subtitle": "CLOSING IN",
         "value": "0.84 s",
-        "meta": "P7 \u00b7 target P6"
+        "meta": "P7 · target P6"
       }
     },
     "hunted": {
@@ -1942,7 +2069,7 @@
       "sample": {
         "title": "SIDE BY SIDE",
         "subtitle": "META-STATE",
-        "value": "P6 \u2194 P7",
+        "value": "P6 ↔ P7",
         "meta": "overlap active"
       }
     },
@@ -1991,7 +2118,7 @@
         "title": "PROJECTED LAP",
         "subtitle": "CONFIDENCE 0.78",
         "value": "1:51.774",
-        "meta": "range \u00b10.110"
+        "meta": "range ±0.110"
       }
     },
     "pb_attack": {
@@ -2001,7 +2128,7 @@
       "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
       "sample": {
         "title": "PB ATTACK",
-        "subtitle": "S1 \u00b7 -0.238",
+        "subtitle": "S1 · -0.238",
         "value": "1:51.640",
         "meta": "personal best"
       }
@@ -2086,7 +2213,7 @@
       "sample": {
         "title": "OVERTAKE",
         "subtitle": "BATTLE COMPLETE",
-        "value": "P7 \u2192 P6",
+        "value": "P7 → P6",
         "meta": "vs #17"
       }
     },
@@ -2111,7 +2238,7 @@
         "title": "POSITION LOST",
         "subtitle": "STAY FOCUSED",
         "value": "-1 POS",
-        "meta": "P6 \u2192 P7"
+        "meta": "P6 → P7"
       }
     },
     "rival_threat": {

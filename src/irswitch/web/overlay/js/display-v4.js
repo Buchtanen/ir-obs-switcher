@@ -32,6 +32,12 @@ const TRANSIENT_FAMILIES = new Set([
   "session",
 ]);
 
+/** Last-resort canvas sizes when manifest/aliases are missing or invalid. */
+const DEFAULT_CANVAS = {
+  transient: [420, 140],
+  sysinfo: [1920, 72],
+};
+
 let manifest = null;
 let catalog = null;
 let theme = "cyber_racing";
@@ -217,8 +223,64 @@ function resolveStateKey(envelope) {
 }
 
 function layerRootForFamily(familyName) {
-  if (familyName === "battle") return ensureLayer("v4-battle-stack");
+  const family = manifest?.themes?.[theme]?.families?.[familyName];
+  const zone = String(family?.zone || (familyName === "battle" ? "battle" : "event")).toLowerCase();
+  if (zone === "battle") return ensureLayer("v4-battle-stack");
   return ensureLayer("v4-event-layer");
+}
+
+function isPositiveIntPair(value) {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    Number.isInteger(value[0]) &&
+    Number.isInteger(value[1]) &&
+    value[0] > 0 &&
+    value[1] > 0
+  );
+}
+
+/** Read order: canvases.<id>.size → legacy alias → DEFAULT_CANVAS. */
+function canvasSize(canvasId) {
+  const fromCanvases = manifest?.canvases?.[canvasId]?.size;
+  if (isPositiveIntPair(fromCanvases)) return [fromCanvases[0], fromCanvases[1]];
+  if (canvasId === "transient" && isPositiveIntPair(manifest?.transient_canvas)) {
+    return [manifest.transient_canvas[0], manifest.transient_canvas[1]];
+  }
+  if (canvasId === "sysinfo" && isPositiveIntPair(manifest?.sysinfo_canvas)) {
+    return [manifest.sysinfo_canvas[0], manifest.sysinfo_canvas[1]];
+  }
+  return DEFAULT_CANVAS[canvasId] || DEFAULT_CANVAS.transient;
+}
+
+function applyManifestGeometry(target) {
+  if (typeof document === "undefined") return;
+  const root = target || document.documentElement;
+  const [tw, th] = canvasSize("transient");
+  const [sw, sh] = canvasSize("sysinfo");
+  root.style.setProperty("--v4-canvas-w", `${tw}px`);
+  root.style.setProperty("--v4-canvas-h", `${th}px`);
+  root.style.setProperty("--v4-sysinfo-w", `${sw}px`);
+  root.style.setProperty("--v4-sysinfo-h", `${sh}px`);
+  root.style.setProperty("--v4-gallery-col", `${tw}px`);
+
+  const battle = manifest?.zones?.battle || {};
+  const event = manifest?.zones?.event || {};
+  const battleOffset = Array.isArray(battle.offset) ? battle.offset : [36, 19];
+  const eventOffset = Array.isArray(event.offset) ? event.offset : [48, 19];
+  const sysH = sh;
+  const battleY = sysH + (Number(battleOffset[1]) || 19);
+  const eventY = sysH + (Number(eventOffset[1]) || 19);
+  root.style.setProperty("--v4-zone-battle-x", `${Number(battleOffset[0]) || 36}px`);
+  root.style.setProperty("--v4-zone-battle-y", `${battleY}px`);
+  root.style.setProperty("--v4-zone-battle-gap", `${Number(battle.gap) || 10}px`);
+  root.style.setProperty("--v4-zone-event-x", `${Number(eventOffset[0]) || 48}px`);
+  root.style.setProperty("--v4-zone-event-y", `${eventY}px`);
+  root.style.setProperty("--v4-zone-event-gap", `${Number(event.gap) || 10}px`);
+
+  // Eager zone containers (existing ids) so geometry vars apply before first event.
+  ensureLayer("v4-battle-stack");
+  ensureLayer("v4-event-layer");
 }
 
 function isStale(envelope) {
@@ -231,31 +293,42 @@ function isStale(envelope) {
   return false;
 }
 
-function paintLayer(el, url, { mask = false, canvas = [420, 140] } = {}) {
+function paintLayer(el, url, { mask = false, canvas = null } = {}) {
   if (!el || !url) {
     el?.classList.add("empty");
     return;
   }
   el.classList.remove("empty");
-  const [cw, ch] = canvas;
-  const size = `${cw}px ${ch}px`;
+  // Prefer CSS vars on the widget/zone. Only pin inline size for explicit canvases
+  // (e.g. SYSINFO) that differ from the transient defaults.
+  const explicit = isPositiveIntPair(canvas);
+  const size = explicit ? `${canvas[0]}px ${canvas[1]}px` : "";
   if (mask) {
     el.style.backgroundImage = "";
     el.style.backgroundColor = "currentColor";
     const maskUrl = `url("${url}")`;
     el.style.webkitMaskImage = maskUrl;
     el.style.maskImage = maskUrl;
-    el.style.webkitMaskSize = size;
-    el.style.maskSize = size;
-    el.style.webkitMaskRepeat = "no-repeat";
-    el.style.maskRepeat = "no-repeat";
-    el.style.webkitMaskPosition = "0 0";
-    el.style.maskPosition = "0 0";
+    if (explicit) {
+      el.style.webkitMaskSize = size;
+      el.style.maskSize = size;
+      el.style.webkitMaskRepeat = "no-repeat";
+      el.style.maskRepeat = "no-repeat";
+      el.style.webkitMaskPosition = "0 0";
+      el.style.maskPosition = "0 0";
+    } else {
+      el.style.webkitMaskSize = "";
+      el.style.maskSize = "";
+      el.style.webkitMaskRepeat = "";
+      el.style.maskRepeat = "";
+      el.style.webkitMaskPosition = "";
+      el.style.maskPosition = "";
+    }
   } else {
     el.style.backgroundColor = "";
     el.style.backgroundImage = `url("${url}")`;
     el.style.backgroundSize = size;
-    el.style.backgroundPosition = "0 0";
+    el.style.backgroundPosition = size ? "0 0" : "";
     el.style.webkitMaskImage = "";
     el.style.maskImage = "";
   }
@@ -284,8 +357,8 @@ function paintPlateMask(el, family) {
   // Prefer setProperty — plain style.maskImage was computing to none in Chromium.
   el.style.setProperty("-webkit-mask-image", mask);
   el.style.setProperty("mask-image", mask);
-  el.style.setProperty("-webkit-mask-size", "420px 140px");
-  el.style.setProperty("mask-size", "420px 140px");
+  el.style.removeProperty("-webkit-mask-size");
+  el.style.removeProperty("mask-size");
   el.style.setProperty("-webkit-mask-repeat", "no-repeat");
   el.style.setProperty("mask-repeat", "no-repeat");
   el.style.setProperty("-webkit-mask-position", "0 0");
@@ -304,7 +377,7 @@ const SYSINFO_ICON_SLOTS = {
 };
 
 function sysinfoCanvas() {
-  return manifest?.sysinfo_canvas || [1920, 72];
+  return canvasSize("sysinfo");
 }
 
 function sysinfoFamily() {
@@ -859,6 +932,8 @@ export async function initV4(options = {}) {
       document.documentElement.dataset.v4Manifest = manifestOk ? "ok" : "fallback";
       if (!manifestOk) {
         document.getElementById("sysinfo-widget")?.classList.add("fallback");
+      } else {
+        applyManifestGeometry();
       }
     }
   }

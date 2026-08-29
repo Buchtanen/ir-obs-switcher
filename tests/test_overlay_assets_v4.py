@@ -41,8 +41,15 @@ def _png_size(path: Path) -> tuple[int, int]:
 def test_v4_manifest_version_and_canvas() -> None:
     manifest = _manifest()
     assert manifest["version"] == 4
+    assert manifest["manifest_schema"] == [2, 0]
     assert manifest["transient_canvas"] == [420, 140]
     assert manifest["sysinfo_canvas"] == [1920, 72]
+    assert manifest["canvases"]["transient"]["size"] == [420, 140]
+    assert manifest["canvases"]["transient"]["icon_mode"] == "full_canvas"
+    assert manifest["canvases"]["sysinfo"]["size"] == [1920, 72]
+    assert manifest["zones"]["battle"]["max"] == 2
+    assert manifest["zones"]["event"]["max"] == 6
+    assert "swipe_fade" in manifest["transitions"]
     assert set(manifest["themes"]) == set(THEMES)
     assert len(manifest["motions"]) == MOTION_COUNT
     assert len(manifest["states"]) == STATE_COUNT
@@ -54,6 +61,13 @@ def test_v4_manifest_version_and_canvas() -> None:
         "hr_pressure",
         "final_lap",
     }
+    for theme in THEMES:
+        families = manifest["themes"][theme]["families"]
+        assert families["battle"]["zone"] == "battle"
+        assert families["battle"]["canvas"] == "transient"
+        assert families["timing"]["zone"] == "event"
+        assert families["sysinfo"]["canvas"] == "sysinfo"
+        assert "zone" not in families["sysinfo"]
 
 
 def test_v4_themes_have_expected_family_dirs() -> None:

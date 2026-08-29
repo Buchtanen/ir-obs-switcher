@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from golden_v4_shared import display_v4_css
-from v4_css_geometry import assert_rule_px, css_rule_block, resolve_px, rule_decls
+from v4_css_geometry import assert_rule_px, css_rule_block, resolve_two_px, rule_decls
 
 
 def test_v4_widget_canvas_is_420x140() -> None:
@@ -20,9 +20,8 @@ def test_v4_icon_full_canvas_not_64_crop() -> None:
         msg="icon well",
     )
     decls = rule_decls(css, ".v4-art .icon")
-    sizes = decls["background-size"].split()
-    assert resolve_px(sizes[0]) == 420.0
-    assert resolve_px(sizes[1]) == 140.0
+    w, h = resolve_two_px(decls["background-size"])
+    assert (w, h) == (420.0, 140.0)
     # Guard against reintroducing the fixed 64×64 crop bug.
     assert "64px" not in css_rule_block(css, ".v4-art .icon")
     assert "28px" not in css_rule_block(css, ".v4-art .icon")

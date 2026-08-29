@@ -128,7 +128,12 @@ class V4AssetResolver:
 
         return {
             "theme": self.theme,
+            "manifest_schema": self._manifest.get("manifest_schema"),
             "transient_canvas": self._manifest.get("transient_canvas"),
+            "sysinfo_canvas": self._manifest.get("sysinfo_canvas"),
+            "canvases": self._manifest.get("canvases"),
+            "zones": self._manifest.get("zones"),
+            "transitions": self._manifest.get("transitions"),
             "states": states,
             "motions": motions,
         }

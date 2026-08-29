@@ -163,15 +163,14 @@ def test_v4_copy_uses_absolute_plate_slots() -> None:
 
 def test_v4_icons_use_full_canvas_well_alignment() -> None:
     """V4 icons are 420×140 plates; a 64×64 crop shifts glyphs right of icon_well."""
-    from v4_css_geometry import assert_rule_px, css_rule_block, resolve_px, rule_decls
+    from v4_css_geometry import assert_rule_px, css_rule_block, resolve_two_px, rule_decls
 
     css = display_v4_css()
     icon_block = css_rule_block(css, ".v4-art .icon")
     assert_rule_px(css, ".v4-art .icon", {"width": 420.0, "height": 140.0})
     decls = rule_decls(css, ".v4-art .icon")
-    sizes = decls["background-size"].split()
-    assert resolve_px(sizes[0]) == 420.0
-    assert resolve_px(sizes[1]) == 140.0
+    w, h = resolve_two_px(decls["background-size"])
+    assert (w, h) == (420.0, 140.0)
     assert "64px" not in icon_block
     assert "28px" not in icon_block
 
