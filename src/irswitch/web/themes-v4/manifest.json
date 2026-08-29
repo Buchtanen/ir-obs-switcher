@@ -1,7 +1,7 @@
 {
   "manifest_schema": [
     2,
-    0
+    1
   ],
   "version": 4,
   "transient_canvas": [
@@ -729,6 +729,43 @@
           ],
           "canvas": "sysinfo"
         }
+      },
+      "canvases": {
+        "transient": {
+          "icon_mode": "full_canvas",
+          "safe_box": {
+            "left": 119,
+            "top": 14,
+            "right": 16,
+            "bottom": 10
+          },
+          "text_slots": {
+            "title": {
+              "left": 119,
+              "top": 38,
+              "right": 16,
+              "font_px": 22
+            },
+            "subtitle": {
+              "left": 120,
+              "top": 62,
+              "right": 16,
+              "font_px": 11
+            },
+            "value": {
+              "left": 120,
+              "top": 80,
+              "right": 16,
+              "font_px": 26
+            },
+            "meta": {
+              "left": 120,
+              "top": 112,
+              "right": 16,
+              "font_px": 11
+            }
+          }
+        }
       }
     },
     "stealth_graphite": {
@@ -1369,6 +1406,43 @@
           ],
           "canvas": "sysinfo"
         }
+      },
+      "canvases": {
+        "transient": {
+          "icon_mode": "full_canvas",
+          "safe_box": {
+            "left": 119,
+            "top": 14,
+            "right": 16,
+            "bottom": 10
+          },
+          "text_slots": {
+            "title": {
+              "left": 119,
+              "top": 38,
+              "right": 16,
+              "font_px": 22
+            },
+            "subtitle": {
+              "left": 120,
+              "top": 62,
+              "right": 16,
+              "font_px": 11
+            },
+            "value": {
+              "left": 120,
+              "top": 80,
+              "right": 16,
+              "font_px": 26
+            },
+            "meta": {
+              "left": 120,
+              "top": 112,
+              "right": 16,
+              "font_px": 11
+            }
+          }
+        }
       }
     },
     "night_attack": {
@@ -2008,6 +2082,43 @@
             }
           ],
           "canvas": "sysinfo"
+        }
+      },
+      "canvases": {
+        "transient": {
+          "icon_mode": "full_canvas",
+          "safe_box": {
+            "left": 119,
+            "top": 14,
+            "right": 16,
+            "bottom": 10
+          },
+          "text_slots": {
+            "title": {
+              "left": 119,
+              "top": 38,
+              "right": 16,
+              "font_px": 22
+            },
+            "subtitle": {
+              "left": 120,
+              "top": 62,
+              "right": 16,
+              "font_px": 11
+            },
+            "value": {
+              "left": 120,
+              "top": 80,
+              "right": 16,
+              "font_px": 26
+            },
+            "meta": {
+              "left": 120,
+              "top": 112,
+              "right": 16,
+              "font_px": 11
+            }
+          }
         }
       }
     }

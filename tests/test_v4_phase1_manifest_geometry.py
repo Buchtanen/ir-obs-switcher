@@ -16,7 +16,7 @@ from irswitch.overlay.v4_manifest_schema import validate_v4_manifest
 def test_shipped_manifest_schema_2_validates() -> None:
     man = json.loads((web_root() / "themes-v4" / "manifest.json").read_text(encoding="utf-8"))
     assert validate_v4_manifest(man) == []
-    assert man["manifest_schema"] == [2, 0]
+    assert man["manifest_schema"] == [2, 1]
 
 
 def test_resolver_publishes_canvases_and_sysinfo() -> None:
@@ -25,7 +25,7 @@ def test_resolver_publishes_canvases_and_sysinfo() -> None:
     assert resolved["sysinfo_canvas"] == [1920, 72]
     assert resolved["canvases"]["transient"]["size"] == [420, 140]
     assert resolved["zones"]["event"]["max"] == 6
-    assert resolved["manifest_schema"] == [2, 0]
+    assert resolved["manifest_schema"] == [2, 1]
 
 
 def test_display_v4_css_uses_canvas_var_fallbacks() -> None:

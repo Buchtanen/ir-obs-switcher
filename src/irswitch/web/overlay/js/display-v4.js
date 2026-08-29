@@ -240,10 +240,16 @@ function isPositiveIntPair(value) {
   );
 }
 
-/** Read order: canvases.<id>.size → legacy alias → DEFAULT_CANVAS. */
+/** Read order: theme canvases override → root canvases → legacy alias → DEFAULT. */
+function resolveThemeCanvas(canvasId) {
+  const root = manifest?.canvases?.[canvasId] || {};
+  const override = manifest?.themes?.[theme]?.canvases?.[canvasId] || {};
+  return { ...root, ...override };
+}
+
 function canvasSize(canvasId) {
-  const fromCanvases = manifest?.canvases?.[canvasId]?.size;
-  if (isPositiveIntPair(fromCanvases)) return [fromCanvases[0], fromCanvases[1]];
+  const cfg = resolveThemeCanvas(canvasId);
+  if (isPositiveIntPair(cfg.size)) return [cfg.size[0], cfg.size[1]];
   if (canvasId === "transient" && isPositiveIntPair(manifest?.transient_canvas)) {
     return [manifest.transient_canvas[0], manifest.transient_canvas[1]];
   }
@@ -251,6 +257,45 @@ function canvasSize(canvasId) {
     return [manifest.sysinfo_canvas[0], manifest.sysinfo_canvas[1]];
   }
   return DEFAULT_CANVAS[canvasId] || DEFAULT_CANVAS.transient;
+}
+
+function setPxVar(root, name, value, fallback) {
+  const n = Number(value);
+  const px = Number.isFinite(n) ? n : fallback;
+  root.style.setProperty(name, `${px}px`);
+}
+
+function applyThemeTextAndIconVars(root, cfg) {
+  const safe = cfg.safe_box || {};
+  setPxVar(root, "--v4-safe-l", safe.left, 119);
+  setPxVar(root, "--v4-safe-t", safe.top, 14);
+  setPxVar(root, "--v4-safe-r", safe.right, 16);
+  setPxVar(root, "--v4-safe-b", safe.bottom, 10);
+
+  const slots = cfg.text_slots || {};
+  const title = slots.title || {};
+  const subtitle = slots.subtitle || {};
+  const value = slots.value || {};
+  const meta = slots.meta || {};
+  setPxVar(root, "--v4-title-x", title.left, 119);
+  setPxVar(root, "--v4-title-y", title.top, 38);
+  setPxVar(root, "--v4-subtitle-x", subtitle.left, 120);
+  setPxVar(root, "--v4-subtitle-y", subtitle.top, 62);
+  setPxVar(root, "--v4-value-x", value.left, 120);
+  setPxVar(root, "--v4-value-y", value.top, 80);
+  setPxVar(root, "--v4-meta-x", meta.left, 120);
+  setPxVar(root, "--v4-meta-y", meta.top, 112);
+
+  if (cfg.icon_mode === "glyph" && Array.isArray(cfg.icon_box) && cfg.icon_box.length === 4) {
+    const [x, y, w, h] = cfg.icon_box;
+    setPxVar(root, "--v4-icon-x", x, 0);
+    setPxVar(root, "--v4-icon-y", y, 0);
+    setPxVar(root, "--v4-icon-w", w, 64);
+    setPxVar(root, "--v4-icon-h", h, 64);
+    root.dataset.v4IconMode = "glyph";
+  } else {
+    root.dataset.v4IconMode = "full_canvas";
+  }
 }
 
 function applyManifestGeometry(target) {
@@ -263,6 +308,8 @@ function applyManifestGeometry(target) {
   root.style.setProperty("--v4-sysinfo-w", `${sw}px`);
   root.style.setProperty("--v4-sysinfo-h", `${sh}px`);
   root.style.setProperty("--v4-gallery-col", `${tw}px`);
+
+  applyThemeTextAndIconVars(root, resolveThemeCanvas("transient"));
 
   const battle = manifest?.zones?.battle || {};
   const event = manifest?.zones?.event || {};
@@ -281,6 +328,13 @@ function applyManifestGeometry(target) {
   // Eager zone containers (existing ids) so geometry vars apply before first event.
   ensureLayer("v4-battle-stack");
   ensureLayer("v4-event-layer");
+}
+
+function applyIconMode(iconEl) {
+  if (!iconEl) return;
+  const mode = resolveThemeCanvas("transient").icon_mode || "full_canvas";
+  iconEl.classList.toggle("mode-glyph", mode === "glyph");
+  iconEl.classList.toggle("mode-full-canvas", mode !== "glyph");
 }
 
 function isStale(envelope) {
@@ -494,6 +548,7 @@ function rebuildArt(node, stateKey, familyName) {
   });
   const icon = document.createElement("div");
   icon.className = "icon";
+  applyIconMode(icon);
   const iconUrl = manifestDiskPath(`${family.icon_dir}/${stateKey}.png`);
   paintLayer(icon, iconUrl);
   art.appendChild(icon);
@@ -948,6 +1003,10 @@ export async function initV4(options = {}) {
 
 export function refreshV4Presentation(options = {}) {
   if (options.theme) theme = options.theme;
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = theme;
+    if (manifest) applyManifestGeometry();
+  }
   renderSysinfo();
 }
 

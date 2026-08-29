@@ -126,12 +126,14 @@ class V4AssetResolver:
         for motion in self._manifest.get("motions") or []:
             motions[str(motion)] = self.resolve_motion(str(motion))
 
+        theme_block = (self._manifest.get("themes") or {}).get(self.theme) or {}
         return {
             "theme": self.theme,
             "manifest_schema": self._manifest.get("manifest_schema"),
             "transient_canvas": self._manifest.get("transient_canvas"),
             "sysinfo_canvas": self._manifest.get("sysinfo_canvas"),
             "canvases": self._manifest.get("canvases"),
+            "theme_canvases": theme_block.get("canvases"),
             "zones": self._manifest.get("zones"),
             "transitions": self._manifest.get("transitions"),
             "states": states,

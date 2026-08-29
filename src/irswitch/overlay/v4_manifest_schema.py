@@ -1,4 +1,4 @@
-"""Validate V4 overlay theme manifests (Phase 0 groundwork for schema 2.x)."""
+"""Validate V4 overlay theme manifests (schema 2.x)."""
 
 from __future__ import annotations
 
@@ -13,13 +13,116 @@ def _is_positive_int_pair(value: Any) -> bool:
     )
 
 
-def validate_v4_manifest(manifest: dict[str, Any]) -> list[str]:
-    """Return human-readable errors; empty list means the manifest is usable today.
+def _validate_safe_box(path: str, safe_box: Any, size: Any, errors: list[str]) -> None:
+    if not isinstance(safe_box, dict):
+        errors.append(f"{path}.safe_box must be an object with left/top/right/bottom")
+        return
+    for key in ("left", "top", "right", "bottom"):
+        if key not in safe_box:
+            errors.append(f"{path}.safe_box missing {key}")
+            continue
+        if not isinstance(safe_box[key], int) or isinstance(safe_box[key], bool):
+            errors.append(f"{path}.safe_box.{key} must be int")
+        elif safe_box[key] < 0:
+            errors.append(f"{path}.safe_box.{key} must be >= 0")
+    if (
+        _is_positive_int_pair(size)
+        and all(k in safe_box for k in ("left", "top", "right", "bottom"))
+        and all(
+            isinstance(safe_box[k], int) and not isinstance(safe_box[k], bool)
+            for k in ("left", "top", "right", "bottom")
+        )
+    ):
+        if safe_box["left"] + safe_box["right"] >= size[0]:
+            errors.append(f"{path}.safe_box horizontal insets exceed width")
+        if safe_box["top"] + safe_box["bottom"] >= size[1]:
+            errors.append(f"{path}.safe_box vertical insets exceed height")
 
-    Accepts the shipped schema (``version`` + canvas aliases + themes/states/motions)
-    and optionally future ``manifest_schema`` / ``canvases`` / ``zones`` keys without
-    requiring them yet.
-    """
+
+def _validate_text_slots(path: str, text_slots: Any, size: Any, errors: list[str]) -> None:
+    if not isinstance(text_slots, dict):
+        errors.append(f"{path}.text_slots must be an object")
+        return
+    for slot_name, slot in text_slots.items():
+        slot_path = f"{path}.text_slots.{slot_name}"
+        if not isinstance(slot, dict):
+            errors.append(f"{slot_path} must be an object")
+            continue
+        for key in ("left", "top", "right"):
+            if key not in slot:
+                errors.append(f"{slot_path} missing {key}")
+            elif not isinstance(slot[key], int) or isinstance(slot[key], bool) or slot[key] < 0:
+                errors.append(f"{slot_path}.{key} must be int >= 0")
+        if "font_px" in slot and (
+            not isinstance(slot["font_px"], int)
+            or isinstance(slot["font_px"], bool)
+            or slot["font_px"] < 1
+        ):
+            errors.append(f"{slot_path}.font_px must be int >= 1")
+        if _is_positive_int_pair(size) and all(
+            isinstance(slot.get(k), int) and not isinstance(slot.get(k), bool)
+            for k in ("left", "top", "right")
+        ):
+            if slot["left"] + slot["right"] >= size[0]:
+                errors.append(f"{slot_path} horizontal insets exceed canvas width")
+            if slot["top"] >= size[1]:
+                errors.append(f"{slot_path}.top out of canvas height")
+
+
+def _validate_canvas_cfg(
+    path: str, cfg: Any, *, inherit_size: Any = None, errors: list[str]
+) -> None:
+    if not isinstance(cfg, dict):
+        errors.append(f"{path} must be an object")
+        return
+    size = cfg.get("size", inherit_size)
+    if "size" in cfg and not _is_positive_int_pair(cfg["size"]):
+        errors.append(f"{path}.size must be [w, h] positive ints")
+    icon_mode = cfg.get("icon_mode")
+    icon_box = cfg.get("icon_box")
+    if icon_mode is not None and icon_mode not in {"full_canvas", "glyph"}:
+        errors.append(f"{path}.icon_mode must be full_canvas|glyph, got {icon_mode!r}")
+    if icon_mode == "full_canvas" and icon_box is not None:
+        errors.append(f"{path}: icon_mode full_canvas forbids icon_box")
+    if icon_mode == "glyph" and icon_box is None:
+        errors.append(f"{path}: icon_mode glyph requires icon_box")
+    if icon_box is not None:
+        if not (
+            isinstance(icon_box, (list, tuple))
+            and len(icon_box) == 4
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in icon_box)
+        ):
+            errors.append(f"{path}.icon_box must be [x, y, w, h] ints")
+        elif _is_positive_int_pair(size):
+            x, y, w, h = icon_box
+            if w <= 0 or h <= 0 or x < 0 or y < 0 or x + w > size[0] or y + h > size[1]:
+                errors.append(f"{path}.icon_box out of bounds for size {list(size)}")
+    if "safe_box" in cfg:
+        _validate_safe_box(path, cfg["safe_box"], size, errors)
+    if "text_slots" in cfg:
+        _validate_text_slots(path, cfg["text_slots"], size, errors)
+
+
+def merge_canvas_config(
+    manifest: dict[str, Any],
+    theme_id: str,
+    canvas_id: str,
+) -> dict[str, Any]:
+    """Merge root ``canvases.<id>`` with ``themes.<theme>.canvases.<id>`` override."""
+    root = dict((manifest.get("canvases") or {}).get(canvas_id) or {})
+    theme_cfg = (manifest.get("themes") or {}).get(theme_id) or {}
+    override = dict((theme_cfg.get("canvases") or {}).get(canvas_id) or {})
+    merged = {**root, **override}
+    if "size" not in merged or merged.get("size") is None:
+        if canvas_id == "transient" and _is_positive_int_pair(manifest.get("transient_canvas")):
+            merged["size"] = list(manifest["transient_canvas"])
+        elif canvas_id == "sysinfo" and _is_positive_int_pair(manifest.get("sysinfo_canvas")):
+            merged["size"] = list(manifest["sysinfo_canvas"])
+    return merged
+
+
+def validate_v4_manifest(manifest: dict[str, Any]) -> list[str]:
+    """Return human-readable errors; empty list means the manifest is usable."""
     errors: list[str] = []
     if not isinstance(manifest, dict):
         return ["manifest root must be an object"]
@@ -55,39 +158,41 @@ def validate_v4_manifest(manifest: dict[str, Any]) -> list[str]:
 
     if isinstance(canvases, dict):
         for canvas_id, cfg in canvases.items():
-            if not isinstance(cfg, dict):
-                errors.append(f"canvases.{canvas_id} must be an object")
-                continue
-            size = cfg.get("size")
-            if size is not None and not _is_positive_int_pair(size):
-                errors.append(f"canvases.{canvas_id}.size must be [w, h] positive ints")
-            icon_mode = cfg.get("icon_mode")
-            icon_box = cfg.get("icon_box")
-            if icon_mode is not None and icon_mode not in {"full_canvas", "glyph"}:
-                errors.append(
-                    f"canvases.{canvas_id}.icon_mode must be full_canvas|glyph, got {icon_mode!r}"
-                )
-            if icon_mode == "full_canvas" and icon_box is not None:
-                errors.append(f"canvases.{canvas_id}: icon_mode full_canvas forbids icon_box")
-            if icon_mode == "glyph" and icon_box is None:
-                errors.append(f"canvases.{canvas_id}: icon_mode glyph requires icon_box")
-            if icon_box is not None:
-                if not (
-                    isinstance(icon_box, (list, tuple))
-                    and len(icon_box) == 4
-                    and all(isinstance(v, int) and not isinstance(v, bool) for v in icon_box)
-                ):
-                    errors.append(f"canvases.{canvas_id}.icon_box must be [x, y, w, h] ints")
-                elif size is not None and _is_positive_int_pair(size):
-                    x, y, w, h = icon_box
-                    if w <= 0 or h <= 0 or x < 0 or y < 0 or x + w > size[0] or y + h > size[1]:
-                        errors.append(
-                            f"canvases.{canvas_id}.icon_box out of bounds for size {list(size)}"
-                        )
+            _validate_canvas_cfg(f"canvases.{canvas_id}", cfg, errors=errors)
 
     themes = manifest.get("themes")
     if not isinstance(themes, dict) or not themes:
         errors.append("themes must be a non-empty object")
+    elif isinstance(themes, dict):
+        for theme_id, theme_cfg in themes.items():
+            if not isinstance(theme_cfg, dict):
+                errors.append(f"themes.{theme_id} must be an object")
+                continue
+            theme_canvases = theme_cfg.get("canvases")
+            if theme_canvases is None:
+                continue
+            if not isinstance(theme_canvases, dict):
+                errors.append(f"themes.{theme_id}.canvases must be an object")
+                continue
+            for canvas_id, override in theme_canvases.items():
+                root_cfg = (canvases or {}).get(canvas_id) if isinstance(canvases, dict) else {}
+                inherit_size = None
+                if isinstance(root_cfg, dict):
+                    inherit_size = root_cfg.get("size")
+                if inherit_size is None and canvas_id == "transient":
+                    inherit_size = transient
+                if inherit_size is None and canvas_id == "sysinfo":
+                    inherit_size = sysinfo
+                # Validate merged exclusivity (override icon_mode vs root icon_box).
+                merged = dict(root_cfg or {})
+                if isinstance(override, dict):
+                    merged.update(override)
+                _validate_canvas_cfg(
+                    f"themes.{theme_id}.canvases.{canvas_id}",
+                    merged,
+                    inherit_size=inherit_size,
+                    errors=errors,
+                )
 
     states = manifest.get("states")
     if not isinstance(states, dict) or not states:

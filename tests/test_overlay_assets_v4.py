@@ -41,7 +41,7 @@ def _png_size(path: Path) -> tuple[int, int]:
 def test_v4_manifest_version_and_canvas() -> None:
     manifest = _manifest()
     assert manifest["version"] == 4
-    assert manifest["manifest_schema"] == [2, 0]
+    assert manifest["manifest_schema"] == [2, 1]
     assert manifest["transient_canvas"] == [420, 140]
     assert manifest["sysinfo_canvas"] == [1920, 72]
     assert manifest["canvases"]["transient"]["size"] == [420, 140]

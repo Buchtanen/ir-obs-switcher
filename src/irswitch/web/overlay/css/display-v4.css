@@ -111,8 +111,7 @@
   opacity: 1;
 }
 
-/* V4 state icons are authored as full-canvas plates (glyph already in the
-   icon-well). Do NOT crop to a 64×64 box — that shifts the glyph right of the well. */
+/* V4 state icons default to full-canvas plates (glyph already in the well). */
 .v4-art .icon {
   position: absolute;
   inset: 0;
@@ -123,6 +122,17 @@
   background-position: 0 0;
   z-index: 2;
   pointer-events: none;
+}
+
+/* Glyph mode: isolated icon_box with contain/center (Pit Wall packs). */
+.v4-art .icon.mode-glyph {
+  inset: auto;
+  left: var(--v4-icon-x, 0px);
+  top: var(--v4-icon-y, 0px);
+  width: var(--v4-icon-w, 64px);
+  height: var(--v4-icon-h, 64px);
+  background-size: contain;
+  background-position: center;
 }
 
 .v4-art video.fx {
