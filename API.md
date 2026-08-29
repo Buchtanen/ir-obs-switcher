@@ -30,6 +30,7 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /overlay/debug](#get-overlaydebug)
   - [GET /overlay/demo](#get-overlaydemo)
   - [GET /config](#get-config)
+  - [GET /commentary](#get-commentary)
 - [Overlay API](#overlay-api)
   - [WS /ws/overlay](#ws-wsoverlay)
   - [V4 event envelopes (`v2_payload=true`)](#v4-event-envelopes-v2_payloadtrue)
@@ -688,6 +689,25 @@ Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1&rend
 ### GET /config
 
 Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
+
+### GET /commentary
+
+Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`).
+
+- **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
+- **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI nebo espeak-ng
+- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `overlay.language`)
+
+**API**
+
+| Method | URL | Poznámka |
+| --- | --- | --- |
+| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, sample řádek |
+| `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
+| `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
+| `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
+
+`speak` nejdřív pustí TTS validator. Neplatný řádek → 400, audio se nespustí.
 
 ### WS /ws/overlay
 

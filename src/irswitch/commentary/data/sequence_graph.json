@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "locales": ["en", "cs"],
+  "default_tts": {
+    "max_chars": 90,
+    "max_seconds": 5.5,
+    "ssml_allowed": ["break", "emphasis"],
+    "require_terminal_punct": true
+  },
+  "nodes": {
+    "lap_complete": {
+      "family": "timing",
+      "event_types": ["LAP_COMPLETE"],
+      "phases": ["RESULT"],
+      "speak_priority": 40,
+      "cooldown_s": 8,
+      "slots": [
+        {"name": "lap", "type": "int", "example": 12},
+        {"name": "lap_time", "type": "time", "example": "1:32.4"}
+      ],
+      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
+      "notes": "One sentence after an accepted lap. Do not read tenths unless they matter. No overlay-style shouting."
+    },
+    "personal_best": {
+      "family": "timing",
+      "event_types": ["PERSONAL_BEST"],
+      "phases": ["RESULT"],
+      "speak_priority": 65,
+      "cooldown_s": 12,
+      "slots": [
+        {"name": "lap", "type": "int", "example": 8},
+        {"name": "lap_time", "type": "time", "example": "1:31.1"},
+        {"name": "delta", "type": "delta", "example": "-0.4"}
+      ],
+      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
+      "notes": "Celebrate briefly. Keep under one breath. Emotion variants may rise with HR but stay spoken, not yelled."
+    },
+    "gain_found": {
+      "family": "timing",
+      "event_types": ["GAIN_FOUND"],
+      "phases": ["RESULT"],
+      "speak_priority": 45,
+      "cooldown_s": 10,
+      "slots": [
+        {"name": "delta", "type": "delta", "example": "-0.12"},
+        {"name": "segment", "type": "label", "example": "minisector 4"}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Practice only. Name the gain, not a race battle. TIME_LOST is a sibling, not this node."
+    },
+    "time_lost": {
+      "family": "timing",
+      "event_types": ["TIME_LOST"],
+      "phases": ["RESULT"],
+      "speak_priority": 45,
+      "cooldown_s": 10,
+      "slots": [
+        {"name": "delta", "type": "delta", "example": "+0.18"},
+        {"name": "segment", "type": "label", "example": "minisector 7"}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Practice only. Calm correction, not panic."
+    },
+    "target_locked": {
+      "family": "timing",
+      "event_types": ["TARGET_LOCKED"],
+      "phases": ["ENTER", "RESULT"],
+      "speak_priority": 42,
+      "cooldown_s": 20,
+      "slots": [
+        {"name": "target_time", "type": "time", "example": "1:31.8"}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Once per practice stint unless the target changes."
+    },
+    "projected_lap": {
+      "family": "timing",
+      "event_types": ["PROJECTED_LAP"],
+      "phases": ["ENTER", "RESULT"],
+      "speak_priority": 42,
+      "cooldown_s": 12,
+      "slots": [
+        {"name": "projected_time", "type": "time", "example": "1:31.5"},
+        {"name": "confidence", "type": "label", "example": "high"}
+      ],
+      "hr_states": ["unknown", "focused", "pushing"],
+      "notes": "Quali. Speak only when confidence is useful. Do not invent grid position."
+    },
+    "hot_lap": {
+      "family": "timing",
+      "event_types": ["HOT_LAP"],
+      "phases": ["ENTER", "RESULT"],
+      "speak_priority": 55,
+      "cooldown_s": 15,
+      "slots": [
+        {"name": "lap", "type": "int", "example": 3}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Quali flyer. Short. No mid-corner chatter."
+    },
+    "position_attack": {
+      "family": "timing",
+      "event_types": ["POSITION_ATTACK"],
+      "phases": ["ENTER", "RESULT"],
+      "speak_priority": 55,
+      "cooldown_s": 12,
+      "slots": [
+        {"name": "position", "type": "int", "example": 4}
+      ],
+      "hr_states": ["unknown", "focused", "pushing"],
+      "notes": "Quali position threat. One sentence."
+    },
+    "clean_streak": {
+      "family": "timing",
+      "event_types": ["CLEAN_STREAK"],
+      "phases": ["RESULT"],
+      "speak_priority": 30,
+      "cooldown_s": 30,
+      "slots": [
+        {"name": "streak", "type": "int", "example": 5}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Low urgency. Skip if a battle is active (director uses speak_priority)."
+    },
+    "hunting": {
+      "family": "battle",
+      "event_types": ["HUNTING", "APPROACH"],
+      "phases": ["ENTER"],
+      "speak_priority": 50,
+      "cooldown_s": 16,
+      "slots": [
+        {"name": "gap", "type": "gap", "example": "1.2"},
+        {"name": "target_name", "type": "name", "example": "Rossi"},
+        {"name": "position", "type": "int", "example": 6}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Enter only, never UPDATE. Next spoken beat is usually side_by_side or overtake."
+    },
+    "hunted": {
+      "family": "battle",
+      "event_types": ["HUNTED"],
+      "phases": ["ENTER"],
+      "speak_priority": 50,
+      "cooldown_s": 16,
+      "slots": [
+        {"name": "gap", "type": "gap", "example": "0.8"},
+        {"name": "target_name", "type": "name", "example": "Berg"},
+        {"name": "position", "type": "int", "example": 5}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Defensive enter only. Do not narrate every gap tick."
+    },
+    "side_by_side": {
+      "family": "battle",
+      "event_types": ["SIDE_BY_SIDE", "BATTLE_FOR_POSITION"],
+      "phases": ["ENTER"],
+      "speak_priority": 70,
+      "cooldown_s": 10,
+      "slots": [
+        {"name": "position", "type": "int", "example": 6},
+        {"name": "target_name", "type": "name", "example": "Rossi"}
+      ],
+      "hr_states": ["unknown", "pushing", "high"],
+      "notes": "Very short. Prefer after hunting on the same correlationId."
+    },
+    "overtake": {
+      "family": "position",
+      "event_types": ["OVERTAKE"],
+      "phases": ["RESULT", "ENTER"],
+      "speak_priority": 85,
+      "cooldown_s": 8,
+      "slots": [
+        {"name": "position", "type": "int", "example": 5},
+        {"name": "target_name", "type": "name", "example": "Rossi"}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Accepted on-track pass only (pit-cycle overtakes are suppressed upstream). Past tense, one beat."
+    },
+    "position_gained": {
+      "family": "position",
+      "event_types": ["POSITION_GAINED"],
+      "phases": ["RESULT"],
+      "speak_priority": 72,
+      "cooldown_s": 8,
+      "slots": [
+        {"name": "position", "type": "int", "example": 9},
+        {"name": "old_position", "type": "int", "example": 10}
+      ],
+      "hr_states": ["unknown", "calm", "focused", "pushing"],
+      "notes": "Use when the classifier did not call OVERTAKE (e.g. car ahead pitted). Do not invent a pass."
+    },
+    "position_lost": {
+      "family": "position",
+      "event_types": ["POSITION_LOST", "OVERTAKEN"],
+      "phases": ["RESULT"],
+      "speak_priority": 72,
+      "cooldown_s": 8,
+      "slots": [
+        {"name": "position", "type": "int", "example": 7},
+        {"name": "old_position", "type": "int", "example": 6}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Matter-of-fact. Prefer after hunted on the same story."
+    },
+    "rival_threat": {
+      "family": "position",
+      "event_types": ["RIVAL_THREAT"],
+      "phases": ["ENTER"],
+      "speak_priority": 48,
+      "cooldown_s": 20,
+      "slots": [
+        {"name": "gap", "type": "gap", "example": "2.4"},
+        {"name": "target_name", "type": "name", "example": "Kovalainen"}
+      ],
+      "hr_states": ["unknown", "focused", "pushing"],
+      "notes": "Faster car closing, not yet hunted. Low chatter."
+    },
+    "battle_won": {
+      "family": "battle",
+      "event_types": ["BATTLE_WON"],
+      "phases": ["RESULT", "ENTER"],
+      "speak_priority": 75,
+      "cooldown_s": 15,
+      "slots": [
+        {"name": "position", "type": "int", "example": 5}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Close the hunting → overtake sequence. Do not restage the pass."
+    },
+    "incident": {
+      "family": "exception",
+      "event_types": ["INCIDENT"],
+      "phases": ["RESULT"],
+      "speak_priority": 88,
+      "cooldown_s": 10,
+      "slots": [
+        {"name": "value", "type": "int", "example": 4}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Short. No blame speech. Overlay already flashes."
+    },
+    "invalid_lap": {
+      "family": "exception",
+      "event_types": ["INVALID_LAP"],
+      "phases": ["RESULT"],
+      "speak_priority": 60,
+      "cooldown_s": 12,
+      "slots": [
+        {"name": "lap", "type": "int", "example": 4}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Practice/quali invalidation. Calm reset, then silence."
+    },
+    "final_lap": {
+      "family": "session",
+      "event_types": ["FINAL_LAP"],
+      "phases": ["RESULT", "ENTER"],
+      "speak_priority": 95,
+      "cooldown_s": 60,
+      "slots": [
+        {"name": "position", "type": "int", "example": 3}
+      ],
+      "hr_states": ["unknown", "focused", "pushing", "high"],
+      "notes": "Once. Next expected spoken node is finish."
+    },
+    "finish": {
+      "family": "session",
+      "event_types": ["FINISH"],
+      "phases": ["RESULT"],
+      "speak_priority": 100,
+      "cooldown_s": 120,
+      "slots": [
+        {"name": "position", "type": "int", "example": 3}
+      ],
+      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
+      "notes": "Closing line. Past tense. No further race chatter after this node."
+    },
+    "pit_entry": {
+      "family": "pit",
+      "event_types": ["PIT_ENTRY"],
+      "phases": ["ENTER", "RESULT"],
+      "speak_priority": 55,
+      "cooldown_s": 20,
+      "slots": [
+        {"name": "position", "type": "int", "example": 8}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Start of pit correlation. Do not call position changes during the pit cycle."
+    },
+    "pit_outcome": {
+      "family": "pit",
+      "event_types": ["PIT_OUTCOME", "PIT_EXIT"],
+      "phases": ["RESULT", "ENTER", "EXIT"],
+      "speak_priority": 58,
+      "cooldown_s": 20,
+      "slots": [
+        {"name": "position", "type": "int", "example": 11},
+        {"name": "old_position", "type": "int", "example": 8}
+      ],
+      "hr_states": ["unknown", "calm", "focused"],
+      "notes": "Prefer same correlationId as pit_entry. State net position change only if known."
+    },
+    "hr_pressure": {
+      "family": "bio",
+      "event_types": ["HR_PRESSURE_RISING"],
+      "phases": ["ENTER"],
+      "speak_priority": 25,
+      "cooldown_s": 45,
+      "slots": [
+        {"name": "bpm", "type": "int", "example": 142}
+      ],
+      "hr_states": ["pushing", "high"],
+      "notes": "Rare spoken line. HR is primarily an emotion selector on other nodes. Skip if a battle/overtake is speaking. Never invent BPM if BLE is down — this node must not fire without bio."
+    }
+  },
+  "edges": [
+    {"from": "hunting", "to": "side_by_side", "when": {"same_correlation": true, "min_gap_s": 1.5, "max_gap_s": 25}},
+    {"from": "hunting", "to": "overtake", "when": {"same_correlation": true, "min_gap_s": 1.0, "max_gap_s": 30}},
+    {"from": "side_by_side", "to": "overtake", "when": {"same_correlation": true, "min_gap_s": 0.4, "max_gap_s": 12}},
+    {"from": "overtake", "to": "battle_won", "when": {"same_correlation": true, "min_gap_s": 0.5, "max_gap_s": 10}},
+    {"from": "hunted", "to": "position_lost", "when": {"same_correlation": true, "min_gap_s": 0.5, "max_gap_s": 20}},
+    {"from": "rival_threat", "to": "hunted", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 40}},
+    {"from": "gain_found", "to": "target_locked", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 60}},
+    {"from": "hot_lap", "to": "projected_lap", "when": {"same_correlation": false, "min_gap_s": 1.0, "max_gap_s": 20}},
+    {"from": "pit_entry", "to": "pit_outcome", "when": {"same_correlation": true, "min_gap_s": 4.0, "max_gap_s": 90}},
+    {"from": "final_lap", "to": "finish", "when": {"same_correlation": false, "min_gap_s": 5.0, "max_gap_s": 240}},
+    {"from": "incident", "to": "invalid_lap", "when": {"same_correlation": false, "min_gap_s": 0.2, "max_gap_s": 8}}
+  ]
+}

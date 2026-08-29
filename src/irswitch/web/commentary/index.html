@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Commentary TTS test</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; margin: 0; padding: 16px; }
+    nav a { color: #9be7ff; margin-right: 12px; }
+    h1 { margin: 12px 0 8px; }
+    .row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    fieldset { border: 1px solid #333; margin: 0 0 12px; padding: 12px; }
+    label { display: block; margin: 8px 0; }
+    input, select, textarea { background: #1c1c1c; color: #eee; border: 1px solid #444; padding: 6px 8px; width: 100%; box-sizing: border-box; }
+    textarea { min-height: 90px; font-size: 1.05em; }
+    button { margin: 4px 8px 4px 0; padding: 8px 14px; cursor: pointer; }
+    .ok { color: #7dcea0; }
+    .bad { color: #f5a6a6; }
+    .muted { color: #888; font-size: 0.9em; }
+    #log { background: #1b1b1b; padding: 10px; min-height: 72px; white-space: pre-wrap; }
+    .nodes { display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow: auto; }
+    .nodes button { margin: 0; font-size: 0.85em; }
+    .nodes button.active { outline: 2px solid #9be7ff; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/gr-status">Switcher</a>
+    <a href="/overlay">Overlay</a>
+    <a href="/overlay/demo">Dry test</a>
+    <a href="/overlay/debug">Overlay debug</a>
+    <a href="/commentary">Commentary</a>
+    <a href="/config">Config</a>
+  </nav>
+  <h1>Commentary / TTS test</h1>
+  <p class="muted">Krátký poslech: nejdřív <b>prohlížeč</b> (Web Speech, Edge/Chrome), pak <b>server</b> (Windows SAPI nebo espeak). Validátor hlídá intonaci.</p>
+  <p id="statusLine" class="muted">Načítám…</p>
+
+  <div class="row">
+    <section>
+      <fieldset>
+        <legend>Řádek</legend>
+        <label>Text
+          <textarea id="text"></textarea>
+        </label>
+        <label>Node
+          <select id="node"></select>
+        </label>
+        <button type="button" id="btnBrowser">Mluvit v prohlížeči</button>
+        <button type="button" id="btnServer">Mluvit na serveru</button>
+        <button type="button" id="btnValidate">Jen validovat</button>
+        <button type="button" id="btnStop">Stop</button>
+        <div id="log"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Nody v grafu</legend>
+        <div id="nodes" class="nodes"></div>
+      </fieldset>
+    </section>
+    <section>
+      <fieldset>
+        <legend>Nastavení</legend>
+        <label><input type="checkbox" id="enabled"> commentary.enabled (živý race feed)</label>
+        <label><input type="checkbox" id="useHr" checked> use_hr_emotion</label>
+        <label>Jazyk overlay
+          <select id="language">
+            <option value="cs">cs</option>
+            <option value="en">en</option>
+          </select>
+        </label>
+        <label>TTS backend
+          <select id="backend">
+            <option value="auto">auto</option>
+            <option value="sapi">sapi (Windows)</option>
+            <option value="espeak">espeak</option>
+            <option value="null">null</option>
+          </select>
+        </label>
+        <label>Hlas (server)
+          <input id="voice" list="voices" placeholder="prázdné = default">
+          <datalist id="voices"></datalist>
+        </label>
+        <label>Prohlížeč — hlas
+          <select id="browserVoice"><option value="">default</option></select>
+        </label>
+        <label>Rate (−10 … 10)
+          <input id="rate" type="number" min="-10" max="10" step="1" value="0">
+        </label>
+        <label>Cooldown s
+          <input id="cooldown" type="number" min="0.5" max="30" step="0.5" value="4">
+        </label>
+        <button type="button" id="btnSave">Uložit nastavení</button>
+        <span id="saveStatus" class="muted"></span>
+      </fieldset>
+    </section>
+  </div>
+
+  <script>
+    const CSRF = { "X-Requested-With": "irswitch", "Content-Type": "application/json" };
+    const $ = (id) => document.getElementById(id);
+    let status = null;
+
+    function log(msg, cls) {
+      const el = $("log");
+      el.className = cls || "";
+      el.textContent = msg;
+    }
+
+    function fillVoices() {
+      const sel = $("browserVoice");
+      const keep = sel.value;
+      sel.innerHTML = '<option value="">default</option>';
+      if (!window.speechSynthesis) return;
+      speechSynthesis.getVoices().forEach((v) => {
+        const opt = document.createElement("option");
+        opt.value = v.name;
+        opt.textContent = v.name + " (" + v.lang + ")";
+        if (v.name === keep) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    async function loadStatus() {
+      const res = await fetch("/api/commentary/status");
+      status = await res.json();
+      $("text").value = $("text").value || status.sample;
+      $("language").value = status.language;
+      $("enabled").checked = status.settings.enabled;
+      $("useHr").checked = status.settings.useHrEmotion;
+      $("backend").value = status.settings.ttsBackend;
+      $("voice").value = status.settings.ttsVoice;
+      $("rate").value = status.settings.ttsRate;
+      $("cooldown").value = status.settings.cooldownS;
+      const dl = $("voices");
+      dl.innerHTML = "";
+      (status.voices || []).forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        dl.appendChild(opt);
+      });
+      const nodeSel = $("node");
+      nodeSel.innerHTML = "";
+      const box = $("nodes");
+      box.innerHTML = "";
+      (status.nodes || []).forEach((node) => {
+        const opt = document.createElement("option");
+        opt.value = node.id;
+        opt.textContent = node.id + " (" + node.eventTypes.join(",") + ")";
+        nodeSel.appendChild(opt);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = node.id;
+        btn.onclick = () => {
+          nodeSel.value = node.id;
+          $("text").value = node.sample;
+          [...box.children].forEach((el) => el.classList.remove("active"));
+          btn.classList.add("active");
+        };
+        box.appendChild(btn);
+      });
+      $("statusLine").textContent =
+        "Server backend: " + status.backend +
+        " (config " + status.configuredBackend + "), jazyk " + status.language +
+        ", prázdných variant: " + status.unfilledCells +
+        ". Prohlížeč: " + (window.speechSynthesis ? "Web Speech OK" : "bez Web Speech");
+    }
+
+    function browserSpeak() {
+      const text = $("text").value.trim();
+      if (!window.speechSynthesis) {
+        log("Web Speech API tady není. Zkus Edge/Chrome.", "bad");
+        return;
+      }
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = $("language").value === "cs" ? "cs-CZ" : "en-US";
+      const rate = Number($("rate").value || 0);
+      u.rate = Math.max(0.6, Math.min(1.4, 1 + rate / 20));
+      const name = $("browserVoice").value;
+      const match = speechSynthesis.getVoices().find((v) => v.name === name);
+      if (match) u.voice = match;
+      u.onstart = () => log("Prohlížeč mluví…", "ok");
+      u.onerror = (ev) => log("Prohlížeč: " + (ev.error || "error"), "bad");
+      u.onend = () => log("Prohlížeč hotovo.", "ok");
+      speechSynthesis.speak(u);
+    }
+
+    async function validate() {
+      const res = await fetch("/api/commentary/validate", {
+        method: "POST",
+        headers: CSRF,
+        body: JSON.stringify({ text: $("text").value, nodeId: $("node").value }),
+      });
+      const body = await res.json();
+      if (body.ok) log("Validátor: OK", "ok");
+      else log("Validátor:\n" + (body.issues || []).map((i) => i.code + ": " + i.message).join("\n"), "bad");
+      return body;
+    }
+
+    async function serverSpeak() {
+      const check = await validate();
+      if (!check.ok) return;
+      log("Server TTS…", "");
+      const res = await fetch("/api/commentary/speak", {
+        method: "POST",
+        headers: CSRF,
+        body: JSON.stringify({
+          text: $("text").value,
+          nodeId: $("node").value,
+          locale: $("language").value,
+          voice: $("voice").value,
+          rate: Number($("rate").value || 0),
+          backend: $("backend").value,
+        }),
+      });
+      const body = await res.json();
+      if (body.spoken) log("Server (" + body.backend + "): hotovo.", "ok");
+      else log("Server (" + (body.backend || "?") + "): " + (body.error || res.status), "bad");
+    }
+
+    async function save() {
+      $("saveStatus").textContent = "ukládám…";
+      const res = await fetch("/api/config", {
+        method: "PUT",
+        headers: CSRF,
+        body: JSON.stringify({
+          values: {
+            "overlay.language": $("language").value,
+            "commentary.enabled": $("enabled").checked,
+            "commentary.use_hr_emotion": $("useHr").checked,
+            "commentary.tts_backend": $("backend").value,
+            "commentary.tts_voice": $("voice").value,
+            "commentary.tts_rate": Number($("rate").value || 0),
+            "commentary.cooldown_s": Number($("cooldown").value || 4),
+          },
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        $("saveStatus").textContent = body.error || "chyba";
+        return;
+      }
+      $("saveStatus").textContent = "uloženo (" + (body.applied || []).length + " klíčů)";
+      await loadStatus();
+    }
+
+    $("btnBrowser").onclick = browserSpeak;
+    $("btnServer").onclick = serverSpeak;
+    $("btnValidate").onclick = validate;
+    $("btnStop").onclick = () => { if (window.speechSynthesis) speechSynthesis.cancel(); };
+    $("btnSave").onclick = save;
+    if (window.speechSynthesis) {
+      fillVoices();
+      speechSynthesis.onvoiceschanged = fillVoices;
+    }
+    loadStatus().catch((err) => { $("statusLine").textContent = String(err); });
+  </script>
+</body>
+</html>

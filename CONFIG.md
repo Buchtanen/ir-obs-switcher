@@ -623,6 +623,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - většina `[dashboards]` klíčů čtených při requestu
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 - `overlay.language`, `overlay.v4_*` a všechny `event_engine.*` flagy
+- `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`
 
 ### Vyžaduje restart procesu
 
@@ -642,6 +643,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` `language` (`en` | `cs`, default `en`) — overlay copy language. Event payloads carry copy tokens; the renderer resolves them via `irswitch.overlay.i18n.resolve_copy()`. English is the base catalog, missing translations fall back to it. Independent of `[app]` `language`, which drives the dashboards.
 - `[overlay]` `v4_assets`, `v4_renderer` (default `false`) — overlay V4 rollout flags. With `v4_renderer=true`, transient widgets use the V4 layer renderer and sysinfo uses V4 layered assets from `themes-v4/`.
 - `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (all default `false`) — event-engine rollout flags. All off = current MVP event behaviour. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` enables practice minisector stories (`GAIN_FOUND`, `TIME_LOST`, `TARGET_LOCKED`). `quali_projection` enables qualifying projected lap / position attack / hot lap stories.
+- `[commentary]` `enabled` (default `false`), `use_hr_emotion` (default `true`), `cooldown_s` (default `4.0`), `max_utterance_s` (default `6.0`), `tts_backend` (`auto`|`sapi`|`espeak`|`null`, default `auto`), `tts_voice` (empty = system default), `tts_rate` (`-10`…`10`, default `0`) — spoken commentary. `auto` uses Windows SAPI (`System.Speech` via PowerShell) or `espeak-ng` on Linux. Test page: [`GET /commentary`](API.md#get-commentary). Graph texts are still empty, so the live race feed stays silent until variants are filled; the test page speaks whatever you type. See [COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md).
 
 **Full V4 demo profile** (local testing only; all flags default off in production):
 

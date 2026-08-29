@@ -68,6 +68,8 @@ def test_feature_flags_default_off_and_language_en(tmp_path: Path) -> None:
         or ee.pit_story
         or ee.hr_pressure
     ) is False
+    assert cfg.overlay.commentary.enabled is False
+    assert cfg.overlay.commentary.use_hr_emotion is True
     values = overlay_values(cfg.overlay)
     flag_keys = [k for k in values if k.startswith("event_engine.") or k.startswith("overlay.v4_")]
     assert len(flag_keys) == 8
@@ -92,6 +94,30 @@ pit_story = true
     assert cfg.overlay.event_engine.v2_payload is True
     assert cfg.overlay.event_engine.pit_story is True
     assert cfg.overlay.event_engine.practice is False
+    assert cfg.overlay.commentary.enabled is False
+
+
+def test_commentary_section_loads_from_ini(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("""
+[commentary]
+enabled = true
+use_hr_emotion = false
+cooldown_s = 2.5
+max_utterance_s = 5.0
+tts_backend = espeak
+tts_rate = -3
+""")
+    cfg = AppConfig.from_file(path)
+    assert cfg.overlay.commentary.enabled is True
+    assert cfg.overlay.commentary.use_hr_emotion is False
+    assert cfg.overlay.commentary.cooldown_s == 2.5
+    assert cfg.overlay.commentary.max_utterance_s == 5.0
+    assert cfg.overlay.commentary.tts_backend == "espeak"
+    assert cfg.overlay.commentary.tts_rate == -3
+    values = overlay_values(cfg.overlay)
+    assert values["commentary.enabled"] is True
 
 
 def test_unknown_language_falls_back_to_en(tmp_path: Path) -> None:
