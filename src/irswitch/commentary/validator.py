@@ -14,7 +14,7 @@ _ALL_CAPS = re.compile(r"\b[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]{4,}\b")
 _URL = re.compile(r"https?://|www\.", re.IGNORECASE)
 _LONG_DIGIT = re.compile(r"\d{4,}")
 _SLOT = re.compile(r"\{([a-z0-9_]+)\}")
-_BREAK_TIME = re.compile(r'time="(\d+)ms"')
+_BREAK_TIME = re.compile(r'time="(\d{1,6})ms"')
 _ALLOWED_TAGS = frozenset({"speak", "break", "emphasis", "prosody"})
 _CHARS_PER_SECOND = 13.0
 _MAX_BREAK_MS = 500
@@ -253,9 +253,11 @@ def _check_break_attrs(attrs: str) -> list[ValidationIssue]:
     time_raw = _attr(attrs, "time")
     if not time_raw:
         return []
-    if not re.fullmatch(r"\d+ms", time_raw.strip()):
+    value = time_raw.strip()
+    # Linear check — avoid unbounded \d+ (CodeQL py/polynomial-redos).
+    if not (value.endswith("ms") and value[:-2].isdigit()):
         return [ValidationIssue("ssml_break", "break time must look like 200ms")]
-    if int(time_raw.strip()[:-2]) > _MAX_BREAK_MS:
+    if int(value[:-2]) > _MAX_BREAK_MS:
         return [
             ValidationIssue(
                 "ssml_break",

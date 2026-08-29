@@ -52,6 +52,8 @@ def test_ssml_break_and_bad_tag() -> None:
     assert "ssml_tag" in codes or "ssml_parse" in codes
     long_break = issues_as_codes(validate_utterance('Wait. <break time="900ms"/> Now.', node))
     assert "ssml_break" in long_break
+    bad_unit = issues_as_codes(validate_utterance('Wait. <break time="200s"/> Now.', node))
+    assert "ssml_break" in bad_unit
 
 
 def test_fill_slots_leaves_unknown_placeholders() -> None:
