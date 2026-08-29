@@ -111,9 +111,13 @@ Získání aktuálního stavu služby.
 - `stream_ready_selected` (boolean) - zda je stream vybrán a připraven (má broadcast_id)
 - `stream_title` (string | null) - název streamu z YouTube API
 - `stream_description` (string | null) - popis streamu z YouTube API
+- `stream_status` (string | null) - stav YouTube broadcastu (`live`, `complete`, …) z cache
+- `stream_privacy_status` (string | null) - privacy YouTube broadcastu
 - `youtube_quota_exceeded` (boolean) - zda byla překročena YouTube API kvóta
 - `youtube_api_key_missing` (boolean) - zda chybí YouTube API klíč
 - `stream_chapters` (array, pouze když `[stream_chapters] enabled = true`) - in-memory kapitoly aktuálního streamu; každá položka: `title`, `offset_seconds`, `session_type`, `created_at_ms`. Když je feature vypnutá, pole chybí.
+
+**YouTube status auto-refresh**: při hraně OBS streamu (start / stop) služba force-refreshe `liveBroadcasts` (title/status/privacy) a pushne aktualizovaný status na `WS /ws`. Po stopu ještě jednou po ~45 s (`obs_stream_stopped_delayed`), protože YouTube často krátce drží `live` → `complete`. Vyžaduje OAuth; chyby se logují a main loop nespadne. Manuální `POST /stream/reinit` zůstává.
 
 **Error Response** (503 Service Unavailable):
 ```json
