@@ -94,6 +94,12 @@ pit_story = true
     assert cfg.overlay.event_engine.practice is False
 
 
+def test_session_tape_defaults_on(tmp_path: Path) -> None:
+    cfg = AppConfig.from_file(_minimal_ini(tmp_path))
+    assert cfg.overlay.tape.enabled is True
+    assert cfg.overlay.tape.directory == "recordings"
+
+
 def test_unknown_language_falls_back_to_en(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
     with path.open("a", encoding="utf-8") as handle:

@@ -18,6 +18,7 @@ from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_s
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import SessionCoordinator, build_session_key
 from irswitch.overlay.settings import OverlaySettings
+from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
@@ -50,6 +51,9 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         self._init_managers(overlay)
         self.engine = EventEngine(overlay)
+        self._timing_detector = CrossingDetector()
+        self._timing_store = TimingStore()
+        self._segment_ref = SegmentReferenceTracker()
         self._register_timing_emitters(overlay)
         self._register_t4_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
@@ -57,15 +61,17 @@ class OverlayRuntime:
         self.session.add_reset_hook(self.analyzer.reset)
         self.session.add_reset_hook(self._reset_event_pipeline)
         self.session.add_reset_hook(self._reset_timing)
-        self._timing_detector = CrossingDetector()
-        self._timing_store = TimingStore()
-        self._segment_ref = SegmentReferenceTracker()
         self.session.add_reset_hook(self._segment_ref.reset)
         self._bio: Any = None
         self._system: Any = None
         self._origin = time.monotonic()
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
+        self._tape = OverlaySessionTape()
+        self._tape_decision_cursor = 0
+        self._stories_sig: tuple[tuple[object, ...], ...] | None = None
+        self._last_race = RaceState()
+        self._hud_live = False
 
     def _init_managers(self, overlay: OverlaySettings) -> None:
         if overlay.event_engine.v2_payload:
@@ -89,6 +95,8 @@ class OverlayRuntime:
         self._register_t4_emitters(overlay)
         self.bus.set_active_events([])
         self.bus.set_active_stories_v4([])
+        self._tape_decision_cursor = 0
+        self._stories_sig = None
 
     def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
         """Attach T2 practice/quali emitters when feature flags are enabled."""
@@ -161,6 +169,19 @@ class OverlayRuntime:
             return OverlaySettings()
         return cfg.overlay
 
+    def _idle_when_disconnected(self, state: RaceState) -> bool:
+        """Blank live HUD when iRacing telemetry is gone. True → skip emitters."""
+        if state.connected:
+            self._hud_live = True
+            return False
+        if self._hud_live:
+            self._reset_event_pipeline()
+            self._hud_live = False
+        else:
+            self.bus.set_active_events([])
+            self.bus.set_active_stories_v4([])
+        return True
+
     def _race_hz(self) -> float:
         s = self._overlay_settings().sampling
         return resolve_component_hz(s.default_hz, s.race_hz)
@@ -198,6 +219,7 @@ class OverlayRuntime:
             while True:
                 await asyncio.sleep(3600)
         except asyncio.CancelledError:
+            self._tape.close()
             await self._registry.cancel_all()
             raise
 
@@ -205,7 +227,7 @@ class OverlayRuntime:
         while True:
             try:
                 for envelope in self._pending_envelopes:
-                    await self.bus.publish_event(envelope)
+                    await self._publish(envelope, time.monotonic())
                 self._pending_envelopes.clear()
                 await self.bus.flush_state()
             except asyncio.CancelledError:
@@ -246,6 +268,10 @@ class OverlayRuntime:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
         self.bus.set_race(state)
+        self._last_race = state
+        self._sync_tape(state, now)
+        if self._idle_when_disconnected(state):
+            return
         if self.session.in_warmup(now):
             # Suppress trend/semantic emitters during reconnect warm-up; still publish state.
             self.bus.set_active_events(self.manager.active_events())
@@ -284,20 +310,52 @@ class OverlayRuntime:
                     candidate, now, mode=state.overlay_mode
                 )
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
-                    await self.bus.publish_event(wire)
+                    await self._publish(wire, now)
             for race_event, envelopes in self.manager_v2.tick(now, mode=state.overlay_mode):
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
-                    await self.bus.publish_event(wire)
+                    await self._publish(wire, now)
             self.bus.set_active_events(self.manager_v2.active_events())
             self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
+            self._drain_tape_side(now)
             return
         for candidate in candidates:
             event = self.manager.submit(candidate, now)
             if event is not None:
-                await self.bus.publish_event(event.to_envelope())
+                await self._publish(event.to_envelope(), now)
         for expired in self.manager.tick(now):
-            await self.bus.publish_event(expired.to_envelope())
+            await self._publish(expired.to_envelope(), now)
         self.bus.set_active_events(self.manager.active_events())
+
+    def _sync_tape(self, state: RaceState, now: float) -> None:
+        if self.mode == "replay":
+            return
+        self._tape.observe(state, now, self._overlay_settings())
+
+    async def _publish(self, envelope: dict[str, Any], now: float) -> None:
+        if self.mode != "replay":
+            self._tape.record_event(envelope, now, self._last_race)
+        await self.bus.publish_event(envelope)
+
+    def _drain_tape_side(self, now: float) -> None:
+        if self.mode == "replay" or self.manager_v2 is None:
+            return
+        entries = self.manager_v2.decisions.to_list()
+        if len(entries) < self._tape_decision_cursor:
+            self._tape_decision_cursor = 0
+        for entry in entries[self._tape_decision_cursor :]:
+            self._tape.record_decision(entry, now, self._last_race)
+        self._tape_decision_cursor = len(entries)
+        stories = self.manager_v2.active_stories_v4()
+        sig = tuple(
+            (item.get("eventType"), item.get("phase"), item.get("correlationId"))
+            for item in stories
+        )
+        if sig != self._stories_sig:
+            if self._stories_sig is None and not sig:
+                self._stories_sig = sig
+                return
+            self._stories_sig = sig
+            self._tape.record_stories(stories, now, self._last_race)
 
     async def _tick_system(self) -> None:
         overlay = self._overlay_settings()
@@ -349,6 +407,7 @@ class OverlayRuntime:
         await self._bio.run()
 
     async def stop(self) -> None:
+        self._tape.close()
         await self._registry.cancel_all()
         if self._bio is not None:
             await self._bio.stop()

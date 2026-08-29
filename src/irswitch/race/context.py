@@ -113,6 +113,7 @@ class RaceContextAnalyzer:
             session_type=snap.session_type,
             track_id=snap.track_id,
             session_time=snap.session_time,
+            session_state=snap.session_state,
             overlay_mode=overlay_mode_from_session_type(snap.session_type),
             player_lap_dist_pct=snap.player_lap_dist_pct,
             stale_for_ms=snap.stale_for_ms,

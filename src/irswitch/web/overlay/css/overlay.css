@@ -11,6 +11,15 @@ html, body {
   color: var(--text-primary, #e8fbff);
 }
 
+/* Live OBS: hide SYSINFO + widgets when iRacing telemetry is down (link drop / quit). */
+html.overlay-idle #sysinfo-widget,
+html.overlay-idle #event-layer,
+html.overlay-idle #battle-stack,
+html.overlay-idle #session-layer,
+html.overlay-idle #bio-expanded {
+  display: none !important;
+}
+
 /* Dry-test only. OBS Browser Source stays fully transparent. */
 html.is-demo,
 html.is-demo body {

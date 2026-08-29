@@ -18,6 +18,7 @@ from irswitch.overlay.settings import (
     HeartRateSettings,
     HuntingSettings,
     OverlaySettings,
+    OverlayTapeSettings,
     OverlayV4Settings,
     OvertakeClassifierSettings,
     SamplingSettings,
@@ -375,6 +376,14 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         assets=_get_bool(parser, "overlay", "v4_assets", defaults.v4.assets),
         renderer=_get_bool(parser, "overlay", "v4_renderer", defaults.v4.renderer),
     )
+    from irswitch.overlay.tape import safe_tape_dir
+
+    tape = OverlayTapeSettings(
+        enabled=_get_bool(parser, "overlay", "session_tape", defaults.tape.enabled),
+        directory=safe_tape_dir(
+            _get_str(parser, "overlay", "session_tape_dir", defaults.tape.directory)
+        ),
+    )
 
     ee_defaults = defaults.event_engine
     event_engine = EventEngineFeatureSettings(
@@ -438,6 +447,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         debug=_get_bool(parser, "overlay", "debug", defaults.debug),
         language=language,
         v4=v4,
+        tape=tape,
         event_engine=event_engine,
         sampling=sampling,
         battle=BattleSettings(

@@ -4,7 +4,7 @@ import { fmtDelta, fmtGap, fmtLapTime } from "./timing-format.js";
 
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.12";
+const ASSET_CACHE = "1.2.13";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 

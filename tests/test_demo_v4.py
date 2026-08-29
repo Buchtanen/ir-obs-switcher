@@ -66,6 +66,20 @@ def test_overlay_js_starts_v4_cyclic_demo_without_fixture() -> None:
     assert 'params.get("fixture") || "lap_complete"' not in js
 
 
+def test_overlay_js_blanks_live_hud_when_iracing_drops() -> None:
+    """Live /overlay must hide SYSINFO + widgets on disconnect; demo/golden stay visible."""
+    js = _overlay_js()
+    assert "function armHud(" in js
+    assert "function fixtureHud(" in js
+    assert 'classList.toggle("overlay-idle"' in js
+    assert "armHud(Boolean(msg.race && msg.race.connected))" in js
+    assert "if (hudIdle()) return;" in js
+    css = (web_root() / "overlay" / "css" / "overlay.css").read_text(encoding="utf-8")
+    assert "html.overlay-idle #sysinfo-widget" in css
+    html = (web_root() / "overlay" / "index.html").read_text(encoding="utf-8")
+    assert 'classList.add("overlay-idle")' in html
+
+
 def test_demo_stage_defaults_to_v4_renderer() -> None:
     html = _demo_html()
     assert "renderer=v4" in html

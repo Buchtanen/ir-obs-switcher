@@ -10,8 +10,11 @@ from typing import Any
 
 from irswitch.overlay.bus import OverlayBus, load_jsonl
 from irswitch.overlay.models import BioState, OpponentInfo, RaceState, SystemState
+from irswitch.overlay.tape import playback_offset, strip_tape_clocks
 
 logger = logging.getLogger(__name__)
+
+_SKIP_TYPES = frozenset({"header", "decision", "green", "stream_origin", "scene", "footer"})
 
 
 class OverlayReplayer:
@@ -26,7 +29,7 @@ class OverlayReplayer:
             return
         origin = time.monotonic()
         for row in self._rows:
-            t = float(row.get("t", 0.0))
+            t = playback_offset(row)
             delay = (origin + t) - time.monotonic()
             if delay > 0:
                 await asyncio.sleep(delay)
@@ -34,22 +37,25 @@ class OverlayReplayer:
 
     async def _apply(self, row: dict[str, Any]) -> None:
         kind = row.get("type")
+        if kind in _SKIP_TYPES:
+            return
+        payload = strip_tape_clocks(row)
         if kind == "snapshot":
-            race = row.get("race") or {}
-            bio = row.get("bio") or {}
-            system = row.get("system") or {}
+            race = payload.get("race") or {}
+            bio = payload.get("bio") or {}
+            system = payload.get("system") or {}
             if race:
                 self._bus.set_race(_race_from_dict(race))
             if bio:
                 self._bus.set_bio(_bio_from_dict(bio))
             if system:
                 self._bus.set_system(_system_from_dict(system))
-            self._bus.set_active_events(list(row.get("activeEvents") or []))
+            self._bus.set_active_events(list(payload.get("activeEvents") or []))
             await self._bus.flush_state()
             return
         if kind == "state":
-            domain = row.get("domain")
-            data = row.get("data") or {}
+            domain = payload.get("domain")
+            data = payload.get("data") or {}
             if domain == "race":
                 self._bus.set_race(_race_from_dict(data))
             elif domain == "bio":
@@ -58,8 +64,11 @@ class OverlayReplayer:
                 self._bus.set_system(_system_from_dict(data))
             await self._bus.flush_state()
             return
+        if kind in {"stories", "STATE_SNAPSHOT"}:
+            self._bus.set_active_stories_v4(list(payload.get("activeStories") or []))
+            return
         if kind == "event":
-            await self._bus.publish_event(row)
+            await self._bus.publish_event(payload)
 
 
 def _race_from_dict(data: dict[str, Any]) -> RaceState:

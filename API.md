@@ -675,7 +675,7 @@ Envelope:
 
 ### GET /overlay
 
-OBS Browser Source, 1920×1080, transparentní pozadí.
+OBS Browser Source, 1920×1080, transparentní pozadí. Live HUD (SYSINFO + karty) se ukáže jen když `race.connected` je true; jinak je overlay prázdný (link drop / iRacing pryč). `?demo=1` / golden / preview tohle nerespektují.
 
 ### GET /overlay/debug
 
@@ -770,7 +770,23 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 }
 ```
 
-Frontend (`overlay.js`) aplikuje `activeStories` před live streamem, aby reconnect obnovil persistentní battle / pit widgety.
+Frontend (`overlay.js`) aplikuje `activeStories` před live streamem, aby reconnect obnovil persistentní battle / pit widgety. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
+
+### Overlay session tape (JSONL)
+
+Když je `[overlay] session_tape = true` (výchozí), při PRACTICE/QUALIFYING/RACE vzniká soubor `recordings/overlay-<utc>-<subsession>-<sessionNum>.jsonl`.
+
+Každý řádek má hodiny v sekundách:
+
+| Pole | Význam |
+|------|--------|
+| `t` | sync clock: `t_stream` jinak `t_session` jinak `t_mono` |
+| `t_mono` | od otevření tape — **tohle používá `--replay`** (nespí na VOD offsetu) |
+| `t_stream` | od startu OBS streamu (`null` když nestreamuješ) |
+| `t_session` | iRacing `SessionTime` |
+| `t_green` | od prvního `SessionState=4` (Racing) na tomto tape |
+
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `stream_origin`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`scene`/`green`.
 
 **Event catalog**
 

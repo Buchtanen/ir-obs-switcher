@@ -2,6 +2,31 @@ import { DisplayManager, applySysinfo, applyPersistentArt } from "./display.js";
 
 const BACKOFF = [1000, 2000, 5000, 10000];
 
+function fixtureHud() {
+  return (
+    Boolean(window.__demoMode) ||
+    document.documentElement.classList.contains("golden-layout") ||
+    document.documentElement.classList.contains("preview-layout")
+  );
+}
+
+function hudIdle() {
+  return document.documentElement.classList.contains("overlay-idle");
+}
+
+function armHud(live) {
+  if (fixtureHud()) {
+    document.documentElement.classList.remove("overlay-idle");
+    return;
+  }
+  const nextIdle = !live;
+  document.documentElement.classList.toggle("overlay-idle", nextIdle);
+  if (nextIdle) {
+    window.__v4Display?.clear?.();
+    DisplayManager.clear();
+  }
+}
+
 function wsUrl() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${location.host}/ws/overlay`;
@@ -67,11 +92,14 @@ function createMessageHandler(useV4) {
       return;
     }
     if (msg.type === "STATE_SNAPSHOT") {
-      if (useV4) window.__v4Display?.applyStateSnapshot?.(msg.activeStories || []);
+      if (useV4 && !hudIdle()) window.__v4Display?.applyStateSnapshot?.(msg.activeStories || []);
       return;
     }
     if (msg.type === "state") {
-      if (msg.domain === "race") window.__race = msg.data;
+      if (msg.domain === "race") {
+        window.__race = msg.data;
+        armHud(Boolean(msg.data && msg.data.connected));
+      }
       if (msg.domain === "bio") {
         window.__bio = msg.data;
         updateSysinfo(window.__system || {}, msg.data);
@@ -83,6 +111,7 @@ function createMessageHandler(useV4) {
       return;
     }
     if (msg.type === "event") {
+      if (hudIdle()) return;
       if (msg.format === "v4") {
         if (useV4) window.__v4Display?.show?.(msg);
         else DisplayManager.show(legacyFromV4(msg));
@@ -102,13 +131,14 @@ let onMessage = createMessageHandler(false);
 function applySnapshot(msg, { events = true } = {}) {
   applyPresentation(msg);
   if (msg.race) window.__race = msg.race;
+  armHud(Boolean(msg.race && msg.race.connected));
   if (msg.bio) window.__bio = msg.bio;
   if (msg.system) {
     window.__system = msg.system;
     updateSysinfo(msg.system, window.__bio);
   }
   if (msg.bio) updateSysinfo(window.__system || {}, msg.bio);
-  if (!events) return;
+  if (!events || hudIdle()) return;
   if (window.__renderer === "v4") return;
   (msg.activeEvents || []).forEach((ev) => DisplayManager.show(ev));
 }
@@ -130,6 +160,7 @@ export function connectOverlay() {
       }
     };
     socket.onclose = () => {
+      armHud(false);
       const wait = BACKOFF[Math.min(attempt, BACKOFF.length - 1)];
       attempt += 1;
       setTimeout(connect, wait);
