@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 2,
   "themeId": "pitwall_race_control",
   "contract": {
     "transient": [
@@ -8,73 +9,980 @@
     "sysinfo": [
       1920,
       72
-    ]
+    ],
+    "icon": [
+      64,
+      64
+    ],
+    "iconBox": [
+      54,
+      50,
+      40,
+      40
+    ],
+    "sysinfoGrid": {
+      "brandWidth": 230,
+      "moduleWidth": 150,
+      "moduleCount": 11,
+      "positions": [
+        230,
+        380,
+        530,
+        680,
+        830,
+        980,
+        1130,
+        1280,
+        1430,
+        1580,
+        1730,
+        1880
+      ],
+      "dataEndX": 1880,
+      "trailingSafeWidth": 40
+    }
+  },
+  "tones": {
+    "primary": {
+      "rail": "cyan",
+      "color": "#35D7FF"
+    },
+    "timing": {
+      "rail": "cyan",
+      "color": "#35D7FF"
+    },
+    "positive": {
+      "rail": "green",
+      "color": "#36D28A"
+    },
+    "warning": {
+      "rail": "amber",
+      "color": "#F4A62A"
+    },
+    "critical": {
+      "rail": "red",
+      "color": "#FF4E5B"
+    },
+    "bio": {
+      "rail": "amber",
+      "color": "#F4A62A"
+    },
+    "neutral": {
+      "rail": "neutral",
+      "color": "#8DA2AD"
+    }
+  },
+  "iconPolicy": {
+    "coverageContract": "state-map-exact",
+    "requiredStateGlyphCount": 35,
+    "stateGlyphs": [
+      "icons/event/pw-icon-approach.svg",
+      "icons/event/pw-icon-attack-range.svg",
+      "icons/event/pw-icon-battle-for-position.svg",
+      "icons/event/pw-icon-battle-won.svg",
+      "icons/event/pw-icon-ble-reconnecting.svg",
+      "icons/event/pw-icon-clean-streak.svg",
+      "icons/event/pw-icon-composure-test.svg",
+      "icons/event/pw-icon-final-lap.svg",
+      "icons/event/pw-icon-finish.svg",
+      "icons/event/pw-icon-gain-found.svg",
+      "icons/event/pw-icon-high-load.svg",
+      "icons/event/pw-icon-hot-lap.svg",
+      "icons/event/pw-icon-hr-pressure.svg",
+      "icons/event/pw-icon-hunted.svg",
+      "icons/event/pw-icon-hunting.svg",
+      "icons/event/pw-icon-incident.svg",
+      "icons/event/pw-icon-invalid-lap.svg",
+      "icons/event/pw-icon-lap-complete.svg",
+      "icons/event/pw-icon-link-drop.svg",
+      "icons/event/pw-icon-overtake.svg",
+      "icons/event/pw-icon-pb-attack.svg",
+      "icons/event/pw-icon-personal-best.svg",
+      "icons/event/pw-icon-pit-entry.svg",
+      "icons/event/pw-icon-pit-exit.svg",
+      "icons/event/pw-icon-pit-lane.svg",
+      "icons/event/pw-icon-pit-outcome.svg",
+      "icons/event/pw-icon-pit-released.svg",
+      "icons/event/pw-icon-pit-stopped.svg",
+      "icons/event/pw-icon-position-attack.svg",
+      "icons/event/pw-icon-position-gained.svg",
+      "icons/event/pw-icon-position-lost.svg",
+      "icons/event/pw-icon-projected-lap.svg",
+      "icons/event/pw-icon-rival-threat.svg",
+      "icons/event/pw-icon-side-by-side.svg",
+      "icons/event/pw-icon-target.svg"
+    ],
+    "eventOverrideGlyphs": [
+      "icons/event/pw-icon-cpu-temp-high.svg",
+      "icons/event/pw-icon-gpu-temp-high.svg"
+    ],
+    "utilityLibrary": [
+      "icons/event/pw-icon-ble.svg",
+      "icons/event/pw-icon-cpu.svg",
+      "icons/event/pw-icon-flag.svg",
+      "icons/event/pw-icon-fps.svg",
+      "icons/event/pw-icon-gpu.svg",
+      "icons/event/pw-icon-heart.svg",
+      "icons/event/pw-icon-memory.svg",
+      "icons/event/pw-icon-position-down.svg",
+      "icons/event/pw-icon-position-up.svg",
+      "icons/event/pw-icon-power.svg",
+      "icons/event/pw-icon-pressure.svg",
+      "icons/event/pw-icon-radar.svg",
+      "icons/event/pw-icon-stopwatch.svg",
+      "icons/event/pw-icon-temp.svg"
+    ],
+    "crossThemeUtilityNameParityRequired": false,
+    "coverageNote": "Only stateGlyphs satisfy the 35-state coverage contract. Event overrides and utilityLibrary are intentional extras and do not indicate a coverage gap."
+  },
+  "rendererPolicy": {
+    "templateResolution": {
+      "precedence": [
+        "events.<event>.template",
+        "states.<state>.template",
+        "fallbacks.<family>"
+      ],
+      "runtimeFamilyMayOverride": false,
+      "runtimeFamilyRole": "routing and lifecycle metadata only",
+      "knownRuntimeFamilyExceptions": [
+        {
+          "state": "position_attack",
+          "runtimeFamily": "timing",
+          "packTemplate": "position"
+        }
+      ]
+    }
+  },
+  "zones": {
+    "BATTLE_AHEAD": {
+      "layout": "BATTLE",
+      "template": "battle",
+      "anchor": "bottom-left",
+      "stackOrder": 0,
+      "semantic": "opponent-ahead"
+    },
+    "BATTLE_BEHIND": {
+      "layout": "BATTLE",
+      "template": "battle",
+      "anchor": "bottom-left",
+      "stackOrder": 1,
+      "semantic": "opponent-behind"
+    },
+    "EVENT": {
+      "layout": "EVENT",
+      "anchor": "bottom-right"
+    },
+    "SESSION": {
+      "layout": "SESSION",
+      "anchor": "top-center"
+    },
+    "BIO_EXPANDED": {
+      "layout": "BIO_EXPANDED",
+      "anchor": "top-right"
+    }
+  },
+  "templates": {
+    "battle": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/battle",
+      "layers": [
+        "frames/templates/battle/pw-battle-01-plate-base.svg",
+        "frames/templates/battle/pw-battle-02-data-surface.svg",
+        "frames/templates/battle/pw-battle-03-border.svg",
+        "frames/templates/battle/pw-battle-05-timing-ticks.svg",
+        "frames/templates/battle/pw-battle-06-technical-grid.svg",
+        "frames/templates/battle/pw-battle-07-corner-accent.svg",
+        "frames/templates/battle/pw-battle-08-pivot-divider.svg"
+      ],
+      "railLayers": {
+        "left-cyan": "frames/templates/battle/pw-battle-04-status-rail-left-cyan.svg",
+        "right-amber": "frames/templates/battle/pw-battle-04-status-rail-right-amber.svg",
+        "right-red": "frames/templates/battle/pw-battle-04-status-rail-right-red.svg"
+      }
+    },
+    "bio": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/bio",
+      "layers": [
+        "frames/templates/bio/pw-bio-01-plate-base.svg",
+        "frames/templates/bio/pw-bio-02-data-surface.svg",
+        "frames/templates/bio/pw-bio-03-border.svg",
+        "frames/templates/bio/pw-bio-05-timing-ticks.svg",
+        "frames/templates/bio/pw-bio-06-technical-grid.svg",
+        "frames/templates/bio/pw-bio-07-corner-accent.svg",
+        "frames/templates/bio/pw-bio-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-amber": "frames/templates/bio/pw-bio-04-status-rail-left-amber.svg",
+        "left-cyan": "frames/templates/bio/pw-bio-04-status-rail-left-cyan.svg",
+        "left-red": "frames/templates/bio/pw-bio-04-status-rail-left-red.svg"
+      }
+    },
+    "exception": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/exception",
+      "layers": [
+        "frames/templates/exception/pw-exception-01-plate-base.svg",
+        "frames/templates/exception/pw-exception-02-data-surface.svg",
+        "frames/templates/exception/pw-exception-03-border.svg",
+        "frames/templates/exception/pw-exception-05-timing-ticks.svg",
+        "frames/templates/exception/pw-exception-06-exception-fracture.svg",
+        "frames/templates/exception/pw-exception-07-corner-accent.svg",
+        "frames/templates/exception/pw-exception-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-amber": "frames/templates/exception/pw-exception-04-status-rail-left-amber.svg",
+        "left-red": "frames/templates/exception/pw-exception-04-status-rail-left-red.svg"
+      }
+    },
+    "final-lap": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/final-lap",
+      "layers": [
+        "frames/templates/final-lap/pw-final-lap-01-plate-base.svg",
+        "frames/templates/final-lap/pw-final-lap-02-data-surface.svg",
+        "frames/templates/final-lap/pw-final-lap-03-border.svg",
+        "frames/templates/final-lap/pw-final-lap-05-timing-ticks.svg",
+        "frames/templates/final-lap/pw-final-lap-06-technical-grid.svg",
+        "frames/templates/final-lap/pw-final-lap-07-corner-accent.svg",
+        "frames/templates/final-lap/pw-final-lap-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-amber": "frames/templates/final-lap/pw-final-lap-04-status-rail-left-amber.svg"
+      }
+    },
+    "finish": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/finish",
+      "layers": [
+        "frames/templates/finish/pw-finish-01-plate-base.svg",
+        "frames/templates/finish/pw-finish-02-data-surface.svg",
+        "frames/templates/finish/pw-finish-03-border.svg",
+        "frames/templates/finish/pw-finish-05-timing-ticks.svg",
+        "frames/templates/finish/pw-finish-06-technical-grid.svg",
+        "frames/templates/finish/pw-finish-07-corner-accent.svg",
+        "frames/templates/finish/pw-finish-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-cyan": "frames/templates/finish/pw-finish-04-status-rail-left-cyan.svg",
+        "left-green": "frames/templates/finish/pw-finish-04-status-rail-left-green.svg"
+      }
+    },
+    "hunted": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/hunted",
+      "layers": [
+        "frames/templates/hunted/pw-hunted-01-plate-base.svg",
+        "frames/templates/hunted/pw-hunted-02-data-surface.svg",
+        "frames/templates/hunted/pw-hunted-03-border.svg",
+        "frames/templates/hunted/pw-hunted-05-timing-ticks.svg",
+        "frames/templates/hunted/pw-hunted-06-technical-grid.svg",
+        "frames/templates/hunted/pw-hunted-07-corner-accent.svg",
+        "frames/templates/hunted/pw-hunted-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "right-amber": "frames/templates/hunted/pw-hunted-04-status-rail-right-amber.svg",
+        "right-red": "frames/templates/hunted/pw-hunted-04-status-rail-right-red.svg"
+      }
+    },
+    "hunting": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/hunting",
+      "layers": [
+        "frames/templates/hunting/pw-hunting-01-plate-base.svg",
+        "frames/templates/hunting/pw-hunting-02-data-surface.svg",
+        "frames/templates/hunting/pw-hunting-03-border.svg",
+        "frames/templates/hunting/pw-hunting-05-timing-ticks.svg",
+        "frames/templates/hunting/pw-hunting-06-technical-grid.svg",
+        "frames/templates/hunting/pw-hunting-07-corner-accent.svg",
+        "frames/templates/hunting/pw-hunting-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-cyan": "frames/templates/hunting/pw-hunting-04-status-rail-left-cyan.svg"
+      }
+    },
+    "lap": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/lap",
+      "layers": [
+        "frames/templates/lap/pw-lap-01-plate-base.svg",
+        "frames/templates/lap/pw-lap-02-data-surface.svg",
+        "frames/templates/lap/pw-lap-03-border.svg",
+        "frames/templates/lap/pw-lap-05-timing-ticks.svg",
+        "frames/templates/lap/pw-lap-06-technical-grid.svg",
+        "frames/templates/lap/pw-lap-07-corner-accent.svg",
+        "frames/templates/lap/pw-lap-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-cyan": "frames/templates/lap/pw-lap-04-status-rail-left-cyan.svg"
+      }
+    },
+    "pb": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/pb",
+      "layers": [
+        "frames/templates/pb/pw-pb-01-plate-base.svg",
+        "frames/templates/pb/pw-pb-02-data-surface.svg",
+        "frames/templates/pb/pw-pb-03-border.svg",
+        "frames/templates/pb/pw-pb-05-timing-ticks.svg",
+        "frames/templates/pb/pw-pb-06-technical-grid.svg",
+        "frames/templates/pb/pw-pb-07-corner-accent.svg",
+        "frames/templates/pb/pw-pb-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-green": "frames/templates/pb/pw-pb-04-status-rail-left-green.svg"
+      }
+    },
+    "pit": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/pit",
+      "layers": [
+        "frames/templates/pit/pw-pit-01-plate-base.svg",
+        "frames/templates/pit/pw-pit-02-data-surface.svg",
+        "frames/templates/pit/pw-pit-03-border.svg",
+        "frames/templates/pit/pw-pit-05-timing-ticks.svg",
+        "frames/templates/pit/pw-pit-06-pit-phase-track.svg",
+        "frames/templates/pit/pw-pit-07-corner-accent.svg",
+        "frames/templates/pit/pw-pit-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-amber": "frames/templates/pit/pw-pit-04-status-rail-left-amber.svg",
+        "left-cyan": "frames/templates/pit/pw-pit-04-status-rail-left-cyan.svg",
+        "left-green": "frames/templates/pit/pw-pit-04-status-rail-left-green.svg"
+      }
+    },
+    "position": {
+      "canvas": [
+        420,
+        140
+      ],
+      "root": "frames/templates/position",
+      "layers": [
+        "frames/templates/position/pw-position-01-plate-base.svg",
+        "frames/templates/position/pw-position-02-data-surface.svg",
+        "frames/templates/position/pw-position-03-border.svg",
+        "frames/templates/position/pw-position-05-timing-ticks.svg",
+        "frames/templates/position/pw-position-06-technical-grid.svg",
+        "frames/templates/position/pw-position-07-corner-accent.svg",
+        "frames/templates/position/pw-position-08-bottom-divider.svg"
+      ],
+      "railLayers": {
+        "left-amber": "frames/templates/position/pw-position-04-status-rail-left-amber.svg",
+        "left-green": "frames/templates/position/pw-position-04-status-rail-left-green.svg",
+        "left-red": "frames/templates/position/pw-position-04-status-rail-left-red.svg"
+      }
+    }
+  },
+  "states": {
+    "hunting": {
+      "template": "hunting",
+      "icon": "icons/event/pw-icon-hunting.svg",
+      "tone": "primary",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/hunting/pw-hunting-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "BATTLE_AHEAD",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Approved HUNTING plate."
+    },
+    "hunted": {
+      "template": "hunted",
+      "icon": "icons/event/pw-icon-hunted.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/hunted/pw-hunted-04-status-rail-right-amber.svg"
+      ],
+      "zone": "BATTLE_BEHIND",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Approved HUNTED plate; critical payload may select red rail.",
+      "criticalRail": "red",
+      "criticalRailLayers": [
+        "frames/templates/hunted/pw-hunted-04-status-rail-right-red.svg"
+      ]
+    },
+    "approach": {
+      "template": "hunting",
+      "icon": "icons/event/pw-icon-approach.svg",
+      "tone": "primary",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/hunting/pw-hunting-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "BATTLE_AHEAD",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses HUNTING plate with approach glyph and copy."
+    },
+    "attack_range": {
+      "template": "battle",
+      "icon": "icons/event/pw-icon-attack-range.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/battle/pw-battle-04-status-rail-right-amber.svg"
+      ],
+      "zone": "BATTLE_AHEAD",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses BATTLE plate with attack-range glyph."
+    },
+    "side_by_side": {
+      "template": "battle",
+      "icon": "icons/event/pw-icon-side-by-side.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/battle/pw-battle-04-status-rail-right-amber.svg"
+      ],
+      "zone": "BATTLE_AHEAD",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses BATTLE plate with side-by-side glyph."
+    },
+    "battle_for_position": {
+      "template": "battle",
+      "icon": "icons/event/pw-icon-battle-for-position.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/battle/pw-battle-04-status-rail-left-cyan.svg",
+        "frames/templates/battle/pw-battle-04-status-rail-right-amber.svg"
+      ],
+      "zone": "BATTLE_AHEAD",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Approved dual-rail BATTLE plate."
+    },
+    "battle_won": {
+      "template": "battle",
+      "icon": "icons/event/pw-icon-battle-won.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/common/rails/pw-status-rail-left-green.svg"
+      ],
+      "zone": "BATTLE_AHEAD",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Reuses BATTLE plate as a result state."
+    },
+    "target": {
+      "template": "lap",
+      "icon": "icons/event/pw-icon-target.svg",
+      "tone": "primary",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/lap/pw-lap-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses LAP timing plate with target glyph."
+    },
+    "projected_lap": {
+      "template": "lap",
+      "icon": "icons/event/pw-icon-projected-lap.svg",
+      "tone": "timing",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/lap/pw-lap-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses LAP timing plate with projection glyph."
+    },
+    "pb_attack": {
+      "template": "pb",
+      "icon": "icons/event/pw-icon-pb-attack.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/pb/pw-pb-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses PB plate with PB-attack glyph."
+    },
+    "lap_complete": {
+      "template": "lap",
+      "icon": "icons/event/pw-icon-lap-complete.svg",
+      "tone": "timing",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/lap/pw-lap-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Approved LAP plate."
+    },
+    "personal_best": {
+      "template": "pb",
+      "icon": "icons/event/pw-icon-personal-best.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/pb/pw-pb-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Approved PB plate."
+    },
+    "hot_lap": {
+      "template": "lap",
+      "icon": "icons/event/pw-icon-hot-lap.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/common/rails/pw-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses LAP plate with hot-lap glyph."
+    },
+    "position_attack": {
+      "template": "position",
+      "icon": "icons/event/pw-icon-position-attack.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/position/pw-position-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses POSITION plate with grid-attack glyph."
+    },
+    "gain_found": {
+      "template": "pb",
+      "icon": "icons/event/pw-icon-gain-found.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/pb/pw-pb-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses PB plate with gain glyph."
+    },
+    "clean_streak": {
+      "template": "pb",
+      "icon": "icons/event/pw-icon-clean-streak.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/pb/pw-pb-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses PB plate with clean-streak glyph."
+    },
+    "overtake": {
+      "template": "position",
+      "icon": "icons/event/pw-icon-overtake.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/position/pw-position-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Reuses POSITION plate with overtake glyph."
+    },
+    "position_gained": {
+      "template": "position",
+      "icon": "icons/event/pw-icon-position-gained.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/position/pw-position-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Approved POSITION plate, upward motion direction."
+    },
+    "position_lost": {
+      "template": "position",
+      "icon": "icons/event/pw-icon-position-lost.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/position/pw-position-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Approved POSITION plate, downward motion direction; red only if critical.",
+      "criticalRail": "red",
+      "criticalRailLayers": [
+        "frames/templates/position/pw-position-04-status-rail-left-red.svg"
+      ]
+    },
+    "rival_threat": {
+      "template": "position",
+      "icon": "icons/event/pw-icon-rival-threat.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/position/pw-position-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses POSITION plate with rival-threat glyph."
+    },
+    "invalid_lap": {
+      "template": "exception",
+      "icon": "icons/event/pw-icon-invalid-lap.svg",
+      "tone": "critical",
+      "rail": "red",
+      "railLayers": [
+        "frames/templates/exception/pw-exception-04-status-rail-left-red.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "exception-alert",
+      "reuseNote": "New EXCEPTION family plate."
+    },
+    "incident": {
+      "template": "exception",
+      "icon": "icons/event/pw-icon-incident.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/exception/pw-exception-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "exception-alert",
+      "reuseNote": "New EXCEPTION family plate."
+    },
+    "link_drop": {
+      "template": "exception",
+      "icon": "icons/event/pw-icon-link-drop.svg",
+      "tone": "critical",
+      "rail": "red",
+      "railLayers": [
+        "frames/templates/exception/pw-exception-04-status-rail-left-red.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "exception-alert",
+      "reuseNote": "New EXCEPTION family plate with broken-link glyph."
+    },
+    "pit_entry": {
+      "template": "pit",
+      "icon": "icons/event/pw-icon-pit-entry.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/pit/pw-pit-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "pit-phase",
+      "reuseNote": "New PIT family plate, phase 1/6."
+    },
+    "pit_lane": {
+      "template": "pit",
+      "icon": "icons/event/pw-icon-pit-lane.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/pit/pw-pit-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "pit-phase",
+      "reuseNote": "New PIT family plate, phase 2/6."
+    },
+    "pit_stopped": {
+      "template": "pit",
+      "icon": "icons/event/pw-icon-pit-stopped.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/pit/pw-pit-04-status-rail-left-amber.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "pit-phase",
+      "reuseNote": "New PIT family plate, phase 3/6."
+    },
+    "pit_released": {
+      "template": "pit",
+      "icon": "icons/event/pw-icon-pit-released.svg",
+      "tone": "primary",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/pit/pw-pit-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "pit-phase",
+      "reuseNote": "New PIT family plate, phase 4/6."
+    },
+    "pit_exit": {
+      "template": "pit",
+      "icon": "icons/event/pw-icon-pit-exit.svg",
+      "tone": "primary",
+      "rail": "cyan",
+      "railLayers": [
+        "frames/templates/pit/pw-pit-04-status-rail-left-cyan.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "pit-phase",
+      "reuseNote": "New PIT family plate, phase 5/6."
+    },
+    "pit_outcome": {
+      "template": "pit",
+      "icon": "icons/event/pw-icon-pit-outcome.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/pit/pw-pit-04-status-rail-left-green.svg"
+      ],
+      "zone": "EVENT",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "New PIT family plate, result phase 6/6."
+    },
+    "hr_pressure": {
+      "template": "bio",
+      "icon": "icons/event/pw-icon-hr-pressure.svg",
+      "tone": "bio",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/bio/pw-bio-04-status-rail-left-amber.svg"
+      ],
+      "zone": "BIO_EXPANDED",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Approved BIO plate."
+    },
+    "composure_test": {
+      "template": "bio",
+      "icon": "icons/event/pw-icon-composure-test.svg",
+      "tone": "bio",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/bio/pw-bio-04-status-rail-left-amber.svg"
+      ],
+      "zone": "BIO_EXPANDED",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses BIO plate with composure glyph."
+    },
+    "high_load": {
+      "template": "bio",
+      "icon": "icons/event/pw-icon-high-load.svg",
+      "tone": "critical",
+      "rail": "red",
+      "railLayers": [
+        "frames/templates/bio/pw-bio-04-status-rail-left-red.svg"
+      ],
+      "zone": "BIO_EXPANDED",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses BIO plate with high-load glyph."
+    },
+    "ble_reconnecting": {
+      "template": "bio",
+      "icon": "icons/event/pw-icon-ble-reconnecting.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/bio/pw-bio-04-status-rail-left-amber.svg"
+      ],
+      "zone": "BIO_EXPANDED",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "active",
+      "reuseNote": "Reuses BIO plate with BLE reconnect glyph."
+    },
+    "final_lap": {
+      "template": "final-lap",
+      "icon": "icons/event/pw-icon-final-lap.svg",
+      "tone": "warning",
+      "rail": "amber",
+      "railLayers": [
+        "frames/templates/final-lap/pw-final-lap-04-status-rail-left-amber.svg"
+      ],
+      "zone": "SESSION",
+      "lifecycle": "ENTER_ACTIVE_COMPACT_EXIT",
+      "motion": "session-sweep",
+      "reuseNote": "Approved FINAL LAP plate."
+    },
+    "finish": {
+      "template": "finish",
+      "icon": "icons/event/pw-icon-finish.svg",
+      "tone": "positive",
+      "rail": "green",
+      "railLayers": [
+        "frames/templates/finish/pw-finish-04-status-rail-left-green.svg"
+      ],
+      "zone": "SESSION",
+      "lifecycle": "RESULT_EXIT",
+      "motion": "result",
+      "reuseNote": "Approved FINISH plate."
+    }
   },
   "events": {
-    "HUNTING": {
-      "template": "hunting",
-      "rail": "cyan",
-      "icon": "target",
-      "zone": "BATTLE_AHEAD"
-    },
-    "HUNTED": {
-      "template": "hunted",
-      "rail": "amber",
-      "criticalRail": "red",
-      "icon": "pressure",
-      "zone": "BATTLE_BEHIND"
-    },
-    "BATTLE_FOR_POSITION": {
-      "template": "battle",
-      "rail": "cyan",
-      "secondaryRail": "amber",
-      "icon": "radar",
-      "zone": "BATTLE_AHEAD"
-    },
     "LAP_COMPLETE": {
-      "template": "lap",
-      "rail": "cyan",
-      "icon": "stopwatch",
-      "zone": "EVENT"
+      "state": "lap_complete"
     },
     "PERSONAL_BEST": {
-      "template": "pb",
-      "rail": "green",
-      "icon": "stopwatch",
-      "zone": "EVENT",
-      "flash": "lcd"
+      "state": "personal_best"
+    },
+    "GAIN_FOUND": {
+      "state": "gain_found"
+    },
+    "PROJECTED_LAP": {
+      "state": "projected_lap"
+    },
+    "POSITION_ATTACK": {
+      "state": "position_attack"
+    },
+    "SECTOR_BEST": {
+      "state": "pb_attack"
+    },
+    "TARGET_LOCKED": {
+      "state": "target"
+    },
+    "HOT_LAP": {
+      "state": "hot_lap"
+    },
+    "CLEAN_STREAK": {
+      "state": "clean_streak"
+    },
+    "HUNTING": {
+      "state": "hunting"
+    },
+    "HUNTED": {
+      "state": "hunted"
+    },
+    "APPROACH": {
+      "state": "approach"
+    },
+    "ATTACK_RANGE": {
+      "state": "attack_range"
+    },
+    "SIDE_BY_SIDE": {
+      "state": "side_by_side"
+    },
+    "BATTLE_FOR_POSITION": {
+      "state": "battle_for_position"
+    },
+    "BATTLE_WON": {
+      "state": "battle_won"
+    },
+    "OVERTAKE": {
+      "state": "overtake"
     },
     "POSITION_GAINED": {
-      "template": "position",
-      "rail": "green",
-      "icon": "position-up",
-      "zone": "EVENT"
+      "state": "position_gained"
     },
     "POSITION_LOST": {
-      "template": "position",
-      "rail": "amber",
-      "criticalRail": "red",
-      "icon": "position-down",
-      "zone": "EVENT"
+      "state": "position_lost"
+    },
+    "RIVAL_THREAT": {
+      "state": "rival_threat"
+    },
+    "INCIDENT": {
+      "state": "incident"
+    },
+    "INVALID_LAP": {
+      "state": "invalid_lap"
+    },
+    "LINK_DROP": {
+      "state": "link_drop"
     },
     "FINAL_LAP": {
-      "template": "final-lap",
-      "rail": "amber",
-      "icon": "flag",
-      "zone": "SESSION"
+      "state": "final_lap"
     },
     "FINISH": {
-      "template": "finish",
-      "rail": "green",
-      "icon": "finish",
-      "zone": "SESSION"
+      "state": "finish"
     },
     "HR_PRESSURE_RISING": {
-      "template": "bio",
-      "rail": "amber",
-      "criticalRail": "red",
-      "icon": "heart",
-      "zone": "BIO_EXPANDED"
+      "state": "hr_pressure"
+    },
+    "BLE_LOST": {
+      "state": "ble_reconnecting"
+    },
+    "CPU_TEMP_HIGH": {
+      "state": "incident",
+      "icon": "icons/event/pw-icon-cpu-temp-high.svg"
+    },
+    "GPU_TEMP_HIGH": {
+      "state": "incident",
+      "icon": "icons/event/pw-icon-gpu-temp-high.svg"
+    },
+    "PIT_ENTRY": {
+      "state": "pit_entry"
+    },
+    "PIT_LANE": {
+      "state": "pit_lane"
+    },
+    "PIT_STOPPED": {
+      "state": "pit_stopped"
+    },
+    "PIT_RELEASED": {
+      "state": "pit_released"
+    },
+    "PIT_EXIT": {
+      "state": "pit_exit"
+    },
+    "PIT_OUTCOME": {
+      "state": "pit_outcome"
     }
+  },
+  "fallbacks": {
+    "TIME_LOST": "gain_found",
+    "NO_IMPROVEMENT": "projected_lap",
+    "OVERTAKEN": "position_lost",
+    "BATTLE_LOST": "hunted",
+    "HEART_RATE": "hr_pressure"
   }
 }

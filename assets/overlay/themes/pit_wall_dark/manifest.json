@@ -1,14 +1,38 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "theme_id": "pit-wall-dark",
   "display_name": "Pit Wall Dark",
-  "asset_root": "assets/overlay/themes/pit_wall_dark",
   "base_commit": "6b7d969",
+  "asset_root": "assets/overlay/themes/pit_wall_dark",
+  "renderer_contract": {
+    "version": 4,
+    "event_visual_map": "accents/event-visual-map.json",
+    "theme_tokens": "theme-tokens.json",
+    "motion": "motion/manifest.json",
+    "transient_canvas": [
+      420,
+      140
+    ],
+    "sysinfo_canvas": [
+      1920,
+      72
+    ],
+    "icon_canvas": [
+      64,
+      64
+    ],
+    "icon_box": [
+      54,
+      50,
+      40,
+      40
+    ]
+  },
   "files": [
     {
       "path": "README.md",
-      "bytes": 1149,
-      "sha256": "6e1b5f5b69c376cd19488338589f0d23b2b092a64f5453584051e18bf4351de2"
+      "bytes": 1804,
+      "sha256": "7e54a9925201d8ff81a101dddcefbfb0001671b64391b050d10ff771c4c81698"
     },
     {
       "path": "accents/common/chevrons/pw-chevrons-down-amber.svg",
@@ -152,8 +176,8 @@
     },
     {
       "path": "accents/event-visual-map.json",
-      "bytes": 1613,
-      "sha256": "b682a319d452d9010adc1ca6dd132317949261733363f7034e5d5b1ff9ff8048"
+      "bytes": 30723,
+      "sha256": "939793929c96bc1cc3675c995c576f289db3d523857842d52b7c522e1c5cdbfc"
     },
     {
       "path": "backgrounds/README.md",
@@ -372,6 +396,51 @@
     },
     {
       "path": "frames/templates/bio/pw-bio-08-bottom-divider.svg",
+      "bytes": 309,
+      "sha256": "7018e898aa057a6c4726eb19c9cc75ac300115544c22437a8ee381b0fee50498"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-01-plate-base.svg",
+      "bytes": 1246,
+      "sha256": "4136a2a0493940150c2739686c168ddeba4b58486e9d36ba909e9f7d8c2ff9c4"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-02-data-surface.svg",
+      "bytes": 1228,
+      "sha256": "52e009a2710328a8476167f45d179e589b33871a39184de400df8b22cf0c568e"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-03-border.svg",
+      "bytes": 1349,
+      "sha256": "94a1c32281d6bbef186616e2fa3cf73c454ad71a1853e37ee6f318f4a32326d1"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-04-status-rail-left-amber.svg",
+      "bytes": 1252,
+      "sha256": "08a500e8c821d165392b8bbd8e3b30be90876a10a94c56ebab1919cc8edb2ddb"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-04-status-rail-left-red.svg",
+      "bytes": 1250,
+      "sha256": "ac845d465ee24bef9ba0f3a661cfe8a90995839d4bdc53032074f32e78d04e33"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-05-timing-ticks.svg",
+      "bytes": 1749,
+      "sha256": "a3b693dacb8dfea008f72ac4ae665e528ccb14ae73d57a1091c42a530dfb747f"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-06-exception-fracture.svg",
+      "bytes": 442,
+      "sha256": "3a9445dea3c9c6623746810d8f2bc4619dd15f4115b012c17c1f4d85d1d5c865"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-07-corner-accent.svg",
+      "bytes": 258,
+      "sha256": "9a8fca37ffb064711f85785409ed91731f41a4c221196e0f96ee2faec77baa27"
+    },
+    {
+      "path": "frames/templates/exception/pw-exception-08-bottom-divider.svg",
       "bytes": 309,
       "sha256": "7018e898aa057a6c4726eb19c9cc75ac300115544c22437a8ee381b0fee50498"
     },
@@ -626,6 +695,56 @@
       "sha256": "7018e898aa057a6c4726eb19c9cc75ac300115544c22437a8ee381b0fee50498"
     },
     {
+      "path": "frames/templates/pit/pw-pit-01-plate-base.svg",
+      "bytes": 1246,
+      "sha256": "4136a2a0493940150c2739686c168ddeba4b58486e9d36ba909e9f7d8c2ff9c4"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-02-data-surface.svg",
+      "bytes": 1228,
+      "sha256": "52e009a2710328a8476167f45d179e589b33871a39184de400df8b22cf0c568e"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-03-border.svg",
+      "bytes": 1349,
+      "sha256": "94a1c32281d6bbef186616e2fa3cf73c454ad71a1853e37ee6f318f4a32326d1"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-04-status-rail-left-amber.svg",
+      "bytes": 1246,
+      "sha256": "5a48d61f7c81c9d7507cb391c3a4b9296a0f906e7fbf5591422795a0984d8cb0"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-04-status-rail-left-cyan.svg",
+      "bytes": 1245,
+      "sha256": "f81b323607273ad2538d16a63d14c14333b0534b5b384ab70336f54fe738cf4a"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-04-status-rail-left-green.svg",
+      "bytes": 1246,
+      "sha256": "30774e7f269654bb05c2012f4b0411cc71552d7d3c4569132e4e805bf64aa8c6"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-05-timing-ticks.svg",
+      "bytes": 1749,
+      "sha256": "a3b693dacb8dfea008f72ac4ae665e528ccb14ae73d57a1091c42a530dfb747f"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-06-pit-phase-track.svg",
+      "bytes": 669,
+      "sha256": "b193a385040bc7c871280f1b470f0957933f2d4132d7ae54a930fd3a5110a4f4"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-07-corner-accent.svg",
+      "bytes": 258,
+      "sha256": "9a8fca37ffb064711f85785409ed91731f41a4c221196e0f96ee2faec77baa27"
+    },
+    {
+      "path": "frames/templates/pit/pw-pit-08-bottom-divider.svg",
+      "bytes": 309,
+      "sha256": "7018e898aa057a6c4726eb19c9cc75ac300115544c22437a8ee381b0fee50498"
+    },
+    {
       "path": "frames/templates/position/pw-position-01-plate-base.svg",
       "bytes": 1246,
       "sha256": "4136a2a0493940150c2739686c168ddeba4b58486e9d36ba909e9f7d8c2ff9c4"
@@ -676,14 +795,59 @@
       "sha256": "7018e898aa057a6c4726eb19c9cc75ac300115544c22437a8ee381b0fee50498"
     },
     {
+      "path": "icons/event/pw-icon-approach.svg",
+      "bytes": 320,
+      "sha256": "130ffcef322f84378b8bed028b80b112982e714fa68ad99d10fd7e435d7f0065"
+    },
+    {
+      "path": "icons/event/pw-icon-attack-range.svg",
+      "bytes": 353,
+      "sha256": "1f18f52ceabb38874703a396530ef194223b853d263be237241c7d6ed34ef5f2"
+    },
+    {
+      "path": "icons/event/pw-icon-battle-for-position.svg",
+      "bytes": 361,
+      "sha256": "850a425ac4fd378e0e4ebf785d70195f248b435fe31ea21b94c23514c348bc49"
+    },
+    {
+      "path": "icons/event/pw-icon-battle-won.svg",
+      "bytes": 409,
+      "sha256": "e6025d25b23e28f08d4ca49a433e5a82ee8a9d2c7ff0145eeebe2c6ec7d309e2"
+    },
+    {
+      "path": "icons/event/pw-icon-ble-reconnecting.svg",
+      "bytes": 436,
+      "sha256": "05384face52e9a27694e94dd48515efb670d98e0cdb5898b30167c892a087975"
+    },
+    {
       "path": "icons/event/pw-icon-ble.svg",
       "bytes": 327,
       "sha256": "8f95fd907db4cf35a00a13babb23a998de5cf3d641f796ec9c897c69b22ffc34"
     },
     {
+      "path": "icons/event/pw-icon-clean-streak.svg",
+      "bytes": 353,
+      "sha256": "c683c7ab21ad8cb0d02ad13b2db660106b743f1b6ee265ee57b5ddd0aeb2edb2"
+    },
+    {
+      "path": "icons/event/pw-icon-composure-test.svg",
+      "bytes": 389,
+      "sha256": "ece33b73717c274c57aa8b4a15a42bbe99f640be3e2d15fcaefa3fa16e99c455"
+    },
+    {
+      "path": "icons/event/pw-icon-cpu-temp-high.svg",
+      "bytes": 467,
+      "sha256": "62f3d568fe647d69326b439b90f2bb51e473d735db6482a681fad94a248ca982"
+    },
+    {
       "path": "icons/event/pw-icon-cpu.svg",
       "bytes": 456,
       "sha256": "5cdf5ea42b16f26ebf87c7616cbbaa4c4fbed957d19d70bb83b8eb20d2549e86"
+    },
+    {
+      "path": "icons/event/pw-icon-final-lap.svg",
+      "bytes": 348,
+      "sha256": "db82d7ee1b0c6522426772fe5015ce891574b5c2780eeade6289a2e89139d67c"
     },
     {
       "path": "icons/event/pw-icon-finish.svg",
@@ -701,6 +865,16 @@
       "sha256": "b77d794b46d3022c935290ccd46f915d1c75a49f5439975532e58bbbc8a8ff47"
     },
     {
+      "path": "icons/event/pw-icon-gain-found.svg",
+      "bytes": 322,
+      "sha256": "b6831c5ff0f76cb68082741274190121caf47a775477df21fb80155b834633bb"
+    },
+    {
+      "path": "icons/event/pw-icon-gpu-temp-high.svg",
+      "bytes": 389,
+      "sha256": "166d4fdf06523fa00770a66587d3193d387225f8ca9567417c0f8f72411ab762"
+    },
+    {
       "path": "icons/event/pw-icon-gpu.svg",
       "bytes": 531,
       "sha256": "7c0e016c5fe5855ea8727376db92d0d47650df151e9644fb1746063500ecc5b2"
@@ -711,14 +885,119 @@
       "sha256": "b3f4cd4839bbd9d0006c8b1d95467a8f15fadf0300c8ed0685937f2e1d779d46"
     },
     {
+      "path": "icons/event/pw-icon-high-load.svg",
+      "bytes": 404,
+      "sha256": "3b99498d369de50f8c73e222606b263855d67cb456463bfdeb1d7f91d9efdfdd"
+    },
+    {
+      "path": "icons/event/pw-icon-hot-lap.svg",
+      "bytes": 407,
+      "sha256": "36ddaf8b0b6d0a28abfdb0dceff908b7fb5c95a6879f73350b3a8c110f891596"
+    },
+    {
+      "path": "icons/event/pw-icon-hr-pressure.svg",
+      "bytes": 378,
+      "sha256": "807886faeee76d85de2b207d033eb4fd819cdddd43c3850ff3d06351240eb66d"
+    },
+    {
+      "path": "icons/event/pw-icon-hunted.svg",
+      "bytes": 374,
+      "sha256": "aaafebc82f4f3230c63d4702ec1f8ee926de8db1f7bdfe448441cef86a4205f3"
+    },
+    {
+      "path": "icons/event/pw-icon-hunting.svg",
+      "bytes": 361,
+      "sha256": "18c4726925247f04b112fb252d21b284c0b5c1d0270a61a317ce8f1e4a464dc7"
+    },
+    {
+      "path": "icons/event/pw-icon-incident.svg",
+      "bytes": 311,
+      "sha256": "281708adac81d60a2b6485b2d3576c69a5b818484a95f2b88435c49ee167aab7"
+    },
+    {
+      "path": "icons/event/pw-icon-invalid-lap.svg",
+      "bytes": 340,
+      "sha256": "fece05c98a698df68cdb6b37ff6059404877b09cf6a554b9564640fa21112432"
+    },
+    {
+      "path": "icons/event/pw-icon-lap-complete.svg",
+      "bytes": 367,
+      "sha256": "59ed88f5de6e6142c4b179383c9c98581e2f32c348dc7cd9045b9aedbdfd3d59"
+    },
+    {
+      "path": "icons/event/pw-icon-link-drop.svg",
+      "bytes": 429,
+      "sha256": "fdeda1bd2e0f333bf070f4710caf39878857650aae039507a186e1c6fd544f28"
+    },
+    {
       "path": "icons/event/pw-icon-memory.svg",
       "bytes": 492,
       "sha256": "fdd29c80bf0ececf1ae2ffdb26ef778f300b99dd8026012e24445eb8b7c278a4"
     },
     {
+      "path": "icons/event/pw-icon-overtake.svg",
+      "bytes": 405,
+      "sha256": "cfa33d4149c65ec228989e4a5687f8966028dae04e8c5b23841a4017376ea1f3"
+    },
+    {
+      "path": "icons/event/pw-icon-pb-attack.svg",
+      "bytes": 344,
+      "sha256": "86c7678b018cf23f6cdc3494bebafca597d85986a8f85003fa337463eee71622"
+    },
+    {
+      "path": "icons/event/pw-icon-personal-best.svg",
+      "bytes": 393,
+      "sha256": "09255bd9f2736d5b2cfd4a249bd3dad6a52a78124fb63943e00b78c7d25cf694"
+    },
+    {
+      "path": "icons/event/pw-icon-pit-entry.svg",
+      "bytes": 353,
+      "sha256": "1e7f22af61c590e0f62062c5f8f7105ec2b82cc6d960d07cd65ffcf37e06a488"
+    },
+    {
+      "path": "icons/event/pw-icon-pit-exit.svg",
+      "bytes": 352,
+      "sha256": "af3a674cef623543e2e80eb22a741ff6a69b254c97c6a77ccebe65c2874244f1"
+    },
+    {
+      "path": "icons/event/pw-icon-pit-lane.svg",
+      "bytes": 369,
+      "sha256": "cb0c57d2a2d00f77986e39010ed1a2a6c7884b6cb52c1626b729c113ebc10b7d"
+    },
+    {
+      "path": "icons/event/pw-icon-pit-outcome.svg",
+      "bytes": 339,
+      "sha256": "681c6c3f6449b1f5e3d73436d23a999bad9e933b1783fca34a2b7b88968e4a01"
+    },
+    {
+      "path": "icons/event/pw-icon-pit-released.svg",
+      "bytes": 320,
+      "sha256": "72d459e9febcfc71d00a4437c7381902a2d0fcfa7d0ccdb7631650b2a461ab4b"
+    },
+    {
+      "path": "icons/event/pw-icon-pit-stopped.svg",
+      "bytes": 342,
+      "sha256": "1502fb9caae0096756cdae5a4711748e5fd35d6abed85f1ea02c0d54cbcd302a"
+    },
+    {
+      "path": "icons/event/pw-icon-position-attack.svg",
+      "bytes": 349,
+      "sha256": "c87af45fefd85223ba1713a61344fc6ac4faac1d70e2f36637e07ed955833dcc"
+    },
+    {
       "path": "icons/event/pw-icon-position-down.svg",
       "bytes": 316,
       "sha256": "e308e9a42b6b3710603027dda96afb2d091016bee08802e0178fe3c22efded8a"
+    },
+    {
+      "path": "icons/event/pw-icon-position-gained.svg",
+      "bytes": 320,
+      "sha256": "b53895f6e629e61b7dac76cd020f18ecd29b50d4894e24440a1ef1f39c48f2f2"
+    },
+    {
+      "path": "icons/event/pw-icon-position-lost.svg",
+      "bytes": 317,
+      "sha256": "e5ecd7723c00231f0e769ef2bff190538fe368059382250413b0f1464e25763a"
     },
     {
       "path": "icons/event/pw-icon-position-up.svg",
@@ -736,9 +1015,24 @@
       "sha256": "d20884cb4c9f21e382c84d1fed9ea6b9ad6f4773f4e61bc0f35c94b484fbf4cc"
     },
     {
+      "path": "icons/event/pw-icon-projected-lap.svg",
+      "bytes": 364,
+      "sha256": "351c61b05ff9243d3fbd540b7b9b4de709c1f62bf880d51a1726c1de41e47a80"
+    },
+    {
       "path": "icons/event/pw-icon-radar.svg",
       "bytes": 416,
       "sha256": "457d3bf5a8102103164e4e7af1e2a49f7ec00ca234712baf8ea19fc635946163"
+    },
+    {
+      "path": "icons/event/pw-icon-rival-threat.svg",
+      "bytes": 370,
+      "sha256": "57bbca4d04b67f35c0309efc0b8682067e380c84c078f3be96bf6e52cc5fc1c0"
+    },
+    {
+      "path": "icons/event/pw-icon-side-by-side.svg",
+      "bytes": 407,
+      "sha256": "306509d94ca19873cc81e99737c72cc6601b49264d6cc24d9b1cb82f4a5d8921"
     },
     {
       "path": "icons/event/pw-icon-stopwatch.svg",
@@ -777,8 +1071,8 @@
     },
     {
       "path": "icons/sysinfo/pw-sysinfo-dividers.svg",
-      "bytes": 888,
-      "sha256": "84dfed1fe0bac8524d0ade398268c20aeb380ec79df8015e55b8695935f7c7d2"
+      "bytes": 994,
+      "sha256": "eca5abc3b3ec2f9172f97f6c693872d10c009820fa436ed8d64b652cdcba9fc1"
     },
     {
       "path": "icons/sysinfo/pw-sysinfo-footer-accent.svg",
@@ -792,33 +1086,113 @@
     },
     {
       "path": "motion/MOTION.md",
-      "bytes": 1010,
-      "sha256": "7f094f0788aba3b08f65a4e3d645d35105e372e444214465a0651dd8ca8904b2"
+      "bytes": 1462,
+      "sha256": "ac4e558b0f99f6cdbd8dab48b15744da1141c35ccbea45f06d4b1fa857468250"
+    },
+    {
+      "path": "motion/active_pulse.webm",
+      "bytes": 5778,
+      "sha256": "464d1a4246879db90ea18290e9162e17ebde8cc142d943249918844c7f86107e"
+    },
+    {
+      "path": "motion/battle_signal_lock.webm",
+      "bytes": 27254,
+      "sha256": "513a4decf566f55c7eadbdda024f67c5aa5a199098e568d8f898615e053e6c6d"
+    },
+    {
+      "path": "motion/bio_pulse.webm",
+      "bytes": 25409,
+      "sha256": "9066a1458787dc1922ed85650c41867e3df0dcc68dbc90b6c53cc843f09c03ea"
+    },
+    {
+      "path": "motion/compact_mask.webm",
+      "bytes": 8738,
+      "sha256": "2303aec5aff204ce904f8c17a79fa1be64d2d2b2507c061d7c8371cc7c914dd2"
+    },
+    {
+      "path": "motion/enter_reveal.webm",
+      "bytes": 13349,
+      "sha256": "f3d906cb34240675c007eaac866c4005dc5e27e30ef8f68f3f6fa46dde62a693"
+    },
+    {
+      "path": "motion/exception_link_drop.webm",
+      "bytes": 18222,
+      "sha256": "8277be3668e76efceca897587ef911dc26f0e16d1740e828d34e2f8c70dbfd9e"
+    },
+    {
+      "path": "motion/exit_trace.webm",
+      "bytes": 6461,
+      "sha256": "db51d3cb6c770afc9b95479b0fbc83768f7c9ec4805409f17b32289acbdcc729"
+    },
+    {
+      "path": "motion/manifest.json",
+      "bytes": 4665,
+      "sha256": "88619ce5dc0f04fd95fe447e4a754e44a4b46cf5a2d82c7e4330fa156d9cfbca"
+    },
+    {
+      "path": "motion/pit_stop_ring.webm",
+      "bytes": 31698,
+      "sha256": "20ede9820df93e8d5f90f0b3baa161cc23d17cc13a92548e03b536f911913fc9"
+    },
+    {
+      "path": "motion/position_chevron_hit.webm",
+      "bytes": 22791,
+      "sha256": "b7a68ab124eeb8460dd8519f659960dbf60e5d55b6873c4c527978b9a1ee4f12"
+    },
+    {
+      "path": "motion/result_burst.webm",
+      "bytes": 27354,
+      "sha256": "24493b438d6109588d9c14997b09463c336362c538083807658427d282081471"
+    },
+    {
+      "path": "motion/resume_reacquire.webm",
+      "bytes": 35004,
+      "sha256": "bce11060257aa2f42ef564788bccdce4c0e4d5be0bddc11faf1096f63a624266"
+    },
+    {
+      "path": "motion/session_finish_burst.webm",
+      "bytes": 16112,
+      "sha256": "e4481da94efcc0e7da8adba9f3ac656bc054516d4a1005164ccfb34e6395453b"
+    },
+    {
+      "path": "motion/suspend_dim.webm",
+      "bytes": 107288,
+      "sha256": "e8f213b1fb100c5fc97e2d721040af42070e57b47be249d9b7cbea71c5feeaf9"
+    },
+    {
+      "path": "motion/theme_glitch.webm",
+      "bytes": 5914,
+      "sha256": "e6c2fbe7e6070f6086d9edea53ed3ac8b9a59c0c926f553f0549150b11edff3d"
+    },
+    {
+      "path": "motion/timing_projection_sweep.webm",
+      "bytes": 16776,
+      "sha256": "a8fd426142f7f8023eaeb48434247dfd9010a0b9272ba5aed50c08695b724224"
     },
     {
       "path": "packages/01_Pitwall_Core_Vector_and_Tokens.zip",
-      "bytes": 33627,
-      "sha256": "66aad16ae6a9753baa457b3b7d8418aed53e738c427e3e91ee6f2c8d4fb1c123"
+      "bytes": 38414,
+      "sha256": "009208fabc44b6ea8351097d26898b3fe9f26e57e1c5ffcd3df7c877f62c7aa1"
     },
     {
       "path": "packages/02_Pitwall_Icons_and_Status.zip",
-      "bytes": 162293,
-      "sha256": "8670efb36ff2ee2c97a17284e3d55fa85101b8bff6b72790c99313479c4bd8f1"
+      "bytes": 703154,
+      "sha256": "b42d677a03c7fb1edbe953c1f411f46cb36cce1733a4d3bb59b67237d32dd5d6"
     },
     {
       "path": "packages/03_Pitwall_Transient_Templates_Vector.zip",
-      "bytes": 54776,
-      "sha256": "3d4df1c27d7caacecd3e26ad11006e2d7b7b5156ad33045617b1d55da79447a9"
+      "bytes": 67951,
+      "sha256": "a8b8a4d75a296e7d13f79d59ae1bf6c7cbc53fdead6206623034fbc8ec725236"
     },
     {
       "path": "packages/04_Pitwall_Transient_Raster_1x.zip",
-      "bytes": 165745,
-      "sha256": "a9263be1ba6609798c09717f2fb4a2d4f30500bbdd424e3642b2e852c6bf2f90"
+      "bytes": 203035,
+      "sha256": "86ec0db10139b1a0e45f61ead402a25f9c25f6c05bc659c6a758c098be77f187"
     },
     {
       "path": "packages/05_Pitwall_Transient_Raster_2x.zip",
-      "bytes": 263183,
-      "sha256": "cb8bf4243f52b6d8d607ab952d5323a0be80683796e6db12f5f57b7642ea33f5"
+      "bytes": 355624,
+      "sha256": "c5c1939936606ec6e625ed920848a78c7425b962f9a23e9fef9ff655e8128664"
     },
     {
       "path": "packages/06_Pitwall_Common_Raster_1x.zip",
@@ -832,38 +1206,48 @@
     },
     {
       "path": "packages/08_Pitwall_SYSINFO_All_Formats.zip",
-      "bytes": 14517,
-      "sha256": "b157f330423834198cb679b051c9bf86b187c07e0f59272b0794809f8957e1b9"
+      "bytes": 14554,
+      "sha256": "91d3b1e8cc915c96bc12f053e389f960ae64b5ee088c4de687f1378f2dba98ab"
     },
     {
       "path": "packages/09_Pitwall_Documentation_Examples_Manifests.zip",
-      "bytes": 78831,
-      "sha256": "cee7336b4d07f11ee9feef75285c687d933bc191a52361e3c564c4a96511de0f"
+      "bytes": 125420,
+      "sha256": "5882a67adc48c2457e75787f600e5607c82247bcd9dabba1a662268c5f42d037"
+    },
+    {
+      "path": "packages/10_Pitwall_Motion_Alpha_VP9.zip",
+      "bytes": 368159,
+      "sha256": "2b7ba13218f1a0bc461aba558548861a09e8c945b2158bd78c3f8bfef46e8d7f"
     },
     {
       "path": "packages/archive-index.json",
-      "bytes": 3613,
-      "sha256": "80b52f32ca668aa2be9142aac8f92c83c70cb5c87bb1ef8917c079cfa1dfd640"
+      "bytes": 3902,
+      "sha256": "380890768fc80879cee928183541515f6b38aad7b0e95a33c0cd58e0f289839b"
     },
     {
       "path": "references/docs/IMPLEMENTATION.md",
-      "bytes": 2393,
-      "sha256": "ad016568342187b1563ff4d8c728ccae445ce6fadc192f438058012683c02e7f"
+      "bytes": 3480,
+      "sha256": "7e17529cac493174b7f38f485004efe296edbe49ec3b695870c31a492fbad8e5"
     },
     {
       "path": "references/docs/LAYERING_AND_ANCHORS.md",
-      "bytes": 1013,
-      "sha256": "9b23600c3f0c589fcd9526e0797a8e24ffb630a19feeb902625caef3c4236ac8"
+      "bytes": 1158,
+      "sha256": "fa8d5888fcd1635177b96328b7b937c208485528a02ee60af26ab1f4ee009bb3"
     },
     {
       "path": "references/docs/MOTION.md",
-      "bytes": 1010,
-      "sha256": "7f094f0788aba3b08f65a4e3d645d35105e372e444214465a0651dd8ca8904b2"
+      "bytes": 1462,
+      "sha256": "ac4e558b0f99f6cdbd8dab48b15744da1141c35ccbea45f06d4b1fa857468250"
+    },
+    {
+      "path": "references/docs/MOTION_QA.md",
+      "bytes": 2492,
+      "sha256": "ad0dd8f6464a54a9d2424222f48cbd9e51b336936fd33f92f99cd04b31777342"
     },
     {
       "path": "references/docs/NAMING_CONVENTION.md",
-      "bytes": 688,
-      "sha256": "b270d075692d348918414c786d596a55c502202cc0bbfe1b6d5d8441fa77e1b1"
+      "bytes": 1189,
+      "sha256": "f9da7ebae0951793a70b4df5b4bdb70065dc256c7b7b824f70997e16a3a3e1e8"
     },
     {
       "path": "references/docs/OBS_BROWSER_SOURCE.md",
@@ -871,9 +1255,14 @@
       "sha256": "a47c95e5e5992530f681d930d36d2cf3286b1a537202f37b25fc661949a837f6"
     },
     {
+      "path": "references/docs/STATE_VISUAL_MAP.md",
+      "bytes": 6074,
+      "sha256": "cbc50a0cc7f990d2e1c0a357b4734234b24cf393d1c2456968dfa9bcbe8a3dec"
+    },
+    {
       "path": "references/examples/css/pitwall-race-control.css",
-      "bytes": 3489,
-      "sha256": "bdba029e0c2a4db314049a4a02c545cb12a1c2ca74cca05800310524688002e2"
+      "bytes": 3485,
+      "sha256": "24b1914f12ffa47fad130804dd137c26e616b54552d3055fb6fe7222433064d8"
     },
     {
       "path": "references/examples/html/sysinfo-composition.html",
@@ -887,8 +1276,8 @@
     },
     {
       "path": "references/source-asset-manifest.json",
-      "bytes": 261166,
-      "sha256": "60d91876150559772b1b9f4051af88854182bdb2688f9961dcbe70ee12b9abe4"
+      "bytes": 350255,
+      "sha256": "e7a182c8d579276fe7cd4263fba2f87125fec06f640e10bc780f7f0da068e5f7"
     },
     {
       "path": "textures/pw-data-surface-battle.svg",
@@ -917,8 +1306,8 @@
     },
     {
       "path": "theme-tokens.json",
-      "bytes": 2815,
-      "sha256": "bbbfd3e409309699a2a1fcf7b38bbf4c989a236280caea2f7047c4ed4ac9a749"
+      "bytes": 3262,
+      "sha256": "0ca7546fc765ee506377e8830fe3a6b90b78e509674adf69d9b7541cdd652045"
     }
   ]
 }

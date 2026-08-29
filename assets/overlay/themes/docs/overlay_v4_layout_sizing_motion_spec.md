@@ -244,6 +244,23 @@ Mapa jméno → metadata. Migrace list→mapa je nerozbíjející pro dnešní P
 
 Bez tohoto bloku se `safe_box` ve fázi 2 nesmí považovat za hotový.
 
+### 2.8 Pack state map precedence and icon coverage
+
+Renderer vybírá plate template z theme pack mapy. Pořadí je:
+
+1. explicitní `events.<event>.template`, pokud existuje;
+2. `states.<state>.template`;
+3. deklarovaný family fallback.
+
+Runtime `family` slouží pro routing a lifecycle; nesmí přepsat již resolved
+template. Povinný kontraktní případ je `position_attack`: runtime family je
+`timing`, ale pack template je `position`.
+
+Coverage 35 stavů se počítá výhradně z `iconPolicy.stateGlyphs`. Event-specific
+override glyphy a utility knihovna (`ble`, systémové metriky, telemetry a obecné
+status symboly) jsou samostatné množiny. Utility naming nemusí být mezi themes
+1:1; přesná parita se vyžaduje pouze pro stavové glyphy.
+
 ---
 
 ## 3) Renderer

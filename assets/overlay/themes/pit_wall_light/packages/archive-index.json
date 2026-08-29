@@ -5,10 +5,10 @@
   "archives": [
     {
       "file": "01_Pitwall_Light_Core_Vector_and_Tokens.zip",
-      "bytes": 44137,
-      "sizeMiB": 0.042,
-      "files": 76,
-      "sha256": "e6e02aa5ebe89baa088f0d4cd0a8493f82e302d392acadb1d627ea328e47c350",
+      "bytes": 49048,
+      "sizeMiB": 0.047,
+      "files": 77,
+      "sha256": "ffcd14bc61f25eb958c5556196b55400c77e0ac5e9c1f9d8e7e1898982fb3b62",
       "integrity": "ok",
       "contents": [
         "assets/vector/common",
@@ -17,10 +17,10 @@
     },
     {
       "file": "02_Pitwall_Light_Icons_BLE_and_Status.zip",
-      "bytes": 199361,
-      "sizeMiB": 0.19,
-      "files": 141,
-      "sha256": "4064a375bd59cdf19c983e5a1a4f9374ca755c39ab6724ef8bc1b3ba2146ada2",
+      "bytes": 756372,
+      "sizeMiB": 0.721,
+      "files": 316,
+      "sha256": "80067b3b25a189bd0cedbf8594adb5d5b8dbfcc9a5d33582bf07f595eb7a95f8",
       "integrity": "ok",
       "contents": [
         "assets/vector/icons",
@@ -37,10 +37,10 @@
     },
     {
       "file": "03_Pitwall_Light_Transient_Templates_Vector.zip",
-      "bytes": 66979,
-      "sizeMiB": 0.064,
-      "files": 111,
-      "sha256": "54b29a10ed4f8865b840b622cadb025461322d24ced4136a73a51d0d46851f6a",
+      "bytes": 82586,
+      "sizeMiB": 0.079,
+      "files": 136,
+      "sha256": "1a791357cafee24277110624c40f3bbd74b1d1eddd4a5442ed327e01c4d7c181",
       "integrity": "ok",
       "contents": [
         "assets/vector/templates"
@@ -48,10 +48,10 @@
     },
     {
       "file": "04_Pitwall_Light_Transient_Raster_1x.zip",
-      "bytes": 351052,
-      "sizeMiB": 0.335,
-      "files": 222,
-      "sha256": "400a074ec1caaafd13bb165b2023bb6940821e4d02015862de9ff699d3e23633",
+      "bytes": 423476,
+      "sizeMiB": 0.404,
+      "files": 272,
+      "sha256": "20339c89e372d863d83438dc962621c188dc6464b9f0280905f64954658c66fa",
       "integrity": "ok",
       "contents": [
         "assets/raster/png/1x/templates",
@@ -60,10 +60,10 @@
     },
     {
       "file": "05_Pitwall_Light_Transient_Raster_2x.zip",
-      "bytes": 643961,
-      "sizeMiB": 0.614,
-      "files": 222,
-      "sha256": "6cd602f234f08fb2da3aa2a9e41c1b302755899d8428652037fb1b0b6f755692",
+      "bytes": 896909,
+      "sizeMiB": 0.855,
+      "files": 272,
+      "sha256": "fb06c1688c36ff039219712126f05585c89dff5a653f0799dc2224ef770e804f",
       "integrity": "ok",
       "contents": [
         "assets/raster/png/2x/templates",
@@ -96,10 +96,10 @@
     },
     {
       "file": "08_Pitwall_Light_SYSINFO_All_Formats.zip",
-      "bytes": 85068,
+      "bytes": 85134,
       "sizeMiB": 0.081,
       "files": 110,
-      "sha256": "259c6ace106323ed8397d4de0d8053b27c771b021b2491a53927c45dc4a5e280",
+      "sha256": "ea7a6b0954b8ddd461324d5a4e6e1df75c58e03a6489abd01172d941f55de9ce",
       "integrity": "ok",
       "contents": [
         "assets/vector/sysinfo",
@@ -111,10 +111,10 @@
     },
     {
       "file": "09_Pitwall_Light_Documentation_Examples_Manifests.zip",
-      "bytes": 295985,
-      "sizeMiB": 0.282,
-      "files": 14,
-      "sha256": "c4d2b6c7319923f6fe7dcbe69dadad30cbd2851b6a6c30ea02af77082259c11b",
+      "bytes": 351654,
+      "sizeMiB": 0.335,
+      "files": 17,
+      "sha256": "9b56326beef205cdda5d2fc9296ad4c9b5c997459a0288c5e9af712fcc411060",
       "integrity": "ok",
       "contents": [
         "README.md",
@@ -122,6 +122,17 @@
         "examples",
         "manifests"
       ]
+    },
+    {
+      "file": "10_Pitwall_Light_Motion_Alpha_VP9.zip",
+      "contents": [
+        "assets/motion"
+      ],
+      "bytes": 405525,
+      "sizeMiB": 0.387,
+      "files": 17,
+      "sha256": "aace39b67d7db92fab260fac88e5e9b703604debebf31ff5c54f7c56f0162672",
+      "integrity": "ok"
     }
   ]
 }
