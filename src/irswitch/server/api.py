@@ -17,6 +17,7 @@ from aiohttp.web_ws import WebSocketResponse
 
 from irswitch import __version__
 from irswitch.config import AppConfig
+from irswitch.logic.stream_chapters import StreamChaptersSettings, StreamChapterTracker
 from irswitch.oauth import OAuthError, create_oauth_manager
 from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
 from irswitch.server.dashboards import (
@@ -40,8 +41,9 @@ def get_app_config() -> AppConfig | None:
 
 
 def set_app_config(config: AppConfig) -> None:
-    """Set config in container (thread-safe for our use case)."""
+    """Set config in container and sync stream-chapters tracker settings."""
     _config_container[0] = config
+    _sync_stream_chapters_settings(config.stream_chapters)
 
 
 if TYPE_CHECKING:
@@ -62,11 +64,24 @@ _restart_mode_active: bool = False
 _shutdown_event: asyncio.Event | None = None
 _oauth_manager: OAuthManager | None = None  # YouTube OAuth manager
 _task_registry = TaskRegistry()
+_stream_chapter_tracker = StreamChapterTracker()
+
+
+def _sync_stream_chapters_settings(settings: StreamChaptersSettings) -> None:
+    try:
+        _stream_chapter_tracker.apply_settings(settings)
+    except Exception:
+        logger.exception("Failed applying stream_chapters settings from config")
+
+
+def get_stream_chapter_tracker() -> StreamChapterTracker:
+    """Return the process-wide stream chapter tracker."""
+    return _stream_chapter_tracker
 
 
 def reset_state() -> None:
     """Reset global state (for testing)."""
-    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry
+    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry, _stream_chapter_tracker
     _current_state = None
     _state_machine = None
     _websocket_clients = set()
@@ -76,6 +91,7 @@ def reset_state() -> None:
     _shutdown_event = None
     _task_registry = TaskRegistry()
     _config_container[0] = None
+    _stream_chapter_tracker = StreamChapterTracker()
     from irswitch.overlay.http import reset_overlay_server
 
     reset_overlay_server()
@@ -162,18 +178,13 @@ def _create_oauth_manager_from_config(request: web.Request | None = None) -> OAu
     )
 
 
-async def _broadcast_state_update(state: SwitchState) -> None:
-    """Broadcast state update to all WebSocket clients with streaming info."""
+async def _send_ws_message(message: str) -> None:
+    """Fan-out a JSON string to all switcher WebSocket clients."""
     global _websocket_clients
-
     if not _websocket_clients:
         return
 
-    # Get full status including streaming info
-    status = await _get_status_dict(state)
-    message = json.dumps(status)
     disconnected = set()
-
     for ws in _websocket_clients:
         try:
             if not ws.closed:
@@ -184,8 +195,29 @@ async def _broadcast_state_update(state: SwitchState) -> None:
             logger.warning(f"Error broadcasting to WebSocket client: {e}")
             disconnected.add(ws)
 
-    # Remove disconnected clients
     _websocket_clients -= disconnected
+
+
+async def _broadcast_chapter_events(chapters: list) -> None:
+    """Emit additive stream_chapter envelopes (does not replace status JSON)."""
+    for chapter in chapters:
+        try:
+            payload = {"type": "stream_chapter", "chapter": chapter.to_dict()}
+            await _send_ws_message(json.dumps(payload))
+        except Exception:
+            logger.exception("Failed broadcasting stream_chapter event")
+
+
+async def _broadcast_state_update(state: SwitchState) -> None:
+    """Broadcast state update to all WebSocket clients with streaming info."""
+    # Always build status so stream chapter tracker advances even with 0 clients.
+    status = await _get_status_dict(state)
+    new_chapters = _stream_chapter_tracker.take_pending()
+
+    if _websocket_clients:
+        await _send_ws_message(json.dumps(status))
+        if new_chapters:
+            await _broadcast_chapter_events(new_chapters)
 
 
 def get_current_state() -> SwitchState | None:
@@ -194,13 +226,18 @@ def get_current_state() -> SwitchState | None:
 
 
 def set_current_state(state: SwitchState) -> None:
-    """Update current state and broadcast to WebSocket clients."""
-    global _current_state, _websocket_clients
+    """Update current state and sync/broadcast to WebSocket clients."""
+    global _current_state
     _current_state = state
 
-    # Broadcast to all WebSocket clients (tracked task; replace avoids pile-up)
-    if _websocket_clients:
-        _task_registry.spawn("ws_broadcast", _broadcast_state_update(state), replace=True)
+    # Sync status + chapters when an event loop is running (main app / async tests).
+    # Sync fixtures may call this without a loop — skip spawn in that case.
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return
+
+    _task_registry.spawn("ws_broadcast", _broadcast_state_update(state), replace=True)
 
 
 async def _get_status_dict(state: SwitchState) -> dict:
@@ -352,6 +389,30 @@ async def _get_status_dict(state: SwitchState) -> dict:
 
         metrics = get_metrics()
         metrics.set_streaming(False)
+
+    # Stream chapter markers (additive WS events; optional /status field)
+    try:
+        cfg = get_app_config()
+        if cfg is not None:
+            _stream_chapter_tracker.apply_settings(cfg.stream_chapters)
+
+        duration_current = status.get("stream_duration_current_session_seconds")
+        if duration_current is None:
+            from irswitch.server.metrics import get_metrics as _gm
+
+            _, duration_current = _gm().get_stream_duration_seconds()
+
+        _stream_chapter_tracker.update(
+            streaming=bool(status.get("streaming")),
+            duration_current_seconds=(
+                float(duration_current) if duration_current is not None else None
+            ),
+            session_type=state.session_type,
+        )
+        if _stream_chapter_tracker.settings.enabled:
+            status["stream_chapters"] = _stream_chapter_tracker.chapters_as_dicts()
+    except Exception:
+        logger.exception("stream_chapters status enrichment failed")
 
     return status
 
@@ -843,10 +904,22 @@ async def handle_websocket(request: web.Request) -> web.WebSocketResponse:
     _websocket_clients.add(ws)
     logger.info("WebSocket client connected")
 
-    # Send current state immediately
+    # Send current state immediately (flat status JSON — legacy clients)
     if _current_state is not None:
-        status = await _get_status_dict(_current_state)
-        await ws.send_str(json.dumps(status))
+        try:
+            status = await _get_status_dict(_current_state)
+            # Consume any chapters created during this status build so connect
+            # clients get them via snapshot, not a duplicate stream_chapter burst.
+            _stream_chapter_tracker.take_pending()
+            await ws.send_str(json.dumps(status))
+            if _stream_chapter_tracker.settings.enabled and status.get("streaming"):
+                snapshot = {
+                    "type": "stream_chapters_snapshot",
+                    "chapters": _stream_chapter_tracker.chapters_as_dicts(),
+                }
+                await ws.send_str(json.dumps(snapshot))
+        except Exception:
+            logger.exception("Failed sending initial WebSocket status/chapters")
 
     try:
         async for msg in ws:
