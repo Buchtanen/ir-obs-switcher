@@ -44,6 +44,19 @@ def test_extract_telemetry_null_safe() -> None:
     assert snap.car_idx_lap_dist_pct == ()
 
 
+def test_extract_player_track_surface_and_tow() -> None:
+    snap = extract_telemetry(
+        {"PlayerCarIdx": 0, "PlayerTrackSurface": 3, "PlayerCarTowTime": 2.5, "SessionState": 5},
+        1.0,
+    )
+    assert snap.player_track_surface == 3
+    assert snap.player_tow_time == 2.5
+    state = RaceContextAnalyzer().analyze(snap)
+    assert state.player_track_surface == 3
+    assert state.player_tow_time == 2.5
+    assert state.session_finished is True
+
+
 def test_gap_history_closing_rate_regression() -> None:
     hist = GapHistory(window_seconds=3.0)
     # gap falls 4.8 → 2.7 over 3s → closing ~0.7 s/s

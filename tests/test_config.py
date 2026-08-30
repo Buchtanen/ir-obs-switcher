@@ -59,6 +59,7 @@ def test_valid_config_loads(tmp_path: Path) -> None:
     assert config.override_seconds == 120
     assert config.stream_chapters.enabled is False
     assert config.stream_chapters.start_title == "Stream start"
+    assert config.stream_chapters.youtube_vod is False
 
 
 def test_stream_chapters_section_loads(tmp_path: Path) -> None:

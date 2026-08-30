@@ -7,8 +7,13 @@ from dataclasses import replace
 from irswitch.events.engine import EventEngine
 from irswitch.events.pit import PitEmitter
 from irswitch.events.pit_story import PitStoryEmitter
+from irswitch.iracing.trk_loc import IN_PIT_STALL, NOT_IN_WORLD, ON_TRACK
 from irswitch.overlay.models import RaceState
-from irswitch.overlay.settings import EventEngineFeatureSettings, OverlaySettings
+from irswitch.overlay.settings import (
+    EventEngineFeatureSettings,
+    EventPrioritySettings,
+    OverlaySettings,
+)
 
 
 def _state(**overrides: object) -> RaceState:
@@ -19,8 +24,11 @@ def _state(**overrides: object) -> RaceState:
         "class_position": 7,
         "on_pit_road": False,
         "player_lap_dist_pct": 0.12,
+        "player_track_surface": ON_TRACK,
     }
     base.update(overrides)
+    if overrides.get("on_pit_road") is True and "player_track_surface" not in overrides:
+        base["player_track_surface"] = IN_PIT_STALL
     return RaceState(**base)  # type: ignore[arg-type]
 
 
@@ -36,7 +44,7 @@ def test_pit_story_fsm_full_cycle() -> None:
     t = 0.0
     dist = 0.20
 
-    emitter.tick(_state(on_pit_road=False), t)
+    emitter.tick(_state(on_pit_road=False, player_lap_dist_pct=dist), t)
     out = emitter.tick(_state(on_pit_road=True, player_lap_dist_pct=dist), t + 0.1)
     assert any(e.phase == "enter" and e.data["state"] == "entry" for e in out)
     assert any(e.phase == "enter" and e.data["state"] == "lane" for e in out)
@@ -63,6 +71,41 @@ def test_pit_story_fsm_full_cycle() -> None:
     assert outcome.phase == "trigger"
     assert outcome.data["positionDelta"] == -2
     assert all(e.data["correlationId"] == cid for e in out if "correlationId" in e.data)
+
+
+def test_pit_story_lobby_sit_in_car_does_not_begin() -> None:
+    emitter = PitStoryEmitter()
+    emitter.tick(_state(on_pit_road=False, player_track_surface=NOT_IN_WORLD), 0.0)
+    out = emitter.tick(_state(on_pit_road=True, player_track_surface=IN_PIT_STALL), 1.0)
+    assert out == []
+    assert emitter._fsm == "idle"
+
+
+def test_pit_story_esc_teleport_does_not_begin() -> None:
+    emitter = PitStoryEmitter()
+    emitter.tick(
+        _state(on_pit_road=False, player_track_surface=ON_TRACK, player_lap_dist_pct=0.55), 0.0
+    )
+    out = emitter.tick(
+        _state(on_pit_road=True, player_track_surface=IN_PIT_STALL, player_lap_dist_pct=0.02),
+        1.0,
+    )
+    assert out == []
+    assert emitter._fsm == "idle"
+
+
+def test_pit_story_tow_does_not_begin() -> None:
+    emitter = PitStoryEmitter()
+    emitter.tick(_state(on_pit_road=False), 0.0)
+    out = emitter.tick(_state(on_pit_road=True, player_tow_time=8.0), 1.0)
+    assert out == []
+
+
+def test_legacy_pit_lobby_sit_in_car_does_not_emit_entry() -> None:
+    emitter = PitEmitter(EventPrioritySettings())
+    emitter.tick(_state(on_pit_road=False, player_track_surface=NOT_IN_WORLD), 0.0)
+    assert emitter.tick(_state(on_pit_road=True, player_track_surface=IN_PIT_STALL), 1.0) == []
+    assert emitter.tick(_state(on_pit_road=False, player_track_surface=ON_TRACK), 2.0) == []
 
 
 def test_pit_story_shared_correlation_id() -> None:

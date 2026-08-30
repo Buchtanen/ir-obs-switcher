@@ -13,6 +13,7 @@ import webbrowser
 import aiohttp
 from aiohttp import web
 
+from irswitch.commentary.duck import restore_shared_ducker
 from irswitch.config import AppConfig
 from irswitch.i18n import set_language
 from irswitch.iracing.extractors import (
@@ -1685,7 +1686,8 @@ async def run_service(
         except asyncio.CancelledError:
             pass
 
-        # Cleanup
+        # Restore ducked OBS volume before dropping the websocket.
+        restore_shared_ducker()
         stop_listener()  # Stop hotkey listener
         await obs_client.disconnect()
         await runner.cleanup()

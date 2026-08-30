@@ -40,6 +40,8 @@ EN: Mapping[str, str] = MappingProxyType(
         "bio.hr_high": "HEART RATE HIGH",
         "bio.hr_pressure": "HR PRESSURE",
         "ble.lost": "HR SENSOR LOST",
+        "timing.gain_found": "GAIN FOUND",
+        "timing.sector_split": "SECTOR",
     }
 )
 
@@ -68,6 +70,8 @@ CS: Mapping[str, str] = MappingProxyType(
         "bio.hr_high": "VYSOKÝ TEP",
         "bio.hr_pressure": "ZÁTĚŽ TEPU",
         "ble.lost": "ZTRÁTA SENZORU TEPU",
+        "timing.gain_found": "ZISK",
+        "timing.sector_split": "SEKTOR",
     }
 )
 

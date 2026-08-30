@@ -117,5 +117,15 @@ def test_extract_telemetry_session_ids_from_weekend_info() -> None:
 def test_telemetry_vars_include_session_identity() -> None:
     from irswitch.iracing.telemetry import TELEMETRY_VARS
 
-    for name in ("SessionType", "SessionName", "SubSessionID", "TrackID", "WeekendInfo"):
+    for name in (
+        "SessionType",
+        "SessionName",
+        "SubSessionID",
+        "TrackID",
+        "WeekendInfo",
+        "DriverInfo",
+        "SplitTimeInfo",
+        "PlayerTrackSurface",
+        "PlayerCarTowTime",
+    ):
         assert name in TELEMETRY_VARS

@@ -116,7 +116,7 @@ Získání aktuálního stavu služby.
 - `stream_privacy_status` (string | null) - privacy YouTube broadcastu
 - `youtube_quota_exceeded` (boolean) - zda byla překročena YouTube API kvóta
 - `youtube_api_key_missing` (boolean) - zda chybí YouTube API klíč
-- `stream_chapters` (array, pouze když `[stream_chapters] enabled = true`) - in-memory kapitoly aktuálního streamu; každá položka: `title`, `offset_seconds`, `session_type`, `created_at_ms`. Když je feature vypnutá, pole chybí.
+- `stream_chapters` (array, pouze když `[stream_chapters] enabled = true`) - in-memory kapitoly aktuálního streamu; každá položka: `title`, `offset_seconds`, `session_type`, `created_at_ms`. Když je feature vypnutá, pole chybí. Při `youtube_vod = true` se stejný seznam (fail-soft) zapisuje do YouTube description VOD.
 
 **YouTube status auto-refresh**: při hraně OBS streamu (start / stop) služba force-refreshe `liveBroadcasts` (title/status/privacy) a pushne aktualizovaný status na `WS /ws`. Po stopu ještě jednou po ~45 s (`obs_stream_stopped_delayed`), protože YouTube často krátce drží `live` → `complete`. Vyžaduje OAuth; chyby se logují a main loop nespadne. Manuální `POST /stream/reinit` zůstává.
 
@@ -576,7 +576,7 @@ Real-time updates stavu služby.
 - Legacy klienti, kteří každou zprávu parsují jako `/status`, musí **ignorovat** objekty s polem `type` (`stream_chapter` / `stream_chapters_snapshot`) — status snapshoty `type` nemají.
 - `offset_seconds` je floor z `stream_duration_current_session_seconds` (monotonic session clock); při nedostupnosti duration = `0`.
 - Seznam se maže při potvrzeném stopu streamu (debounce ≥ 2 s proti flickeru) nebo na začátku nové stream session.
-- **Mimo scope**: zápis kapitol do YouTube description / OBS `CreateRecordChapter` — jen WS + `/status` historie.
+- Při `[stream_chapters] youtube_vod = true` se timestampy zapisují do YouTube VOD description (označený blok `--- irswitch chapters ---`). Vyžaduje OAuth write scope `youtube` (ne jen `readonly`). OBS `CreateRecordChapter` se nepoužívá.
 
 **Příklad použití** (JavaScript):
 ```javascript
