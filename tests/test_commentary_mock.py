@@ -27,12 +27,13 @@ def test_mock_english_nodes_are_filled_and_valid() -> None:
             assert not leftover_slots(line)
 
 
-def test_cs_falls_back_to_english_mock() -> None:
+def test_cs_in_car_uses_authored_czech() -> None:
     graph = load_sequence_graph()
-    assert graph.nodes["in_car"].variant_bucket("cs", "unknown")
-    assert graph.nodes["in_car"].variant_bucket("cs", "unknown") == graph.nodes[
-        "in_car"
-    ].variant_bucket("en", "unknown")
+    cs = graph.nodes["in_car"].variant_bucket("cs", "unknown")
+    en = graph.nodes["in_car"].variant_bucket("en", "unknown")
+    assert cs
+    assert en
+    assert cs != en
 
 
 def test_choose_filled_line_is_deterministic_with_seed() -> None:
@@ -196,17 +197,15 @@ def test_w5_hr_and_invalid_lap_english() -> None:
             assert not leftover_slots(fill_slots(line, examples))
 
 
-def test_english_graph_has_no_unfilled_cells() -> None:
-    missing_en = [c for c in load_sequence_graph().unfilled_cells() if c[1] == "en"]
-    assert missing_en == []
+def test_graph_has_no_unfilled_cells() -> None:
+    assert load_sequence_graph().unfilled_cells() == []
 
 
-def test_unfilled_emotion_still_falls_back_to_neutral() -> None:
+def test_cs_overtake_is_authored_not_en_fallback() -> None:
     graph = load_sequence_graph()
-    # CS still empty on race nodes; EN overtake is filled.
-    assert graph.nodes["overtake"].variant_bucket("cs", "pushing") == graph.nodes[
-        "overtake"
-    ].variant_bucket("en", "pushing")
+    cs = graph.nodes["overtake"].variant_bucket("cs", "pushing")
+    en = graph.nodes["overtake"].variant_bucket("en", "pushing")
+    assert cs and en and cs != en
 
 
 def test_w1_mock_four_emotion_matrix_valid() -> None:
@@ -235,7 +234,7 @@ def test_w1_mock_four_emotion_matrix_valid() -> None:
                 assert not leftover_slots(bound), (node_id, emotion, line)
 
 
-def test_director_speaks_in_car_from_english_matrix() -> None:
+def test_director_speaks_in_car_czech_when_locale_cs() -> None:
     sink = NullTtsSink()
     director = CommentaryDirector(
         graph=load_sequence_graph(),
@@ -247,7 +246,8 @@ def test_director_speaks_in_car_from_english_matrix() -> None:
     spoken = director.observe([make_envelope(event_type="ENTER_CAR", phase="RESULT")], None, 10.0)
     assert spoken is not None
     assert spoken.node_id == "in_car"
-    assert spoken.text in spoken.node.variant_bucket("en", "unknown")
+    assert spoken.locale == "cs"
+    assert spoken.text in spoken.node.variant_bucket("cs", "unknown")
 
 
 def test_w2_race_beat_nodes_speak_english() -> None:

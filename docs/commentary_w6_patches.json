@@ -1,0 +1,875 @@
+{
+  "graph_version": 1,
+  "wave": "W6",
+  "author_model": "claude-opus-parallel",
+  "locale": "cs",
+  "patches": [
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Jsi v autě, můžeme.",
+        "Pásy utažené, jde se do práce.",
+        "Sedíš v autě, všechno je připravené."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Klid, srovnej si to v sedačce.",
+        "Sedíš dobře, nikam nespěchej.",
+        "Jsi usazený a máš čas."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Sedačka sedí, hlava soustředěná.",
+        "Jsi připravený. Drž pozornost.",
+        "Jsi usazený a srovnaný."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Jsi v autě. Teď do toho šlápni.",
+        "Pásy dole, přines tempo.",
+        "Jsi usazený. Jde se makat."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Jsi v autě. Tak jdeme na to!",
+        "Zapnutý a připravený. Ať to má cenu!",
+        "Jsi v tom. Pojď, dáme to!"
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Kolo hotové.",
+        "Máš za sebou další kolo.",
+        "Kolo {lap} zapsané, {lap_time}."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Kolo {lap} hotové, {lap_time}.",
+        "Další klidné kolo za tebou.",
+        "Kolo je venku. Jeď dál plynule."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Kolo {lap} zapsané v čase {lap_time}.",
+        "Kolo hotové. Zůstaň ostrý.",
+        "Kolo je za tebou. Srovnej se a soustřeď."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Kolo {lap} hotové. Tlač dál.",
+        "Na tom kole {lap_time}. Zaber.",
+        "Další kolo venku. Nepolevuj."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Kolo {lap} hotové. Pojď, přidej!",
+        "Máš {lap_time}. Ať to takhle jede dál!",
+        "Kolo hotové. Jedeme další!"
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Jedeš do boxů.",
+        "Jsi v boxové uličce.",
+        "Tohle kolo do boxu."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "V klidu do boxů, jsi {position}.",
+        "Boxová ulička, nespěchej.",
+        "Jsi na boxové cestě. Drž to plynule."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Boxová ulička, pozice {position}. Zůstaň ostrý.",
+        "Jsi v boxové uličce. Drž to čistě.",
+        "Boxy teď. Soustřeď se."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Jsi zpátky na trati.",
+        "Boxy za tebou.",
+        "Zase se rozjíždíš."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Zpátky venku na pozici {position}.",
+        "Boxovou uličku máš za sebou. Usaď se.",
+        "Zase jedeš po trati. Drž to plynule."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Zpátky venku, pozice {position}. Soustřeď se.",
+        "Jsi na trati. Nabírej tempo čistě.",
+        "Boxy za tebou. Oči dopředu."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Zastávka hotová. Jsi {position}.",
+        "Z boxu venku, z {old_position} na {position}.",
+        "Servis dokončený, pozice potvrzená."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Servis hotový. Usaď se na {position}.",
+        "Z {old_position} na {position}. Pěkně v klidu.",
+        "Zastávka je hotová. Pozice je jasná."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Zastávka hotová. Teď jsi {position}.",
+        "Výsledek boxu, z {old_position} na {position}. Zůstaň ostrý.",
+        "Servis hotový, pozice {position}. Oči dopředu."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Cílová vlajka. Dojel jsi na {position}. místě.",
+        "Konec závodu. Bereš {position}. místo."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Máme dojeto. V klidu vydechni, je z toho {position}. místo.",
+        "Konec. Pěkně odjeté, končíš na {position}. místě."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Vlajka je venku. Dojel jsi na {position}. místě.",
+        "Závod je u konce. Výsledek je {position}. místo."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Cílová vlajka. Vybojoval sis {position}. místo.",
+        "Konec. Nechal jsi tam všechno, {position}. místo."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Cílová vlajka! Bereš {position}. místo!",
+        "Je to za tebou! {position}. místo, skvělá práce!"
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Poslední kolo. Jsi na {position}. místě.",
+        "Zbývá jedno kolo. Držíš {position}. místo."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Poslední kolo. Drž koncentraci na {position}. místě.",
+        "Jedno kolo do konce. Odjeď to čistě z {position}. místa."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Poslední kolo. Zatlač z {position}. místa.",
+        "Zbývá jedno kolo. Nech tam všechno."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Poslední kolo! Držíš {position}. místo, využij to!",
+        "Jedno kolo do konce! No tak, tlač až do cíle!"
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Zapsaný incident, celkem {value}. Srovnej to.",
+        "Něco se stalo. Uklidni se a jeď dál."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Incident. Srovnej to a zůstaň ostrý.",
+        "Nech to za sebou. Soustřeď se dopředu."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Incident. Setřes to a jeď zase naplno.",
+        "Hoď to za hlavu. Tlač dál."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Srovnej to hned! Zůstaň u toho!",
+        "Incident. Nech to být a jeď dál!"
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Předjel jsi {target_name}. Teď jsi na {position}. místě.",
+        "Manévr je hotový. Držíš {position}. místo."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Máš {target_name} za sebou. Udrž {position}. místo.",
+        "Pozice je získaná. Jsi na {position}. místě, zůstaň ostrý."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "{target_name} je za tebou. Tlač dál z {position}. místa.",
+        "To místo je tvoje. Jeď dál naplno."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Máš ho! {target_name} je za tebou, jsi na {position}. místě!",
+        "Předjetí sedlo! No tak, tlač z {position}. místa!"
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Je to potvrzené. Udrž {position}. místo.",
+        "Souboj je uzavřený. Jsi na {position}. místě."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Máš to jisté. Zamkni si {position}. místo.",
+        "Vyřízeno. Oči dopředu."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Máš to zajištěné. Jeď dál naplno.",
+        "Drž {position}. místo a tlač dopředu."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Je to tvoje! Teď udrž {position}. místo!",
+        "Máš to zajištěné! No tak, oči dopředu!"
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Posun z {old_position}. na {position}. místo.",
+        "Jsi teď na {position}. místě."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Posunul ses na {position}. místo. Usaď se v tom.",
+        "Z {old_position}. na {position}. místo. Pěkně v klidu."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Posunul ses na {position}. místo. Zůstaň ostrý.",
+        "Z {old_position}. na {position}. místo. Soustřeď se dál."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Jsi teď na {position}. místě. Tlač dál.",
+        "Posun z {old_position}. místa. Jeď pořád naplno."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Propad z {old_position}. na {position}. místo.",
+        "Ztratil jsi pozici. Jsi na {position}. místě."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Jsi zpátky na {position}. místě. Zůstaň klidný.",
+        "Místo je pryč. Srovnej to a soustřeď se."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Padáš na {position}. místo. Jeď si pro něj zpátky.",
+        "Dostali se přes tebe. Tlač dál."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Jsi na {position}. místě! Srovnej to a jeď zpátky!",
+        "Vzali ti to místo. No tak, zůstaň u toho!"
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "{target_name} je vedle tebe.",
+        "Souboj o {position}. místo je živý."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "{target_name} je vedle tebe. Drž stopu.",
+        "Pořád jste vedle sebe. Nech to čisté."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "{target_name} je vedle tebe! Zůstaň u toho!",
+        "Souboj o {position}. místo! Drž pevně!"
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Dotahuješ {target_name}, odstup {gap}.",
+        "Vůz před tebou se ti přibližuje."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Odstup {gap} na {target_name}. Jeď přesně.",
+        "Máš ho na dostřel. Připrav si útok."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Stahuješ {target_name}. Jeď dál naplno.",
+        "Odstup {gap}. Zaber a smaž to."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Odstup {gap}! Dotáhni {target_name} teď!",
+        "Vrací se ti! No tak, tlač dál!"
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "{target_name} se dotahuje, odstup {gap}.",
+        "Tlak zezadu. Jsi na {position}. místě."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "{target_name} se dotahuje. Udrž {position}. místo čistě.",
+        "Odstup {gap} za tebou. Zůstaň ostrý."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Dotahují se rychle. Ubraň {position}. místo.",
+        "Drž {target_name} za sebou. Zůstaň na tom."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "{target_name} útočí! Udrž {position}. místo!",
+        "Tlak zezadu! No tak, ubraň to!"
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Nový osobní rekord, kolo {lap} za {lap_time}.",
+        "To je tvoje nejrychlejší kolo. Rozdíl {delta}."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Čistá práce. Nový nejlepší čas {lap_time}.",
+        "Kolo {lap} je tvoje nejlepší. Krásně usazené."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Nový nejlepší čas {lap_time}. Zafixuj si to.",
+        "Kolo {lap}, rozdíl {delta}. Zůstaň ostrý."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Nový nejlepší, {lap_time}. Tlač dál.",
+        "Rozdíl {delta}. Drž si to tempo."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Nový nejlepší čas {lap_time}! No tak, ještě!",
+        "Kolo {lap}, rozdíl {delta}! Jde to!"
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Našel jsi {delta} v {segment}.",
+        "Zisk {delta} v úseku {segment}."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Pěkný zisk v {segment}, máš tam {delta}.",
+        "V {segment} to bylo {delta}. Klidně a čistě."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Našel jsi {delta} v {segment}. Zafixuj to.",
+        "Zisk {delta} v úseku {segment}. Zopakuj to."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Ztratil jsi {delta} v {segment}.",
+        "Ztráta v úseku {segment}, {delta}."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "V {segment} je ztráta {delta}. Zůstaň v klidu.",
+        "Úsek {segment} tě stál {delta}. Jeď plynule."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Ztráta {delta} v {segment}. Srovnej to.",
+        "Ukliď si {segment}. Ztráta byla {delta}."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Cíl je nastavený na {target_time}.",
+        "Čas, na který jdeš, je {target_time}."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Cíl je {target_time}. Dostaň se k němu postupně.",
+        "Miř na {target_time}. Ber to v klidu."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Cíl zamčený na {target_time}. Jeď přesně.",
+        "Jdi si pro {target_time}. Každý vstup čistě."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Předpokládaný čas kola je {projected_time}.",
+        "V projekci máš {projected_time}, jistota {confidence}."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Projekce je {projected_time}. Drž to čisté.",
+        "{projected_time} s jistotou {confidence}. Buď přesný."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Projekce {projected_time}. Tlač dál.",
+        "Jedeš na {projected_time}. Zaber."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Kolo {lap} je ostré.",
+        "Začíná tvoje měřené kolo {lap}."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Kolo {lap} je ostré. Oči dopředu.",
+        "Tohle je kolo {lap}. Každý vstup čistě."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Kolo {lap} jede. Tlač už od čáry.",
+        "Měřené kolo {lap}. Drž tempo."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Kolo {lap} teď! No tak, ať se počítá!",
+        "Tvoje ostré kolo {lap} jede! Jdeme!"
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Tvoje {position}. místo je ohrožené.",
+        "Pozice {position} je v ohrožení."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Ochraň {position}. místo čistým kolem.",
+        "Tvoje {position}. místo je zranitelné. Zajeď to."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Zaber v tomhle kole, ať udržíš {position}. místo.",
+        "Na {position}. místo je tlak. Zaber."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "{streak} čistých kol v řadě.",
+        "To je série {streak} čistých kol."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "{streak} čistých kol. Drž si ten klid.",
+        "Čistá série je na {streak}. Krásně v pohodě."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Čistá série na {streak}. Drž tu disciplínu.",
+        "To je {streak} čistých. Zůstaň přesný."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "{target_name} se dotahuje, odstup {gap}.",
+        "Odstup na {target_name} je {gap} a klesá."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "{target_name} se přibližuje, odstup {gap}. Dávej pozor.",
+        "Od {target_name} roste tlak. Drž to čisté."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Odstup {gap} na {target_name}. Zvedni tempo.",
+        "{target_name} se dotahuje. Najdi tempo."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "lines": [
+        "Kolo {lap} je neplatné. Reset a jedeme znovu.",
+        "Tohle kolo se nepočítá. Začni nanovo."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "cs",
+      "emotion": "calm",
+      "lines": [
+        "Kolo {lap} je pryč. Klidný reset.",
+        "To se nepočítá. Vydechni a postav to znovu."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "lines": [
+        "Kolo {lap} je neplatné. Reset a soustřeď se.",
+        "To kolo je pryč. Příště čistý začátek."
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "cs",
+      "emotion": "pushing",
+      "lines": [
+        "Puls ti stoupá, {bpm}. Drž dech v klidu.",
+        "Tlak roste. Jeď plynule a tlač dál.",
+        "Námaha stoupá. Hlídej si dech."
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "cs",
+      "emotion": "high",
+      "lines": [
+        "Puls je na {bpm}. Dýchej a měj to pod kontrolou!",
+        "Tlak je teď vysoký. No tak, drž to s rozmyslem!",
+        "Puls je vysoko. Zůstaň ostrý a pod kontrolou!"
+      ]
+    }
+  ]
+}

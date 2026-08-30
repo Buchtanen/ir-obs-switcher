@@ -72,6 +72,33 @@
             "That's {lap_time}. Keep it coming!",
             "Lap done. Let's go again!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Kolo hotové.",
+            "Máš za sebou další kolo.",
+            "Kolo {lap} zapsané, {lap_time}."
+          ],
+          "calm": [
+            "Kolo {lap} hotové, {lap_time}.",
+            "Další klidné kolo za tebou.",
+            "Kolo je venku. Jeď dál plynule."
+          ],
+          "focused": [
+            "Kolo {lap} zapsané v čase {lap_time}.",
+            "Kolo hotové. Zůstaň ostrý.",
+            "Kolo je za tebou. Srovnej se a soustřeď."
+          ],
+          "pushing": [
+            "Kolo {lap} hotové. Tlač dál.",
+            "Na tom kole {lap_time}. Zaber.",
+            "Další kolo venku. Nepolevuj."
+          ],
+          "high": [
+            "Kolo {lap} hotové. Pojď, přidej!",
+            "Máš {lap_time}. Ať to takhle jede dál!",
+            "Kolo hotové. Jedeme další!"
+          ]
         }
       }
     },
@@ -132,6 +159,28 @@
             "New best now, {lap_time}! Come on!",
             "Lap {lap}, quicker by {delta}! Keep it coming!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Nový osobní rekord, kolo {lap} za {lap_time}.",
+            "To je tvoje nejrychlejší kolo. Rozdíl {delta}."
+          ],
+          "calm": [
+            "Čistá práce. Nový nejlepší čas {lap_time}.",
+            "Kolo {lap} je tvoje nejlepší. Krásně usazené."
+          ],
+          "focused": [
+            "Nový nejlepší čas {lap_time}. Zafixuj si to.",
+            "Kolo {lap}, rozdíl {delta}. Zůstaň ostrý."
+          ],
+          "pushing": [
+            "Nový nejlepší, {lap_time}. Tlač dál.",
+            "Rozdíl {delta}. Drž si to tempo."
+          ],
+          "high": [
+            "Nový nejlepší čas {lap_time}! No tak, ještě!",
+            "Kolo {lap}, rozdíl {delta}! Jde to!"
+          ]
         }
       }
     },
@@ -176,6 +225,20 @@
           "focused": [
             "You found {delta} in {segment}. Lock it in.",
             "Gain is {delta} through {segment}. Repeat it."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Našel jsi {delta} v {segment}.",
+            "Zisk {delta} v úseku {segment}."
+          ],
+          "calm": [
+            "Pěkný zisk v {segment}, máš tam {delta}.",
+            "V {segment} to bylo {delta}. Klidně a čistě."
+          ],
+          "focused": [
+            "Našel jsi {delta} v {segment}. Zafixuj to.",
+            "Zisk {delta} v úseku {segment}. Zopakuj to."
           ]
         }
       }
@@ -222,6 +285,20 @@
             "{delta} lost through {segment}. Reset.",
             "Clean up {segment}. The loss was {delta}."
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Ztratil jsi {delta} v {segment}.",
+            "Ztráta v úseku {segment}, {delta}."
+          ],
+          "calm": [
+            "V {segment} je ztráta {delta}. Zůstaň v klidu.",
+            "Úsek {segment} tě stál {delta}. Jeď plynule."
+          ],
+          "focused": [
+            "Ztráta {delta} v {segment}. Srovnej to.",
+            "Ukliď si {segment}. Ztráta byla {delta}."
+          ]
         }
       }
     },
@@ -262,6 +339,20 @@
           "focused": [
             "Target locked at {target_time}. Stay precise.",
             "Chase {target_time}. Every input clean."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Cíl je nastavený na {target_time}.",
+            "Čas, na který jdeš, je {target_time}."
+          ],
+          "calm": [
+            "Cíl je {target_time}. Dostaň se k němu postupně.",
+            "Miř na {target_time}. Ber to v klidu."
+          ],
+          "focused": [
+            "Cíl zamčený na {target_time}. Jeď přesně.",
+            "Jdi si pro {target_time}. Každý vstup čistě."
           ]
         }
       }
@@ -309,6 +400,20 @@
             "Projected {projected_time}. Keep pushing.",
             "You're tracking {projected_time}. Dig in."
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Předpokládaný čas kola je {projected_time}.",
+            "V projekci máš {projected_time}, jistota {confidence}."
+          ],
+          "focused": [
+            "Projekce je {projected_time}. Drž to čisté.",
+            "{projected_time} s jistotou {confidence}. Buď přesný."
+          ],
+          "pushing": [
+            "Projekce {projected_time}. Tlač dál.",
+            "Jedeš na {projected_time}. Zaber."
+          ]
         }
       }
     },
@@ -355,6 +460,24 @@
             "Lap {lap} now! Come on, make it count!",
             "Your flyer is live on lap {lap}! Let's go!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Kolo {lap} je ostré.",
+            "Začíná tvoje měřené kolo {lap}."
+          ],
+          "focused": [
+            "Kolo {lap} je ostré. Oči dopředu.",
+            "Tohle je kolo {lap}. Každý vstup čistě."
+          ],
+          "pushing": [
+            "Kolo {lap} jede. Tlač už od čáry.",
+            "Měřené kolo {lap}. Drž tempo."
+          ],
+          "high": [
+            "Kolo {lap} teď! No tak, ať se počítá!",
+            "Tvoje ostré kolo {lap} jede! Jdeme!"
+          ]
         }
       }
     },
@@ -396,6 +519,20 @@
             "Push this lap to hold {position}.",
             "Position {position} is under pressure. Dig in."
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Tvoje {position}. místo je ohrožené.",
+            "Pozice {position} je v ohrožení."
+          ],
+          "focused": [
+            "Ochraň {position}. místo čistým kolem.",
+            "Tvoje {position}. místo je zranitelné. Zajeď to."
+          ],
+          "pushing": [
+            "Zaber v tomhle kole, ať udržíš {position}. místo.",
+            "Na {position}. místo je tlak. Zaber."
+          ]
         }
       }
     },
@@ -435,6 +572,20 @@
           "focused": [
             "Clean streak at {streak}. Keep the discipline.",
             "That's {streak} clean. Stay precise."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{streak} čistých kol v řadě.",
+            "To je série {streak} čistých kol."
+          ],
+          "calm": [
+            "{streak} čistých kol. Drž si ten klid.",
+            "Čistá série je na {streak}. Krásně v pohodě."
+          ],
+          "focused": [
+            "Čistá série na {streak}. Drž tu disciplínu.",
+            "To je {streak} čistých. Zůstaň přesný."
           ]
         }
       }
@@ -492,6 +643,24 @@
             "Gap {gap}! Close on {target_name} now!",
             "They're coming back to you! Keep pushing!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Dotahuješ {target_name}, odstup {gap}.",
+            "Vůz před tebou se ti přibližuje."
+          ],
+          "focused": [
+            "Odstup {gap} na {target_name}. Jeď přesně.",
+            "Máš ho na dostřel. Připrav si útok."
+          ],
+          "pushing": [
+            "Stahuješ {target_name}. Jeď dál naplno.",
+            "Odstup {gap}. Zaber a smaž to."
+          ],
+          "high": [
+            "Odstup {gap}! Dotáhni {target_name} teď!",
+            "Vrací se ti! No tak, tlač dál!"
+          ]
         }
       }
     },
@@ -547,6 +716,24 @@
             "{target_name} is coming now! Hold {position}!",
             "Pressure behind! Come on, defend it!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} se dotahuje, odstup {gap}.",
+            "Tlak zezadu. Jsi na {position}. místě."
+          ],
+          "focused": [
+            "{target_name} se dotahuje. Udrž {position}. místo čistě.",
+            "Odstup {gap} za tebou. Zůstaň ostrý."
+          ],
+          "pushing": [
+            "Dotahují se rychle. Ubraň {position}. místo.",
+            "Drž {target_name} za sebou. Zůstaň na tom."
+          ],
+          "high": [
+            "{target_name} útočí! Udrž {position}. místo!",
+            "Tlak zezadu! No tak, ubraň to!"
+          ]
         }
       }
     },
@@ -592,6 +779,20 @@
           "high": [
             "Alongside {target_name} now! Stay with it!",
             "Fight for {position}! Hold firm!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} je vedle tebe.",
+            "Souboj o {position}. místo je živý."
+          ],
+          "pushing": [
+            "{target_name} je vedle tebe. Drž stopu.",
+            "Pořád jste vedle sebe. Nech to čisté."
+          ],
+          "high": [
+            "{target_name} je vedle tebe! Zůstaň u toho!",
+            "Souboj o {position}. místo! Drž pevně!"
           ]
         }
       }
@@ -644,6 +845,24 @@
             "You've got {target_name}! You're {position} now!",
             "Place taken! Come on, push from {position}!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Předjel jsi {target_name}. Teď jsi na {position}. místě.",
+            "Manévr je hotový. Držíš {position}. místo."
+          ],
+          "focused": [
+            "Máš {target_name} za sebou. Udrž {position}. místo.",
+            "Pozice je získaná. Jsi na {position}. místě, zůstaň ostrý."
+          ],
+          "pushing": [
+            "{target_name} je za tebou. Tlač dál z {position}. místa.",
+            "To místo je tvoje. Jeď dál naplno."
+          ],
+          "high": [
+            "Máš ho! {target_name} je za tebou, jsi na {position}. místě!",
+            "Předjetí sedlo! No tak, tlač z {position}. místa!"
+          ]
         }
       }
     },
@@ -693,6 +912,24 @@
           "pushing": [
             "You're {position} now. Keep pushing.",
             "Up from {old_position}. Keep after it."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Posun z {old_position}. na {position}. místo.",
+            "Jsi teď na {position}. místě."
+          ],
+          "calm": [
+            "Posunul ses na {position}. místo. Usaď se v tom.",
+            "Z {old_position}. na {position}. místo. Pěkně v klidu."
+          ],
+          "focused": [
+            "Posunul ses na {position}. místo. Zůstaň ostrý.",
+            "Z {old_position}. na {position}. místo. Soustřeď se dál."
+          ],
+          "pushing": [
+            "Jsi teď na {position}. místě. Tlač dál.",
+            "Posun z {old_position}. místa. Jeď pořád naplno."
           ]
         }
       }
@@ -745,6 +982,24 @@
             "You're {position} now. Reset and fight back!",
             "They got the place. Come on, stay with it!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Propad z {old_position}. na {position}. místo.",
+            "Ztratil jsi pozici. Jsi na {position}. místě."
+          ],
+          "focused": [
+            "Jsi zpátky na {position}. místě. Zůstaň klidný.",
+            "Místo je pryč. Srovnej to a soustřeď se."
+          ],
+          "pushing": [
+            "Padáš na {position}. místo. Jeď si pro něj zpátky.",
+            "Dostali se přes tebe. Tlač dál."
+          ],
+          "high": [
+            "Jsi na {position}. místě! Srovnej to a jeď zpátky!",
+            "Vzali ti to místo. No tak, zůstaň u toho!"
+          ]
         }
       }
     },
@@ -789,6 +1044,20 @@
           "pushing": [
             "Gap {gap} to {target_name}. Lift the pace.",
             "{target_name} is closing. Find the pace."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} se dotahuje, odstup {gap}.",
+            "Odstup na {target_name} je {gap} a klesá."
+          ],
+          "focused": [
+            "{target_name} se přibližuje, odstup {gap}. Dávej pozor.",
+            "Od {target_name} roste tlak. Drž to čisté."
+          ],
+          "pushing": [
+            "Odstup {gap} na {target_name}. Zvedni tempo.",
+            "{target_name} se dotahuje. Najdi tempo."
           ]
         }
       }
@@ -836,6 +1105,24 @@
             "That's yours! Hold {position} now!",
             "You've secured it! Come on, eyes forward!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Je to potvrzené. Udrž {position}. místo.",
+            "Souboj je uzavřený. Jsi na {position}. místě."
+          ],
+          "focused": [
+            "Máš to jisté. Zamkni si {position}. místo.",
+            "Vyřízeno. Oči dopředu."
+          ],
+          "pushing": [
+            "Máš to zajištěné. Jeď dál naplno.",
+            "Drž {position}. místo a tlač dopředu."
+          ],
+          "high": [
+            "Je to tvoje! Teď udrž {position}. místo!",
+            "Máš to zajištěné! No tak, oči dopředu!"
+          ]
         }
       }
     },
@@ -881,6 +1168,24 @@
             "Reset now! Stay with it!",
             "Incident. Leave it behind and drive!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Zapsaný incident, celkem {value}. Srovnej to.",
+            "Něco se stalo. Uklidni se a jeď dál."
+          ],
+          "focused": [
+            "Incident. Srovnej to a zůstaň ostrý.",
+            "Nech to za sebou. Soustřeď se dopředu."
+          ],
+          "pushing": [
+            "Incident. Setřes to a jeď zase naplno.",
+            "Hoď to za hlavu. Tlač dál."
+          ],
+          "high": [
+            "Srovnej to hned! Zůstaň u toho!",
+            "Incident. Nech to být a jeď dál!"
+          ]
         }
       }
     },
@@ -920,6 +1225,20 @@
           "focused": [
             "Lap {lap} is invalid. Reset and refocus.",
             "That lap is gone. Clean start next time."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Kolo {lap} je neplatné. Reset a jedeme znovu.",
+            "Tohle kolo se nepočítá. Začni nanovo."
+          ],
+          "calm": [
+            "Kolo {lap} je pryč. Klidný reset.",
+            "To se nepočítá. Vydechni a postav to znovu."
+          ],
+          "focused": [
+            "Kolo {lap} je neplatné. Reset a soustřeď se.",
+            "To kolo je pryč. Příště čistý začátek."
           ]
         }
       }
@@ -966,6 +1285,24 @@
           "high": [
             "Last lap now! You're {position}. Make it count!",
             "One to go! Come on, push to the flag!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Poslední kolo. Jsi na {position}. místě.",
+            "Zbývá jedno kolo. Držíš {position}. místo."
+          ],
+          "focused": [
+            "Poslední kolo. Drž koncentraci na {position}. místě.",
+            "Jedno kolo do konce. Odjeď to čistě z {position}. místa."
+          ],
+          "pushing": [
+            "Poslední kolo. Zatlač z {position}. místa.",
+            "Zbývá jedno kolo. Nech tam všechno."
+          ],
+          "high": [
+            "Poslední kolo! Držíš {position}. místo, využij to!",
+            "Jedno kolo do konce! No tak, tlač až do cíle!"
           ]
         }
       }
@@ -1017,6 +1354,28 @@
             "That's the flag! You finish {position}!",
             "It's over! Finished {position}! Great work!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Cílová vlajka. Dojel jsi na {position}. místě.",
+            "Konec závodu. Bereš {position}. místo."
+          ],
+          "calm": [
+            "Máme dojeto. V klidu vydechni, je z toho {position}. místo.",
+            "Konec. Pěkně odjeté, končíš na {position}. místě."
+          ],
+          "focused": [
+            "Vlajka je venku. Dojel jsi na {position}. místě.",
+            "Závod je u konce. Výsledek je {position}. místo."
+          ],
+          "pushing": [
+            "Cílová vlajka. Vybojoval sis {position}. místo.",
+            "Konec. Nechal jsi tam všechno, {position}. místo."
+          ],
+          "high": [
+            "Cílová vlajka! Bereš {position}. místo!",
+            "Je to za tebou! {position}. místo, skvělá práce!"
+          ]
         }
       }
     },
@@ -1061,6 +1420,23 @@
             "Pit road, position {position}. Stay sharp.",
             "You're on pit road. Keep it clean.",
             "Pit road now. Stay focused."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Jedeš do boxů.",
+            "Jsi v boxové uličce.",
+            "Tohle kolo do boxu."
+          ],
+          "calm": [
+            "V klidu do boxů, jsi {position}.",
+            "Boxová ulička, nespěchej.",
+            "Jsi na boxové cestě. Drž to plynule."
+          ],
+          "focused": [
+            "Boxová ulička, pozice {position}. Zůstaň ostrý.",
+            "Jsi v boxové uličce. Drž to čistě.",
+            "Boxy teď. Soustřeď se."
           ]
         }
       }
@@ -1107,6 +1483,23 @@
             "Back out, position {position}. Lock in.",
             "You're on track. Build the pace cleanly.",
             "Pit road behind you. Eyes forward."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Jsi zpátky na trati.",
+            "Boxy za tebou.",
+            "Zase se rozjíždíš."
+          ],
+          "calm": [
+            "Zpátky venku na pozici {position}.",
+            "Boxovou uličku máš za sebou. Usaď se.",
+            "Zase jedeš po trati. Drž to plynule."
+          ],
+          "focused": [
+            "Zpátky venku, pozice {position}. Soustřeď se.",
+            "Jsi na trati. Nabírej tempo čistě.",
+            "Boxy za tebou. Oči dopředu."
           ]
         }
       }
@@ -1163,6 +1556,33 @@
             "Locked in now. Make it count!",
             "You're set. Let's get after it!"
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Jsi v autě, můžeme.",
+            "Pásy utažené, jde se do práce.",
+            "Sedíš v autě, všechno je připravené."
+          ],
+          "calm": [
+            "Klid, srovnej si to v sedačce.",
+            "Sedíš dobře, nikam nespěchej.",
+            "Jsi usazený a máš čas."
+          ],
+          "focused": [
+            "Sedačka sedí, hlava soustředěná.",
+            "Jsi připravený. Drž pozornost.",
+            "Jsi usazený a srovnaný."
+          ],
+          "pushing": [
+            "Jsi v autě. Teď do toho šlápni.",
+            "Pásy dole, přines tempo.",
+            "Jsi usazený. Jde se makat."
+          ],
+          "high": [
+            "Jsi v autě. Tak jdeme na to!",
+            "Zapnutý a připravený. Ať to má cenu!",
+            "Jsi v tom. Pojď, dáme to!"
+          ]
         }
       }
     },
@@ -1214,6 +1634,23 @@
             "Box result, {old_position} to {position}. Stay sharp.",
             "Service complete. Position {position}. Eyes forward."
           ]
+        },
+        "cs": {
+          "neutral": [
+            "Zastávka hotová. Jsi {position}.",
+            "Z boxu venku, z {old_position} na {position}.",
+            "Servis dokončený, pozice potvrzená."
+          ],
+          "calm": [
+            "Servis hotový. Usaď se na {position}.",
+            "Z {old_position} na {position}. Pěkně v klidu.",
+            "Zastávka je hotová. Pozice je jasná."
+          ],
+          "focused": [
+            "Zastávka hotová. Teď jsi {position}.",
+            "Výsledek boxu, z {old_position} na {position}. Zůstaň ostrý.",
+            "Servis hotový, pozice {position}. Oči dopředu."
+          ]
         }
       }
     },
@@ -1250,6 +1687,18 @@
             "Heart rate up to {bpm}. Breathe and stay in control!",
             "Pressure is high now. Come on, keep it measured!",
             "Heart rate is high. Stay sharp, stay controlled!"
+          ]
+        },
+        "cs": {
+          "pushing": [
+            "Puls ti stoupá, {bpm}. Drž dech v klidu.",
+            "Tlak roste. Jeď plynule a tlač dál.",
+            "Námaha stoupá. Hlídej si dech."
+          ],
+          "high": [
+            "Puls je na {bpm}. Dýchej a měj to pod kontrolou!",
+            "Tlak je teď vysoký. No tak, drž to s rozmyslem!",
+            "Puls je vysoko. Zůstaň ostrý a pod kontrolou!"
           ]
         }
       }

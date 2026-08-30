@@ -106,18 +106,15 @@ duck_fade_ms = 750
 
 Migration: new optional section. Existing `config.ini` keeps defaults (off). No user action required.
 
-## English mock + W1 emotions
+## English + Czech content
 
-Spoken language is English. The director picks **one random fully-bound line** from the node matrix (`rng.choice`).
+Spoken lines live in `variants.{en|cs}.{emotion}`. The director picks **one random fully-bound line** from the matching bucket (`rng.choice`). Empty cells fall back `emotion→neutral` then `locale→en`.
 
-| Node | Trigger | Authored EN | Not |
-| --- | --- | --- | --- |
-| `in_car` | First seated snapshot this stint (`player_car_idx` set) | `neutral` mock + W1 calm/focused/pushing/high | Pit entry |
-| `lap_complete` | Existing lap emitter | `neutral` mock + W1 emotions | — |
-| `pit_entry` | Existing pit-road **rising** edge | `neutral` mock + W1 calm/focused | Getting into the car |
-| `back_on_track` | Existing pit-road **falling** edge (`PIT_EXIT`) | `neutral` mock + W1 calm/focused | Car entry |
-
-Further waves: [`docs/commentary_content_db_plan.md`](docs/commentary_content_db_plan.md). GPT W1 source patch: `docs/commentary_w1_patches.json`.
+| Wave | Status |
+| --- | --- |
+| W0–W5 EN | Complete (mock-4 + race + pit_outcome + timing + bio/invalid) |
+| W6 CS | Complete (all nodes/emotions) |
+| W7 polish | Optional sequence wording pass |
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
 
