@@ -720,7 +720,7 @@ hr_pressure = true
 ```
 
 Golden gallery URL: `/overlay/golden?demo=1&renderer=v4&layout=golden&fixture=all&motion=off`
-- `[battle.hunting]` / `[battle.hunted]` hysteresis
+- `[battle.hunting]` / `[battle.hunted]` hysteresis; hunting also has intensity hold / UPDATE throttle: `min_intensity_hold_s` (default 2.5), `update_min_interval_s` (1.0), `update_gap_epsilon_s` (0.08)
 - `[heart_rate]` + `[heart_rate.bluetooth]` — `device=auto` picks a scanner result that **advertises** Heart Rate UUID `0x180D` (bleak `return_adv`, not empty WinRT `metadata.uuids`). Name fallback is only `heart` / `hr` / `hrm`. After GATT connect the provider calls `BleakClient.pair()` (fail-soft) so Windows can bond before `0x2A37` notify. Pin `device` to a name/address substring if more than one HR radio is nearby.
 - `[system_info]` (+ cpu/gpu/memory enabled). CPU package on Windows: LibreHardwareMonitor 0.9.5+ HTTP `http://127.0.0.1:8085/data.json` (Remote Web Server; File → Hardware → CPU). If LHM binds a LAN NIC, overlay reads `LibreHardwareMonitor.config`. Older LHM WMI `root\LibreHardwareMonitor`. Stock Windows has no CPU package power class. FPS/frametime come from iRacing (empty in the garage).
 - `[events]` / `[events.priorities]`

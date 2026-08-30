@@ -1,6 +1,6 @@
 /** V4 overlay renderer (S1: timing + battle + position families). */
 
-import { fmtDelta, fmtGap, fmtLapTime } from "./timing-format.js";
+import { fmtBpmDelta, fmtDelta, fmtGap, fmtLapTime, fmtRate } from "./timing-format.js";
 
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
@@ -604,12 +604,28 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
     );
   } else if (stateKey === "approach") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE BUILDING");
-    text(value, metrics.closingRate != null ? `${fmt(metrics.closingRate, 2)} s/s` : sample.value);
-    text(meta, sample.meta);
+    text(value, metrics.gap != null ? fmtGap(metrics.gap) : sample.value);
+    const approachName = resolveTargetName(metrics, envelope);
+    text(
+      meta,
+      approachName
+        ? approachName
+        : metrics.closingRate != null
+          ? fmtRate(metrics.closingRate)
+          : sample.meta,
+    );
   } else if (stateKey === "attack_range") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "MOVE POSSIBLE");
     text(value, fmtGap(metrics.gap));
-    text(meta, metrics.closingRate != null ? `rate ${fmt(metrics.closingRate, 2)} s/s` : sample.meta);
+    const attackName = resolveTargetName(metrics, envelope);
+    text(
+      meta,
+      attackName
+        ? attackName
+        : metrics.closingRate != null
+          ? fmtRate(metrics.closingRate)
+          : sample.meta,
+    );
   } else if (stateKey === "side_by_side") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "WHEEL TO WHEEL");
     text(value, fmtGap(metrics.gap));
@@ -761,13 +777,8 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   text(title, headline);
   if (stateKey === "hr_pressure") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE INTENSITY");
-    text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value);
-    text(
-      meta,
-      metrics.deltaBpm != null
-        ? `${metrics.deltaBpm >= 0 ? "+" : ""}${metrics.deltaBpm} vs baseline`
-        : sample.meta,
-    );
+    text(value, metrics.bpm != null ? `${Math.round(Number(metrics.bpm))} BPM` : sample.value);
+    text(meta, metrics.deltaBpm != null ? fmtBpmDelta(metrics.deltaBpm, 0) : sample.meta || "");
   } else if (stateKey === "ble_reconnecting") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "SENSOR DATA PAUSED");
     text(value, sample.value || "--");

@@ -238,7 +238,13 @@ class OverlayRuntime:
         if len(self.commentary.decisions()) == before:
             return None
         decisions = self.commentary.decisions(1)
-        return decisions[-1] if decisions else None
+        decision = decisions[-1] if decisions else None
+        if decision is not None:
+            try:
+                self._tape.record_commentary(decision, now, self._last_race)
+            except Exception:
+                logger.debug("commentary tape write failed", exc_info=True)
+        return decision
 
     def _observe_in_car(self, state: RaceState, now: float) -> None:
         try:

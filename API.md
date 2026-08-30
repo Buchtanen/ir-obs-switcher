@@ -938,7 +938,7 @@ Každý řádek má hodiny v sekundách:
 | `t_session` | iRacing `SessionTime` |
 | `t_green` | od prvního `SessionState=4` (Racing) na tomto tape |
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `stream_origin`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`scene`/`green`.
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `commentary` (speak/skip z CommentaryDirector), `scene`, `green`, `stream_origin`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`scene`/`green`.
 
 **Event catalog**
 

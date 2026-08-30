@@ -38,7 +38,14 @@ def _state(**overrides: object) -> RaceState:
 
 def test_hunting_candidate_then_enter_then_exit() -> None:
     emitter = BattleEmitter(
-        HuntingSettings(activation_delay=2.0, exit_delay=1.5), HuntingSettings()
+        HuntingSettings(
+            activation_delay=2.0,
+            exit_delay=1.5,
+            min_intensity_hold_s=0.0,
+            update_min_interval_s=0.25,
+            update_gap_epsilon_s=0.05,
+        ),
+        HuntingSettings(),
     )
     ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3)
     t = 10.0
@@ -59,7 +66,8 @@ def test_hunting_candidate_then_enter_then_exit() -> None:
 
 def test_hunting_exits_immediately_when_session_finished() -> None:
     emitter = BattleEmitter(
-        HuntingSettings(activation_delay=0.0, exit_delay=1.5), HuntingSettings()
+        HuntingSettings(activation_delay=0.0, exit_delay=1.5, min_intensity_hold_s=0.0),
+        HuntingSettings(),
     )
     ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3)
     racing = _state(opponent_ahead=ahead, gap_ahead=2.0, closing_rate_ahead=0.3)
@@ -73,7 +81,8 @@ def test_hunting_exits_immediately_when_session_finished() -> None:
 
 def test_hunting_and_hunted_both_independent() -> None:
     emitter = BattleEmitter(
-        HuntingSettings(activation_delay=0.0), HuntingSettings(activation_delay=0.0)
+        HuntingSettings(activation_delay=0.0, min_intensity_hold_s=0.0),
+        HuntingSettings(activation_delay=0.0),
     )
     state = _state(
         opponent_ahead=OpponentInfo(car_idx=1, position=6, gap=1.0, closing_rate=0.4),

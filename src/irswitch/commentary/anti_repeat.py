@@ -14,10 +14,10 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 
 # Defaults (not config keys — document in COMMENTARY_ENGINE.md).
-DEFAULT_HISTORY_SIZE = 16
-DEFAULT_TAIL_TOKENS = 4
-DEFAULT_MAX_SIMILAR_TAILS = 2
-DEFAULT_TAIL_RATIO = 0.82
+DEFAULT_HISTORY_SIZE = 24
+DEFAULT_TAIL_TOKENS = 5
+DEFAULT_MAX_SIMILAR_TAILS = 1
+DEFAULT_TAIL_RATIO = 0.78
 
 _SLOT_TOKEN = re.compile(r"\{[a-z0-9_]+\}", re.IGNORECASE)
 _NON_WORD = re.compile(r"[^\w\s]+", re.UNICODE)

@@ -14,7 +14,9 @@ from irswitch.overlay.tape import playback_offset, strip_tape_clocks
 
 logger = logging.getLogger(__name__)
 
-_SKIP_TYPES = frozenset({"header", "decision", "green", "stream_origin", "scene", "footer"})
+_SKIP_TYPES = frozenset(
+    {"header", "decision", "commentary", "green", "stream_origin", "scene", "footer"}
+)
 
 
 class OverlayReplayer:

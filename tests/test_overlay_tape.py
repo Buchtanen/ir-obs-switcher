@@ -68,6 +68,18 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
         _race(),
     )
     tape.record_stories([{"eventType": "HUNTING", "phase": "ACTIVE"}], 111.2, _race())
+    tape.record_commentary(
+        {
+            "action": "speak",
+            "reason": "ok",
+            "eventType": "LAP_COMPLETE",
+            "nodeId": "lap.complete",
+            "emotion": "neutral",
+            "text": "Lap in the books.",
+        },
+        111.3,
+        _race(),
+    )
     tape.observe(_race(connected=False, overlay_mode="GENERIC"), 120.0, settings)
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     types = [row["type"] for row in rows]
@@ -78,6 +90,10 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     assert "event" in types
     assert "decision" in types
     assert "stories" in types
+    assert "commentary" in types
+    commentary = next(row for row in rows if row["type"] == "commentary")
+    assert commentary["text"] == "Lap in the books."
+    assert commentary["action"] == "speak"
     assert "scene" in types
     assert tape.path is None
 

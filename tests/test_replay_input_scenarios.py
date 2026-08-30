@@ -67,7 +67,14 @@ def test_session_reset_clears_emitter_state() -> None:
         {
             "name": "warm",
             "mode": "RACE",
-            "flags": {"battle": {"hunting": {"activation_delay": 0.0}}},
+            "flags": {
+                "battle": {
+                    "hunting": {
+                        "activation_delay": 0.0,
+                        "min_intensity_hold_s": 0.0,
+                    }
+                }
+            },
             "ticks": [hunting_tick],
         }
     )
@@ -78,7 +85,14 @@ def test_session_reset_clears_emitter_state() -> None:
         {
             "name": "after reset",
             "mode": "RACE",
-            "flags": {"battle": {"hunting": {"activation_delay": 0.0}}},
+            "flags": {
+                "battle": {
+                    "hunting": {
+                        "activation_delay": 0.0,
+                        "min_intensity_hold_s": 0.0,
+                    }
+                }
+            },
             "ticks": [hunting_tick],
         }
     )

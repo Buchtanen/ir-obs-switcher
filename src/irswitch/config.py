@@ -368,6 +368,15 @@ def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSet
         intensity_min_closing_rate=_get_float(
             parser, section, "intensity_min_closing_rate", defaults.intensity_min_closing_rate
         ),
+        min_intensity_hold_s=_get_float(
+            parser, section, "min_intensity_hold_s", defaults.min_intensity_hold_s
+        ),
+        update_min_interval_s=_get_float(
+            parser, section, "update_min_interval_s", defaults.update_min_interval_s
+        ),
+        update_gap_epsilon_s=_get_float(
+            parser, section, "update_gap_epsilon_s", defaults.update_gap_epsilon_s
+        ),
     )
 
 

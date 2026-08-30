@@ -29,6 +29,11 @@ class HuntingSettings:
     side_by_side_enter_gap: float = 0.35
     side_by_side_exit_gap: float = 0.45
     intensity_min_closing_rate: float = 0.15
+    # Floor between intensity ladder swaps (exit→enter). Matches presentation minHoldMs.
+    min_intensity_hold_s: float = 2.5
+    # Throttle UPDATE spam while intensity is unchanged.
+    update_min_interval_s: float = 1.0
+    update_gap_epsilon_s: float = 0.08
 
 
 @dataclass(frozen=True)

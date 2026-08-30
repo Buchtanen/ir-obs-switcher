@@ -7,14 +7,14 @@ from dataclasses import dataclass
 from irswitch.events.manager import EventManager
 from irswitch.overlay.protocol import CandidateEvent, RaceEvent
 
-_PIT_SUPPRESSED = frozenset({"position_change", "overtake"})
+_PIT_SUPPRESSED = frozenset({"position_change", "overtake", "battle", "rival_threat"})
 
 
 @dataclass
 class PitCycleGuard:
-    """Suppress position/overtake semantics while the player is on pit road."""
+    """Suppress position/overtake/battle/rival while the player is on pit road."""
 
-    post_exit_grace_s: float = 3.0
+    post_exit_grace_s: float = 5.0
     on_pit_road: bool = False
     suppress_until: float = 0.0
 

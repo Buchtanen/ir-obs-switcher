@@ -4,7 +4,11 @@
   "time_tolerance_ms": 0,
   "flags": {
     "battle": {
-      "hunting": {"activation_delay": 0.0}
+      "hunting": {
+        "activation_delay": 0.0,
+        "min_intensity_hold_s": 0.0,
+        "update_min_interval_s": 0.25
+      }
     }
   },
   "expected": [

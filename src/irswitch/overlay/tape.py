@@ -199,6 +199,24 @@ class OverlaySessionTape:
             },
         )
 
+    def record_commentary(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """Persist commentary speak/skip rows (fail-soft; caller catches)."""
+        if self._path is None:
+            return
+        self._write(
+            now,
+            state,
+            {
+                "type": "commentary",
+                "action": entry.get("action"),
+                "reason": entry.get("reason"),
+                "eventType": entry.get("eventType") or entry.get("event_type") or "",
+                "nodeId": entry.get("nodeId") or entry.get("node_id") or "",
+                "emotion": entry.get("emotion") or "",
+                "text": entry.get("text") or "",
+            },
+        )
+
     def record_stories(
         self, stories: list[dict[str, Any]], now: float, state: RaceState | None
     ) -> None:

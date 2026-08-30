@@ -67,14 +67,13 @@ def _accent_for(event_type: str) -> str:
 
 
 def _rival_metrics(data: dict[str, Any]) -> dict[str, Any]:
-    """Keep emitter gap/target fields; invent a speakable label when DriverInfo is absent."""
+    """Keep emitter gap/target fields; prefer real names / P# over fake copy."""
     metrics = {key: data[key] for key in _RIVAL_METRIC_KEYS if key in data}
     if metrics.get("targetName") in (None, ""):
         rival_pos = data.get("rivalPosition")
         if rival_pos is not None:
             metrics["targetName"] = f"P{rival_pos}"
-        else:
-            metrics["targetName"] = "the car behind"
+        # No invented "the car behind" — leave unnamed when DriverInfo is missing.
     return metrics
 
 
