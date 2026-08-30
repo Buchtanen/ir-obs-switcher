@@ -8,6 +8,11 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
+from irswitch.commentary.anti_repeat import (
+    DEFAULT_HISTORY_SIZE,
+    RecentUtteranceHistory,
+    prefer_fresh_candidates,
+)
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
 from irswitch.commentary.slot_format import format_spoken_bindings
 from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink, TtsSink, build_tts_sink
@@ -78,10 +83,15 @@ class CommentaryDirector:
     _last: _LastSpoken | None = None
     _global_ready_at: float = 0.0
     _decisions: deque[SpeakDecision] = field(default_factory=deque)
+    _recent: RecentUtteranceHistory = field(
+        default_factory=lambda: RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
+    )
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
         self._decisions = deque(maxlen=size)
+        if not isinstance(self._recent, RecentUtteranceHistory):
+            self._recent = RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
 
     @classmethod
     def from_defaults(
@@ -108,6 +118,7 @@ class CommentaryDirector:
         size = max(1, int(getattr(self.settings, "decision_log_size", self.decision_log_size)))
         self.decision_log_size = size
         self._decisions = deque(maxlen=size)
+        self._recent.clear()
 
     def decisions(self, n: int = 20) -> list[dict[str, Any]]:
         """Newest-last chronological slice for HTTP/UI."""
@@ -242,7 +253,7 @@ class CommentaryDirector:
             )
             return None
         bindings = slot_bindings(envelope, resolved)
-        spoken = choose_filled_line(texts, bindings, self.rng)
+        spoken = choose_filled_line(texts, bindings, self.rng, history=self._recent)
         if spoken is None:
             self._record(
                 action="skipped",
@@ -278,6 +289,7 @@ class CommentaryDirector:
         self._busy_until = now + duration
         self._global_ready_at = now + self.settings.cooldown_s
         self._last = _LastSpoken(node.id, envelope.correlation_id, now)
+        self._recent.remember(spoken)
         return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
@@ -333,13 +345,21 @@ def choose_filled_line(
     texts: tuple[str, ...],
     bindings: dict[str, object],
     rng: random.Random,
+    *,
+    history: RecentUtteranceHistory | None = None,
 ) -> str | None:
-    """Pick one fully-bound line at random. Leftover {slots} are skipped."""
+    """Pick one fully-bound line; prefer non-recent / under filler-tail quota.
+
+    Leftover ``{slots}`` are skipped. When *history* is set, exact repeats and
+    overused shared tails are deprioritized; if every candidate is recent the
+    call still returns a bound line (never hard-fails speech forever).
+    """
     ready = [fill_slots(text, bindings) for text in texts]
     ready = [line for line in ready if line.strip() and not leftover_slots(line)]
     if not ready:
         return None
-    return rng.choice(ready)
+    pool = prefer_fresh_candidates(ready, history)
+    return rng.choice(pool)
 
 
 def resolve_emotion(bio: BioState | None, use_hr: bool) -> str:

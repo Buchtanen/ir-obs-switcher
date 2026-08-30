@@ -118,9 +118,29 @@ Migration: new optional keys keep defaults. Existing `config.ini` stays silent u
 
 **Audio path (stream PC):** SAPI → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing; code sink stays `sapi`/`espeak`/`null`. See product suite T0/T1 and P4 note.
 
+## Anti-repeat + filler-tail quota (M2)
+
+After densify, `rng.choice` alone can loop the same ~8 lines or shared Czech filler endings. Selection policy (constants in `anti_repeat.py`, not config keys):
+
+| Constant | Default | Role |
+| --- | --- | --- |
+| `DEFAULT_HISTORY_SIZE` | 16 | Global ring of recently spoken normalized lines |
+| `DEFAULT_TAIL_TOKENS` | 4 | Last *N* tokens compared for shared filler tails |
+| `DEFAULT_MAX_SIMILAR_TAILS` | 2 | Cap similar tails inside the ring before deprioritize |
+| `DEFAULT_TAIL_RATIO` | 0.82 | `SequenceMatcher` threshold for near-duplicate tails |
+
+Algorithm in `choose_filled_line(..., history=...)`:
+
+1. Build fully-bound candidates (leftover `{slots}` skipped).
+2. Prefer lines that are **not** an exact recent match **and** whose filler tail is under quota.
+3. Else prefer any non-exact recent line (even if tail is over quota).
+4. Else fall back to any bound line — never hard-fail speech forever.
+
+`CommentaryDirector` remembers each spoken line and clears the ring on `reset()`.
+
 ## English + Czech content
 
-Spoken lines live in `variants.{en|cs}.{emotion}`. The director picks **one random fully-bound line** from the matching bucket (`rng.choice`). Empty cells fall back `emotion→neutral` then `locale→en`.
+Spoken lines live in `variants.{en|cs}.{emotion}`. The director picks **one fully-bound line** from the matching bucket, with anti-repeat preference above (`rng.choice` among the preferred pool). Empty cells fall back `emotion→neutral` then `locale→en`.
 
 | Wave | Status |
 | --- | --- |
@@ -159,3 +179,4 @@ Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentar
 - `tests/test_commentary_http.py`
 - `tests/test_commentary_mock.py`
 - `tests/test_commentary_live_slots.py`
+- `tests/test_commentary_anti_repeat.py`
