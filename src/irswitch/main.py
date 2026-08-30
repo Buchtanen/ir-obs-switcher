@@ -26,6 +26,11 @@ from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.oauth import OAuthManager, create_oauth_manager
 from irswitch.obs.client import ObsClient
+from irswitch.obs.stream_status_refresh import (
+    classify_streaming_edge,
+    refresh_stream_status,
+    schedule_post_stop_status_refresh,
+)
 from irswitch.server.api import (
     APP_CONFIG,
     APP_CONFIG_PATH,
@@ -35,13 +40,16 @@ from irswitch.server.api import (
     get_restart_mode,
     set_app_config,
     set_current_state,
+    set_oauth_manager,
     set_obs_client,
     set_reader,
     set_restart_mode,
+    set_shutdown_event,
     set_state_machine,
 )
 from irswitch.server.event_log import EventLog, get_event_log, set_event_log
 from irswitch.server.metrics import get_metrics
+from irswitch.server.task_registry import TaskRegistry
 from irswitch.util.clock import now_ms
 from irswitch.util.hotkeys import (
     is_hotkey_pressed,
@@ -246,6 +254,9 @@ async def main_loop(
     stream_selection_min_confirm_count: int = (
         3  # Need 3 consecutive same readings to confirm change
     )
+    # OBS streaming edge → refresh YouTube liveBroadcast status (title/status/privacy)
+    last_obs_streaming: bool | None = None
+    loop_background_tasks = TaskRegistry()
 
     event_log = get_event_log()
     # Seed shared runtime holder so tests/hot-reload cannot pick up a stale config
@@ -943,6 +954,8 @@ async def main_loop(
                     last_stream_title = None
                     last_broadcast_id = None
                     last_stream_selected = False
+                    last_obs_streaming = None
+                    loop_background_tasks.cancel("youtube_post_stop_status_refresh")
                     # Reconnect is owned solely by background_obs_connect task
             # When OBS is down, background_obs_connect owns reconnect (avoid dual connect races)
 
@@ -953,6 +966,44 @@ async def main_loop(
             if connected_obs and obs_client.is_connected():
                 try:
                     is_streaming, _ = await obs_client.get_stream_status()
+
+                    # Auto-refresh YouTube video/broadcast status on OBS start/stop
+                    stream_edge = classify_streaming_edge(last_obs_streaming, is_streaming)
+                    if stream_edge == "obs_stream_started":
+                        loop_background_tasks.cancel("youtube_post_stop_status_refresh")
+                        title, _ = await refresh_stream_status(
+                            obs_client, event_log, "obs_stream_started"
+                        )
+                        if title:
+                            last_stream_title = title
+                        state_now = get_current_state()
+                        if state_now is not None:
+                            set_current_state(state_now)
+                    elif stream_edge == "obs_stream_stopped":
+
+                        async def _rebroadcast() -> None:
+                            state_now = get_current_state()
+                            if state_now is not None:
+                                set_current_state(state_now)
+
+                        title, _ = await refresh_stream_status(
+                            obs_client, event_log, "obs_stream_stopped"
+                        )
+                        if title:
+                            last_stream_title = title
+                        state_now = get_current_state()
+                        if state_now is not None:
+                            set_current_state(state_now)
+                        schedule_post_stop_status_refresh(
+                            obs_client=obs_client,
+                            event_log=event_log,
+                            spawn=lambda name, coro: loop_background_tasks.spawn(
+                                name, coro, replace=True
+                            ),
+                            on_done=_rebroadcast,
+                        )
+                    last_obs_streaming = is_streaming
+
                     is_selected, is_ready_selected = await obs_client.is_stream_selected()
 
                     # Update cache timestamp for auto-start logic
@@ -1272,7 +1323,6 @@ async def run_service(
     oauth_reauth_event = asyncio.Event()
     if oauth_manager:
         oauth_manager.bind_reauth_event(oauth_reauth_event)
-    from irswitch.server.api import set_oauth_manager
 
     set_oauth_manager(oauth_manager)
 
@@ -1581,7 +1631,6 @@ async def run_service(
     shutdown_event = asyncio.Event()
 
     # Make shutdown event available to API
-    from irswitch.server.api import set_shutdown_event
 
     set_shutdown_event(shutdown_event)
 

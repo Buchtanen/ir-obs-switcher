@@ -57,6 +57,26 @@ def test_valid_config_loads(tmp_path: Path) -> None:
     assert config.debounce_ms == 900
     assert config.cooldown_ms == 1000
     assert config.override_seconds == 120
+    assert config.stream_chapters.enabled is False
+    assert config.stream_chapters.start_title == "Stream start"
+
+
+def test_stream_chapters_section_loads(tmp_path: Path) -> None:
+    """Optional [stream_chapters] section is parsed."""
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write("""
+[stream_chapters]
+enabled = true
+start_title = Go
+trigger_session_types = Race
+title_race = Feature Race
+""")
+    config = AppConfig.from_file(path)
+    assert config.stream_chapters.enabled is True
+    assert config.stream_chapters.start_title == "Go"
+    assert config.stream_chapters.trigger_session_types == ("Race",)
+    assert config.stream_chapters.session_titles["race"] == "Feature Race"
 
 
 def test_poll_hz_zero_raises(tmp_path: Path) -> None:

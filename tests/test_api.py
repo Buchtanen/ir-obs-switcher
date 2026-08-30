@@ -67,11 +67,15 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
     """Create test application."""
     from unittest.mock import AsyncMock
 
+    from irswitch.logic.stream_chapters import StreamChaptersSettings
     from irswitch.obs.client import ObsClient
+    from irswitch.server.api import get_stream_chapter_tracker
 
     app = create_app()
     set_state_machine(state_machine)
     set_current_state(initial_state)
+    get_stream_chapter_tracker().apply_settings(StreamChaptersSettings())
+    get_stream_chapter_tracker().clear()
 
     # Mock OBS client for stream status
     from unittest.mock import MagicMock
@@ -784,3 +788,153 @@ async def test_stream_reinit_success(app: web.Application, initial_state: Switch
             assert data["status"] == "ok"
             assert data["stream_title"] == "Race Night"
             obs.refresh_stream_info.assert_awaited_once_with("api_reinit", force=True)
+
+
+def _app_config_with_chapters(tmp_path, *, enabled: bool = True):
+    from pathlib import Path
+
+    from irswitch.config import AppConfig
+
+    path = Path(tmp_path) / "config.ini"
+    path.write_text(f"""[app]
+http_host = 127.0.0.1
+http_port = 17321
+log_level = INFO
+
+[iracing]
+poll_hz = 5
+
+[obs]
+ws_url = ws://127.0.0.1:4455
+password = test
+
+[switching]
+autoswitch_default = true
+debounce_ms = 100
+cooldown_ms = 100
+override_seconds = 120
+safe_scene = Idle
+
+[scenes]
+IDLE = Idle
+GARAGE = Pits
+RACE = Race
+REPLAY = Replay
+
+[stream_chapters]
+enabled = {"true" if enabled else "false"}
+start_title = Stream start
+trigger_session_types = Practice,Qualify,Race
+""")
+    return AppConfig.from_file(path)
+
+
+@pytest.mark.asyncio
+async def test_status_omits_stream_chapters_when_disabled(app: web.Application, tmp_path) -> None:
+    """Disabled feature must not expose stream_chapters on /status."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.server.api import set_app_config
+
+    set_app_config(_app_config_with_chapters(tmp_path, enabled=False))
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/status")
+            assert resp.status == 200
+            data = await resp.json()
+            assert "stream_chapters" not in data
+
+
+@pytest.mark.asyncio
+async def test_ws_stream_chapters_snapshot_and_event(
+    app: web.Application, initial_state: SwitchState, tmp_path
+) -> None:
+    """WS /ws sends status, snapshot, then stream_chapter on session change."""
+    import asyncio
+    from dataclasses import replace
+    from unittest.mock import AsyncMock, MagicMock
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.obs.client import ObsClient
+    from irswitch.server.api import reset_state, set_app_config, set_current_state, set_obs_client
+
+    set_app_config(_app_config_with_chapters(tmp_path, enabled=True))
+
+    mock_obs = AsyncMock(spec=ObsClient)
+    mock_obs.get_stream_status = AsyncMock(return_value=(True, 60_000))
+    mock_obs.get_cached_stream_info = MagicMock(return_value=(None, None, False, False))
+    mock_obs.get_cached_stream_info_full = MagicMock(return_value=None)
+    mock_obs.is_stream_selected = AsyncMock(return_value=(True, False))
+    mock_obs.get_current_profile = AsyncMock(return_value=None)
+    set_obs_client(mock_obs)
+
+    racing = replace(initial_state, session_type="Practice", connected_obs=True)
+    set_current_state(racing)
+    await asyncio.sleep(0.05)
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            async with client.ws_connect("/ws") as ws:
+                status_msg = await ws.receive_json()
+                assert "mode" in status_msg
+                assert "type" not in status_msg
+                assert status_msg.get("streaming") is True
+                assert isinstance(status_msg.get("stream_chapters"), list)
+                assert status_msg["stream_chapters"][0]["title"] == "Stream start"
+                assert status_msg["stream_chapters"][0]["offset_seconds"] == 0
+
+                snap = await ws.receive_json()
+                assert snap["type"] == "stream_chapters_snapshot"
+                assert snap["chapters"][0]["title"] == "Stream start"
+
+                set_current_state(replace(racing, session_type="Race"))
+                # Drain status broadcast + chapter event
+                chapter_event = None
+                for _ in range(5):
+                    msg = await asyncio.wait_for(ws.receive_json(), timeout=2.0)
+                    if msg.get("type") == "stream_chapter":
+                        chapter_event = msg
+                        break
+                assert chapter_event is not None
+                assert chapter_event["chapter"]["session_type"] == "Race"
+                assert chapter_event["chapter"]["title"] == "Race"
+                assert isinstance(chapter_event["chapter"]["offset_seconds"], int)
+
+    reset_state()
+
+
+@pytest.mark.asyncio
+async def test_ws_no_chapter_messages_when_disabled(
+    app: web.Application, initial_state: SwitchState, tmp_path
+) -> None:
+    """With feature off, WS only sends flat status."""
+    import asyncio
+    from dataclasses import replace
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.server.api import set_app_config, set_current_state
+
+    set_app_config(_app_config_with_chapters(tmp_path, enabled=False))
+    set_current_state(replace(initial_state, session_type="Race"))
+    await asyncio.sleep(0.05)
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            async with client.ws_connect("/ws") as ws:
+                status_msg = await ws.receive_json()
+                assert "mode" in status_msg
+                assert "stream_chapters" not in status_msg
+                # No second message should arrive promptly
+                try:
+                    extra = await asyncio.wait_for(ws.receive(timeout=0.2), timeout=0.3)
+                    if extra.type.name == "TEXT":
+                        data = extra.json()
+                        assert data.get("type") not in (
+                            "stream_chapter",
+                            "stream_chapters_snapshot",
+                        )
+                except TimeoutError:
+                    pass
