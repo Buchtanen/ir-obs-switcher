@@ -1,169 +1,136 @@
 # Commentary product suite
 
-**Status:** product backlog / decision doc (runtime still Phase 0 + content DB)  
-**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 / #127  
-**Audience:** stream viewers (broadcast voice). Content DB is filled; this suite is what makes it a **product**, not only a testable engine.
+**Status:** active prep (build gradually on content branch)  
+**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 (engine) + this content PR  
+**Audience:** stream viewers (broadcast voice).
 
-## 0. Current baseline (already shipped / in PR)
-
-| Piece | State |
-| --- | --- |
-| Post-arbitration director + sequence graph | Done |
-| EN+CS variants, viewer voice, ~4 lines/cell | Done (content) |
-| TTS SAPI / espeak / null + `/commentary` test page | Done |
-| `commentary.enabled` default **off** | Done |
-| Live Event Engine → speech | Wired; needs real metrics/emitters + enable |
-
-**While testing with mock:** keep `enabled=false` in production configs; use `/commentary` + unit tests. Product slices below must stay fail-soft and not break the race loop.
-
-## 1. Product suite packages
-
-Ship as **separate PRs** (one package ≈ one reviewable slice). Order is the recommended path from “engine works” → “stream-ready product”.
-
----
-
-### P1 — Live readiness (must before calling it live)
-
-**Goal:** Spoken lines fire reliably from real session, not only `/commentary` speak button.
-
-| AC | Detail |
-| --- | --- |
-| P1.1 | Document which graph nodes are **live-backed** vs **structure-only** (emitter exists + metrics fill slots) |
-| P1.2 | For each live-backed node: at least one integration/unit path proves `choose_filled_line` gets full slot bindings from real envelope shapes |
-| P1.3 | Dashboard/config: clear enable + locale (`overlay.language`) + TTS backend status on `/commentary` |
-| P1.4 | Manual checklist: enable → in-car / lap / pit / one battle beat audible on Windows SAPI |
-
-**Out:** new sinks, stream_start, WS debug.  
-**Config:** none new (use existing `commentary.*`).  
-**Docs:** COMMENTARY_ENGINE live node matrix; CONFIG note “enable for live”.  
-**Semver:** patch or none if docs-only matrix; minor if API status fields grow.
-
----
-
-### P2 — Speak decision log (“why quiet?”)
-
-**Goal:** Operator/streamer sees why a beat did not speak (cooldown, busy, empty binding, disabled, wrong phase, HR gate).
-
-| AC | Detail |
-| --- | --- |
-| P2.1 | Director records last N decisions: `spoken` \| `skipped` + reason code |
-| P2.2 | Expose via `GET /api/commentary/decisions` (and optionally WS topic) |
-| P2.3 | `/commentary` page shows last decisions (no secrets) |
-| P2.4 | Reason codes are stable enum (documented in API.md) |
-
-**Codes (minimum):** `disabled`, `busy`, `global_cooldown`, `node_cooldown`, `no_node`, `hr_gate`, `no_variant`, `slot_unbound`, `validator_reject`, `spoken`.  
-**Config:** optional `commentary.decision_log_size` (default 32).  
-**Docs:** API.md + COMMENTARY_ENGINE.  
-**Semver:** minor.
-
----
-
-### P3 — Stream start line
-
-**Goal:** One short viewer-facing line when the stream goes live (OBS / app stream state), typed templates + irsdk slots — **not** free-form LLM.
-
-| AC | Detail |
-| --- | --- |
-| P3.1 | New graph node `stream_start` (commentary-only event type, e.g. `STREAM_START`) |
-| P3.2 | Trigger source agreed: OBS websocket stream state **or** explicit HTTP `POST /api/commentary/stream-start` for tests |
-| P3.3 | Slots only from known fields (track/car/session labels already available — no invented grid) |
-| P3.4 | EN+CS variants authored (viewer voice); validator green |
-| P3.5 | Fail-soft if OBS down; no main-loop block |
-
-**Config:** `commentary.stream_start_enabled` (default true when commentary enabled, or separate flag).  
-**Docs:** COMMENTARY_ENGINE + CONFIG + API.  
-**Semver:** minor.  
-**Note:** structure PR before text fill; content can reuse VOICE_VIEWER rules.
-
----
-
-### P4 — Output sink productization
-
-**Goal:** Reliable audible path on the streaming PC beyond “hope SAPI works”.
-
-| AC | Detail |
-| --- | --- |
-| P4.1 | Documented sink matrix: `sapi` / `espeak` / `null` (+ optional future `obs_media` **only if dep approved**) |
-| P4.2 | Health: `/api/commentary/status` reports backend, last error, last utterance |
-| P4.3 | Optional: ducking / don’t speak while mic hot — **only if** explicit product ask |
-| P4.4 | No new dependency unless separately approved |
-
-**Default path:** keep stdlib SAPI/espeak. OBS media = separate approval.  
-**Semver:** minor if status/API grows; none if docs-only.
-
----
-
-### P5 — Voice budget (anti-chatter)
-
-**Goal:** Under busy race, speech stays sparse and predictable.
-
-| AC | Detail |
-| --- | --- |
-| P5.1 | Global + per-node cooldowns remain time-based (already) |
-| P5.2 | Optional budget tiers P0–P5 mapped from `speak_priority` bands (config) |
-| P5.3 | When overlay arbitration is saturated, commentary still fail-soft (never blocks HUD) |
-| P5.4 | Decision log records `budget_skip` |
-
-**Config:** e.g. `commentary.min_priority_live` (int, default 0 = all).  
-**Semver:** minor.
-
----
-
-### P6 — Content polish (non-blocking)
-
-| Item | Note |
-| --- | --- |
-| W7 sequence polish | Edge-aware wording (hunting→…→battle_won) |
-| CS gender | Past-tense agreement; needs locale gender setting — park unless requested |
-| Variant density | Already ~4/cell (752 lines); further density only on weak nodes |
-
-**Semver:** none / patch (content-only).
-
----
-
-## 2. Recommended ship order
+## 0. How we test (your order — source of truth)
 
 ```text
-P1 Live readiness  →  P2 Decision log  →  P3 Stream start  →  P4 Sink status  →  P5 Budget  →  P6 Polish
+1) Commentary-engine branch (#120)
+   SAPI → Windows playback device = Virtual Audio Driver (not headphones)
+   Test with mock / /commentary speak  ← FIRST
+
+2) Merge / checkout content (this PR: graph texts EN+CS viewer voice)
+   Restart irswitchd
+   Same SAPI→VAD path, richer lines  ← SECOND
+
+3) Product packages below (P1 → P2 → P3…)
+   Live emitters, why-quiet, stream start, …
 ```
 
-**Parallel-safe:** P6 content polish can run beside P2–P4 (content-only).  
-**Do not parallelize:** P2 director changes + P5 budget (same `director.py`).
+**Mock stays valid** until P1 proves live envelopes fill slots.  
+`commentary.enabled` stays **default false**; turn on only on the stream PC under test.
 
-## 3. Explicit non-goals (suite-wide)
+---
+
+## 1. P4 vs Virtual Audio Driver — **no collision**
+
+| Layer | What it is |
+| --- | --- |
+| **SAPI sink (code, #120)** | `tts_backend=sapi` — Windows Speech API via PowerShell |
+| **Virtual Audio Driver (OS)** | Playback **device** routing: SAPI audio goes to a virtual cable OBS can capture, **not** to headphones |
+| **P4 (this suite)** | Optional **productization**: status/health API, docs for sink matrix, maybe later OBS-media sink **if** a new dep is approved |
+
+**Conclusion:** VAD is configuration on the gaming PC, not a second sink in code.  
+P4 does **not** replace VAD and is **not required** for the mock→content SAPI test.  
+P4 later only adds observability / optional alternate sinks.
+
+Document under P4: “Recommended stream PC: set the process/default playback device so SAPI hits Virtual Audio Driver; leave headphones on a different endpoint.”
+
+---
+
+## 2. P6 — deferred
+
+P6 was optional **content polish** (W7 edge wording, Czech gender for past tense, extra density).  
+
+**Not needed now.** Content is already viewer-facing + ~4 lines/cell.  
+Revisit only if live listening finds weak nodes or gender becomes a product ask.
+
+---
+
+## 3. Packages we prepare (order)
+
+| # | Package | Now? | Role |
+| --- | --- | --- | --- |
+| **T0** | Engine mock + SAPI→VAD | **You / #120** | Prove audio path without headphones |
+| **T1** | Content graph on same path | **This PR** | Prove texts after restart |
+| **P1** | Live readiness matrix + slot proofs | **Prep next** | Know which events actually speak live |
+| **P2** | Speak decision log (why quiet) | **Prep after P1** | Debug silence without guessing |
+| **P3** | Stream start line | Later | Go-live beat |
+| **P4** | Sink status / docs (VAD note) | Later / light | Does not block T0–T1 |
+| **P5** | Voice budget gate | Later | Anti-chatter under race load |
+| **P6** | Content polish | **Deferred** | — |
+
+### T0 / T1 checklist (manual)
+
+- [ ] T0: `#120` running, SAPI → VAD, `/commentary` **Mluvit na serveru** audible in OBS (not cans)
+- [ ] T0: `commentary.enabled=true` + mock/live feed speaks a mock-4 style beat into VAD
+- [ ] T1: content branch/PR merged or checked out, **restart**, same VAD path
+- [ ] T1: CS or EN locale matches `overlay.language`; battle/pit/in-car lines sound viewer-facing
+
+### P1 — Live readiness
+
+| AC | Detail |
+| --- | --- |
+| P1.1 | Doc table: node → live-backed / partial / structure-only |
+| P1.2 | Unit proofs: real-shaped envelopes bind slots (no `slot_unbound` silence) |
+| P1.3 | `/commentary` shows enable + language + backend |
+| P1.4 | Manual: one live battle or pit beat into VAD after enable |
+
+### P2 — Why quiet
+
+| AC | Detail |
+| --- | --- |
+| P2.1 | Director ring-buffer of decisions + reason codes |
+| P2.2 | `GET /api/commentary/decisions` |
+| P2.3 | List on `/commentary` |
+| P2.4 | Codes in API.md |
+
+Codes: `disabled`, `busy`, `global_cooldown`, `node_cooldown`, `no_node`, `hr_gate`, `no_variant`, `slot_unbound`, `validator_reject`, `spoken`.
+
+### P3 — Stream start (later)
+
+Typed `stream_start` node + OBS or HTTP trigger; viewer voice; fail-soft.
+
+### P4 — Sink productization (later, light)
+
+Docs + status only first. **VAD remains OS routing.** No new dep unless approved.
+
+### P5 — Budget (later)
+
+`min_priority_live` / speak_priority gate; needs P2 reason `budget_skip`.
+
+---
+
+## 4. Non-goals
 
 - Free-form LLM at race time  
-- Neo4j / external graph DB  
-- Mixing OBS scene-switcher policy into commentary  
-- Changing Event Engine math / overlay HUD tokens as speech  
-- New TTS SaaS / cloud voices without dependency review  
+- Neo4j  
+- Replacing SAPI→VAD with a cloud TTS  
+- Blocking the race loop on TTS  
 
-## 4. Mock vs product
+---
 
-| Mode | What you do |
+## 5. Prep status (this branch)
+
+| Item | Status |
 | --- | --- |
-| **Engine test (now)** | Mock/content DB + `/commentary` + unit tests; `enabled=false` in real configs |
-| **Product live** | P1 done + `enabled=true` on stream PC; P2 strongly recommended before public use |
-| **Stream complete** | P1–P4 (P3 if you want go-live line) |
+| Content DB EN+CS viewer voice | Done |
+| Product suite aligned to T0→T1→P1→P2 | Done |
+| P1 live node matrix | Done — [`commentary_live_node_matrix.md`](commentary_live_node_matrix.md) + slot proofs |
+| P2 decision log | Done — director ring + `/api/commentary/decisions` + `/commentary` panel |
+| P3–P5 | Queued |
+| P6 | Deferred |
 
-## 5. Decision checklist (for you)
+---
 
-Pick one:
+## 6. Config impact
 
-- [ ] **A.** Stay on engine test — no product PRs yet  
-- [ ] **B.** Start **P1** (live readiness matrix + slot proof)  
-- [ ] **C.** Start **P1+P2** (live + why-quiet log) — recommended product MVP  
-- [ ] **D.** Full suite roadmap P1→P5 as sequential PRs  
-
-Default recommendation: **C**.
-
-## 6. Docs / config impact map
-
-| Package | Docs | Config |
-| --- | --- | --- |
-| P1 | COMMENTARY_ENGINE, maybe API status | none / status only |
-| P2 | API.md, COMMENTARY_ENGINE, `/commentary` UI | `decision_log_size` |
-| P3 | COMMENTARY_ENGINE, CONFIG, API, graph JSON | `stream_start_enabled` |
-| P4 | COMMENTARY_ENGINE, API | none or status-only |
-| P5 | COMMENTARY_ENGINE, CONFIG | `min_priority_live` |
-| P6 | content plan / graph only | none |
+| When | Keys |
+| --- | --- |
+| T0–T1 | existing `commentary.*` only |
+| P2 | optional `commentary.decision_log_size` (default 32) |
+| P3 | `commentary.stream_start_enabled` |
+| P5 | `commentary.min_priority_live` |
+| P4 | none for VAD (OS); maybe status-only API |

@@ -107,13 +107,16 @@ audio_device =
 duck_input =
 duck_ratio = 0.25
 duck_fade_ms = 750
+decision_log_size = 32
 ```
 
 `audio_device` empty = you hear SAPI on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
 
 `duck_input` is the OBS source to lower while speaking (e.g. `Zvuk plochy`). Empty `duck_input` skips ducking. `duck_ratio` is the fraction of the original volume (0.25 = 25%). `duck_fade_ms` (default 750) ramps volume down before the line and back after; `0` is an instant jump. Overlapping lines share one ducker: volume is saved once, not stacked, and restored after the last line.
 
-Migration: new optional section. Existing `config.ini` keeps defaults (off). No user action required.
+Migration: new optional keys keep defaults. Existing `config.ini` stays silent until `enabled=true`.
+
+**Audio path (stream PC):** SAPI → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing; code sink stays `sapi`/`espeak`/`null`. See product suite T0/T1 and P4 note.
 
 ## English + Czech content
 
@@ -135,12 +138,17 @@ Filled EN+CS (viewer voice). Return point for authoring waves:
 
 ## Product suite (next)
 
-What remains to make this stream-ready (live readiness, why-quiet log, stream start, sinks, budget):  
-[`docs/commentary_product_suite.md`](docs/commentary_product_suite.md)
+Test order and packages: [`docs/commentary_product_suite.md`](docs/commentary_product_suite.md)  
+Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentary_live_node_matrix.md)
 
-## Later (moved into product suite)
-
-See product suite packages **P1–P6**. Engine test can continue with mock/`/commentary` while those ship.
+| Package | Status |
+| --- | --- |
+| T0 SAPI→VAD mock | Manual on #120 |
+| T1 content after restart | This content branch |
+| P1 live matrix | Doc + slot binding proofs |
+| P2 why-quiet log | `GET /api/commentary/decisions` + `/commentary` panel |
+| P3–P5 | Queued |
+| P6 polish | Deferred |
 
 ## Tests
 
@@ -148,4 +156,6 @@ See product suite packages **P1–P6**. Engine test can continue with mock/`/com
 - `tests/test_commentary_validator.py`
 - `tests/test_commentary_assignments.py`
 - `tests/test_commentary_director.py`
+- `tests/test_commentary_http.py`
 - `tests/test_commentary_mock.py`
+- `tests/test_commentary_live_slots.py`
