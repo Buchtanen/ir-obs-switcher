@@ -4,8 +4,8 @@ from irswitch.commentary.assignments import render_assignments
 from irswitch.commentary.graph import load_sequence_graph
 
 
-def test_assignments_cover_unfilled_speak_nodes() -> None:
-    text = render_assignments()
+def test_assignments_can_cover_all_speak_nodes_for_rewrite_work() -> None:
+    text = render_assignments(only_unfilled=False)
     assert text.startswith("# Commentary text assignments")
     assert "`overtake`" in text
     assert "{position}" in text
@@ -17,12 +17,18 @@ def test_assignments_cover_unfilled_speak_nodes() -> None:
 
 
 def test_assignments_can_filter_locale() -> None:
-    text = render_assignments(locale="cs")
+    text = render_assignments(locale="cs", only_unfilled=False)
     assert " — cs / " in text
     assert " — en / " not in text
 
 
-def test_assignments_still_ask_for_cs_on_english_mock_nodes() -> None:
-    text = render_assignments(locale="cs")
+def test_assignments_can_rebrief_dense_czech_nodes() -> None:
+    text = render_assignments(locale="cs", only_unfilled=False)
     for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
         assert f"`{node_id}`" in text
+
+
+def test_default_assignments_report_no_unfilled_cells() -> None:
+    text = render_assignments()
+    assert "Unfilled cells: 0." in text
+    assert "`overtake`" not in text

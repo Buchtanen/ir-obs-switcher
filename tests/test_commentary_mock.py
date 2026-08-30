@@ -9,7 +9,7 @@ from irswitch.commentary.director import CommentaryDirector, choose_filled_line
 from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.tts import NullTtsSink
-from irswitch.commentary.validator import leftover_slots, validate_utterance
+from irswitch.commentary.validator import fill_slots, leftover_slots, validate_utterance
 from irswitch.events.envelope import make_envelope
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import RaceEvent
@@ -24,13 +24,14 @@ def test_mock_english_nodes_are_filled_and_valid() -> None:
         assert len(lines) >= (6 if node_id == "in_car" else 3), node_id
         for line in lines:
             assert validate_utterance(line, node) == []
-            assert not leftover_slots(line)
+            bound = fill_slots(line, {slot.name: slot.example for slot in node.slots})
+            assert not leftover_slots(bound)
 
 
-def test_cs_falls_back_to_english_mock() -> None:
+def test_cs_has_authored_viewer_content() -> None:
     graph = load_sequence_graph()
     assert graph.nodes["in_car"].variant_bucket("cs", "unknown")
-    assert graph.nodes["in_car"].variant_bucket("cs", "unknown") == graph.nodes[
+    assert graph.nodes["in_car"].variant_bucket("cs", "unknown") != graph.nodes[
         "in_car"
     ].variant_bucket("en", "unknown")
 
@@ -127,13 +128,14 @@ def test_merge_adds_legacy_pit_when_v2_adapter_misses() -> None:
     assert len(merge_speech_envelopes(race_event, [already], now=1.0, mode="RACE")) == 1
 
 
-def test_emotion_bucket_falls_back_to_neutral_mock() -> None:
+def test_emotion_bucket_has_authored_variants() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["lap_complete"]
-    assert node.variant_bucket("en", "pushing") == node.variant_bucket("en", "unknown")
+    assert node.variant_bucket("en", "pushing")
+    assert node.variant_bucket("en", "pushing") != node.variant_bucket("en", "unknown")
 
 
-def test_director_speaks_in_car_from_english_matrix() -> None:
+def test_director_speaks_in_car_from_czech_matrix() -> None:
     sink = NullTtsSink()
     director = CommentaryDirector(
         graph=load_sequence_graph(),
@@ -145,7 +147,7 @@ def test_director_speaks_in_car_from_english_matrix() -> None:
     spoken = director.observe([make_envelope(event_type="ENTER_CAR", phase="RESULT")], None, 10.0)
     assert spoken is not None
     assert spoken.node_id == "in_car"
-    assert spoken.text in spoken.node.variant_bucket("en", "unknown")
+    assert spoken.text in spoken.node.variant_bucket("cs", "unknown")
 
 
 def test_director_maps_mock_events_to_expected_nodes() -> None:

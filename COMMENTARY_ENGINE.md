@@ -1,13 +1,23 @@
 # Commentary engine (Phase 0)
 
-**Status:** structure + TTS + `/commentary` test page + **English mock lines** on four events. Default **off** for the live race feed.  
-**Branch base:** `master`. Mock texts are placeholders until another model fills the graph.
+**Status:** structure + TTS + `/commentary` test page + dense EN/CS viewer commentary on 26 events. Default **off** for the live race feed.
+**Runtime base:** `master`; content baseline and expansion are documented in [`docs/commentary_extension_report.md`](docs/commentary_extension_report.md).
 
 ## Why
 
 Overlay copy is i18n **tokens** (`PŘEDJETÍ`), not speech. Event Engine already decides *what happened* and *who won arbitration*. Commentary sits **after** that and decides *whether to speak* and *which sequence node* to use.
 
-Texts are filled later by another model. This repo owns the graph, validator, assignment briefs, and director.
+This repo owns the graph, validator, assignment briefs, authored text, and director.
+
+## Voice contract (viewer-facing)
+
+Commentary is for the stream audience, not pit-wall radio to the driver.
+
+- EN uses third-person broadcast language: “He's closing on Rossi.” / “That's P5.”
+- CS uses third-person viewer commentary: “Dotahuje na Rossiho.” / “Bere páté místo.”
+- Never address the driver in second person: no “You take P5” or “Jsi pátý.”
+- Light viewer asides are allowed; each line stays within one breath and existing slots keep their meaning.
+- HR intensity comes from word choice and cadence, not ALL-CAPS or stacked punctuation.
 
 ## Pipeline
 
@@ -27,7 +37,7 @@ Rules:
 - Works with **legacy** EventManager (`v2_payload=false`, default) via a speech map for `lap_complete` / `pit_entry` / `pit_exit`. V2 envelopes are used when present; the map fills gaps (basic pit has no V2 adapter).
 - `in_car` is a commentary sidecar (`player_car_idx` rising, event type `ENTER_CAR`). It is **not** an overlay HUD catalog entry and is **not** pit entry.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
-- BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
+- BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral`.
 - Fail-soft: graph load / observe errors must not break the race loop.
 
 ## Sequence graph (not Neo4j)
@@ -40,7 +50,7 @@ Rules:
 | `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`) |
 | `slots` | `{position}`, `{gap}`, … bound from envelope metrics |
 | `hr_states` | Which BLE bands may pick this node |
-| `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
+| `variants.{locale}.{emotion}` | Spoken EN+CS lines. Every active cell has 12 variants; priority cells have 16. |
 | `edges` | Preferred next line (e.g. hunting → side_by_side → overtake) |
 
 Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDATE`s) are **not** in the speak graph.
@@ -106,25 +116,22 @@ duck_fade_ms = 750
 
 Migration: new optional section. Existing `config.ini` keeps defaults (off). No user action required.
 
-## English mock (until the text model)
+## English + Czech content
 
-Spoken language is English. The director picks **one random fully-bound line** from the node matrix (`rng.choice`).
+The director picks one random fully bound line from the current locale and emotion bucket (`rng.choice`). The active graph contains 2,760 lines across 188 cells:
 
-| Node | Trigger | Not |
-| --- | --- | --- |
-| `in_car` | First seated snapshot this stint (`player_car_idx` set) | Pit entry |
-| `lap_complete` | Existing lap emitter | — |
-| `pit_entry` | Existing pit-road rising edge | Getting into the car |
-| `back_on_track` | Existing pit-road falling edge (`PIT_EXIT`) | Car entry |
+- 16 lines per priority lap, battle, position, pit, in-car, final-lap, and finish cell;
+- 12 lines per other active cell;
+- 37.5% name-free fallback coverage on battle/position nodes that declare `{target_name}`;
+- factual, pace/pressure, opponent, viewer-aside, sequence-bridge, HR, and slot-light layers.
+
+The expansion lowers repeat probability but does not provide a hard anti-repeat guarantee. A bounded history in `CommentaryDirector` remains an explicit engineering option.
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
 
-## Later (not this PR)
+## Proposed session, SoF, and weather content
 
-- Author fills `variants` (EN + CS, per emotion)
-- Windows SAPI / OBS media sink (still no new dep unless approved)
-- Optional DecisionLog “why not spoken” on WS
-- P0–P5 voice budget if overlay arbitration grows zones
+Five proposed nodes and nine proposed slots are kept outside the active graph in [`docs/commentary_extension_proposals.json`](docs/commentary_extension_proposals.json). Their runtime extraction, emitters, bindings, product decisions, and tests are specified in [`docs/commentary_extension_handover.md`](docs/commentary_extension_handover.md). They remain `needs-engineering`; no topology or wiring changes are implied by the proposal.
 
 ## Tests
 
@@ -133,3 +140,4 @@ Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine 
 - `tests/test_commentary_assignments.py`
 - `tests/test_commentary_director.py`
 - `tests/test_commentary_mock.py`
+- `tests/test_commentary_content_extension.py`

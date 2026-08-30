@@ -114,7 +114,7 @@ def _render_node(
             node.notes or "(none)",
             "",
             "### Deliver",
-            "1–3 spoken sentences per emotion. Second person or implied driver.",
+            "Viewer-facing third-person broadcast. Never address the driver in second person.",
             "Use slots verbatim (`{position}`). One breath. Terminal `.` `!` or `?`.",
             "",
         ]
