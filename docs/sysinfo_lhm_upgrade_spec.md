@@ -1,41 +1,46 @@
 # Spec: Sysinfo upgrade — Libre Hardware Monitor as data source
 
-**Status:** idea / planned upgrade — **not implemented** by the admin Slice 1 work  
-**Baseline:** CPU package temp/power already prefer LHM HTTP (`system/lhm_http.py`); GPU via NVML; RAM/CPU load via psutil; FPS from iRacing  
+**Status:** planned upgrade — **not fully implemented**; Slice A (admin LHM surface) exists via admin Slice 1/1.1  
+**Baseline:** accurate multi-backend CPU package path in `system/cpu_sensors.py` + LHM HTTP in `system/lhm_http.py`; GPU via NVML; RAM/CPU load via psutil; FPS from iRacing  
 **Related:** [`admin_dashboard_spec.md`](admin_dashboard_spec.md), `CONFIG.md` `[system_info]`, README LHM note
 
-This document defines how to upgrade overlay **sysinfo** so operator-facing metrics are driven primarily from **Libre Hardware Monitor (LHM)**, with LHM runtime treated as a **hard prerequisite** for correct sysinfo — not an optional nicety.
+Defines how to evolve overlay **sysinfo** toward LHM as the **preferred** hardware sensor bus, without lying about today’s fallbacks or silently breaking working non-LHM setups.
+
+Incorporates critical review (Claude Opus + GPT-5.6).
 
 ---
 
 ## 1. Intent
 
-Today sysinfo is a mash-up:
+### Actual baseline today (correct this doc if code changes)
 
-| Metric | Source today |
+| Metric | Sources today (precedence / notes) |
 | --- | --- |
+| CPU package temp/power | Multi-backend in `cpu_sensors.read_cpu_package_sensors`: RAPL (Linux), PDH thermal, **LHM HTTP**, WMI (`LibreHardwareMonitor` / `OpenHardwareMonitor` / ACPI zones), optional LHM DLL (pythonnet); HWiNFO shared memory helpers also exist in-module |
 | CPU load / clocks / RAM | `psutil` |
-| CPU package temp / power | LHM HTTP (or legacy WMI) via `cpu_sensors` |
-| GPU load / temp / power / VRAM / clocks | NVIDIA NVML (`pynvml`) |
+| GPU load / temp / power / VRAM / clocks | NVIDIA NVML (`pynvml`) only |
 | FPS / frametime | iRacing telemetry |
 
 Problems:
 
-1. LHM must already be running with Remote Web Server — operators discover this only when CPU temp/power stay empty.  
-2. GPU path is NVIDIA-only; AMD/Intel GPUs stay blank even when LHM sees them.  
-3. Admin/dashboard had no LHM readiness signal.  
-4. Future sysinfo modules (fans, board, multi-GPU) already exist in LHM’s tree but are unused.
+1. Operators often need LHM Remote Web Server for package temp/power on modern Windows LHM 0.9.5+, but discover that only when values stay empty — **unless** another backend filled them.  
+2. GPU path is NVIDIA-only; AMD/Intel stay blank even when LHM sees them.  
+3. Admin must show LHM readiness without false “required” nags when sysinfo is off or values already exist from other backends.  
+4. Future modules (fans, board, multi-GPU) exist in LHM’s tree but are unused.
 
-**Upgrade goal:** treat LHM as the **canonical hardware sensor bus** for sysinfo display metrics (CPU/GPU/memory package sensors). Keep iRacing for FPS/frametime. Keep fail-soft behavior (never crash the overlay loop).
+**Upgrade goal:** prefer LHM as the **canonical** hardware sensor bus for display metrics (CPU/GPU/memory package sensors) **when configured**, keep iRacing for FPS/frametime, keep fail-soft (never crash the overlay loop), and **do not** mark healthy RAPL/PDH/NVML setups as degraded merely because LHM is down — until the operator opts into `lhm_required`.
 
 ---
 
 ## 2. Non-goals
 
-- Bundling or auto-installing LibreHardwareMonitor into the irswitch installer (may be a later Windows packaging track).  
-- Replacing bleak / BLE HR with LHM (HR stays BLE).  
-- Remote LHM over the public internet (SSRF gate stays localhost / private NIC only).  
-- New third-party Python deps for hardware access.
+- Bundling or auto-installing LibreHardwareMonitor into the installer (later packaging track only).  
+- Auto-start LHM with UAC elevation (Slice E = detect + tip at most).  
+- Replacing BLE HR with LHM.  
+- Remote LHM over the public internet (SSRF gate: localhost / private NIC only).  
+- New third-party Python deps for hardware access.  
+- Writing/controlling hardware via LHM (fans/pumps) — permanently out of scope.  
+- Promoting HWiNFO/AIDA/etc. to first-class backends (do not grow the stack further).
 
 ---
 
@@ -45,91 +50,107 @@ Problems:
 LibreHardwareMonitor.exe (Remote Web Server)
         │  HTTP /data.json  (preferred)  or  /metrics
         ▼
- irswitch.system.lhm_http  →  normalized sensor rows
+ irswitch.system.lhm_http  →  normalized sensor rows + connection status
         ▼
- irswitch.system.provider  →  SystemState (cpu/gpu/memory/…)
+ irswitch.system.provider  →  SystemState (+ per-metric source / sampledAt)
         ▼
  OverlayBus / WS / overlay SYSINFO widget
         +
- Admin extensions card (LHM reachable?)
+ Admin extensions card (LHM connection / required mode)
 ```
 
-**Prerequisite policy (target):**
+Background single-flight LHM poller with TTL; **no** blocking probe on the async sampling hot path.
 
-- If `system_info.enabled` and CPU/GPU package sensors are configured:  
-  - LHM unreachable → sysinfo status `degraded`, admin shows actionable tip  
-  - Do **not** silently pretend NVML-only is “full” sysinfo once the upgrade lands  
-- FPS/frametime remain iRacing-sourced (empty in garage is OK)
+### Prerequisite policy
+
+| Mode | When | Admin / sysinfo behavior |
+| --- | --- | --- |
+| `optional` | sysinfo off or CPU package not needed | LHM `not_required`, no tip |
+| `recommended` | sysinfo+cpu on, default today | Warn if LHM down **and** package temp/power empty; OK if other backends fill values |
+| `required` | future `system_info.lhm_required=true` | Degrade loudly if LHM down even if NVML/psutil partial; still keep FPS from iRacing |
+
+Default for a future `lhm_required` key: prefer **`false`** or staged rollout — flipping default `true` is behavior-breaking (`semver:major` or explicit migration).
 
 ---
 
-## 4. Data mapping (proposed)
+## 4. Data mapping (implementation rules)
 
-Flatten LHM rows → `SystemState` fields:
+Flatten LHM rows → `SystemState` with **deterministic** selection:
+
+1. Prefer sensors whose hardware id matches configured / first CPU or GPU device.  
+2. Prefer Package / Tctl / “CPU Package” over Core #N.  
+3. Prefer primary GPU hardware id (stable sort by LHM hardware id string); optional INI selector later.  
+4. Every published metric should carry provenance when upgrade ships: `source` (`lhm` \| `nvml` \| `psutil` \| `rapl` \| …) and `sampledAt` (wall clock or mono+convert).  
+5. Per-metric fallback during transition (not atomic all-or-nothing), unless `lhm_required` forces LHM for listed metrics.
 
 | Sysinfo field | LHM preference | Fallback (transition) |
 | --- | --- | --- |
-| `cpu.temperature` | CPU Package Temperature | (remove WMI after LHM-only) |
-| `cpu.power` | CPU Package Power | none on stock Windows |
-| `cpu.load` | CPU Total Load **or** keep psutil | psutil during transition |
-| `cpu.frequency` | CPU Core clocks avg / effective | psutil |
-| `gpu.*` | matching GPU hardware node (NVIDIA/AMD/Intel) | NVML for NVIDIA only |
-| `memory.*` | LHM memory load / used | psutil |
+| `cpu.temperature` | CPU Package Temperature | existing cpu_sensors chain |
+| `cpu.power` | CPU Package Power | RAPL / none on stock Windows |
+| `cpu.load` | CPU Total Load (Slice C) | psutil |
+| `cpu.frequency` | effective/core clocks | psutil |
+| `gpu.*` | matching GPU node (NVIDIA/AMD/Intel) when `gpu_source=lhm\|auto` | NVML if NVIDIA and allowed |
+| `memory.*` | LHM memory load/used | psutil |
 | `performance.fps` | — | iRacing only |
 
-Selection rules must stay deterministic (prefer Package over Core #N; prefer primary GPU hardware id).
+`gpu_source=auto` decision order (proposed): if LHM GPU sensors present → LHM; else if NVML works → NVML; else empty. Multi-GPU: lowest hardware id unless pinned.
+
+Units: normalize to °C, W, %, GHz, GiB as today; document in CONFIG when keys land.
 
 ---
 
 ## 5. Config impact (when implemented)
 
-Likely keys under `[system_info]` (names TBD in implementing PR):
+Under `[system_info]` (names locked in implementing PR):
 
-- `lhm_required` (bool, default true after migration) — degrade loudly if LHM down  
-- `lhm_url` or keep autodiscovery from `LibreHardwareMonitor.config`  
+- `lhm_required` (bool, **default false** unless release notes justify major)  
+- keep autodiscovery from `LibreHardwareMonitor.config`; optional explicit URL only if SSRF-safe  
 - `gpu_source` = `auto` \| `lhm` \| `nvml`  
-- Existing `lhm_dll_path` remains for any residual native path; HTTP remains primary for 0.9.5+
+- existing `lhm_dll_path` residual; HTTP remains primary for 0.9.5+
 
-Migration note for users:
+Migration for operators:
 
 1. Install LibreHardwareMonitor 0.9.5+  
 2. Options → Remote Web Server → Run  
 3. File → Hardware → enable CPU (+ GPU)  
-4. Confirm admin **Extensions → LHM** shows reachable before going live
+4. Confirm admin Extensions → LHM `connected` before relying on package sensors  
+5. Only then consider `lhm_required=true`
+
+Docs: `CONFIG.md` + `config.example.ini` + `API.md` in the implementing PR. Semver: new keys compatible = `semver:minor`; default-true required behavior = `semver:major` or opt-in.
 
 ---
 
 ## 6. Admin / observability
 
-Admin Extensions page (Slice 1) already surfaces LHM as a first-class extension:
+Aligned with admin dashboard §4–§5:
 
-- `enabled`: always “required when sysinfo CPU package needed” (soft in Slice 1)  
-- `active` / `status`: HTTP reachable + sensor row count + base URL  
-- Tip copy: start LHM Remote Web Server
-
-When this upgrade ships, sysinfo card must reference LHM status explicitly (`lhmRequired: true`).
+- LHM card: `required` / `requirementMode`, `connection`, `status`, `severity`, tip only when required/recommended and unhealthy  
+- Sysinfo card: `lhmRequired` mirrors config/mode, not a hardcoded `true`  
+- Prefer `lastSuccessAt`, `sampleAgeMs`, `errorCode` when Slice B+ lands  
+- Distinguish `unreachable` vs `reachable_empty` (HTTP up, no usable sensors)
 
 ---
 
-## 7. Implementation slices (future work)
+## 7. Implementation slices
 
 | Slice | Work |
 | --- | --- |
-| A | Docs + admin LHM status (done with admin dashboard Slice 1) |
-| B | Expand LHM row picking for GPU + memory; feature-flag `gpu_source=lhm` |
-| C | Prefer LHM for CPU load/clocks; psutil fallback |
-| D | `lhm_required` + health banner tip; drop legacy WMI path if unused |
-| E | Optional Windows helper to detect/start LHM process (careful: UX + UAC) |
+| A | Docs + admin LHM status (admin Slice 1 / 1.1) |
+| B | Expand LHM picking for GPU + memory; `gpu_source`; per-metric `source` provenance |
+| C | Optional LHM CPU load/clocks with psutil fallback; background poller only |
+| D | `lhm_required` + health tips; **audit** before dropping any legacy path; do not drop RAPL/PDH/WMI without evidence “unused” |
+| E | Windows detect LHM process + tip only (no implicit start / UAC) |
 
-Each slice needs tests with fixture `/data.json` / `/metrics` (see `tests/test_system_info.py`).
+Tests: fixture `/data.json` / `/metrics` matrix (Intel Package, AMD Tctl/Package, multi-GPU, empty tree, timeout). See `tests/test_system_info.py`.
 
 ---
 
-## 8. Acceptance criteria (when upgrade is scheduled)
+## 8. Acceptance criteria (when scheduled)
 
-- [ ] With LHM running, CPU package temp/power **and** GPU metrics populate without NVML when `gpu_source=lhm`  
-- [ ] With LHM stopped, admin + overlay report degraded sysinfo with actionable tip  
-- [ ] SSRF allow-list unchanged (local hosts only)  
-- [ ] No main-loop crash on LHM timeout  
+- [ ] With LHM running and `gpu_source=lhm`, GPU metrics populate without NVML  
+- [ ] With LHM stopped and `lhm_required=false`, non-empty package sensors from other backends ⇒ sysinfo **not** forced degraded solely for LHM absence  
+- [ ] With `lhm_required=true` and LHM stopped ⇒ admin + sysinfo degraded with actionable tip; FPS still from iRacing  
+- [ ] SSRF allow-list unchanged  
+- [ ] No main-loop crash / no probe on async hot path  
 - [ ] `CONFIG.md` + `config.example.ini` + `API.md` updated  
-- [ ] Tests cover parse + provider merge for LHM-only path
+- [ ] Tests: parse + provider merge + reachable_empty + vendor fixtures

@@ -69,21 +69,69 @@ async def test_admin_status_extensions_and_features(app: web.Application) -> Non
                 resp = await client.get("/api/admin/status")
                 assert resp.status == 200
                 body = await resp.json()
+                assert body["schemaVersion"] == 1
                 assert "version" in body
                 assert body["extensions"]["ble"]["active"] is True
+                assert body["extensions"]["ble"]["severity"] == "ok"
                 assert body["extensions"]["ble"]["detail"]["bpm"] == 142
+                assert body["extensions"]["lhm"]["required"] is True
+                assert body["extensions"]["lhm"]["requirementMode"] == "recommended"
                 assert body["extensions"]["lhm"]["active"] is True
-                assert body["extensions"]["lhm"]["detail"]["baseUrl"] == "http://127.0.0.1:8085"
+                assert body["extensions"]["lhm"]["detail"]["lastBaseUrl"] == "http://127.0.0.1:8085"
                 assert body["extensions"]["sysinfo"]["detail"]["lhmRequired"] is True
                 assert "overlay" in body["features"]
                 assert "commentary" in body["features"]
                 assert "enabled" in body["features"]["commentary"]
+                assert "available" in body["features"]["commentary"]
                 assert "active" in body["features"]["commentary"]
                 assert "eventEngine" in body["features"]
 
 
 @pytest.mark.asyncio
-async def test_admin_activity_merges_sources(app: web.Application) -> None:
+async def test_commentary_ready_is_active_not_warn(app: web.Application) -> None:
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.overlay.settings import CommentarySettings, OverlaySettings
+    from irswitch.server.api import set_app_config
+
+    cfg = MagicMock()
+    cfg.overlay = OverlaySettings(commentary=CommentarySettings(enabled=True))
+    set_app_config(cfg)
+
+    director = CommentaryDirector.from_defaults(settings=CommentarySettings(enabled=True))
+    runtime = MagicMock()
+    runtime.commentary = director
+    runtime._tape = None
+
+    with (
+        patch("irswitch.server.admin._overlay_runtime", return_value=runtime),
+        patch(
+            "irswitch.server.admin._probe_lhm",
+            new=AsyncMock(
+                return_value={
+                    "reachable": False,
+                    "base_url": None,
+                    "sensor_rows": 0,
+                    "status": "unreachable",
+                    "prerequisite_for": ["sysinfo.cpu_package"],
+                }
+            ),
+        ),
+    ):
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                body = await (await client.get("/api/admin/status")).json()
+                card = body["features"]["commentary"]
+                assert card["enabled"] is True
+                assert card["available"] is True
+                assert card["active"] is True
+                assert card["busy"] is False
+                assert card["status"] == "ready"
+                assert card["severity"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_admin_activity_uses_wall_clock(app: web.Application) -> None:
     from aiohttp.test_utils import TestClient, TestServer
 
     log = EventLog(max_size=20)
@@ -113,12 +161,18 @@ async def test_admin_activity_merges_sources(app: web.Application) -> None:
                 resp = await client.get("/api/admin/activity?limit=20")
                 assert resp.status == 200
                 body = await resp.json()
+                assert body["schemaVersion"] == 1
                 sources = {item["source"] for item in body["items"]}
                 assert "switcher" in sources
                 assert "commentary" in sources
                 assert "overlay" in sources
+                for item in body["items"]:
+                    assert item["occurredAt"] > 1_600_000_000
+                    assert "dedupeKey" in item
                 spoken = [i for i in body["items"] if i["kind"] == "spoken"]
                 assert spoken and "Rossi" in spoken[0]["message"]
+                overlay = [i for i in body["items"] if i["source"] == "overlay"]
+                assert overlay and overlay[0]["ephemeral"] is True
 
 
 def test_lhm_connection_status_helper() -> None:
@@ -137,7 +191,6 @@ def test_lhm_connection_status_helper() -> None:
     def opener(req: object, timeout: float = 0) -> object:  # noqa: ARG001
         raise AssertionError("should use cache")
 
-    # Seed cache via fetch with force + stubbed read path
     with patch.object(lhm_http, "fetch_lhm_http_rows", return_value=rows) as mocked:
         status = lhm_http.lhm_connection_status(opener=opener, force=True)
         mocked.assert_called_once()

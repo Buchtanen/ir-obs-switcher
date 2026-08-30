@@ -563,43 +563,46 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
 
 **Method**: `GET`
 
-**Response** (200 OK) — klíčová pole:
-- `version` (string)
-- `switcher` (object | null) — `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
-- `extensions.ble` / `extensions.lhm` / `extensions.sysinfo` — každá karta: `enabled`, `active`, `status`, `detail`
-- `features.overlay` / `features.commentary` / `features.tape` — `enabled`, `active`, `status` (+ commentary `busy`)
+**Response** (200 OK) — klíčová pole (`schemaVersion: 1`):
+- `runtime.overlay` / `runtime.switcher` (bool)
+- `switcher` (object | null) — legacy snake_case subset: `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
+- `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
+- `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
+- `features.overlay` / `features.commentary` / `features.tape` — stejné osy; commentary `ready` = active+not busy
 - `features.eventEngine` — rollout flagy (`v2Payload`, `practice`, …)
 
-LHM probe je fail-soft (worker thread); unreachable LHM → `extensions.lhm.active=false`, sysinfo často `degraded`.
-
-Spec: [docs/admin_dashboard_spec.md](docs/admin_dashboard_spec.md).
+LHM probe je fail-soft (cache TTL + worker thread); HTTP 200 i při unreachable. Kontrakt: [`docs/admin_dashboard_spec.md`](docs/admin_dashboard_spec.md).
 
 ---
 
 ### GET /api/admin/activity
 
-Merged activity feed (newest first): switcher EventLog + commentary decisions + active overlay widgets.
+Merged activity feed (newest-first): switcher EventLog + commentary decisions + overlay **ephemeral** active widgets (do lifecycle ring).
 
 **URL**: `http://127.0.0.1:17321/api/admin/activity?limit=50`
 
-**Query**: `limit` (1–200, default 50)
+**Query**: `limit` (1–200, default 50; neplatné → 50)
 
 **Response**:
 ```json
 {
+  "schemaVersion": 1,
   "items": [
     {
-      "at": 1710000000.12,
+      "occurredAt": 1710000000.12,
+      "monoMs": 12345,
+      "dedupeKey": "commentary:spoken:overtake:…",
       "source": "commentary",
       "kind": "spoken",
       "message": "He takes P5 from Rossi.",
+      "ephemeral": false,
       "data": { "nodeId": "overtake", "reason": "ok" }
     }
   ]
 }
 ```
 
-`source`: `switcher` | `commentary` | `overlay`.
+`occurredAt` = wall-clock UTC epoch seconds (všechny zdroje). `source`: `switcher` | `commentary` | `overlay`.
 
 ---
 

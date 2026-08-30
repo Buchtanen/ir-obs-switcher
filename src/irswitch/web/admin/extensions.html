@@ -40,6 +40,7 @@
   <script src="/admin/web/js/admin.js"></script>
   <script>
     IrAdmin.startAdmin({
+      useOverlayWs: true,
       refreshOnWs: true,
       onStatus(status) {
         const ext = status.extensions || {};

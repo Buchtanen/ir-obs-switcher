@@ -1,13 +1,21 @@
-/* Shared admin live client — polls status/activity + optional WS hooks. */
+/* Shared admin live client — poll primary, debounced WS invalidate, single-flight. */
 (function (global) {
   const POLL_MS = 2000;
+  const WS_DEBOUNCE_MS = 500;
 
-  function statusClass(status) {
+  function statusClass(severity, status) {
+    const sev = String(severity || "").toLowerCase();
+    if (sev) {
+      if (sev === "ok") return "status-ok";
+      if (sev === "warn") return "status-warn";
+      if (sev === "bad") return "status-bad";
+      if (sev === "disabled" || sev === "idle") return "status-idle";
+    }
     const s = String(status || "").toLowerCase();
     if (["connected", "sampling", "running", "speaking", "ready", "recording"].includes(s)) {
       return "status-ok";
     }
-    if (["degraded", "connecting", "reconnecting", "unreachable", "busy"].includes(s)) {
+    if (["degraded", "connecting", "reconnecting", "unreachable", "reachable_empty", "stale"].includes(s)) {
       return "status-warn";
     }
     if (["error", "disconnected"].includes(s)) return "status-bad";
@@ -15,15 +23,27 @@
   }
 
   function pillEnabled(enabled) {
+    if (enabled == null) return "";
     return `<span class="pill ${enabled ? "enabled" : "disabled"}">${enabled ? "enabled" : "disabled"}</span>`;
+  }
+
+  function pillRequired(required, mode) {
+    if (required == null) return "";
+    const label = required ? `required:${mode || "yes"}` : "not required";
+    return `<span class="pill ${required ? "inactive" : "disabled"}">${escapeHtml(label)}</span>`;
   }
 
   function pillActive(active) {
     return `<span class="pill ${active ? "active" : "inactive"}">${active ? "active" : "inactive"}</span>`;
   }
 
-  function pillStatus(status) {
-    return `<span class="pill ${statusClass(status)}">${escapeHtml(status || "—")}</span>`;
+  function pillBusy(busy) {
+    if (!busy) return "";
+    return `<span class="pill active">busy</span>`;
+  }
+
+  function pillStatus(status, severity) {
+    return `<span class="pill ${statusClass(severity, status)}">${escapeHtml(status || "—")}</span>`;
   }
 
   function escapeHtml(value) {
@@ -36,10 +56,8 @@
 
   function formatClock(at) {
     if (at == null || at === 0) return "—";
-    // Prefer wall-clock when at looks like epoch seconds; else show relative mono.
     if (at > 1e9) {
-      const d = new Date(at * 1000);
-      return d.toLocaleTimeString();
+      return new Date(at * 1000).toLocaleTimeString();
     }
     return `${Number(at).toFixed(1)}s`;
   }
@@ -50,17 +68,19 @@
     if (ext.id === "ble") {
       meta = `device=${d.deviceName || "—"} · bpm=${d.bpm ?? "—"} · state=${d.hrState || "—"}`;
     } else if (ext.id === "lhm") {
-      meta = `url=${d.baseUrl || "—"} · sensors=${d.sensorRows ?? 0}`;
+      meta = `url=${d.lastBaseUrl || d.baseUrl || "—"} · sensors=${d.sensorRows ?? 0} · ${d.connection || ""}`;
     } else if (ext.id === "sysinfo") {
-      meta = `cpu=${d.cpuTemp ?? "—"}°C / ${d.cpuPower ?? "—"}W · gpu=${d.gpuLoad ?? "—"}%`;
+      meta = `cpu=${d.cpuTemp ?? "—"}°C / ${d.cpuPower ?? "—"}W · gpu=${d.gpuLoad ?? "—"}% · lhmReq=${d.lhmRequired ? d.lhmRequirementMode || "yes" : "no"}`;
     }
     const tip =
-      ext.id === "lhm" && !ext.active && d.tip
+      ext.id === "lhm" && d.tip && ext.required
         ? `<div class="tip">${escapeHtml(d.tip)}</div>`
         : "";
+    const enableOrReq =
+      ext.id === "lhm" ? pillRequired(ext.required, ext.requirementMode) : pillEnabled(ext.enabled);
     return `<article class="card" data-id="${escapeHtml(ext.id)}">
       <h3>${escapeHtml(ext.label)}</h3>
-      <div class="row">${pillEnabled(ext.enabled)} ${pillActive(ext.active)} ${pillStatus(ext.status)}</div>
+      <div class="row">${enableOrReq} ${pillActive(ext.active)} ${pillBusy(ext.busy)} ${pillStatus(ext.status, ext.severity)}</div>
       <div class="meta">${escapeHtml(meta)}</div>
       ${tip}
     </article>`;
@@ -80,11 +100,11 @@
       key === "overlay"
         ? `theme=${feat.theme || "—"} · widgets=${feat.activeWidgets ?? 0}`
         : key === "commentary"
-          ? `busy=${feat.busy ? "yes" : "no"} · runtime=${feat.runtime ? "yes" : "no"}`
-          : "";
+          ? `busy=${feat.busy ? "yes" : "no"} · available=${feat.available ? "yes" : "no"}`
+          : `available=${feat.available ? "yes" : "no"}`;
     return `<article class="card" data-id="${escapeHtml(key)}">
       <h3>${escapeHtml(title)}</h3>
-      <div class="row">${pillEnabled(!!feat.enabled)} ${pillActive(!!feat.active)} ${pillStatus(feat.status)}</div>
+      <div class="row">${pillEnabled(!!feat.enabled)} ${pillActive(!!feat.active)} ${pillBusy(!!feat.busy)} ${pillStatus(feat.status, feat.severity)}</div>
       <div class="meta">${escapeHtml(extra)}</div>
     </article>`;
   }
@@ -111,9 +131,11 @@
     return items
       .map((row) => {
         const src = escapeHtml(row.source || "?");
+        const at = row.occurredAt != null ? row.occurredAt : row.at;
+        const eph = row.ephemeral ? " · live" : "";
         return `<div class="feed-row">
-          <span class="at">${escapeHtml(formatClock(row.at))}</span>
-          <span class="src-${src}">${src}</span>
+          <span class="at">${escapeHtml(formatClock(at))}</span>
+          <span class="src-${src}">${src}${eph}</span>
           <span class="kind">${escapeHtml(row.kind || "")}</span>
           <span class="msg">${escapeHtml(row.message || "")}</span>
         </div>`;
@@ -134,21 +156,25 @@
     el.textContent = on ? "live" : "offline";
   }
 
-  function setVersion(v) {
+  function setVersion(v, schema) {
     const el = document.getElementById("admin-version");
-    if (el && v) el.textContent = `v${v}`;
+    if (el && v) el.textContent = schema != null ? `v${v} · schema ${schema}` : `v${v}`;
   }
 
   function startAdmin(options) {
     const opts = options || {};
     let timer = null;
     let wsOk = false;
+    let inFlight = false;
+    let debounceTimer = null;
 
     async function tick() {
+      if (inFlight) return;
+      inFlight = true;
       try {
         if (opts.onStatus) {
           const status = await fetchJson("/api/admin/status");
-          setVersion(status.version);
+          setVersion(status.version, status.schemaVersion);
           opts.onStatus(status);
         }
         if (opts.onActivity) {
@@ -159,10 +185,20 @@
       } catch (err) {
         console.debug("admin poll failed", err);
         setLive(wsOk);
+      } finally {
+        inFlight = false;
       }
     }
 
-    function connectWs(path, label) {
+    function scheduleTick() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        tick();
+      }, opts.wsDebounceMs || WS_DEBOUNCE_MS);
+    }
+
+    function connectWs(path) {
       try {
         const proto = location.protocol === "https:" ? "wss" : "ws";
         const ws = new WebSocket(`${proto}://${location.host}${path}`);
@@ -174,20 +210,19 @@
           wsOk = false;
         };
         ws.onmessage = () => {
-          // Any traffic nudges a refresh so cards stay fresh without waiting for poll.
-          if (opts.refreshOnWs) tick();
+          if (opts.refreshOnWs) scheduleTick();
         };
         ws.onerror = () => {};
         return ws;
       } catch (e) {
-        console.debug("admin ws", label, e);
+        console.debug("admin ws", path, e);
         return null;
       }
     }
 
     const sockets = [];
-    if (opts.useSwitcherWs !== false) sockets.push(connectWs("/ws", "switcher"));
-    if (opts.useOverlayWs !== false) sockets.push(connectWs("/ws/overlay", "overlay"));
+    if (opts.useSwitcherWs) sockets.push(connectWs("/ws"));
+    if (opts.useOverlayWs) sockets.push(connectWs("/ws/overlay"));
 
     tick();
     timer = setInterval(tick, opts.pollMs || POLL_MS);
@@ -195,6 +230,7 @@
     return {
       stop() {
         if (timer) clearInterval(timer);
+        if (debounceTimer) clearTimeout(debounceTimer);
         sockets.forEach((ws) => {
           try {
             ws && ws.close();
