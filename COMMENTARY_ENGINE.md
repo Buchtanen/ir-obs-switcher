@@ -195,7 +195,19 @@ Fail-soft SessionInfo helpers live in `irswitch.iracing.session_context` (standa
 - `session_key(data)` / `SessionContextCache` — cache identity `(SubSessionID, SessionNum)`, invalidate on change
 - `extract_session_context(data)` — track + roster + player car/class when available
 
-SoF math (H2), weather (H3), and sequence_graph intro nodes (H4) are separate. No new config flag.
+## SoF helper (W4 H2)
+
+Pure arithmetic-mean interim SoF in `irswitch.iracing.sof` (`compute_sof` / `compute_sof_bundle` / `format_sof_label`). Not official iRacing SoF. Sequence_graph intro nodes remain H4.
+
+## Weather speech formatting (W4 H3)
+
+Fail-soft helpers in `irswitch.iracing.weather` extract current vs forecast weather and produce spoken EN/CS labels for slots `skies`, `air_temp`, `track_temp`, `wind_speed`, `precipitation`.
+
+- `extract_weather(data, prefer="live"|"session"|"forecast")` → `WeatherSnapshot` with honest `source` (`live` / `session` / `forecast` / `mixed`) and per-field `field_sources`
+- Live may fall back to `WeekendInfo.Track*` (same “current” family); forecast (`WeekendOptions`) is never mixed in silently
+- `format_*` / `spoken_weather_bindings` — speech labels (e.g. `23 C`, `4 m/s`, `partly cloudy` / CS equivalents); precip uses a small vocab and never invents rain from `Skies` alone
+
+**Not wired yet:** H4 must add session-intro / `SOF_BRIEF` / `WEATHER_BRIEF` emitters + director bindings. No new config flag.
 
 ## Tests
 
@@ -208,3 +220,5 @@ SoF math (H2), weather (H3), and sequence_graph intro nodes (H4) are separate. N
 - `tests/test_commentary_live_slots.py`
 - `tests/test_commentary_anti_repeat.py`
 - `tests/test_session_context.py`
+- `tests/test_sof.py`
+- `tests/test_iracing_weather.py`
