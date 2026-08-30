@@ -85,7 +85,8 @@ class BattleEmitter:
                         "targetPosition": getattr(state.opponent_ahead, "position", None),
                         **(
                             {"targetName": state.opponent_ahead.display_name}
-                            if state.opponent_ahead is not None and state.opponent_ahead.display_name
+                            if state.opponent_ahead is not None
+                            and state.opponent_ahead.display_name
                             else {}
                         ),
                     },

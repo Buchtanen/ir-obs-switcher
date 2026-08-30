@@ -15,7 +15,9 @@ from irswitch.race.context import RaceContextAnalyzer
 
 
 def test_speakable_driver_name_prefers_last_token_of_user_name() -> None:
-    assert speakable_driver_name({"UserName": "Valentino Rossi", "AbbrevName": "V. Rossi"}) == "Rossi"
+    assert (
+        speakable_driver_name({"UserName": "Valentino Rossi", "AbbrevName": "V. Rossi"}) == "Rossi"
+    )
     assert speakable_driver_name({"UserName": "Senna"}) == "Senna"
     assert speakable_driver_name({"AbbrevName": "J. Smith"}) == "Smith"
     assert speakable_driver_name({}) is None
@@ -89,9 +91,7 @@ def test_race_context_copies_display_name_onto_opponents() -> None:
 
 
 def test_battle_and_rival_emit_target_name() -> None:
-    ahead = OpponentInfo(
-        car_idx=17, position=6, gap=2.0, closing_rate=0.3, display_name="Rossi"
-    )
+    ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3, display_name="Rossi")
     behind = OpponentInfo(
         car_idx=23, position=8, gap=1.5, closing_rate=0.4, display_name="Kovalainen"
     )

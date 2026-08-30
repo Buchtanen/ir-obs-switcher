@@ -181,7 +181,7 @@ def test_w4_timing_nodes_english() -> None:
 def test_w5_hr_and_invalid_lap_english() -> None:
     graph = load_sequence_graph()
     examples = {"bpm": 142, "lap": 4}
-    for emotion, lines in (
+    for _emotion, lines in (
         ("pushing", graph.nodes["hr_pressure"].variants["en"]["pushing"]),
         ("high", graph.nodes["hr_pressure"].variants["en"]["high"]),
     ):

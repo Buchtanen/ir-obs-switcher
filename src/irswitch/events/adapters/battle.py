@@ -53,7 +53,14 @@ def battle_race_event_to_envelope(
     target_pos = event.data.get("targetPosition")
     metrics = {
         key: event.data[key]
-        for key in ("gap", "closingRate", "targetCarIdx", "targetPosition", "position", "targetName")
+        for key in (
+            "gap",
+            "closingRate",
+            "targetCarIdx",
+            "targetPosition",
+            "position",
+            "targetName",
+        )
         if key in event.data
     }
     copy_token = (
