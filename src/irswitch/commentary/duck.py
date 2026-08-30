@@ -37,7 +37,7 @@ def fade_mul(start: float, end: float, t: float) -> float:
         return max(0.0, float(end))
     db_a = 20.0 * math.log10(max(_MUL_FLOOR, float(start)))
     db_b = 20.0 * math.log10(max(_MUL_FLOOR, float(end)))
-    return 10.0 ** ((db_a + (db_b - db_a) * t) / 20.0)
+    return float(10.0 ** ((db_a + (db_b - db_a) * t) / 20.0))
 
 
 @dataclass

@@ -12,7 +12,7 @@ from typing import Any, Literal
 from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_from_race_event
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
-from irswitch.commentary.tts import build_tts_sink
+from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.config import AppConfig
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope
@@ -181,7 +181,7 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         self.commentary.settings = overlay.commentary
         sink = self.commentary.sink
-        if getattr(sink, "settings", None) is not None:
+        if isinstance(sink, ProcessTtsSink):
             sink.settings = overlay.commentary
         try:
             self.commentary.observe(
