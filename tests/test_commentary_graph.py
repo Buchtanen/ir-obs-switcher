@@ -13,14 +13,14 @@ from irswitch.commentary.graph import (
 from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 
-def test_default_graph_loads_and_is_unfilled() -> None:
+def test_default_graph_loads_fully_filled() -> None:
     graph = load_sequence_graph()
     assert graph.version == 1
     assert "overtake" in graph.nodes
     assert graph.nodes["overtake"].event_types == ("OVERTAKE",)
-    missing = graph.unfilled_cells()
-    assert missing
-    assert all(locale in {"en", "cs"} for _, locale, _ in missing)
+    assert graph.unfilled_cells() == []
+    assert graph.nodes["overtake"].variant_bucket("en", "neutral")
+    assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
 
 
 def test_graph_event_types_are_in_catalog() -> None:

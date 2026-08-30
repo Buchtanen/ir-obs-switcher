@@ -9,6 +9,15 @@ Overlay copy is i18n **tokens** (`PŘEDJETÍ`), not speech. Event Engine already
 
 Texts are filled later by another model. This repo owns the graph, validator, assignment briefs, and director.
 
+## Voice (viewer-facing)
+
+Commentary is **for the stream audience**, not pit-wall radio to the driver.
+
+- EN: third person / broadcast (“He's closing on Rossi.” / “That's P5.”)
+- CS: třetí osoba / komentář pro diváky (“Dotahuje na Rossiho.” / “Bere páté místo.”)
+- Never second person to the driver (“You take P5”, “Jsi pátý” as address)
+- Light viewer asides OK; keep one breath; slots unchanged
+
 ## Pipeline
 
 ```text
@@ -98,33 +107,48 @@ audio_device =
 duck_input =
 duck_ratio = 0.25
 duck_fade_ms = 750
+decision_log_size = 32
 ```
 
 `audio_device` empty = you hear SAPI on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
 
 `duck_input` is the OBS source to lower while speaking (e.g. `Zvuk plochy`). Empty `duck_input` skips ducking. `duck_ratio` is the fraction of the original volume (0.25 = 25%). `duck_fade_ms` (default 750) ramps volume down before the line and back after; `0` is an instant jump. Overlapping lines share one ducker: volume is saved once, not stacked, and restored after the last line.
 
-Migration: new optional section. Existing `config.ini` keeps defaults (off). No user action required.
+Migration: new optional keys keep defaults. Existing `config.ini` stays silent until `enabled=true`.
 
-## English mock (until the text model)
+**Audio path (stream PC):** SAPI → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing; code sink stays `sapi`/`espeak`/`null`. See product suite T0/T1 and P4 note.
 
-Spoken language is English. The director picks **one random fully-bound line** from the node matrix (`rng.choice`).
+## English + Czech content
 
-| Node | Trigger | Not |
-| --- | --- | --- |
-| `in_car` | First seated snapshot this stint (`player_car_idx` set) | Pit entry |
-| `lap_complete` | Existing lap emitter | — |
-| `pit_entry` | Existing pit-road rising edge | Getting into the car |
-| `back_on_track` | Existing pit-road falling edge (`PIT_EXIT`) | Car entry |
+Spoken lines live in `variants.{en|cs}.{emotion}`. The director picks **one random fully-bound line** from the matching bucket (`rng.choice`). Empty cells fall back `emotion→neutral` then `locale→en`.
+
+| Wave | Status |
+| --- | --- |
+| W0–W5 EN | Complete |
+| W6 CS | Complete |
+| VOICE | Stream-viewer broadcast (3rd person); ~4 lines/cell (**752** lines) |
+| W7 polish | Optional |
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
 
-## Later (not this PR)
+## Content DB + fill plan
 
-- Author fills `variants` (EN + CS, per emotion)
-- Windows SAPI / OBS media sink (still no new dep unless approved)
-- Optional DecisionLog “why not spoken” on WS
-- P0–P5 voice budget if overlay arbitration grows zones
+Filled EN+CS (viewer voice). Return point for authoring waves:  
+[`docs/commentary_content_db_plan.md`](docs/commentary_content_db_plan.md)
+
+## Product suite (next)
+
+Test order and packages: [`docs/commentary_product_suite.md`](docs/commentary_product_suite.md)  
+Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentary_live_node_matrix.md)
+
+| Package | Status |
+| --- | --- |
+| T0 SAPI→VAD mock | Manual on #120 |
+| T1 content after restart | This content branch |
+| P1 live matrix | Doc + slot binding proofs |
+| P2 why-quiet log | `GET /api/commentary/decisions` + `/commentary` panel |
+| P3–P5 | Queued |
+| P6 polish | Deferred |
 
 ## Tests
 
@@ -132,4 +156,6 @@ Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine 
 - `tests/test_commentary_validator.py`
 - `tests/test_commentary_assignments.py`
 - `tests/test_commentary_director.py`
+- `tests/test_commentary_http.py`
 - `tests/test_commentary_mock.py`
+- `tests/test_commentary_live_slots.py`

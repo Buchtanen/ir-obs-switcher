@@ -114,8 +114,10 @@ def _render_node(
             node.notes or "(none)",
             "",
             "### Deliver",
-            "1–3 spoken sentences per emotion. Second person or implied driver.",
-            "Use slots verbatim (`{position}`). One breath. Terminal `.` `!` or `?`.",
+            "3–6 spoken sentences per emotion (target ~4; denser matrix).",
+            "Address the **stream viewer** (broadcast / third person about the driver).",
+            "Never second-person to the driver. Use slots verbatim (`{position}`).",
+            "One breath per line. Terminal `.` `!` or `?`.",
             "",
         ]
     )

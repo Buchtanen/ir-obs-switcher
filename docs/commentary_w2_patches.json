@@ -1,0 +1,368 @@
+{
+  "graph_version": 1,
+  "wave": "W2",
+  "author_model": "gpt-5",
+  "locale": "en",
+  "patches": [
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "That's the flag. Finished {position}.",
+        "Session over. You finish {position}."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Race over. Breathe easy. You're {position}.",
+        "Finished {position}. Nice and steady."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Flag is out. You finished {position}.",
+        "Session complete. Result is {position}."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "That's the flag. You fought to {position}.",
+        "Race done. Finished {position}. Strong to the end."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "That's the flag! You finish {position}!",
+        "It's over! Finished {position}! Great work!"
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Last lap. You're in {position}.",
+        "One lap to go. Position {position}."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Last lap. Hold your focus in {position}.",
+        "One to go. Keep it clean from {position}."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Last lap. Push from {position}.",
+        "One lap left. Keep after it."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Last lap now! You're {position}. Make it count!",
+        "One to go! Come on, push to the flag!"
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Incident recorded, count {value}. Reset.",
+        "Something happened. Settle and carry on."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Incident. Reset and stay sharp.",
+        "Leave that behind. Focus forward."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Incident. Reset and get back after it.",
+        "Shake it off. Keep pushing."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Reset now! Stay with it!",
+        "Incident. Leave it behind and drive!"
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "You took {position} from {target_name}.",
+        "The pass is done. You're now {position}."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "You've cleared {target_name}. Hold {position}.",
+        "Place taken. You're {position}. Stay sharp."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Past {target_name}. Keep after it from {position}.",
+        "That place is yours. Push on."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "You've got {target_name}! You're {position} now!",
+        "Place taken! Come on, push from {position}!"
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "That's secured. Hold {position}.",
+        "Fight settled. You're {position}."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "That's yours. Lock down {position}.",
+        "That's settled. Eyes forward."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "You've secured it. Keep after it.",
+        "Hold {position} and push on."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "That's yours! Hold {position} now!",
+        "You've secured it! Come on, eyes forward!"
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Up from {old_position} to {position}.",
+        "You're now {position}."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "You're up to {position}. Settle in.",
+        "From {old_position} to {position}. Nice and steady."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "You're up to {position}. Stay sharp.",
+        "From {old_position} to {position}. Lock in."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "You're {position} now. Keep pushing.",
+        "Up from {old_position}. Keep after it."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Down from {old_position} to {position}.",
+        "You've lost the place. You're {position}."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "You're down to {position}. Stay composed.",
+        "Place lost. Reset and focus."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Down to {position}. Get back after it.",
+        "They got through. Keep pushing."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "You're {position} now. Reset and fight back!",
+        "They got the place. Come on, stay with it!"
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Side by side with {target_name}.",
+        "Fight is live for {position}."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Door to door with {target_name}. Hold your line.",
+        "Still alongside. Keep it clean."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Alongside {target_name} now! Stay with it!",
+        "Fight for {position}! Hold firm!"
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "You're closing on {target_name}, gap {gap}.",
+        "The car ahead is coming to you."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Gap {gap} to {target_name}. Stay precise.",
+        "You're onto them. Set up the run."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "You're reeling in {target_name}. Keep after it.",
+        "Gap {gap}. Dig in and close it."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Gap {gap}! Close on {target_name} now!",
+        "They're coming back to you! Keep pushing!"
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "{target_name} is closing, gap {gap}.",
+        "Pressure from behind. You're {position}."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "{target_name} is closing. Hold {position} cleanly.",
+        "Gap {gap} behind. Stay sharp."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "They're closing fast. Defend {position}.",
+        "Keep {target_name} behind. Stay on it."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "{target_name} is coming now! Hold {position}!",
+        "Pressure behind! Come on, defend it!"
+      ]
+    }
+  ]
+}

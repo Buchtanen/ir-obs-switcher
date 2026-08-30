@@ -51,6 +51,7 @@ class RivalThreatEmitter:
                     "gap": gap,
                     "closingRate": closing,
                     "targetCarIdx": opp.car_idx,
+                    **({"targetName": opp.display_name} if opp.display_name else {}),
                 },
                 duration=self.events.alert_duration,
                 cooldown=_COOLDOWN_S,

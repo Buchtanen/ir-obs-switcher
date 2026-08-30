@@ -1,0 +1,278 @@
+{
+  "graph_version": 1,
+  "wave": "W4",
+  "author_model": "gpt-5",
+  "locale": "en",
+  "patches": [
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "New best, lap {lap} at {lap_time}.",
+        "That's your quickest lap, improved by {delta}."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Nice and tidy. New best at {lap_time}.",
+        "Lap {lap} is your best. Well settled."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "New best, {lap_time}. Lock that in.",
+        "Lap {lap}, improved by {delta}. Stay sharp."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "New best, {lap_time}. Keep pushing.",
+        "That's {delta} quicker. Keep after it."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "New best now, {lap_time}! Come on!",
+        "Lap {lap}, quicker by {delta}! Keep it coming!"
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "You found {delta} in {segment}.",
+        "Gain of {delta} through {segment}."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Nice gain in {segment}, {delta} found.",
+        "That was {delta} in {segment}. Easy and clean."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "You found {delta} in {segment}. Lock it in.",
+        "Gain is {delta} through {segment}. Repeat it."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "You lost {delta} in {segment}.",
+        "Time loss in {segment}, {delta}."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "{delta} lost in {segment}. Stay relaxed.",
+        "{segment} cost {delta}. Keep it smooth."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "{delta} lost through {segment}. Reset.",
+        "Clean up {segment}. The loss was {delta}."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Target set at {target_time}.",
+        "The time to aim for is {target_time}."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Target is {target_time}. Build into it.",
+        "Aim for {target_time}. Keep it easy."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Target locked at {target_time}. Stay precise.",
+        "Chase {target_time}. Every input clean."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Projected lap is {projected_time}.",
+        "{projected_time} projected, confidence {confidence}."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Projection is {projected_time}. Keep it clean.",
+        "{projected_time} at {confidence} confidence. Stay precise."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Projected {projected_time}. Keep pushing.",
+        "You're tracking {projected_time}. Dig in."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Lap {lap} is live.",
+        "Your flyer begins on lap {lap}."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Lap {lap} is live. Eyes ahead.",
+        "This is lap {lap}. Make every input clean."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Lap {lap} now. Push from the line.",
+        "Flyer on lap {lap}. Keep after it."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Lap {lap} now! Come on, make it count!",
+        "Your flyer is live on lap {lap}! Let's go!"
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Your {position} is under threat.",
+        "Position {position} is at risk."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Protect {position} with a clean lap.",
+        "Your {position} is vulnerable. Nail the lap."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Push this lap to hold {position}.",
+        "Position {position} is under pressure. Dig in."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "{streak} clean laps in a row.",
+        "That's a streak of {streak} clean laps."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "{streak} clean laps. Keep it settled.",
+        "The clean run is at {streak}. Nice and easy."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Clean streak at {streak}. Keep the discipline.",
+        "That's {streak} clean. Stay precise."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "{target_name} is closing, gap {gap}.",
+        "Gap to {target_name} is {gap} and shrinking."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "{target_name} is gaining, gap {gap}. Stay aware.",
+        "Pressure is building from {target_name}. Keep it clean."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Gap {gap} to {target_name}. Lift the pace.",
+        "{target_name} is closing. Find the pace."
+      ]
+    }
+  ]
+}

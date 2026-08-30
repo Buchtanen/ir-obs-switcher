@@ -53,7 +53,14 @@ def battle_race_event_to_envelope(
     target_pos = event.data.get("targetPosition")
     metrics = {
         key: event.data[key]
-        for key in ("gap", "closingRate", "targetCarIdx", "targetPosition", "position")
+        for key in (
+            "gap",
+            "closingRate",
+            "targetCarIdx",
+            "targetPosition",
+            "position",
+            "targetName",
+        )
         if key in event.data
     }
     copy_token = (
@@ -64,6 +71,7 @@ def battle_race_event_to_envelope(
     )
     tone = "warning" if battle_state in {"hunted", "battle_for_position"} else "primary"
     preferred = "RESULT" if battle_state == "battle_won" else "ACTIVE"
+    target_name = event.data.get("targetName")
     return make_envelope(
         event_type=event_type,
         phase=phase,
@@ -76,7 +84,11 @@ def battle_race_event_to_envelope(
         correlation_id=f"battle:{battle_state}",
         story_key=f"battle:{battle_state}",
         subject=EventSubject(car_id="player"),
-        target=EventSubject(car_id=str(target_idx or "unknown"), class_position=target_pos),
+        target=EventSubject(
+            car_id=str(target_idx or "unknown"),
+            class_position=target_pos if isinstance(target_pos, int) else None,
+            display_name=str(target_name) if target_name else None,
+        ),
         metrics=metrics,
         copy=EventCopy(headline_token=copy_token, status_token=""),
         presentation=EventPresentation(

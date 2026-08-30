@@ -298,6 +298,8 @@ Pro **restart bez ručního startu** použij GR **Restart Service** / `POST /res
 
 - **[CONFIG.md](CONFIG.md)** - Kompletní popis konfigurace
 - **[COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md)** - Komentář / TTS: graf sekvencí, EN mock (in-car / lap / pit / back on track), validator, zadání textů
+- **[docs/commentary_content_db_plan.md](docs/commentary_content_db_plan.md)** - Plán content DB (JSON graf) + vlny plnění textů + handoff na textový model
+- **[docs/commentary_product_suite.md](docs/commentary_product_suite.md)** - Produktová sada commentary (live readiness, why-quiet, stream start, sink, budget)
 - **[API.md](API.md)** - Dokumentace REST API a WebSocket endpointů
 - **[LOCALIZATION.md](LOCALIZATION.md)** - Popis lokalizace a podporovaných jazyků
 - **[BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)** - Návod pro vytvoření EXE a nastavení jako služby

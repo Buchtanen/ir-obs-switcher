@@ -1,0 +1,55 @@
+{
+  "graph_version": 1,
+  "wave": "W5",
+  "author_model": "gpt-5",
+  "locale": "en",
+  "patches": [
+    {
+      "node_id": "hr_pressure",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Heart rate is climbing, {bpm}. Keep the breathing steady.",
+        "Pressure is rising. Stay smooth and keep pushing.",
+        "Effort is up. Control the breath."
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Heart rate up to {bpm}. Breathe and stay in control!",
+        "Pressure is high now. Come on, keep it measured!",
+        "Heart rate is high. Stay sharp, stay controlled!"
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Lap {lap} is invalid. Reset and go again.",
+        "That lap won't count. Start fresh."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Lap {lap} is gone. Easy reset.",
+        "That one won't count. Breathe and build again."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Lap {lap} is invalid. Reset and refocus.",
+        "That lap is gone. Clean start next time."
+      ]
+    }
+  ]
+}

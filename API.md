@@ -722,18 +722,38 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
 - **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`)
+- **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
 - Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `overlay.language`)
 
 **API**
 
 | Method | URL | Poznámka |
 | --- | --- | --- |
-| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, sample řádek |
+| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, sample řádek, `audioHint` (VAD) |
+| `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
 | `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
 
 `speak` nejdřív pustí TTS validator. Neplatný řádek → 400, audio se nespustí.
+
+**Decision reason codes** (`action` = `spoken` \| `skipped`):
+
+| reason | Význam |
+| --- | --- |
+| `spoken` | řádek odeslán do TTS sinku |
+| `disabled` | `commentary.enabled=false` |
+| `busy` | TTS ještě hraje předchozí řádek |
+| `global_cooldown` | `commentary.cooldown_s` |
+| `no_speak_phase` | envelope phase není ENTER/RESULT/EXIT |
+| `no_node` | žádný uzel v grafu pro event type |
+| `node_cooldown` | per-node cooldown |
+| `hr_gate` | emoce mimo `hr_states` uzlu |
+| `no_variant` | prázdný emotion bucket |
+| `slot_unbound` | žádný řádek bez nevyplněných `{slot}` |
+| `validator_reject` | `validate_utterance` odmítl |
+
+Config: `commentary.decision_log_size` (default 32). Live readiness matrix: [docs/commentary_live_node_matrix.md](docs/commentary_live_node_matrix.md).
 
 ### WS /ws/overlay
 

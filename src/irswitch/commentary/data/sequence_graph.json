@@ -1,396 +1,2143 @@
 {
   "version": 1,
-  "locales": ["en", "cs"],
+  "locales": [
+    "en",
+    "cs"
+  ],
   "default_tts": {
     "max_chars": 90,
     "max_seconds": 5.5,
-    "ssml_allowed": ["break", "emphasis"],
+    "ssml_allowed": [
+      "break",
+      "emphasis"
+    ],
     "require_terminal_punct": true
   },
   "nodes": {
     "lap_complete": {
       "family": "timing",
-      "event_types": ["LAP_COMPLETE"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "LAP_COMPLETE"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 40,
       "cooldown_s": 8,
       "slots": [
-        {"name": "lap", "type": "int", "example": 12},
-        {"name": "lap_time", "type": "time", "example": "1:32.4"}
+        {
+          "name": "lap",
+          "type": "int",
+          "example": 12
+        },
+        {
+          "name": "lap_time",
+          "type": "time",
+          "example": "1:32.4"
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
       "notes": "Mock EN until the text model fills variants. Generic lap line; do not read tenths.",
       "variants": {
         "en": {
           "neutral": [
-            "Lap complete.",
-            "That's a lap.",
-            "Another lap done.",
-            "Lap in the books."
+            "That's a lap for him.",
+            "Lap {lap} is done, {lap_time}.",
+            "Another lap in the books.",
+            "He crosses the line to complete lap {lap}."
+          ],
+          "calm": [
+            "Lap {lap} done in {lap_time}, all very controlled.",
+            "Another steady lap from him.",
+            "He completes lap {lap} without a wasted movement.",
+            "That's {lap_time}, and it looked effortless."
+          ],
+          "focused": [
+            "Lap {lap} logged at {lap_time}.",
+            "That's the lap, and he's straight into the next one.",
+            "He banks lap {lap} and resets.",
+            "{lap_time} on that one, and he stays on task."
+          ],
+          "pushing": [
+            "Lap {lap} complete, and he isn't easing off.",
+            "{lap_time} on that lap, and he keeps digging.",
+            "Another lap done, and the pace is still coming.",
+            "He completes lap {lap} still hard at it."
+          ],
+          "high": [
+            "Lap {lap} done, and he's flying now!",
+            "That's {lap_time}, and he keeps it coming!",
+            "Another lap banked, and he's really going for it!",
+            "Lap {lap} complete, and there is no let up!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Kolo je hotové.",
+            "Má za sebou další kolo.",
+            "Kolo {lap} zapsané, {lap_time}.",
+            "Další kolo je v tabulce."
+          ],
+          "calm": [
+            "Kolo {lap} hotové, {lap_time}.",
+            "Další klidné kolo má za sebou.",
+            "Kolo je venku a tempo drží plynule.",
+            "Bez chyby projel další kolo."
+          ],
+          "focused": [
+            "Kolo {lap} zapsané v čase {lap_time}.",
+            "Kolo je hotové a soustředění drží.",
+            "Má kolo za sebou a jede dál přesně.",
+            "Kolo {lap} je v tabulce a pokračuje se dál."
+          ],
+          "pushing": [
+            "Kolo {lap} hotové a tempo pořád stoupá.",
+            "Na tom kole {lap_time} a nepolevuje.",
+            "Další kolo venku, pořád tlačí.",
+            "Kolo je hotové a plyn zůstává dole."
+          ],
+          "high": [
+            "Kolo {lap} hotové a tohle jede skvěle!",
+            "Má {lap_time} a pořád přidává!",
+            "Kolo je hotové a hned letí do dalšího!",
+            "Kolo {lap} venku a tempo je famózní!"
           ]
         }
       }
     },
     "personal_best": {
       "family": "timing",
-      "event_types": ["PERSONAL_BEST"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "PERSONAL_BEST"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 65,
       "cooldown_s": 12,
       "slots": [
-        {"name": "lap", "type": "int", "example": 8},
-        {"name": "lap_time", "type": "time", "example": "1:31.1"},
-        {"name": "delta", "type": "delta", "example": "-0.4"}
+        {
+          "name": "lap",
+          "type": "int",
+          "example": 8
+        },
+        {
+          "name": "lap_time",
+          "type": "time",
+          "example": "1:31.1"
+        },
+        {
+          "name": "delta",
+          "type": "delta",
+          "example": "-0.4"
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
-      "notes": "Celebrate briefly. Keep under one breath. Emotion variants may rise with HR but stay spoken, not yelled."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Celebrate briefly. Keep under one breath. Emotion variants may rise with HR but stay spoken, not yelled.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's a personal best, lap {lap} at {lap_time}.",
+            "His quickest lap of the session, {lap_time}.",
+            "New best for him, improved by {delta}.",
+            "Lap {lap} goes down as his benchmark."
+          ],
+          "calm": [
+            "A tidy personal best at {lap_time}.",
+            "Lap {lap} is his best, and it never looked hurried.",
+            "Quickest of the day so far, {delta} better.",
+            "That's a best lap, and it came without any fuss."
+          ],
+          "focused": [
+            "New best, {lap_time}, and he'll want that repeated.",
+            "Lap {lap} improves him by {delta}.",
+            "That's his benchmark now, {lap_time}.",
+            "A best lap of {lap_time}, precise from start to finish."
+          ],
+          "pushing": [
+            "Personal best, {lap_time}, and he's still finding more.",
+            "That's {delta} quicker, and he keeps digging.",
+            "New best at {lap_time}, with more still to come.",
+            "Lap {lap} is his fastest yet, and he isn't done."
+          ],
+          "high": [
+            "That's a personal best, {lap_time}! Brilliant lap!",
+            "Lap {lap}, quicker by {delta}, and he is flying!",
+            "New best at {lap_time}, and it just keeps coming!",
+            "What a lap! {lap_time} and a new personal best!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Nový osobní rekord, kolo {lap} za {lap_time}.",
+            "To je jeho nejrychlejší kolo, rozdíl {delta}.",
+            "Osobní rekord. Kolo {lap} v čase {lap_time}.",
+            "Zlepšení o {delta} a nový nejlepší čas."
+          ],
+          "calm": [
+            "Čistá práce a nový nejlepší čas {lap_time}.",
+            "Kolo {lap} je jeho nejlepší, krásně usazené.",
+            "Bez chyby a rovnou osobní rekord, {lap_time}.",
+            "Zlepšil se o {delta} a vypadalo to úplně klidně."
+          ],
+          "focused": [
+            "Nový nejlepší čas {lap_time}, přesně odjetý.",
+            "Kolo {lap}, zlepšení o {delta}. Koncentrace drží.",
+            "Osobní rekord {lap_time} a bez jediné chyby.",
+            "Zajel {lap_time} a je to jeho nové maximum."
+          ],
+          "pushing": [
+            "Nový nejlepší čas {lap_time} a pořád přidává.",
+            "Zlepšení o {delta}, tempo drží nahoře.",
+            "Osobní rekord na kole {lap} a nepolevuje.",
+            "Zajel {lap_time} a rovnou jde po dalším."
+          ],
+          "high": [
+            "Nový nejlepší čas {lap_time}! Tohle je paráda!",
+            "Kolo {lap}, zlepšení o {delta}! Skvělá jízda!",
+            "Osobní rekord! A tempo pořád roste!",
+            "Zajel {lap_time} a je to jeho nejlepší kolo!"
+          ]
+        }
+      }
     },
     "gain_found": {
       "family": "timing",
-      "event_types": ["GAIN_FOUND"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "GAIN_FOUND"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 45,
       "cooldown_s": 10,
       "slots": [
-        {"name": "delta", "type": "delta", "example": "-0.12"},
-        {"name": "segment", "type": "label", "example": "minisector 4"}
+        {
+          "name": "delta",
+          "type": "delta",
+          "example": "-0.12"
+        },
+        {
+          "name": "segment",
+          "type": "label",
+          "example": "minisector 4"
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Practice only. Name the gain, not a race battle. TIME_LOST is a sibling, not this node."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Practice only. Name the gain, not a race battle. TIME_LOST is a sibling, not this node.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He's found {delta} in {segment}.",
+            "A gain of {delta} through {segment}.",
+            "{segment} is where the time came from, {delta}.",
+            "He picks up {delta} in {segment}."
+          ],
+          "calm": [
+            "A nice gain in {segment}, {delta} to the good.",
+            "That was {delta} in {segment}, done without any fuss.",
+            "He's quietly found {delta} through {segment}.",
+            "{segment} gives him {delta}, and it looked easy."
+          ],
+          "focused": [
+            "He's found {delta} in {segment}, and he'll want that again.",
+            "The gain is {delta} through {segment}.",
+            "{delta} better in {segment}, and that is the reference now.",
+            "He nails {segment} for {delta}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Našel {delta} v {segment}.",
+            "Zisk {delta} v úseku {segment}.",
+            "V {segment} si připsal {delta}.",
+            "Tady je zlepšení: {segment}, {delta}."
+          ],
+          "calm": [
+            "Pěkný zisk v {segment}, je tam {delta}.",
+            "V {segment} to bylo {delta}, klidně a čistě.",
+            "Bez tlaku našel {delta} v úseku {segment}.",
+            "Úsek {segment} mu přinesl {delta}."
+          ],
+          "focused": [
+            "Našel {delta} v {segment}, přesná práce.",
+            "Zisk {delta} v úseku {segment}, čistě odjetý.",
+            "V {segment} je rychlejší o {delta}.",
+            "Úsek {segment} sedí, je tam {delta}."
+          ]
+        }
+      }
     },
     "time_lost": {
       "family": "timing",
-      "event_types": ["TIME_LOST"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "TIME_LOST"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 45,
       "cooldown_s": 10,
       "slots": [
-        {"name": "delta", "type": "delta", "example": "+0.18"},
-        {"name": "segment", "type": "label", "example": "minisector 7"}
+        {
+          "name": "delta",
+          "type": "delta",
+          "example": "+0.18"
+        },
+        {
+          "name": "segment",
+          "type": "label",
+          "example": "minisector 7"
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Practice only. Calm correction, not panic."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Practice only. Calm correction, not panic.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He loses {delta} in {segment}.",
+            "Time lost in {segment}, {delta}.",
+            "{segment} costs him {delta}.",
+            "That's {delta} dropped through {segment}."
+          ],
+          "calm": [
+            "{delta} lost in {segment}, and there is no panic about it.",
+            "{segment} cost him {delta}, but it all stays smooth.",
+            "A small loss of {delta} in {segment}.",
+            "He gives up {delta} in {segment}, nothing more than that."
+          ],
+          "focused": [
+            "{delta} lost through {segment}, and he'll clean that up.",
+            "{segment} is the weak point, {delta} away.",
+            "He drops {delta} in {segment}, and he knows it.",
+            "The loss is {delta}, and all of it comes in {segment}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Ztratil {delta} v {segment}.",
+            "Ztráta v úseku {segment}, {delta}.",
+            "V {segment} přišel o {delta}.",
+            "Tady je ztráta: {segment}, {delta}."
+          ],
+          "calm": [
+            "V {segment} je ztráta {delta}, nic dramatického.",
+            "Úsek {segment} ho stál {delta}, jede dál plynule.",
+            "Drobná ztráta {delta} v {segment}, klid zůstává.",
+            "V {segment} to bylo o {delta} pomalejší."
+          ],
+          "focused": [
+            "Ztráta {delta} v {segment}, tam má rezervu.",
+            "Úsek {segment} je slabší, ztráta {delta}.",
+            "V {segment} přišel o {delta}, tady je prostor.",
+            "Ztrácí {delta} v úseku {segment}, drží ale klid."
+          ]
+        }
+      }
     },
     "target_locked": {
       "family": "timing",
-      "event_types": ["TARGET_LOCKED"],
-      "phases": ["ENTER", "RESULT"],
+      "event_types": [
+        "TARGET_LOCKED"
+      ],
+      "phases": [
+        "ENTER",
+        "RESULT"
+      ],
       "speak_priority": 42,
       "cooldown_s": 20,
       "slots": [
-        {"name": "target_time", "type": "time", "example": "1:31.8"}
+        {
+          "name": "target_time",
+          "type": "time",
+          "example": "1:31.8"
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Once per practice stint unless the target changes."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Once per practice stint unless the target changes.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The target is set at {target_time}.",
+            "{target_time} is the time to beat.",
+            "He's chasing {target_time} this stint.",
+            "The benchmark for him is {target_time}."
+          ],
+          "calm": [
+            "Target is {target_time}, and he'll build into it.",
+            "He's aiming at {target_time}, with time to work up to it.",
+            "{target_time} is the goal, and the stint is young.",
+            "The number he wants is {target_time}."
+          ],
+          "focused": [
+            "Target locked at {target_time}.",
+            "He's hunting {target_time}, and every input matters.",
+            "{target_time} is the marker, and he's dialled in on it.",
+            "The lap he needs is {target_time}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Cíl je nastavený na {target_time}.",
+            "Čas, na který jde, je {target_time}.",
+            "Cílový čas: {target_time}.",
+            "Míří na {target_time}."
+          ],
+          "calm": [
+            "Cíl je {target_time} a dostává se k němu postupně.",
+            "Míří na {target_time}, zatím bez tlaku.",
+            "Cílový čas {target_time}, klidná stavba tempa.",
+            "Má před sebou {target_time} a času dost."
+          ],
+          "focused": [
+            "Cíl zamčený na {target_time}, přesná jízda.",
+            "Jde si pro {target_time}, každý vstup čistě.",
+            "Cílový čas {target_time} a plná koncentrace.",
+            "Terč je {target_time} a teď to musí sedět."
+          ]
+        }
+      }
     },
     "projected_lap": {
       "family": "timing",
-      "event_types": ["PROJECTED_LAP"],
-      "phases": ["ENTER", "RESULT"],
+      "event_types": [
+        "PROJECTED_LAP"
+      ],
+      "phases": [
+        "ENTER",
+        "RESULT"
+      ],
       "speak_priority": 42,
       "cooldown_s": 12,
       "slots": [
-        {"name": "projected_time", "type": "time", "example": "1:31.5"},
-        {"name": "confidence", "type": "label", "example": "high"}
+        {
+          "name": "projected_time",
+          "type": "time",
+          "example": "1:31.5"
+        },
+        {
+          "name": "confidence",
+          "type": "label",
+          "example": "high"
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing"],
-      "notes": "Quali. Speak only when confidence is useful. Do not invent grid position."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing"
+      ],
+      "notes": "Quali. Speak only when confidence is useful. Do not invent grid position.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "His projected lap is {projected_time}.",
+            "{projected_time} on the projection, confidence {confidence}.",
+            "The numbers say {projected_time}.",
+            "He's on for {projected_time} as it stands."
+          ],
+          "focused": [
+            "Projection is {projected_time}, and he needs it clean.",
+            "{projected_time} at {confidence} confidence.",
+            "He's tracking {projected_time}, precise so far.",
+            "The projection holds at {projected_time}."
+          ],
+          "pushing": [
+            "Projected {projected_time}, and he's still attacking.",
+            "He's on for {projected_time} and pressing hard.",
+            "{projected_time} projected, with more on the table.",
+            "The projection is {projected_time}, and he wants better."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Předpokládaný čas kola je {projected_time}.",
+            "V projekci má {projected_time}, jistota {confidence}.",
+            "Projekce ukazuje {projected_time}.",
+            "Podle průběhu to vychází na {projected_time}."
+          ],
+          "focused": [
+            "Projekce je {projected_time} a jede to čistě.",
+            "{projected_time} s jistotou {confidence}, přesná práce.",
+            "Míří na {projected_time} a drží koncentraci.",
+            "Projekce {projected_time}, zatím bez ztráty."
+          ],
+          "pushing": [
+            "Projekce {projected_time} a pořád přidává.",
+            "Jede na {projected_time} a tlačí dál.",
+            "V projekci {projected_time}, jistota {confidence}.",
+            "Směřuje k {projected_time} a nepolevuje."
+          ]
+        }
+      }
     },
     "hot_lap": {
       "family": "timing",
-      "event_types": ["HOT_LAP"],
-      "phases": ["ENTER", "RESULT"],
+      "event_types": [
+        "HOT_LAP"
+      ],
+      "phases": [
+        "ENTER",
+        "RESULT"
+      ],
       "speak_priority": 55,
       "cooldown_s": 15,
       "slots": [
-        {"name": "lap", "type": "int", "example": 3}
+        {
+          "name": "lap",
+          "type": "int",
+          "example": 3
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Quali flyer. Short. No mid-corner chatter."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Quali flyer. Short. No mid-corner chatter.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Lap {lap} is his flying lap.",
+            "The flyer begins on lap {lap}.",
+            "This is the one, lap {lap}.",
+            "Lap {lap} is live for him."
+          ],
+          "focused": [
+            "Lap {lap} is live, and he's dialled in.",
+            "This is the flyer, and every corner counts.",
+            "Lap {lap} now, and the precision is there.",
+            "He starts lap {lap} with everything in place."
+          ],
+          "pushing": [
+            "Lap {lap} now, and he's on it from the line.",
+            "The flyer is live, and he's attacking already.",
+            "Lap {lap} is the one, and he's pressing hard.",
+            "He's fully committed on lap {lap}."
+          ],
+          "high": [
+            "Lap {lap} now, and this is the one that counts!",
+            "The flyer is live, and he's absolutely going for it!",
+            "Lap {lap}, and he's throwing everything at it!",
+            "This is his lap, and he's right on the edge of it!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Kolo {lap} je ostré.",
+            "Začíná jeho měřené kolo {lap}.",
+            "Tohle je pokus o čas, kolo {lap}.",
+            "Měřené kolo {lap} právě odstartovalo."
+          ],
+          "focused": [
+            "Kolo {lap} je ostré a koncentrace je maximální.",
+            "Tohle je kolo {lap} a každý vstup musí sedět.",
+            "Měřené kolo běží a jede se přesně.",
+            "Kolo {lap} je živé, teď se nesmí nic pokazit."
+          ],
+          "pushing": [
+            "Kolo {lap} jede a tlačí už od čáry.",
+            "Měřené kolo {lap}, tempo drží nahoře.",
+            "Ostré kolo {lap} a jde do toho naplno.",
+            "Kolo {lap} běží a vůbec se nešetří."
+          ],
+          "high": [
+            "Kolo {lap} je ostré a tohle může být paráda!",
+            "Měřené kolo {lap} jede a napětí stoupá!",
+            "Tohle je jeho kolo {lap} a jede naplno!",
+            "Ostré kolo {lap} běží, sledujeme každý metr!"
+          ]
+        }
+      }
     },
     "position_attack": {
       "family": "timing",
-      "event_types": ["POSITION_ATTACK"],
-      "phases": ["ENTER", "RESULT"],
+      "event_types": [
+        "POSITION_ATTACK"
+      ],
+      "phases": [
+        "ENTER",
+        "RESULT"
+      ],
       "speak_priority": 55,
       "cooldown_s": 12,
       "slots": [
-        {"name": "position", "type": "int", "example": 4}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 4
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing"],
-      "notes": "Quali position threat. One sentence."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing"
+      ],
+      "notes": "Quali position threat. One sentence.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "His P{position} is under threat.",
+            "P{position} is at risk for him.",
+            "Someone is coming for his P{position}.",
+            "That P{position} may not last."
+          ],
+          "focused": [
+            "He needs a clean lap to protect P{position}.",
+            "P{position} is vulnerable, and he knows it.",
+            "The lap has to be right to keep P{position}.",
+            "He's defending P{position} on the timing screens."
+          ],
+          "pushing": [
+            "He has to deliver this lap to hold P{position}.",
+            "P{position} is under pressure, and he's digging in.",
+            "He's pushing hard to keep hold of P{position}.",
+            "This lap decides whether P{position} stays his."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Jeho {position}. místo je ohrožené.",
+            "Pozice {position} je v ohrožení.",
+            "Na {position}. místo se tlačí soupeři.",
+            "{position}. místo mu nemusí vydržet."
+          ],
+          "focused": [
+            "Brání {position}. místo a potřebuje čisté kolo.",
+            "Jeho {position}. místo je zranitelné, musí to zajet.",
+            "Soustředí se na obhajobu {position}. místa.",
+            "{position}. místo drží jen o kousek."
+          ],
+          "pushing": [
+            "Tlačí v tomhle kole, aby udržel {position}. místo.",
+            "Na {position}. místo je tlak a on zabírá.",
+            "Bojuje o {position}. místo a jde naplno.",
+            "Aby udržel {position}. místo, musí přidat."
+          ]
+        }
+      }
     },
     "clean_streak": {
       "family": "timing",
-      "event_types": ["CLEAN_STREAK"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "CLEAN_STREAK"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 30,
       "cooldown_s": 30,
       "slots": [
-        {"name": "streak", "type": "int", "example": 5}
+        {
+          "name": "streak",
+          "type": "int",
+          "example": 5
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Low urgency. Skip if a battle is active (director uses speak_priority)."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Low urgency. Skip if a battle is active (director uses speak_priority).",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's {streak} clean laps in a row.",
+            "A run of {streak} clean laps for him.",
+            "{streak} laps now without a mistake.",
+            "He's strung together {streak} clean laps."
+          ],
+          "calm": [
+            "{streak} clean laps, and he looks comfortable out there.",
+            "The clean run stands at {streak}, and nothing is forced.",
+            "{streak} in a row, done the easy way.",
+            "A quiet, tidy streak of {streak} laps from him."
+          ],
+          "focused": [
+            "The clean streak is at {streak}, and the discipline holds.",
+            "That's {streak} clean, every one of them precise.",
+            "{streak} laps without an error, and he stays sharp.",
+            "A disciplined {streak} laps from him."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{streak} čistých kol v řadě.",
+            "To je série {streak} čistých kol.",
+            "Jede už {streak} kol bez chyby.",
+            "Série čistých kol je na {streak}."
+          ],
+          "calm": [
+            "{streak} čistých kol a klid vydržel.",
+            "Čistá série je na {streak}, krásně v pohodě.",
+            "Už {streak} kol bez zaváhání, žádná nervozita.",
+            "Série {streak} čistých kol, všechno pod kontrolou."
+          ],
+          "focused": [
+            "Čistá série na {streak}, disciplína drží.",
+            "To je {streak} čistých kol, přesná práce.",
+            "Už {streak} kol bez chyby a koncentrace vydržela.",
+            "Série {streak} čistých kol, drží to přesně."
+          ]
+        }
+      }
     },
     "hunting": {
       "family": "battle",
-      "event_types": ["HUNTING", "APPROACH"],
-      "phases": ["ENTER"],
+      "event_types": [
+        "HUNTING",
+        "APPROACH"
+      ],
+      "phases": [
+        "ENTER"
+      ],
       "speak_priority": 50,
       "cooldown_s": 16,
       "slots": [
-        {"name": "gap", "type": "gap", "example": "1.2"},
-        {"name": "target_name", "type": "name", "example": "Rossi"},
-        {"name": "position", "type": "int", "example": 6}
+        {
+          "name": "gap",
+          "type": "gap",
+          "example": "1.2"
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Rossi"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 6
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Enter only, never UPDATE. Next spoken beat is usually side_by_side or overtake."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Enter only, never UPDATE. Next spoken beat is usually side_by_side or overtake.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is closing on {target_name}, gap {gap}.",
+            "The gap to {target_name} is down to {gap}.",
+            "{target_name} is coming back to him up ahead.",
+            "He is reeling in the car in front from P{position}."
+          ],
+          "focused": [
+            "Gap {gap} to {target_name}, and he is lining something up.",
+            "He is measured and precise as he closes on {target_name}.",
+            "{target_name} is {gap} up the road and the gap keeps falling.",
+            "From P{position} he is building toward a move."
+          ],
+          "pushing": [
+            "He is hunting {target_name} down, gap {gap} and shrinking.",
+            "The charge is on from P{position}. {target_name} is in his sights.",
+            "Big lap from him. Gap {gap} to {target_name} and closing fast.",
+            "He is throwing everything at it to catch {target_name}."
+          ],
+          "high": [
+            "Gap {gap}! He is right on {target_name} now!",
+            "{target_name} is in trouble! He is all over the back of him!",
+            "Here he comes! P{position} and hunting hard!",
+            "The gap is tumbling! This move is coming!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Vpředu je {target_name}, odstup {gap}.",
+            "Vůz před ním se přibližuje.",
+            "Odstup {gap} a klesá, {target_name} je na dohled.",
+            "Z {position}. místa se sune blíž k vozu vpředu."
+          ],
+          "focused": [
+            "Odstup {gap}, vpředu {target_name}. Jede přesně.",
+            "Má ho na dostřel a připravuje si útok.",
+            "{target_name} je před ním a mezera se tenčí.",
+            "Z {position}. místa měří vzdálenost k vozu vpředu."
+          ],
+          "pushing": [
+            "Stahuje mezeru, {target_name} je před ním, odstup {gap}.",
+            "Odstup {gap} a ukrajuje z něj každé kolo.",
+            "Tlačí z {position}. místa a vůz vpředu se blíží.",
+            "{target_name} už není daleko, mezera padá."
+          ],
+          "high": [
+            "Odstup {gap}! {target_name} je na dosah!",
+            "Vrací se mu to! Mezera se rychle zmenšuje!",
+            "Z {position}. místa útočí a {target_name} to musí cítit!",
+            "Odstup {gap} a pořád klesá! Tohle bude souboj!"
+          ]
+        }
+      }
     },
     "hunted": {
       "family": "battle",
-      "event_types": ["HUNTED"],
-      "phases": ["ENTER"],
+      "event_types": [
+        "HUNTED"
+      ],
+      "phases": [
+        "ENTER"
+      ],
       "speak_priority": 50,
       "cooldown_s": 16,
       "slots": [
-        {"name": "gap", "type": "gap", "example": "0.8"},
-        {"name": "target_name", "type": "name", "example": "Berg"},
-        {"name": "position", "type": "int", "example": 5}
+        {
+          "name": "gap",
+          "type": "gap",
+          "example": "0.8"
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Berg"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Defensive enter only. Do not narrate every gap tick."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Defensive enter only. Do not narrate every gap tick.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{target_name} is closing on him, gap {gap}.",
+            "Pressure is building from behind on P{position}.",
+            "The gap behind is down to {gap}.",
+            "{target_name} is the car coming for P{position}."
+          ],
+          "focused": [
+            "He is defending P{position} cleanly with {target_name} at {gap}.",
+            "{target_name} is close, but he is using the mirrors well.",
+            "Gap {gap} behind, and he is holding a tidy line.",
+            "He knows {target_name} is there and is placing the car well."
+          ],
+          "pushing": [
+            "{target_name} is all over him in the fight for P{position}.",
+            "The gap is {gap} and he is working hard for every corner.",
+            "He is under real pressure but refuses to give up P{position}.",
+            "{target_name} is close enough to strike. He is digging in."
+          ],
+          "high": [
+            "{target_name} is right there! Can he hold P{position}?",
+            "The gap is {gap}! This is going to be a fight!",
+            "Huge pressure from behind! He is defending with everything!",
+            "{target_name} is ready to pounce! P{position} is on the line!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} se dotahuje, odstup {gap}.",
+            "Tlak zezadu, drží {position}. místo.",
+            "Za ním je {target_name} a mezera klesá.",
+            "Odstup {gap} dozadu, souboj se rodí."
+          ],
+          "focused": [
+            "{target_name} se dotahuje. {position}. místo musí udržet čistě.",
+            "Odstup {gap} vzadu a on o tom dobře ví.",
+            "Za ním roste tlak, obrana {position}. místa začíná.",
+            "{target_name} je blízko, rytmus si ale drží."
+          ],
+          "pushing": [
+            "{target_name} se dotahuje rychle a on brání {position}. místo.",
+            "Odstup {gap} vzadu, tlak roste každým kolem.",
+            "Za ním sedí {target_name} a čeká na chybu.",
+            "Brání {position}. místo a plyn drží na podlaze."
+          ],
+          "high": [
+            "{target_name} je mu na zádech! {position}. místo je v ohrožení!",
+            "Velký tlak zezadu! Tohle musí udržet!",
+            "Odstup {gap}! {target_name} je hned za ním!",
+            "Za ním je {target_name} a hledá si cestu!"
+          ]
+        }
+      }
     },
     "side_by_side": {
       "family": "battle",
-      "event_types": ["SIDE_BY_SIDE", "BATTLE_FOR_POSITION"],
-      "phases": ["ENTER"],
+      "event_types": [
+        "SIDE_BY_SIDE",
+        "BATTLE_FOR_POSITION"
+      ],
+      "phases": [
+        "ENTER"
+      ],
       "speak_priority": 70,
       "cooldown_s": 10,
       "slots": [
-        {"name": "position", "type": "int", "example": 6},
-        {"name": "target_name", "type": "name", "example": "Rossi"}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 6
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Rossi"
+        }
       ],
-      "hr_states": ["unknown", "pushing", "high"],
-      "notes": "Very short. Prefer after hunting on the same correlationId."
+      "hr_states": [
+        "unknown",
+        "pushing",
+        "high"
+      ],
+      "notes": "Very short. Prefer after hunting on the same correlationId.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is side by side with {target_name}.",
+            "Two cars abreast in the fight for P{position}.",
+            "{target_name} is right alongside him.",
+            "Wheel to wheel for P{position}."
+          ],
+          "pushing": [
+            "Door to door with {target_name}, and neither one lifts.",
+            "They are locked together in the scrap for P{position}.",
+            "He holds his line as {target_name} refuses to back out.",
+            "Still alongside, still fighting for P{position}."
+          ],
+          "high": [
+            "Side by side! This is a proper fight for P{position}!",
+            "{target_name} is right there! Neither of them is lifting!",
+            "Wheel to wheel and flat out! Who takes P{position}?",
+            "They are a whisker apart! What a scrap this is!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} jede vedle něj.",
+            "Souboj o {position}. místo je živý.",
+            "Jsou bok po boku.",
+            "Dvě auta vedle sebe, {target_name} nedává nic zdarma."
+          ],
+          "pushing": [
+            "{target_name} je vedle něj a nikdo neuhýbá.",
+            "Pořád jedou vedle sebe, kolo na kolo.",
+            "Souboj o {position}. místo pokračuje bok po boku.",
+            "Ani jeden z nich neubral z plynu."
+          ],
+          "high": [
+            "{target_name} je vedle něj! Tohle je hodně těsné!",
+            "Souboj o {position}. místo! Bok po boku!",
+            "Jedou kolo na kolo a nikdo nechce ustoupit!",
+            "{target_name} se nedá! Dvě auta vedle sebe!"
+          ]
+        }
+      }
     },
     "overtake": {
       "family": "position",
-      "event_types": ["OVERTAKE"],
-      "phases": ["RESULT", "ENTER"],
+      "event_types": [
+        "OVERTAKE"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
       "speak_priority": 85,
       "cooldown_s": 8,
       "slots": [
-        {"name": "position", "type": "int", "example": 5},
-        {"name": "target_name", "type": "name", "example": "Rossi"}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Rossi"
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Accepted on-track pass only (pit-cycle overtakes are suppressed upstream). Past tense, one beat."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Accepted on-track pass only (pit-cycle overtakes are suppressed upstream). Past tense, one beat.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He has {target_name} behind him and takes P{position}.",
+            "The move is done. He is up to P{position}.",
+            "Past {target_name} and into P{position}.",
+            "That pass sticks, and P{position} belongs to him."
+          ],
+          "focused": [
+            "Clean and clinical past {target_name}. He holds P{position}.",
+            "He clears {target_name} with no fuss and settles into P{position}.",
+            "A precise move there, and P{position} is his.",
+            "No drama in that pass. He takes P{position}."
+          ],
+          "pushing": [
+            "He forces his way past {target_name} and grabs P{position}.",
+            "A hard-earned move. P{position} now, and he is still coming.",
+            "{target_name} is beaten, and he keeps the hammer down.",
+            "He muscles through and presses on in P{position}."
+          ],
+          "high": [
+            "He has got {target_name}! That is P{position}!",
+            "What a move! He is up to P{position}!",
+            "He does it! {target_name} is behind him now!",
+            "Brilliant pass! He slots into P{position} and keeps coming!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Manévr je hotový. {target_name} zůstává za ním.",
+            "Předjetí sedlo, posouvá se na {position}. místo.",
+            "A je venku. {target_name} už před ním nejede.",
+            "Souboj vyřešen, průběžně je na {position}. místě."
+          ],
+          "focused": [
+            "Čisté předjetí. {target_name} je za ním a drží {position}. místo.",
+            "Manévr dotažený bez kontaktu, průběžně {position}. místo.",
+            "Přesně načasovaný útok a {target_name} zůstal pozadu.",
+            "Bere {position}. místo a hned si hlídá stopu."
+          ],
+          "pushing": [
+            "{target_name} je za ním a on nepolevuje z {position}. místa.",
+            "To místo je jeho. Z {position}. místa jede dál naplno.",
+            "Předjetí sedlo a hned míří na dalšího vpředu.",
+            "Bere {position}. místo a plyn nechává na podlaze."
+          ],
+          "high": [
+            "Má ho! {target_name} je za ním a bere {position}. místo!",
+            "Skvělý manévr! Posouvá se na {position}. místo!",
+            "A je to venku! {target_name} musel uhnout!",
+            "Nádherné předjetí! {position}. místo je jeho!"
+          ]
+        }
+      }
     },
     "position_gained": {
       "family": "position",
-      "event_types": ["POSITION_GAINED"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "POSITION_GAINED"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 72,
       "cooldown_s": 8,
       "slots": [
-        {"name": "position", "type": "int", "example": 9},
-        {"name": "old_position", "type": "int", "example": 10}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 9
+        },
+        {
+          "name": "old_position",
+          "type": "int",
+          "example": 10
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused", "pushing"],
-      "notes": "Use when the classifier did not call OVERTAKE (e.g. car ahead pitted). Do not invent a pass."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing"
+      ],
+      "notes": "Use when the classifier did not call OVERTAKE (e.g. car ahead pitted). Do not invent a pass.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He moves up from P{old_position} to P{position}.",
+            "A place comes his way. He is now P{position}.",
+            "The order shuffles and he sits P{position}.",
+            "That is P{old_position} to P{position} on the timing screen."
+          ],
+          "calm": [
+            "A quiet gain there. He is now P{position}.",
+            "No fight needed. P{old_position} becomes P{position}.",
+            "He drifts up to P{position} as the order settles.",
+            "Steady work brings him to P{position}."
+          ],
+          "focused": [
+            "Up to P{position} from P{old_position}, and he stays locked in.",
+            "A free place for him. P{position} now, and the head stays down.",
+            "He inherits P{position} and carries on without fuss.",
+            "The board shows him P{position}, one better than before."
+          ],
+          "pushing": [
+            "He is up to P{position} and pressing on hard.",
+            "P{old_position} to P{position}, and the pace is not dropping.",
+            "A place gained, and he keeps hunting from P{position}.",
+            "He takes P{position} and immediately looks up the road."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Posun z {old_position}. na {position}. místo.",
+            "Průběžně je teď na {position}. místě.",
+            "Tabule se změnila, {position}. místo pro něj.",
+            "O jedno místo výš, z {old_position}. na {position}."
+          ],
+          "calm": [
+            "Bez boje se posouvá na {position}. místo a usazuje se v něm.",
+            "Z {old_position}. na {position}. místo, tiše a bez dramat.",
+            "Získává místo a dál si jede svoje tempo.",
+            "Klidný posun na {position}. místo."
+          ],
+          "focused": [
+            "Posun na {position}. místo, teď to jen udržet čisté.",
+            "Z {old_position}. na {position}. místo na průběžné tabuli.",
+            "Je na {position}. místě a rytmus nijak nemění.",
+            "Místo přidané, pozornost zůstává stejná."
+          ],
+          "pushing": [
+            "Je na {position}. místě a pořád je v útoku.",
+            "Posun z {old_position}. místa a plyn zůstává dole.",
+            "{position}. místo a tempo dál roste.",
+            "O jedno místo výš a hned se dívá po dalším."
+          ]
+        }
+      }
     },
     "position_lost": {
       "family": "position",
-      "event_types": ["POSITION_LOST", "OVERTAKEN"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "POSITION_LOST",
+        "OVERTAKEN"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 72,
       "cooldown_s": 8,
       "slots": [
-        {"name": "position", "type": "int", "example": 7},
-        {"name": "old_position", "type": "int", "example": 6}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 7
+        },
+        {
+          "name": "old_position",
+          "type": "int",
+          "example": 6
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Matter-of-fact. Prefer after hunted on the same story."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Matter-of-fact. Prefer after hunted on the same story.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He slips from P{old_position} to P{position}.",
+            "That place is gone. He is now P{position}.",
+            "The order changes and he drops to P{position}.",
+            "P{old_position} becomes P{position} for our man."
+          ],
+          "focused": [
+            "He loses the place but stays composed in P{position}.",
+            "Down to P{position}, and there is no panic in that car.",
+            "A place surrendered. He resets and holds P{position}.",
+            "He is P{position} now, keeping every line tidy."
+          ],
+          "pushing": [
+            "He drops to P{position} and is already looking to hit back.",
+            "That place is lost, but he stays glued to the car ahead.",
+            "P{old_position} to P{position}, and the counter attack starts now.",
+            "He is shuffled back to P{position} with the throttle still pinned."
+          ],
+          "high": [
+            "He loses it! Down to P{position} and the fight is on!",
+            "That place is gone! Can he strike straight back?",
+            "He is P{position} now, and he will not accept that!",
+            "A place lost in a big moment! P{old_position} down to P{position}!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Propad z {old_position}. na {position}. místo.",
+            "Místo je pryč, teď je na {position}. místě.",
+            "Tabule ho posouvá dolů na {position}. místo.",
+            "O jedno místo zpátky, z {old_position}. na {position}."
+          ],
+          "focused": [
+            "Padá na {position}. místo, ale zůstává klidný.",
+            "Místo ztratil a hned se soustředí na odpověď.",
+            "Z {old_position}. na {position}. místo, bez paniky.",
+            "Ztráta pozice, rytmus si ale drží."
+          ],
+          "pushing": [
+            "Padá na {position}. místo a bude ho chtít hned zpátky.",
+            "Dostali se přes něj, tempo ale nesnižuje.",
+            "Z {old_position}. na {position}. místo a už chystá protiútok.",
+            "Místo je pryč, ale jeho odpověď nepřijde pozdě."
+          ],
+          "high": [
+            "Je na {position}. místě! A tohle si nenechá!",
+            "Vzali mu to místo! Odpověď určitě přijde!",
+            "Propad na {position}. místo! Ale ještě není konec!",
+            "Ztratil pozici! A hned se do toho zase pouští!"
+          ]
+        }
+      }
     },
     "rival_threat": {
       "family": "position",
-      "event_types": ["RIVAL_THREAT"],
-      "phases": ["ENTER"],
+      "event_types": [
+        "RIVAL_THREAT"
+      ],
+      "phases": [
+        "ENTER"
+      ],
       "speak_priority": 48,
       "cooldown_s": 20,
       "slots": [
-        {"name": "gap", "type": "gap", "example": "2.4"},
-        {"name": "target_name", "type": "name", "example": "Kovalainen"}
+        {
+          "name": "gap",
+          "type": "gap",
+          "example": "2.4"
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Kovalainen"
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing"],
-      "notes": "Faster car closing, not yet hunted. Low chatter."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing"
+      ],
+      "notes": "Faster car closing, not yet hunted. Low chatter.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{target_name} is closing, gap {gap}.",
+            "The gap to {target_name} is {gap} and shrinking.",
+            "{target_name} is coming his way.",
+            "{gap} back to {target_name}, and it is coming down."
+          ],
+          "focused": [
+            "{target_name} is gaining, gap {gap}, and he'll have noticed.",
+            "Pressure is building from {target_name}.",
+            "{target_name} has found pace, gap {gap}.",
+            "That gap of {gap} to {target_name} is a concern."
+          ],
+          "pushing": [
+            "Gap {gap} to {target_name}, and he needs more pace.",
+            "{target_name} is closing hard, and he's responding.",
+            "{gap} and falling to {target_name}, so the effort goes up.",
+            "{target_name} is on the move, and he has to answer."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} se dotahuje, odstup {gap}.",
+            "Odstup na {target_name} je {gap} a klesá.",
+            "Zezadu přijíždí {target_name}, odstup {gap}.",
+            "{target_name} ukrajuje z odstupu {gap}."
+          ],
+          "focused": [
+            "{target_name} se přibližuje, odstup {gap}.",
+            "Od {target_name} roste tlak, ale drží to čistě.",
+            "Odstup {gap} a {target_name} je pořád rychlejší.",
+            "{target_name} se blíží, koncentrace teď rozhodne."
+          ],
+          "pushing": [
+            "Odstup {gap} na {target_name}, tempo musí zvednout.",
+            "{target_name} se dotahuje a on hledá tempo.",
+            "Odstup {gap} klesá, {target_name} jde nahoru.",
+            "Tlak od {target_name} sílí, odstup je {gap}."
+          ]
+        }
+      }
     },
     "battle_won": {
       "family": "battle",
-      "event_types": ["BATTLE_WON"],
-      "phases": ["RESULT", "ENTER"],
+      "event_types": [
+        "BATTLE_WON"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
       "speak_priority": 75,
       "cooldown_s": 15,
       "slots": [
-        {"name": "position", "type": "int", "example": 5}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Close the hunting → overtake sequence. Do not restage the pass."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Close the hunting → overtake sequence. Do not restage the pass.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That fight is settled. He holds P{position}.",
+            "The battle is over and P{position} is his.",
+            "That one is done. He has the place in hand.",
+            "Order restored, with him now secure in P{position}."
+          ],
+          "focused": [
+            "He locks it down and P{position} looks safe.",
+            "The scrap is finished. His eyes are back on the road ahead.",
+            "That is settled cleanly. P{position} is under control.",
+            "He has the place secured and the mirrors are clear."
+          ],
+          "pushing": [
+            "He wins that duel and is already chasing the next car.",
+            "P{position} is banked, and he is straight back on the throttle.",
+            "That battle is his, and the charge continues.",
+            "He comes out on top and keeps pressing from P{position}."
+          ],
+          "high": [
+            "He wins it! P{position} is his and he is still going!",
+            "That is a big scalp! P{position} secured!",
+            "He holds on and takes the fight! What a battle that was!",
+            "The duel is his! P{position}, and the charge is on!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Souboj je uzavřený. Drží {position}. místo.",
+            "Je to potvrzené, {position}. místo zůstává jeho.",
+            "Ten duel má vyřešený a jede si svoje tempo.",
+            "Na trati je klid. Průběžně je na {position}. místě."
+          ],
+          "focused": [
+            "Má to jisté. {position}. místo si zamkl.",
+            "Vyřízeno. Oči míří zase dopředu.",
+            "Souboj skončil v jeho prospěch, {position}. místo drží.",
+            "Duel je za ním a soustředí se na další kolo."
+          ],
+          "pushing": [
+            "Má to zajištěné a hned jede dál naplno.",
+            "{position}. místo je uhájené a on míří výš.",
+            "Souboj vyhrál a tempo ani na chvíli nesnížil.",
+            "Duel je vyřešený, teď se dívá po dalším soupeři."
+          ],
+          "high": [
+            "Je to jeho! {position}. místo si udržel!",
+            "Má to zajištěné! A pořád se dívá dopředu!",
+            "Ten souboj vyhrál! {position}. místo zůstává jeho!",
+            "Zvládl to! Z {position}. místa už ho nikdo nedostal!"
+          ]
+        }
+      }
     },
     "incident": {
       "family": "exception",
-      "event_types": ["INCIDENT"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "INCIDENT"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 88,
       "cooldown_s": 10,
       "slots": [
-        {"name": "value", "type": "int", "example": 4}
+        {
+          "name": "value",
+          "type": "int",
+          "example": 4
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Short. No blame speech. Overlay already flashes."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Short. No blame speech. Overlay already flashes.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Contact there. His incident count moves to {value}.",
+            "A moment for him. That is {value} on the tally.",
+            "Something happened out there, and he gathers it up.",
+            "An incident logged, and the count is now {value}."
+          ],
+          "focused": [
+            "A scrappy moment, and he resets straight away.",
+            "Incident there. He is already back on the racing line.",
+            "A small mistake, quickly tidied up. Count at {value}.",
+            "That is {value} incidents now, but he looks composed."
+          ],
+          "pushing": [
+            "A knock there. He shakes it off and keeps charging.",
+            "Incident number {value}, and he is straight back on it.",
+            "That cost him a beat. He is already chasing again.",
+            "A rough moment, but the pace is right back with him."
+          ],
+          "high": [
+            "Big moment there! He gathers it up!",
+            "That was close! Incident {value} on the sheet!",
+            "A hit, and he is fighting to keep it pointed straight!",
+            "What a save! He keeps it going after that one!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Zapsaný incident, celkem {value}. Jede dál.",
+            "Malý kontakt a v protokolu je {value}.",
+            "Něco se tam stalo, ale pokračuje.",
+            "Incident na kontě, počítadlo hlásí {value}."
+          ],
+          "focused": [
+            "Incident. Srovnává to a vrací se do rytmu.",
+            "Krátký moment a hned je zpátky ve své lajně.",
+            "Zaváhání bez následků. Počítadlo je na {value}.",
+            "Incident si zapsal, hlavu ale nesklopil."
+          ],
+          "pushing": [
+            "Incident, a přesto hned zase šlape na gas.",
+            "Setřepal to a jede dál naplno.",
+            "Ťukanec je zapsaný, celkem {value}. Tempo nepolevuje.",
+            "Krátká chyba a okamžitě zpět na plný gas."
+          ],
+          "high": [
+            "Incident! Srovnává to a pokračuje dál!",
+            "Velký moment, ale udržel to a jede!",
+            "To bylo o vlásek! Počítadlo hlásí {value}!",
+            "Zachránil to a pořád je v závodě!"
+          ]
+        }
+      }
     },
     "invalid_lap": {
       "family": "exception",
-      "event_types": ["INVALID_LAP"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "INVALID_LAP"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 60,
       "cooldown_s": 12,
       "slots": [
-        {"name": "lap", "type": "int", "example": 4}
+        {
+          "name": "lap",
+          "type": "int",
+          "example": 4
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Practice/quali invalidation. Calm reset, then silence."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Practice/quali invalidation. Calm reset, then silence.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Lap {lap} is invalid.",
+            "That lap will not count for him.",
+            "Lap {lap} is deleted, and he goes again.",
+            "No time for that one."
+          ],
+          "calm": [
+            "Lap {lap} is gone, and there is no frustration there.",
+            "That one will not count, and he simply resets.",
+            "Lap {lap} is wiped, and he has time to spare.",
+            "A deleted lap, and he takes it in his stride."
+          ],
+          "focused": [
+            "Lap {lap} is invalid, and he has already reset.",
+            "That lap is gone, so he builds another one.",
+            "No time for lap {lap}, and he goes again straight away.",
+            "The lap is deleted, and he refocuses immediately."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Kolo {lap} je neplatné.",
+            "Tohle kolo se nepočítá.",
+            "Kolo {lap} smazané, jede se znovu.",
+            "Čas z kola {lap} neplatí."
+          ],
+          "calm": [
+            "Kolo {lap} je pryč, ale klid zůstává.",
+            "To se nepočítá, prostě to postaví znovu.",
+            "Kolo {lap} neplatí, nic dramatického.",
+            "Čas padl a jezdec to bere v klidu."
+          ],
+          "focused": [
+            "Kolo {lap} je neplatné, soustředí se na další.",
+            "To kolo je pryč, teď musí přijít čistý pokus.",
+            "Kolo {lap} neplatí a koncentrace se vrací.",
+            "Čas neplatí, příště to musí být bez chyby."
+          ]
+        }
+      }
     },
     "final_lap": {
       "family": "session",
-      "event_types": ["FINAL_LAP"],
-      "phases": ["RESULT", "ENTER"],
+      "event_types": [
+        "FINAL_LAP"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
       "speak_priority": 95,
       "cooldown_s": 60,
       "slots": [
-        {"name": "position", "type": "int", "example": 3}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 3
+        }
       ],
-      "hr_states": ["unknown", "focused", "pushing", "high"],
-      "notes": "Once. Next expected spoken node is finish."
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Once. Next expected spoken node is finish.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Last lap. He starts it in P{position}.",
+            "One to go, and he sits P{position}.",
+            "This is the final tour, P{position} for our man.",
+            "White flag is out. He runs P{position}."
+          ],
+          "focused": [
+            "Last lap, and he is locked in at P{position}.",
+            "One to go. It all rides on a clean lap from P{position}.",
+            "Final tour. He needs to keep it tidy to hold P{position}.",
+            "The last lap begins with his focus on protecting P{position}."
+          ],
+          "pushing": [
+            "Last lap, and he is still hunting from P{position}.",
+            "One to go, and he is not settling for P{position}.",
+            "The final lap is live. He is giving it everything.",
+            "He starts the last lap on the attack in P{position}."
+          ],
+          "high": [
+            "Last lap now! He is P{position} and going for it!",
+            "One to go! This is where it all gets decided!",
+            "Here we go, final lap! He is flying in P{position}!",
+            "The last lap is on, and this one goes right to the wire!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Poslední kolo. Jede na {position}. místě.",
+            "Zbývá jedno kolo, drží {position}. místo.",
+            "Vjíždí do posledního kola z {position}. místa.",
+            "Poslední okruh závodu, průběžně na {position}. místě."
+          ],
+          "focused": [
+            "Poslední kolo. Potřebuje ho odjet čistě z {position}. místa.",
+            "Jedno kolo do konce a {position}. místo má pod kontrolou.",
+            "Poslední okruh. Soustředí se na udržení {position}. místa.",
+            "Zbývá jedno kolo a on si hlídá {position}. místo."
+          ],
+          "pushing": [
+            "Poslední kolo a pořád útočí z {position}. místa.",
+            "Jedno kolo do konce. Nechává tam poslední zbytky sil.",
+            "Poslední okruh a tempo nesnižuje, {position}. místo mu nestačí.",
+            "Do posledního kola jde plným gazem z {position}. místa."
+          ],
+          "high": [
+            "Poslední kolo! Je na {position}. místě a jde si pro víc!",
+            "Jedno kolo do konce! Vrhá do toho úplně všechno!",
+            "Poslední okruh! {position}. místo, a tohle bude drama!",
+            "Poslední kolo je tady! Z {position}. místa útočí až do cíle!"
+          ]
+        }
+      }
     },
     "finish": {
       "family": "session",
-      "event_types": ["FINISH"],
-      "phases": ["RESULT"],
+      "event_types": [
+        "FINISH"
+      ],
+      "phases": [
+        "RESULT"
+      ],
       "speak_priority": 100,
       "cooldown_s": 120,
       "slots": [
-        {"name": "position", "type": "int", "example": 3}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 3
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
-      "notes": "Closing line. Past tense. No further race chatter after this node."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Closing line. Past tense. No further race chatter after this node.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's the flag. He brings it home in P{position}.",
+            "Chequered flag, and the result is P{position}.",
+            "Session over. He finishes P{position}.",
+            "The race is done. P{position} on the board for him."
+          ],
+          "calm": [
+            "Flag is out, and he comes home calmly in P{position}.",
+            "No drama at the end. P{position} is the result.",
+            "A tidy run to the flag. He takes P{position}.",
+            "That's the race complete. He settles for P{position}."
+          ],
+          "focused": [
+            "Flag is out. He holds it together for P{position}.",
+            "Job done at the line. P{position} is the final call.",
+            "He keeps it clean to the end and finishes P{position}.",
+            "The session closes with him classified P{position}."
+          ],
+          "pushing": [
+            "He fought all the way to the flag for P{position}.",
+            "That's the flag. He never let up, and P{position} is his.",
+            "A hard run to the end. He banks P{position}.",
+            "He kept the hammer down and comes home P{position}."
+          ],
+          "high": [
+            "That's the flag! He takes P{position}!",
+            "It's over, and what a drive! P{position} for him!",
+            "He brings it home in P{position}! Superb from start to finish!",
+            "Chequered flag! P{position} and he earned every bit of it!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Cílová vlajka. Dojíždí na {position}. místě.",
+            "Konec závodu. V cíli bere {position}. místo.",
+            "Šachovnicová vlajka je venku a je z toho {position}. místo.",
+            "A je hotovo. Klasifikace ho řadí na {position}. místo."
+          ],
+          "calm": [
+            "Šachovnicová vlajka a klidný konec. Končí na {position}. místě.",
+            "Dojezd bez chyby. Výsledkem je {position}. místo.",
+            "Závod končí v pohodě, {position}. místo je doma.",
+            "Nikde to nelámal, a přesto bere {position}. místo."
+          ],
+          "focused": [
+            "Vlajka je venku. Soustředěný dojezd na {position}. místě.",
+            "Závod je u konce a výsledek zní {position}. místo.",
+            "Do cíle to dovezl čistě. Klasifikace {position}. místo.",
+            "Konec. Odjel to bez zbytečných rizik, {position}. místo."
+          ],
+          "pushing": [
+            "Cílová vlajka. {position}. místo si vybojoval do posledního metru.",
+            "Konec závodu. Nechal tam všechno a bere {position}. místo.",
+            "Do cíle šel plným gazem. Výsledek je {position}. místo.",
+            "A je to za ním. {position}. místo po závodě bez oddechu."
+          ],
+          "high": [
+            "Cílová vlajka! Bere {position}. místo!",
+            "Je to v cíli! {position}. místo a nádherná jízda!",
+            "Konec! Dojíždí na {position}. místě a může slavit!",
+            "Šachovnicová vlajka! {position}. místo je jeho!"
+          ]
+        }
+      }
     },
     "pit_entry": {
       "family": "pit",
-      "event_types": ["PIT_ENTRY"],
-      "phases": ["ENTER", "RESULT"],
+      "event_types": [
+        "PIT_ENTRY"
+      ],
+      "phases": [
+        "ENTER",
+        "RESULT"
+      ],
       "speak_priority": 55,
       "cooldown_s": 20,
       "slots": [
-        {"name": "position", "type": "int", "example": 8}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 8
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
       "notes": "Mock EN. Pit-road entry only — not getting into the car.",
       "variants": {
         "en": {
           "neutral": [
-            "In the pits.",
-            "Coming in.",
-            "Box this time.",
-            "Down the pit lane."
+            "He's coming into the pits.",
+            "Into pit lane he goes.",
+            "He boxes this time around.",
+            "Pit road for him."
+          ],
+          "calm": [
+            "Easy into pit lane from P{position}.",
+            "He settles it down as he enters pit road.",
+            "No drama on the way in, running P{position}.",
+            "He rolls into the pits, nice and tidy."
+          ],
+          "focused": [
+            "Pit road, and he's running P{position}.",
+            "He's on pit road and watching the limiter.",
+            "Into the pits from P{position}, all very precise.",
+            "Pit entry done cleanly, and he's on the limiter."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Odbočuje do boxů.",
+            "Je v boxové uličce.",
+            "Tohle kolo míří do boxu.",
+            "Zajíždí na zastávku."
+          ],
+          "calm": [
+            "V klidu zajíždí do boxů z {position}. místa.",
+            "Boxovou uličkou projíždí bez spěchu.",
+            "Je na boxové cestě a drží to plynule.",
+            "Zastávka přichází v klidu, bez nervozity."
+          ],
+          "focused": [
+            "Boxová ulička, {position}. místo, plná koncentrace.",
+            "Je v uličce a hlídá si limit rychlosti.",
+            "Míří do boxů a drží to čistě.",
+            "Zajíždí do boxů z {position}. místa."
           ]
         }
       }
     },
     "back_on_track": {
       "family": "pit",
-      "event_types": ["PIT_EXIT"],
-      "phases": ["RESULT", "ENTER", "EXIT"],
+      "event_types": [
+        "PIT_EXIT"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER",
+        "EXIT"
+      ],
       "speak_priority": 62,
       "cooldown_s": 16,
       "slots": [
-        {"name": "position", "type": "int", "example": 11}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 11
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
       "notes": "Mock EN. Leaving pit road, back on track. Not a car-entry line.",
       "variants": {
         "en": {
           "neutral": [
-            "Back on track.",
-            "Out of the pits.",
-            "Rolling again.",
-            "We're back out."
+            "He's back on track.",
+            "Out of the pits and away.",
+            "He's rolling again.",
+            "Back out he comes."
+          ],
+          "calm": [
+            "Back out in P{position}, and he settles in.",
+            "He's clear of pit road, no rush about it.",
+            "Rolling again, and the tyres will come in gently.",
+            "Out of the pits and easing back into rhythm."
+          ],
+          "focused": [
+            "Back out in P{position} and straight to work.",
+            "He's on track and building the pace cleanly.",
+            "Pit road is behind him, and the eyes are forward.",
+            "Out again from P{position}, sharp from the first corner."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Je zpátky na trati.",
+            "Boxy má za sebou.",
+            "Vyjíždí z boxů.",
+            "Zase se rozjíždí po trati."
+          ],
+          "calm": [
+            "Zpátky venku na {position}. místě.",
+            "Boxovou uličku má za sebou a usazuje se.",
+            "Zase jede po trati a drží to plynule.",
+            "Vrací se na trať bez zbytečného spěchu."
+          ],
+          "focused": [
+            "Zpátky venku na {position}. místě, plně soustředěný.",
+            "Je na trati a čistě nabírá tempo.",
+            "Boxy má za sebou a oči míří dopředu.",
+            "Vyjíždí z boxů a hned řeší tempo."
           ]
         }
       }
     },
     "in_car": {
       "family": "session",
-      "event_types": ["ENTER_CAR"],
-      "phases": ["RESULT", "ENTER"],
+      "event_types": [
+        "ENTER_CAR"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
       "speak_priority": 38,
       "cooldown_s": 45,
       "slots": [],
-      "hr_states": ["unknown", "calm", "focused", "pushing", "high"],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
       "notes": "Mock EN matrix. Seated in-car once per stint. Random pick. Not pit entry.",
       "variants": {
         "en": {
           "neutral": [
-            "In the car.",
-            "Belted in.",
-            "Ready to go.",
-            "Seats in.",
-            "Let's go to work.",
-            "We're in.",
-            "Strapped in.",
-            "Car is live."
+            "He's in the car.",
+            "Belted in and ready to run.",
+            "He's aboard, and we're set to go.",
+            "Seat is filled, and the car is live."
+          ],
+          "calm": [
+            "He's settled into the seat, no rush about him.",
+            "In the car and comfortable.",
+            "Nice and relaxed as he gets strapped in.",
+            "He's aboard, taking his time over the belts."
+          ],
+          "focused": [
+            "He's in, and he's locked on already.",
+            "Seat set, visor down, mind on the job.",
+            "He's aboard and all business.",
+            "Strapped in, and the focus is obvious."
+          ],
+          "pushing": [
+            "He's in the car and ready to work.",
+            "Strapped in, and he means business.",
+            "Aboard and eager to get going.",
+            "He's set, and the intent is clear."
+          ],
+          "high": [
+            "He's in, and he cannot wait to get going!",
+            "Belted in, and the adrenaline is already up!",
+            "He's aboard and fired up for this one!",
+            "Seat filled, and he's raring to go!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Sedí v autě.",
+            "Pásy jsou utažené, vůz je připravený.",
+            "Je usazený v kokpitu.",
+            "Kokpit je obsazený a může se začít."
+          ],
+          "calm": [
+            "Sedí pohodlně a nikam nespěchá.",
+            "V klidu se srovnává v sedačce.",
+            "Je usazený a má na to čas.",
+            "V kokpitu je klid, všechno má srovnané."
+          ],
+          "focused": [
+            "Sedačka sedí, hlava je soustředěná.",
+            "Je připravený a drží pozornost.",
+            "V kokpitu je usazený a srovnaný.",
+            "Vůz je připravený, jezdec plně soustředěný."
+          ],
+          "pushing": [
+            "Sedí v autě a chystá se přidat.",
+            "Pásy dole, přijede si pro tempo.",
+            "Je usazený a jde do práce.",
+            "V kokpitu je připravený zabrat."
+          ],
+          "high": [
+            "Sedí v autě a jde se na to!",
+            "Zapnutý a připravený, tohle bude stát za to!",
+            "Je v tom a chystá se rozjet naplno!",
+            "Kokpit je obsazený a napětí roste!"
           ]
         }
       }
     },
     "pit_outcome": {
       "family": "pit",
-      "event_types": ["PIT_OUTCOME", "PIT_EXIT"],
-      "phases": ["RESULT", "ENTER", "EXIT"],
+      "event_types": [
+        "PIT_OUTCOME",
+        "PIT_EXIT"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER",
+        "EXIT"
+      ],
       "speak_priority": 58,
       "cooldown_s": 20,
       "slots": [
-        {"name": "position", "type": "int", "example": 11},
-        {"name": "old_position", "type": "int", "example": 8}
+        {
+          "name": "position",
+          "type": "int",
+          "example": 11
+        },
+        {
+          "name": "old_position",
+          "type": "int",
+          "example": 8
+        }
       ],
-      "hr_states": ["unknown", "calm", "focused"],
-      "notes": "Prefer same correlationId as pit_entry. State net position change only if known."
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Prefer same correlationId as pit_entry. State net position change only if known.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The stop is done, and he's P{position}.",
+            "Out of the box, P{old_position} to P{position}.",
+            "Service complete for him.",
+            "He rejoins in P{position}."
+          ],
+          "calm": [
+            "Service complete, and he settles into P{position}.",
+            "From P{old_position} to P{position}, no drama at all.",
+            "The stop is done and the place is sorted.",
+            "A tidy stop, and he comes out in P{position}."
+          ],
+          "focused": [
+            "Stop complete, and he's now P{position}.",
+            "Box result, P{old_position} to P{position}.",
+            "Service done, P{position}, and he's straight back at it.",
+            "A clean stop, and he's back out in P{position}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Zastávka je hotová, je na {position}. místě.",
+            "Z boxu venku, z {old_position}. na {position}. místo.",
+            "Servis dokončený, pozice je potvrzená.",
+            "Zastávka proběhla a pořadí je jasné."
+          ],
+          "calm": [
+            "Servis hotový a usazuje se na {position}. místě.",
+            "Z {old_position}. na {position}. místo, pěkně v klidu.",
+            "Zastávka je hotová a pozice je srovnaná.",
+            "Box zvládl klidně, teď je na {position}. místě."
+          ],
+          "focused": [
+            "Zastávka hotová, teď je na {position}. místě.",
+            "Výsledek boxu: z {old_position}. na {position}. místo.",
+            "Servis hotový, {position}. místo, oči dopředu.",
+            "Po zastávce se vrací na {position}. místo."
+          ]
+        }
+      }
     },
     "hr_pressure": {
       "family": "bio",
-      "event_types": ["HR_PRESSURE_RISING"],
-      "phases": ["ENTER"],
+      "event_types": [
+        "HR_PRESSURE_RISING"
+      ],
+      "phases": [
+        "ENTER"
+      ],
       "speak_priority": 25,
       "cooldown_s": 45,
       "slots": [
-        {"name": "bpm", "type": "int", "example": 142}
+        {
+          "name": "bpm",
+          "type": "int",
+          "example": 142
+        }
       ],
-      "hr_states": ["pushing", "high"],
-      "notes": "Rare spoken line. HR is primarily an emotion selector on other nodes. Skip if a battle/overtake is speaking. Never invent BPM if BLE is down — this node must not fire without bio."
+      "hr_states": [
+        "pushing",
+        "high"
+      ],
+      "notes": "Rare spoken line. HR is primarily an emotion selector on other nodes. Skip if a battle/overtake is speaking. Never invent BPM if BLE is down — this node must not fire without bio.",
+      "variants": {
+        "en": {
+          "pushing": [
+            "His heart rate is climbing, {bpm}.",
+            "The effort is showing, {bpm} on the monitor.",
+            "The pulse is up as the pressure builds.",
+            "{bpm} and rising, and he's working hard in there."
+          ],
+          "high": [
+            "Heart rate up to {bpm}, and he's right on the limit!",
+            "The pulse is high now, and the tension is obvious!",
+            "{bpm} on the monitor, and this is flat out for him!",
+            "His heart rate is up, and this is intense stuff!"
+          ]
+        },
+        "cs": {
+          "pushing": [
+            "Puls stoupá, {bpm}. Napětí je znát.",
+            "Tep jde nahoru, {bpm} úderů za minutu.",
+            "Zátěž roste, puls je na {bpm}.",
+            "Srdce zrychluje, {bpm}, a tempo drží."
+          ],
+          "high": [
+            "Puls je na {bpm}, tohle je opravdový tlak!",
+            "Tep vyletěl na {bpm}, napětí je maximální!",
+            "Srdce jede naplno, {bpm}, a on pořád drží!",
+            "Puls {bpm}, tady se rozhoduje o všem!"
+          ]
+        }
+      }
     }
   },
   "edges": [
-    {"from": "hunting", "to": "side_by_side", "when": {"same_correlation": true, "min_gap_s": 1.5, "max_gap_s": 25}},
-    {"from": "hunting", "to": "overtake", "when": {"same_correlation": true, "min_gap_s": 1.0, "max_gap_s": 30}},
-    {"from": "side_by_side", "to": "overtake", "when": {"same_correlation": true, "min_gap_s": 0.4, "max_gap_s": 12}},
-    {"from": "overtake", "to": "battle_won", "when": {"same_correlation": true, "min_gap_s": 0.5, "max_gap_s": 10}},
-    {"from": "hunted", "to": "position_lost", "when": {"same_correlation": true, "min_gap_s": 0.5, "max_gap_s": 20}},
-    {"from": "rival_threat", "to": "hunted", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 40}},
-    {"from": "gain_found", "to": "target_locked", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 60}},
-    {"from": "hot_lap", "to": "projected_lap", "when": {"same_correlation": false, "min_gap_s": 1.0, "max_gap_s": 20}},
-    {"from": "pit_entry", "to": "back_on_track", "when": {"same_correlation": false, "min_gap_s": 2.0, "max_gap_s": 90}},
-    {"from": "pit_entry", "to": "pit_outcome", "when": {"same_correlation": true, "min_gap_s": 4.0, "max_gap_s": 90}},
-    {"from": "final_lap", "to": "finish", "when": {"same_correlation": false, "min_gap_s": 5.0, "max_gap_s": 240}},
-    {"from": "incident", "to": "invalid_lap", "when": {"same_correlation": false, "min_gap_s": 0.2, "max_gap_s": 8}}
+    {
+      "from": "hunting",
+      "to": "side_by_side",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 1.5,
+        "max_gap_s": 25
+      }
+    },
+    {
+      "from": "hunting",
+      "to": "overtake",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 1.0,
+        "max_gap_s": 30
+      }
+    },
+    {
+      "from": "side_by_side",
+      "to": "overtake",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.4,
+        "max_gap_s": 12
+      }
+    },
+    {
+      "from": "overtake",
+      "to": "battle_won",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 10
+      }
+    },
+    {
+      "from": "hunted",
+      "to": "position_lost",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 20
+      }
+    },
+    {
+      "from": "rival_threat",
+      "to": "hunted",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 2.0,
+        "max_gap_s": 40
+      }
+    },
+    {
+      "from": "gain_found",
+      "to": "target_locked",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 2.0,
+        "max_gap_s": 60
+      }
+    },
+    {
+      "from": "hot_lap",
+      "to": "projected_lap",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 1.0,
+        "max_gap_s": 20
+      }
+    },
+    {
+      "from": "pit_entry",
+      "to": "back_on_track",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 2.0,
+        "max_gap_s": 90
+      }
+    },
+    {
+      "from": "pit_entry",
+      "to": "pit_outcome",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 4.0,
+        "max_gap_s": 90
+      }
+    },
+    {
+      "from": "final_lap",
+      "to": "finish",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 5.0,
+        "max_gap_s": 240
+      }
+    },
+    {
+      "from": "incident",
+      "to": "invalid_lap",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.2,
+        "max_gap_s": 8
+      }
+    }
   ]
 }

@@ -17,6 +17,7 @@ class OpponentInfo:
     class_position: int | None = None
     gap: float | None = None
     closing_rate: float | None = None
+    display_name: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return _asdict(self)
@@ -53,6 +54,7 @@ class TelemetrySnapshot:
     car_idx_on_pit_road: tuple[bool | None, ...] = ()
     car_idx_est_time: tuple[float | None, ...] = ()
     car_idx_track_surface: tuple[int | None, ...] = ()
+    car_idx_driver_name: tuple[str | None, ...] = ()
     # Session / quality (Event Engine normalized input — optional until adapter fills them)
     session_num: int | None = None
     subsession_id: str | None = None

@@ -81,7 +81,14 @@ class BattleEmitter:
                         "state": "battle_for_position",
                         "position": state.position,
                         "gap": state.gap_ahead,
+                        "targetCarIdx": getattr(state.opponent_ahead, "car_idx", None),
                         "targetPosition": getattr(state.opponent_ahead, "position", None),
+                        **(
+                            {"targetName": state.opponent_ahead.display_name}
+                            if state.opponent_ahead is not None
+                            and state.opponent_ahead.display_name
+                            else {}
+                        ),
                     },
                 )
             )
@@ -177,6 +184,9 @@ class BattleEmitter:
             "gap": gap,
             "closingRate": closing,
         }
+        target_name = getattr(target, "display_name", None) if target is not None else None
+        if target_name:
+            payload["targetName"] = target_name
 
         if track.target_car_idx is not None and car_idx != track.target_car_idx:
             if track.state == "ACTIVE":

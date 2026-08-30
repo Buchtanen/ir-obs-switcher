@@ -69,6 +69,7 @@ class RaceContextAnalyzer:
                 class_position=class_position_of(snap, ahead_idx),
                 gap=gap_ahead,
                 closing_rate=close_ahead,
+                display_name=_driver_name(snap, ahead_idx),
             )
         opponent_behind = None
         if behind_idx is not None:
@@ -78,6 +79,7 @@ class RaceContextAnalyzer:
                 class_position=class_position_of(snap, behind_idx),
                 gap=gap_behind,
                 closing_rate=close_behind,
+                display_name=_driver_name(snap, behind_idx),
             )
 
         remain = snap.session_laps_remain
@@ -119,3 +121,11 @@ class RaceContextAnalyzer:
             stale_for_ms=snap.stale_for_ms,
             data_quality=snap.data_quality,
         )
+
+
+def _driver_name(snap: TelemetrySnapshot, car_idx: int) -> str | None:
+    names = snap.car_idx_driver_name
+    if car_idx < 0 or car_idx >= len(names):
+        return None
+    value = names[car_idx]
+    return value if value else None

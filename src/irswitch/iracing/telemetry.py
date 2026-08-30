@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from irswitch.iracing.drivers import driver_names_by_car_idx
 from irswitch.iracing.extractors import as_bool, as_int, extract_session_type
 from irswitch.iracing.sdk_units import (
     as_completed_lap_time,
@@ -51,6 +52,7 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "CarIdxOnPitRoad",
     "CarIdxEstTime",
     "CarIdxTrackSurface",
+    "DriverInfo",
 )
 
 
@@ -170,6 +172,7 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         car_idx_on_pit_road=_bool_tuple(data.get("CarIdxOnPitRoad")),
         car_idx_est_time=_est_time_tuple(data.get("CarIdxEstTime")),
         car_idx_track_surface=_int_tuple(data.get("CarIdxTrackSurface")),
+        car_idx_driver_name=driver_names_by_car_idx(data.get("DriverInfo")),
         session_num=as_int(data.get("SessionNum")),
         subsession_id=str(subsession) if subsession is not None else None,
         session_type=session_type_str,

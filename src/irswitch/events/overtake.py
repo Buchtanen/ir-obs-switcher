@@ -87,6 +87,11 @@ class OvertakeClassifierEmitter:
                         "delta": delta,
                         "targetCarIdx": passed.car_idx if passed else None,
                         "targetPosition": passed.position if passed else None,
+                        **(
+                            {"targetName": passed.display_name}
+                            if passed is not None and passed.display_name
+                            else {}
+                        ),
                     },
                 )
             ]

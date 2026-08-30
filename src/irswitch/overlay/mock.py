@@ -36,10 +36,20 @@ def mock_race_state(elapsed: float) -> RaceState:
         is_final_lap=False,
         session_finished=False,
         opponent_ahead=OpponentInfo(
-            car_idx=17, position=6, class_position=4, gap=gap, closing_rate=closing
+            car_idx=17,
+            position=6,
+            class_position=4,
+            gap=gap,
+            closing_rate=closing,
+            display_name="Rossi",
         ),
         opponent_behind=OpponentInfo(
-            car_idx=23, position=8, class_position=6, gap=2.14, closing_rate=-0.05
+            car_idx=23,
+            position=8,
+            class_position=6,
+            gap=2.14,
+            closing_rate=-0.05,
+            display_name="Kovalainen",
         ),
         gap_ahead=gap,
         gap_behind=2.14,

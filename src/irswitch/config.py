@@ -450,6 +450,18 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         duck_fade_ms=_clamp_duck_fade_ms(
             _get_int(parser, "commentary", "duck_fade_ms", commentary_defaults.duck_fade_ms)
         ),
+        decision_log_size=max(
+            1,
+            min(
+                200,
+                _get_int(
+                    parser,
+                    "commentary",
+                    "decision_log_size",
+                    commentary_defaults.decision_log_size,
+                ),
+            ),
+        ),
     )
 
     lhm_raw = ""

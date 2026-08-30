@@ -9,7 +9,7 @@ from irswitch.commentary.director import CommentaryDirector, choose_filled_line
 from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.tts import NullTtsSink
-from irswitch.commentary.validator import leftover_slots, validate_utterance
+from irswitch.commentary.validator import fill_slots, leftover_slots, validate_utterance
 from irswitch.events.envelope import make_envelope
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import RaceEvent
@@ -18,21 +18,23 @@ from irswitch.overlay.settings import CommentarySettings
 
 def test_mock_english_nodes_are_filled_and_valid() -> None:
     graph = load_sequence_graph()
+    examples = {"lap": 12, "lap_time": "1:32.4", "position": 8}
     for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
         node = graph.nodes[node_id]
         lines = node.variant_bucket("en", "unknown")
-        assert len(lines) >= (6 if node_id == "in_car" else 3), node_id
+        assert len(lines) >= 4, node_id
         for line in lines:
             assert validate_utterance(line, node) == []
-            assert not leftover_slots(line)
+            assert not leftover_slots(fill_slots(line, examples))
 
 
-def test_cs_falls_back_to_english_mock() -> None:
+def test_cs_in_car_uses_authored_czech() -> None:
     graph = load_sequence_graph()
-    assert graph.nodes["in_car"].variant_bucket("cs", "unknown")
-    assert graph.nodes["in_car"].variant_bucket("cs", "unknown") == graph.nodes[
-        "in_car"
-    ].variant_bucket("en", "unknown")
+    cs = graph.nodes["in_car"].variant_bucket("cs", "unknown")
+    en = graph.nodes["in_car"].variant_bucket("en", "unknown")
+    assert cs
+    assert en
+    assert cs != en
 
 
 def test_choose_filled_line_is_deterministic_with_seed() -> None:
@@ -127,13 +129,113 @@ def test_merge_adds_legacy_pit_when_v2_adapter_misses() -> None:
     assert len(merge_speech_envelopes(race_event, [already], now=1.0, mode="RACE")) == 1
 
 
-def test_emotion_bucket_falls_back_to_neutral_mock() -> None:
+def test_w1_emotion_buckets_are_authored_not_neutral_fallback() -> None:
+    """W1 filled calm/focused/pushing/high on mock-4; unknown still uses neutral."""
     graph = load_sequence_graph()
     node = graph.nodes["lap_complete"]
-    assert node.variant_bucket("en", "pushing") == node.variant_bucket("en", "unknown")
+    neutral = node.variant_bucket("en", "unknown")
+    pushing = node.variant_bucket("en", "pushing")
+    assert neutral
+    assert pushing
+    assert pushing != neutral
+    for line in pushing:
+        assert validate_utterance(line, node) == []
 
 
-def test_director_speaks_in_car_from_english_matrix() -> None:
+def test_w4_timing_nodes_english() -> None:
+    graph = load_sequence_graph()
+    expected = {
+        "personal_best": ("neutral", "calm", "focused", "pushing", "high"),
+        "gain_found": ("neutral", "calm", "focused"),
+        "time_lost": ("neutral", "calm", "focused"),
+        "target_locked": ("neutral", "calm", "focused"),
+        "projected_lap": ("neutral", "focused", "pushing"),
+        "hot_lap": ("neutral", "focused", "pushing", "high"),
+        "position_attack": ("neutral", "focused", "pushing"),
+        "clean_streak": ("neutral", "calm", "focused"),
+        "rival_threat": ("neutral", "focused", "pushing"),
+    }
+    examples = {
+        "lap": 8,
+        "lap_time": "1:31.1",
+        "delta": "-0.4",
+        "segment": "minisector 4",
+        "target_time": "1:31.8",
+        "projected_time": "1:31.5",
+        "confidence": "high",
+        "position": 4,
+        "streak": 5,
+        "gap": "2.4",
+        "target_name": "Kovalainen",
+    }
+    for node_id, emotions in expected.items():
+        node = graph.nodes[node_id]
+        for emotion in emotions:
+            lines = node.variants["en"].get(emotion) or ()
+            assert 3 <= len(lines) <= 6, (node_id, emotion)
+            for line in lines:
+                assert validate_utterance(line, node) == []
+                assert not leftover_slots(fill_slots(line, examples))
+
+
+def test_w5_hr_and_invalid_lap_english() -> None:
+    graph = load_sequence_graph()
+    examples = {"bpm": 142, "lap": 4}
+    for _emotion, lines in (
+        ("pushing", graph.nodes["hr_pressure"].variants["en"]["pushing"]),
+        ("high", graph.nodes["hr_pressure"].variants["en"]["high"]),
+    ):
+        assert 3 <= len(lines) <= 6
+        for line in lines:
+            assert validate_utterance(line, graph.nodes["hr_pressure"]) == []
+            assert not leftover_slots(fill_slots(line, examples))
+    node = graph.nodes["invalid_lap"]
+    for emotion in ("neutral", "calm", "focused"):
+        lines = node.variants["en"][emotion]
+        assert 3 <= len(lines) <= 6
+        for line in lines:
+            assert validate_utterance(line, node) == []
+            assert not leftover_slots(fill_slots(line, examples))
+
+
+def test_graph_has_no_unfilled_cells() -> None:
+    assert load_sequence_graph().unfilled_cells() == []
+
+
+def test_cs_overtake_is_authored_not_en_fallback() -> None:
+    graph = load_sequence_graph()
+    cs = graph.nodes["overtake"].variant_bucket("cs", "pushing")
+    en = graph.nodes["overtake"].variant_bucket("en", "pushing")
+    assert cs and en and cs != en
+
+
+def test_w1_mock_four_emotion_matrix_valid() -> None:
+    graph = load_sequence_graph()
+    expected = {
+        "in_car": ("calm", "focused", "pushing", "high"),
+        "lap_complete": ("calm", "focused", "pushing", "high"),
+        "pit_entry": ("calm", "focused"),
+        "back_on_track": ("calm", "focused"),
+    }
+    examples = {
+        "lap": 12,
+        "lap_time": "1:32.4",
+        "position": 8,
+    }
+    for node_id, emotions in expected.items():
+        node = graph.nodes[node_id]
+        locale_map = node.variants["en"]
+        assert locale_map.get("neutral"), node_id
+        for emotion in emotions:
+            lines = locale_map.get(emotion) or ()
+            assert 3 <= len(lines) <= 6, (node_id, emotion)
+            for line in lines:
+                assert validate_utterance(line, node) == []
+                bound = fill_slots(line, examples)
+                assert not leftover_slots(bound), (node_id, emotion, line)
+
+
+def test_director_speaks_in_car_czech_when_locale_cs() -> None:
     sink = NullTtsSink()
     director = CommentaryDirector(
         graph=load_sequence_graph(),
@@ -145,7 +247,77 @@ def test_director_speaks_in_car_from_english_matrix() -> None:
     spoken = director.observe([make_envelope(event_type="ENTER_CAR", phase="RESULT")], None, 10.0)
     assert spoken is not None
     assert spoken.node_id == "in_car"
-    assert spoken.text in spoken.node.variant_bucket("en", "unknown")
+    assert spoken.locale == "cs"
+    assert spoken.text in spoken.node.variant_bucket("cs", "unknown")
+
+
+def test_w2_race_beat_nodes_speak_english() -> None:
+    graph = load_sequence_graph()
+    expected = {
+        "finish": ("neutral", "calm", "focused", "pushing", "high"),
+        "final_lap": ("neutral", "focused", "pushing", "high"),
+        "incident": ("neutral", "focused", "pushing", "high"),
+        "overtake": ("neutral", "focused", "pushing", "high"),
+        "battle_won": ("neutral", "focused", "pushing", "high"),
+        "position_gained": ("neutral", "calm", "focused", "pushing"),
+        "position_lost": ("neutral", "focused", "pushing", "high"),
+        "side_by_side": ("neutral", "pushing", "high"),
+        "hunting": ("neutral", "focused", "pushing", "high"),
+        "hunted": ("neutral", "focused", "pushing", "high"),
+    }
+    examples = {
+        "position": 5,
+        "old_position": 6,
+        "target_name": "Rossi",
+        "gap": "1.2",
+        "value": 4,
+    }
+    for node_id, emotions in expected.items():
+        node = graph.nodes[node_id]
+        locale_map = node.variants["en"]
+        for emotion in emotions:
+            lines = locale_map.get(emotion) or ()
+            assert 3 <= len(lines) <= 6, (node_id, emotion)
+            for line in lines:
+                assert validate_utterance(line, node) == []
+                assert not leftover_slots(fill_slots(line, examples))
+
+
+def test_w3_pit_outcome_english() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["pit_outcome"]
+    examples = {"position": 11, "old_position": 8}
+    for emotion in ("neutral", "calm", "focused"):
+        lines = node.variants["en"].get(emotion) or ()
+        assert 3 <= len(lines) <= 6, emotion
+        for line in lines:
+            assert validate_utterance(line, node) == []
+            assert not leftover_slots(fill_slots(line, examples))
+
+
+def test_director_speaks_overtake_and_finish() -> None:
+    graph = load_sequence_graph()
+    cases = (
+        ("OVERTAKE", "RESULT", "overtake", {"position": 5, "target_name": "Rossi"}),
+        ("FINISH", "RESULT", "finish", {"position": 3}),
+        ("HUNTING", "ENTER", "hunting", {"gap": 1.2, "target_name": "Rossi", "position": 6}),
+    )
+    for event_type, phase, node_id, metrics in cases:
+        director = CommentaryDirector(
+            graph=graph,
+            settings=CommentarySettings(enabled=True, cooldown_s=0.1),
+            sink=NullTtsSink(),
+            language="en",
+            rng=random.Random(3),
+        )
+        spoken = director.observe(
+            [make_envelope(event_type=event_type, phase=phase, metrics=metrics)],
+            None,
+            10.0,
+        )
+        assert spoken is not None, event_type
+        assert spoken.node_id == node_id
+        assert spoken.text
 
 
 def test_director_maps_mock_events_to_expected_nodes() -> None:
