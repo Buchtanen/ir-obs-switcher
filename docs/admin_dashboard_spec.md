@@ -1,7 +1,7 @@
 # Spec: Robust admin dashboard
 
-**Status:** Slice 1 shipped; **Slice 1.1 contract revision** (this document) — fix dishonest fields before Slice 2  
-**Baseline:** branch work after commentary #127; admin skeleton in `src/irswitch/server/admin.py` + `src/irswitch/web/admin/`  
+**Status:** Slice 1.2 shipped (health + public snapshots + lifecycle ring consumer + LHM cache fields); Slice 1.1 contract revision underneath  
+**Baseline:** Wave 1 producers (P1/P2/P3) + admin consumer on `server/admin.py` + `web/admin/`  
 **Related:** [`sysinfo_lhm_upgrade_spec.md`](sysinfo_lhm_upgrade_spec.md), [`API.md`](../API.md), legacy `/gr-status`
 
 Product contract for a **live admin** covering switcher + overlay extensions + feature readiness.  
@@ -213,7 +213,7 @@ Sort: `occurredAt` desc, then `source` priority (`commentary` > `overlay` > `swi
 | --- | --- |
 | switcher | `dashboards.dashboard_event_log_size` (default 50) |
 | commentary | `commentary.decision_log_size` (default 32) |
-| overlay lifecycle | TBD ring (Slice 1.2+); until then ephemeral snapshot ≤ active widget count |
+| overlay lifecycle | `OverlayActivityLog` ring (default capacity 128); history rows with `dedupeKey` |
 
 `limit` clamped 1–200; invalid/non-numeric → default 50 (document in API.md). `limit` cannot invent history beyond retention.
 
@@ -279,7 +279,7 @@ Sort: `occurredAt` desc, then `source` priority (`commentary` > `overlay` > `swi
 - [ ] Tests cover the above; docs examples match payload  
 
 ### Slice 1.2+
-- [ ] `health.ready` / blocking / warnings server-side  
-- [ ] No `_private` foreign attribute access from `server/admin.py`  
-- [ ] LHM probe single-flight; status p95 stays low with LHM down  
-- [ ] Overlay lifecycle ring with `dedupeKey`
+- [x] `health.ready` / blocking / warnings server-side  
+- [x] No `_private` foreign attribute access from `server/admin.py`  
+- [x] LHM probe single-flight; status p95 stays low with LHM down  
+- [x] Overlay lifecycle ring with `dedupeKey`

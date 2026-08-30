@@ -179,6 +179,26 @@ a:hover { text-decoration: underline; }
   font-size: 0.82rem;
 }
 
+.health {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--bg-elev);
+}
+.health strong { text-transform: uppercase; letter-spacing: 0.04em; }
+.health ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.health.ok { border-color: rgba(61,214,140,.4); }
+.health.ok strong { color: var(--ok); }
+.health.warn { border-color: rgba(240,180,41,.45); }
+.health.warn strong { color: var(--warn); }
+.health.bad { border-color: rgba(240,113,120,.5); }
+.health.bad strong { color: var(--bad); }
+
 .feed {
   background: var(--bg-elev);
   border: 1px solid var(--border);

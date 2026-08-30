@@ -26,6 +26,11 @@
     </nav>
 
     <section class="section">
+      <h2>Health</h2>
+      <div id="health-panel"></div>
+    </section>
+
+    <section class="section">
       <h2>Switcher</h2>
       <div id="switcher-panel" class="grid"></div>
     </section>
@@ -54,6 +59,7 @@
       refreshOnWs: true,
       activityLimit: 25,
       onStatus(status) {
+        document.getElementById("health-panel").innerHTML = IrAdmin.renderHealth(status.health);
         const sw = document.getElementById("switcher-panel");
         sw.innerHTML = IrAdmin.renderSwitcher(status.switcher);
         const ext = status.extensions || {};
