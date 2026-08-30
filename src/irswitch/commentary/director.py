@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
+from irswitch.commentary.slot_format import format_spoken_bindings
 from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink, TtsSink, build_tts_sink
 from irswitch.commentary.validator import (
     estimate_seconds,
@@ -350,10 +351,16 @@ def resolve_emotion(bio: BioState | None, use_hr: bool) -> str:
 
 
 def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
+    """Bind envelope metrics for TTS fill.
+
+    Timing slots (``lap_time``, ``gap``, ``delta``, …) are formatted for speech
+    via ``format_spoken_bindings``; sentinels become ``None`` so unbound lines
+    are skipped. Wire/envelope metrics stay numeric upstream.
+    """
     metrics = envelope.metrics
     subject = envelope.subject
     target = envelope.target
-    return {
+    raw: dict[str, object] = {
         "position": _first(metrics, "newPosition", "position", "classPosition")
         or subject.class_position,
         "old_position": _first(metrics, "oldPosition"),
@@ -367,11 +374,13 @@ def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
         "streak": _first(metrics, "streak"),
         "value": _first(metrics, "value"),
         "segment": _first(metrics, "timingPointId", "segment"),
+        "segment_time": _first(metrics, "segmentTime"),
         "target_time": _first(metrics, "targetTime"),
         "projected_time": _first(metrics, "projectedTime"),
         "confidence": _first(metrics, "confidence"),
         "emotion": emotion,
     }
+    return format_spoken_bindings(raw)
 
 
 def _first(metrics: dict[str, object], *keys: str) -> object | None:
