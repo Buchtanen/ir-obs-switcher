@@ -18,13 +18,14 @@ from irswitch.overlay.settings import CommentarySettings
 
 def test_mock_english_nodes_are_filled_and_valid() -> None:
     graph = load_sequence_graph()
+    examples = {"lap": 12, "lap_time": "1:32.4", "position": 8}
     for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
         node = graph.nodes[node_id]
         lines = node.variant_bucket("en", "unknown")
-        assert len(lines) >= (6 if node_id == "in_car" else 3), node_id
+        assert len(lines) >= 4, node_id
         for line in lines:
             assert validate_utterance(line, node) == []
-            assert not leftover_slots(line)
+            assert not leftover_slots(fill_slots(line, examples))
 
 
 def test_cs_in_car_uses_authored_czech() -> None:
@@ -171,7 +172,7 @@ def test_w4_timing_nodes_english() -> None:
         node = graph.nodes[node_id]
         for emotion in emotions:
             lines = node.variants["en"].get(emotion) or ()
-            assert 1 <= len(lines) <= 3, (node_id, emotion)
+            assert 3 <= len(lines) <= 6, (node_id, emotion)
             for line in lines:
                 assert validate_utterance(line, node) == []
                 assert not leftover_slots(fill_slots(line, examples))
@@ -184,14 +185,14 @@ def test_w5_hr_and_invalid_lap_english() -> None:
         ("pushing", graph.nodes["hr_pressure"].variants["en"]["pushing"]),
         ("high", graph.nodes["hr_pressure"].variants["en"]["high"]),
     ):
-        assert 1 <= len(lines) <= 3
+        assert 3 <= len(lines) <= 6
         for line in lines:
             assert validate_utterance(line, graph.nodes["hr_pressure"]) == []
             assert not leftover_slots(fill_slots(line, examples))
     node = graph.nodes["invalid_lap"]
     for emotion in ("neutral", "calm", "focused"):
         lines = node.variants["en"][emotion]
-        assert 1 <= len(lines) <= 3
+        assert 3 <= len(lines) <= 6
         for line in lines:
             assert validate_utterance(line, node) == []
             assert not leftover_slots(fill_slots(line, examples))
@@ -227,7 +228,7 @@ def test_w1_mock_four_emotion_matrix_valid() -> None:
         assert locale_map.get("neutral"), node_id
         for emotion in emotions:
             lines = locale_map.get(emotion) or ()
-            assert 1 <= len(lines) <= 3, (node_id, emotion)
+            assert 3 <= len(lines) <= 6, (node_id, emotion)
             for line in lines:
                 assert validate_utterance(line, node) == []
                 bound = fill_slots(line, examples)
@@ -276,7 +277,7 @@ def test_w2_race_beat_nodes_speak_english() -> None:
         locale_map = node.variants["en"]
         for emotion in emotions:
             lines = locale_map.get(emotion) or ()
-            assert 1 <= len(lines) <= 3, (node_id, emotion)
+            assert 3 <= len(lines) <= 6, (node_id, emotion)
             for line in lines:
                 assert validate_utterance(line, node) == []
                 assert not leftover_slots(fill_slots(line, examples))
@@ -288,7 +289,7 @@ def test_w3_pit_outcome_english() -> None:
     examples = {"position": 11, "old_position": 8}
     for emotion in ("neutral", "calm", "focused"):
         lines = node.variants["en"].get(emotion) or ()
-        assert 1 <= len(lines) <= 3, emotion
+        assert 3 <= len(lines) <= 6, emotion
         for line in lines:
             assert validate_utterance(line, node) == []
             assert not leftover_slots(fill_slots(line, examples))

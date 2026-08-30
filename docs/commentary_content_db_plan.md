@@ -158,14 +158,14 @@ Output: ONLY a JSON object matching the delivery schema (see plan §5.5).
 Rules:
 - Fill spoken variants only. Never change node ids, slots, edges, or TTS limits.
 - Locales: en and/or cs as requested in the batch header.
-- 1–3 lines per emotion cell. Second person or implied driver. One breath.
+- 3–6 lines per emotion cell (target ~4; roughly **2×** the early W1–W6 density). **Viewer-facing broadcast** (third person about the driver). Never second-person to the driver. One breath per line.
 - Use slot tokens verbatim, e.g. {position}, {gap}, {target_name}.
 - Terminal punctuation required: . ! or ?
 - Forbidden: ALL-CAPS words, stacked !!/??/..., emoji, URLs, digit runs of 4+.
 - SSML only if needed: <break time="…ms"/> (≤500ms) and <emphasis>…</emphasis>.
 - Overlay HUD tokens are visual only — do not speak them as labels.
 - Intensity comes from word choice per emotion, not shouting.
-- Czech (cs): natural spoken Czech for a driver coach, not literal EN translation.
+- Czech (cs): natural spoken Czech commentary for viewers, not a driver-coach radio and not a literal EN translation.
 ```
 
 ### 5.5 Delivery schema (output from the text model)
@@ -266,7 +266,8 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 - [x] W4 — EN timing / quali / practice (gpt-5; unfilled 129 → 99)
 - [x] W5 — EN bio + invalid_lap (gpt-5; unfilled 99 → 94; **EN complete**)
 - [x] W6 — CS parity all-at-once (claude-opus parallel W6a/b/c; unfilled 94 → **0**)
-- [ ] W7 — sequence polish (optional; graph fully authored)
+- [x] VOICE — stream-viewer broadcast + denser matrix (~4 lines/cell; **426 → 752** lines)
+- [ ] W7 — sequence polish (optional)
 - [ ] (optional) Phase D store split / export — only if approved
 
 ## 10. Open decisions (parked)

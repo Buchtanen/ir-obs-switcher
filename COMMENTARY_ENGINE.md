@@ -9,6 +9,15 @@ Overlay copy is i18n **tokens** (`PŘEDJETÍ`), not speech. Event Engine already
 
 Texts are filled later by another model. This repo owns the graph, validator, assignment briefs, and director.
 
+## Voice (viewer-facing)
+
+Commentary is **for the stream audience**, not pit-wall radio to the driver.
+
+- EN: third person / broadcast (“He's closing on Rossi.” / “That's P5.”)
+- CS: třetí osoba / komentář pro diváky (“Dotahuje na Rossiho.” / “Bere páté místo.”)
+- Never second person to the driver (“You take P5”, “Jsi pátý” as address)
+- Light viewer asides OK; keep one breath; slots unchanged
+
 ## Pipeline
 
 ```text
@@ -112,9 +121,10 @@ Spoken lines live in `variants.{en|cs}.{emotion}`. The director picks **one rand
 
 | Wave | Status |
 | --- | --- |
-| W0–W5 EN | Complete (mock-4 + race + pit_outcome + timing + bio/invalid) |
-| W6 CS | Complete (all nodes/emotions) |
-| W7 polish | Optional sequence wording pass |
+| W0–W5 EN | Complete |
+| W6 CS | Complete |
+| VOICE | Stream-viewer broadcast (3rd person); ~4 lines/cell (**752** lines) |
+| W7 polish | Optional |
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
 
