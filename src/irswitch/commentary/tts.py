@@ -90,9 +90,7 @@ class ProcessTtsSink:
     _worker: threading.Thread | None = field(default=None, init=False, repr=False)
     _pending: int = field(default=0, init=False, repr=False)
     _speaking: bool = field(default=False, init=False, repr=False)
-    _idle: threading.Condition = field(
-        default_factory=threading.Condition, repr=False
-    )
+    _idle: threading.Condition = field(default_factory=threading.Condition, repr=False)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop."""

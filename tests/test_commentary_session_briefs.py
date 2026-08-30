@@ -40,12 +40,14 @@ def _session_data(
         weekend_info=weekend,
         driver_info={
             "DriverCarIdx": 0,
-            "Drivers": drivers
-            if drivers is not None
-            else [
-                _racing_driver(0, 2400),
-                _racing_driver(1, 2600),
-            ],
+            "Drivers": (
+                drivers
+                if drivers is not None
+                else [
+                    _racing_driver(0, 2400),
+                    _racing_driver(1, 2600),
+                ]
+            ),
         },
         subsession_id=sub,
         session_num=num,
