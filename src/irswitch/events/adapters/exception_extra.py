@@ -1,4 +1,4 @@
-"""Exception family extras: link_drop / invalid_lap RaceEvent → EventEnvelope."""
+"""Exception family extras: link_drop / invalid_lap / incident RaceEvent → EventEnvelope."""
 
 from __future__ import annotations
 
@@ -33,6 +33,8 @@ def _exception_envelope(
         return None
     phase = legacy_trigger_to_phase(event.phase, default=default_phase)
     lap = event.data.get("lap")
+    value = event.data.get("value")
+    stamp = lap if lap is not None else value
     return make_envelope(
         event_type=event_type,
         phase=phase,
@@ -41,8 +43,8 @@ def _exception_envelope(
         occurred_at=datetime.fromtimestamp(time.time(), tz=UTC).isoformat(),
         monotonic_ms=int(now * 1000),
         priority=event.priority,
-        dedupe_key=f"{normalize_mode(mode)}:{event_type}:{lap}",
-        correlation_id=f"exception:{event_type}:{lap}",
+        dedupe_key=f"{normalize_mode(mode)}:{event_type}:{stamp}",
+        correlation_id=f"exception:{event_type}:{stamp}",
         metrics=dict(event.data),
         copy=EventCopy(headline_token=copy_token, status_token=""),
         presentation=EventPresentation(
@@ -92,6 +94,27 @@ def invalid_lap_race_event_to_envelope(
         mode=mode,
         now=now,
         copy_token="exception.invalid_lap",
+        accent="alert",
+        default_phase="RESULT",
+    )
+
+
+def incident_race_event_to_envelope(
+    event: RaceEvent,
+    *,
+    session_id: str,
+    mode: str,
+    now: float,
+) -> EventEnvelope | None:
+    if event.name != "incident":
+        return None
+    return _exception_envelope(
+        event,
+        event_type="INCIDENT",
+        session_id=session_id,
+        mode=mode,
+        now=now,
+        copy_token="exception.incident",
         accent="alert",
         default_phase="RESULT",
     )

@@ -28,7 +28,11 @@ class SessionEmitter:
                     channel="session",
                     priority=self._priorities.final_lap,
                     phase="trigger",
-                    data={"lap": state.lap},
+                    data={
+                        "lap": state.lap,
+                        "position": state.position,
+                        "classPosition": state.class_position,
+                    },
                     duration=self._events.session_duration,
                 )
             )

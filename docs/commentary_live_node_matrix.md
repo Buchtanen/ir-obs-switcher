@@ -57,12 +57,12 @@ Feature flags (`src/irswitch/overlay/settings.py` defaults false; `config/config
 | `overtake` | `OVERTAKE` | `position`, `target_name` | **partial** — `OvertakeClassifierEmitter` (`events/overtake.py`) only when `overtake_classifier`; else gains become `POSITION_GAINED`. Adapter keeps only `oldPosition`/`newPosition`/`delta` — drops `targetCarIdx`, sets no `target` | `oldPosition`, `newPosition`, `delta` | **low–medium** — `position` ← `newPosition` works; `target_name` unbound (name-heavy lines skipped; position-only lines OK) |
 | `position_gained` | `POSITION_GAINED` | `position`, `old_position` | **yes** — `PositionEmitter` / classifier non-OT gain → `adapters/position.py` | `direction`, `oldPosition`, `newPosition`, `delta` | **low** — both position slots map from metrics |
 | `position_lost` | `POSITION_LOST`, `OVERTAKEN` | `position`, `old_position` | **partial** — `POSITION_LOST` yes via position_change loss; **`OVERTAKEN` never emitted** (catalog fallback only in `themes-v4/event_catalog.json`) | `direction`, `oldPosition`, `newPosition`, `delta` | **low** for `POSITION_LOST`; `OVERTAKEN` path **n/a** |
-| `rival_threat` | `RIVAL_THREAT` | `gap`, `target_name` | **partial** — `RivalThreatEmitter` (`events/rival_threat.py`) fires with `gap`/`targetCarIdx`/`closingRate`, but **position adapter whitelist** (`_POSITION_METRIC_KEYS`) drops them → empty/useless metrics; no `target` subject | *(adapter typically empty or only position keys if present — live data has none of those)* | **high** — every EN line needs `target_name`; most also `gap`. Live envelopes → systematic **slot_unbound** |
+| `rival_threat` | `RIVAL_THREAT` | `gap`, `target_name` | **yes** — `RivalThreatEmitter` → position adapter keeps `gap` / `closingRate` / `targetCarIdx`; speakable `targetName` fallback `P{rivalPosition}` (real DriverInfo names still later) | `gap`, `closingRate`, `targetCarIdx`, `rivalPosition`, `targetName` | **low** when emitter fires (gap + label bind) |
 | `battle_won` | `BATTLE_WON` | `position` | **yes** — BattleEmitter peak exit → battle adapter | `position`, `oldPosition`, `newPosition` | **low** — many slot-free lines; `position` usually set |
-| `incident` | `INCIDENT` | `value` | **no** — `IncidentEmitter` (`events/incident.py`) produces RaceEvent `incident` with `value`/`total`, but **no adapter** in `adapters/__init__.py` and speech bridge does not map it → commentary never sees envelope | *(would be)* `value`, `total` | **high (no envelope)** — never reaches `slot_bindings` on live path |
+| `incident` | `INCIDENT` | `value` | **yes** — `IncidentEmitter` → `adapters/exception_extra.py` | `value`, `total` | **low** — slot-free lines exist; `value` set on delta |
 | `invalid_lap` | `INVALID_LAP` | `lap` | **yes** — `InvalidLapEmitter` → `adapters/exception_extra.py` | `lap`, `incidentDelta` | **low** — slot-free lines exist; `lap` usually set |
-| `final_lap` | `FINAL_LAP` | `position` | **no** — `SessionEmitter` (`events/session.py`) emits `final_lap` with **only** `{lap}` — no adapter, no speech-bridge map | *(emitter data)* `lap` only — **no `position`** | **high (no envelope)**; even if adapted, default emotion lines all need `position` |
-| `finish` | `FINISH` | `position` | **no** — `SessionEmitter` emits `finish` with `position`/`classPosition` but **no adapter** / no speech bridge | *(emitter data unused)* `position`, `classPosition` | **high (no envelope)** — all EN lines need `position` |
+| `final_lap` | `FINAL_LAP` | `position` | **yes** — `SessionEmitter` (+ position/classPosition) → `adapters/session.py` | `lap`, `position`, `classPosition` | **low** — `position` set on emit |
+| `finish` | `FINISH` | `position` | **yes** — `SessionEmitter` → session adapter | `position`, `classPosition` | **low** — all lines need `position` (set) |
 | `pit_entry` | `PIT_ENTRY` | `position` | **partial** — with `pit_story`: `PitStoryEmitter` → `adapters/pit.py` (`state=entry`); without: legacy `PitEmitter` + speech bridge (`onPitRoad` only) | pit story: `position`, `onPitRoad`, `lapDistPct`, `correlationId`, …; legacy bridge: `onPitRoad` | **low** — neutral lines are all slot-free |
 | `back_on_track` | `PIT_EXIT` | `position` | **partial** — pit_story exit → pit adapter; or speech bridge from legacy `pit_exit` | `position`, `onPitRoad`, `entryPosition`/`exitPosition`, … | **low** — neutral lines slot-free; `position` often set on exit |
 | `in_car` | `ENTER_CAR` | *(none)* | **yes** — not EventEngine; `InCarDetector` (`commentary/in_car.py`) via `OverlayRuntime._observe_in_car` | `position`, `sessionType` (unused by slots) | **none** — empty slots; all variants slot-free |
@@ -85,13 +85,11 @@ Director speak phases: `ENTER` / `RESULT` / `EXIT` only (`_SPEAK_PHASES`). `UPDA
 
 ---
 
-## Highest P1 gaps (product)
+## Highest remaining P1 gaps (product)
 
-1. **No adapter** for `incident` / `final_lap` / `finish` → graph nodes dead on live feed.
-2. **`rival_threat`**: emitter OK, adapter strips `gap` + no `target_name` → near-certain slot_unbound.
-3. **Battle / overtake `target_name`**: `OpponentInfo` has no driver name; battle/position adapters never set `target.display_name` or `metrics.targetName`.
-4. **`pit_outcome.old_position`**: `entryPosition` not aliased to `oldPosition`.
-5. **`OVERTAKEN` / `ATTACK_RANGE`**: `ATTACK_RANGE` is emitted by battle intensity but has **no graph node**; `OVERTAKEN` is never emitted.
+1. **Battle / overtake `target_name`**: `OpponentInfo` has no driver name; battle/position adapters never set real DriverInfo names (rival uses `P{n}` fallback only).
+2. **`pit_outcome.old_position`**: `entryPosition` not aliased to `oldPosition`.
+3. **`OVERTAKEN` / `ATTACK_RANGE`**: `ATTACK_RANGE` is emitted by battle intensity but has **no graph node**; `OVERTAKEN` is never emitted.
 
 ---
 
@@ -106,6 +104,6 @@ Director speak phases: `ENTER` / `RESULT` / `EXIT` only (`_SPEAK_PHASES`). `UPDA
 | pit story | `events/pit_story.py` | `adapters/pit.py` |
 | legacy pit | `events/pit.py` | speech bridge only (`bridge.py`) |
 | bio | `events/hr_pressure.py` | `adapters/bio.py` |
-| invalid lap | `events/invalid_lap.py` | `adapters/exception_extra.py` |
-| incident / session | `incident.py`, `session.py` | **missing** |
+| invalid lap / incident | `invalid_lap.py`, `incident.py` | `adapters/exception_extra.py` |
+| session final/finish | `events/session.py` | `adapters/session.py` |
 | in-car | `commentary/in_car.py` | direct envelope |

@@ -79,14 +79,14 @@ def test_battle_update_single_envelope() -> None:
     assert envelopes[0].phase == "UPDATE"
 
 
-def test_non_lap_event_falls_back_to_legacy_wire() -> None:
+def test_unsupported_event_falls_back_to_legacy_wire() -> None:
     mgr = EventManagerV2()
     race, envelopes = mgr.submit(
-        CandidateEvent(name="incident", channel="alert", priority=90, phase="trigger"),
+        CandidateEvent(name="cpu_temp_high", channel="system", priority=10, phase="trigger"),
         1.0,
     )
     assert race is not None
     assert envelopes == []
     wires = mgr.publish_wire(envelopes, race)
-    assert wires[0]["name"] == "incident"
+    assert wires[0]["name"] == "cpu_temp_high"
     assert wires[0].get("format") != "v4"

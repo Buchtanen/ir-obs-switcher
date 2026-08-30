@@ -118,7 +118,7 @@ Docs + status only first. **VAD remains OS routing.** No new dep unless approved
 | --- | --- |
 | Content DB EN+CS viewer voice | Done |
 | Product suite aligned to T0→T1→P1→P2 | Done |
-| P1 live node matrix | Done — [`commentary_live_node_matrix.md`](commentary_live_node_matrix.md) + slot proofs |
+| P1 live node matrix | Done — matrix + adapters for incident/final_lap/finish + rival_threat gap/label |
 | P2 decision log | Done — director ring + `/api/commentary/decisions` + `/commentary` panel |
 | P3–P5 | Queued |
 | P6 | Deferred |

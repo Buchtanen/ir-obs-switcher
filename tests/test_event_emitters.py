@@ -119,6 +119,8 @@ def test_final_lap_and_finish_once() -> None:
     emitter = SessionEmitter(EventSettings(), EventPrioritySettings())
     out = emitter.tick(_state(is_final_lap=True), 1.0)
     assert out[0].name == "final_lap"
+    assert out[0].data["position"] == 7
+    assert out[0].data["classPosition"] == 5
     assert emitter.tick(_state(is_final_lap=True), 2.0) == []
     out = emitter.tick(_state(session_finished=True), 3.0)
     assert out[0].name == "finish"

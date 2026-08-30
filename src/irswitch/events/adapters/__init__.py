@@ -7,12 +7,14 @@ from collections.abc import Callable
 from irswitch.events.adapters.battle import battle_race_event_to_envelope
 from irswitch.events.adapters.bio import bio_race_event_to_envelope
 from irswitch.events.adapters.exception_extra import (
+    incident_race_event_to_envelope,
     invalid_lap_race_event_to_envelope,
     link_drop_race_event_to_envelope,
 )
 from irswitch.events.adapters.lap import lap_race_event_to_envelope
 from irswitch.events.adapters.pit import pit_race_event_to_envelope
 from irswitch.events.adapters.position import position_race_event_to_envelope
+from irswitch.events.adapters.session import session_race_event_to_envelope
 from irswitch.events.adapters.timing import timing_race_event_to_envelope
 from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.protocol import RaceEvent
@@ -28,6 +30,8 @@ _ADAPTERS: tuple[AdapterFn, ...] = (
     bio_race_event_to_envelope,
     link_drop_race_event_to_envelope,
     invalid_lap_race_event_to_envelope,
+    incident_race_event_to_envelope,
+    session_race_event_to_envelope,
 )
 
 

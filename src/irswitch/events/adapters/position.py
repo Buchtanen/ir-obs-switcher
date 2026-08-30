@@ -1,14 +1,16 @@
-"""Position / overtake RaceEvent → EventEnvelope adapter."""
+"""Position / overtake / rival_threat RaceEvent → EventEnvelope adapter."""
 
 from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
+from typing import Any
 
 from irswitch.events.envelope import (
     EventCopy,
     EventEnvelope,
     EventPresentation,
+    EventSubject,
     legacy_trigger_to_phase,
     make_envelope,
     normalize_mode,
@@ -21,6 +23,7 @@ _OVERTAKE_EVENT = "overtake"
 _RIVAL_THREAT_EVENT = "rival_threat"
 
 _POSITION_METRIC_KEYS = ("direction", "oldPosition", "newPosition", "delta")
+_RIVAL_METRIC_KEYS = ("gap", "closingRate", "targetCarIdx", "rivalPosition", "targetName")
 
 
 def _event_type_for_position_change(direction: str) -> str | None:
@@ -49,9 +52,21 @@ def _copy_token(event_type: str) -> str:
 
 
 def _accent_for(event_type: str) -> str:
-    if event_type == "POSITION_LOST":
+    if event_type in {"POSITION_LOST", "RIVAL_THREAT"}:
         return "warning"
     return "primary"
+
+
+def _rival_metrics(data: dict[str, Any]) -> dict[str, Any]:
+    """Keep emitter gap/target fields; invent a speakable label when DriverInfo is absent."""
+    metrics = {key: data[key] for key in _RIVAL_METRIC_KEYS if key in data}
+    if metrics.get("targetName") in (None, ""):
+        rival_pos = data.get("rivalPosition")
+        if rival_pos is not None:
+            metrics["targetName"] = f"P{rival_pos}"
+        else:
+            metrics["targetName"] = "the car behind"
+    return metrics
 
 
 def position_race_event_to_envelope(
@@ -76,6 +91,40 @@ def position_race_event_to_envelope(
     catalog_state = state_for_event_type(event_type)
     if catalog_state is None:
         return None
+
+    if event_type == "RIVAL_THREAT":
+        default_phase = "ENTER"
+        phase = legacy_trigger_to_phase(event.phase, default=default_phase)
+        metrics = _rival_metrics(event.data)
+        target_idx = event.data.get("targetCarIdx")
+        rival_pos = event.data.get("rivalPosition")
+        label = metrics.get("targetName")
+        return make_envelope(
+            event_type=event_type,
+            phase=phase,
+            mode=normalize_mode(mode),
+            session_id=session_id or "session:unknown",
+            occurred_at=datetime.fromtimestamp(time.time(), tz=UTC).isoformat(),
+            monotonic_ms=int(now * 1000),
+            priority=event.priority,
+            dedupe_key=f"{normalize_mode(mode)}:RIVAL_THREAT:{target_idx}",
+            correlation_id=f"rival:{target_idx}",
+            subject=EventSubject(car_id="player"),
+            target=EventSubject(
+                car_id=str(target_idx if target_idx is not None else "unknown"),
+                class_position=rival_pos if isinstance(rival_pos, int) else None,
+                display_name=str(label) if label else None,
+            ),
+            metrics=metrics,
+            copy=EventCopy(headline_token=_copy_token(event_type), status_token=""),
+            presentation=EventPresentation(
+                widget=_catalog_family(event_type),
+                zone="EVENT",
+                variant=catalog_state,
+                accent=_accent_for(event_type),
+                preferred_state="ACTIVE",
+            ),
+        )
 
     phase = legacy_trigger_to_phase(event.phase, default="RESULT")
     new_position = event.data.get("newPosition")

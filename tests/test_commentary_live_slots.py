@@ -7,7 +7,7 @@ import random
 from irswitch.commentary.director import CommentaryDirector, choose_filled_line, slot_bindings
 from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.tts import NullTtsSink
-from irswitch.events.envelope import make_envelope
+from irswitch.events.envelope import EventSubject, make_envelope
 from irswitch.overlay.settings import CommentarySettings
 
 
@@ -56,8 +56,23 @@ def test_hunting_without_target_name_still_has_gap_lines() -> None:
     assert "{gap}" not in spoken
 
 
-def test_rival_threat_without_name_is_slot_unbound_on_live_graph() -> None:
-    """Documents P1 gap: adapter strips gap/name → high silence risk."""
+def test_rival_threat_with_live_metrics_speaks() -> None:
+    """After adapter fix: gap + P{n} label bind; no longer systematic slot_unbound."""
+    graph = load_sequence_graph()
+    node = graph.nodes["rival_threat"]
+    env = make_envelope(
+        event_type="RIVAL_THREAT",
+        phase="ENTER",
+        priority=60,
+        metrics={"gap": 1.8, "targetName": "P8"},
+        target=EventSubject(car_id="22", display_name="P8"),
+    )
+    bound = slot_bindings(env, "unknown")
+    texts = node.variant_bucket("en", "unknown")
+    assert choose_filled_line(texts, bound, random.Random(0)) is not None
+
+
+def test_rival_threat_without_name_or_gap_still_slot_unbound() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["rival_threat"]
     env = make_envelope(event_type="RIVAL_THREAT", phase="ENTER", priority=60, metrics={})
