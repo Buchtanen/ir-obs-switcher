@@ -9,7 +9,7 @@ from irswitch.commentary.director import CommentaryDirector, choose_filled_line
 from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.tts import NullTtsSink
-from irswitch.commentary.validator import leftover_slots, validate_utterance
+from irswitch.commentary.validator import fill_slots, leftover_slots, validate_utterance
 from irswitch.events.envelope import make_envelope
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import RaceEvent
@@ -127,10 +127,52 @@ def test_merge_adds_legacy_pit_when_v2_adapter_misses() -> None:
     assert len(merge_speech_envelopes(race_event, [already], now=1.0, mode="RACE")) == 1
 
 
-def test_emotion_bucket_falls_back_to_neutral_mock() -> None:
+def test_w1_emotion_buckets_are_authored_not_neutral_fallback() -> None:
+    """W1 filled calm/focused/pushing/high on mock-4; unknown still uses neutral."""
     graph = load_sequence_graph()
     node = graph.nodes["lap_complete"]
-    assert node.variant_bucket("en", "pushing") == node.variant_bucket("en", "unknown")
+    neutral = node.variant_bucket("en", "unknown")
+    pushing = node.variant_bucket("en", "pushing")
+    assert neutral
+    assert pushing
+    assert pushing != neutral
+    for line in pushing:
+        assert validate_utterance(line, node) == []
+
+
+def test_unfilled_emotion_still_falls_back_to_neutral() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["overtake"]
+    # Structure-only node: empty emotion cells fall back once neutral exists.
+    # Until authored, overtake stays silent (no neutral either).
+    assert node.variant_bucket("en", "pushing") == ()
+    assert node.variant_bucket("en", "unknown") == ()
+
+
+def test_w1_mock_four_emotion_matrix_valid() -> None:
+    graph = load_sequence_graph()
+    expected = {
+        "in_car": ("calm", "focused", "pushing", "high"),
+        "lap_complete": ("calm", "focused", "pushing", "high"),
+        "pit_entry": ("calm", "focused"),
+        "back_on_track": ("calm", "focused"),
+    }
+    examples = {
+        "lap": 12,
+        "lap_time": "1:32.4",
+        "position": 8,
+    }
+    for node_id, emotions in expected.items():
+        node = graph.nodes[node_id]
+        locale_map = node.variants["en"]
+        assert locale_map.get("neutral"), node_id
+        for emotion in emotions:
+            lines = locale_map.get(emotion) or ()
+            assert 1 <= len(lines) <= 3, (node_id, emotion)
+            for line in lines:
+                assert validate_utterance(line, node) == []
+                bound = fill_slots(line, examples)
+                assert not leftover_slots(bound), (node_id, emotion, line)
 
 
 def test_director_speaks_in_car_from_english_matrix() -> None:

@@ -260,7 +260,7 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 ## 9. Checklist (progress)
 
 - [x] W0 — structure + EN mock (PR #120)
-- [ ] W1 — EN emotions on mock-4
+- [x] W1 — EN emotions on mock-4 (gpt-5 patches; unfilled 184 → 172)
 - [ ] W2 — EN high-priority race beats
 - [ ] W3 — EN pit + session sidecar depth
 - [ ] W4 — EN timing / quali / practice

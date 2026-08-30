@@ -1,0 +1,128 @@
+{
+  "graph_version": 1,
+  "wave": "W1",
+  "author_model": "gpt-5",
+  "locale": "en",
+  "patches": [
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "You're settled in the seat.",
+        "Easy now, get comfortable.",
+        "You're in and settled."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "You're set in the car.",
+        "Locked in and ready.",
+        "Seat set, mind sharp."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "You're in. Time to dig in.",
+        "Strapped in, keep after it.",
+        "You're set. Bring the pace."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "You're in. Come on, let's go!",
+        "Locked in now. Make it count!",
+        "You're set. Let's get after it!"
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Lap {lap} done — {lap_time}.",
+        "That's another steady lap.",
+        "Lap done. Keep it smooth."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Lap {lap} logged at {lap_time}.",
+        "That's the lap. Stay sharp.",
+        "Lap done. Reset and focus."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "pushing",
+      "lines": [
+        "Lap {lap} done. Keep pushing.",
+        "{lap_time} on that lap. Dig in.",
+        "That's another lap. Keep after it."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "high",
+      "lines": [
+        "Lap {lap} done. Come on, push now!",
+        "That's {lap_time}. Keep it coming!",
+        "Lap done. Let's go again!"
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Easy in, position {position}.",
+        "Settle it down the pit lane.",
+        "You're on pit road. Keep it smooth."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Pit road, position {position}. Stay sharp.",
+        "You're on pit road. Keep it clean.",
+        "Pit road now. Stay focused."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Back out in position {position}.",
+        "You're clear of pit road. Settle in.",
+        "Rolling on track again. Keep it smooth."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Back out, position {position}. Lock in.",
+        "You're on track. Build the pace cleanly.",
+        "Pit road behind you. Eyes forward."
+      ]
+    }
+  ]
+}
