@@ -1,0 +1,38 @@
+{
+  "graph_version": 1,
+  "wave": "W3",
+  "author_model": "gpt-5",
+  "locale": "en",
+  "patches": [
+    {
+      "node_id": "pit_outcome",
+      "locale": "en",
+      "emotion": "neutral",
+      "lines": [
+        "Stop done. You're {position}.",
+        "Out of the box, {old_position} to {position}.",
+        "Service complete. Position confirmed."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "en",
+      "emotion": "calm",
+      "lines": [
+        "Service complete. Settle into {position}.",
+        "From {old_position} to {position}. Nice and steady.",
+        "Stop is done. Your place is settled."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "en",
+      "emotion": "focused",
+      "lines": [
+        "Stop complete. You're now {position}.",
+        "Box result, {old_position} to {position}. Stay sharp.",
+        "Service complete. Position {position}. Eyes forward."
+      ]
+    }
+  ]
+}

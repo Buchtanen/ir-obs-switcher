@@ -221,6 +221,18 @@ def test_w2_race_beat_nodes_speak_english() -> None:
                 assert not leftover_slots(fill_slots(line, examples))
 
 
+def test_w3_pit_outcome_english() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["pit_outcome"]
+    examples = {"position": 11, "old_position": 8}
+    for emotion in ("neutral", "calm", "focused"):
+        lines = node.variants["en"].get(emotion) or ()
+        assert 1 <= len(lines) <= 3, emotion
+        for line in lines:
+            assert validate_utterance(line, node) == []
+            assert not leftover_slots(fill_slots(line, examples))
+
+
 def test_director_speaks_overtake_and_finish() -> None:
     graph = load_sequence_graph()
     cases = (

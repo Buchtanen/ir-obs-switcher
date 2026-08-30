@@ -1024,7 +1024,26 @@
         "calm",
         "focused"
       ],
-      "notes": "Prefer same correlationId as pit_entry. State net position change only if known."
+      "notes": "Prefer same correlationId as pit_entry. State net position change only if known.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Stop done. You're {position}.",
+            "Out of the box, {old_position} to {position}.",
+            "Service complete. Position confirmed."
+          ],
+          "calm": [
+            "Service complete. Settle into {position}.",
+            "From {old_position} to {position}. Nice and steady.",
+            "Stop is done. Your place is settled."
+          ],
+          "focused": [
+            "Stop complete. You're now {position}.",
+            "Box result, {old_position} to {position}. Stay sharp.",
+            "Service complete. Position {position}. Eyes forward."
+          ]
+        }
+      }
     },
     "hr_pressure": {
       "family": "bio",
