@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>irswitch admin — extensions</title>
+  <link rel="stylesheet" href="/admin/web/css/admin.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <h1>Extensions</h1>
+      <span class="ver" id="admin-version"></span>
+      <span class="live-dot" id="live-indicator">offline</span>
+    </header>
+    <nav class="nav" aria-label="Admin">
+      <a href="/admin">Overview</a>
+      <a class="active" href="/admin/extensions">Extensions</a>
+      <a href="/admin/features">Features</a>
+      <a href="/admin/activity">Activity</a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/gr-status">Switcher controls</a>
+      <a href="/config">Config</a>
+    </nav>
+
+    <section class="section">
+      <h2>Connectable / connected</h2>
+      <div id="extensions-panel" class="grid"></div>
+    </section>
+
+    <section class="section">
+      <h2>Notes</h2>
+      <div class="card">
+        <p><strong>BLE</strong> — heart-rate via bleak. Enabled in <code>heart_rate.enabled</code>. Status comes from overlay bio state.</p>
+        <p><strong>Libre Hardware Monitor</strong> — prerequisite for sysinfo CPU package temp/power. Keep Remote Web Server running on the stream PC.</p>
+        <p><strong>Sysinfo</strong> — overlay HUD sampling. Degraded when LHM is down and package sensors are empty. Full LHM-first upgrade: <code>docs/sysinfo_lhm_upgrade_spec.md</code>.</p>
+      </div>
+    </section>
+  </div>
+  <script src="/admin/web/js/admin.js"></script>
+  <script>
+    IrAdmin.startAdmin({
+      refreshOnWs: true,
+      onStatus(status) {
+        const ext = status.extensions || {};
+        document.getElementById("extensions-panel").innerHTML = ["ble", "lhm", "sysinfo"]
+          .map((id) => (ext[id] ? IrAdmin.renderExtensionCard(ext[id]) : ""))
+          .join("");
+      },
+    });
+  </script>
+</body>
+</html>

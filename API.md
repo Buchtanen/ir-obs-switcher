@@ -20,9 +20,12 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [POST /shutdown](#post-shutdown)
   - [POST /restart](#post-restart)
   - [GET /api/events](#get-apievents)
+  - [GET /api/admin/status](#get-apiadminstatus)
+  - [GET /api/admin/activity](#get-apiadminactivity)
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
 - [HTML Dashboardy](#html-dashboardy)
+  - [GET /admin](#get-admin)
   - [GET /gr-status](#get-gr-status)
   - [GET /vr-status](#get-vr-status)
   - [GET /test](#get-test)
@@ -552,6 +555,54 @@ Získání posledních eventů z event logu.
 
 ---
 
+### GET /api/admin/status
+
+Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher subset.
+
+**URL**: `http://127.0.0.1:17321/api/admin/status`
+
+**Method**: `GET`
+
+**Response** (200 OK) — klíčová pole:
+- `version` (string)
+- `switcher` (object | null) — `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
+- `extensions.ble` / `extensions.lhm` / `extensions.sysinfo` — každá karta: `enabled`, `active`, `status`, `detail`
+- `features.overlay` / `features.commentary` / `features.tape` — `enabled`, `active`, `status` (+ commentary `busy`)
+- `features.eventEngine` — rollout flagy (`v2Payload`, `practice`, …)
+
+LHM probe je fail-soft (worker thread); unreachable LHM → `extensions.lhm.active=false`, sysinfo často `degraded`.
+
+Spec: [docs/admin_dashboard_spec.md](docs/admin_dashboard_spec.md).
+
+---
+
+### GET /api/admin/activity
+
+Merged activity feed (newest first): switcher EventLog + commentary decisions + active overlay widgets.
+
+**URL**: `http://127.0.0.1:17321/api/admin/activity?limit=50`
+
+**Query**: `limit` (1–200, default 50)
+
+**Response**:
+```json
+{
+  "items": [
+    {
+      "at": 1710000000.12,
+      "source": "commentary",
+      "kind": "spoken",
+      "message": "He takes P5 from Rossi.",
+      "data": { "nodeId": "overtake", "reason": "ok" }
+    }
+  ]
+}
+```
+
+`source`: `switcher` | `commentary` | `overlay`.
+
+---
+
 ## WebSocket Endpoint
 
 ### WS /ws
@@ -637,9 +688,25 @@ asyncio.run(listen_to_updates())
 
 Aplikace poskytuje HTML dashboardy pro vizualizaci stavu.
 
+### GET /admin
+
+Primární **admin shell** (live): overview + extensions + features + activity.
+
+**URL**: `http://127.0.0.1:17321/admin`
+
+**Podstránky**:
+- `/admin/extensions` — BLE, Libre Hardware Monitor, sysinfo
+- `/admin/features` — overlay / commentary / tape enabled vs active
+- `/admin/activity` — merged live log
+- Static: `/admin/web/css/admin.css`, `/admin/web/js/admin.js`
+
+Live data: poll `GET /api/admin/status` + `GET /api/admin/activity` (~2 s) a WS `/ws` + `/ws/overlay`.
+
+---
+
 ### GET /gr-status
 
-Velký dashboard pro monitor (GR Dashboard).
+Velký dashboard / switcher controls (legacy GR Dashboard).
 
 **URL**: `http://127.0.0.1:17321/gr-status`
 
@@ -650,6 +717,7 @@ Velký dashboard pro monitor (GR Dashboard).
 - Zobrazuje status, event log, streaming info, metrics
 - Konfigurovatelné obrázky a loga
 - Real-time aktualizace přes JavaScript
+- Navigace odkazuje na `/admin`
 
 **Screenshot**: Viz `assets/rg-status-screen.png`
 

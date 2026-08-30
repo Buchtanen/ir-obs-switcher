@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>irswitch admin</title>
+  <link rel="stylesheet" href="/admin/web/css/admin.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <h1>irswitch admin</h1>
+      <span class="ver" id="admin-version"></span>
+      <span class="live-dot" id="live-indicator">offline</span>
+    </header>
+    <nav class="nav" aria-label="Admin">
+      <a class="active" href="/admin">Overview</a>
+      <a href="/admin/extensions">Extensions</a>
+      <a href="/admin/features">Features</a>
+      <a href="/admin/activity">Activity</a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/gr-status">Switcher controls</a>
+      <a href="/config">Config</a>
+      <a href="/commentary">Commentary</a>
+      <a href="/overlay/demo">Overlay demo</a>
+    </nav>
+
+    <section class="section">
+      <h2>Switcher</h2>
+      <div id="switcher-panel" class="grid"></div>
+    </section>
+
+    <section class="section">
+      <h2>Extensions</h2>
+      <div id="extensions-panel" class="grid"></div>
+      <p class="hint">LHM Remote Web Server is a prerequisite for correct sysinfo CPU package metrics. See docs/sysinfo_lhm_upgrade_spec.md.</p>
+    </section>
+
+    <section class="section">
+      <h2>Features</h2>
+      <div id="features-panel" class="grid"></div>
+    </section>
+
+    <section class="section">
+      <h2>Recent activity</h2>
+      <div id="activity-panel" class="feed"></div>
+      <p class="hint"><a href="/admin/activity">Open full activity feed →</a></p>
+    </section>
+  </div>
+  <script src="/admin/web/js/admin.js"></script>
+  <script>
+    IrAdmin.startAdmin({
+      refreshOnWs: true,
+      activityLimit: 25,
+      onStatus(status) {
+        const sw = document.getElementById("switcher-panel");
+        sw.innerHTML = IrAdmin.renderSwitcher(status.switcher);
+        const ext = status.extensions || {};
+        document.getElementById("extensions-panel").innerHTML = ["ble", "lhm", "sysinfo"]
+          .map((id) => (ext[id] ? IrAdmin.renderExtensionCard(ext[id]) : ""))
+          .join("");
+        const feat = status.features || {};
+        document.getElementById("features-panel").innerHTML = ["overlay", "commentary", "tape", "eventEngine"]
+          .map((key) => (feat[key] != null ? IrAdmin.renderFeatureCard(key, feat[key]) : ""))
+          .join("");
+      },
+      onActivity(act) {
+        document.getElementById("activity-panel").innerHTML = IrAdmin.renderActivity(act.items || []);
+      },
+    });
+  </script>
+</body>
+</html>

@@ -1241,8 +1241,10 @@ def create_app() -> web.Application:
     app.router.add_post("/oauth/revoke", handle_oauth_revoke)
 
     from irswitch.overlay.http import register_overlay_routes
+    from irswitch.server.admin import register_admin_routes
 
     register_overlay_routes(app)
+    register_admin_routes(app)
 
     # Static asset routes for favicon and app icons
     # Handle both normal execution and PyInstaller bundled EXE

@@ -249,6 +249,29 @@ def fetch_lhm_http_rows(
     return []
 
 
+def lhm_connection_status(
+    *,
+    opener: Opener | None = None,
+    now: float | None = None,
+    config_text: str | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Admin/diagnostics snapshot: is LHM HTTP reachable and where."""
+    rows = fetch_lhm_http_rows(
+        opener=opener, now=now, config_text=config_text, force=force
+    )
+    with _LOCK:
+        base = _CACHED_BASE
+    reachable = bool(rows)
+    return {
+        "reachable": reachable,
+        "base_url": base,
+        "sensor_rows": len(rows),
+        "status": "connected" if reachable else "unreachable",
+        "prerequisite_for": ["sysinfo.cpu_package"],
+    }
+
+
 def _listener_from_config(*, config_text: str | None, now: float) -> tuple[int, str | None]:
     global _CACHED_CONFIG
     if config_text is not None:
