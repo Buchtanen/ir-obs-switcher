@@ -141,6 +141,26 @@ class BleHeartRateProvider:
     def current(self) -> BioState:
         return self._state
 
+    def status_snapshot(self) -> dict[str, Any]:
+        """Public read-only status for dashboards. No side effects, no radio I/O.
+
+        ``status`` stays inside the BLE enum
+        (``disabled|disconnected|connecting|reconnecting|connected|error``).
+        """
+        state = self._state
+        enabled = bool(self._settings.enabled)
+        status = str(state.status or "disconnected") if enabled else "disabled"
+        return {
+            "enabled": enabled,
+            "status": status,
+            "connected": bool(enabled and state.connected),
+            "deviceName": state.device_name,
+            "bpm": state.bpm,
+            "hrState": state.state,
+            "source": self._settings.source,
+            "deviceFilter": self._settings.device,
+        }
+
     def apply_settings(self, settings: HeartRateSettings, sampling: SamplingSettings) -> None:
         self._settings = settings
         self._sampling = sampling

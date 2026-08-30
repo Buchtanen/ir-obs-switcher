@@ -77,6 +77,7 @@ class OverlayRuntime:
         self._stories_sig: tuple[tuple[object, ...], ...] | None = None
         self._last_race = RaceState()
         self._hud_live = False
+        self._running = False
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session.add_reset_hook(self._reset_commentary)
@@ -263,9 +264,14 @@ class OverlayRuntime:
             from irswitch.overlay.replay import OverlayReplayer
 
             logger.info("Overlay replay: %s", self._replay_path)
-            await OverlayReplayer(self._replay_path, self.bus).run()
+            self._running = True
+            try:
+                await OverlayReplayer(self._replay_path, self.bus).run()
+            finally:
+                self._running = False
             return
 
+        self._running = True
         self._registry.spawn(
             "overlay_race", SamplingScheduler("race", self._race_hz, self._tick_race).run()
         )
@@ -279,6 +285,7 @@ class OverlayRuntime:
             while True:
                 await asyncio.sleep(3600)
         except asyncio.CancelledError:
+            self._running = False
             self._tape.close()
             await self._registry.cancel_all()
             raise
@@ -476,7 +483,140 @@ class OverlayRuntime:
         await self._bio.run()
 
     async def stop(self) -> None:
+        self._running = False
         self._tape.close()
         await self._registry.cancel_all()
         if self._bio is not None:
             await self._bio.stop()
+
+    def status_snapshot(self, now: float | None = None) -> dict[str, Any]:
+        """Public read-only overlay status for dashboards. No side effects.
+
+        Aggregates config (``enabled``) with live runtime facts and the nested
+        commentary / tape / bio / system summaries, so callers never need
+        ``_``-prefixed attributes. ``now`` is monotonic seconds. Sysinfo
+        ``degraded`` needs LHM knowledge and stays with the sysinfo/admin lane.
+        """
+        now = time.monotonic() if now is None else now
+        try:
+            overlay = self._overlay_settings()
+        except Exception:
+            logger.debug("Overlay settings unavailable for snapshot", exc_info=True)
+            overlay = OverlaySettings()
+        enabled = bool(getattr(overlay, "enabled", False))
+        running = self._running
+        if not enabled:
+            status = "disabled"
+        elif running:
+            status = "running"
+        else:
+            status = "idle"
+        return {
+            "enabled": enabled,
+            "available": True,
+            "running": running,
+            "mode": self.mode,
+            "status": status,
+            "tasks": len(self._registry),
+            "commentary": self._commentary_status(overlay, now),
+            "tape": self._tape_status(overlay),
+            "bio": self._bio_status(overlay),
+            "system": self._system_status(overlay),
+        }
+
+    def _commentary_status(self, overlay: OverlaySettings, now: float) -> dict[str, Any]:
+        enabled = False
+        try:
+            enabled = bool(overlay.commentary.enabled)
+            director = self.commentary
+            if director is not None:
+                return director.status_snapshot(now, enabled=enabled)
+        except Exception:
+            logger.debug("Commentary status snapshot failed", exc_info=True)
+        return {
+            "enabled": enabled,
+            "available": False,
+            "busy": False,
+            "busyUntil": 0.0,
+            "status": "disabled" if not enabled else "idle",
+            "lastSpokeAt": None,
+        }
+
+    def _tape_status(self, overlay: OverlaySettings) -> dict[str, Any]:
+        enabled = False
+        tape: dict[str, Any] = {
+            "available": False,
+            "pathOpen": False,
+            "path": None,
+            "sessionKey": None,
+        }
+        try:
+            enabled = bool(overlay.tape.enabled)
+            tape = self._tape.status_snapshot()
+        except Exception:
+            logger.debug("Tape status snapshot failed", exc_info=True)
+        if not enabled:
+            status = "disabled"
+        elif tape.get("pathOpen"):
+            status = "recording"
+        else:
+            status = "idle"
+        return {"enabled": enabled, "status": status, **tape}
+
+    def _bio_status(self, overlay: OverlaySettings) -> dict[str, Any]:
+        enabled = False
+        try:
+            enabled = bool(overlay.heart_rate.enabled)
+            provider = self._bio
+            if provider is not None:
+                snapshot = dict(provider.status_snapshot())
+                snapshot["available"] = True
+                if not enabled:
+                    snapshot.update({"enabled": False, "status": "disabled", "connected": False})
+                return snapshot
+            state = self.bus.bio
+            return {
+                "enabled": enabled,
+                "available": False,
+                "status": str(state.status or "disconnected") if enabled else "disabled",
+                "connected": bool(enabled and state.connected),
+                "deviceName": state.device_name,
+                "bpm": state.bpm,
+                "hrState": state.state,
+                "source": overlay.heart_rate.source,
+                "deviceFilter": overlay.heart_rate.device,
+            }
+        except Exception:
+            logger.debug("Bio status snapshot failed", exc_info=True)
+        return {
+            "enabled": enabled,
+            "available": False,
+            "status": "disabled" if not enabled else "disconnected",
+            "connected": False,
+            "deviceName": None,
+            "bpm": None,
+            "hrState": "unknown",
+        }
+
+    def _system_status(self, overlay: OverlaySettings) -> dict[str, Any]:
+        try:
+            settings = overlay.system_info
+            enabled = bool(settings.enabled)
+            available = self._system is not None
+            if not enabled:
+                status = "disabled"
+            elif available:
+                status = "sampling"
+            else:
+                status = "idle"
+            return {
+                "enabled": enabled,
+                "available": available,
+                "status": status,
+                "cpuEnabled": bool(settings.cpu_enabled),
+                "gpuEnabled": bool(settings.gpu_enabled),
+                "memoryEnabled": bool(settings.memory_enabled),
+            }
+        except Exception:
+            logger.debug("System status snapshot failed", exc_info=True)
+        return {"enabled": False, "available": False, "status": "disabled"}
