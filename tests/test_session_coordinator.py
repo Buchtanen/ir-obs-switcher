@@ -124,6 +124,7 @@ def test_telemetry_vars_include_session_identity() -> None:
         "TrackID",
         "WeekendInfo",
         "DriverInfo",
+        "SplitTimeInfo",
         "PlayerTrackSurface",
         "PlayerCarTowTime",
     ):

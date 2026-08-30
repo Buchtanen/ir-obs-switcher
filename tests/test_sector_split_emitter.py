@@ -61,6 +61,26 @@ def test_sector_split_silent_in_race() -> None:
     assert emitter.tick(_state(overlay_mode="RACE"), 35.0) == []
 
 
+def test_sector_split_emits_s3_when_present() -> None:
+    from irswitch.race.timing.points import TimingPoint
+
+    points = (
+        TimingPoint(id="MS00", lap_dist_pct=0.0, label="START_FINISH"),
+        TimingPoint(id="S1", lap_dist_pct=0.25, label="S1"),
+        TimingPoint(id="S2", lap_dist_pct=0.5, label="S2"),
+        TimingPoint(id="S3", lap_dist_pct=0.75, label="S3"),
+    )
+    store = TimingStore()
+    det = CrossingDetector(points=points)
+    emitter = SectorSplitEmitter(store, EventSettings(), EventPrioritySettings())
+    _ingest(store, det, 0.90, 1.0, lap=1)
+    _ingest(store, det, 0.02, 2.0, lap=2)
+    _ingest(store, det, 0.80, 80.0, lap=2)
+    out = emitter.tick(_state(), 80.0)
+    names = [e.data["sector"] for e in out]
+    assert "S3" in names
+
+
 def test_sector_split_silent_after_checkered() -> None:
     store = TimingStore()
     det = CrossingDetector(points=default_sectors())

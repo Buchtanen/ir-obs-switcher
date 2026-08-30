@@ -23,6 +23,10 @@ GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 
+# Write scope so VOD chapter timestamps can be patched into the video description.
+# Existing youtube.readonly tokens keep working for title fetch until the user re-auths.
+DEFAULT_YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube"]
+
 # Default cooldown between interactive reauth attempts (browser open)
 DEFAULT_REAUTH_COOLDOWN_S = 300.0
 
@@ -106,13 +110,13 @@ class OAuthManager:
             client_secret: Google OAuth client secret
             redirect_uri: Redirect URI for OAuth callback
             token_path: Path to store/load OAuth tokens
-            scopes: OAuth scopes to request (default: YouTube readonly)
+            scopes: OAuth scopes to request (default: YouTube manage/write for VOD chapters)
         """
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
         self.token_path = Path(token_path)
-        self.scopes = scopes or ["https://www.googleapis.com/auth/youtube.readonly"]
+        self.scopes = scopes or list(DEFAULT_YOUTUBE_SCOPES)
 
         self._token: OAuthToken | None = None
         self._loaded_from_disk = False

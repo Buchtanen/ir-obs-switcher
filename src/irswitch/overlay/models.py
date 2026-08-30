@@ -67,6 +67,7 @@ class TelemetrySnapshot:
     data_quality: str = "ok"  # ok/degraded/stale
     player_track_surface: int | None = None
     player_tow_time: float | None = None
+    sector_start_pcts: tuple[float, ...] = ()
 
     @classmethod
     def disconnected(cls, timestamp: float = 0.0) -> TelemetrySnapshot:

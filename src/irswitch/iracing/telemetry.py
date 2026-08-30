@@ -16,6 +16,7 @@ from irswitch.iracing.sdk_units import (
     as_non_negative_int,
     as_session_laps_remain,
 )
+from irswitch.iracing.sectors import sector_start_pcts
 from irswitch.overlay.models import TelemetrySnapshot
 
 TELEMETRY_VARS: tuple[str, ...] = (
@@ -53,6 +54,7 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "CarIdxEstTime",
     "CarIdxTrackSurface",
     "DriverInfo",
+    "SplitTimeInfo",
     "PlayerTrackSurface",
     "PlayerCarTowTime",
 )
@@ -196,4 +198,5 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         data_quality=str(data.get("data_quality") or "ok"),
         player_track_surface=_player_track_surface(data, player_idx),
         player_tow_time=as_float(data.get("PlayerCarTowTime")),
+        sector_start_pcts=sector_start_pcts(data.get("SplitTimeInfo")),
     )

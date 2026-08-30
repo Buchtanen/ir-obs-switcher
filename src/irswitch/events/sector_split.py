@@ -8,7 +8,12 @@ from irswitch.overlay.settings import EventPrioritySettings, EventSettings
 from irswitch.race.timing.store import TimingStore
 
 _TIMING_MODES = frozenset({"PRACTICE", "QUALIFYING"})
-_SECTOR_IDS = frozenset({"S1", "S2"})
+
+
+def is_sector_point_id(point_id: str) -> bool:
+    if len(point_id) < 2 or point_id[0] != "S":
+        return False
+    return point_id[1:].isdigit()
 
 
 class SectorSplitEmitter:
@@ -36,7 +41,7 @@ class SectorSplitEmitter:
         self._cursor = self._store.append_count
         out: list[CandidateEvent] = []
         for record in pending:
-            if record.timing_point_id not in _SECTOR_IDS or record.segment_time is None:
+            if not is_sector_point_id(record.timing_point_id) or record.segment_time is None:
                 continue
             data = {
                 "sector": record.timing_point_id,

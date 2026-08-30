@@ -563,6 +563,14 @@ function rebuildArt(node, stateKey, familyName) {
   paintPlateMask(art, family, stateKey);
 }
 
+function resolveTargetName(metrics, envelope) {
+  const fromMetrics = metrics && metrics.targetName;
+  if (fromMetrics) return String(fromMetrics);
+  const fromTarget = envelope && envelope.target && (envelope.target.displayName || envelope.target.display_name);
+  if (fromTarget) return String(fromTarget);
+  return "";
+}
+
 function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   const title = node.querySelector(".title");
   const subtitle = node.querySelector(".subtitle");
@@ -573,14 +581,27 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   if (stateKey === "hunting") {
     text(subtitle, resolveCopy("battle.closing_in") || sample.subtitle || "CLOSING IN");
     text(value, fmtGap(metrics.gap));
+    const huntName = resolveTargetName(metrics, envelope);
     text(
       meta,
-      metrics.targetPosition != null ? `P${metrics.targetPosition} · target` : sample.meta,
+      huntName
+        ? huntName
+        : metrics.targetPosition != null
+          ? `P${metrics.targetPosition} · target`
+          : sample.meta,
     );
   } else if (stateKey === "hunted") {
     text(subtitle, sample.subtitle || resolveCopy("battle.hunted") || "UNDER PRESSURE");
     text(value, fmtGap(metrics.gap));
-    text(meta, metrics.targetPosition != null ? `P${metrics.targetPosition} behind` : sample.meta);
+    const huntedName = resolveTargetName(metrics, envelope);
+    text(
+      meta,
+      huntedName
+        ? huntedName
+        : metrics.targetPosition != null
+          ? `P${metrics.targetPosition} behind`
+          : sample.meta,
+    );
   } else if (stateKey === "approach") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE BUILDING");
     text(value, metrics.closingRate != null ? `${fmt(metrics.closingRate, 2)} s/s` : sample.value);
@@ -592,7 +613,8 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else if (stateKey === "side_by_side") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "WHEEL TO WHEEL");
     text(value, fmtGap(metrics.gap));
-    text(meta, metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
+    const vsName = resolveTargetName(metrics, envelope);
+    text(meta, vsName ? `vs ${vsName}` : metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
   } else if (stateKey === "battle_for_position") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "AHEAD + BEHIND");
     text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
@@ -844,18 +866,25 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
       value,
       metrics.sectorDelta != null ? `S1 ${fmtDelta(metrics.sectorDelta)}` : sample.value,
     );
+    const hotName = resolveTargetName(metrics, envelope);
     text(
       meta,
-      metrics.targetPosition != null ? `target P${metrics.targetPosition}` : sample.meta,
+      hotName
+        ? `target ${hotName}`
+        : metrics.targetPosition != null
+          ? `target P${metrics.targetPosition}`
+          : sample.meta,
     );
   } else if (stateKey === "position_attack") {
-    if (metrics.targetPosition != null) text(title, `P${metrics.targetPosition} IN RANGE`);
+    const attackName = resolveTargetName(metrics, envelope);
+    if (attackName) text(title, `${attackName} IN RANGE`);
+    else if (metrics.targetPosition != null) text(title, `P${metrics.targetPosition} IN RANGE`);
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ME VS GRID");
     text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
     text(meta, metrics.confidence != null ? `confidence ${fmt(metrics.confidence, 2)}` : sample.meta);
   } else if (stateKey === "gain_found") {
     const sectorLabel = metrics.sector || metrics.timingPointId;
-    const isSplit = sectorLabel === "S1" || sectorLabel === "S2";
+    const isSplit = typeof sectorLabel === "string" && /^S\d+$/.test(sectorLabel);
     text(
       subtitle,
       isSplit ? sectorLabel : metrics.timingPointId ? `${metrics.timingPointId} EXIT` : sample.subtitle,

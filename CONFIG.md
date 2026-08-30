@@ -583,9 +583,13 @@ dashboard_vr_icons_path = assets/vr_icons/
 
 ## Sekce `[stream_chapters]` - Kapitoly streamu přes WS (volitelné)
 
-In-memory chapter markery pro aktuální OBS stream. Emitují se jako **additive** zprávy na `WS /ws` (viz `API.md`). **Nepíšou** YouTube description ani OBS `CreateRecordChapter` (to je budoucí práce).
+In-memory chapter markery pro aktuální OBS stream. Emitují se jako **additive** zprávy na `WS /ws` (viz `API.md`).
+
+Volitelně (`youtube_vod = true`) se stejné timestampy zapíšou do YouTube description aktuálního VOD/broadcastu, do označeného bloku `--- irswitch chapters ---` … `--- end irswitch chapters ---`. Zbytek popisu (ruční text) zůstane. OBS `CreateRecordChapter` se **nepoužívá**.
 
 Výchozí stav: vypnuto. Bez migrace — existující instalace se chovají stejně, dokud sekci nezapneš.
+
+Zápis na YouTube vyžaduje OAuth scope `https://www.googleapis.com/auth/youtube` (ne jen `youtube.readonly`). Starý readonly token dál stačí na title fetch; VOD kapitoly se přeskočí, dokud znovu neprojdeš `/oauth/initiate`.
 
 ### `enabled` (výchozí: `false`)
 
@@ -608,10 +612,15 @@ Krátký OBS flicker (< 2 s stop) **nevyvolá** clear ani nový start marker.
 
 Když template chybí, použije se raw `session_type`.
 
+### `youtube_vod` (výchozí: `false`)
+
+Když `true` **a** `enabled = true`, po každé nové kapitole se (fail-soft) updatuje YouTube `videos.update` snippet.description. Bez write scope, bez broadcast_id, nebo při API chybě se nic neshodí — jen log.
+
 **Příklad**:
 ```ini
 [stream_chapters]
 enabled = true
+youtube_vod = true
 start_title = Stream start
 trigger_session_types = Practice,Qualify,Race
 title_practice = Practice
@@ -662,7 +671,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `switching.auto_start_broadcast`, `auto_start_at_percent`, `default_loading_time_seconds`
 - `switching.auto_stop_stream`, `stop_stream_after_seconds`
 - většina `[dashboards]` klíčů čtených při requestu
-- `[stream_chapters].*` (enabled, titles, triggers)
+- `[stream_chapters].*` (enabled, titles, triggers, youtube_vod)
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 - `overlay.language`, `overlay.v4_*`, `overlay.session_tape` a všechny `event_engine.*` flagy
 - `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`, `commentary.audio_device`, `commentary.duck_input`, `commentary.duck_ratio`, `commentary.duck_fade_ms`, `commentary.decision_log_size`
@@ -687,7 +696,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` `v4_assets`, `v4_renderer` (`config.example.ini` defaults `true` for the full V4 demo profile; keep `false` in production until you want V4 live) — overlay V4 rollout flags. With `v4_renderer=true`, transient widgets use the V4 layer renderer and sysinfo uses V4 layered assets from `themes-v4/`.
 - `[overlay]` `session_tape` (default **true**) — session HUD JSONL tape: WS eventy, DecisionLog (emitted/suppressed/preempted), změna OBS scény / driving mode, aktivní V4 stories. Ne telemetry ticky. Soubor `recordings/overlay-<utc>-<subsession>-<session>.jsonl`. Gate je stejný session type jako switcher (`extract_session_type`: Practice / Qualify / Race → overlay_mode PRACTICE/QUALIFYING/RACE). Warmup/Test tape nezapisují. Vypni `session_tape = false`.
 - `[overlay]` `session_tape_dir` (default `recordings`) — adresář tape souborů; změna vyžaduje restart. `..` v cestě se ignoruje.
-- `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. Missing `[event_engine]` = all off. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` / `quali_projection` enable S1/S2 split callouts (`SECTOR_SPLIT`) in Practice and Quali (absolute sector time; detector uses start/finish + 1/3 + 2/3). Practice still also emits `GAIN_FOUND` / `TIME_LOST` vs a reference lap; `quali_projection` still emits projected lap / position attack / hot lap. Race never announces splits — battles and gaps stay the race overlay. After checkered / cooldown (`SessionState` 5/6) only `finish` / `final_lap` (plus widget EXIT) stay live; hunting, pits, and lap noise are muted. Pit stories start only after a driven on-track stint (lobby sit-in-car, ESC teleport, and tow do not).
+- `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. Missing `[event_engine]` = all off. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` / `quali_projection` enable S1/S2(/S3) split callouts (`SECTOR_SPLIT`) in Practice and Quali (absolute sector time; detector uses iRSDK `SplitTimeInfo` sector lines, with geometric 1/3+2/3 only as fallback). Practice still also emits `GAIN_FOUND` / `TIME_LOST` vs a reference lap; `quali_projection` still emits projected lap / position attack / hot lap. Race never announces splits — battles and gaps stay the race overlay. After checkered / cooldown (`SessionState` 5/6) only `finish` / `final_lap` (plus widget EXIT) stay live; hunting, pits, and lap noise are muted. Pit stories start only after a driven on-track stint (lobby sit-in-car, ESC teleport, and tow do not).
 - `[commentary]` `enabled` (default `false`), `use_hr_emotion` (default `true`), `cooldown_s` (default `4.0`), `max_utterance_s` (default `6.0`), `tts_backend` (`auto`|`sapi`|`espeak`|`null`, default `auto`), `tts_voice` (empty = system default), `tts_rate` (`-10`…`10`, default `0`), `audio_device` (empty = Windows default playback; substring match e.g. `CABLE Input` routes SAPI to VB-CABLE so you do not hear it in the headset; stereo is preferred over 16ch), `duck_input` (empty = no ducking; OBS audio source name e.g. `Zvuk plochy`), `duck_ratio` (default `0.25` = 25% of the original OBS volume while commentary speaks, then restore), `duck_fade_ms` (default `750`; `0` = instant), `decision_log_size` (default `32`, ring buffer for speak/skip reasons) — spoken commentary. `auto` uses Windows SAPI (memory + winmm to `audio_device`) or `espeak-ng` on Linux. Test page: [`GET /commentary`](API.md#get-commentary). Live feed stays silent while `enabled=false`. See [COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md) and [docs/commentary_product_suite.md](docs/commentary_product_suite.md).
 
 **Full V4 demo profile** (mirrored in `config/config.example.ini`; production code defaults stay off until you opt in):

@@ -16,7 +16,7 @@ Navod pro nastaveni YouTube Data API v3 pro ziskavani nazvu a popisu streamu.
 
 ## Prehled
 
-Aplikace pouziva YouTube Data API v3 pro ziskavani nazvu a popisu streamu z YouTube. Podporuje dve metody autentifikace:
+Aplikace pouziva YouTube Data API v3 pro nazev/popis streamu a volitelne pro VOD kapitoly (`videos.update` description). Podporuje dve metody autentifikace:
 
 1. **OAuth 2.0** (doporuceno) - pro pristup k `liveBroadcasts` endpointu
 2. **API klic** (fallback) - pro pristup k `videos` endpointu
@@ -127,7 +127,7 @@ Pro zvyseni bezpecnosti muzes omezit API klic:
    - **User support email**: tvuj Gmail ucet
    - **Developer contact email**: tvuj Gmail ucet
 4. Klikni na **Save and Continue**
-5. Na SCOPES klikni **Save and Continue** (bez pridavani scopes)
+5. Na SCOPES klikni **Save and Continue**. Aplikace pri `/oauth/initiate` pozaduje scope `https://www.googleapis.com/auth/youtube` (sprava YouTube uctu), aby mohla zapisovat VOD kapitoly. Readonly token z minula staci na cteni title; pro `youtube_vod` musis consent zopakovat.
 6. Na TEST USERS klikni **Add Users** a pridej tvuj Gmail ucet
 7. Klikni na **Save and Continue**
 

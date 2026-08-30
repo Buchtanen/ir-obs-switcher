@@ -18,6 +18,7 @@ from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
+from irswitch.iracing.sectors import resolve_sector_points_from_pcts
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
@@ -64,6 +65,7 @@ class OverlayRuntime:
         self._timing_detector = CrossingDetector(points=default_sectors())
         self._timing_store = TimingStore()
         self._segment_ref = SegmentReferenceTracker()
+        self._sector_sig: tuple[str, ...] | None = None
         self._register_timing_emitters(overlay)
         self._register_t4_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
@@ -166,6 +168,16 @@ class OverlayRuntime:
     def _reset_timing(self) -> None:
         self._timing_detector.reset()
         self._timing_store.reset()
+        self._sector_sig = None
+
+    def _apply_sector_points(self, snap: TelemetrySnapshot) -> None:
+        points = resolve_sector_points_from_pcts(snap.sector_start_pcts)
+        sig = tuple(f"{p.id}:{p.lap_dist_pct:.6f}" for p in points)
+        if sig == self._sector_sig:
+            return
+        self._timing_detector = CrossingDetector(points=points)
+        self._timing_store.reset()
+        self._sector_sig = sig
 
     def _build_commentary(self, overlay: OverlaySettings) -> CommentaryDirector | None:
         """Load the sequence graph once. Fail-soft if the JSON is broken."""
@@ -225,6 +237,7 @@ class OverlayRuntime:
         mode = overlay_mode_from_session_type(snap.session_type)
         if mode not in {"PRACTICE", "QUALIFYING"}:
             return
+        self._apply_sector_points(snap)
         if snap.player_car_idx is None or snap.player_lap_dist_pct is None:
             return
         lap_number = snap.lap_completed if snap.lap_completed is not None else snap.lap
