@@ -153,6 +153,7 @@ def test_overlay_runtime_constructs_with_practice_emitters() -> None:
     names = {type(emitter).__name__ for emitter in runtime.engine._emitters}
     assert "PracticeEmitter" in names
     assert "QualiEmitter" in names
+    assert "SectorSplitEmitter" in names
 
 
 def test_overlay_runtime_disconnect_clears_stories() -> None:

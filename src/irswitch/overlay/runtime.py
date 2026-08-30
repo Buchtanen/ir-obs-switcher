@@ -21,11 +21,16 @@ from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
-from irswitch.overlay.session import SessionCoordinator, build_session_key
+from irswitch.overlay.session import (
+    SessionCoordinator,
+    build_session_key,
+    overlay_mode_from_session_type,
+)
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
+from irswitch.race.timing.points import default_sectors
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
 from irswitch.server.task_registry import TaskRegistry
 
@@ -56,7 +61,7 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         self._init_managers(overlay)
         self.engine = EventEngine(overlay)
-        self._timing_detector = CrossingDetector()
+        self._timing_detector = CrossingDetector(points=default_sectors())
         self._timing_store = TimingStore()
         self._segment_ref = SegmentReferenceTracker()
         self._register_timing_emitters(overlay)
@@ -109,6 +114,16 @@ class OverlayRuntime:
 
     def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
         """Attach T2 practice/quali emitters when feature flags are enabled."""
+        if overlay.event_engine.practice or overlay.event_engine.quali_projection:
+            from irswitch.events.sector_split import SectorSplitEmitter
+
+            self.engine.register(
+                SectorSplitEmitter(
+                    self._timing_store,
+                    overlay.events,
+                    overlay.events.priorities,
+                )
+            )
         if overlay.event_engine.practice:
             from irswitch.events.practice import PracticeEmitter
             from irswitch.events.target_locked import TargetLockedEmitter
@@ -204,7 +219,12 @@ class OverlayRuntime:
             self._observe_commentary([envelope], now)
 
     def _observe_timing(self, snap: TelemetrySnapshot) -> None:
-        """Ingest player crossings into the timing store (no semantic events yet)."""
+        """Ingest player crossings into the timing store (Practice/Quali only)."""
+        if snap.session_state in (5, 6):
+            return
+        mode = overlay_mode_from_session_type(snap.session_type)
+        if mode not in {"PRACTICE", "QUALIFYING"}:
+            return
         if snap.player_car_idx is None or snap.player_lap_dist_pct is None:
             return
         lap_number = snap.lap_completed if snap.lap_completed is not None else snap.lap

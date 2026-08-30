@@ -53,6 +53,8 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "CarIdxEstTime",
     "CarIdxTrackSurface",
     "DriverInfo",
+    "PlayerTrackSurface",
+    "PlayerCarTowTime",
 )
 
 
@@ -111,6 +113,16 @@ def _bool_tuple(value: object) -> tuple[bool | None, ...]:
         else:
             items.append(as_bool(item))
     return tuple(items)
+
+
+def _player_track_surface(data: Mapping[str, object], player_idx: int | None) -> int | None:
+    direct = as_int(data.get("PlayerTrackSurface"))
+    if direct is not None:
+        return direct
+    surfaces = _int_tuple(data.get("CarIdxTrackSurface"))
+    if player_idx is None or player_idx < 0 or player_idx >= len(surfaces):
+        return None
+    return surfaces[player_idx]
 
 
 def _weekend_value(data: Mapping[str, object], key: str) -> object:
@@ -182,4 +194,6 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         player_lap_dist_pct=player_lap_dist,
         stale_for_ms=as_float(data.get("stale_for_ms")),
         data_quality=str(data.get("data_quality") or "ok"),
+        player_track_surface=_player_track_surface(data, player_idx),
+        player_tow_time=as_float(data.get("PlayerCarTowTime")),
     )

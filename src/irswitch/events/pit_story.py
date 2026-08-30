@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from irswitch.events.session_phase import should_begin_pit_cycle
+from irswitch.iracing.trk_loc import is_on_track
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import CandidateEvent
 from irswitch.overlay.settings import EventPrioritySettings
@@ -27,27 +29,44 @@ class PitStoryEmitter:
     _last_dist: float | None = None
     _dist_stable_since: float | None = None
     _on_pit: bool | None = None
+    _seen_on_track: bool = False
+    _prev_surface: int | None = None
+    _prev_dist: float | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
         if not state.connected:
             return self._reset(now)
 
+        if state.session_finished:
+            return self._reset(now)
+
+        if is_on_track(state.player_track_surface):
+            self._seen_on_track = True
+
         events: list[CandidateEvent] = []
         prev_on_pit = self._on_pit
+        prev_surface = self._prev_surface
+        prev_dist = self._prev_dist
         self._on_pit = state.on_pit_road
+        self._prev_surface = state.player_track_surface
+        self._prev_dist = state.player_lap_dist_pct
 
         if prev_on_pit is None:
-            if state.on_pit_road:
-                events.extend(self._begin_cycle(state, now))
             return events
 
         if not prev_on_pit and state.on_pit_road:
-            events.extend(self._begin_cycle(state, now))
+            if should_begin_pit_cycle(
+                state,
+                seen_on_track=self._seen_on_track,
+                prev_surface=prev_surface,
+                prev_dist=prev_dist,
+            ):
+                events.extend(self._begin_cycle(state, now))
 
         if self._fsm in _PIT_PHASES and self._fsm != "outcome":
             events.extend(self._advance_in_pit(state, now))
 
-        if prev_on_pit and not state.on_pit_road:
+        if prev_on_pit and not state.on_pit_road and self._fsm not in {"idle", "outcome"}:
             events.extend(self._leave_pit(state, now))
 
         return events
@@ -58,6 +77,9 @@ class PitStoryEmitter:
             events.extend(self._exit_phase(self._fsm, now))
         self._fsm = "idle"
         self._on_pit = None
+        self._seen_on_track = False
+        self._prev_surface = None
+        self._prev_dist = None
         self._last_dist = None
         self._dist_stable_since = None
         return events

@@ -118,6 +118,7 @@ def test_state_for_event_type_unknown_returns_none() -> None:
         ("PERSONAL_BEST", "personal_best"),
         ("HUNTING", "hunting"),
         ("TIME_LOST", "gain_found"),
+        ("SECTOR_SPLIT", "gain_found"),
     ],
 )
 def test_state_resolution(event_type: str, state: str) -> None:

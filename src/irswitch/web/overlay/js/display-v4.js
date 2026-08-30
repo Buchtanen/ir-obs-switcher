@@ -854,12 +854,19 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(value, metrics.projectedTime != null ? fmtLapTime(metrics.projectedTime) : sample.value);
     text(meta, metrics.confidence != null ? `confidence ${fmt(metrics.confidence, 2)}` : sample.meta);
   } else if (stateKey === "gain_found") {
+    const sectorLabel = metrics.sector || metrics.timingPointId;
+    const isSplit = sectorLabel === "S1" || sectorLabel === "S2";
     text(
       subtitle,
-      metrics.timingPointId ? `${metrics.timingPointId} EXIT` : sample.subtitle,
+      isSplit ? sectorLabel : metrics.timingPointId ? `${metrics.timingPointId} EXIT` : sample.subtitle,
     );
-    text(value, metrics.delta != null ? fmtDelta(metrics.delta) : sample.value);
-    text(meta, sample.meta || "clean minisector");
+    if (isSplit && metrics.segmentTime != null) {
+      text(value, fmtLapTime(metrics.segmentTime));
+      text(meta, metrics.delta != null ? fmtDelta(metrics.delta) : sample.meta || "");
+    } else {
+      text(value, metrics.delta != null ? fmtDelta(metrics.delta) : sample.value);
+      text(meta, sample.meta || "clean minisector");
+    }
   } else if (stateKey === "clean_streak") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "CONSISTENT PACE");
     text(value, metrics.streak != null ? `${metrics.streak} LAPS` : sample.value);
