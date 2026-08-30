@@ -46,6 +46,11 @@
       "debug_key": "clean_streak",
       "family": "timing"
     },
+    "SECTOR_SPLIT": {
+      "state": "gain_found",
+      "debug_key": "sector_split",
+      "family": "timing"
+    },
     "HUNTING": {
       "state": "hunting",
       "debug_key": "hunting",

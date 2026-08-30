@@ -65,6 +65,7 @@ _shutdown_event: asyncio.Event | None = None
 _oauth_manager: OAuthManager | None = None  # YouTube OAuth manager
 _task_registry = TaskRegistry()
 _stream_chapter_tracker = StreamChapterTracker()
+_last_vod_sig: tuple[tuple[int, str], ...] | None = None
 
 
 def _sync_stream_chapters_settings(settings: StreamChaptersSettings) -> None:
@@ -81,7 +82,7 @@ def get_stream_chapter_tracker() -> StreamChapterTracker:
 
 def reset_state() -> None:
     """Reset global state (for testing)."""
-    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry, _stream_chapter_tracker
+    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry, _stream_chapter_tracker, _last_vod_sig
     _current_state = None
     _state_machine = None
     _websocket_clients = set()
@@ -92,6 +93,7 @@ def reset_state() -> None:
     _task_registry = TaskRegistry()
     _config_container[0] = None
     _stream_chapter_tracker = StreamChapterTracker()
+    _last_vod_sig = None
     from irswitch.overlay.http import reset_overlay_server
 
     reset_overlay_server()
@@ -203,6 +205,39 @@ async def _send_ws_message(message: str) -> None:
     _websocket_clients -= disconnected
 
 
+async def _maybe_push_youtube_vod_chapters() -> None:
+    """Patch YouTube VOD description with current chapter timestamps. Fail-soft."""
+    global _last_vod_sig
+    try:
+        settings = _stream_chapter_tracker.settings
+        if not settings.enabled or not settings.youtube_vod:
+            return
+        chapters = _stream_chapter_tracker.chapters()
+        if not chapters:
+            _last_vod_sig = None
+            return
+        sig = tuple((c.offset_seconds, c.title) for c in chapters)
+        if sig == _last_vod_sig:
+            return
+        oauth = get_oauth_manager()
+        if oauth is None:
+            return
+        video_id = _obs_client.get_cached_broadcast_id() if _obs_client is not None else None
+        if not video_id:
+            return
+        from irswitch.obs.youtube_vod import push_youtube_vod_chapters
+
+        ok = await push_youtube_vod_chapters(
+            oauth_manager=oauth,
+            video_id=str(video_id),
+            chapters=chapters,
+        )
+        if ok:
+            _last_vod_sig = sig
+    except Exception:
+        logger.exception("youtube VOD chapters spawn failed")
+
+
 async def _broadcast_chapter_events(chapters: list) -> None:
     """Emit additive stream_chapter envelopes (does not replace status JSON)."""
     for chapter in chapters:
@@ -218,6 +253,12 @@ async def _broadcast_state_update(state: SwitchState) -> None:
     # Always build status so stream chapter tracker advances even with 0 clients.
     status = await _get_status_dict(state)
     new_chapters = _stream_chapter_tracker.take_pending()
+    if _stream_chapter_tracker.settings.youtube_vod:
+        _task_registry.spawn(
+            "youtube_vod_chapters",
+            _maybe_push_youtube_vod_chapters(),
+            replace=True,
+        )
 
     if _websocket_clients:
         await _send_ws_message(json.dumps(status))

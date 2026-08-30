@@ -120,6 +120,8 @@ class RaceContextAnalyzer:
             player_lap_dist_pct=snap.player_lap_dist_pct,
             stale_for_ms=snap.stale_for_ms,
             data_quality=snap.data_quality,
+            player_track_surface=snap.player_track_surface,
+            player_tow_time=snap.player_tow_time,
         )
 
 

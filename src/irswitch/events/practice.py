@@ -27,7 +27,7 @@ class PracticeEmitter:
         self._cursor = 0
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:  # noqa: ARG002
-        if state.overlay_mode != "PRACTICE" or not state.connected:
+        if state.overlay_mode != "PRACTICE" or not state.connected or state.session_finished:
             return []
         pending = [
             r

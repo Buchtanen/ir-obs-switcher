@@ -26,6 +26,7 @@ _TIMING_EVENT_NAMES = frozenset(
         "target_locked",
         "hot_lap",
         "clean_streak",
+        "sector_split",
     }
 )
 
@@ -38,6 +39,7 @@ _NAME_TO_EVENT_TYPE = {
     "target_locked": "TARGET_LOCKED",
     "hot_lap": "HOT_LAP",
     "clean_streak": "CLEAN_STREAK",
+    "sector_split": "SECTOR_SPLIT",
 }
 
 
@@ -56,6 +58,7 @@ def _copy_token(event_type: str) -> str:
         "TARGET_LOCKED": "timing.target",
         "HOT_LAP": "timing.hot_lap",
         "CLEAN_STREAK": "timing.clean_streak",
+        "SECTOR_SPLIT": "timing.sector_split",
     }
     return mapping.get(event_type, "")
 
@@ -64,7 +67,7 @@ def _default_phase(event_type: str, phase: str) -> str:
     mapped = legacy_trigger_to_phase(phase, default="")
     if mapped:
         return mapped
-    if event_type in {"GAIN_FOUND", "TIME_LOST", "SECTOR_BEST"}:
+    if event_type in {"GAIN_FOUND", "TIME_LOST", "SECTOR_BEST", "SECTOR_SPLIT"}:
         return "RESULT"
     if phase in {"enter", "update"}:
         return "ACTIVE" if phase == "update" else "ENTER"

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from irswitch.overlay.models import TelemetrySnapshot
 
-# irsdk_TrkLoc: 0 NotInWorld, 1 OffTrack, 2 InPitStall, 3 AproachingPits, 4 OnTrack
-ON_TRACK = 4
+# irsdk_TrkLoc: -1 NotInWorld, 0 OffTrack, 1 InPitStall, 2 AproachingPits, 3 OnTrack
+ON_TRACK = 3
 
 
 def _get(seq: tuple[object, ...], idx: int) -> object:

@@ -32,7 +32,7 @@ class QualiEmitter:
         self._hot_lap_lap: int | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:  # noqa: ARG002
-        if state.overlay_mode != "QUALIFYING" or not state.connected:
+        if state.overlay_mode != "QUALIFYING" or not state.connected or state.session_finished:
             return []
         pending = [
             r

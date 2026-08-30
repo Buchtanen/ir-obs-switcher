@@ -1,4 +1,8 @@
-"""In-memory stream chapter markers for WS / status (no YouTube/OBS write)."""
+"""In-memory stream chapter markers for WS / status.
+
+YouTube VOD description writes live in ``obs.youtube_vod`` (called from the API
+layer when ``[stream_chapters] youtube_vod = true``).
+"""
 
 from __future__ import annotations
 
@@ -26,6 +30,8 @@ class StreamChaptersSettings:
     trigger_session_types: tuple[str, ...] = DEFAULT_TRIGGER_SESSION_TYPES
     # Lowercase session_type -> display title
     session_titles: Mapping[str, str] = field(default_factory=dict)
+    # Write chapter timestamps into the YouTube VOD description (needs youtube write scope).
+    youtube_vod: bool = False
 
 
 @dataclass(frozen=True)
@@ -276,9 +282,12 @@ def load_stream_chapters_settings(parser: configparser.ConfigParser) -> StreamCh
     except Exception:
         logger.debug("Failed reading stream_chapters title keys", exc_info=True)
 
+    youtube_vod = parser.getboolean("stream_chapters", "youtube_vod", fallback=defaults.youtube_vod)
+
     return StreamChaptersSettings(
         enabled=enabled,
         start_title=start_title,
         trigger_session_types=triggers,
         session_titles=titles,
+        youtube_vod=youtube_vod,
     )

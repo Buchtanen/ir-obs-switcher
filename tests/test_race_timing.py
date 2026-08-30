@@ -8,6 +8,7 @@ from irswitch.race.timing import (
     CrossingDetector,
     TimingStore,
     default_minisectors,
+    default_sectors,
 )
 
 
@@ -17,6 +18,11 @@ def test_default_minisectors_count_and_sf() -> None:
     assert points[0].id == "MS00"
     assert points[0].lap_dist_pct == 0.0
     assert points[1].lap_dist_pct == 0.05
+
+
+def test_default_sectors_s1_s2() -> None:
+    points = default_sectors()
+    assert [p.id for p in points] == ["MS00", "S1", "S2"]
 
 
 def test_lap_increment_emits_single_sf_crossing() -> None:

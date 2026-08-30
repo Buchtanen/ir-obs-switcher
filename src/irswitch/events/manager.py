@@ -329,6 +329,13 @@ _DEBUG_CATALOG: dict[str, dict] = {
         "phase": "trigger",
         "data": {"streak": 5, "lap": 12},
     },
+    "sector_split": {
+        "name": "sector_split",
+        "channel": "timing",
+        "priority": 45,
+        "phase": "trigger",
+        "data": {"sector": "S1", "timingPointId": "S1", "segmentTime": 31.214, "lap": 2},
+    },
     "invalid_lap": {
         "name": "invalid_lap",
         "channel": "alert",

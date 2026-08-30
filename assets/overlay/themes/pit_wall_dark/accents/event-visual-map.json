@@ -897,6 +897,9 @@
     "CLEAN_STREAK": {
       "state": "clean_streak"
     },
+    "SECTOR_SPLIT": {
+      "state": "gain_found"
+    },
     "HUNTING": {
       "state": "hunting"
     },

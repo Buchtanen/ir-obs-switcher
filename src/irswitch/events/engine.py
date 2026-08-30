@@ -17,6 +17,7 @@ from irswitch.events.pit import PitEmitter
 from irswitch.events.position import PositionEmitter
 from irswitch.events.rival_threat import RivalThreatEmitter
 from irswitch.events.session import SessionEmitter
+from irswitch.events.session_phase import filter_post_race
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.overlay.protocol import CandidateEvent
 from irswitch.overlay.settings import OverlaySettings
@@ -75,7 +76,7 @@ class EventEngine:
                     type(emitter).__name__,
                     exc_info=True,
                 )
-        return events
+        return filter_post_race(events, session_finished=state.session_finished)
 
     @staticmethod
     def _tick_emitter(

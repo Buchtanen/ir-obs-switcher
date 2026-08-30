@@ -127,3 +127,15 @@ practice = Free Practice
     assert settings.trigger_session_types == ("Practice", "Race")
     assert settings.session_titles["qualify"] == "Quali block"
     assert settings.session_titles["practice"] == "Free Practice"
+    assert settings.youtube_vod is False
+
+
+def test_load_stream_chapters_youtube_vod() -> None:
+    parser = configparser.ConfigParser()
+    parser.read_string("""
+[stream_chapters]
+enabled = true
+youtube_vod = true
+""")
+    settings = load_stream_chapters_settings(parser)
+    assert settings.youtube_vod is True
