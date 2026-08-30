@@ -24,6 +24,15 @@ _RIVAL_THREAT_EVENT = "rival_threat"
 
 _POSITION_METRIC_KEYS = ("direction", "oldPosition", "newPosition", "delta")
 _RIVAL_METRIC_KEYS = ("gap", "closingRate", "targetCarIdx", "rivalPosition", "targetName")
+_OVERTAKE_METRIC_KEYS = (
+    "direction",
+    "oldPosition",
+    "newPosition",
+    "delta",
+    "targetCarIdx",
+    "targetPosition",
+    "targetName",
+)
 
 
 def _event_type_for_position_change(direction: str) -> str | None:
@@ -128,7 +137,19 @@ def position_race_event_to_envelope(
 
     phase = legacy_trigger_to_phase(event.phase, default="RESULT")
     new_position = event.data.get("newPosition")
-    metrics = {key: event.data[key] for key in _POSITION_METRIC_KEYS if key in event.data}
+    metric_keys = _OVERTAKE_METRIC_KEYS if event_type == "OVERTAKE" else _POSITION_METRIC_KEYS
+    metrics = {key: event.data[key] for key in metric_keys if key in event.data}
+    target = None
+    if event_type == "OVERTAKE":
+        target_idx = event.data.get("targetCarIdx")
+        target_pos = event.data.get("targetPosition")
+        target_name = event.data.get("targetName")
+        if target_idx is not None or target_name:
+            target = EventSubject(
+                car_id=str(target_idx if target_idx is not None else "unknown"),
+                class_position=target_pos if isinstance(target_pos, int) else None,
+                display_name=str(target_name) if target_name else None,
+            )
     return make_envelope(
         event_type=event_type,
         phase=phase,
@@ -139,6 +160,7 @@ def position_race_event_to_envelope(
         priority=event.priority,
         dedupe_key=f"{normalize_mode(mode)}:{event_type}:{new_position}",
         correlation_id=f"position:{event_type}:{new_position}",
+        target=target,
         metrics=metrics,
         copy=EventCopy(headline_token=_copy_token(event_type), status_token=""),
         presentation=EventPresentation(

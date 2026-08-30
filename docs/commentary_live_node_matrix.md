@@ -51,13 +51,13 @@ Feature flags (`src/irswitch/overlay/settings.py` defaults false; `config/config
 | `hot_lap` | `HOT_LAP` | `lap` | **partial** — QualiEmitter + flag → timing adapter | `lap`, `hotLapIndex`, `position`, `projectedTime`, `sectorDelta` | **low** — `lap` set; some emotion lines are slot-free |
 | `position_attack` | `POSITION_ATTACK` | `position` | **partial** — QualiEmitter + flag → timing adapter | `position`, `projectedTime`, `confidence`, `bestLap`, `targetPosition` | **low** — `position` required and set |
 | `clean_streak` | `CLEAN_STREAK` | `streak` | **yes** — `CleanStreakEmitter` (`events/clean_streak.py`) → timing adapter | `streak`, `lap` | **low** — `streak` always set when emitted (≥3) |
-| `hunting` | `HUNTING`, `APPROACH` | `gap`, `target_name`, `position` | **yes** — `BattleEmitter` (`events/battle.py`) intensity ladder → `adapters/battle.py` (`APPROACH` via `state=approach`) | `gap`, `closingRate`, `targetCarIdx`, `targetPosition`, `position` (+ `state`) | **medium–high** — live path never sets `target.display_name` / `targetName` (`OpponentInfo` has no name). Position/gap-only lines still speak in `unknown`/`high`; **pushing** EN lines all require `target_name` → slot_unbound |
-| `hunted` | `HUNTED` | `gap`, `target_name`, `position` | **yes** — BattleEmitter → battle adapter | same battle metrics | **medium** — same missing `target_name`; some lines only need `gap`/`position` |
-| `side_by_side` | `SIDE_BY_SIDE`, `BATTLE_FOR_POSITION` | `position`, `target_name` | **yes** — BattleEmitter (`side_by_side` / `battle_for_position`) → battle adapter | `gap`, `position`, `targetCarIdx`, `targetPosition`, … | **medium** — no `target_name`; position-only lines exist in each bucket |
-| `overtake` | `OVERTAKE` | `position`, `target_name` | **partial** — `OvertakeClassifierEmitter` (`events/overtake.py`) only when `overtake_classifier`; else gains become `POSITION_GAINED`. Adapter keeps only `oldPosition`/`newPosition`/`delta` — drops `targetCarIdx`, sets no `target` | `oldPosition`, `newPosition`, `delta` | **low–medium** — `position` ← `newPosition` works; `target_name` unbound (name-heavy lines skipped; position-only lines OK) |
-| `position_gained` | `POSITION_GAINED` | `position`, `old_position` | **yes** — `PositionEmitter` / classifier non-OT gain → `adapters/position.py` | `direction`, `oldPosition`, `newPosition`, `delta` | **low** — both position slots map from metrics |
-| `position_lost` | `POSITION_LOST`, `OVERTAKEN` | `position`, `old_position` | **partial** — `POSITION_LOST` yes via position_change loss; **`OVERTAKEN` never emitted** (catalog fallback only in `themes-v4/event_catalog.json`) | `direction`, `oldPosition`, `newPosition`, `delta` | **low** for `POSITION_LOST`; `OVERTAKEN` path **n/a** |
-| `rival_threat` | `RIVAL_THREAT` | `gap`, `target_name` | **yes** — `RivalThreatEmitter` → position adapter keeps `gap` / `closingRate` / `targetCarIdx`; speakable `targetName` fallback `P{rivalPosition}` (real DriverInfo names still later) | `gap`, `closingRate`, `targetCarIdx`, `rivalPosition`, `targetName` | **low** when emitter fires (gap + label bind) |
+| `hunting` | `HUNTING`, `APPROACH` | `gap`, `target_name`, `position` | **yes** — `BattleEmitter` → battle adapter; `targetName` from iRSDK DriverInfo when present | `gap`, `closingRate`, `targetCarIdx`, `targetPosition`, `position`, `targetName` | **low–medium** — name-heavy lines speak when DriverInfo present; gap/position lines cover missing names |
+| `hunted` | `HUNTED` | `gap`, `target_name`, `position` | **yes** — BattleEmitter → battle adapter | same battle metrics | **low–medium** — same as hunting |
+| `side_by_side` | `SIDE_BY_SIDE`, `BATTLE_FOR_POSITION` | `position`, `target_name` | **yes** — BattleEmitter | `gap`, `position`, `targetCarIdx`, `targetName`, … | **low–medium** |
+| `overtake` | `OVERTAKE` | `position`, `target_name` | **partial** — classifier when flagged; adapter keeps `targetName` / target subject | `oldPosition`, `newPosition`, `delta`, `targetName`, … | **low** when name present; position-only lines otherwise |
+| `position_gained` | `POSITION_GAINED` | `position`, `old_position` | **yes** — PositionEmitter / classifier non-OT gain → `adapters/position.py` | `direction`, `oldPosition`, `newPosition`, `delta` | **low** — both position slots map from metrics |
+| `position_lost` | `POSITION_LOST`, `OVERTAKEN` | `position`, `old_position` | **partial** — `POSITION_LOST` yes via position_change loss; **`OVERTAKEN` never emitted** | `direction`, `oldPosition`, `newPosition`, `delta` | **low** for `POSITION_LOST`; `OVERTAKEN` path **n/a** |
+| `rival_threat` | `RIVAL_THREAT` | `gap`, `target_name` | **yes** — `RivalThreatEmitter` → position adapter keeps gap + iRSDK/`P{n}` label | `gap`, `closingRate`, `targetCarIdx`, `rivalPosition`, `targetName` | **low** when emitter fires |
 | `battle_won` | `BATTLE_WON` | `position` | **yes** — BattleEmitter peak exit → battle adapter | `position`, `oldPosition`, `newPosition` | **low** — many slot-free lines; `position` usually set |
 | `incident` | `INCIDENT` | `value` | **yes** — `IncidentEmitter` → `adapters/exception_extra.py` | `value`, `total` | **low** — slot-free lines exist; `value` set on delta |
 | `invalid_lap` | `INVALID_LAP` | `lap` | **yes** — `InvalidLapEmitter` → `adapters/exception_extra.py` | `lap`, `incidentDelta` | **low** — slot-free lines exist; `lap` usually set |
@@ -87,9 +87,9 @@ Director speak phases: `ENTER` / `RESULT` / `EXIT` only (`_SPEAK_PHASES`). `UPDA
 
 ## Highest remaining P1 gaps (product)
 
-1. **Battle / overtake `target_name`**: `OpponentInfo` has no driver name; battle/position adapters never set real DriverInfo names (rival uses `P{n}` fallback only).
-2. **`pit_outcome.old_position`**: `entryPosition` not aliased to `oldPosition`.
-3. **`OVERTAKEN` / `ATTACK_RANGE`**: `ATTACK_RANGE` is emitted by battle intensity but has **no graph node**; `OVERTAKEN` is never emitted.
+1. **`pit_outcome.old_position`**: `entryPosition` not aliased to `oldPosition`.
+2. **`OVERTAKEN` / `ATTACK_RANGE`**: `ATTACK_RANGE` is emitted by battle intensity but has **no graph node**; `OVERTAKEN` is never emitted.
+3. Driver names: live path uses iRSDK `DriverInfo` (`UserName` last token / `AbbrevName`) on `OpponentInfo.display_name` → `targetName`. Missing DriverInfo still falls back to `P{n}` on rival_threat only.
 
 ---
 
@@ -106,4 +106,5 @@ Director speak phases: `ENTER` / `RESULT` / `EXIT` only (`_SPEAK_PHASES`). `UPDA
 | bio | `events/hr_pressure.py` | `adapters/bio.py` |
 | invalid lap / incident | `invalid_lap.py`, `incident.py` | `adapters/exception_extra.py` |
 | session final/finish | `events/session.py` | `adapters/session.py` |
+| driver names | iRSDK `DriverInfo` → `TelemetrySnapshot.car_idx_driver_name` → `OpponentInfo.display_name` | battle / position / rival adapters (`targetName`) |
 | in-car | `commentary/in_car.py` | direct envelope |
