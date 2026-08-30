@@ -333,7 +333,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Enter only, never UPDATE. Next spoken beat is usually side_by_side or overtake."
+      "notes": "Enter only, never UPDATE. Next spoken beat is usually side_by_side or overtake.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "You're closing on {target_name}, gap {gap}.",
+            "The car ahead is coming to you."
+          ],
+          "focused": [
+            "Gap {gap} to {target_name}. Stay precise.",
+            "You're onto them. Set up the run."
+          ],
+          "pushing": [
+            "You're reeling in {target_name}. Keep after it.",
+            "Gap {gap}. Dig in and close it."
+          ],
+          "high": [
+            "Gap {gap}! Close on {target_name} now!",
+            "They're coming back to you! Keep pushing!"
+          ]
+        }
+      }
     },
     "hunted": {
       "family": "battle",
@@ -368,7 +388,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Defensive enter only. Do not narrate every gap tick."
+      "notes": "Defensive enter only. Do not narrate every gap tick.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{target_name} is closing, gap {gap}.",
+            "Pressure from behind. You're {position}."
+          ],
+          "focused": [
+            "{target_name} is closing. Hold {position} cleanly.",
+            "Gap {gap} behind. Stay sharp."
+          ],
+          "pushing": [
+            "They're closing fast. Defend {position}.",
+            "Keep {target_name} behind. Stay on it."
+          ],
+          "high": [
+            "{target_name} is coming now! Hold {position}!",
+            "Pressure behind! Come on, defend it!"
+          ]
+        }
+      }
     },
     "side_by_side": {
       "family": "battle",
@@ -398,7 +438,23 @@
         "pushing",
         "high"
       ],
-      "notes": "Very short. Prefer after hunting on the same correlationId."
+      "notes": "Very short. Prefer after hunting on the same correlationId.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Side by side with {target_name}.",
+            "Fight is live for {position}."
+          ],
+          "pushing": [
+            "Door to door with {target_name}. Hold your line.",
+            "Still alongside. Keep it clean."
+          ],
+          "high": [
+            "Alongside {target_name} now! Stay with it!",
+            "Fight for {position}! Hold firm!"
+          ]
+        }
+      }
     },
     "overtake": {
       "family": "position",
@@ -429,7 +485,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Accepted on-track pass only (pit-cycle overtakes are suppressed upstream). Past tense, one beat."
+      "notes": "Accepted on-track pass only (pit-cycle overtakes are suppressed upstream). Past tense, one beat.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "You took {position} from {target_name}.",
+            "The pass is done. You're now {position}."
+          ],
+          "focused": [
+            "You've cleared {target_name}. Hold {position}.",
+            "Place taken. You're {position}. Stay sharp."
+          ],
+          "pushing": [
+            "Past {target_name}. Keep after it from {position}.",
+            "That place is yours. Push on."
+          ],
+          "high": [
+            "You've got {target_name}! You're {position} now!",
+            "Place taken! Come on, push from {position}!"
+          ]
+        }
+      }
     },
     "position_gained": {
       "family": "position",
@@ -459,7 +535,27 @@
         "focused",
         "pushing"
       ],
-      "notes": "Use when the classifier did not call OVERTAKE (e.g. car ahead pitted). Do not invent a pass."
+      "notes": "Use when the classifier did not call OVERTAKE (e.g. car ahead pitted). Do not invent a pass.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Up from {old_position} to {position}.",
+            "You're now {position}."
+          ],
+          "calm": [
+            "You're up to {position}. Settle in.",
+            "From {old_position} to {position}. Nice and steady."
+          ],
+          "focused": [
+            "You're up to {position}. Stay sharp.",
+            "From {old_position} to {position}. Lock in."
+          ],
+          "pushing": [
+            "You're {position} now. Keep pushing.",
+            "Up from {old_position}. Keep after it."
+          ]
+        }
+      }
     },
     "position_lost": {
       "family": "position",
@@ -490,7 +586,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Matter-of-fact. Prefer after hunted on the same story."
+      "notes": "Matter-of-fact. Prefer after hunted on the same story.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Down from {old_position} to {position}.",
+            "You've lost the place. You're {position}."
+          ],
+          "focused": [
+            "You're down to {position}. Stay composed.",
+            "Place lost. Reset and focus."
+          ],
+          "pushing": [
+            "Down to {position}. Get back after it.",
+            "They got through. Keep pushing."
+          ],
+          "high": [
+            "You're {position} now. Reset and fight back!",
+            "They got the place. Come on, stay with it!"
+          ]
+        }
+      }
     },
     "rival_threat": {
       "family": "position",
@@ -545,7 +661,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Close the hunting → overtake sequence. Do not restage the pass."
+      "notes": "Close the hunting → overtake sequence. Do not restage the pass.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's secured. Hold {position}.",
+            "Fight settled. You're {position}."
+          ],
+          "focused": [
+            "That's yours. Lock down {position}.",
+            "That's settled. Eyes forward."
+          ],
+          "pushing": [
+            "You've secured it. Keep after it.",
+            "Hold {position} and push on."
+          ],
+          "high": [
+            "That's yours! Hold {position} now!",
+            "You've secured it! Come on, eyes forward!"
+          ]
+        }
+      }
     },
     "incident": {
       "family": "exception",
@@ -570,7 +706,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Short. No blame speech. Overlay already flashes."
+      "notes": "Short. No blame speech. Overlay already flashes.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Incident recorded, count {value}. Reset.",
+            "Something happened. Settle and carry on."
+          ],
+          "focused": [
+            "Incident. Reset and stay sharp.",
+            "Leave that behind. Focus forward."
+          ],
+          "pushing": [
+            "Incident. Reset and get back after it.",
+            "Shake it off. Keep pushing."
+          ],
+          "high": [
+            "Reset now! Stay with it!",
+            "Incident. Leave it behind and drive!"
+          ]
+        }
+      }
     },
     "invalid_lap": {
       "family": "exception",
@@ -620,7 +776,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Once. Next expected spoken node is finish."
+      "notes": "Once. Next expected spoken node is finish.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Last lap. You're in {position}.",
+            "One lap to go. Position {position}."
+          ],
+          "focused": [
+            "Last lap. Hold your focus in {position}.",
+            "One to go. Keep it clean from {position}."
+          ],
+          "pushing": [
+            "Last lap. Push from {position}.",
+            "One lap left. Keep after it."
+          ],
+          "high": [
+            "Last lap now! You're {position}. Make it count!",
+            "One to go! Come on, push to the flag!"
+          ]
+        }
+      }
     },
     "finish": {
       "family": "session",
@@ -646,7 +822,31 @@
         "pushing",
         "high"
       ],
-      "notes": "Closing line. Past tense. No further race chatter after this node."
+      "notes": "Closing line. Past tense. No further race chatter after this node.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's the flag. Finished {position}.",
+            "Session over. You finish {position}."
+          ],
+          "calm": [
+            "Race over. Breathe easy. You're {position}.",
+            "Finished {position}. Nice and steady."
+          ],
+          "focused": [
+            "Flag is out. You finished {position}.",
+            "Session complete. Result is {position}."
+          ],
+          "pushing": [
+            "That's the flag. You fought to {position}.",
+            "Race done. Finished {position}. Strong to the end."
+          ],
+          "high": [
+            "That's the flag! You finish {position}!",
+            "It's over! Finished {position}! Great work!"
+          ]
+        }
+      }
     },
     "pit_entry": {
       "family": "pit",

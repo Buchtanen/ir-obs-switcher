@@ -142,9 +142,8 @@ def test_w1_emotion_buckets_are_authored_not_neutral_fallback() -> None:
 
 def test_unfilled_emotion_still_falls_back_to_neutral() -> None:
     graph = load_sequence_graph()
-    node = graph.nodes["overtake"]
-    # Structure-only node: empty emotion cells fall back once neutral exists.
-    # Until authored, overtake stays silent (no neutral either).
+    node = graph.nodes["personal_best"]
+    # Timing node still structure-only after W2: empty until later waves.
     assert node.variant_bucket("en", "pushing") == ()
     assert node.variant_bucket("en", "unknown") == ()
 
@@ -188,6 +187,63 @@ def test_director_speaks_in_car_from_english_matrix() -> None:
     assert spoken is not None
     assert spoken.node_id == "in_car"
     assert spoken.text in spoken.node.variant_bucket("en", "unknown")
+
+
+def test_w2_race_beat_nodes_speak_english() -> None:
+    graph = load_sequence_graph()
+    expected = {
+        "finish": ("neutral", "calm", "focused", "pushing", "high"),
+        "final_lap": ("neutral", "focused", "pushing", "high"),
+        "incident": ("neutral", "focused", "pushing", "high"),
+        "overtake": ("neutral", "focused", "pushing", "high"),
+        "battle_won": ("neutral", "focused", "pushing", "high"),
+        "position_gained": ("neutral", "calm", "focused", "pushing"),
+        "position_lost": ("neutral", "focused", "pushing", "high"),
+        "side_by_side": ("neutral", "pushing", "high"),
+        "hunting": ("neutral", "focused", "pushing", "high"),
+        "hunted": ("neutral", "focused", "pushing", "high"),
+    }
+    examples = {
+        "position": 5,
+        "old_position": 6,
+        "target_name": "Rossi",
+        "gap": "1.2",
+        "value": 4,
+    }
+    for node_id, emotions in expected.items():
+        node = graph.nodes[node_id]
+        locale_map = node.variants["en"]
+        for emotion in emotions:
+            lines = locale_map.get(emotion) or ()
+            assert 1 <= len(lines) <= 3, (node_id, emotion)
+            for line in lines:
+                assert validate_utterance(line, node) == []
+                assert not leftover_slots(fill_slots(line, examples))
+
+
+def test_director_speaks_overtake_and_finish() -> None:
+    graph = load_sequence_graph()
+    cases = (
+        ("OVERTAKE", "RESULT", "overtake", {"position": 5, "target_name": "Rossi"}),
+        ("FINISH", "RESULT", "finish", {"position": 3}),
+        ("HUNTING", "ENTER", "hunting", {"gap": 1.2, "target_name": "Rossi", "position": 6}),
+    )
+    for event_type, phase, node_id, metrics in cases:
+        director = CommentaryDirector(
+            graph=graph,
+            settings=CommentarySettings(enabled=True, cooldown_s=0.1),
+            sink=NullTtsSink(),
+            language="en",
+            rng=random.Random(3),
+        )
+        spoken = director.observe(
+            [make_envelope(event_type=event_type, phase=phase, metrics=metrics)],
+            None,
+            10.0,
+        )
+        assert spoken is not None, event_type
+        assert spoken.node_id == node_id
+        assert spoken.text
 
 
 def test_director_maps_mock_events_to_expected_nodes() -> None:
