@@ -143,6 +143,10 @@ class CommentarySettings:
     tts_backend: str = "auto"
     tts_voice: str = ""
     tts_rate: int = 0
+    audio_device: str = ""
+    duck_input: str = ""
+    duck_ratio: float = 0.25
+    duck_fade_ms: int = 750
 
 
 @dataclass(frozen=True)

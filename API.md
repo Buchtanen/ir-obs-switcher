@@ -721,7 +721,7 @@ Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`).
 
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
-- **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI nebo espeak-ng
+- **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`)
 - Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `overlay.language`)
 
 **API**

@@ -126,6 +126,11 @@ def set_obs_client(obs_client: ObsClient) -> None:
     _obs_client = obs_client
 
 
+def get_obs_client() -> ObsClient | None:
+    """OBS client for commentary ducking and other API helpers."""
+    return _obs_client
+
+
 def set_reader(reader: object) -> None:
     """Set the iRacing reader instance for API handlers."""
     global _reader

@@ -687,3 +687,18 @@ async def test_refresh_stream_info_clears_cache_and_force_fetches(
     assert obs_client._stream_info_cache is None
     assert obs_client._stream_info_cache_broadcast_id is None
     mock_get.assert_awaited_once_with(force_refresh=True)
+
+
+def test_get_set_input_volume_mul(obs_client: ObsClient) -> None:
+    mock_client = MagicMock()
+    mock_client.get_input_volume.return_value = MagicMock(input_volume_mul=0.4)
+    obs_client._client = mock_client
+    obs_client._connected = True
+    assert obs_client.get_input_volume_mul("Zvuk plochy") == 0.4
+    assert obs_client.set_input_volume_mul("Zvuk plochy", 0.1) is True
+    mock_client.set_input_volume.assert_called_once_with("Zvuk plochy", vol_mul=0.1)
+
+
+def test_volume_mul_fail_soft_when_disconnected(obs_client: ObsClient) -> None:
+    assert obs_client.get_input_volume_mul("Zvuk plochy") is None
+    assert obs_client.set_input_volume_mul("Zvuk plochy", 0.1) is False

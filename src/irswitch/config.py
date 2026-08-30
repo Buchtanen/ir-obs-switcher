@@ -335,6 +335,14 @@ def _clamp_tts_rate(value: int) -> int:
     return max(-10, min(10, int(value)))
 
 
+def _clamp_duck_ratio(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def _clamp_duck_fade_ms(value: int) -> int:
+    return max(0, min(3000, int(value)))
+
+
 def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSettings:
     defaults = HuntingSettings()
     return HuntingSettings(
@@ -431,6 +439,16 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         tts_voice=_get_str(parser, "commentary", "tts_voice", commentary_defaults.tts_voice),
         tts_rate=_clamp_tts_rate(
             _get_int(parser, "commentary", "tts_rate", commentary_defaults.tts_rate)
+        ),
+        audio_device=_get_str(
+            parser, "commentary", "audio_device", commentary_defaults.audio_device
+        ),
+        duck_input=_get_str(parser, "commentary", "duck_input", commentary_defaults.duck_input),
+        duck_ratio=_clamp_duck_ratio(
+            _get_float(parser, "commentary", "duck_ratio", commentary_defaults.duck_ratio)
+        ),
+        duck_fade_ms=_clamp_duck_fade_ms(
+            _get_int(parser, "commentary", "duck_fade_ms", commentary_defaults.duck_fade_ms)
         ),
     )
 

@@ -10,6 +10,7 @@ from irswitch.commentary.tts import (
     CommentaryUtterance,
     ProcessTtsSink,
     detect_backend,
+    select_sapi_output_name,
     speak_text,
 )
 from irswitch.overlay.settings import CommentarySettings
@@ -59,7 +60,8 @@ def test_speak_text_sapi_passes_base64_env(monkeypatch: Any) -> None:
         argv: list[str], env: dict[str, str], timeout_s: float
     ) -> subprocess.CompletedProcess[str]:
         seen_env.update(env)
-        assert "-Command" in argv
+        assert "-File" in argv
+        assert argv[-1].endswith("sapi_speak.ps1")
         return _ok_run(argv, env, timeout_s)
 
     result = speak_text("Hello.", voice="Microsoft David", rate=-2, backend="sapi", runner=runner)
@@ -67,6 +69,45 @@ def test_speak_text_sapi_passes_base64_env(monkeypatch: Any) -> None:
     assert seen_env["IRSWITCH_TTS_VOICE"] == "Microsoft David"
     assert seen_env["IRSWITCH_TTS_RATE"] == "-2"
     assert seen_env["IRSWITCH_TTS_B64"]
+
+
+def test_speak_text_sapi_passes_audio_device_env(monkeypatch: Any) -> None:
+    monkeypatch.setattr("irswitch.commentary.tts.detect_backend", lambda _pref="auto": "sapi")
+    seen_env: dict[str, str] = {}
+
+    def runner(
+        argv: list[str], env: dict[str, str], timeout_s: float
+    ) -> subprocess.CompletedProcess[str]:
+        seen_env.update(env)
+        return _ok_run(argv, env, timeout_s)
+
+    result = speak_text("Hello.", backend="sapi", device="CABLE Input", runner=runner)
+    assert result.spoken is True
+    assert seen_env["IRSWITCH_TTS_DEVICE"] == "CABLE Input"
+
+
+def test_sapi_script_plays_via_waveout_not_default_device() -> None:
+    from irswitch.commentary.tts import _SAPI_PS1
+
+    text = _SAPI_PS1.read_text(encoding="utf-8")
+    assert "IrswitchWaveOut" in text
+    assert "SpMemoryStream" in text
+    assert "waveOutOpen" in text
+
+
+def test_select_sapi_output_skips_16ch_when_stereo_exists() -> None:
+    picked = select_sapi_output_name(
+        [
+            "CABLE Input (VB-Audio Virtual Cable)",
+            "CABLE Input Cable 16ch (VB-Audio Virtual Cable)",
+        ],
+        "CABLE Input",
+    )
+    assert picked == "CABLE Input (VB-Audio Virtual Cable)"
+
+
+def test_select_sapi_output_empty_want_is_none() -> None:
+    assert select_sapi_output_name(["CABLE Input (VB-Audio Virtual Cable)"], "") is None
 
 
 def test_process_sink_enqueues_without_blocking(monkeypatch: Any) -> None:

@@ -70,7 +70,8 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 ## TTS
 
-- **Windows:** `System.Speech.SpeechSynthesizer` via PowerShell. Text goes in `IRSWITCH_TTS_B64` (no shell quoting).
+- **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
+- **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
 - Speak runs in a worker thread / executor. The race loop only enqueues.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
@@ -93,7 +94,15 @@ max_utterance_s = 6.0
 tts_backend = auto
 tts_voice =
 tts_rate = 0
+audio_device =
+duck_input =
+duck_ratio = 0.25
+duck_fade_ms = 750
 ```
+
+`audio_device` empty = you hear SAPI on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
+
+`duck_input` is the OBS source to lower while speaking (e.g. `Zvuk plochy`). Empty `duck_input` skips ducking. `duck_ratio` is the fraction of the original volume (0.25 = 25%). `duck_fade_ms` (default 750) ramps volume down before the line and back after; `0` is an instant jump. Overlapping lines share one ducker: volume is saved once, not stacked, and restored after the last line.
 
 Migration: new optional section. Existing `config.ini` keeps defaults (off). No user action required.
 

@@ -108,6 +108,10 @@ cooldown_s = 2.5
 max_utterance_s = 5.0
 tts_backend = espeak
 tts_rate = -3
+audio_device = CABLE Input
+duck_input = Zvuk plochy
+duck_ratio = 0.25
+duck_fade_ms = 400
 """)
     cfg = AppConfig.from_file(path)
     assert cfg.overlay.commentary.enabled is True
@@ -116,8 +120,16 @@ tts_rate = -3
     assert cfg.overlay.commentary.max_utterance_s == 5.0
     assert cfg.overlay.commentary.tts_backend == "espeak"
     assert cfg.overlay.commentary.tts_rate == -3
+    assert cfg.overlay.commentary.audio_device == "CABLE Input"
+    assert cfg.overlay.commentary.duck_input == "Zvuk plochy"
+    assert cfg.overlay.commentary.duck_ratio == 0.25
+    assert cfg.overlay.commentary.duck_fade_ms == 400
     values = overlay_values(cfg.overlay)
     assert values["commentary.enabled"] is True
+    assert values["commentary.audio_device"] == "CABLE Input"
+    assert values["commentary.duck_input"] == "Zvuk plochy"
+    assert values["commentary.duck_ratio"] == 0.25
+    assert values["commentary.duck_fade_ms"] == 400
 
 
 def test_session_tape_defaults_on(tmp_path: Path) -> None:

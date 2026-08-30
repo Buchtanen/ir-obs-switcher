@@ -86,6 +86,18 @@
         <label>Rate (−10 … 10)
           <input id="rate" type="number" min="-10" max="10" step="1" value="0">
         </label>
+        <label>audio_device (SAPI výstup, např. CABLE Input)
+          <input id="audioDevice" placeholder="prázdné = default Windows výstup">
+        </label>
+        <label>duck_input (OBS zdroj, např. Zvuk plochy)
+          <input id="duckInput" placeholder="prázdné = bez ztlumení">
+        </label>
+        <label>duck_ratio (0–1, 0.25 = 25 %)
+          <input id="duckRatio" type="number" min="0" max="1" step="0.05" value="0.25">
+        </label>
+        <label>duck_fade_ms (0 = skok, 750 = fade)
+          <input id="duckFadeMs" type="number" min="0" max="3000" step="50" value="750">
+        </label>
         <label>Cooldown s
           <input id="cooldown" type="number" min="0.5" max="30" step="0.5" value="4">
         </label>
@@ -130,6 +142,10 @@
       $("backend").value = status.settings.ttsBackend;
       $("voice").value = status.settings.ttsVoice;
       $("rate").value = status.settings.ttsRate;
+      $("audioDevice").value = status.settings.audioDevice || "";
+      $("duckInput").value = status.settings.duckInput || "";
+      $("duckRatio").value = status.settings.duckRatio;
+      $("duckFadeMs").value = status.settings.duckFadeMs;
       $("cooldown").value = status.settings.cooldownS;
       const dl = $("voices");
       dl.innerHTML = "";
@@ -161,6 +177,7 @@
       $("statusLine").textContent =
         "Server backend: " + status.backend +
         " (config " + status.configuredBackend + "), jazyk " + status.language +
+        ", device " + (status.settings.audioDevice || "default") +
         ", prázdných variant: " + status.unfilledCells +
         ". Prohlížeč: " + (window.speechSynthesis ? "Web Speech OK" : "bez Web Speech");
     }
@@ -231,6 +248,10 @@
             "commentary.tts_backend": $("backend").value,
             "commentary.tts_voice": $("voice").value,
             "commentary.tts_rate": Number($("rate").value || 0),
+            "commentary.audio_device": $("audioDevice").value,
+            "commentary.duck_input": $("duckInput").value,
+            "commentary.duck_ratio": Number($("duckRatio").value || 0.25),
+            "commentary.duck_fade_ms": Number($("duckFadeMs").value || 750),
             "commentary.cooldown_s": Number($("cooldown").value || 4),
           },
         }),

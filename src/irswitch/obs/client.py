@@ -6,6 +6,7 @@ import ast
 import asyncio
 import logging
 import re
+import threading
 from typing import Any
 
 import aiohttp
@@ -50,6 +51,7 @@ class ObsClient:
         # Reference to OAuth manager for YouTube API access
         self._oauth_manager: Any = None  # Set externally via set_oauth_manager()
         self._stream_info_refresh_lock = asyncio.Lock()
+        self._volume_lock = threading.Lock()
         # Rate-limit final-fail connect ERROR logs while OBS stays down
         self._connect_fail_streak: int = 0
 
@@ -147,6 +149,36 @@ class ObsClient:
     def is_connected(self) -> bool:
         """Check if client is connected to OBS."""
         return self._connected and self._client is not None
+
+    def get_input_volume_mul(self, name: str) -> float | None:
+        """Read OBS input volume (linear). Fail-soft; callable from a worker thread."""
+        if not name or not self.is_connected() or self._client is None:
+            return None
+        try:
+            with self._volume_lock:
+                response = self._client.get_input_volume(name)
+            mul = getattr(response, "input_volume_mul", None)
+            if mul is None and hasattr(response, "datain") and isinstance(response.datain, dict):
+                mul = response.datain.get("inputVolumeMul")
+            if mul is None:
+                return None
+            return float(mul)
+        except Exception as e:
+            logger.warning("OBS get_input_volume failed input=%s: %s", name, e)
+            return None
+
+    def set_input_volume_mul(self, name: str, mul: float) -> bool:
+        """Set OBS input volume (linear). Fail-soft; callable from a worker thread."""
+        if not name or not self.is_connected() or self._client is None:
+            return False
+        try:
+            clamped = max(0.0, min(20.0, float(mul)))
+            with self._volume_lock:
+                self._client.set_input_volume(name, vol_mul=clamped)
+            return True
+        except Exception as e:
+            logger.warning("OBS set_input_volume failed input=%s: %s", name, e)
+            return False
 
     async def get_current_scene(self, use_cache: bool = True) -> str | None:
         """

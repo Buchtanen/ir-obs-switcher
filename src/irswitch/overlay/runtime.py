@@ -171,6 +171,7 @@ class OverlayRuntime:
             return
         self.commentary.settings = overlay.commentary
         self.commentary.language = overlay.language
+        self.commentary.sink = build_tts_sink(overlay.commentary)
         self.commentary.reset()
         self.in_car.reset()
 
@@ -178,6 +179,10 @@ class OverlayRuntime:
         if not envelopes or self.commentary is None:
             return
         overlay = self._overlay_settings()
+        self.commentary.settings = overlay.commentary
+        sink = self.commentary.sink
+        if getattr(sink, "settings", None) is not None:
+            sink.settings = overlay.commentary
         try:
             self.commentary.observe(
                 envelopes,

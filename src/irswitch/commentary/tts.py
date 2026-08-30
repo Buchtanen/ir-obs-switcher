@@ -12,8 +12,10 @@ import sys
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Protocol
 
+from irswitch.commentary.duck import ducker_from_settings
 from irswitch.commentary.graph import GraphNode
 from irswitch.overlay.settings import CommentarySettings
 
@@ -21,19 +23,7 @@ logger = logging.getLogger(__name__)
 
 BACKENDS = ("auto", "sapi", "espeak", "null")
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
-
-_SAPI_SCRIPT = """\
-Add-Type -AssemblyName System.Speech
-$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$rate = 0
-[void][int]::TryParse($env:IRSWITCH_TTS_RATE, [ref]$rate)
-if ($rate -lt -10) { $rate = -10 }
-if ($rate -gt 10) { $rate = 10 }
-$synth.Rate = $rate
-if ($env:IRSWITCH_TTS_VOICE) { $synth.SelectVoice($env:IRSWITCH_TTS_VOICE) }
-$text = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:IRSWITCH_TTS_B64))
-$synth.Speak($text)
-"""
+_SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
 
 _SAPI_VOICES_SCRIPT = """\
 Add-Type -AssemblyName System.Speech
@@ -99,15 +89,17 @@ class ProcessTtsSink:
         loop.run_in_executor(None, self._speak, utterance)
 
     def _speak(self, utterance: CommentaryUtterance) -> None:
-        result = speak_text(
-            utterance.text,
-            locale=utterance.locale,
-            voice=self.settings.tts_voice,
-            rate=self.settings.tts_rate,
-            backend=self.settings.tts_backend,
-            timeout_s=max(self.settings.max_utterance_s + 3.0, 6.0),
-            runner=self.runner,
-        )
+        with ducker_from_settings(self.settings):
+            result = speak_text(
+                utterance.text,
+                locale=utterance.locale,
+                voice=self.settings.tts_voice,
+                rate=self.settings.tts_rate,
+                backend=self.settings.tts_backend,
+                device=self.settings.audio_device,
+                timeout_s=max(self.settings.max_utterance_s + 10.0, 20.0),
+                runner=self.runner,
+            )
         self.last_result = result
         self.last_error = result.error
         if result.error:
@@ -145,7 +137,8 @@ def speak_text(
     voice: str = "",
     rate: int = 0,
     backend: str = "auto",
-    timeout_s: float = 12.0,
+    device: str = "",
+    timeout_s: float = 25.0,
     runner: SpeakRunner | None = None,
 ) -> TtsResult:
     """Blocking speak for a worker thread. Fail-soft; never raises to callers."""
@@ -157,7 +150,14 @@ def speak_text(
         return TtsResult(backend="null", spoken=False, error="no TTS backend on this host")
     try:
         if resolved == "sapi":
-            _speak_sapi(spoken, voice=voice, rate=rate, timeout_s=timeout_s, runner=runner)
+            _speak_sapi(
+                spoken,
+                voice=voice,
+                rate=rate,
+                device=device,
+                timeout_s=timeout_s,
+                runner=runner,
+            )
         else:
             _speak_espeak(
                 spoken,
@@ -214,11 +214,23 @@ def _run(
     )
 
 
+def select_sapi_output_name(descriptions: list[str], want: str) -> str | None:
+    """Pick a playback device. Prefer stereo over 16ch when both match."""
+    needle = (want or "").strip().lower()
+    if not needle:
+        return None
+    matches = [name for name in descriptions if needle in name.lower()]
+    stereo = [name for name in matches if "16ch" not in name.lower()]
+    pool = stereo or matches
+    return pool[0] if pool else None
+
+
 def _speak_sapi(
     text: str,
     *,
     voice: str,
     rate: int,
+    device: str,
     timeout_s: float,
     runner: SpeakRunner | None,
 ) -> None:
@@ -226,7 +238,9 @@ def _speak_sapi(
     env["IRSWITCH_TTS_B64"] = base64.b64encode(text.encode("utf-8")).decode("ascii")
     env["IRSWITCH_TTS_RATE"] = str(int(rate))
     env["IRSWITCH_TTS_VOICE"] = voice or ""
+    env["IRSWITCH_TTS_DEVICE"] = device.strip()
     exe = shutil.which("powershell") or shutil.which("pwsh") or "powershell"
+    script = str(_SAPI_PS1)
     completed = _run(
         [
             exe,
@@ -234,8 +248,8 @@ def _speak_sapi(
             "-NonInteractive",
             "-ExecutionPolicy",
             "Bypass",
-            "-Command",
-            _SAPI_SCRIPT,
+            "-File",
+            script,
         ],
         env=env,
         timeout_s=timeout_s,
@@ -244,6 +258,9 @@ def _speak_sapi(
     if completed.returncode != 0:
         err = (completed.stderr or completed.stdout or "sapi failed").strip()
         raise RuntimeError(err[:300])
+    chosen = (completed.stdout or "").strip()
+    if chosen:
+        logger.info("tts sapi %s", chosen.splitlines()[-1][:200])
 
 
 def _speak_espeak(

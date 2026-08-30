@@ -9,8 +9,9 @@ from typing import Any
 from aiohttp import web
 
 from irswitch.commentary.assignments import render_assignments
+from irswitch.commentary.duck import ducker_from_settings
 from irswitch.commentary.graph import GraphNode, load_sequence_graph
-from irswitch.commentary.tts import detect_backend, list_voices, speak_text
+from irswitch.commentary.tts import TtsResult, detect_backend, list_voices, speak_text
 from irswitch.commentary.validator import validate_utterance
 from irswitch.overlay.http import _file_response, _require_csrf
 from irswitch.overlay.i18n import normalize_language
@@ -82,6 +83,10 @@ async def handle_commentary_status(_request: web.Request) -> web.Response:
                 "ttsBackend": settings.tts_backend,
                 "ttsVoice": settings.tts_voice,
                 "ttsRate": settings.tts_rate,
+                "audioDevice": settings.audio_device,
+                "duckInput": settings.duck_input,
+                "duckRatio": settings.duck_ratio,
+                "duckFadeMs": settings.duck_fade_ms,
             },
             "nodes": nodes,
             "unfilledCells": len(graph.unfilled_cells()),
@@ -138,19 +143,22 @@ async def handle_commentary_speak(request: web.Request) -> web.Response:
     except (TypeError, ValueError):
         rate = settings.tts_rate
     backend = str(body.get("backend") or settings.tts_backend)
-    timeout = max(settings.max_utterance_s + 3.0, 8.0)
+    timeout = max(settings.max_utterance_s + 10.0, 20.0)
+
+    def _speak_job() -> TtsResult:
+        with ducker_from_settings(settings):
+            return speak_text(
+                text,
+                locale=locale,
+                voice=voice,
+                rate=rate,
+                backend=backend,
+                device=settings.audio_device,
+                timeout_s=timeout,
+            )
+
     loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(
-        None,
-        lambda: speak_text(
-            text,
-            locale=locale,
-            voice=voice,
-            rate=rate,
-            backend=backend,
-            timeout_s=timeout,
-        ),
-    )
+    result = await loop.run_in_executor(None, _speak_job)
     return web.json_response(
         {
             "spoken": result.spoken,
