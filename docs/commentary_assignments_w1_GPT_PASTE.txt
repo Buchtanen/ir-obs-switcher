@@ -1,12 +1,3 @@
-# GPT brief — irswitch commentary Wave W1
-
-**Use this file as the full prompt.** Paste everything from “START OF PROMPT” to “END OF PROMPT” into GPT (ChatGPT / API).  
-Do not ask GPT to read the repo. Do not ask it to invent nodes.
-
-After GPT answers, you should receive **one JSON object only**. Bring that JSON back to the engineer to merge into `sequence_graph.json`.
-
----
-
 ## START OF PROMPT
 
 ### Role
@@ -193,13 +184,3 @@ Requirements on `patches`:
 Then output the JSON only.
 
 ## END OF PROMPT
-
----
-
-## Engineer notes (do not paste to GPT)
-
-- Source plan: `docs/commentary_content_db_plan.md` § Wave W1  
-- Merge target: `src/irswitch/commentary/data/sequence_graph.json` → `nodes.*.variants.en.*`  
-- Validate each line with `validate_utterance` before commit  
-- Keep existing `neutral` arrays untouched  
-- Expected drop in `unfilled_cells()`: **12** (en emotion buckets on these four nodes)
