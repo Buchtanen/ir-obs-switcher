@@ -263,8 +263,8 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 - [x] W1 — EN emotions on mock-4 (gpt-5 patches; unfilled 184 → 172)
 - [x] W2 — EN high-priority race beats (gpt-5; unfilled 172 → 132)
 - [x] W3 — EN pit_outcome (gpt-5; unfilled 132 → 129)
-- [ ] W4 — EN timing / quali / practice *(brief: `docs/commentary_assignments_w4_GPT_PASTE.txt`, 30 cells)*
-- [ ] W5 — EN bio
+- [x] W4 — EN timing / quali / practice (gpt-5; unfilled 129 → 99)
+- [ ] W5 — EN bio + invalid_lap leftover *(brief: `docs/commentary_assignments_w5_GPT_PASTE.txt`, 5 cells)*
 - [ ] W6 — CS parity
 - [ ] W7 — sequence polish
 - [ ] (optional) Phase D store split / export — only if approved

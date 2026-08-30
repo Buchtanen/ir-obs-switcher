@@ -140,10 +140,46 @@ def test_w1_emotion_buckets_are_authored_not_neutral_fallback() -> None:
         assert validate_utterance(line, node) == []
 
 
+def test_w4_timing_nodes_english() -> None:
+    graph = load_sequence_graph()
+    expected = {
+        "personal_best": ("neutral", "calm", "focused", "pushing", "high"),
+        "gain_found": ("neutral", "calm", "focused"),
+        "time_lost": ("neutral", "calm", "focused"),
+        "target_locked": ("neutral", "calm", "focused"),
+        "projected_lap": ("neutral", "focused", "pushing"),
+        "hot_lap": ("neutral", "focused", "pushing", "high"),
+        "position_attack": ("neutral", "focused", "pushing"),
+        "clean_streak": ("neutral", "calm", "focused"),
+        "rival_threat": ("neutral", "focused", "pushing"),
+    }
+    examples = {
+        "lap": 8,
+        "lap_time": "1:31.1",
+        "delta": "-0.4",
+        "segment": "minisector 4",
+        "target_time": "1:31.8",
+        "projected_time": "1:31.5",
+        "confidence": "high",
+        "position": 4,
+        "streak": 5,
+        "gap": "2.4",
+        "target_name": "Kovalainen",
+    }
+    for node_id, emotions in expected.items():
+        node = graph.nodes[node_id]
+        for emotion in emotions:
+            lines = node.variants["en"].get(emotion) or ()
+            assert 1 <= len(lines) <= 3, (node_id, emotion)
+            for line in lines:
+                assert validate_utterance(line, node) == []
+                assert not leftover_slots(fill_slots(line, examples))
+
+
 def test_unfilled_emotion_still_falls_back_to_neutral() -> None:
     graph = load_sequence_graph()
-    node = graph.nodes["personal_best"]
-    # Timing node still structure-only after W2: empty until later waves.
+    node = graph.nodes["hr_pressure"]
+    # Bio node still empty until W5.
     assert node.variant_bucket("en", "pushing") == ()
     assert node.variant_bucket("en", "unknown") == ()
 

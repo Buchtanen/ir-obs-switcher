@@ -109,7 +109,31 @@
         "pushing",
         "high"
       ],
-      "notes": "Celebrate briefly. Keep under one breath. Emotion variants may rise with HR but stay spoken, not yelled."
+      "notes": "Celebrate briefly. Keep under one breath. Emotion variants may rise with HR but stay spoken, not yelled.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "New best, lap {lap} at {lap_time}.",
+            "That's your quickest lap, improved by {delta}."
+          ],
+          "calm": [
+            "Nice and tidy. New best at {lap_time}.",
+            "Lap {lap} is your best. Well settled."
+          ],
+          "focused": [
+            "New best, {lap_time}. Lock that in.",
+            "Lap {lap}, improved by {delta}. Stay sharp."
+          ],
+          "pushing": [
+            "New best, {lap_time}. Keep pushing.",
+            "That's {delta} quicker. Keep after it."
+          ],
+          "high": [
+            "New best now, {lap_time}! Come on!",
+            "Lap {lap}, quicker by {delta}! Keep it coming!"
+          ]
+        }
+      }
     },
     "gain_found": {
       "family": "timing",
@@ -138,7 +162,23 @@
         "calm",
         "focused"
       ],
-      "notes": "Practice only. Name the gain, not a race battle. TIME_LOST is a sibling, not this node."
+      "notes": "Practice only. Name the gain, not a race battle. TIME_LOST is a sibling, not this node.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "You found {delta} in {segment}.",
+            "Gain of {delta} through {segment}."
+          ],
+          "calm": [
+            "Nice gain in {segment}, {delta} found.",
+            "That was {delta} in {segment}. Easy and clean."
+          ],
+          "focused": [
+            "You found {delta} in {segment}. Lock it in.",
+            "Gain is {delta} through {segment}. Repeat it."
+          ]
+        }
+      }
     },
     "time_lost": {
       "family": "timing",
@@ -167,7 +207,23 @@
         "calm",
         "focused"
       ],
-      "notes": "Practice only. Calm correction, not panic."
+      "notes": "Practice only. Calm correction, not panic.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "You lost {delta} in {segment}.",
+            "Time loss in {segment}, {delta}."
+          ],
+          "calm": [
+            "{delta} lost in {segment}. Stay relaxed.",
+            "{segment} cost {delta}. Keep it smooth."
+          ],
+          "focused": [
+            "{delta} lost through {segment}. Reset.",
+            "Clean up {segment}. The loss was {delta}."
+          ]
+        }
+      }
     },
     "target_locked": {
       "family": "timing",
@@ -192,7 +248,23 @@
         "calm",
         "focused"
       ],
-      "notes": "Once per practice stint unless the target changes."
+      "notes": "Once per practice stint unless the target changes.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Target set at {target_time}.",
+            "The time to aim for is {target_time}."
+          ],
+          "calm": [
+            "Target is {target_time}. Build into it.",
+            "Aim for {target_time}. Keep it easy."
+          ],
+          "focused": [
+            "Target locked at {target_time}. Stay precise.",
+            "Chase {target_time}. Every input clean."
+          ]
+        }
+      }
     },
     "projected_lap": {
       "family": "timing",
@@ -222,7 +294,23 @@
         "focused",
         "pushing"
       ],
-      "notes": "Quali. Speak only when confidence is useful. Do not invent grid position."
+      "notes": "Quali. Speak only when confidence is useful. Do not invent grid position.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Projected lap is {projected_time}.",
+            "{projected_time} projected, confidence {confidence}."
+          ],
+          "focused": [
+            "Projection is {projected_time}. Keep it clean.",
+            "{projected_time} at {confidence} confidence. Stay precise."
+          ],
+          "pushing": [
+            "Projected {projected_time}. Keep pushing.",
+            "You're tracking {projected_time}. Dig in."
+          ]
+        }
+      }
     },
     "hot_lap": {
       "family": "timing",
@@ -248,7 +336,27 @@
         "pushing",
         "high"
       ],
-      "notes": "Quali flyer. Short. No mid-corner chatter."
+      "notes": "Quali flyer. Short. No mid-corner chatter.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Lap {lap} is live.",
+            "Your flyer begins on lap {lap}."
+          ],
+          "focused": [
+            "Lap {lap} is live. Eyes ahead.",
+            "This is lap {lap}. Make every input clean."
+          ],
+          "pushing": [
+            "Lap {lap} now. Push from the line.",
+            "Flyer on lap {lap}. Keep after it."
+          ],
+          "high": [
+            "Lap {lap} now! Come on, make it count!",
+            "Your flyer is live on lap {lap}! Let's go!"
+          ]
+        }
+      }
     },
     "position_attack": {
       "family": "timing",
@@ -273,7 +381,23 @@
         "focused",
         "pushing"
       ],
-      "notes": "Quali position threat. One sentence."
+      "notes": "Quali position threat. One sentence.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Your {position} is under threat.",
+            "Position {position} is at risk."
+          ],
+          "focused": [
+            "Protect {position} with a clean lap.",
+            "Your {position} is vulnerable. Nail the lap."
+          ],
+          "pushing": [
+            "Push this lap to hold {position}.",
+            "Position {position} is under pressure. Dig in."
+          ]
+        }
+      }
     },
     "clean_streak": {
       "family": "timing",
@@ -297,7 +421,23 @@
         "calm",
         "focused"
       ],
-      "notes": "Low urgency. Skip if a battle is active (director uses speak_priority)."
+      "notes": "Low urgency. Skip if a battle is active (director uses speak_priority).",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{streak} clean laps in a row.",
+            "That's a streak of {streak} clean laps."
+          ],
+          "calm": [
+            "{streak} clean laps. Keep it settled.",
+            "The clean run is at {streak}. Nice and easy."
+          ],
+          "focused": [
+            "Clean streak at {streak}. Keep the discipline.",
+            "That's {streak} clean. Stay precise."
+          ]
+        }
+      }
     },
     "hunting": {
       "family": "battle",
@@ -635,7 +775,23 @@
         "focused",
         "pushing"
       ],
-      "notes": "Faster car closing, not yet hunted. Low chatter."
+      "notes": "Faster car closing, not yet hunted. Low chatter.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{target_name} is closing, gap {gap}.",
+            "Gap to {target_name} is {gap} and shrinking."
+          ],
+          "focused": [
+            "{target_name} is gaining, gap {gap}. Stay aware.",
+            "Pressure is building from {target_name}. Keep it clean."
+          ],
+          "pushing": [
+            "Gap {gap} to {target_name}. Lift the pace.",
+            "{target_name} is closing. Find the pace."
+          ]
+        }
+      }
     },
     "battle_won": {
       "family": "battle",
