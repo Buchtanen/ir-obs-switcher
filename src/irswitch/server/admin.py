@@ -37,7 +37,9 @@ def _switcher_state() -> Any | None:
     return _current_state
 
 
-def _mono_to_wall(mono_s: float, *, now_mono: float | None = None, now_wall: float | None = None) -> float:
+def _mono_to_wall(
+    mono_s: float, *, now_mono: float | None = None, now_wall: float | None = None
+) -> float:
     """Convert monotonic seconds to wall-clock epoch seconds."""
     now_mono = time.monotonic() if now_mono is None else now_mono
     now_wall = time.time() if now_wall is None else now_wall

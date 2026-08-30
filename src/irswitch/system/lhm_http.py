@@ -257,9 +257,7 @@ def lhm_connection_status(
     force: bool = False,
 ) -> dict[str, Any]:
     """Admin/diagnostics snapshot: is LHM HTTP reachable and where."""
-    rows = fetch_lhm_http_rows(
-        opener=opener, now=now, config_text=config_text, force=force
-    )
+    rows = fetch_lhm_http_rows(opener=opener, now=now, config_text=config_text, force=force)
     with _LOCK:
         base = _CACHED_BASE
     reachable = bool(rows)
