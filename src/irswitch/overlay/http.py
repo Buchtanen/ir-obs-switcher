@@ -49,6 +49,11 @@ def set_overlay_bus(bus: OverlayBus | None) -> None:
     _overlay_bus = bus
 
 
+def get_overlay_runtime() -> Any | None:
+    """Public read-only accessor for the process overlay runtime (None when down)."""
+    return _overlay_runtime
+
+
 def set_overlay_runtime(runtime: Any) -> None:
     global _overlay_runtime
     _overlay_runtime = runtime

@@ -20,9 +20,12 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [POST /shutdown](#post-shutdown)
   - [POST /restart](#post-restart)
   - [GET /api/events](#get-apievents)
+  - [GET /api/admin/status](#get-apiadminstatus)
+  - [GET /api/admin/activity](#get-apiadminactivity)
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
 - [HTML Dashboardy](#html-dashboardy)
+  - [GET /admin](#get-admin)
   - [GET /gr-status](#get-gr-status)
   - [GET /vr-status](#get-vr-status)
   - [GET /test](#get-test)
@@ -552,6 +555,72 @@ Získání posledních eventů z event logu.
 
 ---
 
+### GET /api/admin/status
+
+Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher subset + server-side `health`.
+
+**URL**: `http://127.0.0.1:17321/api/admin/status`
+
+**Method**: `GET`
+
+**Response** (200 OK) — klíčová pole (`schemaVersion: 1`, additive):
+- `runtime.overlay` / `runtime.switcher` (bool)
+- `health` — server-side aggregation:
+  - `ready` (bool) — `false` jen když existuje alespoň jedna **blocking** položka
+  - `blocking[]` — `{id, reason, tip}` (např. iRacing/OBS disconnected)
+  - `warnings[]` — doporučené závislosti (LHM unreachable, sysinfo degraded, …); samy o sobě `ready` neflipují
+- `switcher` (object | null) — legacy snake_case subset: `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
+- `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
+- `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
+- `extensions.lhm.detail` — cache observability: `checkedAt`, `lastSuccessAt` (wall-clock epoch), `stale`, `errorCode`, `lastBaseUrl`, `sensorRows`, `connection`
+- `features.overlay` / `features.commentary` / `features.tape` — stejné osy; commentary `ready` = active+not busy
+- `features.eventEngine` — rollout flagy (`v2Payload`, `practice`, …)
+
+Aggregator čte **public** `status_snapshot()` (overlay runtime) + LHM cache (`force=False`). LHM probe je fail-soft (TTL + worker thread); HTTP 200 i při unreachable. Kontrakt: [`docs/admin_dashboard_spec.md`](docs/admin_dashboard_spec.md).
+
+---
+
+### GET /api/admin/activity
+
+Merged activity feed (newest-first): switcher EventLog + commentary decisions + overlay **lifecycle ring** (`OverlayActivityLog`; bounded, `dedupeKey`, wall `occurredAt`).
+
+**URL**: `http://127.0.0.1:17321/api/admin/activity?limit=50`
+
+**Query**: `limit` (1–200, default 50; neplatné → 50)
+
+**Response**:
+```json
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "occurredAt": 1710000000.12,
+      "monoMs": 12345,
+      "dedupeKey": "commentary:spoken:overtake:…",
+      "source": "commentary",
+      "kind": "spoken",
+      "message": "He takes P5 from Rossi.",
+      "ephemeral": false,
+      "data": { "nodeId": "overtake", "reason": "ok" }
+    },
+    {
+      "occurredAt": 1710000001.0,
+      "monoMs": 100000,
+      "dedupeKey": "overlay:hunting:ENTER:100000",
+      "source": "overlay",
+      "kind": "hunting",
+      "phase": "ENTER",
+      "message": "Widget hunting (ENTER)",
+      "ephemeral": false
+    }
+  ]
+}
+```
+
+`occurredAt` = wall-clock UTC epoch seconds (všechny zdroje). `source`: `switcher` | `commentary` | `overlay`. Overlay items are **lifecycle history**, not a live `active_events` dump.
+
+---
+
 ## WebSocket Endpoint
 
 ### WS /ws
@@ -637,9 +706,25 @@ asyncio.run(listen_to_updates())
 
 Aplikace poskytuje HTML dashboardy pro vizualizaci stavu.
 
+### GET /admin
+
+Primární **admin shell** (live): overview + extensions + features + activity.
+
+**URL**: `http://127.0.0.1:17321/admin`
+
+**Podstránky**:
+- `/admin/extensions` — BLE, Libre Hardware Monitor, sysinfo
+- `/admin/features` — overlay / commentary / tape enabled vs active
+- `/admin/activity` — merged live log
+- Static: `/admin/web/css/admin.css`, `/admin/web/js/admin.js`
+
+Live data: poll `GET /api/admin/status` + `GET /api/admin/activity` (~2 s); optional WS invalidate (`/ws`, `/ws/overlay`) debounced — stránky otevírají jen potřebné sockety. Overview zobrazuje server-side `health`.
+
+---
+
 ### GET /gr-status
 
-Velký dashboard pro monitor (GR Dashboard).
+Velký dashboard / switcher controls (legacy GR Dashboard).
 
 **URL**: `http://127.0.0.1:17321/gr-status`
 
@@ -650,6 +735,7 @@ Velký dashboard pro monitor (GR Dashboard).
 - Zobrazuje status, event log, streaming info, metrics
 - Konfigurovatelné obrázky a loga
 - Real-time aktualizace přes JavaScript
+- Navigace odkazuje na `/admin`
 
 **Screenshot**: Viz `assets/rg-status-screen.png`
 

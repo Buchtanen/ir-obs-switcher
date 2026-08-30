@@ -135,15 +135,23 @@ Starting main loop
 
 ## HTML Dashboards
 
-Aplikace poskytuje dva HTML dashboardy:
+Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
 
-### GR Dashboard (velký monitor)
+### Admin (primární)
+
+- **URL**: `http://127.0.0.1:17321/admin`
+- **Funkce**: Live overview — server-side `health` (ready/blocking/warnings), switcher, extensions (BLE, Libre Hardware Monitor, sysinfo), features (overlay / commentary enabled vs active), merged activity feed (lifecycle ring)
+- **Podstránky**: `/admin/extensions`, `/admin/features`, `/admin/activity`
+- **API**: `GET /api/admin/status`, `GET /api/admin/activity` (viz [API.md](API.md))
+- **Spec**: [docs/admin_dashboard_spec.md](docs/admin_dashboard_spec.md); sysinfo/LHM upgrade plán: [docs/sysinfo_lhm_upgrade_spec.md](docs/sysinfo_lhm_upgrade_spec.md)
+
+### GR Dashboard / Switcher controls (legacy)
 
 - **URL**: `http://127.0.0.1:17321/gr-status`
-- **Funkce**: JavaScript auto-update, zobrazuje status, event log, streaming info, metrics (včetně `errors_total`)
+- **Funkce**: JavaScript auto-update, override/restart ovládání, YouTube stream info, switcher event log, metrics
 - **Konfigurovatelné**: Obrázky pozadí a loga
 - **Screenshot**: [GR Dashboard](assets/rg-status-screen.png)
-- **Navigace**: Overlay, Overlay demo, Overlay debug, Config
+- **Navigace**: odkazuje i na Admin
 
 ### Race overlay (OBS Browser Source)
 
@@ -165,7 +173,7 @@ irswitchd --config config\config.ini --mock
 irswitchd --config config\config.ini --replay recordings\battle.jsonl
 ```
 
-Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. GPU čísla bere NVML. CPU package na Windows: LibreHardwareMonitor 0.9.5+ **zrušil WMI** — overlay čte `http://127.0.0.1:8085/data.json` (Options → Remote Web Server → Run, File → Hardware → CPU zaškrtnuté). Když LHM bindne jen na LAN IP, overlay to vezme z `LibreHardwareMonitor.config`. Starší LHM pořád WMI `root\LibreHardwareMonitor`. Stock Windows **nemá** CPU package power. FPS/FT berou iRacing — mimo 3D zůstanou prázdné.
+Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. GPU čísla bere NVML. CPU package na Windows: LibreHardwareMonitor 0.9.5+ **zrušil WMI** — overlay čte `http://127.0.0.1:8085/data.json` (Options → Remote Web Server → Run, File → Hardware → CPU zaškrtnuté). Když LHM bindne jen na LAN IP, overlay to vezme z `LibreHardwareMonitor.config`. Starší LHM pořád WMI `root\LibreHardwareMonitor`. Stock Windows **nemá** CPU package power. FPS/FT berou iRacing — mimo 3D zůstanou prázdné. **LHM je prerekvizita** pro správné sysinfo CPU package údaje; admin Extensions kartu ukazuje, jestli LHM HTTP běží. Plán plného sysinfo přes LHM: [docs/sysinfo_lhm_upgrade_spec.md](docs/sysinfo_lhm_upgrade_spec.md).
 
 ### VR Dashboard (pro VR)
 

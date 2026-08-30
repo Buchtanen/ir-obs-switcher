@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>irswitch admin — features</title>
+  <link rel="stylesheet" href="/admin/web/css/admin.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <h1>Features</h1>
+      <span class="ver" id="admin-version"></span>
+      <span class="live-dot" id="live-indicator">offline</span>
+    </header>
+    <nav class="nav" aria-label="Admin">
+      <a href="/admin">Overview</a>
+      <a href="/admin/extensions">Extensions</a>
+      <a class="active" href="/admin/features">Features</a>
+      <a href="/admin/activity">Activity</a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/config">Config</a>
+      <a href="/commentary">Commentary test</a>
+      <a href="/overlay">Overlay</a>
+    </nav>
+
+    <section class="section">
+      <h2>Enabled vs active</h2>
+      <div id="features-panel" class="grid"></div>
+      <p class="hint">Enabled = config flag. Active = currently doing work (speaking, recording, runtime publishing).</p>
+    </section>
+  </div>
+  <script src="/admin/web/js/admin.js"></script>
+  <script>
+    IrAdmin.startAdmin({
+      useOverlayWs: true,
+      refreshOnWs: true,
+      onStatus(status) {
+        const feat = status.features || {};
+        document.getElementById("features-panel").innerHTML = ["overlay", "commentary", "tape", "eventEngine"]
+          .map((key) => (feat[key] != null ? IrAdmin.renderFeatureCard(key, feat[key]) : ""))
+          .join("");
+      },
+    });
+  </script>
+</body>
+</html>
