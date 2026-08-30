@@ -143,12 +143,17 @@ async def test_bus_records_events_without_websocket_clients(v4_event: dict[str, 
 @pytest.mark.asyncio
 async def test_bus_broadcast_survives_activity_append_failure(
     v4_event: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     bus = OverlayBus()
     ws = AsyncMock()
     await bus.add_client(ws)
     ws.send_str.reset_mock()
-    bus.activity_log.add = MagicMock(side_effect=RuntimeError("broken activity log"))
+    monkeypatch.setattr(
+        bus.activity_log,
+        "add",
+        MagicMock(side_effect=RuntimeError("broken activity log")),
+    )
 
     await bus.publish_event(v4_event)
 
