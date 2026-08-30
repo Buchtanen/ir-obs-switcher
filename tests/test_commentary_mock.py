@@ -15,14 +15,40 @@ from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import RaceEvent
 from irswitch.overlay.settings import CommentarySettings
 
+# Dense graph targets from commentary-extension-texts (#130 M0).
+PRIORITY_DENSITY = 16
+STANDARD_DENSITY = 12
+PRIORITY_NODES = {
+    "lap_complete",
+    "personal_best",
+    "hunting",
+    "hunted",
+    "side_by_side",
+    "overtake",
+    "position_gained",
+    "position_lost",
+    "rival_threat",
+    "battle_won",
+    "final_lap",
+    "finish",
+    "pit_entry",
+    "back_on_track",
+    "in_car",
+    "pit_outcome",
+}
+
+
+def _expected_density(node_id: str) -> int:
+    return PRIORITY_DENSITY if node_id in PRIORITY_NODES else STANDARD_DENSITY
+
 
 def test_mock_english_nodes_are_filled_and_valid() -> None:
     graph = load_sequence_graph()
-    examples = {"lap": 12, "lap_time": "1:32.4", "position": 8}
     for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
         node = graph.nodes[node_id]
         lines = node.variant_bucket("en", "unknown")
-        assert len(lines) >= 4, node_id
+        assert len(lines) == _expected_density(node_id), node_id
+        examples = {slot.name: slot.example for slot in node.slots}
         for line in lines:
             assert validate_utterance(line, node) == []
             assert not leftover_slots(fill_slots(line, examples))
@@ -155,24 +181,12 @@ def test_w4_timing_nodes_english() -> None:
         "clean_streak": ("neutral", "calm", "focused"),
         "rival_threat": ("neutral", "focused", "pushing"),
     }
-    examples = {
-        "lap": 8,
-        "lap_time": "1:31.1",
-        "delta": "-0.4",
-        "segment": "minisector 4",
-        "target_time": "1:31.8",
-        "projected_time": "1:31.5",
-        "confidence": "high",
-        "position": 4,
-        "streak": 5,
-        "gap": "2.4",
-        "target_name": "Kovalainen",
-    }
     for node_id, emotions in expected.items():
         node = graph.nodes[node_id]
+        examples = {slot.name: slot.example for slot in node.slots}
         for emotion in emotions:
             lines = node.variants["en"].get(emotion) or ()
-            assert 3 <= len(lines) <= 6, (node_id, emotion)
+            assert len(lines) == _expected_density(node_id), (node_id, emotion)
             for line in lines:
                 assert validate_utterance(line, node) == []
                 assert not leftover_slots(fill_slots(line, examples))
@@ -180,19 +194,21 @@ def test_w4_timing_nodes_english() -> None:
 
 def test_w5_hr_and_invalid_lap_english() -> None:
     graph = load_sequence_graph()
-    examples = {"bpm": 142, "lap": 4}
+    hr = graph.nodes["hr_pressure"]
+    hr_examples = {slot.name: slot.example for slot in hr.slots}
     for _emotion, lines in (
-        ("pushing", graph.nodes["hr_pressure"].variants["en"]["pushing"]),
-        ("high", graph.nodes["hr_pressure"].variants["en"]["high"]),
+        ("pushing", hr.variants["en"]["pushing"]),
+        ("high", hr.variants["en"]["high"]),
     ):
-        assert 3 <= len(lines) <= 6
+        assert len(lines) == _expected_density("hr_pressure")
         for line in lines:
-            assert validate_utterance(line, graph.nodes["hr_pressure"]) == []
-            assert not leftover_slots(fill_slots(line, examples))
+            assert validate_utterance(line, hr) == []
+            assert not leftover_slots(fill_slots(line, hr_examples))
     node = graph.nodes["invalid_lap"]
+    examples = {slot.name: slot.example for slot in node.slots}
     for emotion in ("neutral", "calm", "focused"):
         lines = node.variants["en"][emotion]
-        assert 3 <= len(lines) <= 6
+        assert len(lines) == _expected_density("invalid_lap")
         for line in lines:
             assert validate_utterance(line, node) == []
             assert not leftover_slots(fill_slots(line, examples))
@@ -217,18 +233,14 @@ def test_w1_mock_four_emotion_matrix_valid() -> None:
         "pit_entry": ("calm", "focused"),
         "back_on_track": ("calm", "focused"),
     }
-    examples = {
-        "lap": 12,
-        "lap_time": "1:32.4",
-        "position": 8,
-    }
     for node_id, emotions in expected.items():
         node = graph.nodes[node_id]
+        examples = {slot.name: slot.example for slot in node.slots}
         locale_map = node.variants["en"]
         assert locale_map.get("neutral"), node_id
         for emotion in emotions:
             lines = locale_map.get(emotion) or ()
-            assert 3 <= len(lines) <= 6, (node_id, emotion)
+            assert len(lines) == _expected_density(node_id), (node_id, emotion)
             for line in lines:
                 assert validate_utterance(line, node) == []
                 bound = fill_slots(line, examples)
@@ -265,19 +277,13 @@ def test_w2_race_beat_nodes_speak_english() -> None:
         "hunting": ("neutral", "focused", "pushing", "high"),
         "hunted": ("neutral", "focused", "pushing", "high"),
     }
-    examples = {
-        "position": 5,
-        "old_position": 6,
-        "target_name": "Rossi",
-        "gap": "1.2",
-        "value": 4,
-    }
     for node_id, emotions in expected.items():
         node = graph.nodes[node_id]
+        examples = {slot.name: slot.example for slot in node.slots}
         locale_map = node.variants["en"]
         for emotion in emotions:
             lines = locale_map.get(emotion) or ()
-            assert 3 <= len(lines) <= 6, (node_id, emotion)
+            assert len(lines) == _expected_density(node_id), (node_id, emotion)
             for line in lines:
                 assert validate_utterance(line, node) == []
                 assert not leftover_slots(fill_slots(line, examples))
@@ -286,10 +292,10 @@ def test_w2_race_beat_nodes_speak_english() -> None:
 def test_w3_pit_outcome_english() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["pit_outcome"]
-    examples = {"position": 11, "old_position": 8}
+    examples = {slot.name: slot.example for slot in node.slots}
     for emotion in ("neutral", "calm", "focused"):
         lines = node.variants["en"].get(emotion) or ()
-        assert 3 <= len(lines) <= 6, emotion
+        assert len(lines) == _expected_density("pit_outcome"), emotion
         for line in lines:
             assert validate_utterance(line, node) == []
             assert not leftover_slots(fill_slots(line, examples))

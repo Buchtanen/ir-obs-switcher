@@ -1,0 +1,3536 @@
+{
+  "graph_version": 1,
+  "wave": "COMMENTARY_EXTENSION_TEXTS",
+  "author_model": "OpenAI Codex GPT-5",
+  "merge_mode": "append",
+  "baseline": {
+    "ref": "origin/cursor/commentary-content-db-plan-8972",
+    "commit": "692da086a55629e6c6dcfb8fa833f70298a9cbc4",
+    "blob_sha": "1e91b06ec65cce386d7a50bdd9ec6259c8020da5",
+    "path": "src/irswitch/commentary/data/sequence_graph.json",
+    "sha256": "1f25faf2cef9351d94687e9bb8fd88b5e1179d1196618f5499b7eced9d7287e8",
+    "line_count": 752,
+    "cell_count": 188
+  },
+  "invariants": {
+    "node_count": 26,
+    "edges_unchanged": true,
+    "event_types_unchanged": true,
+    "slot_meanings_unchanged": true,
+    "runtime_database_dependency_added": false
+  },
+  "patches": [
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes lap {lap} with {lap_time} on the clock.",
+        "The timing line records {lap_time} for lap {lap}.",
+        "Another completed tour gives the audience a fresh reference.",
+        "He carries the rhythm straight across the line.",
+        "Lap {lap} adds another piece to this stint.",
+        "The lap is banked and the next one begins, and the picture is clear.",
+        "His latest run is complete at {lap_time}, as the race story develops.",
+        "That crossing resets the story for another lap.",
+        "He turns the page from lap {lap} without delay.",
+        "The stint moves forward with another clean crossing.",
+        "A new lap starts as {lap_time} goes into the book.",
+        "He completes the tour and settles back into the cycle."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes lap {lap} with {lap_time} on the clock, all under control.",
+        "The timing line records {lap_time} for lap {lap}.",
+        "Another completed tour gives the audience a fresh reference.",
+        "He carries the rhythm straight across the line.",
+        "Lap {lap} adds another piece to this stint, all under control.",
+        "The lap is banked and the next one begins, with no rush in the car.",
+        "His latest run is complete at {lap_time}, and the rhythm stays smooth.",
+        "That crossing resets the story for another lap.",
+        "He turns the page from lap {lap} without delay, all under control.",
+        "The stint moves forward with another clean crossing.",
+        "A new lap starts as {lap_time} goes into the book.",
+        "He completes the tour and settles back into the cycle."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes lap {lap} with {lap_time} on the clock.",
+        "The timing line records {lap_time} for lap {lap}.",
+        "Another completed tour gives the audience a fresh reference.",
+        "He carries the rhythm straight across the line, all part of the plan.",
+        "Lap {lap} adds another piece to this stint, and his focus stays sharp.",
+        "The lap is banked and the next one begins, with every detail measured.",
+        "His latest run is complete at {lap_time}.",
+        "That crossing resets the story for another lap, all part of the plan.",
+        "He turns the page from lap {lap} without delay.",
+        "The stint moves forward with another clean crossing.",
+        "A new lap starts as {lap_time} goes into the book.",
+        "He completes the tour and settles back into the cycle."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes lap {lap} with {lap_time} on the clock.",
+        "The timing line records {lap_time} for lap {lap}.",
+        "Another completed tour gives the audience a fresh reference.",
+        "He carries the rhythm straight across the line.",
+        "Lap {lap} adds another piece to this stint.",
+        "The lap is banked and the next one begins.",
+        "His latest run is complete at {lap_time}, and he keeps asking for more.",
+        "That crossing resets the story for another lap.",
+        "He turns the page from lap {lap} without delay.",
+        "The stint moves forward with another clean crossing.",
+        "A new lap starts as {lap_time} goes into the book.",
+        "He completes the tour and settles back into the cycle."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes lap {lap} with {lap_time} on the clock!",
+        "The timing line records {lap_time} for lap {lap}!",
+        "Another completed tour gives the audience a fresh reference!",
+        "He carries the rhythm straight across the line!",
+        "Lap {lap} adds another piece to this stint!",
+        "The lap is banked and the next one begins!",
+        "His latest run is complete at {lap_time}, and the momentum is surging!",
+        "That crossing resets the story for another lap!",
+        "He turns the page from lap {lap} without delay!",
+        "The stint moves forward with another clean crossing!",
+        "A new lap starts as {lap_time} goes into the book!",
+        "He completes the tour and settles back into the cycle!"
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} uzavírá časem {lap_time}.",
+        "Časomíra zapisuje {lap_time} za kolo {lap}, obraz závodu je jasný.",
+        "Další dokončený okruh dává divákům nový údaj, příběh pokračuje.",
+        "Přes cílovou čáru přenáší stejný rytmus, další fáze se rýsuje.",
+        "Kolo {lap} přidává další část téhle jízdy.",
+        "Kolo je zapsané a další právě začíná, obraz závodu je jasný.",
+        "Poslední průjezd uzavírá časem {lap_time}, příběh pokračuje.",
+        "Průjezd cílem otevírá další kapitolu jízdy, další fáze se rýsuje.",
+        "Za kolem {lap} dělá čáru a hned pokračuje.",
+        "Stint pokračuje dalším čistým průjezdem, obraz závodu je jasný.",
+        "S časem {lap_time} se pouští do nového kola, příběh pokračuje.",
+        "Dokončuje okruh a znovu se usazuje do rytmu, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} uzavírá časem {lap_time}, všechno má pod kontrolou.",
+        "Časomíra zapisuje {lap_time} za kolo {lap}, bez zbytečného spěchu.",
+        "Další dokončený okruh dává divákům nový údaj, rytmus zůstává plynulý.",
+        "Přes cílovou čáru přenáší stejný rytmus, zvládá to bez nervozity.",
+        "Kolo {lap} přidává další část téhle jízdy, všechno má pod kontrolou.",
+        "Kolo je zapsané a další právě začíná, bez zbytečného spěchu.",
+        "Poslední průjezd uzavírá časem {lap_time}, rytmus zůstává plynulý.",
+        "Průjezd cílem otevírá další kapitolu jízdy, zvládá to bez nervozity.",
+        "Za kolem {lap} dělá čáru a hned pokračuje, všechno má pod kontrolou.",
+        "Stint pokračuje dalším čistým průjezdem, bez zbytečného spěchu.",
+        "S časem {lap_time} se pouští do nového kola, rytmus zůstává plynulý.",
+        "Dokončuje okruh a znovu se usazuje do rytmu, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} uzavírá časem {lap_time}, soustředění zůstává pevné.",
+        "Časomíra zapisuje {lap_time} za kolo {lap}, každý detail má změřený.",
+        "Další dokončený okruh dává divákům nový údaj, už myslí na další krok.",
+        "Přes cílovou čáru přenáší stejný rytmus, přesně podle plánu.",
+        "Kolo {lap} přidává další část téhle jízdy, soustředění zůstává pevné.",
+        "Kolo je zapsané a další právě začíná, každý detail má změřený.",
+        "Poslední průjezd uzavírá časem {lap_time}, už myslí na další krok.",
+        "Průjezd cílem otevírá další kapitolu jízdy, přesně podle plánu.",
+        "Za kolem {lap} dělá čáru a hned pokračuje, soustředění zůstává pevné.",
+        "Stint pokračuje dalším čistým průjezdem, každý detail má změřený.",
+        "S časem {lap_time} se pouští do nového kola, už myslí na další krok.",
+        "Dokončuje okruh a znovu se usazuje do rytmu, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} uzavírá časem {lap_time}, tlak dál roste.",
+        "Časomíra zapisuje {lap_time} za kolo {lap}, tempo pořád zvedá.",
+        "Další dokončený okruh dává divákům nový údaj, pořád hledá něco navíc.",
+        "Přes cílovou čáru přenáší stejný rytmus, bez náznaku polevení.",
+        "Kolo {lap} přidává další část téhle jízdy, tlak dál roste.",
+        "Kolo je zapsané a další právě začíná, tempo pořád zvedá.",
+        "Poslední průjezd uzavírá časem {lap_time}, pořád hledá něco navíc.",
+        "Průjezd cílem otevírá další kapitolu jízdy, bez náznaku polevení.",
+        "Za kolem {lap} dělá čáru a hned pokračuje, tlak dál roste.",
+        "Stint pokračuje dalším čistým průjezdem, tempo pořád zvedá.",
+        "S časem {lap_time} se pouští do nového kola, pořád hledá něco navíc.",
+        "Dokončuje okruh a znovu se usazuje do rytmu, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "lap_complete",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} uzavírá časem {lap_time}, napětí stoupá!",
+        "Časomíra zapisuje {lap_time} za kolo {lap}, závod kolem něj ožívá!",
+        "Další dokončený okruh dává divákům nový údaj, momentum nabírá sílu!",
+        "Přes cílovou čáru přenáší stejný rytmus, tohle začíná být ostré!",
+        "Kolo {lap} přidává další část téhle jízdy, napětí stoupá!",
+        "Kolo je zapsané a další právě začíná, závod kolem něj ožívá!",
+        "Poslední průjezd uzavírá časem {lap_time}, momentum nabírá sílu!",
+        "Průjezd cílem otevírá další kapitolu jízdy, tohle začíná být ostré!",
+        "Za kolem {lap} dělá čáru a hned pokračuje, napětí stoupá!",
+        "Stint pokračuje dalším čistým průjezdem, závod kolem něj ožívá!",
+        "S časem {lap_time} se pouští do nového kola, momentum nabírá sílu!",
+        "Dokončuje okruh a znovu se usazuje do rytmu, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He moves his own benchmark to {lap_time}.",
+        "Lap {lap} becomes the quickest of his session.",
+        "The improvement is {delta}, a clear step forward.",
+        "That lap gives the audience a new personal reference.",
+        "He finds a cleaner route to {lap_time}.",
+        "His work through the stint pays off with a new best.",
+        "The clock confirms that he has found more pace.",
+        "This becomes the lap the next attempt must beat.",
+        "He turns steady progress into a personal best.",
+        "The new mark is set and the search continues, and the picture is clear.",
+        "Lap {lap} rewards the build-up with {lap_time}.",
+        "He trims {delta} from the previous benchmark."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He moves his own benchmark to {lap_time}, all under control.",
+        "Lap {lap} becomes the quickest of his session, with no rush in the car.",
+        "The improvement is {delta}, a clear step forward.",
+        "That lap gives the audience a new personal reference.",
+        "He finds a cleaner route to {lap_time}, all under control.",
+        "His work through the stint pays off with a new best.",
+        "The clock confirms that he has found more pace.",
+        "This becomes the lap the next attempt must beat.",
+        "He turns steady progress into a personal best, all under control.",
+        "The new mark is set and the search continues, with no rush in the car.",
+        "Lap {lap} rewards the build-up with {lap_time}.",
+        "He trims {delta} from the previous benchmark, handled without any fuss."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He moves his own benchmark to {lap_time}, and his focus stays sharp.",
+        "Lap {lap} becomes the quickest of his session.",
+        "The improvement is {delta}, a clear step forward.",
+        "That lap gives the audience a new personal reference.",
+        "He finds a cleaner route to {lap_time}, and his focus stays sharp.",
+        "His work through the stint pays off with a new best.",
+        "The clock confirms that he has found more pace.",
+        "This becomes the lap the next attempt must beat, all part of the plan.",
+        "He turns steady progress into a personal best.",
+        "The new mark is set and the search continues.",
+        "Lap {lap} rewards the build-up with {lap_time}.",
+        "He trims {delta} from the previous benchmark, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He moves his own benchmark to {lap_time}.",
+        "Lap {lap} becomes the quickest of his session.",
+        "The improvement is {delta}, a clear step forward.",
+        "That lap gives the audience a new personal reference.",
+        "He finds a cleaner route to {lap_time}, and the pressure keeps rising.",
+        "His work through the stint pays off with a new best.",
+        "The clock confirms that he has found more pace.",
+        "This becomes the lap the next attempt must beat.",
+        "He turns steady progress into a personal best.",
+        "The new mark is set and the search continues.",
+        "Lap {lap} rewards the build-up with {lap_time}.",
+        "He trims {delta} from the previous benchmark."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He moves his own benchmark to {lap_time}, and the tension is climbing!",
+        "Lap {lap} becomes the quickest of his session!",
+        "The improvement is {delta}, a clear step forward!",
+        "That lap gives the audience a new personal reference!",
+        "He finds a cleaner route to {lap_time}, and the tension is climbing!",
+        "His work through the stint pays off with a new best!",
+        "The clock confirms that he has found more pace!",
+        "This becomes the lap the next attempt must beat!",
+        "He turns steady progress into a personal best!",
+        "The new mark is set and the search continues!",
+        "Lap {lap} rewards the build-up with {lap_time}!",
+        "He trims {delta} from the previous benchmark!"
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vlastní hranici posouvá na {lap_time}.",
+        "Kolo {lap} je jeho nejrychlejší v celé jízdě, obraz závodu je jasný.",
+        "Zlepšení o {delta} znamená jasný krok dopředu, příběh pokračuje.",
+        "Diváci mají po tomhle kole nový osobní etalon, další fáze se rýsuje.",
+        "Čistší stopa mu přináší čas {lap_time}.",
+        "Práce během stintu se mění v osobní maximum, obraz závodu je jasný.",
+        "Časomíra potvrzuje, že našel další tempo, příběh pokračuje.",
+        "Tohle je kolo, které musí příští pokus překonat, další fáze se rýsuje.",
+        "Postupné zlepšování proměňuje v osobní rekord.",
+        "Nová hranice stojí a hledání pokračuje, obraz závodu je jasný.",
+        "Kolo {lap} odměňuje přípravu časem {lap_time}, příběh pokračuje.",
+        "Z předchozího maxima ukrajuje {delta}, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vlastní hranici posouvá na {lap_time}, všechno má pod kontrolou.",
+        "Kolo {lap} je jeho nejrychlejší v celé jízdě, bez zbytečného spěchu.",
+        "Zlepšení o {delta} znamená jasný krok dopředu, rytmus zůstává plynulý.",
+        "Diváci mají po tomhle kole nový osobní etalon, zvládá to bez nervozity.",
+        "Čistší stopa mu přináší čas {lap_time}, všechno má pod kontrolou.",
+        "Práce během stintu se mění v osobní maximum, bez zbytečného spěchu.",
+        "Časomíra potvrzuje, že našel další tempo, rytmus zůstává plynulý.",
+        "Tohle je kolo, které musí příští pokus překonat.",
+        "Postupné zlepšování proměňuje v osobní rekord.",
+        "Nová hranice stojí a hledání pokračuje, bez zbytečného spěchu.",
+        "Kolo {lap} odměňuje přípravu časem {lap_time}, rytmus zůstává plynulý.",
+        "Z předchozího maxima ukrajuje {delta}, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vlastní hranici posouvá na {lap_time}, soustředění zůstává pevné.",
+        "Kolo {lap} je jeho nejrychlejší v celé jízdě, každý detail má změřený.",
+        "Zlepšení o {delta} znamená jasný krok dopředu, už myslí na další krok.",
+        "Diváci mají po tomhle kole nový osobní etalon, přesně podle plánu.",
+        "Čistší stopa mu přináší čas {lap_time}, soustředění zůstává pevné.",
+        "Práce během stintu se mění v osobní maximum, každý detail má změřený.",
+        "Časomíra potvrzuje, že našel další tempo, už myslí na další krok.",
+        "Tohle je kolo, které musí příští pokus překonat, přesně podle plánu.",
+        "Postupné zlepšování proměňuje v osobní rekord.",
+        "Nová hranice stojí a hledání pokračuje, každý detail má změřený.",
+        "Kolo {lap} odměňuje přípravu časem {lap_time}, už myslí na další krok.",
+        "Z předchozího maxima ukrajuje {delta}, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vlastní hranici posouvá na {lap_time}, tlak dál roste.",
+        "Kolo {lap} je jeho nejrychlejší v celé jízdě, tempo pořád zvedá.",
+        "Zlepšení o {delta} znamená jasný krok dopředu, pořád hledá něco navíc.",
+        "Diváci mají po tomhle kole nový osobní etalon, bez náznaku polevení.",
+        "Čistší stopa mu přináší čas {lap_time}, tlak dál roste.",
+        "Práce během stintu se mění v osobní maximum, tempo pořád zvedá.",
+        "Časomíra potvrzuje, že našel další tempo, pořád hledá něco navíc.",
+        "Tohle je kolo, které musí příští pokus překonat, bez náznaku polevení.",
+        "Postupné zlepšování proměňuje v osobní rekord, tlak dál roste.",
+        "Nová hranice stojí a hledání pokračuje, tempo pořád zvedá.",
+        "Kolo {lap} odměňuje přípravu časem {lap_time}, pořád hledá něco navíc.",
+        "Z předchozího maxima ukrajuje {delta}, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "personal_best",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vlastní hranici posouvá na {lap_time}, napětí stoupá!",
+        "Kolo {lap} je jeho nejrychlejší v celé jízdě, závod kolem něj ožívá!",
+        "Zlepšení o {delta} znamená jasný krok dopředu, momentum nabírá sílu!",
+        "Diváci mají po tomhle kole nový osobní etalon, tohle začíná být ostré!",
+        "Čistší stopa mu přináší čas {lap_time}, napětí stoupá!",
+        "Práce během stintu se mění v osobní maximum, závod kolem něj ožívá!",
+        "Časomíra potvrzuje, že našel další tempo, momentum nabírá sílu!",
+        "Tohle je kolo, které musí příští pokus překonat!",
+        "Postupné zlepšování proměňuje v osobní rekord, napětí stoupá!",
+        "Nová hranice stojí a hledání pokračuje, závod kolem něj ožívá!",
+        "Kolo {lap} odměňuje přípravu časem {lap_time}, momentum nabírá sílu!",
+        "Z předchozího maxima ukrajuje {delta}, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He uncovers {delta} through {segment}.",
+        "The useful gain appears in {segment}, and the picture is clear.",
+        "That section gives him a better reference, as the race story develops.",
+        "Viewers can see where the lap has improved.",
+        "The setup is paying back time in {segment}.",
+        "He turns a cleaner passage into {delta}, and the picture is clear.",
+        "That gain can now carry into the next lap, as the race story develops.",
+        "The stopwatch rewards his work through {segment}."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He uncovers {delta} through {segment}, all under control.",
+        "The useful gain appears in {segment}, with no rush in the car.",
+        "That section gives him a better reference, and the rhythm stays smooth.",
+        "Viewers can see where the lap has improved, handled without any fuss.",
+        "The setup is paying back time in {segment}, all under control.",
+        "He turns a cleaner passage into {delta}, with no rush in the car.",
+        "That gain can now carry into the next lap, and the rhythm stays smooth.",
+        "The stopwatch rewards his work through {segment}."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He uncovers {delta} through {segment}, and his focus stays sharp.",
+        "The useful gain appears in {segment}, with every detail measured.",
+        "That section gives him a better reference.",
+        "Viewers can see where the lap has improved, all part of the plan.",
+        "The setup is paying back time in {segment}.",
+        "He turns a cleaner passage into {delta}, with every detail measured.",
+        "That gain can now carry into the next lap.",
+        "The stopwatch rewards his work through {segment}."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "V úseku {segment} nachází {delta}.",
+        "Užitečný zisk přichází právě v {segment}, obraz závodu je jasný.",
+        "Tenhle úsek mu dává lepší referenci, příběh pokračuje.",
+        "Diváci teď vidí, kde se kolo zlepšilo, další fáze se rýsuje.",
+        "Nastavení vrací čas v úseku {segment}.",
+        "Čistší průjezd proměňuje v zisk {delta}, obraz závodu je jasný.",
+        "Tohle zlepšení může přenést do dalšího kola, příběh pokračuje.",
+        "Stopky odměňují jeho práci v {segment}, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "V úseku {segment} nachází {delta}, všechno má pod kontrolou.",
+        "Užitečný zisk přichází právě v {segment}, bez zbytečného spěchu.",
+        "Tenhle úsek mu dává lepší referenci, rytmus zůstává plynulý.",
+        "Diváci teď vidí, kde se kolo zlepšilo, zvládá to bez nervozity.",
+        "Nastavení vrací čas v úseku {segment}, všechno má pod kontrolou.",
+        "Čistší průjezd proměňuje v zisk {delta}, bez zbytečného spěchu.",
+        "Tohle zlepšení může přenést do dalšího kola, rytmus zůstává plynulý.",
+        "Stopky odměňují jeho práci v {segment}, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "gain_found",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "V úseku {segment} nachází {delta}, soustředění zůstává pevné.",
+        "Užitečný zisk přichází právě v {segment}, každý detail má změřený.",
+        "Tenhle úsek mu dává lepší referenci, už myslí na další krok.",
+        "Diváci teď vidí, kde se kolo zlepšilo, přesně podle plánu.",
+        "Nastavení vrací čas v úseku {segment}, soustředění zůstává pevné.",
+        "Čistší průjezd proměňuje v zisk {delta}, každý detail má změřený.",
+        "Tohle zlepšení může přenést do dalšího kola, už myslí na další krok.",
+        "Stopky odměňují jeho práci v {segment}, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He leaves {delta} behind in {segment}.",
+        "The stopwatch points to {segment} as the weak section.",
+        "That passage costs time without changing the whole run.",
+        "Viewers have a clear place to watch on the next lap.",
+        "The loss is isolated and the correction is obvious.",
+        "He now has a precise reference for {segment}.",
+        "The next attempt begins with one clear task.",
+        "A small deficit in {segment} shapes the next lap."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He leaves {delta} behind in {segment}, all under control.",
+        "The stopwatch points to {segment} as the weak section.",
+        "That passage costs time without changing the whole run.",
+        "Viewers have a clear place to watch on the next lap.",
+        "The loss is isolated and the correction is obvious, all under control.",
+        "He now has a precise reference for {segment}.",
+        "The next attempt begins with one clear task.",
+        "A small deficit in {segment} shapes the next lap."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He leaves {delta} behind in {segment}, and his focus stays sharp.",
+        "The stopwatch points to {segment} as the weak section.",
+        "That passage costs time without changing the whole run.",
+        "Viewers have a clear place to watch on the next lap.",
+        "The loss is isolated and the correction is obvious.",
+        "He now has a precise reference for {segment}.",
+        "The next attempt begins with one clear task.",
+        "A small deficit in {segment} shapes the next lap."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "V úseku {segment} nechává {delta}.",
+        "Stopky označují {segment} jako slabší část, obraz závodu je jasný.",
+        "Tenhle průjezd stojí čas, ale nebourá celé kolo, příběh pokračuje.",
+        "Diváci vědí, kam se v dalším kole dívat, další fáze se rýsuje.",
+        "Ztráta je přesně určená a oprava je zřejmá.",
+        "Pro úsek {segment} má teď přesnou referenci, obraz závodu je jasný.",
+        "Další pokus začíná s jedním jasným úkolem, příběh pokračuje.",
+        "Menší ztráta v {segment} určuje další postup, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "V úseku {segment} nechává {delta}, všechno má pod kontrolou.",
+        "Stopky označují {segment} jako slabší část, bez zbytečného spěchu.",
+        "Tenhle průjezd stojí čas, ale nebourá celé kolo.",
+        "Diváci vědí, kam se v dalším kole dívat, zvládá to bez nervozity.",
+        "Ztráta je přesně určená a oprava je zřejmá, všechno má pod kontrolou.",
+        "Pro úsek {segment} má teď přesnou referenci, bez zbytečného spěchu.",
+        "Další pokus začíná s jedním jasným úkolem, rytmus zůstává plynulý.",
+        "Menší ztráta v {segment} určuje další postup."
+      ]
+    },
+    {
+      "node_id": "time_lost",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "V úseku {segment} nechává {delta}, soustředění zůstává pevné.",
+        "Stopky označují {segment} jako slabší část, každý detail má změřený.",
+        "Tenhle průjezd stojí čas, ale nebourá celé kolo.",
+        "Diváci vědí, kam se v dalším kole dívat, přesně podle plánu.",
+        "Ztráta je přesně určená a oprava je zřejmá, soustředění zůstává pevné.",
+        "Pro úsek {segment} má teď přesnou referenci.",
+        "Další pokus začíná s jedním jasným úkolem, už myslí na další krok.",
+        "Menší ztráta v {segment} určuje další postup, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The working target is now {target_time}.",
+        "He has a precise number for the next run, and the picture is clear.",
+        "The session gains a clear benchmark at {target_time}.",
+        "Viewers know exactly what the next lap must deliver.",
+        "Every sector can now be measured against one target.",
+        "He begins the chase with {target_time} in view.",
+        "The next sequence has a simple objective, as the race story develops.",
+        "A firm reference replaces any guesswork."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The working target is now {target_time}, all under control.",
+        "He has a precise number for the next run, with no rush in the car.",
+        "The session gains a clear benchmark at {target_time}.",
+        "Viewers know exactly what the next lap must deliver.",
+        "Every sector can now be measured against one target, all under control.",
+        "He begins the chase with {target_time} in view.",
+        "The next sequence has a simple objective, and the rhythm stays smooth.",
+        "A firm reference replaces any guesswork, handled without any fuss."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The working target is now {target_time}, and his focus stays sharp.",
+        "He has a precise number for the next run, with every detail measured.",
+        "The session gains a clear benchmark at {target_time}.",
+        "Viewers know exactly what the next lap must deliver.",
+        "Every sector can now be measured against one target.",
+        "He begins the chase with {target_time} in view.",
+        "The next sequence has a simple objective.",
+        "A firm reference replaces any guesswork, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pracovní cíl teď stojí na {target_time}.",
+        "Pro další jízdu má přesné číslo, obraz závodu je jasný.",
+        "Trénink dostává jasnou hranici {target_time}, příběh pokračuje.",
+        "Diváci přesně vědí, co musí další kolo přinést, další fáze se rýsuje.",
+        "Každý úsek se teď může měřit proti jednomu cíli.",
+        "Do dalšího pokusu vyráží s časem {target_time}, obraz závodu je jasný.",
+        "Následující sekvence má jednoduchý úkol, příběh pokračuje.",
+        "Pevná reference nahrazuje odhad, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pracovní cíl teď stojí na {target_time}, všechno má pod kontrolou.",
+        "Pro další jízdu má přesné číslo, bez zbytečného spěchu.",
+        "Trénink dostává jasnou hranici {target_time}, rytmus zůstává plynulý.",
+        "Diváci přesně vědí, co musí další kolo přinést.",
+        "Každý úsek se teď může měřit proti jednomu cíli.",
+        "Do dalšího pokusu vyráží s časem {target_time}, bez zbytečného spěchu.",
+        "Následující sekvence má jednoduchý úkol, rytmus zůstává plynulý.",
+        "Pevná reference nahrazuje odhad, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "target_locked",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pracovní cíl teď stojí na {target_time}, soustředění zůstává pevné.",
+        "Pro další jízdu má přesné číslo, každý detail má změřený.",
+        "Trénink dostává jasnou hranici {target_time}, už myslí na další krok.",
+        "Diváci přesně vědí, co musí další kolo přinést, přesně podle plánu.",
+        "Každý úsek se teď může měřit proti jednomu cíli.",
+        "Do dalšího pokusu vyráží s časem {target_time}.",
+        "Následující sekvence má jednoduchý úkol, už myslí na další krok.",
+        "Pevná reference nahrazuje odhad, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The current projection settles at {projected_time}.",
+        "His live pace points toward {projected_time}, and the picture is clear.",
+        "The lap is building into a useful qualifying number.",
+        "Viewers get an early look at the likely result.",
+        "The estimate holds while the lap develops.",
+        "He carries a promising projection into the next sector.",
+        "The timing model gives this run a clear direction.",
+        "Confidence {confidence} supports the current estimate."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The current projection settles at {projected_time}.",
+        "His live pace points toward {projected_time}.",
+        "The lap is building into a useful qualifying number.",
+        "Viewers get an early look at the likely result, all part of the plan.",
+        "The estimate holds while the lap develops, and his focus stays sharp.",
+        "He carries a promising projection into the next sector.",
+        "The timing model gives this run a clear direction.",
+        "Confidence {confidence} supports the current estimate."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The current projection settles at {projected_time}.",
+        "His live pace points toward {projected_time}.",
+        "The lap is building into a useful qualifying number.",
+        "Viewers get an early look at the likely result.",
+        "The estimate holds while the lap develops.",
+        "He carries a promising projection into the next sector.",
+        "The timing model gives this run a clear direction.",
+        "Confidence {confidence} supports the current estimate."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Aktuální projekce se ustaluje na {projected_time}.",
+        "Průběžné tempo míří k času {projected_time}, obraz závodu je jasný.",
+        "Kolo se skládá do použitelného kvalifikačního času, příběh pokračuje.",
+        "Diváci dostávají první náhled na možný výsledek, další fáze se rýsuje.",
+        "Odhad drží, zatímco se kolo dál vyvíjí.",
+        "Slibnou projekci přenáší do dalšího úseku, obraz závodu je jasný.",
+        "Časový model dává pokusu jasný směr, příběh pokračuje.",
+        "Jistota {confidence} podporuje aktuální odhad, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Aktuální projekce se ustaluje na {projected_time}.",
+        "Průběžné tempo míří k času {projected_time}, každý detail má změřený.",
+        "Kolo se skládá do použitelného kvalifikačního času.",
+        "Diváci dostávají první náhled na možný výsledek, přesně podle plánu.",
+        "Odhad drží, zatímco se kolo dál vyvíjí, soustředění zůstává pevné.",
+        "Slibnou projekci přenáší do dalšího úseku, každý detail má změřený.",
+        "Časový model dává pokusu jasný směr, už myslí na další krok.",
+        "Jistota {confidence} podporuje aktuální odhad, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "projected_lap",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Aktuální projekce se ustaluje na {projected_time}, tlak dál roste.",
+        "Průběžné tempo míří k času {projected_time}, tempo pořád zvedá.",
+        "Kolo se skládá do použitelného kvalifikačního času.",
+        "Diváci dostávají první náhled na možný výsledek, bez náznaku polevení.",
+        "Odhad drží, zatímco se kolo dál vyvíjí, tlak dál roste.",
+        "Slibnou projekci přenáší do dalšího úseku, tempo pořád zvedá.",
+        "Časový model dává pokusu jasný směr, pořád hledá něco navíc.",
+        "Jistota {confidence} podporuje aktuální odhad, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He opens lap {lap} as a full qualifying attempt.",
+        "The clock is live for his next flying lap, and the picture is clear.",
+        "This pass starts with a clean sheet, as the race story develops.",
+        "Viewers now have one uninterrupted lap to follow.",
+        "He commits to the run from the timing line.",
+        "Every corner belongs to this single attempt, and the picture is clear.",
+        "The preparation phase gives way to the flyer.",
+        "Lap {lap} becomes the centre of the session."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He opens lap {lap} as a full qualifying attempt.",
+        "The clock is live for his next flying lap, with every detail measured.",
+        "This pass starts with a clean sheet, and he is already looking ahead.",
+        "Viewers now have one uninterrupted lap to follow, all part of the plan.",
+        "He commits to the run from the timing line, and his focus stays sharp.",
+        "Every corner belongs to this single attempt.",
+        "The preparation phase gives way to the flyer.",
+        "Lap {lap} becomes the centre of the session, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He opens lap {lap} as a full qualifying attempt.",
+        "The clock is live for his next flying lap.",
+        "This pass starts with a clean sheet, and he keeps asking for more.",
+        "Viewers now have one uninterrupted lap to follow.",
+        "He commits to the run from the timing line.",
+        "Every corner belongs to this single attempt.",
+        "The preparation phase gives way to the flyer.",
+        "Lap {lap} becomes the centre of the session."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He opens lap {lap} as a full qualifying attempt!",
+        "The clock is live for his next flying lap!",
+        "This pass starts with a clean sheet, and the momentum is surging!",
+        "Viewers now have one uninterrupted lap to follow!",
+        "He commits to the run from the timing line!",
+        "Every corner belongs to this single attempt!",
+        "The preparation phase gives way to the flyer!",
+        "Lap {lap} becomes the centre of the session!"
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} otevírá jako plný kvalifikační pokus.",
+        "Časomíra běží pro jeho další ostré kolo, obraz závodu je jasný.",
+        "Tenhle průjezd začíná s čistým štítem, příběh pokračuje.",
+        "Diváci teď mohou sledovat celé kolo bez přerušení.",
+        "Od časové čáry se pouští do ostrého pokusu.",
+        "Každá zatáčka patří jedinému pokusu, obraz závodu je jasný.",
+        "Přípravná fáze končí a přichází ostré kolo, příběh pokračuje.",
+        "Kolo {lap} se stává středem celé jízdy, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} otevírá jako plný kvalifikační pokus.",
+        "Časomíra běží pro jeho další ostré kolo, každý detail má změřený.",
+        "Tenhle průjezd začíná s čistým štítem, už myslí na další krok.",
+        "Diváci teď mohou sledovat celé kolo bez přerušení, přesně podle plánu.",
+        "Od časové čáry se pouští do ostrého pokusu, soustředění zůstává pevné.",
+        "Každá zatáčka patří jedinému pokusu, každý detail má změřený.",
+        "Přípravná fáze končí a přichází ostré kolo, už myslí na další krok.",
+        "Kolo {lap} se stává středem celé jízdy, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} otevírá jako plný kvalifikační pokus, tlak dál roste.",
+        "Časomíra běží pro jeho další ostré kolo, tempo pořád zvedá.",
+        "Tenhle průjezd začíná s čistým štítem, pořád hledá něco navíc.",
+        "Diváci teď mohou sledovat celé kolo bez přerušení.",
+        "Od časové čáry se pouští do ostrého pokusu, tlak dál roste.",
+        "Každá zatáčka patří jedinému pokusu, tempo pořád zvedá.",
+        "Přípravná fáze končí a přichází ostré kolo, pořád hledá něco navíc.",
+        "Kolo {lap} se stává středem celé jízdy, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "hot_lap",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} otevírá jako plný kvalifikační pokus, napětí stoupá!",
+        "Časomíra běží pro jeho další ostré kolo, závod kolem něj ožívá!",
+        "Tenhle průjezd začíná s čistým štítem, momentum nabírá sílu!",
+        "Diváci teď mohou sledovat celé kolo bez přerušení!",
+        "Od časové čáry se pouští do ostrého pokusu, napětí stoupá!",
+        "Každá zatáčka patří jedinému pokusu, závod kolem něj ožívá!",
+        "Přípravná fáze končí a přichází ostré kolo, momentum nabírá sílu!",
+        "Kolo {lap} se stává středem celé jízdy, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "His hold on P{position} now depends on this run.",
+        "The timing screen puts P{position} in play, and the picture is clear.",
+        "A cleaner lap is needed to protect the result.",
+        "Viewers have a qualifying position to watch closely.",
+        "The next sectors decide whether the place survives.",
+        "He has a direct answer to find on the stopwatch.",
+        "The session moves from building pace to defending it.",
+        "P{position} becomes the target for the whole lap."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "His hold on P{position} now depends on this run.",
+        "The timing screen puts P{position} in play, with every detail measured.",
+        "A cleaner lap is needed to protect the result.",
+        "Viewers have a qualifying position to watch closely.",
+        "The next sectors decide whether the place survives.",
+        "He has a direct answer to find on the stopwatch.",
+        "The session moves from building pace to defending it.",
+        "P{position} becomes the target for the whole lap, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "His hold on P{position} now depends on this run.",
+        "The timing screen puts P{position} in play.",
+        "A cleaner lap is needed to protect the result.",
+        "Viewers have a qualifying position to watch closely.",
+        "The next sectors decide whether the place survives.",
+        "He has a direct answer to find on the stopwatch.",
+        "The session moves from building pace to defending it.",
+        "P{position} becomes the target for the whole lap."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Udržení {position}. místa teď závisí na tomhle kole.",
+        "Časomíra otevírá boj o {position}. místo, obraz závodu je jasný.",
+        "K ochraně výsledku potřebuje čistší kolo, příběh pokračuje.",
+        "Diváci mají kvalifikační pozici, kterou stojí za to hlídat.",
+        "Další úseky rozhodnou, jestli místo vydrží.",
+        "Na stopkách musí najít přímou odpověď, obraz závodu je jasný.",
+        "Jízda přechází od stavby tempa k jeho obraně, příběh pokračuje.",
+        "{position}. místo se stává cílem celého kola, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Udržení {position}. místa teď závisí na tomhle kole.",
+        "Časomíra otevírá boj o {position}. místo, každý detail má změřený.",
+        "K ochraně výsledku potřebuje čistší kolo, už myslí na další krok.",
+        "Diváci mají kvalifikační pozici, kterou stojí za to hlídat.",
+        "Další úseky rozhodnou, jestli místo vydrží, soustředění zůstává pevné.",
+        "Na stopkách musí najít přímou odpověď, každý detail má změřený.",
+        "Jízda přechází od stavby tempa k jeho obraně, už myslí na další krok.",
+        "{position}. místo se stává cílem celého kola, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "position_attack",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Udržení {position}. místa teď závisí na tomhle kole, tlak dál roste.",
+        "Časomíra otevírá boj o {position}. místo, tempo pořád zvedá.",
+        "K ochraně výsledku potřebuje čistší kolo, pořád hledá něco navíc.",
+        "Diváci mají kvalifikační pozici, kterou stojí za to hlídat.",
+        "Další úseky rozhodnou, jestli místo vydrží, tlak dál roste.",
+        "Na stopkách musí najít přímou odpověď, tempo pořád zvedá.",
+        "Jízda přechází od stavby tempa k jeho obraně, pořád hledá něco navíc.",
+        "{position}. místo se stává cílem celého kola, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "His clean sequence reaches {streak} laps.",
+        "The error-free run keeps growing, and the picture is clear.",
+        "Consistency becomes the quiet story of this stint.",
+        "Viewers can see the discipline behind the pace.",
+        "He turns repetition into a dependable rhythm.",
+        "Another tidy lap protects the sequence, and the picture is clear.",
+        "That clean base gives him room to build, as the race story develops.",
+        "The stint now rests on {streak} controlled laps."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "His clean sequence reaches {streak} laps, all under control.",
+        "The error-free run keeps growing, with no rush in the car.",
+        "Consistency becomes the quiet story of this stint.",
+        "Viewers can see the discipline behind the pace.",
+        "He turns repetition into a dependable rhythm, all under control.",
+        "Another tidy lap protects the sequence, with no rush in the car.",
+        "That clean base gives him room to build, and the rhythm stays smooth.",
+        "The stint now rests on {streak} controlled laps."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "His clean sequence reaches {streak} laps, and his focus stays sharp.",
+        "The error-free run keeps growing, with every detail measured.",
+        "Consistency becomes the quiet story of this stint.",
+        "Viewers can see the discipline behind the pace, all part of the plan.",
+        "He turns repetition into a dependable rhythm.",
+        "Another tidy lap protects the sequence, with every detail measured.",
+        "That clean base gives him room to build.",
+        "The stint now rests on {streak} controlled laps, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Čistá série dosahuje {streak} kol.",
+        "Jízda bez chyby dál roste, obraz závodu je jasný.",
+        "Konzistence se stává tichým příběhem stintu, příběh pokračuje.",
+        "Diváci mohou za tempem vidět i disciplínu, další fáze se rýsuje.",
+        "Opakování proměňuje ve spolehlivý rytmus.",
+        "Další čisté kolo chrání celou sérii, obraz závodu je jasný.",
+        "Tenhle pevný základ mu dává prostor stavět dál, příběh pokračuje.",
+        "Stint teď stojí na {streak} kontrolovaných kolech."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Čistá série dosahuje {streak} kol, všechno má pod kontrolou.",
+        "Jízda bez chyby dál roste, bez zbytečného spěchu.",
+        "Konzistence se stává tichým příběhem stintu, rytmus zůstává plynulý.",
+        "Diváci mohou za tempem vidět i disciplínu, zvládá to bez nervozity.",
+        "Opakování proměňuje ve spolehlivý rytmus, všechno má pod kontrolou.",
+        "Další čisté kolo chrání celou sérii, bez zbytečného spěchu.",
+        "Tenhle pevný základ mu dává prostor stavět dál, rytmus zůstává plynulý.",
+        "Stint teď stojí na {streak} kontrolovaných kolech."
+      ]
+    },
+    {
+      "node_id": "clean_streak",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Čistá série dosahuje {streak} kol, soustředění zůstává pevné.",
+        "Jízda bez chyby dál roste, každý detail má změřený.",
+        "Konzistence se stává tichým příběhem stintu, už myslí na další krok.",
+        "Diváci mohou za tempem vidět i disciplínu, přesně podle plánu.",
+        "Opakování proměňuje ve spolehlivý rytmus, soustředění zůstává pevné.",
+        "Další čisté kolo chrání celou sérii, každý detail má změřený.",
+        "Tenhle pevný základ mu dává prostor stavět dál, už myslí na další krok.",
+        "Stint teď stojí na {streak} kontrolovaných kolech, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car ahead is coming into range at {gap}.",
+        "He is building a real passing opportunity, and the picture is clear.",
+        "P{position} is becoming a launch point rather than a destination.",
+        "The gap is falling and the next beat is taking shape.",
+        "His pace is turning open road into a chase.",
+        "He draws closer to {target_name}, with {gap} left to close.",
+        "{target_name} is becoming the next live target.",
+        "The gap to {target_name} gives this stint a clear direction.",
+        "He brings {target_name} into reach from P{position}.",
+        "{target_name} remains ahead, but the pressure is changing.",
+        "The chase of {target_name} is now visible to the audience.",
+        "He turns steady pace into a threat for {target_name}."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car ahead is coming into range at {gap}, and his focus stays sharp.",
+        "He is building a real passing opportunity, with every detail measured.",
+        "P{position} is becoming a launch point rather than a destination.",
+        "The gap is falling and the next beat is taking shape.",
+        "His pace is turning open road into a chase, and his focus stays sharp.",
+        "He draws closer to {target_name}, with {gap} left to close.",
+        "{target_name} is becoming the next live target.",
+        "The gap to {target_name} gives this stint a clear direction.",
+        "He brings {target_name} into reach from P{position}.",
+        "{target_name} remains ahead, but the pressure is changing.",
+        "The chase of {target_name} is now visible to the audience.",
+        "He turns steady pace into a threat for {target_name}."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car ahead is coming into range at {gap}.",
+        "He is building a real passing opportunity.",
+        "P{position} is becoming a launch point rather than a destination.",
+        "The gap is falling and the next beat is taking shape.",
+        "His pace is turning open road into a chase.",
+        "Viewers can sense a move developing up the road.",
+        "He draws closer to {target_name}, with {gap} left to close.",
+        "{target_name} is becoming the next live target.",
+        "The gap to {target_name} gives this stint a clear direction.",
+        "He brings {target_name} into reach from P{position}.",
+        "{target_name} remains ahead, but the pressure is changing.",
+        "The chase of {target_name} is now visible to the audience."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car ahead is coming into range at {gap}!",
+        "He is building a real passing opportunity!",
+        "P{position} is becoming a launch point rather than a destination!",
+        "The gap is falling and the next beat is taking shape!",
+        "He draws closer to {target_name}, with {gap} left to close!",
+        "{target_name} is becoming the next live target!",
+        "The gap to {target_name} gives this stint a clear direction!",
+        "He brings {target_name} into reach from P{position}!",
+        "{target_name} remains ahead, but the pressure is changing!",
+        "The chase of {target_name} is now visible to the audience!",
+        "He turns steady pace into a threat for {target_name}!",
+        "The next sequence may begin with {target_name} at {gap}!"
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz vpředu se dostává na dosah, odstup je {gap}.",
+        "Vytváří si skutečnou příležitost k útoku, obraz závodu je jasný.",
+        "{position}. místo se mění ve výchozí bod místo cíle, příběh pokračuje.",
+        "Mezera klesá a další část příběhu se rýsuje, další fáze se rýsuje.",
+        "Přibližuje se k {target_name}, zbývá odstup {gap}.",
+        "{target_name} se stává dalším živým cílem, obraz závodu je jasný.",
+        "Odstup na {target_name} dává stintu jasný směr, příběh pokračuje.",
+        "Z {position}. místa dostává {target_name} na dosah.",
+        "{target_name} zůstává vpředu, tlak se ale mění.",
+        "Diváci už vidí, jak stíhá {target_name}, obraz závodu je jasný.",
+        "Stabilní tempo proměňuje v hrozbu pro {target_name}, příběh pokračuje.",
+        "Další sekvence může začít u {target_name} s odstupem {gap}."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz vpředu se dostává na dosah, odstup je {gap}.",
+        "Vytváří si skutečnou příležitost k útoku, každý detail má změřený.",
+        "{position}. místo se mění ve výchozí bod místo cíle.",
+        "Mezera klesá a další část příběhu se rýsuje, přesně podle plánu.",
+        "Přibližuje se k {target_name}, zbývá odstup {gap}.",
+        "{target_name} se stává dalším živým cílem, každý detail má změřený.",
+        "Odstup na {target_name} dává stintu jasný směr, už myslí na další krok.",
+        "Z {position}. místa dostává {target_name} na dosah, přesně podle plánu.",
+        "{target_name} zůstává vpředu, tlak se ale mění.",
+        "Diváci už vidí, jak stíhá {target_name}, každý detail má změřený.",
+        "Stabilní tempo proměňuje v hrozbu pro {target_name}.",
+        "Další sekvence může začít u {target_name} s odstupem {gap}."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz vpředu se dostává na dosah, odstup je {gap}, tlak dál roste.",
+        "Vytváří si skutečnou příležitost k útoku, tempo pořád zvedá.",
+        "{position}. místo se mění ve výchozí bod místo cíle.",
+        "Mezera klesá a další část příběhu se rýsuje, bez náznaku polevení.",
+        "Přibližuje se k {target_name}, zbývá odstup {gap}, tlak dál roste.",
+        "{target_name} se stává dalším živým cílem, tempo pořád zvedá.",
+        "Odstup na {target_name} dává stintu jasný směr, pořád hledá něco navíc.",
+        "Z {position}. místa dostává {target_name} na dosah.",
+        "{target_name} zůstává vpředu, tlak se ale mění, tlak dál roste.",
+        "Diváci už vidí, jak stíhá {target_name}, tempo pořád zvedá.",
+        "Stabilní tempo proměňuje v hrozbu pro {target_name}.",
+        "Další sekvence může začít u {target_name} s odstupem {gap}."
+      ]
+    },
+    {
+      "node_id": "hunting",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz vpředu se dostává na dosah, odstup je {gap}, napětí stoupá!",
+        "Vytváří si skutečnou příležitost k útoku, závod kolem něj ožívá!",
+        "{position}. místo se mění ve výchozí bod místo cíle!",
+        "Mezera klesá a další část příběhu se rýsuje, tohle začíná být ostré!",
+        "Přibližuje se k {target_name}, zbývá odstup {gap}, napětí stoupá!",
+        "{target_name} se stává dalším živým cílem, závod kolem něj ožívá!",
+        "Odstup na {target_name} dává stintu jasný směr, momentum nabírá sílu!",
+        "Z {position}. místa dostává {target_name} na dosah!",
+        "{target_name} zůstává vpředu, tlak se ale mění, napětí stoupá!",
+        "Diváci už vidí, jak stíhá {target_name}, závod kolem něj ožívá!",
+        "Stabilní tempo proměňuje v hrozbu pro {target_name}!",
+        "Další sekvence může začít u {target_name} s odstupem {gap}!"
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car behind is closing, with {gap} left.",
+        "P{position} now needs a disciplined defence, and the picture is clear.",
+        "The mirrors become part of every decision, as the race story develops.",
+        "Viewers can see the pressure arriving from behind.",
+        "{target_name} closes from behind with the gap at {gap}.",
+        "He has {target_name} filling the mirrors, and the picture is clear.",
+        "{target_name} turns P{position} into a defensive task.",
+        "The pressure from {target_name} is now part of every corner.",
+        "He measures the threat of {target_name} at {gap}.",
+        "{target_name} is close enough to shape his line.",
+        "The audience can see {target_name} preparing the next phase.",
+        "His defence now has a name, and it is {target_name}."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car behind is closing, with {gap} left, and his focus stays sharp.",
+        "P{position} now needs a disciplined defence.",
+        "The mirrors become part of every decision.",
+        "Viewers can see the pressure arriving from behind.",
+        "He has a shrinking margin to manage, and his focus stays sharp.",
+        "{target_name} closes from behind with the gap at {gap}.",
+        "He has {target_name} filling the mirrors, with every detail measured.",
+        "{target_name} turns P{position} into a defensive task.",
+        "The pressure from {target_name} is now part of every corner.",
+        "He measures the threat of {target_name} at {gap}.",
+        "{target_name} is close enough to shape his line.",
+        "The audience can see {target_name} preparing the next phase."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car behind is closing, with {gap} left.",
+        "P{position} now needs a disciplined defence.",
+        "The mirrors become part of every decision.",
+        "Viewers can see the pressure arriving from behind.",
+        "{target_name} closes from behind with the gap at {gap}.",
+        "He has {target_name} filling the mirrors, with the pace still building.",
+        "{target_name} turns P{position} into a defensive task.",
+        "The pressure from {target_name} is now part of every corner.",
+        "He measures the threat of {target_name} at {gap}.",
+        "{target_name} is close enough to shape his line.",
+        "The audience can see {target_name} preparing the next phase.",
+        "His defence now has a name, and it is {target_name}."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The car behind is closing, with {gap} left!",
+        "P{position} now needs a disciplined defence!",
+        "The mirrors become part of every decision, and the momentum is surging!",
+        "Viewers can see the pressure arriving from behind!",
+        "{target_name} closes from behind with the gap at {gap}!",
+        "He has {target_name} filling the mirrors!",
+        "{target_name} turns P{position} into a defensive task!",
+        "The pressure from {target_name} is now part of every corner!",
+        "He measures the threat of {target_name} at {gap}!",
+        "{target_name} is close enough to shape his line!",
+        "The audience can see {target_name} preparing the next phase!",
+        "His defence now has a name, and it is {target_name}!"
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz zezadu se blíží, zbývá odstup {gap}.",
+        "{position}. místo teď potřebuje disciplinovanou obranu.",
+        "Zrcátka se stávají součástí každého rozhodnutí, příběh pokračuje.",
+        "Diváci vidí, jak zezadu přichází tlak, další fáze se rýsuje.",
+        "{target_name} se zezadu blíží, odstup je {gap}.",
+        "V zrcátkách mu roste {target_name}, obraz závodu je jasný.",
+        "{target_name} mění {position}. místo v obranný úkol, příběh pokračuje.",
+        "Tlak od {target_name} je teď součástí každé zatáčky.",
+        "Hrozbu od {target_name} měří odstupem {gap}.",
+        "{target_name} je dost blízko, aby ovlivnil jeho stopu.",
+        "Diváci vidí, jak si {target_name} připravuje další fázi.",
+        "Jeho obrana má jméno a tím je {target_name}, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz zezadu se blíží, zbývá odstup {gap}, soustředění zůstává pevné.",
+        "{position}. místo teď potřebuje disciplinovanou obranu.",
+        "Zrcátka se stávají součástí každého rozhodnutí, už myslí na další krok.",
+        "Diváci vidí, jak zezadu přichází tlak, přesně podle plánu.",
+        "{target_name} se zezadu blíží, odstup je {gap}.",
+        "V zrcátkách mu roste {target_name}, každý detail má změřený.",
+        "{target_name} mění {position}. místo v obranný úkol.",
+        "Tlak od {target_name} je teď součástí každé zatáčky.",
+        "Hrozbu od {target_name} měří odstupem {gap}, soustředění zůstává pevné.",
+        "{target_name} je dost blízko, aby ovlivnil jeho stopu.",
+        "Diváci vidí, jak si {target_name} připravuje další fázi.",
+        "Jeho obrana má jméno a tím je {target_name}, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz zezadu se blíží, zbývá odstup {gap}, tlak dál roste.",
+        "{position}. místo teď potřebuje disciplinovanou obranu.",
+        "Zrcátka se stávají součástí každého rozhodnutí, pořád hledá něco navíc.",
+        "Diváci vidí, jak zezadu přichází tlak, bez náznaku polevení.",
+        "{target_name} se zezadu blíží, odstup je {gap}, tlak dál roste.",
+        "V zrcátkách mu roste {target_name}, tempo pořád zvedá.",
+        "{target_name} mění {position}. místo v obranný úkol.",
+        "Tlak od {target_name} je teď součástí každé zatáčky.",
+        "Hrozbu od {target_name} měří odstupem {gap}, tlak dál roste.",
+        "{target_name} je dost blízko, aby ovlivnil jeho stopu.",
+        "Diváci vidí, jak si {target_name} připravuje další fázi.",
+        "Jeho obrana má jméno a tím je {target_name}, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "hunted",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vůz zezadu se blíží, zbývá odstup {gap}, napětí stoupá!",
+        "{position}. místo teď potřebuje disciplinovanou obranu!",
+        "Zrcátka se stávají součástí každého rozhodnutí, momentum nabírá sílu!",
+        "Diváci vidí, jak zezadu přichází tlak, tohle začíná být ostré!",
+        "Musí pracovat se stále menším náskokem, napětí stoupá!",
+        "{target_name} se zezadu blíží, odstup je {gap}, napětí stoupá!",
+        "V zrcátkách mu roste {target_name}, závod kolem něj ožívá!",
+        "{target_name} mění {position}. místo v obranný úkol!",
+        "Tlak od {target_name} je teď součástí každé zatáčky!",
+        "Hrozbu od {target_name} měří odstupem {gap}, napětí stoupá!",
+        "{target_name} je dost blízko, aby ovlivnil jeho stopu!",
+        "Diváci vidí, jak si {target_name} připravuje další fázi!"
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The cars are level in the fight for P{position}.",
+        "He is fully alongside now, with the next beat taking shape.",
+        "Two lines enter the corner and only one can lead out.",
+        "Viewers have the direct battle they were waiting for.",
+        "He runs door to door with {target_name}.",
+        "{target_name} is level with him in the fight for P{position}.",
+        "The chase has become a direct contest with {target_name}.",
+        "He shares the racing line with {target_name}.",
+        "{target_name} leaves no room for a quiet exit.",
+        "The audience gets a full side-by-side moment with {target_name}.",
+        "He keeps the car alongside {target_name}, as the race story develops.",
+        "This sequence now turns on who clears {target_name} first."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The cars are level in the fight for P{position}.",
+        "He is fully alongside now, with no sign of easing off.",
+        "Two lines enter the corner and only one can lead out.",
+        "Viewers have the direct battle they were waiting for.",
+        "He runs door to door with {target_name}, and the pressure keeps rising.",
+        "{target_name} is level with him in the fight for P{position}.",
+        "The chase has become a direct contest with {target_name}.",
+        "He shares the racing line with {target_name}.",
+        "{target_name} leaves no room for a quiet exit.",
+        "The audience gets a full side-by-side moment with {target_name}.",
+        "He keeps the car alongside {target_name}, and he keeps asking for more.",
+        "This sequence now turns on who clears {target_name} first."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The cars are level in the fight for P{position}!",
+        "He is fully alongside now, and this is getting intense!",
+        "Two lines enter the corner and only one can lead out!",
+        "He runs door to door with {target_name}, and the tension is climbing!",
+        "{target_name} is level with him in the fight for P{position}!",
+        "The chase has become a direct contest with {target_name}!",
+        "He shares the racing line with {target_name}!",
+        "{target_name} leaves no room for a quiet exit!",
+        "The audience gets a full side-by-side moment with {target_name}!",
+        "He keeps the car alongside {target_name}, and the momentum is surging!",
+        "This sequence now turns on who clears {target_name} first!",
+        "{target_name} is still there at his side, and the tension is climbing!"
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vozy jsou vedle sebe v boji o {position}. místo, příběh pokračuje.",
+        "Teď už je úplně vedle soupeře, další fáze se rýsuje.",
+        "Do zatáčky vedou dvě stopy, ven může první jen jedna.",
+        "Diváci dostávají přímý souboj, na který čekali, obraz závodu je jasný.",
+        "Jede dveře na dveře s {target_name}.",
+        "{target_name} je vedle něj v boji o {position}. místo.",
+        "Stíhání se mění v přímý souboj s {target_name}, příběh pokračuje.",
+        "O závodní stopu se dělí s {target_name}, další fáze se rýsuje.",
+        "{target_name} mu nenechává klidný výjezd.",
+        "Diváci sledují plný souboj bok po boku s {target_name}.",
+        "Vůz drží vedle {target_name}, příběh pokračuje.",
+        "Sekvence se láme na tom, kdo první zdolá {target_name}."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vozy jsou vedle sebe v boji o {position}. místo.",
+        "Teď už je úplně vedle soupeře, bez náznaku polevení.",
+        "Do zatáčky vedou dvě stopy, ven může první jen jedna, tlak dál roste.",
+        "Jede dveře na dveře s {target_name}, tlak dál roste.",
+        "{target_name} je vedle něj v boji o {position}. místo.",
+        "Stíhání se mění v přímý souboj s {target_name}, pořád hledá něco navíc.",
+        "O závodní stopu se dělí s {target_name}, bez náznaku polevení.",
+        "{target_name} mu nenechává klidný výjezd, tlak dál roste.",
+        "Diváci sledují plný souboj bok po boku s {target_name}.",
+        "Vůz drží vedle {target_name}, pořád hledá něco navíc.",
+        "Sekvence se láme na tom, kdo první zdolá {target_name}.",
+        "{target_name} je pořád těsně vedle něj, tlak dál roste."
+      ]
+    },
+    {
+      "node_id": "side_by_side",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Vozy jsou vedle sebe v boji o {position}. místo, momentum nabírá sílu!",
+        "Teď už je úplně vedle soupeře, tohle začíná být ostré!",
+        "Do zatáčky vedou dvě stopy, ven může první jen jedna, napětí stoupá!",
+        "Diváci dostávají přímý souboj, na který čekali, závod kolem něj ožívá!",
+        "Jede dveře na dveře s {target_name}, napětí stoupá!",
+        "{target_name} je vedle něj v boji o {position}. místo!",
+        "Stíhání se mění v přímý souboj s {target_name}, momentum nabírá sílu!",
+        "O závodní stopu se dělí s {target_name}, tohle začíná být ostré!",
+        "{target_name} mu nenechává klidný výjezd, napětí stoupá!",
+        "Diváci sledují plný souboj bok po boku s {target_name}!",
+        "Vůz drží vedle {target_name}, momentum nabírá sílu!",
+        "Sekvence se láme na tom, kdo první zdolá {target_name}!"
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the pass and takes P{position}.",
+        "The place changes hands on track, with the next beat taking shape.",
+        "That whole chase now has a result.",
+        "Viewers see a clean finish to the sequence, and the picture is clear.",
+        "He completes the move on {target_name} for P{position}.",
+        "{target_name} is behind after a clean pass, and the picture is clear.",
+        "The earlier chase of {target_name} becomes track position.",
+        "He converts the run on {target_name} into P{position}.",
+        "Viewers see the sequence pay off against {target_name}.",
+        "He clears {target_name} and owns the next piece of road.",
+        "The contest with {target_name} ends in a gained place.",
+        "He makes the accepted pass on {target_name} count."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the pass and takes P{position}.",
+        "The place changes hands on track, all part of the plan.",
+        "That whole chase now has a result, and his focus stays sharp.",
+        "Viewers see a clean finish to the sequence, with every detail measured.",
+        "He completes the move on {target_name} for P{position}.",
+        "{target_name} is behind after a clean pass, with every detail measured.",
+        "The earlier chase of {target_name} becomes track position.",
+        "He converts the run on {target_name} into P{position}.",
+        "Viewers see the sequence pay off against {target_name}.",
+        "He clears {target_name} and owns the next piece of road.",
+        "The contest with {target_name} ends in a gained place.",
+        "He makes the accepted pass on {target_name} count."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the pass and takes P{position}.",
+        "The place changes hands on track, with no sign of easing off.",
+        "That whole chase now has a result, and the pressure keeps rising.",
+        "Viewers see a clean finish to the sequence.",
+        "He completes the move on {target_name} for P{position}.",
+        "{target_name} is behind after a clean pass.",
+        "The earlier chase of {target_name} becomes track position.",
+        "He converts the run on {target_name} into P{position}.",
+        "Viewers see the sequence pay off against {target_name}.",
+        "He clears {target_name} and owns the next piece of road.",
+        "The contest with {target_name} ends in a gained place.",
+        "He makes the accepted pass on {target_name} count."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the pass and takes P{position}!",
+        "The place changes hands on track, and this is getting intense!",
+        "That whole chase now has a result, and the tension is climbing!",
+        "Viewers see a clean finish to the sequence!",
+        "He completes the move on {target_name} for P{position}!",
+        "{target_name} is behind after a clean pass!",
+        "The earlier chase of {target_name} becomes track position!",
+        "He converts the run on {target_name} into P{position}!",
+        "Viewers see the sequence pay off against {target_name}!",
+        "He clears {target_name} and owns the next piece of road!",
+        "The contest with {target_name} ends in a gained place!",
+        "He makes the accepted pass on {target_name} count!"
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Dokončuje předjetí a bere {position}. místo, příběh pokračuje.",
+        "Pozice mění majitele přímo na trati, další fáze se rýsuje.",
+        "Celé stíhání teď dostává výsledek.",
+        "Diváci vidí čisté zakončení sekvence, obraz závodu je jasný.",
+        "Dokončuje manévr na {target_name} pro {position}. místo.",
+        "Po čistém předjetí zůstává {target_name} za ním, obraz závodu je jasný.",
+        "Předchozí stíhání {target_name} mění v pozici na trati.",
+        "Útok na {target_name} proměňuje v {position}. místo.",
+        "Diváci vidí, jak sekvence proti {target_name} přináší výsledek.",
+        "Zdolává {target_name} a bere si další kus trati, obraz závodu je jasný.",
+        "Souboj s {target_name} končí získanou pozicí, příběh pokračuje.",
+        "Potvrzené předjetí {target_name} skutečně využívá."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Dokončuje předjetí a bere {position}. místo, už myslí na další krok.",
+        "Pozice mění majitele přímo na trati, přesně podle plánu.",
+        "Celé stíhání teď dostává výsledek, soustředění zůstává pevné.",
+        "Diváci vidí čisté zakončení sekvence, každý detail má změřený.",
+        "Dokončuje manévr na {target_name} pro {position}. místo.",
+        "Po čistém předjetí zůstává {target_name} za ním.",
+        "Předchozí stíhání {target_name} mění v pozici na trati.",
+        "Útok na {target_name} proměňuje v {position}. místo.",
+        "Diváci vidí, jak sekvence proti {target_name} přináší výsledek.",
+        "Zdolává {target_name} a bere si další kus trati.",
+        "Souboj s {target_name} končí získanou pozicí, už myslí na další krok.",
+        "Potvrzené předjetí {target_name} skutečně využívá, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Dokončuje předjetí a bere {position}. místo, pořád hledá něco navíc.",
+        "Pozice mění majitele přímo na trati, bez náznaku polevení.",
+        "Celé stíhání teď dostává výsledek, tlak dál roste.",
+        "Dokončuje manévr na {target_name} pro {position}. místo.",
+        "Po čistém předjetí zůstává {target_name} za ním, tempo pořád zvedá.",
+        "Předchozí stíhání {target_name} mění v pozici na trati.",
+        "Útok na {target_name} proměňuje v {position}. místo.",
+        "Diváci vidí, jak sekvence proti {target_name} přináší výsledek.",
+        "Zdolává {target_name} a bere si další kus trati, tempo pořád zvedá.",
+        "Souboj s {target_name} končí získanou pozicí, pořád hledá něco navíc.",
+        "Potvrzené předjetí {target_name} skutečně využívá.",
+        "Po dokončeném manévru přenechává {target_name} místo, tlak dál roste."
+      ]
+    },
+    {
+      "node_id": "overtake",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Dokončuje předjetí a bere {position}. místo, momentum nabírá sílu!",
+        "Pozice mění majitele přímo na trati, tohle začíná být ostré!",
+        "Celé stíhání teď dostává výsledek, napětí stoupá!",
+        "Diváci vidí čisté zakončení sekvence, závod kolem něj ožívá!",
+        "Dokončuje manévr na {target_name} pro {position}. místo, napětí stoupá!",
+        "Po čistém předjetí zůstává {target_name} za ním, závod kolem něj ožívá!",
+        "Předchozí stíhání {target_name} mění v pozici na trati!",
+        "Útok na {target_name} proměňuje v {position}. místo!",
+        "Diváci vidí, jak sekvence proti {target_name} přináší výsledek!",
+        "Zdolává {target_name} a bere si další kus trati, závod kolem něj ožívá!",
+        "Souboj s {target_name} končí získanou pozicí, momentum nabírá sílu!",
+        "Potvrzené předjetí {target_name} skutečně využívá!"
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order moves him forward to P{position}.",
+        "He advances from P{old_position} to P{position}.",
+        "A place opens and he is there to collect it.",
+        "The timing screen gives viewers a new running order.",
+        "His race gains one position without a claimed pass.",
+        "The next chapter begins from P{position}, and the picture is clear.",
+        "The classification shifts in his favour, as the race story develops.",
+        "He inherits cleaner track position, with the next beat taking shape.",
+        "One place comes his way as the race develops.",
+        "The field reshuffles and he moves with it, and the picture is clear.",
+        "P{position} is now the number beside his name.",
+        "The change puts him one step farther up the order."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order moves him forward to P{position}, all under control.",
+        "He advances from P{old_position} to P{position}.",
+        "A place opens and he is there to collect it.",
+        "The timing screen gives viewers a new running order.",
+        "His race gains one position without a claimed pass, all under control.",
+        "The next chapter begins from P{position}, with no rush in the car.",
+        "The classification shifts in his favour, and the rhythm stays smooth.",
+        "He inherits cleaner track position, handled without any fuss.",
+        "One place comes his way as the race develops, all under control.",
+        "The field reshuffles and he moves with it, with no rush in the car.",
+        "P{position} is now the number beside his name.",
+        "The change puts him one step farther up the order."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order moves him forward to P{position}, and his focus stays sharp.",
+        "He advances from P{old_position} to P{position}.",
+        "A place opens and he is there to collect it.",
+        "The timing screen gives viewers a new running order.",
+        "His race gains one position without a claimed pass.",
+        "The next chapter begins from P{position}, with every detail measured.",
+        "The classification shifts in his favour.",
+        "He inherits cleaner track position, all part of the plan.",
+        "One place comes his way as the race develops.",
+        "The field reshuffles and he moves with it, with every detail measured.",
+        "P{position} is now the number beside his name.",
+        "The change puts him one step farther up the order."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order moves him forward to P{position}.",
+        "He advances from P{old_position} to P{position}.",
+        "A place opens and he is there to collect it.",
+        "The timing screen gives viewers a new running order.",
+        "His race gains one position without a claimed pass.",
+        "The next chapter begins from P{position}, with the pace still building.",
+        "The classification shifts in his favour, and he keeps asking for more.",
+        "He inherits cleaner track position, with no sign of easing off.",
+        "One place comes his way as the race develops.",
+        "The field reshuffles and he moves with it.",
+        "P{position} is now the number beside his name.",
+        "The change puts him one step farther up the order."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho posouvá na {position}. místo.",
+        "Z {old_position}. místa postupuje na {position}, obraz závodu je jasný.",
+        "Pozice se uvolňuje a on ji bere, příběh pokračuje.",
+        "Časomíra ukazuje divákům nové průběžné pořadí, další fáze se rýsuje.",
+        "Získává místo, aniž by komentář tvrdil předjetí.",
+        "Další kapitola začíná z {position}. místa, obraz závodu je jasný.",
+        "Klasifikace se mění v jeho prospěch, příběh pokračuje.",
+        "Dostává se do lepší pozice na trati, další fáze se rýsuje.",
+        "Vývoj závodu mu přináší jedno místo.",
+        "Pole se přeskládává a on postupuje s ním, obraz závodu je jasný.",
+        "U jeho jména teď svítí {position}. místo, příběh pokračuje.",
+        "Změna ho posouvá o krok výš v pořadí, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho posouvá na {position}. místo, všechno má pod kontrolou.",
+        "Z {old_position}. místa postupuje na {position}, bez zbytečného spěchu.",
+        "Pozice se uvolňuje a on ji bere, rytmus zůstává plynulý.",
+        "Časomíra ukazuje divákům nové průběžné pořadí, zvládá to bez nervozity.",
+        "Získává místo, aniž by komentář tvrdil předjetí.",
+        "Další kapitola začíná z {position}. místa, bez zbytečného spěchu.",
+        "Klasifikace se mění v jeho prospěch, rytmus zůstává plynulý.",
+        "Dostává se do lepší pozice na trati, zvládá to bez nervozity.",
+        "Vývoj závodu mu přináší jedno místo, všechno má pod kontrolou.",
+        "Pole se přeskládává a on postupuje s ním, bez zbytečného spěchu.",
+        "U jeho jména teď svítí {position}. místo, rytmus zůstává plynulý.",
+        "Změna ho posouvá o krok výš v pořadí, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho posouvá na {position}. místo, soustředění zůstává pevné.",
+        "Z {old_position}. místa postupuje na {position}.",
+        "Pozice se uvolňuje a on ji bere, už myslí na další krok.",
+        "Časomíra ukazuje divákům nové průběžné pořadí, přesně podle plánu.",
+        "Získává místo, aniž by komentář tvrdil předjetí.",
+        "Další kapitola začíná z {position}. místa, každý detail má změřený.",
+        "Klasifikace se mění v jeho prospěch, už myslí na další krok.",
+        "Dostává se do lepší pozice na trati, přesně podle plánu.",
+        "Vývoj závodu mu přináší jedno místo, soustředění zůstává pevné.",
+        "Pole se přeskládává a on postupuje s ním, každý detail má změřený.",
+        "U jeho jména teď svítí {position}. místo, už myslí na další krok.",
+        "Změna ho posouvá o krok výš v pořadí, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "position_gained",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho posouvá na {position}. místo, tlak dál roste.",
+        "Z {old_position}. místa postupuje na {position}, tempo pořád zvedá.",
+        "Pozice se uvolňuje a on ji bere, pořád hledá něco navíc.",
+        "Časomíra ukazuje divákům nové průběžné pořadí, bez náznaku polevení.",
+        "Získává místo, aniž by komentář tvrdil předjetí, tlak dál roste.",
+        "Další kapitola začíná z {position}. místa, tempo pořád zvedá.",
+        "Klasifikace se mění v jeho prospěch, pořád hledá něco navíc.",
+        "Dostává se do lepší pozice na trati, bez náznaku polevení.",
+        "Vývoj závodu mu přináší jedno místo, tlak dál roste.",
+        "Pole se přeskládává a on postupuje s ním, tempo pořád zvedá.",
+        "U jeho jména teď svítí {position}. místo, pořád hledá něco navíc.",
+        "Změna ho posouvá o krok výš v pořadí, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order drops him back to P{position}.",
+        "He moves from P{old_position} to P{position}, and the picture is clear.",
+        "One place slips away in the running order, as the race story develops.",
+        "The timing screen gives viewers the updated picture.",
+        "His next phase starts from a lower position.",
+        "The classification turns against him by one place.",
+        "That change resets the task ahead, as the race story develops.",
+        "He now has ground to recover, with the next beat taking shape.",
+        "The field reshuffles and leaves him behind.",
+        "P{position} becomes the new reference, and the picture is clear.",
+        "One position is gone, but the race continues.",
+        "The story changes without needing any blame."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order drops him back to P{position}, and his focus stays sharp.",
+        "He moves from P{old_position} to P{position}.",
+        "One place slips away in the running order.",
+        "The timing screen gives viewers the updated picture.",
+        "His next phase starts from a lower position, and his focus stays sharp.",
+        "The classification turns against him by one place.",
+        "That change resets the task ahead, and he is already looking ahead.",
+        "He now has ground to recover, all part of the plan.",
+        "The field reshuffles and leaves him behind, and his focus stays sharp.",
+        "P{position} becomes the new reference, with every detail measured.",
+        "One position is gone, but the race continues.",
+        "The story changes without needing any blame, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order drops him back to P{position}, and the pressure keeps rising.",
+        "He moves from P{old_position} to P{position}.",
+        "One place slips away in the running order.",
+        "The timing screen gives viewers the updated picture.",
+        "His next phase starts from a lower position.",
+        "The classification turns against him by one place.",
+        "That change resets the task ahead, and he keeps asking for more.",
+        "He now has ground to recover, with no sign of easing off.",
+        "The field reshuffles and leaves him behind.",
+        "P{position} becomes the new reference, with the pace still building.",
+        "One position is gone, but the race continues.",
+        "The story changes without needing any blame."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The order drops him back to P{position}, and the tension is climbing!",
+        "He moves from P{old_position} to P{position}!",
+        "One place slips away in the running order, and the momentum is surging!",
+        "The timing screen gives viewers the updated picture!",
+        "His next phase starts from a lower position!",
+        "The classification turns against him by one place!",
+        "That change resets the task ahead, and the momentum is surging!",
+        "He now has ground to recover, and this is getting intense!",
+        "The field reshuffles and leaves him behind!",
+        "P{position} becomes the new reference, with the race alive around him!",
+        "One position is gone, but the race continues!",
+        "The story changes without needing any blame!"
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho odsouvá na {position}. místo.",
+        "Z {old_position}. místa klesá na {position}, obraz závodu je jasný.",
+        "Jedna pozice se v průběžném pořadí ztrácí, příběh pokračuje.",
+        "Časomíra dává divákům aktuální obraz, další fáze se rýsuje.",
+        "Další fáze začíná z horší pozice.",
+        "Klasifikace se obrací o jedno místo proti němu, obraz závodu je jasný.",
+        "Tahle změna znovu nastavuje úkol před ním, příběh pokračuje.",
+        "Teď má co dohánět, další fáze se rýsuje.",
+        "Pole se přeskládává a on na tom prodělává.",
+        "Novou referencí je {position}. místo, obraz závodu je jasný.",
+        "Jedna pozice je pryč, závod ale pokračuje, příběh pokračuje.",
+        "Příběh se mění bez hledání viníka, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho odsouvá na {position}. místo, soustředění zůstává pevné.",
+        "Z {old_position}. místa klesá na {position}, každý detail má změřený.",
+        "Jedna pozice se v průběžném pořadí ztrácí, už myslí na další krok.",
+        "Časomíra dává divákům aktuální obraz, přesně podle plánu.",
+        "Další fáze začíná z horší pozice, soustředění zůstává pevné.",
+        "Klasifikace se obrací o jedno místo proti němu.",
+        "Tahle změna znovu nastavuje úkol před ním, už myslí na další krok.",
+        "Teď má co dohánět, přesně podle plánu.",
+        "Pole se přeskládává a on na tom prodělává, soustředění zůstává pevné.",
+        "Novou referencí je {position}. místo, každý detail má změřený.",
+        "Jedna pozice je pryč, závod ale pokračuje, už myslí na další krok.",
+        "Příběh se mění bez hledání viníka, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho odsouvá na {position}. místo, tlak dál roste.",
+        "Z {old_position}. místa klesá na {position}, tempo pořád zvedá.",
+        "Jedna pozice se v průběžném pořadí ztrácí, pořád hledá něco navíc.",
+        "Časomíra dává divákům aktuální obraz, bez náznaku polevení.",
+        "Další fáze začíná z horší pozice, tlak dál roste.",
+        "Klasifikace se obrací o jedno místo proti němu, tempo pořád zvedá.",
+        "Tahle změna znovu nastavuje úkol před ním, pořád hledá něco navíc.",
+        "Teď má co dohánět, bez náznaku polevení.",
+        "Pole se přeskládává a on na tom prodělává, tlak dál roste.",
+        "Novou referencí je {position}. místo, tempo pořád zvedá.",
+        "Jedna pozice je pryč, závod ale pokračuje, pořád hledá něco navíc.",
+        "Příběh se mění bez hledání viníka, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "position_lost",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Pořadí ho odsouvá na {position}. místo, napětí stoupá!",
+        "Z {old_position}. místa klesá na {position}, závod kolem něj ožívá!",
+        "Jedna pozice se v průběžném pořadí ztrácí, momentum nabírá sílu!",
+        "Časomíra dává divákům aktuální obraz, tohle začíná být ostré!",
+        "Další fáze začíná z horší pozice, napětí stoupá!",
+        "Klasifikace se obrací o jedno místo proti němu, závod kolem něj ožívá!",
+        "Tahle změna znovu nastavuje úkol před ním, momentum nabírá sílu!",
+        "Teď má co dohánět, tohle začíná být ostré!",
+        "Pole se přeskládává a on na tom prodělává, napětí stoupá!",
+        "Novou referencí je {position}. místo, závod kolem něj ožívá!",
+        "Jedna pozice je pryč, závod ale pokračuje, momentum nabírá sílu!",
+        "Příběh se mění bez hledání viníka, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The background gap is falling to {gap}, as the race story develops.",
+        "A faster car is beginning to affect his race.",
+        "The threat is still distant, but no longer irrelevant.",
+        "Viewers have a new contest to keep in mind, and the picture is clear.",
+        "He receives an early warning from the timing screen.",
+        "The next few laps may change the race around him.",
+        "{target_name} is reducing the margin to {gap}.",
+        "He has {target_name} emerging as a future threat.",
+        "The pace of {target_name} changes the background story.",
+        "Viewers should keep {target_name} in the wider picture.",
+        "{target_name} is not attacking yet, but the trend is clear.",
+        "The gap to {target_name} gives him an early warning."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The background gap is falling to {gap}.",
+        "A faster car is beginning to affect his race, all part of the plan.",
+        "The threat is still distant, but no longer irrelevant.",
+        "Viewers have a new contest to keep in mind, with every detail measured.",
+        "He receives an early warning from the timing screen.",
+        "The next few laps may change the race around him, all part of the plan.",
+        "{target_name} is reducing the margin to {gap}.",
+        "He has {target_name} emerging as a future threat.",
+        "The pace of {target_name} changes the background story.",
+        "Viewers should keep {target_name} in the wider picture.",
+        "{target_name} is not attacking yet, but the trend is clear.",
+        "The gap to {target_name} gives him an early warning."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The background gap is falling to {gap}, and he keeps asking for more.",
+        "A faster car is beginning to affect his race.",
+        "The threat is still distant, but no longer irrelevant.",
+        "Viewers have a new contest to keep in mind.",
+        "He receives an early warning from the timing screen.",
+        "The next few laps may change the race around him.",
+        "{target_name} is reducing the margin to {gap}.",
+        "He has {target_name} emerging as a future threat.",
+        "The pace of {target_name} changes the background story.",
+        "Viewers should keep {target_name} in the wider picture.",
+        "{target_name} is not attacking yet, but the trend is clear.",
+        "The gap to {target_name} gives him an early warning."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Odstup v pozadí klesá na {gap}, příběh pokračuje.",
+        "Rychlejší vůz začíná ovlivňovat jeho závod, další fáze se rýsuje.",
+        "Hrozba je pořád daleko, už ale není bez významu.",
+        "Diváci mají nový souboj, který stojí za pozornost.",
+        "Časomíra mu dává včasné varování, příběh pokračuje.",
+        "Příští kola mohou změnit závod kolem něj, další fáze se rýsuje.",
+        "{target_name} se dostává do dosahu {gap}.",
+        "{target_name} se objevuje jako budoucí hrozba, obraz závodu je jasný.",
+        "Tempo jezdce {target_name} mění příběh v pozadí, příběh pokračuje.",
+        "Diváci by měli v širším obrazu držet {target_name}.",
+        "{target_name} ještě neútočí, trend je ale jasný.",
+        "Odstup na {target_name} dává včasné varování, obraz závodu je jasný."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Odstup v pozadí klesá na {gap}, už myslí na další krok.",
+        "Rychlejší vůz začíná ovlivňovat jeho závod, přesně podle plánu.",
+        "Hrozba je pořád daleko, už ale není bez významu.",
+        "Diváci mají nový souboj, který stojí za pozornost.",
+        "Časomíra mu dává včasné varování, už myslí na další krok.",
+        "Příští kola mohou změnit závod kolem něj, přesně podle plánu.",
+        "{target_name} se dostává do dosahu {gap}, soustředění zůstává pevné.",
+        "{target_name} se objevuje jako budoucí hrozba, každý detail má změřený.",
+        "Tempo jezdce {target_name} mění příběh v pozadí.",
+        "Diváci by měli v širším obrazu držet {target_name}, přesně podle plánu.",
+        "{target_name} ještě neútočí, trend je ale jasný.",
+        "Odstup na {target_name} dává včasné varování, každý detail má změřený."
+      ]
+    },
+    {
+      "node_id": "rival_threat",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Odstup v pozadí klesá na {gap}, pořád hledá něco navíc.",
+        "Rychlejší vůz začíná ovlivňovat jeho závod, bez náznaku polevení.",
+        "Hrozba je pořád daleko, už ale není bez významu, tlak dál roste.",
+        "Diváci mají nový souboj, který stojí za pozornost, tempo pořád zvedá.",
+        "Časomíra mu dává včasné varování, pořád hledá něco navíc.",
+        "Příští kola mohou změnit závod kolem něj, bez náznaku polevení.",
+        "{target_name} se dostává do dosahu {gap}, tlak dál roste.",
+        "{target_name} se objevuje jako budoucí hrozba, tempo pořád zvedá.",
+        "Tempo jezdce {target_name} mění příběh v pozadí.",
+        "Diváci by měli v širším obrazu držet {target_name}.",
+        "{target_name} ještě neútočí, trend je ale jasný, tlak dál roste.",
+        "Odstup na {target_name} dává včasné varování, tempo pořád zvedá."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes the contest with P{position} secured.",
+        "The pressure phase ends in his favour, and the picture is clear.",
+        "That sequence is complete and the road ahead opens.",
+        "Viewers can mark that duel down for him.",
+        "He converts the earlier pressure into control.",
+        "The story moves from defence back to pursuit, and the picture is clear.",
+        "His mirrors clear as the fight settles, as the race story develops.",
+        "P{position} is stable after the exchange.",
+        "He owns the outcome without restaging the move.",
+        "The battle closes and his race can breathe again.",
+        "That chapter ends with him ahead, as the race story develops.",
+        "He leaves the duel behind and resets the target."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes the contest with P{position} secured.",
+        "The pressure phase ends in his favour, with every detail measured.",
+        "That sequence is complete and the road ahead opens.",
+        "Viewers can mark that duel down for him, all part of the plan.",
+        "He converts the earlier pressure into control.",
+        "The story moves from defence back to pursuit.",
+        "His mirrors clear as the fight settles.",
+        "P{position} is stable after the exchange, all part of the plan.",
+        "He owns the outcome without restaging the move.",
+        "The battle closes and his race can breathe again.",
+        "That chapter ends with him ahead, and he is already looking ahead.",
+        "He leaves the duel behind and resets the target, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes the contest with P{position} secured.",
+        "The pressure phase ends in his favour, with the pace still building.",
+        "That sequence is complete and the road ahead opens.",
+        "Viewers can mark that duel down for him, with no sign of easing off.",
+        "He converts the earlier pressure into control.",
+        "The story moves from defence back to pursuit.",
+        "His mirrors clear as the fight settles, and he keeps asking for more.",
+        "P{position} is stable after the exchange, with no sign of easing off.",
+        "He owns the outcome without restaging the move.",
+        "The battle closes and his race can breathe again.",
+        "That chapter ends with him ahead, and he keeps asking for more.",
+        "He leaves the duel behind and resets the target."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He closes the contest with P{position} secured!",
+        "The pressure phase ends in his favour, with the race alive around him!",
+        "That sequence is complete and the road ahead opens!",
+        "Viewers can mark that duel down for him, and this is getting intense!",
+        "He converts the earlier pressure into control!",
+        "The story moves from defence back to pursuit!",
+        "His mirrors clear as the fight settles, and the momentum is surging!",
+        "P{position} is stable after the exchange, and this is getting intense!",
+        "He owns the outcome without restaging the move!",
+        "The battle closes and his race can breathe again!",
+        "That chapter ends with him ahead, and the momentum is surging!",
+        "He leaves the duel behind and resets the target!"
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Souboj uzavírá s jistým {position}. místem.",
+        "Fáze tlaku končí v jeho prospěch, obraz závodu je jasný.",
+        "Sekvence je hotová a trať před ním se otevírá, příběh pokračuje.",
+        "Diváci si tenhle duel mohou připsat na jeho stranu.",
+        "Předchozí tlak proměňuje v kontrolu.",
+        "Příběh se přesouvá od obrany zpět k útoku, obraz závodu je jasný.",
+        "Po uklidnění souboje má čistší zrcátka, příběh pokračuje.",
+        "{position}. místo je po výměně stabilní, další fáze se rýsuje.",
+        "Výsledek patří jemu bez opakování samotného manévru.",
+        "Souboj končí a jeho závod může znovu dýchat, obraz závodu je jasný.",
+        "Tahle kapitola končí s ním vpředu, příběh pokračuje.",
+        "Duel nechává za sebou a nastavuje nový cíl, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Souboj uzavírá s jistým {position}. místem, soustředění zůstává pevné.",
+        "Fáze tlaku končí v jeho prospěch, každý detail má změřený.",
+        "Sekvence je hotová a trať před ním se otevírá, už myslí na další krok.",
+        "Diváci si tenhle duel mohou připsat na jeho stranu, přesně podle plánu.",
+        "Předchozí tlak proměňuje v kontrolu, soustředění zůstává pevné.",
+        "Příběh se přesouvá od obrany zpět k útoku, každý detail má změřený.",
+        "Po uklidnění souboje má čistší zrcátka, už myslí na další krok.",
+        "{position}. místo je po výměně stabilní, přesně podle plánu.",
+        "Výsledek patří jemu bez opakování samotného manévru.",
+        "Souboj končí a jeho závod může znovu dýchat, každý detail má změřený.",
+        "Tahle kapitola končí s ním vpředu, už myslí na další krok.",
+        "Duel nechává za sebou a nastavuje nový cíl, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Souboj uzavírá s jistým {position}. místem, tlak dál roste.",
+        "Fáze tlaku končí v jeho prospěch, tempo pořád zvedá.",
+        "Sekvence je hotová a trať před ním se otevírá, pořád hledá něco navíc.",
+        "Diváci si tenhle duel mohou připsat na jeho stranu.",
+        "Předchozí tlak proměňuje v kontrolu, tlak dál roste.",
+        "Příběh se přesouvá od obrany zpět k útoku, tempo pořád zvedá.",
+        "Po uklidnění souboje má čistší zrcátka, pořád hledá něco navíc.",
+        "{position}. místo je po výměně stabilní, bez náznaku polevení.",
+        "Výsledek patří jemu bez opakování samotného manévru, tlak dál roste.",
+        "Souboj končí a jeho závod může znovu dýchat, tempo pořád zvedá.",
+        "Tahle kapitola končí s ním vpředu, pořád hledá něco navíc.",
+        "Duel nechává za sebou a nastavuje nový cíl, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "battle_won",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Souboj uzavírá s jistým {position}. místem, napětí stoupá!",
+        "Fáze tlaku končí v jeho prospěch, závod kolem něj ožívá!",
+        "Sekvence je hotová a trať před ním se otevírá, momentum nabírá sílu!",
+        "Diváci si tenhle duel mohou připsat na jeho stranu!",
+        "Předchozí tlak proměňuje v kontrolu, napětí stoupá!",
+        "Příběh se přesouvá od obrany zpět k útoku, závod kolem něj ožívá!",
+        "Po uklidnění souboje má čistší zrcátka, momentum nabírá sílu!",
+        "{position}. místo je po výměně stabilní, tohle začíná být ostré!",
+        "Výsledek patří jemu bez opakování samotného manévru, napětí stoupá!",
+        "Souboj končí a jeho závod může znovu dýchat, závod kolem něj ožívá!",
+        "Tahle kapitola končí s ním vpředu, momentum nabírá sílu!",
+        "Duel nechává za sebou a nastavuje nový cíl, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The tally changes to {value} after that moment.",
+        "He gathers the car and continues without blame.",
+        "A brief interruption enters the race record.",
+        "Viewers saw the moment, and now the race moves on.",
+        "The incident changes the count, not the whole story.",
+        "He restores the line after a rough passage, and the picture is clear.",
+        "That interruption is logged and left behind.",
+        "The next task is simply to recover the rhythm."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The tally changes to {value} after that moment.",
+        "He gathers the car and continues without blame.",
+        "A brief interruption enters the race record.",
+        "Viewers saw the moment, and now the race moves on.",
+        "The incident changes the count, not the whole story.",
+        "He restores the line after a rough passage, with every detail measured.",
+        "That interruption is logged and left behind.",
+        "The next task is simply to recover the rhythm, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The tally changes to {value} after that moment.",
+        "He gathers the car and continues without blame.",
+        "A brief interruption enters the race record.",
+        "Viewers saw the moment, and now the race moves on.",
+        "The incident changes the count, not the whole story.",
+        "He restores the line after a rough passage.",
+        "That interruption is logged and left behind.",
+        "The next task is simply to recover the rhythm."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The tally changes to {value} after that moment!",
+        "He gathers the car and continues without blame!",
+        "A brief interruption enters the race record!",
+        "Viewers saw the moment, and now the race moves on!",
+        "The incident changes the count, not the whole story!",
+        "He restores the line after a rough passage!",
+        "That interruption is logged and left behind!",
+        "The next task is simply to recover the rhythm!"
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Po tomhle momentu se počítadlo mění na {value}.",
+        "Srovnává vůz a pokračuje bez hledání viníka, obraz závodu je jasný.",
+        "Krátké přerušení se zapisuje do průběhu závodu, příběh pokračuje.",
+        "Diváci moment viděli a závod teď pokračuje, další fáze se rýsuje.",
+        "Incident mění počet, ne celý příběh.",
+        "Po hrubším průjezdu vrací vůz do stopy, obraz závodu je jasný.",
+        "Tahle událost je zapsaná a zůstává za ním, příběh pokračuje.",
+        "Dalším úkolem je prostě vrátit rytmus, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Po tomhle momentu se počítadlo mění na {value}.",
+        "Srovnává vůz a pokračuje bez hledání viníka, každý detail má změřený.",
+        "Krátké přerušení se zapisuje do průběhu závodu, už myslí na další krok.",
+        "Diváci moment viděli a závod teď pokračuje, přesně podle plánu.",
+        "Incident mění počet, ne celý příběh, soustředění zůstává pevné.",
+        "Po hrubším průjezdu vrací vůz do stopy, každý detail má změřený.",
+        "Tahle událost je zapsaná a zůstává za ním, už myslí na další krok.",
+        "Dalším úkolem je prostě vrátit rytmus, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Po tomhle momentu se počítadlo mění na {value}, tlak dál roste.",
+        "Srovnává vůz a pokračuje bez hledání viníka, tempo pořád zvedá.",
+        "Krátké přerušení se zapisuje do průběhu závodu, pořád hledá něco navíc.",
+        "Diváci moment viděli a závod teď pokračuje, bez náznaku polevení.",
+        "Incident mění počet, ne celý příběh, tlak dál roste.",
+        "Po hrubším průjezdu vrací vůz do stopy, tempo pořád zvedá.",
+        "Tahle událost je zapsaná a zůstává za ním, pořád hledá něco navíc.",
+        "Dalším úkolem je prostě vrátit rytmus, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "incident",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Po tomhle momentu se počítadlo mění na {value}, napětí stoupá!",
+        "Srovnává vůz a pokračuje bez hledání viníka, závod kolem něj ožívá!",
+        "Krátké přerušení se zapisuje do průběhu závodu, momentum nabírá sílu!",
+        "Diváci moment viděli a závod teď pokračuje, tohle začíná být ostré!",
+        "Incident mění počet, ne celý příběh, napětí stoupá!",
+        "Po hrubším průjezdu vrací vůz do stopy, závod kolem něj ožívá!",
+        "Tahle událost je zapsaná a zůstává za ním, momentum nabírá sílu!",
+        "Dalším úkolem je prostě vrátit rytmus, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Lap {lap} leaves the timing sheet.",
+        "The attempt is removed before the next one begins.",
+        "That run becomes information rather than a result.",
+        "Viewers can reset with him for another attempt.",
+        "He has a clear chance to rebuild the lap.",
+        "The deleted time closes this short sequence, and the picture is clear.",
+        "One invalid result does not change the target.",
+        "The session now waits for a clean response."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Lap {lap} leaves the timing sheet, all under control.",
+        "The attempt is removed before the next one begins.",
+        "That run becomes information rather than a result.",
+        "Viewers can reset with him for another attempt.",
+        "He has a clear chance to rebuild the lap, all under control.",
+        "The deleted time closes this short sequence, with no rush in the car.",
+        "One invalid result does not change the target.",
+        "The session now waits for a clean response, handled without any fuss."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Lap {lap} leaves the timing sheet, and his focus stays sharp.",
+        "The attempt is removed before the next one begins.",
+        "That run becomes information rather than a result.",
+        "Viewers can reset with him for another attempt, all part of the plan.",
+        "He has a clear chance to rebuild the lap, and his focus stays sharp.",
+        "The deleted time closes this short sequence.",
+        "One invalid result does not change the target.",
+        "The session now waits for a clean response, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} mizí z výsledkové listiny.",
+        "Pokus je smazaný dřív, než začne další, obraz závodu je jasný.",
+        "Tahle jízda se mění v informaci místo výsledku, příběh pokračuje.",
+        "Diváci s ním mohou přepnout k dalšímu pokusu, další fáze se rýsuje.",
+        "Má jasnou možnost postavit kolo znovu.",
+        "Smazaný čas uzavírá tuhle krátkou sekvenci, obraz závodu je jasný.",
+        "Jeden neplatný výsledek nemění hlavní cíl, příběh pokračuje.",
+        "Trénink teď čeká na čistou odpověď, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} mizí z výsledkové listiny, všechno má pod kontrolou.",
+        "Pokus je smazaný dřív, než začne další, bez zbytečného spěchu.",
+        "Tahle jízda se mění v informaci místo výsledku, rytmus zůstává plynulý.",
+        "Diváci s ním mohou přepnout k dalšímu pokusu, zvládá to bez nervozity.",
+        "Má jasnou možnost postavit kolo znovu, všechno má pod kontrolou.",
+        "Smazaný čas uzavírá tuhle krátkou sekvenci, bez zbytečného spěchu.",
+        "Jeden neplatný výsledek nemění hlavní cíl, rytmus zůstává plynulý.",
+        "Trénink teď čeká na čistou odpověď, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "invalid_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Kolo {lap} mizí z výsledkové listiny, soustředění zůstává pevné.",
+        "Pokus je smazaný dřív, než začne další, každý detail má změřený.",
+        "Tahle jízda se mění v informaci místo výsledku, už myslí na další krok.",
+        "Diváci s ním mohou přepnout k dalšímu pokusu, přesně podle plánu.",
+        "Má jasnou možnost postavit kolo znovu, soustředění zůstává pevné.",
+        "Smazaný čas uzavírá tuhle krátkou sekvenci, každý detail má změřený.",
+        "Jeden neplatný výsledek nemění hlavní cíl, už myslí na další krok.",
+        "Trénink teď čeká na čistou odpověď, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He takes P{position} into the final lap.",
+        "The last tour begins with everything still to settle.",
+        "One lap now connects the whole race to the finish.",
+        "Viewers have one final circuit to follow.",
+        "He starts the closing chapter from P{position}.",
+        "The earlier battles now feed into this last run.",
+        "Every remaining corner belongs to the finish story.",
+        "The race narrows to one final sequence.",
+        "He crosses into the last lap with the result in hand.",
+        "P{position} is the reference for the closing tour.",
+        "The final lap opens and no later reset is coming.",
+        "One circuit remains before the finishing line speaks."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He takes P{position} into the final lap, and his focus stays sharp.",
+        "The last tour begins with everything still to settle.",
+        "One lap now connects the whole race to the finish.",
+        "Viewers have one final circuit to follow, all part of the plan.",
+        "He starts the closing chapter from P{position}.",
+        "The earlier battles now feed into this last run.",
+        "Every remaining corner belongs to the finish story.",
+        "The race narrows to one final sequence, all part of the plan.",
+        "He crosses into the last lap with the result in hand.",
+        "P{position} is the reference for the closing tour.",
+        "The final lap opens and no later reset is coming.",
+        "One circuit remains before the finishing line speaks."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He takes P{position} into the final lap, and the pressure keeps rising.",
+        "The last tour begins with everything still to settle.",
+        "One lap now connects the whole race to the finish.",
+        "Viewers have one final circuit to follow, with no sign of easing off.",
+        "He starts the closing chapter from P{position}.",
+        "The earlier battles now feed into this last run.",
+        "Every remaining corner belongs to the finish story.",
+        "The race narrows to one final sequence, with no sign of easing off.",
+        "He crosses into the last lap with the result in hand.",
+        "P{position} is the reference for the closing tour.",
+        "The final lap opens and no later reset is coming.",
+        "One circuit remains before the finishing line speaks."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He takes P{position} into the final lap, and the tension is climbing!",
+        "The last tour begins with everything still to settle!",
+        "One lap now connects the whole race to the finish!",
+        "Viewers have one final circuit to follow, and this is getting intense!",
+        "He starts the closing chapter from P{position}!",
+        "The earlier battles now feed into this last run!",
+        "Every remaining corner belongs to the finish story!",
+        "The race narrows to one final sequence, and this is getting intense!",
+        "He crosses into the last lap with the result in hand!",
+        "P{position} is the reference for the closing tour!",
+        "The final lap opens and no later reset is coming!",
+        "One circuit remains before the finishing line speaks!"
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Do posledního kola veze {position}. místo.",
+        "Závěrečný okruh začíná a pořád není všechno rozhodnuté.",
+        "Jediné kolo teď spojuje celý závod s cílem, příběh pokračuje.",
+        "Diváci mají před sebou poslední okruh, další fáze se rýsuje.",
+        "Závěrečnou kapitolu otevírá z {position}. místa.",
+        "Předchozí souboje se teď sbíhají do poslední jízdy.",
+        "Každá zbývající zatáčka patří příběhu cíle, příběh pokračuje.",
+        "Závod se zužuje na jedinou závěrečnou sekvenci, další fáze se rýsuje.",
+        "Do posledního kola vjíždí s výsledkem v rukou.",
+        "Referencí pro závěrečný okruh je {position}. místo.",
+        "Poslední kolo začíná a další oprava už nepřijde, příběh pokračuje.",
+        "Do cílové čáry zbývá jediný okruh, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Do posledního kola veze {position}. místo, soustředění zůstává pevné.",
+        "Závěrečný okruh začíná a pořád není všechno rozhodnuté.",
+        "Jediné kolo teď spojuje celý závod s cílem, už myslí na další krok.",
+        "Diváci mají před sebou poslední okruh, přesně podle plánu.",
+        "Závěrečnou kapitolu otevírá z {position}. místa.",
+        "Předchozí souboje se teď sbíhají do poslední jízdy.",
+        "Každá zbývající zatáčka patří příběhu cíle, už myslí na další krok.",
+        "Závod se zužuje na jedinou závěrečnou sekvenci, přesně podle plánu.",
+        "Do posledního kola vjíždí s výsledkem v rukou.",
+        "Referencí pro závěrečný okruh je {position}. místo.",
+        "Poslední kolo začíná a další oprava už nepřijde.",
+        "Do cílové čáry zbývá jediný okruh, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Do posledního kola veze {position}. místo, tlak dál roste.",
+        "Závěrečný okruh začíná a pořád není všechno rozhodnuté.",
+        "Jediné kolo teď spojuje celý závod s cílem, pořád hledá něco navíc.",
+        "Diváci mají před sebou poslední okruh, bez náznaku polevení.",
+        "Závěrečnou kapitolu otevírá z {position}. místa, tlak dál roste.",
+        "Předchozí souboje se teď sbíhají do poslední jízdy, tempo pořád zvedá.",
+        "Každá zbývající zatáčka patří příběhu cíle, pořád hledá něco navíc.",
+        "Závod se zužuje na jedinou závěrečnou sekvenci, bez náznaku polevení.",
+        "Do posledního kola vjíždí s výsledkem v rukou, tlak dál roste.",
+        "Referencí pro závěrečný okruh je {position}. místo, tempo pořád zvedá.",
+        "Poslední kolo začíná a další oprava už nepřijde.",
+        "Do cílové čáry zbývá jediný okruh, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "final_lap",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Do posledního kola veze {position}. místo, napětí stoupá!",
+        "Závěrečný okruh začíná a pořád není všechno rozhodnuté!",
+        "Jediné kolo teď spojuje celý závod s cílem, momentum nabírá sílu!",
+        "Diváci mají před sebou poslední okruh, tohle začíná být ostré!",
+        "Závěrečnou kapitolu otevírá z {position}. místa, napětí stoupá!",
+        "Předchozí souboje se teď sbíhají do poslední jízdy!",
+        "Každá zbývající zatáčka patří příběhu cíle, momentum nabírá sílu!",
+        "Závod se zužuje na jedinou závěrečnou sekvenci, tohle začíná být ostré!",
+        "Do posledního kola vjíždí s výsledkem v rukou, napětí stoupá!",
+        "Referencí pro závěrečný okruh je {position}. místo!",
+        "Poslední kolo začíná a další oprava už nepřijde, momentum nabírá sílu!",
+        "Do cílové čáry zbývá jediný okruh, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the race in P{position}.",
+        "The final classification places him P{position}.",
+        "His full race story closes at the chequered flag.",
+        "Viewers can now put P{position} beside this drive.",
+        "He turns the final lap into a confirmed result.",
+        "Every earlier sequence ends with this classification.",
+        "The line settles the day in P{position}, as the race story develops.",
+        "His race is complete and the result is official.",
+        "The closing chapter records P{position}.",
+        "He reaches the flag with the whole stint behind him.",
+        "P{position} is the lasting number from this race.",
+        "The commentary closes as he crosses the line."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the race in P{position}, all under control.",
+        "The final classification places him P{position}.",
+        "His full race story closes at the chequered flag.",
+        "Viewers can now put P{position} beside this drive.",
+        "He turns the final lap into a confirmed result, all under control.",
+        "Every earlier sequence ends with this classification.",
+        "The line settles the day in P{position}, and the rhythm stays smooth.",
+        "His race is complete and the result is official.",
+        "The closing chapter records P{position}, all under control.",
+        "He reaches the flag with the whole stint behind him.",
+        "P{position} is the lasting number from this race.",
+        "The commentary closes as he crosses the line, handled without any fuss."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the race in P{position}, and his focus stays sharp.",
+        "The final classification places him P{position}.",
+        "His full race story closes at the chequered flag.",
+        "Viewers can now put P{position} beside this drive.",
+        "He turns the final lap into a confirmed result.",
+        "Every earlier sequence ends with this classification.",
+        "The line settles the day in P{position}.",
+        "His race is complete and the result is official, all part of the plan.",
+        "The closing chapter records P{position}, and his focus stays sharp.",
+        "He reaches the flag with the whole stint behind him.",
+        "P{position} is the lasting number from this race.",
+        "The commentary closes as he crosses the line, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the race in P{position}, and the pressure keeps rising.",
+        "The final classification places him P{position}.",
+        "His full race story closes at the chequered flag.",
+        "Viewers can now put P{position} beside this drive.",
+        "He turns the final lap into a confirmed result.",
+        "Every earlier sequence ends with this classification.",
+        "The line settles the day in P{position}, and he keeps asking for more.",
+        "His race is complete and the result is official.",
+        "The closing chapter records P{position}, and the pressure keeps rising.",
+        "He reaches the flag with the whole stint behind him.",
+        "P{position} is the lasting number from this race.",
+        "The commentary closes as he crosses the line."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He completes the race in P{position}, and the tension is climbing!",
+        "The final classification places him P{position}!",
+        "His full race story closes at the chequered flag!",
+        "Viewers can now put P{position} beside this drive!",
+        "He turns the final lap into a confirmed result!",
+        "Every earlier sequence ends with this classification!",
+        "The line settles the day in P{position}, and the momentum is surging!",
+        "His race is complete and the result is official!",
+        "The closing chapter records P{position}, and the tension is climbing!",
+        "He reaches the flag with the whole stint behind him!",
+        "P{position} is the lasting number from this race!",
+        "The commentary closes as he crosses the line!"
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Závod dokončuje na {position}. místě.",
+        "Konečná klasifikace ho řadí na {position}. místo.",
+        "Celý závodní příběh uzavírá šachovnicová vlajka, příběh pokračuje.",
+        "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
+        "Poslední kolo proměňuje v potvrzený výsledek.",
+        "Všechny předchozí sekvence končí touhle klasifikací.",
+        "Cílová čára uzavírá den na {position}. místě, příběh pokračuje.",
+        "Jeho závod je hotový a výsledek je potvrzený, další fáze se rýsuje.",
+        "Závěrečná kapitola zapisuje {position}. místo.",
+        "K vlajce přijíždí s celým stintem za sebou, obraz závodu je jasný.",
+        "Trvalým číslem z tohohle závodu je {position}. místo, příběh pokračuje.",
+        "Komentář se uzavírá jeho průjezdem cílem, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Závod dokončuje na {position}. místě, všechno má pod kontrolou.",
+        "Konečná klasifikace ho řadí na {position}. místo.",
+        "Celý závodní příběh uzavírá šachovnicová vlajka.",
+        "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
+        "Poslední kolo proměňuje v potvrzený výsledek, všechno má pod kontrolou.",
+        "Všechny předchozí sekvence končí touhle klasifikací.",
+        "Cílová čára uzavírá den na {position}. místě, rytmus zůstává plynulý.",
+        "Jeho závod je hotový a výsledek je potvrzený, zvládá to bez nervozity.",
+        "Závěrečná kapitola zapisuje {position}. místo.",
+        "K vlajce přijíždí s celým stintem za sebou, bez zbytečného spěchu.",
+        "Trvalým číslem z tohohle závodu je {position}. místo.",
+        "Komentář se uzavírá jeho průjezdem cílem, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Závod dokončuje na {position}. místě, soustředění zůstává pevné.",
+        "Konečná klasifikace ho řadí na {position}. místo.",
+        "Celý závodní příběh uzavírá šachovnicová vlajka.",
+        "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
+        "Poslední kolo proměňuje v potvrzený výsledek.",
+        "Všechny předchozí sekvence končí touhle klasifikací.",
+        "Cílová čára uzavírá den na {position}. místě, už myslí na další krok.",
+        "Jeho závod je hotový a výsledek je potvrzený, přesně podle plánu.",
+        "Závěrečná kapitola zapisuje {position}. místo.",
+        "K vlajce přijíždí s celým stintem za sebou, každý detail má změřený.",
+        "Trvalým číslem z tohohle závodu je {position}. místo.",
+        "Komentář se uzavírá jeho průjezdem cílem, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Závod dokončuje na {position}. místě, tlak dál roste.",
+        "Konečná klasifikace ho řadí na {position}. místo, tempo pořád zvedá.",
+        "Celý závodní příběh uzavírá šachovnicová vlajka.",
+        "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
+        "Poslední kolo proměňuje v potvrzený výsledek, tlak dál roste.",
+        "Všechny předchozí sekvence končí touhle klasifikací, tempo pořád zvedá.",
+        "Cílová čára uzavírá den na {position}. místě, pořád hledá něco navíc.",
+        "Jeho závod je hotový a výsledek je potvrzený, bez náznaku polevení.",
+        "Závěrečná kapitola zapisuje {position}. místo, tlak dál roste.",
+        "K vlajce přijíždí s celým stintem za sebou, tempo pořád zvedá.",
+        "Trvalým číslem z tohohle závodu je {position}. místo.",
+        "Komentář se uzavírá jeho průjezdem cílem, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "finish",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Závod dokončuje na {position}. místě, napětí stoupá!",
+        "Konečná klasifikace ho řadí na {position}. místo!",
+        "Celý závodní příběh uzavírá šachovnicová vlajka, momentum nabírá sílu!",
+        "Diváci si k téhle jízdě mohou zapsat {position}. místo!",
+        "Poslední kolo proměňuje v potvrzený výsledek, napětí stoupá!",
+        "Všechny předchozí sekvence končí touhle klasifikací!",
+        "Cílová čára uzavírá den na {position}. místě, momentum nabírá sílu!",
+        "Jeho závod je hotový a výsledek je potvrzený, tohle začíná být ostré!",
+        "Závěrečná kapitola zapisuje {position}. místo, napětí stoupá!",
+        "K vlajce přijíždí s celým stintem za sebou, závod kolem něj ožívá!",
+        "Trvalým číslem z tohohle závodu je {position}. místo!",
+        "Komentář se uzavírá jeho průjezdem cílem, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He commits to pit road from P{position}.",
+        "The race sequence pauses for scheduled service.",
+        "His line into the lane is clean and deliberate.",
+        "Viewers now shift attention from track to pit work.",
+        "He leaves the racing surface for the service lane.",
+        "The stop story begins at pit entry, and the picture is clear.",
+        "Pit road becomes the next measured part of his race.",
+        "He brings the car down to lane speed, with the next beat taking shape.",
+        "The field continues while his service window opens.",
+        "He trades open track for the discipline of pit lane.",
+        "A clean entry gives the crew a stable start.",
+        "The next spoken beat should come after the service."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He commits to pit road from P{position}, all under control.",
+        "The race sequence pauses for scheduled service.",
+        "His line into the lane is clean and deliberate.",
+        "Viewers now shift attention from track to pit work.",
+        "He leaves the racing surface for the service lane, all under control.",
+        "The stop story begins at pit entry, with no rush in the car.",
+        "Pit road becomes the next measured part of his race.",
+        "He brings the car down to lane speed, handled without any fuss.",
+        "The field continues while his service window opens, all under control.",
+        "He trades open track for the discipline of pit lane.",
+        "A clean entry gives the crew a stable start.",
+        "The next spoken beat should come after the service."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He commits to pit road from P{position}, and his focus stays sharp.",
+        "The race sequence pauses for scheduled service.",
+        "His line into the lane is clean and deliberate.",
+        "Viewers now shift attention from track to pit work.",
+        "He leaves the racing surface for the service lane.",
+        "The stop story begins at pit entry, with every detail measured.",
+        "Pit road becomes the next measured part of his race.",
+        "He brings the car down to lane speed, all part of the plan.",
+        "The field continues while his service window opens.",
+        "He trades open track for the discipline of pit lane.",
+        "A clean entry gives the crew a stable start.",
+        "The next spoken beat should come after the service."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Z {position}. místa se zavazuje k vjezdu do boxů.",
+        "Závodní sekvence se přerušuje kvůli servisu, obraz závodu je jasný.",
+        "Stopa do boxové uličky je čistá a přesná, příběh pokračuje.",
+        "Pozornost diváků se přesouvá z trati k mechanikům.",
+        "Závodní povrch mění za servisní uličku.",
+        "Příběh zastávky začíná už na vjezdu, obraz závodu je jasný.",
+        "Boxová ulička je další měřenou částí závodu, příběh pokračuje.",
+        "Vůz zpomaluje na rychlost povolenou v uličce, další fáze se rýsuje.",
+        "Pole pokračuje, zatímco se otevírá servisní okno.",
+        "Volnou trať mění za disciplínu boxové uličky, obraz závodu je jasný.",
+        "Čistý vjezd dává mechanikům stabilní začátek, příběh pokračuje.",
+        "Další komentář má přijít až po servisu, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Z {position}. místa se zavazuje k vjezdu do boxů.",
+        "Závodní sekvence se přerušuje kvůli servisu, bez zbytečného spěchu.",
+        "Stopa do boxové uličky je čistá a přesná, rytmus zůstává plynulý.",
+        "Pozornost diváků se přesouvá z trati k mechanikům.",
+        "Závodní povrch mění za servisní uličku, všechno má pod kontrolou.",
+        "Příběh zastávky začíná už na vjezdu, bez zbytečného spěchu.",
+        "Boxová ulička je další měřenou částí závodu, rytmus zůstává plynulý.",
+        "Vůz zpomaluje na rychlost povolenou v uličce, zvládá to bez nervozity.",
+        "Pole pokračuje, zatímco se otevírá servisní okno.",
+        "Volnou trať mění za disciplínu boxové uličky, bez zbytečného spěchu.",
+        "Čistý vjezd dává mechanikům stabilní začátek, rytmus zůstává plynulý.",
+        "Další komentář má přijít až po servisu, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "pit_entry",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Z {position}. místa se zavazuje k vjezdu do boxů.",
+        "Závodní sekvence se přerušuje kvůli servisu, každý detail má změřený.",
+        "Stopa do boxové uličky je čistá a přesná, už myslí na další krok.",
+        "Pozornost diváků se přesouvá z trati k mechanikům, přesně podle plánu.",
+        "Závodní povrch mění za servisní uličku, soustředění zůstává pevné.",
+        "Příběh zastávky začíná už na vjezdu, každý detail má změřený.",
+        "Boxová ulička je další měřenou částí závodu, už myslí na další krok.",
+        "Vůz zpomaluje na rychlost povolenou v uličce, přesně podle plánu.",
+        "Pole pokračuje, zatímco se otevírá servisní okno.",
+        "Volnou trať mění za disciplínu boxové uličky, každý detail má změřený.",
+        "Čistý vjezd dává mechanikům stabilní začátek, už myslí na další krok.",
+        "Další komentář má přijít až po servisu, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He rejoins the circuit in P{position}.",
+        "Pit road gives way to racing speed again, and the picture is clear.",
+        "The service sequence ends as he returns to the track.",
+        "Viewers can follow the rebuild from here.",
+        "He brings the car back into the live field.",
+        "The next phase is about tyres and rhythm, and the picture is clear.",
+        "His attention moves from the limiter to the road ahead.",
+        "Track position becomes relevant again, with the next beat taking shape.",
+        "The pit story hands control back to the race.",
+        "He begins another on-track sequence, and the picture is clear.",
+        "A clean release gives him room to settle the car.",
+        "The lane is behind him and the stint resumes."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He rejoins the circuit in P{position}, all under control.",
+        "Pit road gives way to racing speed again, with no rush in the car.",
+        "The service sequence ends as he returns to the track.",
+        "Viewers can follow the rebuild from here, handled without any fuss.",
+        "He brings the car back into the live field, all under control.",
+        "The next phase is about tyres and rhythm, with no rush in the car.",
+        "His attention moves from the limiter to the road ahead.",
+        "Track position becomes relevant again, handled without any fuss.",
+        "The pit story hands control back to the race, all under control.",
+        "He begins another on-track sequence, with no rush in the car.",
+        "A clean release gives him room to settle the car.",
+        "The lane is behind him and the stint resumes, handled without any fuss."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He rejoins the circuit in P{position}, and his focus stays sharp.",
+        "Pit road gives way to racing speed again, with every detail measured.",
+        "The service sequence ends as he returns to the track.",
+        "Viewers can follow the rebuild from here, all part of the plan.",
+        "He brings the car back into the live field, and his focus stays sharp.",
+        "The next phase is about tyres and rhythm, with every detail measured.",
+        "His attention moves from the limiter to the road ahead.",
+        "Track position becomes relevant again, all part of the plan.",
+        "The pit story hands control back to the race.",
+        "He begins another on-track sequence, with every detail measured.",
+        "A clean release gives him room to settle the car.",
+        "The lane is behind him and the stint resumes, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Na trať se vrací na {position}. místě.",
+        "Boxovou uličku znovu střídá závodní rychlost, obraz závodu je jasný.",
+        "Servisní sekvence končí návratem na trať, příběh pokračuje.",
+        "Diváci odtud mohou sledovat nové budování tempa, další fáze se rýsuje.",
+        "Vůz vrací zpět do živého pole.",
+        "Další fáze bude o pneumatikách a rytmu, obraz závodu je jasný.",
+        "Pozornost přesouvá z omezovače na trať před sebou, příběh pokračuje.",
+        "Pozice na trati je znovu důležitá, další fáze se rýsuje.",
+        "Boxový příběh předává řízení zpět závodu.",
+        "Začíná další sekvenci na trati, obraz závodu je jasný.",
+        "Čisté vypuštění mu dává prostor vůz usadit, příběh pokračuje.",
+        "Ulička zůstává za ním a stint pokračuje, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Na trať se vrací na {position}. místě, všechno má pod kontrolou.",
+        "Boxovou uličku znovu střídá závodní rychlost, bez zbytečného spěchu.",
+        "Servisní sekvence končí návratem na trať, rytmus zůstává plynulý.",
+        "Diváci odtud mohou sledovat nové budování tempa.",
+        "Vůz vrací zpět do živého pole, všechno má pod kontrolou.",
+        "Další fáze bude o pneumatikách a rytmu, bez zbytečného spěchu.",
+        "Pozornost přesouvá z omezovače na trať před sebou.",
+        "Pozice na trati je znovu důležitá, zvládá to bez nervozity.",
+        "Boxový příběh předává řízení zpět závodu, všechno má pod kontrolou.",
+        "Začíná další sekvenci na trati, bez zbytečného spěchu.",
+        "Čisté vypuštění mu dává prostor vůz usadit, rytmus zůstává plynulý.",
+        "Ulička zůstává za ním a stint pokračuje, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "back_on_track",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Na trať se vrací na {position}. místě, soustředění zůstává pevné.",
+        "Boxovou uličku znovu střídá závodní rychlost, každý detail má změřený.",
+        "Servisní sekvence končí návratem na trať, už myslí na další krok.",
+        "Diváci odtud mohou sledovat nové budování tempa, přesně podle plánu.",
+        "Vůz vrací zpět do živého pole, soustředění zůstává pevné.",
+        "Další fáze bude o pneumatikách a rytmu, každý detail má změřený.",
+        "Pozornost přesouvá z omezovače na trať před sebou.",
+        "Pozice na trati je znovu důležitá, přesně podle plánu.",
+        "Boxový příběh předává řízení zpět závodu, soustředění zůstává pevné.",
+        "Začíná další sekvenci na trati, každý detail má změřený.",
+        "Čisté vypuštění mu dává prostor vůz usadit, už myslí na další krok.",
+        "Ulička zůstává za ním a stint pokračuje, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He settles into the cockpit for the next stint.",
+        "The belts are set and the car becomes his workspace.",
+        "His race day moves from preparation to execution.",
+        "Viewers now have the driver and machine together.",
+        "He checks in from the seat and begins the routine.",
+        "The next sequence starts with him fully aboard.",
+        "The cockpit closes around a clear plan, as the race story develops.",
+        "He takes his place before the track action begins.",
+        "Preparation gives way to the first live inputs.",
+        "The car is occupied and the session can move forward.",
+        "He brings his attention inside the visor, as the race story develops.",
+        "This stint begins with everything in its place."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He settles into the cockpit for the next stint, all under control.",
+        "The belts are set and the car becomes his workspace.",
+        "His race day moves from preparation to execution.",
+        "Viewers now have the driver and machine together.",
+        "He checks in from the seat and begins the routine, all under control.",
+        "The next sequence starts with him fully aboard.",
+        "The cockpit closes around a clear plan, and the rhythm stays smooth.",
+        "He takes his place before the track action begins.",
+        "Preparation gives way to the first live inputs, all under control.",
+        "The car is occupied and the session can move forward.",
+        "He brings his attention inside the visor, and the rhythm stays smooth.",
+        "This stint begins with everything in its place."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He settles into the cockpit for the next stint.",
+        "The belts are set and the car becomes his workspace.",
+        "His race day moves from preparation to execution.",
+        "Viewers now have the driver and machine together, all part of the plan.",
+        "He checks in from the seat and begins the routine.",
+        "The next sequence starts with him fully aboard.",
+        "The cockpit closes around a clear plan.",
+        "He takes his place before the track action begins.",
+        "Preparation gives way to the first live inputs.",
+        "The car is occupied and the session can move forward.",
+        "He brings his attention inside the visor.",
+        "This stint begins with everything in its place, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He settles into the cockpit for the next stint.",
+        "The belts are set and the car becomes his workspace.",
+        "His race day moves from preparation to execution.",
+        "Viewers now have the driver and machine together.",
+        "He checks in from the seat and begins the routine.",
+        "The next sequence starts with him fully aboard.",
+        "The cockpit closes around a clear plan, and he keeps asking for more.",
+        "He takes his place before the track action begins.",
+        "Preparation gives way to the first live inputs.",
+        "The car is occupied and the session can move forward.",
+        "He brings his attention inside the visor, and he keeps asking for more.",
+        "This stint begins with everything in its place."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "He settles into the cockpit for the next stint!",
+        "The belts are set and the car becomes his workspace!",
+        "His race day moves from preparation to execution!",
+        "Viewers now have the driver and machine together!",
+        "He checks in from the seat and begins the routine!",
+        "The next sequence starts with him fully aboard!",
+        "The cockpit closes around a clear plan, and the momentum is surging!",
+        "He takes his place before the track action begins!",
+        "Preparation gives way to the first live inputs!",
+        "The car is occupied and the session can move forward!",
+        "He brings his attention inside the visor, and the momentum is surging!",
+        "This stint begins with everything in its place!"
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Usazuje se v kokpitu pro další stint.",
+        "Pásy jsou nastavené a vůz se mění v jeho pracoviště.",
+        "Závodní den přechází od přípravy k provedení, příběh pokračuje.",
+        "Diváci teď mají jezdce i vůz pohromadě, další fáze se rýsuje.",
+        "Ze sedačky zahajuje svou obvyklou rutinu.",
+        "Další sekvence začíná s jezdcem uvnitř, obraz závodu je jasný.",
+        "Kokpit se zavírá kolem jasného plánu, příběh pokračuje.",
+        "Před akcí na trati zaujímá své místo, další fáze se rýsuje.",
+        "Přípravu střídají první živé vstupy.",
+        "Vůz je obsazený a jízda může pokračovat, obraz závodu je jasný.",
+        "Pozornost soustředí dovnitř hledí, příběh pokračuje.",
+        "Tenhle stint začíná se vším na svém místě, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Usazuje se v kokpitu pro další stint, všechno má pod kontrolou.",
+        "Pásy jsou nastavené a vůz se mění v jeho pracoviště.",
+        "Závodní den přechází od přípravy k provedení, rytmus zůstává plynulý.",
+        "Diváci teď mají jezdce i vůz pohromadě, zvládá to bez nervozity.",
+        "Ze sedačky zahajuje svou obvyklou rutinu, všechno má pod kontrolou.",
+        "Další sekvence začíná s jezdcem uvnitř, bez zbytečného spěchu.",
+        "Kokpit se zavírá kolem jasného plánu, rytmus zůstává plynulý.",
+        "Před akcí na trati zaujímá své místo, zvládá to bez nervozity.",
+        "Přípravu střídají první živé vstupy, všechno má pod kontrolou.",
+        "Vůz je obsazený a jízda může pokračovat, bez zbytečného spěchu.",
+        "Pozornost soustředí dovnitř hledí, rytmus zůstává plynulý.",
+        "Tenhle stint začíná se vším na svém místě, zvládá to bez nervozity."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Usazuje se v kokpitu pro další stint, soustředění zůstává pevné.",
+        "Pásy jsou nastavené a vůz se mění v jeho pracoviště.",
+        "Závodní den přechází od přípravy k provedení, už myslí na další krok.",
+        "Diváci teď mají jezdce i vůz pohromadě, přesně podle plánu.",
+        "Ze sedačky zahajuje svou obvyklou rutinu, soustředění zůstává pevné.",
+        "Další sekvence začíná s jezdcem uvnitř, každý detail má změřený.",
+        "Kokpit se zavírá kolem jasného plánu, už myslí na další krok.",
+        "Před akcí na trati zaujímá své místo, přesně podle plánu.",
+        "Přípravu střídají první živé vstupy, soustředění zůstává pevné.",
+        "Vůz je obsazený a jízda může pokračovat, každý detail má změřený.",
+        "Pozornost soustředí dovnitř hledí, už myslí na další krok.",
+        "Tenhle stint začíná se vším na svém místě, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Usazuje se v kokpitu pro další stint, tlak dál roste.",
+        "Pásy jsou nastavené a vůz se mění v jeho pracoviště, tempo pořád zvedá.",
+        "Závodní den přechází od přípravy k provedení, pořád hledá něco navíc.",
+        "Diváci teď mají jezdce i vůz pohromadě, bez náznaku polevení.",
+        "Ze sedačky zahajuje svou obvyklou rutinu, tlak dál roste.",
+        "Další sekvence začíná s jezdcem uvnitř, tempo pořád zvedá.",
+        "Kokpit se zavírá kolem jasného plánu, pořád hledá něco navíc.",
+        "Před akcí na trati zaujímá své místo, bez náznaku polevení.",
+        "Přípravu střídají první živé vstupy, tlak dál roste.",
+        "Vůz je obsazený a jízda může pokračovat, tempo pořád zvedá.",
+        "Pozornost soustředí dovnitř hledí, pořád hledá něco navíc.",
+        "Tenhle stint začíná se vším na svém místě, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "in_car",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Usazuje se v kokpitu pro další stint, napětí stoupá!",
+        "Pásy jsou nastavené a vůz se mění v jeho pracoviště!",
+        "Závodní den přechází od přípravy k provedení, momentum nabírá sílu!",
+        "Diváci teď mají jezdce i vůz pohromadě, tohle začíná být ostré!",
+        "Ze sedačky zahajuje svou obvyklou rutinu, napětí stoupá!",
+        "Další sekvence začíná s jezdcem uvnitř, závod kolem něj ožívá!",
+        "Kokpit se zavírá kolem jasného plánu, momentum nabírá sílu!",
+        "Před akcí na trati zaujímá své místo, tohle začíná být ostré!",
+        "Přípravu střídají první živé vstupy, napětí stoupá!",
+        "Vůz je obsazený a jízda může pokračovat, závod kolem něj ožívá!",
+        "Pozornost soustředí dovnitř hledí, momentum nabírá sílu!",
+        "Tenhle stint začíná se vším na svém místě, tohle začíná být ostré!"
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "en",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The service cycle returns him to P{position}.",
+        "His net change runs from P{old_position} to P{position}.",
+        "The stop has a clear result on the timing screen.",
+        "Viewers can now judge the full pit sequence.",
+        "Track position settles after the service.",
+        "The pit entry story closes with P{position}, and the picture is clear.",
+        "He leaves the stop with a confirmed place, as the race story develops.",
+        "The strategy phase hands back to the driver.",
+        "His position after service is now established.",
+        "The field order gives the stop its final meaning.",
+        "A completed service creates the next race baseline.",
+        "The pit cycle ends and the chase can restart."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "en",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The service cycle returns him to P{position}, all under control.",
+        "His net change runs from P{old_position} to P{position}.",
+        "The stop has a clear result on the timing screen.",
+        "Viewers can now judge the full pit sequence, handled without any fuss.",
+        "Track position settles after the service, all under control.",
+        "The pit entry story closes with P{position}, with no rush in the car.",
+        "He leaves the stop with a confirmed place, and the rhythm stays smooth.",
+        "The strategy phase hands back to the driver, handled without any fuss.",
+        "His position after service is now established, all under control.",
+        "The field order gives the stop its final meaning.",
+        "A completed service creates the next race baseline.",
+        "The pit cycle ends and the chase can restart, handled without any fuss."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "en",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The service cycle returns him to P{position}.",
+        "His net change runs from P{old_position} to P{position}.",
+        "The stop has a clear result on the timing screen.",
+        "Viewers can now judge the full pit sequence, all part of the plan.",
+        "Track position settles after the service, and his focus stays sharp.",
+        "The pit entry story closes with P{position}.",
+        "He leaves the stop with a confirmed place.",
+        "The strategy phase hands back to the driver, all part of the plan.",
+        "His position after service is now established.",
+        "The field order gives the stop its final meaning.",
+        "A completed service creates the next race baseline.",
+        "The pit cycle ends and the chase can restart, all part of the plan."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "cs",
+      "emotion": "neutral",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Servisní cyklus ho vrací na {position}. místo.",
+        "Čistá změna vede z {old_position}. na {position}. místo.",
+        "Zastávka má na časomíře jasný výsledek, příběh pokračuje.",
+        "Diváci teď mohou posoudit celou boxovou sekvenci, další fáze se rýsuje.",
+        "Po servisu se pozice na trati ustaluje.",
+        "Příběh vjezdu do boxů končí na {position}. místě.",
+        "Ze zastávky odjíždí s potvrzenou pozicí, příběh pokračuje.",
+        "Strategická fáze předává práci zpět jezdci, další fáze se rýsuje.",
+        "Jeho místo po servisu je teď jasné.",
+        "Pořadí v poli dává zastávce konečný význam, obraz závodu je jasný.",
+        "Dokončený servis vytváří nový závodní základ, příběh pokračuje.",
+        "Boxový cyklus končí a stíhání může začít znovu, další fáze se rýsuje."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "cs",
+      "emotion": "calm",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Servisní cyklus ho vrací na {position}. místo.",
+        "Čistá změna vede z {old_position}. na {position}. místo.",
+        "Zastávka má na časomíře jasný výsledek, rytmus zůstává plynulý.",
+        "Diváci teď mohou posoudit celou boxovou sekvenci.",
+        "Po servisu se pozice na trati ustaluje, všechno má pod kontrolou.",
+        "Příběh vjezdu do boxů končí na {position}. místě.",
+        "Ze zastávky odjíždí s potvrzenou pozicí, rytmus zůstává plynulý.",
+        "Strategická fáze předává práci zpět jezdci, zvládá to bez nervozity.",
+        "Jeho místo po servisu je teď jasné, všechno má pod kontrolou.",
+        "Pořadí v poli dává zastávce konečný význam, bez zbytečného spěchu.",
+        "Dokončený servis vytváří nový závodní základ, rytmus zůstává plynulý.",
+        "Boxový cyklus končí a stíhání může začít znovu."
+      ]
+    },
+    {
+      "node_id": "pit_outcome",
+      "locale": "cs",
+      "emotion": "focused",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Servisní cyklus ho vrací na {position}. místo.",
+        "Čistá změna vede z {old_position}. na {position}. místo.",
+        "Zastávka má na časomíře jasný výsledek, už myslí na další krok.",
+        "Diváci teď mohou posoudit celou boxovou sekvenci, přesně podle plánu.",
+        "Po servisu se pozice na trati ustaluje, soustředění zůstává pevné.",
+        "Příběh vjezdu do boxů končí na {position}. místě.",
+        "Ze zastávky odjíždí s potvrzenou pozicí, už myslí na další krok.",
+        "Strategická fáze předává práci zpět jezdci, přesně podle plánu.",
+        "Jeho místo po servisu je teď jasné, soustředění zůstává pevné.",
+        "Pořadí v poli dává zastávce konečný význam, každý detail má změřený.",
+        "Dokončený servis vytváří nový závodní základ, už myslí na další krok.",
+        "Boxový cyklus končí a stíhání může začít znovu, přesně podle plánu."
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "en",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The monitor shows {bpm} as the effort rises.",
+        "His pulse confirms the work inside the cockpit.",
+        "The physical load becomes part of the race picture.",
+        "Viewers get a rare measure of the pressure he feels.",
+        "Heart rate adds context to the pace on track.",
+        "The bio signal reflects a demanding sequence.",
+        "His body is answering the intensity of the stint.",
+        "The number {bpm} shows how hard this phase has become."
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "en",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "The monitor shows {bpm} as the effort rises!",
+        "His pulse confirms the work inside the cockpit!",
+        "The physical load becomes part of the race picture!",
+        "Viewers get a rare measure of the pressure he feels!",
+        "Heart rate adds context to the pace on track!",
+        "The bio signal reflects a demanding sequence!",
+        "His body is answering the intensity of the stint!",
+        "The number {bpm} shows how hard this phase has become!"
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "cs",
+      "emotion": "pushing",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Monitor ukazuje {bpm}, zatímco zátěž roste, tlak dál roste.",
+        "Puls potvrzuje práci uvnitř kokpitu, tempo pořád zvedá.",
+        "Fyzická zátěž se stává součástí obrazu závodu, pořád hledá něco navíc.",
+        "Diváci dostávají vzácné měřítko jeho tlaku, bez náznaku polevení.",
+        "Tep přidává kontext k tempu na trati, tlak dál roste.",
+        "Biometrický signál odráží náročnou sekvenci, tempo pořád zvedá.",
+        "Tělo odpovídá na intenzitu celého stintu, pořád hledá něco navíc.",
+        "Hodnota {bpm} ukazuje náročnost téhle fáze, bez náznaku polevení."
+      ]
+    },
+    {
+      "node_id": "hr_pressure",
+      "locale": "cs",
+      "emotion": "high",
+      "baseline_line_count": 4,
+      "append_lines": [
+        "Monitor ukazuje {bpm}, zatímco zátěž roste, napětí stoupá!",
+        "Puls potvrzuje práci uvnitř kokpitu, závod kolem něj ožívá!",
+        "Fyzická zátěž se stává součástí obrazu závodu, momentum nabírá sílu!",
+        "Diváci dostávají vzácné měřítko jeho tlaku, tohle začíná být ostré!",
+        "Tep přidává kontext k tempu na trati, napětí stoupá!",
+        "Biometrický signál odráží náročnou sekvenci, závod kolem něj ožívá!",
+        "Tělo odpovídá na intenzitu celého stintu, momentum nabírá sílu!",
+        "Hodnota {bpm} ukazuje náročnost téhle fáze, tohle začíná být ostré!"
+      ]
+    }
+  ]
+}

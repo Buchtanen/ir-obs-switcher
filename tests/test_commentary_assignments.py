@@ -28,3 +28,10 @@ def test_assignments_can_filter_locale() -> None:
     assert " — en / " not in text
     for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
         assert f"`{node_id}`" in text
+
+
+def test_assignments_can_rebrief_dense_czech_nodes() -> None:
+    """Dense graph still lists core Czech speak nodes for rewrite briefs."""
+    text = render_assignments(locale="cs", only_unfilled=False)
+    for node_id in ("in_car", "lap_complete", "pit_entry", "back_on_track"):
+        assert f"`{node_id}`" in text
