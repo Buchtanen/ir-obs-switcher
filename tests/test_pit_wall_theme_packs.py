@@ -139,7 +139,7 @@ def test_event_visual_map_covers_v4_states_and_events(theme_name: str) -> None:
     assert set(visual_map["states"]) == set(v4_manifest["states"])
     assert len(visual_map["states"]) == 35
     assert set(visual_map["events"]) == set(v4_catalog["entries"])
-    assert len(visual_map["events"]) == 35
+    assert len(visual_map["events"]) == 36
     assert visual_map["fallbacks"] == v4_catalog["fallbacks"]
 
     for state_name, state in visual_map["states"].items():
