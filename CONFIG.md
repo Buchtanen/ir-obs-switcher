@@ -665,6 +665,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `[stream_chapters].*` (enabled, titles, triggers)
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 - `overlay.language`, `overlay.v4_*`, `overlay.session_tape` a všechny `event_engine.*` flagy
+- `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`, `commentary.audio_device`, `commentary.duck_input`, `commentary.duck_ratio`, `commentary.duck_fade_ms`
 
 ### Vyžaduje restart procesu
 
@@ -687,6 +688,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` `session_tape` (default **true**) — session HUD JSONL tape: WS eventy, DecisionLog (emitted/suppressed/preempted), změna OBS scény / driving mode, aktivní V4 stories. Ne telemetry ticky. Soubor `recordings/overlay-<utc>-<subsession>-<session>.jsonl`. Gate je stejný session type jako switcher (`extract_session_type`: Practice / Qualify / Race → overlay_mode PRACTICE/QUALIFYING/RACE). Warmup/Test tape nezapisují. Vypni `session_tape = false`.
 - `[overlay]` `session_tape_dir` (default `recordings`) — adresář tape souborů; změna vyžaduje restart. `..` v cestě se ignoruje.
 - `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. All off = current MVP event behaviour. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` enables practice minisector stories (`GAIN_FOUND`, `TIME_LOST`, `TARGET_LOCKED`). `quali_projection` enables qualifying projected lap / position attack / hot lap stories.
+- `[commentary]` `enabled` (default `false`), `use_hr_emotion` (default `true`), `cooldown_s` (default `4.0`), `max_utterance_s` (default `6.0`), `tts_backend` (`auto`|`sapi`|`espeak`|`null`, default `auto`), `tts_voice` (empty = system default), `tts_rate` (`-10`…`10`, default `0`), `audio_device` (empty = Windows default playback; substring match e.g. `CABLE Input` routes SAPI to VB-CABLE so you do not hear it in the headset; stereo is preferred over 16ch), `duck_input` (empty = no ducking; OBS audio source name e.g. `Zvuk plochy`), `duck_ratio` (default `0.25` = 25% of the original OBS volume while commentary speaks, then restore), `duck_fade_ms` (default `750`; `0` = instant) — spoken commentary. `auto` uses Windows SAPI (memory + winmm to `audio_device`) or `espeak-ng` on Linux. Test page: [`GET /commentary`](API.md#get-commentary). English mock lines exist for in-car, lap complete, pit entry, and back on track; other graph cells stay empty until the text model fills them. Live feed stays silent while `enabled=false`. See [COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md).
 
 **Full V4 demo profile** (mirrored in `config/config.example.ini`; production code defaults stay off until you opt in):
 

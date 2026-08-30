@@ -13,6 +13,7 @@ from irswitch.models import DrivingMode
 from irswitch.overlay.i18n import normalize_language as normalize_overlay_language
 from irswitch.overlay.settings import (
     BattleSettings,
+    CommentarySettings,
     EventEngineFeatureSettings,
     EventPrioritySettings,
     EventSettings,
@@ -325,6 +326,23 @@ def _get_str(parser: configparser.ConfigParser, section: str, key: str, fallback
     return parser.get(section, key, fallback=fallback).strip() or fallback
 
 
+def _normalize_tts_backend(value: str) -> str:
+    key = (value or "auto").strip().lower()
+    return key if key in {"auto", "sapi", "espeak", "null"} else "auto"
+
+
+def _clamp_tts_rate(value: int) -> int:
+    return max(-10, min(10, int(value)))
+
+
+def _clamp_duck_ratio(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def _clamp_duck_fade_ms(value: int) -> int:
+    return max(0, min(3000, int(value)))
+
+
 def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSettings:
     defaults = HuntingSettings()
     return HuntingSettings(
@@ -405,6 +423,35 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         hr_pressure=_get_bool(parser, "event_engine", "hr_pressure", ee_defaults.hr_pressure),
     )
 
+    commentary_defaults = defaults.commentary
+    commentary = CommentarySettings(
+        enabled=_get_bool(parser, "commentary", "enabled", commentary_defaults.enabled),
+        use_hr_emotion=_get_bool(
+            parser, "commentary", "use_hr_emotion", commentary_defaults.use_hr_emotion
+        ),
+        cooldown_s=_get_float(parser, "commentary", "cooldown_s", commentary_defaults.cooldown_s),
+        max_utterance_s=_get_float(
+            parser, "commentary", "max_utterance_s", commentary_defaults.max_utterance_s
+        ),
+        tts_backend=_normalize_tts_backend(
+            _get_str(parser, "commentary", "tts_backend", commentary_defaults.tts_backend)
+        ),
+        tts_voice=_get_str(parser, "commentary", "tts_voice", commentary_defaults.tts_voice),
+        tts_rate=_clamp_tts_rate(
+            _get_int(parser, "commentary", "tts_rate", commentary_defaults.tts_rate)
+        ),
+        audio_device=_get_str(
+            parser, "commentary", "audio_device", commentary_defaults.audio_device
+        ),
+        duck_input=_get_str(parser, "commentary", "duck_input", commentary_defaults.duck_input),
+        duck_ratio=_clamp_duck_ratio(
+            _get_float(parser, "commentary", "duck_ratio", commentary_defaults.duck_ratio)
+        ),
+        duck_fade_ms=_clamp_duck_fade_ms(
+            _get_int(parser, "commentary", "duck_fade_ms", commentary_defaults.duck_fade_ms)
+        ),
+    )
+
     lhm_raw = ""
     if parser.has_section("system_info"):
         lhm_raw = parser.get("system_info", "lhm_dll_path", fallback="").strip()
@@ -455,6 +502,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         v4=v4,
         tape=tape,
         event_engine=event_engine,
+        commentary=commentary,
         sampling=sampling,
         battle=BattleSettings(
             hunting=_load_hunting(parser, "battle.hunting"),

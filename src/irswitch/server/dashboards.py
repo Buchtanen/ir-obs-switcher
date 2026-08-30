@@ -927,6 +927,7 @@ async def handle_gr_status(request: web.Request) -> web.Response:
             <a href="/overlay">Overlay</a>
             <a href="/overlay/demo">Overlay demo</a>
             <a href="/overlay/debug">Overlay debug</a>
+            <a href="/commentary">Commentary</a>
             <a href="/config">Config</a>
         </nav>
 

@@ -316,6 +316,9 @@ def register_overlay_routes(app: web.Application) -> None:
     app.router.add_get("/overlay/demo/", handle_overlay_demo_page)
     app.router.add_get("/overlay/golden", handle_overlay_golden_page)
     app.router.add_get("/config", handle_config_page)
+    from irswitch.commentary.http import register_commentary_routes
+
+    register_commentary_routes(app)
     app.router.add_get("/ws/overlay", handle_overlay_ws)
     app.router.add_get("/api/overlay/snapshot", handle_overlay_snapshot)
     app.router.add_get("/api/overlay/i18n", handle_overlay_i18n)

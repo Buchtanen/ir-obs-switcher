@@ -133,6 +133,23 @@ class OverlayTapeSettings:
 
 
 @dataclass(frozen=True)
+class CommentarySettings:
+    """Spoken commentary rollout. Default off; no audio until texts are filled."""
+
+    enabled: bool = False
+    use_hr_emotion: bool = True
+    cooldown_s: float = 4.0
+    max_utterance_s: float = 6.0
+    tts_backend: str = "auto"
+    tts_voice: str = ""
+    tts_rate: int = 0
+    audio_device: str = ""
+    duck_input: str = ""
+    duck_ratio: float = 0.25
+    duck_fade_ms: int = 750
+
+
+@dataclass(frozen=True)
 class OverlaySettings:
     """Feature flags and overlay presentation."""
 
@@ -143,6 +160,7 @@ class OverlaySettings:
     v4: OverlayV4Settings = field(default_factory=OverlayV4Settings)
     tape: OverlayTapeSettings = field(default_factory=OverlayTapeSettings)
     event_engine: EventEngineFeatureSettings = field(default_factory=EventEngineFeatureSettings)
+    commentary: CommentarySettings = field(default_factory=CommentarySettings)
     sampling: SamplingSettings = field(default_factory=SamplingSettings)
     battle: BattleSettings = field(default_factory=BattleSettings)
     heart_rate: HeartRateSettings = field(default_factory=HeartRateSettings)
