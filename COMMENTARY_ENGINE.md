@@ -130,19 +130,17 @@ Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine 
 
 ## Content DB + fill plan
 
-Structure is loadable today; most `variants` cells are empty. Mock EN covers four nodes so the live path can be tried.
-
-**Plan (waves, handoff to the text model, gradual mock→data):**  
+Filled EN+CS (viewer voice). Return point for authoring waves:  
 [`docs/commentary_content_db_plan.md`](docs/commentary_content_db_plan.md)
 
-That doc is the return point for authoring. Runtime rules stay here.
+## Product suite (next)
 
-## Later (not this PR)
+What remains to make this stream-ready (live readiness, why-quiet log, stream start, sinks, budget):  
+[`docs/commentary_product_suite.md`](docs/commentary_product_suite.md)
 
-- Author fills `variants` (EN + CS, per emotion) per the content plan waves
-- Windows SAPI / OBS media sink (still no new dep unless approved)
-- Optional DecisionLog “why not spoken” on WS
-- P0–P5 voice budget if overlay arbitration grows zones
+## Later (moved into product suite)
+
+See product suite packages **P1–P6**. Engine test can continue with mock/`/commentary` while those ship.
 
 ## Tests
 
