@@ -119,9 +119,18 @@ Spoken language is English. The director picks **one random fully-bound line** f
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
 
+## Content DB + fill plan
+
+Structure is loadable today; most `variants` cells are empty. Mock EN covers four nodes so the live path can be tried.
+
+**Plan (waves, handoff to the text model, gradual mock→data):**  
+[`docs/commentary_content_db_plan.md`](docs/commentary_content_db_plan.md)
+
+That doc is the return point for authoring. Runtime rules stay here.
+
 ## Later (not this PR)
 
-- Author fills `variants` (EN + CS, per emotion)
+- Author fills `variants` (EN + CS, per emotion) per the content plan waves
 - Windows SAPI / OBS media sink (still no new dep unless approved)
 - Optional DecisionLog “why not spoken” on WS
 - P0–P5 voice budget if overlay arbitration grows zones
