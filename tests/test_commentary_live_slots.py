@@ -74,13 +74,18 @@ def test_rival_threat_with_live_metrics_speaks() -> None:
     assert choose_filled_line(texts, bound, random.Random(0)) is not None
 
 
-def test_rival_threat_without_name_or_gap_still_slot_unbound() -> None:
+def test_rival_threat_without_metrics_uses_slotless_filler_or_skips() -> None:
+    """Densified cells include slotless fillers; empty metrics must not leave {slots}."""
     graph = load_sequence_graph()
     node = graph.nodes["rival_threat"]
     env = make_envelope(event_type="RIVAL_THREAT", phase="ENTER", priority=60, metrics={})
     bound = slot_bindings(env, "unknown")
     texts = node.variant_bucket("en", "unknown")
-    assert choose_filled_line(texts, bound, random.Random(0)) is None
+    spoken = choose_filled_line(texts, bound, random.Random(0))
+    if spoken is None:
+        return
+    assert "{" not in spoken
+    assert "-1" not in spoken
 
 
 def test_director_speaks_lap_complete_from_live_shaped_envelope() -> None:
