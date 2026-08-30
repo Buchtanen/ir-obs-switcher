@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from irswitch.logic.stream_chapters import StreamChaptersSettings, load_stream_chapters_settings
 from irswitch.models import DrivingMode
 from irswitch.overlay.i18n import normalize_language as normalize_overlay_language
 from irswitch.overlay.settings import (
@@ -88,6 +89,9 @@ class AppConfig:
     # [oauth] - Optional OAuth credentials for YouTube API
     oauth_client_id: str | None
     oauth_client_secret: str | None
+
+    # [stream_chapters] - optional WS chapter markers for the current stream
+    stream_chapters: StreamChaptersSettings = field(default_factory=StreamChaptersSettings)
 
     # Overlay / race pipeline (optional INI sections, defaults apply)
     overlay: OverlaySettings = field(default_factory=OverlaySettings)
@@ -244,6 +248,7 @@ class AppConfig:
                 if not oauth_client_secret:
                     oauth_client_secret = None
 
+        stream_chapters = load_stream_chapters_settings(parser)
         overlay = _load_overlay_settings(parser)
 
         result = cls(
@@ -282,6 +287,7 @@ class AppConfig:
             dashboard_event_log_size=dashboard_event_log_size,
             oauth_client_id=oauth_client_id,
             oauth_client_secret=oauth_client_secret,
+            stream_chapters=stream_chapters,
             overlay=overlay,
         )
         return result

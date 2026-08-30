@@ -309,3 +309,4 @@ Pro **restart bez ručního startu** použij GR **Restart Service** / `POST /res
 - **[STATUS.md](STATUS.md)** - Přehled stavu projektu a co je hotové
 - **[CHANGELOG.md](CHANGELOG.md)** - Historie změn projektu
 - **[tests.md](tests.md)** - Detailní dokumentace všech testů
+- **[docs/event_graph_editor_spec.md](docs/event_graph_editor_spec.md)** - Nápad (nice-to-have): grafický editor eventů / prahů — není implementováno

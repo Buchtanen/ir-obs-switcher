@@ -104,6 +104,10 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "dashboards.dashboard_gr_logo_app",
         "dashboards.dashboard_vr_icons_path",
         "dashboards.dashboard_event_log_size",
+        "stream_chapters.enabled",
+        "stream_chapters.start_title",
+        "stream_chapters.trigger_session_types",
+        "stream_chapters.session_titles",
         *(f"scenes.{mode.name}" for mode in DrivingMode),
     }
 )
@@ -162,6 +166,12 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
         "dashboards.dashboard_event_log_size": config.dashboard_event_log_size,
         "oauth.client_id": config.oauth_client_id,
         "oauth.client_secret": config.oauth_client_secret,
+        "stream_chapters.enabled": config.stream_chapters.enabled,
+        "stream_chapters.start_title": config.stream_chapters.start_title,
+        "stream_chapters.trigger_session_types": tuple(
+            config.stream_chapters.trigger_session_types
+        ),
+        "stream_chapters.session_titles": dict(config.stream_chapters.session_titles),
     }
     values.update(overlay_values(config.overlay))
     for mode in DrivingMode:

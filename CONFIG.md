@@ -13,6 +13,7 @@ Viz `config/config.example.ini` pro kompletní příklad konfigurace.
 - [Sekce `[hotkeys]`](#sekce-hotkeys---globální-hotkey-volitelné)
 - [Sekce `[scenes]`](#sekce-scenes---mapování-módu-na-obs-scény)
 - [Sekce `[dashboards]`](#sekce-dashboards---html-dashboardy-volitelné)
+- [Sekce `[stream_chapters]`](#sekce-stream_chapters---kapitoly-streamu-přes-ws-volitelné)
 
 ---
 
@@ -580,6 +581,46 @@ dashboard_vr_icons_path = assets/vr_icons/
 
 ---
 
+## Sekce `[stream_chapters]` - Kapitoly streamu přes WS (volitelné)
+
+In-memory chapter markery pro aktuální OBS stream. Emitují se jako **additive** zprávy na `WS /ws` (viz `API.md`). **Nepíšou** YouTube description ani OBS `CreateRecordChapter` (to je budoucí práce).
+
+Výchozí stav: vypnuto. Bez migrace — existující instalace se chovají stejně, dokud sekci nezapneš.
+
+### `enabled` (výchozí: `false`)
+
+Master switch. Při `false` se markery neukládají, neposílají se chapter WS zprávy a `/status` pole `stream_chapters` chybí.
+
+### `start_title` (výchozí: `Stream start`)
+
+Titulek start markeru při přechodu na `streaming: true` (`offset_seconds: 0`).
+
+Krátký OBS flicker (< 2 s stop) **nevyvolá** clear ani nový start marker.
+
+### `trigger_session_types` (výchozí: `Practice,Qualify,Race`)
+
+Čárkou oddělené `session_type` hodnoty, při jejich **změně** (během streamu) se přidá marker. `Test` / prázdné / null se ignorují.
+
+### Title templates (volitelné)
+
+- `title_practice`, `title_qualify`, `title_race`, … — prefix `title_` + lowercase session type
+- nebo holé klíče `practice` / `qualify` / `race`
+
+Když template chybí, použije se raw `session_type`.
+
+**Příklad**:
+```ini
+[stream_chapters]
+enabled = true
+start_title = Stream start
+trigger_session_types = Practice,Qualify,Race
+title_practice = Practice
+title_qualify = Qualifying
+title_race = Race
+```
+
+---
+
 ## Cesty v konfiguraci
 
 **Důležité**: Všechny cesty v `config.ini` jsou **relativní vzhledem k working directory** (adresáři, ze kterého spouštíš aplikaci).
@@ -621,6 +662,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `switching.auto_start_broadcast`, `auto_start_at_percent`, `default_loading_time_seconds`
 - `switching.auto_stop_stream`, `stop_stream_after_seconds`
 - většina `[dashboards]` klíčů čtených při requestu
+- `[stream_chapters].*` (enabled, titles, triggers)
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 - `overlay.language`, `overlay.v4_*`, `overlay.session_tape` a všechny `event_engine.*` flagy
 - `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`
