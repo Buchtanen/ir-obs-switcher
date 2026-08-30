@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
 import os
+import queue
 import shutil
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -69,24 +70,84 @@ class NullTtsSink:
 
 @dataclass
 class ProcessTtsSink:
-    """Speaks via a subprocess in a worker thread / executor."""
+    """Speaks via a single serial worker thread (queue + one consumer).
+
+    ``enqueue`` only appends history and puts on an unbounded queue — never
+    waits for SAPI/espeak or duck fades. Concurrent enqueues cannot start two
+    speaks at once; duck enter/exit stays on that one worker path and remains
+    nested-safe via the shared ``VolumeDucker``.
+    """
 
     settings: CommentarySettings
     spoken: list[CommentaryUtterance] = field(default_factory=list)
     last_error: str | None = None
     last_result: TtsResult | None = None
     runner: SpeakRunner | None = None
+    _queue: queue.SimpleQueue[CommentaryUtterance] = field(
+        default_factory=queue.SimpleQueue, repr=False
+    )
+    _worker_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+    _worker: threading.Thread | None = field(default=None, init=False, repr=False)
+    _pending: int = field(default=0, init=False, repr=False)
+    _speaking: bool = field(default=False, init=False, repr=False)
+    _idle: threading.Condition = field(
+        default_factory=threading.Condition, repr=False
+    )
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
+        """Accept a validated line. Must not block the race loop."""
         self.spoken.append(utterance)
         if len(self.spoken) > 32:
             del self.spoken[:-16]
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            threading.Thread(target=self._speak, args=(utterance,), daemon=True).start()
-            return
-        loop.run_in_executor(None, self._speak, utterance)
+        with self._idle:
+            self._pending += 1
+        self._ensure_worker()
+        self._queue.put(utterance)
+
+    def pending_count(self) -> int:
+        """Queued + in-flight speaks (test / diagnostics)."""
+        with self._idle:
+            return self._pending
+
+    def wait_idle(self, timeout_s: float = 5.0) -> bool:
+        """Block until the serial worker has drained. For tests only."""
+        deadline = time.monotonic() + max(0.0, float(timeout_s))
+        with self._idle:
+            while self._pending > 0 or self._speaking:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._idle.wait(remaining)
+            return True
+
+    def _ensure_worker(self) -> None:
+        with self._worker_lock:
+            worker = self._worker
+            if worker is not None and worker.is_alive():
+                return
+            worker = threading.Thread(
+                target=self._worker_loop,
+                name="irswitch-commentary-tts",
+                daemon=True,
+            )
+            self._worker = worker
+            worker.start()
+
+    def _worker_loop(self) -> None:
+        while True:
+            utterance = self._queue.get()
+            with self._idle:
+                self._speaking = True
+            try:
+                self._speak(utterance)
+            except Exception:
+                logger.exception("tts serial worker failed")
+            finally:
+                with self._idle:
+                    self._speaking = False
+                    self._pending = max(0, self._pending - 1)
+                    if self._pending == 0:
+                        self._idle.notify_all()
 
     def _speak(self, utterance: CommentaryUtterance) -> None:
         with ducker_from_settings(self.settings):
