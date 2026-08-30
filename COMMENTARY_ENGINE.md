@@ -35,6 +35,7 @@ Rules:
 - Hook **accepted envelopes only**. Raw candidates are too noisy.
 - Works with **legacy** EventManager (`v2_payload=false`, default) via a speech map for `lap_complete` / `pit_entry` / `pit_exit`. V2 envelopes are used when present; the map fills gaps (basic pit has no V2 adapter).
 - `in_car` is a commentary sidecar (`player_car_idx` rising, event type `ENTER_CAR`). It is **not** an overlay HUD catalog entry and is **not** pit entry.
+- Session intros / SoF / weather are commentary sidecars (`SessionBriefsDetector`, gated by `commentary.session_briefs`). They are **not** overlay HUD catalog entries.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
 - BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
 - Fail-soft: graph load / observe errors must not break the race loop.
@@ -132,6 +133,27 @@ sector_speak_max_per_lap = 1
 
 Migration: new optional keys keep defaults. Existing `config.ini` stays silent until `enabled=true`.
 
+### Session briefs (W4/H4)
+
+Opt-in once-per-session intro / SoF / weather commentary (COMMENTARY_ONLY sidecars, like `ENTER_CAR` — not overlay HUD catalog):
+
+```ini
+session_briefs = false
+```
+
+| Gate | Behavior |
+| --- | --- |
+| `session_briefs=false` (default) | Director skips intro/SoF/weather envelopes (`session_briefs_disabled`) |
+| Intro | Once when `session_type` resolves to Practice / Qualify / Race |
+| SoF | Once when race is active, intro already attempted, and racing roster ready (`field_size > 0`); arithmetic-mean interim (not official iRacing SoF) |
+| Weather | Once after intro, preferring live snapshot (`extract_weather(..., prefer="live")`) |
+| Reset | `(SubSessionID, SessionNum)` change or disconnect |
+| Arbitration | At most one brief envelope per tick; if a brief speaks, `ENTER_CAR` is deferred to the next tick |
+
+Slots bound from envelope metrics: `track`, `field_size`, `sof`, `sof_class`, `skies`, `air_temp`, `track_temp`, `wind_speed`, `precipitation` (H1/H2/H3 formatters). Slot-light variants still speak when optional fields are missing.
+
+Migration: optional key default `false`. Requires `commentary.enabled=true` for audible output.
+
 **Audio path (stream PC):** SAPI → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing; code sink stays `sapi`/`espeak`/`null`. See product suite T0/T1 and P4 note.
 
 ## Anti-repeat + filler-tail quota (M2)
@@ -188,16 +210,18 @@ Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentar
 
 ## Session intros / SoF extraction (W4 H1)
 
-Fail-soft SessionInfo helpers live in `irswitch.iracing.session_context` (standalone; not wired to director events yet):
+Fail-soft SessionInfo helpers live in `irswitch.iracing.session_context`:
 
 - `track_display_name(weekend_info)` — `WeekendInfo.TrackDisplayName`, optional `TrackConfigName` append; never speaks `TrackID` alone
 - `parse_roster(driver_info)` — racing drivers only (excludes pace car, spectators, invalid `CarIdx`); missing `IsSpectator` excludes the row
 - `session_key(data)` / `SessionContextCache` — cache identity `(SubSessionID, SessionNum)`, invalidate on change
 - `extract_session_context(data)` — track + roster + player car/class when available
 
+Wired in H4 via `irswitch.commentary.session_briefs.SessionBriefsDetector` (COMMENTARY_ONLY sidecars).
+
 ## SoF helper (W4 H2)
 
-Pure arithmetic-mean interim SoF in `irswitch.iracing.sof` (`compute_sof` / `compute_sof_bundle` / `format_sof_label`). Not official iRacing SoF. Sequence_graph intro nodes remain H4.
+Pure arithmetic-mean interim SoF in `irswitch.iracing.sof` (`compute_sof` / `compute_sof_bundle` / `format_sof_label`). Not official iRacing SoF. H4 emits `SOF_BRIEF` once per race session when the roster is ready.
 
 ## Weather speech formatting (W4 H3)
 
@@ -207,7 +231,9 @@ Fail-soft helpers in `irswitch.iracing.weather` extract current vs forecast weat
 - Live may fall back to `WeekendInfo.Track*` (same “current” family); forecast (`WeekendOptions`) is never mixed in silently
 - `format_*` / `spoken_weather_bindings` — speech labels (e.g. `23 C`, `4 m/s`, `partly cloudy` / CS equivalents); precip uses a small vocab and never invents rain from `Skies` alone
 
-**Not wired yet:** H4 must add session-intro / `SOF_BRIEF` / `WEATHER_BRIEF` emitters + director bindings. No new config flag.
+## Session briefs wiring (W4 H4)
+
+Graph nodes `session_intro_practice` / `session_intro_qualify` / `session_intro_race` / `sof_brief` / `weather_brief` are in `sequence_graph.json`. Overlay runtime hooks `SessionBriefsDetector` beside `InCarDetector`. Feature flag: `commentary.session_briefs` (default off).
 
 ## Tests
 
@@ -219,6 +245,7 @@ Fail-soft helpers in `irswitch.iracing.weather` extract current vs forecast weat
 - `tests/test_commentary_mock.py`
 - `tests/test_commentary_live_slots.py`
 - `tests/test_commentary_anti_repeat.py`
+- `tests/test_commentary_session_briefs.py`
 - `tests/test_session_context.py`
 - `tests/test_sof.py`
 - `tests/test_iracing_weather.py`

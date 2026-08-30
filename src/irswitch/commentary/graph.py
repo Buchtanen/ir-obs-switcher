@@ -11,7 +11,16 @@ from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 GRAPH_VERSION = 1
 # Speech-only event types. Not overlay HUD catalog entries.
-COMMENTARY_ONLY_EVENTS = frozenset({"ENTER_CAR"})
+COMMENTARY_ONLY_EVENTS = frozenset(
+    {
+        "ENTER_CAR",
+        "SESSION_INTRO_PRACTICE",
+        "SESSION_INTRO_QUALIFY",
+        "SESSION_INTRO_RACE",
+        "SOF_BRIEF",
+        "WEATHER_BRIEF",
+    }
+)
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})
 ALLOWED_SLOT_TYPES = frozenset({"int", "time", "delta", "gap", "name", "label"})
 ALLOWED_SSML = frozenset({"break", "emphasis"})

@@ -8,7 +8,7 @@ import re
 from difflib import SequenceMatcher
 from pathlib import Path
 
-from irswitch.commentary.graph import GraphNode, SlotSpec, TtsLimits, load_sequence_graph
+from irswitch.commentary.graph import GraphNode, load_sequence_graph
 from irswitch.commentary.validator import fill_slots, validate_utterance
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +33,14 @@ PRIORITY_NODES = {
     "in_car",
     "pit_outcome",
 }
+# W4/H4 session briefs landed from proposals at 10 lines/cell (not densified to 12).
+SESSION_BRIEF_NODES = {
+    "session_intro_practice",
+    "session_intro_qualify",
+    "session_intro_race",
+    "sof_brief",
+    "weather_brief",
+}
 TARGET_NAME_NODES = {"hunting", "hunted", "side_by_side", "overtake", "rival_threat"}
 
 
@@ -54,15 +62,24 @@ def _active_rows() -> list[tuple[GraphNode, str, str, str]]:
     return rows
 
 
+def _expected_density(node_id: str) -> int:
+    if node_id in PRIORITY_NODES:
+        return 16
+    if node_id in SESSION_BRIEF_NODES:
+        return 10
+    return 12
+
+
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
     graph = load_sequence_graph()
-    assert len(graph.nodes) == 27
+    assert len(graph.nodes) == 32
     assert len(graph.edges) == 12
     assert graph.unfilled_cells() == []
+    assert SESSION_BRIEF_NODES <= set(graph.nodes)
 
     total = 0
     for node in graph.nodes.values():
-        expected = 16 if node.id in PRIORITY_NODES else 12
+        expected = _expected_density(node.id)
         emotions = {"neutral" if state == "unknown" else state for state in node.hr_states}
         examples = {slot.name: slot.example for slot in node.slots}
         for locale, buckets in node.variants.items():
@@ -85,7 +102,8 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                         bound,
                     )
                 total += len(lines)
-    assert total == 2832
+    # 2832 prior densified lines + 5 brief nodes × 2 locales × 5 emotions × 10
+    assert total == 3332
 
 
 def test_append_patch_exactly_matches_graph_tails() -> None:
@@ -168,40 +186,23 @@ def test_deterministic_sixty_line_self_check_against_current_validator() -> None
         assert validate_utterance(line, node) == [], (node.id, locale, emotion, line)
 
 
-def test_proposed_nodes_are_explicit_unwired_and_fully_valid() -> None:
+def test_proposed_nodes_are_wired_into_graph_and_fully_valid() -> None:
     document = _json(PROPOSALS_PATH)
-    assert document["status"] == "needs-engineering"
+    assert document["status"] == "wired"
     assert document["topology_changed"] is False
-    assert document["runtime_wiring_changed"] is False
+    assert document["runtime_wiring_changed"] is True
     proposed = document["proposed_nodes"]
     assert isinstance(proposed, dict)
-    assert set(proposed) == {
-        "session_intro_practice",
-        "session_intro_qualify",
-        "session_intro_race",
-        "sof_brief",
-        "weather_brief",
-    }
+    assert set(proposed) == SESSION_BRIEF_NODES
 
+    graph = load_sequence_graph()
     line_count = 0
     for node_id, raw in proposed.items():
         assert isinstance(raw, dict)
-        assert raw["status"] == "needs-engineering"
-        slots = tuple(
-            SlotSpec(str(item["name"]), str(item["type"]), str(item["example"]))
-            for item in raw["slots"]
-        )
-        node = GraphNode(
-            id=node_id,
-            family=str(raw["family"]),
-            event_types=tuple(str(value) for value in raw["event_types"]),
-            phases=tuple(str(value) for value in raw["phases"]),
-            speak_priority=int(raw["speak_priority"]),
-            cooldown_s=float(raw["cooldown_s"]),
-            slots=slots,
-            hr_states=tuple(str(value) for value in raw["hr_states"]),
-            tts=TtsLimits(max_chars=90, max_seconds=5.5),
-        )
+        assert raw["status"] == "wired"
+        assert node_id in graph.nodes
+        graph_node = graph.nodes[node_id]
+        assert graph_node.event_types == tuple(str(value) for value in raw["event_types"])
         variants = raw["variants"]
         assert set(variants) == {"en", "cs"}
         for locale, buckets in variants.items():
@@ -214,15 +215,16 @@ def test_proposed_nodes_are_explicit_unwired_and_fully_valid() -> None:
             assert set(buckets) == {"neutral", "calm", "focused", "pushing", "high"}
             for emotion, lines in buckets.items():
                 assert len(lines) == 10, (node_id, locale, emotion)
+                assert graph_node.variants[locale][emotion] == tuple(lines)
                 for line in lines:
-                    assert validate_utterance(line, node) == [], (
+                    assert validate_utterance(line, graph_node) == [], (
                         node_id,
                         locale,
                         emotion,
                         line,
                     )
                     bound = fill_slots(line, examples)
-                    assert validate_utterance(bound, node) == [], (
+                    assert validate_utterance(bound, graph_node) == [], (
                         node_id,
                         locale,
                         emotion,
@@ -232,7 +234,7 @@ def test_proposed_nodes_are_explicit_unwired_and_fully_valid() -> None:
     assert line_count == 500
 
 
-def test_proposed_slot_sources_are_exact_and_marked_unimplemented() -> None:
+def test_proposed_slot_sources_are_exact_and_marked_wired() -> None:
     slots = _json(PROPOSALS_PATH)["proposed_slots"]
     assert isinstance(slots, list)
     assert {item["slot"] for item in slots} == {
@@ -248,4 +250,5 @@ def test_proposed_slot_sources_are_exact_and_marked_unimplemented() -> None:
     }
     for item in slots:
         assert item["irsdk_session_source"]
-        assert "not implemented" in item["notes"].lower()
+        assert "wired" in item["notes"].lower()
+        assert "not implemented" not in item["notes"].lower()

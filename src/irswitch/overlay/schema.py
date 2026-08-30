@@ -271,6 +271,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         8.0,
     ),
     FieldSpec(
+        "commentary.session_briefs",
+        "bool",
+        False,
+        True,
+        "commentary",
+        "Speak once-per-session intro / SoF / weather briefs (commentary sidecars; default off).",
+    ),
+    FieldSpec(
         "sampling.default_hz",
         "float",
         5.0,
@@ -830,6 +838,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "commentary.decision_log_size": s.commentary.decision_log_size,
         "commentary.sector_speak": s.commentary.sector_speak,
         "commentary.sector_speak_max_per_lap": s.commentary.sector_speak_max_per_lap,
+        "commentary.session_briefs": s.commentary.session_briefs,
         "sampling.default_hz": s.sampling.default_hz,
         "sampling.race.hz": s.sampling.race_hz,
         "sampling.system.hz": s.sampling.system_hz,

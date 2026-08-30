@@ -151,6 +151,8 @@ class CommentarySettings:
     # Sector absolute-time speak path (HUD SECTOR_SPLIT stays independent).
     sector_speak: bool = False
     sector_speak_max_per_lap: int = 1
+    # Session intro / SoF / weather commentary sidecars (default off).
+    session_briefs: bool = False
 
 
 @dataclass(frozen=True)

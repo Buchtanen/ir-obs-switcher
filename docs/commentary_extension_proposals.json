@@ -1,8 +1,8 @@
 {
   "proposal_version": 1,
-  "status": "needs-engineering",
+  "status": "wired",
   "topology_changed": false,
-  "runtime_wiring_changed": false,
+  "runtime_wiring_changed": true,
   "proposed_nodes": {
     "session_intro_practice": {
       "family": "session",
@@ -38,13 +38,8 @@
         ],
         "require_terminal_punct": true
       },
-      "status": "needs-engineering",
-      "needs_engineering": [
-        "Add or approve the proposed event type and emitter trigger.",
-        "Bind every proposed slot from the documented iRSDK/SessionInfo source.",
-        "Add catalog/director tests before inserting this node into sequence_graph.json.",
-        "Decide topology and cooldown interaction explicitly; no edge is proposed silently."
-      ],
+      "status": "wired",
+      "needs_engineering": [],
       "variants": {
         "en": {
           "neutral": [
@@ -211,13 +206,8 @@
         ],
         "require_terminal_punct": true
       },
-      "status": "needs-engineering",
-      "needs_engineering": [
-        "Add or approve the proposed event type and emitter trigger.",
-        "Bind every proposed slot from the documented iRSDK/SessionInfo source.",
-        "Add catalog/director tests before inserting this node into sequence_graph.json.",
-        "Decide topology and cooldown interaction explicitly; no edge is proposed silently."
-      ],
+      "status": "wired",
+      "needs_engineering": [],
       "variants": {
         "en": {
           "neutral": [
@@ -384,13 +374,8 @@
         ],
         "require_terminal_punct": true
       },
-      "status": "needs-engineering",
-      "needs_engineering": [
-        "Add or approve the proposed event type and emitter trigger.",
-        "Bind every proposed slot from the documented iRSDK/SessionInfo source.",
-        "Add catalog/director tests before inserting this node into sequence_graph.json.",
-        "Decide topology and cooldown interaction explicitly; no edge is proposed silently."
-      ],
+      "status": "wired",
+      "needs_engineering": [],
       "variants": {
         "en": {
           "neutral": [
@@ -570,13 +555,8 @@
         ],
         "require_terminal_punct": true
       },
-      "status": "needs-engineering",
-      "needs_engineering": [
-        "Add or approve the proposed event type and emitter trigger.",
-        "Bind every proposed slot from the documented iRSDK/SessionInfo source.",
-        "Add catalog/director tests before inserting this node into sequence_graph.json.",
-        "Decide topology and cooldown interaction explicitly; no edge is proposed silently."
-      ],
+      "status": "wired",
+      "needs_engineering": [],
       "variants": {
         "en": {
           "neutral": [
@@ -763,13 +743,8 @@
         ],
         "require_terminal_punct": true
       },
-      "status": "needs-engineering",
-      "needs_engineering": [
-        "Add or approve the proposed event type and emitter trigger.",
-        "Bind every proposed slot from the documented iRSDK/SessionInfo source.",
-        "Add catalog/director tests before inserting this node into sequence_graph.json.",
-        "Decide topology and cooldown interaction explicitly; no edge is proposed silently."
-      ],
+      "status": "wired",
+      "needs_engineering": [],
       "variants": {
         "en": {
           "neutral": [
@@ -910,7 +885,7 @@
         "session_intro_race",
         "weather_brief"
       ],
-      "notes": "Binding not implemented. Prefer display name; append config only when it adds information."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "field_size",
@@ -922,7 +897,7 @@
         "session_intro_race",
         "sof_brief"
       ],
-      "notes": "Binding not implemented on master; DriverInfo is not read by the current reader."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "sof",
@@ -932,7 +907,7 @@
       "nodes": [
         "sof_brief"
       ],
-      "notes": "Binding and formula not implemented; product must confirm formula and format the localized thousands separator so the validator never receives a four-digit run."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "sof_class",
@@ -942,7 +917,7 @@
       "nodes": [
         "sof_brief"
       ],
-      "notes": "Binding not implemented; omit in single-class or unavailable-class fallbacks and format the localized thousands separator before binding."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "skies",
@@ -952,7 +927,7 @@
       "nodes": [
         "weather_brief"
       ],
-      "notes": "Binding not implemented. Map the numeric live Skies enum to localized spoken labels."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "air_temp",
@@ -962,7 +937,7 @@
       "nodes": [
         "weather_brief"
       ],
-      "notes": "Binding not implemented; format value and unit as a speakable label."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "track_temp",
@@ -972,7 +947,7 @@
       "nodes": [
         "weather_brief"
       ],
-      "notes": "Binding not implemented; no separate forecast track-temperature field is evidenced in the current repo."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "wind_speed",
@@ -982,7 +957,7 @@
       "nodes": [
         "weather_brief"
       ],
-      "notes": "Binding not implemented; normalize units before formatting."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     },
     {
       "slot": "precipitation",
@@ -992,7 +967,7 @@
       "nodes": [
         "weather_brief"
       ],
-      "notes": "Binding not implemented; never invent a rain probability from skies alone."
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
     }
   ]
 }

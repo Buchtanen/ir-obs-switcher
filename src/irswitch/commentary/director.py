@@ -31,6 +31,15 @@ logger = logging.getLogger(__name__)
 
 _SPEAK_PHASES = frozenset({"ENTER", "RESULT", "EXIT"})
 _SECTOR_SPEAK_EVENTS = frozenset({"SECTOR_SPLIT", "SECTOR_BEST"})
+_SESSION_BRIEF_EVENTS = frozenset(
+    {
+        "SESSION_INTRO_PRACTICE",
+        "SESSION_INTRO_QUALIFY",
+        "SESSION_INTRO_RACE",
+        "SOF_BRIEF",
+        "WEATHER_BRIEF",
+    }
+)
 DEFAULT_DECISION_LOG_SIZE = 32
 
 
@@ -218,6 +227,9 @@ class CommentaryDirector:
         sector_gate = self._sector_speak_gate(envelope, now)
         if sector_gate is not None:
             return None
+        briefs_gate = self._session_briefs_gate(envelope, now)
+        if briefs_gate is not None:
+            return None
         node = self._pick_node(envelope, now)
         if node is None:
             self._record(
@@ -343,6 +355,20 @@ class CommentaryDirector:
             return "sector_lap_cap"
         return None
 
+    def _session_briefs_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        """Return a skip reason when session briefs stay silent; else None."""
+        if envelope.event_type not in _SESSION_BRIEF_EVENTS:
+            return None
+        if not getattr(self.settings, "session_briefs", False):
+            self._record(
+                action="skipped",
+                reason="session_briefs_disabled",
+                now=now,
+                event_type=envelope.event_type,
+            )
+            return "session_briefs_disabled"
+        return None
+
     def _note_sector_spoken(self, envelope: EventEnvelope) -> None:
         if envelope.event_type not in _SECTOR_SPEAK_EVENTS:
             return
@@ -448,6 +474,16 @@ def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
         "projected_time": _first(metrics, "projectedTime"),
         "confidence": _first(metrics, "confidence"),
         "emotion": emotion,
+        # W4/H4 session briefs (pre-formatted labels from sidecar emitters).
+        "track": _first(metrics, "track"),
+        "field_size": _first(metrics, "field_size", "fieldSize"),
+        "sof": _first(metrics, "sof"),
+        "sof_class": _first(metrics, "sof_class", "sofClass"),
+        "skies": _first(metrics, "skies"),
+        "air_temp": _first(metrics, "air_temp", "airTemp"),
+        "track_temp": _first(metrics, "track_temp", "trackTemp"),
+        "wind_speed": _first(metrics, "wind_speed", "windSpeed"),
+        "precipitation": _first(metrics, "precipitation"),
     }
     return format_spoken_bindings(raw)
 

@@ -98,6 +98,8 @@ class IRacingReader:
         self._process_running_cache: bool | None = None
         self._process_running_cache_ts: float | None = None
         self._process_check_interval_s = 1.0  # Check process status max once per second
+        # Raw SDK mapping from the latest successful telemetry read (session briefs).
+        self._last_telemetry_data: dict[str, object] = {}
 
     def startup(self) -> None:
         """Startup the SDK (synchronous, called once)."""
@@ -456,6 +458,10 @@ class IRacingReader:
             logger.debug(f"read_mode() - exception: {e}", exc_info=True)
             return None
 
+    def last_telemetry_data(self) -> dict[str, object]:
+        """Copy of the raw var dict from the last successful ``read_telemetry``."""
+        return dict(self._last_telemetry_data)
+
     async def read_telemetry(self) -> TelemetrySnapshot:
         """
         Read overlay telemetry vars. Extraction only — no race logic.
@@ -465,15 +471,18 @@ class IRacingReader:
         """
         now = time.monotonic()
         if not self.is_connected():
+            self._last_telemetry_data = {}
             return TelemetrySnapshot.disconnected(now)
         try:
             data = await asyncio.wait_for(
                 asyncio.to_thread(self.read_vars, TELEMETRY_VARS),
                 timeout=2.0,
             )
+            self._last_telemetry_data = dict(data) if data else {}
             return extract_telemetry(data, now)
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.debug("read_telemetry() failed", exc_info=True)
+            self._last_telemetry_data = {}
             return TelemetrySnapshot.disconnected(now)

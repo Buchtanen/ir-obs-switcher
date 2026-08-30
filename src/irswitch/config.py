@@ -477,6 +477,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
+        session_briefs=_get_bool(
+            parser, "commentary", "session_briefs", commentary_defaults.session_briefs
+        ),
     )
 
     lhm_raw = ""
