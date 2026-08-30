@@ -152,3 +152,72 @@ def test_slot_bindings_prefer_envelope_metrics() -> None:
     bound = slot_bindings(env, "unknown")
     assert bound["position"] == 5
     assert bound["target_name"] == "Rossi"
+
+
+def test_decision_log_records_disabled() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=False, decision_log_size=8),
+        sink=NullTtsSink(),
+    )
+    assert director.observe([_overtake()], None, 10.0) is None
+    rows = director.decisions()
+    assert len(rows) == 1
+    assert rows[0]["action"] == "skipped"
+    assert rows[0]["reason"] == "disabled"
+
+
+def test_decision_log_records_spoken_and_busy() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True, cooldown_s=4.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    spoken = director.observe([_overtake()], None, 10.0)
+    assert spoken is not None
+    assert director.decisions(1)[-1]["reason"] == "spoken"
+    # Still inside estimated TTS duration → busy wins over global_cooldown.
+    assert director.observe([_overtake()], None, 10.1) is None
+    assert director.decisions(1)[-1]["reason"] == "busy"
+
+
+def test_decision_log_records_global_cooldown_after_busy() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True, cooldown_s=4.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    spoken = director.observe([_overtake()], None, 10.0)
+    assert spoken is not None
+    after_busy = 10.0 + spoken.estimated_seconds + 0.05
+    assert after_busy < 10.0 + 4.0
+    assert director.observe([_overtake()], None, after_busy) is None
+    assert director.decisions(1)[-1]["reason"] == "global_cooldown"
+
+
+def test_decision_log_records_no_speak_phase() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True),
+        sink=NullTtsSink(),
+    )
+    env = make_envelope(event_type="OVERTAKE", phase="UPDATE", priority=80)
+    assert director.observe([env], None, 10.0) is None
+    assert director.decisions(1)[-1]["reason"] == "no_speak_phase"
+
+
+def test_decision_log_records_slot_unbound() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True, cooldown_s=0.5, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    env = make_envelope(
+        event_type="OVERTAKE",
+        phase="RESULT",
+        priority=80,
+        metrics={},  # no position / target → cannot fill template
+        target=EventSubject(car_id="12"),
+    )
+    assert director.observe([env], None, 10.0) is None
+    assert director.decisions(1)[-1]["reason"] == "slot_unbound"

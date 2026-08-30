@@ -52,6 +52,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "commentary.duck_input",
         "commentary.duck_ratio",
         "commentary.duck_fade_ms",
+        "commentary.decision_log_size",
         "battle.hunting.enter_gap",
         "battle.hunting.exit_gap",
         "battle.hunting.min_closing_rate",

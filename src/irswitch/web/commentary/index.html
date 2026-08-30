@@ -21,6 +21,8 @@
     .nodes { display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow: auto; }
     .nodes button { margin: 0; font-size: 0.85em; }
     .nodes button.active { outline: 2px solid #9be7ff; }
+    #decisions { background: #1b1b1b; padding: 10px; max-height: 220px; overflow: auto; font-size: 0.85em; white-space: pre-wrap; }
+    #audioHint { margin: 0 0 12px; padding: 8px 10px; border-left: 3px solid #9be7ff; background: #1a2228; }
   </style>
 </head>
 <body>
@@ -33,7 +35,8 @@
     <a href="/config">Config</a>
   </nav>
   <h1>Commentary / TTS test</h1>
-  <p class="muted">Krátký poslech: nejdřív <b>prohlížeč</b> (Web Speech, Edge/Chrome), pak <b>server</b> (Windows SAPI nebo espeak). Validátor hlídá intonaci.</p>
+  <p class="muted">Krátký poslech: nejdřív <b>prohlížeč</b> (Web Speech, Edge/Chrome), pak <b>server</b> (Windows SAPI → Virtual Audio Driver, ne sluchátka). Validátor hlídá intonaci.</p>
+  <p id="audioHint" class="muted" hidden></p>
   <p id="statusLine" class="muted">Načítám…</p>
 
   <div class="row">
@@ -103,6 +106,12 @@
         </label>
         <button type="button" id="btnSave">Uložit nastavení</button>
         <span id="saveStatus" class="muted"></span>
+      </fieldset>
+      <fieldset>
+        <legend>Proč ticho (decision log)</legend>
+        <p class="muted">Živý feed: poslední spoken/skipped důvody z CommentaryDirector.</p>
+        <button type="button" id="btnDecisions">Obnovit</button>
+        <div id="decisions" class="muted">—</div>
       </fieldset>
     </section>
   </div>
@@ -174,12 +183,44 @@
         };
         box.appendChild(btn);
       });
+      const hint = $("audioHint");
+      if (status.audioHint) {
+        hint.hidden = false;
+        hint.textContent = status.audioHint;
+      }
       $("statusLine").textContent =
         "Server backend: " + status.backend +
         " (config " + status.configuredBackend + "), jazyk " + status.language +
         ", device " + (status.settings.audioDevice || "default") +
         ", prázdných variant: " + status.unfilledCells +
         ". Prohlížeč: " + (window.speechSynthesis ? "Web Speech OK" : "bez Web Speech");
+    }
+
+    async function loadDecisions() {
+      const el = $("decisions");
+      try {
+        const res = await fetch("/api/commentary/decisions?limit=20");
+        const body = await res.json();
+        if (!body.runtime) {
+          el.textContent = "Runtime offline — decision log prázdný (startni irswitchd).";
+          return;
+        }
+        const rows = body.decisions || [];
+        if (!rows.length) {
+          el.textContent = "Zatím žádná rozhodnutí (zapni enabled a jeď race / mock).";
+          return;
+        }
+        el.textContent = rows.map((d) => {
+          const t = (d.at || 0).toFixed ? d.at.toFixed(1) : d.at;
+          const bits = [t + "s", d.action, d.reason];
+          if (d.eventType) bits.push(d.eventType);
+          if (d.nodeId) bits.push(d.nodeId);
+          if (d.text) bits.push(JSON.stringify(d.text));
+          return bits.join(" | ");
+        }).join("\n");
+      } catch (err) {
+        el.textContent = String(err);
+      }
     }
 
     function browserSpeak() {
@@ -270,11 +311,14 @@
     $("btnValidate").onclick = validate;
     $("btnStop").onclick = () => { if (window.speechSynthesis) speechSynthesis.cancel(); };
     $("btnSave").onclick = save;
+    $("btnDecisions").onclick = loadDecisions;
     if (window.speechSynthesis) {
       fillVoices();
       speechSynthesis.onvoiceschanged = fillVoices;
     }
     loadStatus().catch((err) => { $("statusLine").textContent = String(err); });
+    loadDecisions();
+    setInterval(loadDecisions, 4000);
   </script>
 </body>
 </html>

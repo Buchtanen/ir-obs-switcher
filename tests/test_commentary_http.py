@@ -99,3 +99,33 @@ async def test_speak_blocks_invalid_text(app: web.Application) -> None:
                 )
                 assert resp.status == 400
                 mocked.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_decisions_endpoint_without_runtime(app: web.Application) -> None:
+    from aiohttp.test_utils import TestClient, TestServer
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/decisions")
+            assert resp.status == 200
+            body = await resp.json()
+            assert body["runtime"] is False
+            assert body["decisions"] == []
+            status = await client.get("/api/commentary/status")
+            payload = await status.json()
+            assert "audioHint" in payload
+            assert "Virtual Audio" in payload["audioHint"]
+            assert "decisionLogSize" in payload["settings"]
+
+
+@pytest.mark.asyncio
+async def test_commentary_page_exposes_decision_panel(app: web.Application) -> None:
+    from aiohttp.test_utils import TestClient, TestServer
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            page = await client.get("/commentary")
+            html = await page.text()
+            assert "decision log" in html.lower() or "Proč ticho" in html
+            assert "/api/commentary/decisions" in html

@@ -19,8 +19,8 @@ from irswitch.overlay.i18n import normalize_language
 logger = logging.getLogger(__name__)
 
 SAMPLE_LINES = {
-    "en": "Commentary test. You take P5 from Rossi.",
-    "cs": "Test komentáře. Bereš páté místo.",
+    "en": "Commentary test. He takes P5 from Rossi.",
+    "cs": "Test komentáře. Bere páté místo před Rossim.",
 }
 
 
@@ -87,11 +87,32 @@ async def handle_commentary_status(_request: web.Request) -> web.Response:
                 "duckInput": settings.duck_input,
                 "duckRatio": settings.duck_ratio,
                 "duckFadeMs": settings.duck_fade_ms,
+                "decisionLogSize": settings.decision_log_size,
             },
+            "audioHint": (
+                "On the stream PC, route SAPI playback to a Virtual Audio Driver "
+                "(not headphones) so OBS can capture commentary separately."
+            ),
             "nodes": nodes,
             "unfilledCells": len(graph.unfilled_cells()),
         }
     )
+
+
+async def handle_commentary_decisions(request: web.Request) -> web.Response:
+    """Recent speak/skip decisions from the live director (empty if runtime down)."""
+    try:
+        limit = int(request.rel_url.query.get("limit") or 20)
+    except ValueError:
+        limit = 20
+    limit = max(1, min(limit, 100))
+    from irswitch.overlay import http as overlay_http
+
+    runtime = getattr(overlay_http, "_overlay_runtime", None)
+    director = getattr(runtime, "commentary", None) if runtime is not None else None
+    if director is None or not hasattr(director, "decisions"):
+        return web.json_response({"decisions": [], "runtime": False})
+    return web.json_response({"decisions": director.decisions(limit), "runtime": True})
 
 
 async def handle_commentary_validate(request: web.Request) -> web.Response:
@@ -190,13 +211,12 @@ def _node_or_default(node_id: str) -> GraphNode:
 
 def _sample_for_node(node: GraphNode) -> str:
     values = {slot.name: slot.example for slot in node.slots}
-    template = "Test. "
-    if "position" in values:
-        template = "You take P{position}."
-        if "target_name" in values:
-            template = "You take P{position} from {target_name}."
+    if "position" in values and "target_name" in values:
+        template = "He takes P{position} from {target_name}."
+    elif "position" in values:
+        template = "He is P{position}."
     elif "lap" in values:
-        template = "Lap {lap} done."
+        template = "Lap {lap} is done."
     elif "gap" in values:
         template = "Gap is {gap} seconds."
     elif "bpm" in values:
@@ -214,6 +234,7 @@ def register_commentary_routes(app: web.Application) -> None:
     app.router.add_get("/commentary", handle_commentary_page)
     app.router.add_get("/commentary/", handle_commentary_page)
     app.router.add_get("/api/commentary/status", handle_commentary_status)
+    app.router.add_get("/api/commentary/decisions", handle_commentary_decisions)
     app.router.add_get("/api/commentary/assignments", handle_commentary_assignments)
     app.router.add_post("/api/commentary/validate", handle_commentary_validate)
     app.router.add_post("/api/commentary/speak", handle_commentary_speak)

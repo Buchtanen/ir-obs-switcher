@@ -134,7 +134,7 @@ class OverlayTapeSettings:
 
 @dataclass(frozen=True)
 class CommentarySettings:
-    """Spoken commentary rollout. Default off; no audio until texts are filled."""
+    """Spoken commentary rollout. Default off; no audio until enabled on stream PC."""
 
     enabled: bool = False
     use_hr_emotion: bool = True
@@ -147,6 +147,7 @@ class CommentarySettings:
     duck_input: str = ""
     duck_ratio: float = 0.25
     duck_fade_ms: int = 750
+    decision_log_size: int = 32
 
 
 @dataclass(frozen=True)
