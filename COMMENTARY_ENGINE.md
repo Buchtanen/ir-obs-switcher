@@ -186,6 +186,16 @@ Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentar
 | P3–P5 | Queued |
 | P6 polish | Deferred |
 
+## Weather speech formatting (W4 H3)
+
+Fail-soft helpers in `irswitch.iracing.weather` extract current vs forecast weather and produce spoken EN/CS labels for slots `skies`, `air_temp`, `track_temp`, `wind_speed`, `precipitation`.
+
+- `extract_weather(data, prefer="live"|"session"|"forecast")` → `WeatherSnapshot` with honest `source` (`live` / `session` / `forecast` / `mixed`) and per-field `field_sources`
+- Live may fall back to `WeekendInfo.Track*` (same “current” family); forecast (`WeekendOptions`) is never mixed in silently
+- `format_*` / `spoken_weather_bindings` — speech labels (e.g. `23 C`, `4 m/s`, `partly cloudy` / CS equivalents); precip uses a small vocab and never invents rain from `Skies` alone
+
+**Not wired yet:** H4 must add `WEATHER_BRIEF` emitter + director bindings. No new config flag.
+
 ## Tests
 
 - `tests/test_commentary_graph.py`
@@ -196,3 +206,4 @@ Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentar
 - `tests/test_commentary_mock.py`
 - `tests/test_commentary_live_slots.py`
 - `tests/test_commentary_anti_repeat.py`
+- `tests/test_iracing_weather.py`
