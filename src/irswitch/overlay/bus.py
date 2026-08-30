@@ -10,6 +10,7 @@ from typing import Any
 
 from aiohttp.web_ws import WebSocketResponse
 
+from irswitch.overlay.activity import OverlayActivityLog
 from irswitch.overlay.models import BioState, RaceState, SystemState
 from irswitch.overlay.protocol import snapshot_envelope, state_envelope, state_snapshot_envelope
 
@@ -28,6 +29,7 @@ class OverlayBus:
         self.system = SystemState()
         self.active_events: list[dict[str, Any]] = []
         self.active_stories_v4: list[dict[str, Any]] = []
+        self.activity_log = OverlayActivityLog()
         self._dirty: set[str] = set()
         self._lock = asyncio.Lock()
 
@@ -70,6 +72,10 @@ class OverlayBus:
         self.active_stories_v4 = list(stories)
 
     async def publish_event(self, envelope: dict[str, Any]) -> None:
+        try:
+            self.activity_log.add(envelope)
+        except Exception:
+            logger.debug("Overlay lifecycle activity append failed", exc_info=True)
         await self._broadcast(envelope)
 
     async def flush_state(self) -> None:

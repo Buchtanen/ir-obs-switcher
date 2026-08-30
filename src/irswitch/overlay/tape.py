@@ -126,6 +126,20 @@ class OverlaySessionTape:
     def path(self) -> Path | None:
         return self._path
 
+    def status_snapshot(self) -> dict[str, Any]:
+        """Public read-only status for dashboards. No side effects.
+
+        The tape does not own ``overlay.tape.enabled``; callers combine
+        ``pathOpen`` with config to decide ``recording`` vs ``disabled``.
+        """
+        path = self._path
+        return {
+            "available": True,
+            "pathOpen": path is not None,
+            "path": str(path) if path is not None else None,
+            "sessionKey": self._key,
+        }
+
     def close(self) -> None:
         self._path = None
         self._key = None
