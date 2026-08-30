@@ -56,7 +56,7 @@ def _active_rows() -> list[tuple[GraphNode, str, str, str]]:
 
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
     graph = load_sequence_graph()
-    assert len(graph.nodes) == 26
+    assert len(graph.nodes) == 27
     assert len(graph.edges) == 12
     assert graph.unfilled_cells() == []
 
@@ -85,7 +85,7 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                         bound,
                     )
                 total += len(lines)
-    assert total == 2760
+    assert total == 2832
 
 
 def test_append_patch_exactly_matches_graph_tails() -> None:

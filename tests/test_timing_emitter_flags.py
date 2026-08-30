@@ -7,7 +7,7 @@ from dataclasses import replace
 from irswitch.events.engine import EventEngine
 from irswitch.events.practice import PracticeEmitter
 from irswitch.events.quali import QualiEmitter
-from irswitch.events.sector_split import SectorSplitEmitter
+from irswitch.events.sector_split import SectorBestEmitter, SectorSplitEmitter
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.settings import (
     EventEngineFeatureSettings,
@@ -26,6 +26,13 @@ def _register_timing_emitters(
     if overlay.event_engine.practice or overlay.event_engine.quali_projection:
         engine.register(
             SectorSplitEmitter(
+                store,
+                overlay.events,
+                overlay.events.priorities,
+            )
+        )
+        engine.register(
+            SectorBestEmitter(
                 store,
                 overlay.events,
                 overlay.events.priorities,
@@ -60,6 +67,7 @@ def test_practice_flag_registers_emitter() -> None:
 
     assert any(isinstance(e, PracticeEmitter) for e in engine._emitters)
     assert any(isinstance(e, SectorSplitEmitter) for e in engine._emitters)
+    assert any(isinstance(e, SectorBestEmitter) for e in engine._emitters)
     assert not any(isinstance(e, QualiEmitter) for e in engine._emitters)
 
 
@@ -75,6 +83,7 @@ def test_quali_flag_registers_emitter() -> None:
 
     assert any(isinstance(e, QualiEmitter) for e in engine._emitters)
     assert any(isinstance(e, SectorSplitEmitter) for e in engine._emitters)
+    assert any(isinstance(e, SectorBestEmitter) for e in engine._emitters)
     assert not any(isinstance(e, PracticeEmitter) for e in engine._emitters)
 
 
@@ -85,7 +94,8 @@ def test_flags_off_skips_timing_emitters() -> None:
     _register_timing_emitters(engine, OverlaySettings(), store, ref)
 
     assert not any(
-        isinstance(e, (PracticeEmitter, QualiEmitter, SectorSplitEmitter)) for e in engine._emitters
+        isinstance(e, (PracticeEmitter, QualiEmitter, SectorSplitEmitter, SectorBestEmitter))
+        for e in engine._emitters
     )
 
 

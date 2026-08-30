@@ -30,6 +30,7 @@ from irswitch.overlay.settings import CommentarySettings
 logger = logging.getLogger(__name__)
 
 _SPEAK_PHASES = frozenset({"ENTER", "RESULT", "EXIT"})
+_SECTOR_SPEAK_EVENTS = frozenset({"SECTOR_SPLIT", "SECTOR_BEST"})
 DEFAULT_DECISION_LOG_SIZE = 32
 
 
@@ -86,12 +87,15 @@ class CommentaryDirector:
     _recent: RecentUtteranceHistory = field(
         default_factory=lambda: RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
     )
+    _sector_speaks_by_lap: dict[int, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
         self._decisions = deque(maxlen=size)
         if not isinstance(self._recent, RecentUtteranceHistory):
             self._recent = RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
+        if not isinstance(self._sector_speaks_by_lap, dict):
+            self._sector_speaks_by_lap = {}
 
     @classmethod
     def from_defaults(
@@ -119,6 +123,7 @@ class CommentaryDirector:
         self.decision_log_size = size
         self._decisions = deque(maxlen=size)
         self._recent.clear()
+        self._sector_speaks_by_lap.clear()
 
     def decisions(self, n: int = 20) -> list[dict[str, Any]]:
         """Newest-last chronological slice for HTTP/UI."""
@@ -210,6 +215,9 @@ class CommentaryDirector:
         emotion: str,
         now: float,
     ) -> CommentaryUtterance | None:
+        sector_gate = self._sector_speak_gate(envelope, now)
+        if sector_gate is not None:
+            return None
         node = self._pick_node(envelope, now)
         if node is None:
             self._record(
@@ -290,6 +298,7 @@ class CommentaryDirector:
         self._global_ready_at = now + self.settings.cooldown_s
         self._last = _LastSpoken(node.id, envelope.correlation_id, now)
         self._recent.remember(spoken)
+        self._note_sector_spoken(envelope)
         return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
@@ -301,6 +310,44 @@ class CommentaryDirector:
             estimated_seconds=duration,
             node=node,
         )
+
+    def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        """Return a skip reason when sector speak must stay silent; else None."""
+        if envelope.event_type not in _SECTOR_SPEAK_EVENTS:
+            return None
+        if not getattr(self.settings, "sector_speak", False):
+            self._record(
+                action="skipped",
+                reason="sector_speak_disabled",
+                now=now,
+                event_type=envelope.event_type,
+            )
+            return "sector_speak_disabled"
+        if not _sector_envelope_notable(envelope):
+            self._record(
+                action="skipped",
+                reason="sector_not_notable",
+                now=now,
+                event_type=envelope.event_type,
+            )
+            return "sector_not_notable"
+        lap = _sector_lap(envelope)
+        cap = int(getattr(self.settings, "sector_speak_max_per_lap", 1) or 0)
+        if cap <= 0 or self._sector_speaks_by_lap.get(lap, 0) >= cap:
+            self._record(
+                action="skipped",
+                reason="sector_lap_cap",
+                now=now,
+                event_type=envelope.event_type,
+            )
+            return "sector_lap_cap"
+        return None
+
+    def _note_sector_spoken(self, envelope: EventEnvelope) -> None:
+        if envelope.event_type not in _SECTOR_SPEAK_EVENTS:
+            return
+        lap = _sector_lap(envelope)
+        self._sector_speaks_by_lap[lap] = self._sector_speaks_by_lap.get(lap, 0) + 1
 
     def _pick_node(self, envelope: EventEnvelope, now: float) -> GraphNode | None:
         candidates = self.graph.nodes_for(envelope.event_type, envelope.phase)
@@ -380,6 +427,7 @@ def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
     metrics = envelope.metrics
     subject = envelope.subject
     target = envelope.target
+    sector = _spoken_sector_label(_first(metrics, "sector", "timingPointId"))
     raw: dict[str, object] = {
         "position": _first(metrics, "newPosition", "position", "classPosition")
         or subject.class_position,
@@ -394,6 +442,7 @@ def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
         "streak": _first(metrics, "streak"),
         "value": _first(metrics, "value"),
         "segment": _first(metrics, "timingPointId", "segment"),
+        "sector": sector,
         "segment_time": _first(metrics, "segmentTime"),
         "target_time": _first(metrics, "targetTime"),
         "projected_time": _first(metrics, "projectedTime"),
@@ -401,6 +450,39 @@ def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
         "emotion": emotion,
     }
     return format_spoken_bindings(raw)
+
+
+def _sector_envelope_notable(envelope: EventEnvelope) -> bool:
+    """SECTOR_BEST is always notable; SECTOR_SPLIT needs emitter annotation."""
+    if envelope.event_type == "SECTOR_BEST":
+        return True
+    metrics = envelope.metrics
+    if metrics.get("notable") is True:
+        return True
+    if metrics.get("isBest") is True and metrics.get("delta") is not None:
+        try:
+            return float(metrics["delta"]) <= -0.05
+        except (TypeError, ValueError):
+            return False
+    return False
+
+
+def _sector_lap(envelope: EventEnvelope) -> int:
+    lap = envelope.metrics.get("lap")
+    try:
+        return int(lap) if lap is not None else -1
+    except (TypeError, ValueError):
+        return -1
+
+
+def _spoken_sector_label(value: object) -> str | None:
+    """Keep S1/S2 as a single text slot (not separate graph nodes)."""
+    if value is None or value == "":
+        return None
+    text = str(value).strip().upper()
+    if len(text) >= 2 and text[0] == "S" and text[1:].isdigit():
+        return text
+    return str(value).strip() or None
 
 
 def _first(metrics: dict[str, object], *keys: str) -> object | None:
