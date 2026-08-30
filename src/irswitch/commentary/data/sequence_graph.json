@@ -906,7 +906,23 @@
         "calm",
         "focused"
       ],
-      "notes": "Practice/quali invalidation. Calm reset, then silence."
+      "notes": "Practice/quali invalidation. Calm reset, then silence.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Lap {lap} is invalid. Reset and go again.",
+            "That lap won't count. Start fresh."
+          ],
+          "calm": [
+            "Lap {lap} is gone. Easy reset.",
+            "That one won't count. Breathe and build again."
+          ],
+          "focused": [
+            "Lap {lap} is invalid. Reset and refocus.",
+            "That lap is gone. Clean start next time."
+          ]
+        }
+      }
     },
     "final_lap": {
       "family": "session",
@@ -1222,7 +1238,21 @@
         "pushing",
         "high"
       ],
-      "notes": "Rare spoken line. HR is primarily an emotion selector on other nodes. Skip if a battle/overtake is speaking. Never invent BPM if BLE is down — this node must not fire without bio."
+      "notes": "Rare spoken line. HR is primarily an emotion selector on other nodes. Skip if a battle/overtake is speaking. Never invent BPM if BLE is down — this node must not fire without bio.",
+      "variants": {
+        "en": {
+          "pushing": [
+            "Heart rate is climbing, {bpm}. Keep the breathing steady.",
+            "Pressure is rising. Stay smooth and keep pushing.",
+            "Effort is up. Control the breath."
+          ],
+          "high": [
+            "Heart rate up to {bpm}. Breathe and stay in control!",
+            "Pressure is high now. Come on, keep it measured!",
+            "Heart rate is high. Stay sharp, stay controlled!"
+          ]
+        }
+      }
     }
   },
   "edges": [

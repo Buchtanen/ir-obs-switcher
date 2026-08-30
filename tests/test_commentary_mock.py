@@ -176,12 +176,37 @@ def test_w4_timing_nodes_english() -> None:
                 assert not leftover_slots(fill_slots(line, examples))
 
 
+def test_w5_hr_and_invalid_lap_english() -> None:
+    graph = load_sequence_graph()
+    examples = {"bpm": 142, "lap": 4}
+    for emotion, lines in (
+        ("pushing", graph.nodes["hr_pressure"].variants["en"]["pushing"]),
+        ("high", graph.nodes["hr_pressure"].variants["en"]["high"]),
+    ):
+        assert 1 <= len(lines) <= 3
+        for line in lines:
+            assert validate_utterance(line, graph.nodes["hr_pressure"]) == []
+            assert not leftover_slots(fill_slots(line, examples))
+    node = graph.nodes["invalid_lap"]
+    for emotion in ("neutral", "calm", "focused"):
+        lines = node.variants["en"][emotion]
+        assert 1 <= len(lines) <= 3
+        for line in lines:
+            assert validate_utterance(line, node) == []
+            assert not leftover_slots(fill_slots(line, examples))
+
+
+def test_english_graph_has_no_unfilled_cells() -> None:
+    missing_en = [c for c in load_sequence_graph().unfilled_cells() if c[1] == "en"]
+    assert missing_en == []
+
+
 def test_unfilled_emotion_still_falls_back_to_neutral() -> None:
     graph = load_sequence_graph()
-    node = graph.nodes["hr_pressure"]
-    # Bio node still empty until W5.
-    assert node.variant_bucket("en", "pushing") == ()
-    assert node.variant_bucket("en", "unknown") == ()
+    # CS still empty on race nodes; EN overtake is filled.
+    assert graph.nodes["overtake"].variant_bucket("cs", "pushing") == graph.nodes[
+        "overtake"
+    ].variant_bucket("en", "pushing")
 
 
 def test_w1_mock_four_emotion_matrix_valid() -> None:
