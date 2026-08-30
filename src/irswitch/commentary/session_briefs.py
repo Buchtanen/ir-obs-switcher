@@ -21,12 +21,12 @@ the brief can retry next frame without starving ``ENTER_CAR`` forever.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any
+from collections.abc import Iterable, Mapping
+from typing import Any, cast
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.session_context import SessionContext, SessionContextCache, session_key
-from irswitch.iracing.sof import compute_sof_bundle, format_sof_label
+from irswitch.iracing.sof import RosterRow, compute_sof_bundle, format_sof_label
 from irswitch.iracing.weather import extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.session import (
@@ -207,7 +207,11 @@ class SessionBriefsDetector:
     ) -> EventEnvelope | None:
         if ctx is None or len(ctx.roster) == 0:
             return None
-        bundle = compute_sof_bundle(ctx.roster, ctx.player_class_id)
+        # RosterDriver matches RosterRow structurally; cast for mypy tuple invariance.
+        bundle = compute_sof_bundle(
+            cast("Iterable[RosterRow]", ctx.roster),
+            ctx.player_class_id,
+        )
         if bundle.field_size <= 0:
             return None
         metrics: dict[str, object] = {

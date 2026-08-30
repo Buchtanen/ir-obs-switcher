@@ -274,7 +274,7 @@ class OverlayRuntime:
         if reason in {"busy", "global_cooldown"}:
             return False
         self.session_briefs.acknowledge(envelope.event_type)
-        return decision.get("action") == "spoken"
+        return str(decision.get("action") or "") == "spoken"
 
     def _session_brief_data(self) -> dict[str, object] | None:
         """Raw SessionInfo/telemetry mapping for H1/H2/H3 extractors."""
