@@ -186,6 +186,17 @@ Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentar
 | P3–P5 | Queued |
 | P6 polish | Deferred |
 
+## Session intros / SoF extraction (W4 H1)
+
+Fail-soft SessionInfo helpers live in `irswitch.iracing.session_context` (standalone; not wired to director events yet):
+
+- `track_display_name(weekend_info)` — `WeekendInfo.TrackDisplayName`, optional `TrackConfigName` append; never speaks `TrackID` alone
+- `parse_roster(driver_info)` — racing drivers only (excludes pace car, spectators, invalid `CarIdx`); missing `IsSpectator` excludes the row
+- `session_key(data)` / `SessionContextCache` — cache identity `(SubSessionID, SessionNum)`, invalidate on change
+- `extract_session_context(data)` — track + roster + player car/class when available
+
+SoF math (H2), weather (H3), and sequence_graph intro nodes (H4) are separate. No new config flag.
+
 ## Tests
 
 - `tests/test_commentary_graph.py`
@@ -196,3 +207,4 @@ Live node readiness (P1): [`docs/commentary_live_node_matrix.md`](docs/commentar
 - `tests/test_commentary_mock.py`
 - `tests/test_commentary_live_slots.py`
 - `tests/test_commentary_anti_repeat.py`
+- `tests/test_session_context.py`

@@ -28,8 +28,8 @@ This handover covers every runtime change required by the proposed session, SoF,
 
 | Slot | Type | Example | Exact iRSDK / SessionInfo source | Normalization and fallback | Used by | Current status |
 |---|---|---|---|---|---|---|
-| `track` | `label` | `Spa-Francorchamps - Grand Prix Pits` | `WeekendInfo.TrackDisplayName`; optionally append `WeekendInfo.TrackConfigName` | Use display name first. Append configuration only when non-empty and not already part of the display name. Do not speak `TrackID`. | all session intros, `weather_brief` | Binding not implemented; master stores only `WeekendInfo.TrackID` as `track_id`. |
-| `field_size` | `int` | `32` | Count `DriverInfo.Drivers[]` | Exclude `CarIsPaceCar != 0`, `IsSpectator != 0`, invalid `CarIdx`, and empty roster entries. Treat a missing `IsSpectator` key conservatively and cover it with fixtures. | qualify/race intro, `sof_brief` | Binding not implemented; master does not read `DriverInfo`. |
+| `track` | `label` | `Spa-Francorchamps - Grand Prix Pits` | `WeekendInfo.TrackDisplayName`; optionally append `WeekendInfo.TrackConfigName` | Use display name first. Append configuration only when non-empty and not already part of the display name. Do not speak `TrackID`. | all session intros, `weather_brief` | **H1 extraction done** (`iracing.session_context.track_display_name` / `extract_session_context`); director binding / graph nodes still open (H4). |
+| `field_size` | `int` | `32` | Count `DriverInfo.Drivers[]` | Exclude `CarIsPaceCar != 0`, `IsSpectator != 0`, invalid `CarIdx`, and empty roster entries. Missing `IsSpectator` → exclude (conservative). | qualify/race intro, `sof_brief` | **H1 roster parse done** (`parse_roster`); field_size / SoF binding still open (H2/H4). |
 | `sof` | `label` | EN `2,450`; CS `2 450` | Derive from valid `DriverInfo.Drivers[].IRating` values | The current SoF spec proposes an arithmetic mean of racing drivers. Round once after aggregation, then format a locale-aware thousands separator before binding so the validator never receives a four-digit run. The product owner must approve the formula before wiring. | `sof_brief` | Formula, localization, and binding not implemented. |
 | `sof_class` | `label` | EN `2,520`; CS `2 520` | Same roster, filtered by `CarClassID == DriverInfo.Drivers[DriverCarIdx].CarClassID` | Apply the same locale-aware formatter. Omit class-specific lines when player class or class roster is unavailable. | `sof_brief` | Formula, localization, and binding not implemented. |
 | `skies` | `label` | `partly cloudy` | Live `Skies`; fallback `WeekendInfo.TrackSkies`; forecast `WeekendInfo.WeekendOptions.Skies` | Map the live enum to localized spoken labels. Keep forecast and current condition distinct in the envelope metadata. | `weather_brief` | Extraction, localization, and binding not implemented. |
@@ -56,12 +56,14 @@ No proposed event id is currently in the Event Engine catalog. Do not insert the
 
 ### H1 — SessionInfo roster and circuit context
 
-1. Extend the iRacing extraction layer to read `DriverInfo` and the named `WeekendInfo` fields.
-2. Cache parsed session data by `(SubSessionID, SessionNum)` and invalidate it on change.
-3. Add immutable normalized fields for circuit display name, roster entries, and player class.
-4. Keep missing or malformed SessionInfo as normal state; never fail the main loop.
+**Status:** extraction API landed in `src/irswitch/iracing/session_context.py` (+ `tests/test_session_context.py`). Not yet hooked to telemetry snapshot fields, SoF (H2), or director events (H4).
 
-Tests: circuit name with and without configuration; empty roster; pace car; spectator; missing `IsSpectator`; invalid `IRating`; multiclass player lookup; session reset.
+1. Extend the iRacing extraction layer to read `DriverInfo` and the named `WeekendInfo` fields. ✅
+2. Cache parsed session data by `(SubSessionID, SessionNum)` and invalidate it on change. ✅ (`SessionContextCache`)
+3. Add immutable normalized fields for circuit display name, roster entries, and player class. ✅
+4. Keep missing or malformed SessionInfo as normal state; never fail the main loop. ✅
+
+Tests: circuit name with and without configuration; empty roster; pace car; spectator; missing `IsSpectator`; invalid `IRating`; multiclass player lookup; session reset. ✅
 
 ### H2 — SoF computation
 
