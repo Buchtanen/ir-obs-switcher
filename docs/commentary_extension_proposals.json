@@ -1,0 +1,973 @@
+{
+  "proposal_version": 1,
+  "status": "wired",
+  "topology_changed": false,
+  "runtime_wiring_changed": true,
+  "proposed_nodes": {
+    "session_intro_practice": {
+      "family": "session",
+      "event_types": [
+        "SESSION_INTRO_PRACTICE"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 300,
+      "slots": [
+        {
+          "name": "track",
+          "type": "label",
+          "example": "Spa-Francorchamps"
+        }
+      ],
+      "notes": "One viewer-facing practice opener per session; not wired into Event Engine.",
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "tts": {
+        "max_chars": 90,
+        "max_seconds": 5.5,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "status": "wired",
+      "needs_engineering": [],
+      "variants": {
+        "en": {
+          "neutral": [
+            "Practice is under way at {track}.",
+            "He begins the practice programme at {track}.",
+            "The first job is to build a reference around {track}.",
+            "Viewers join him at the start of a practice run.",
+            "Track time begins with setup and rhythm in focus.",
+            "He rolls into practice with a full session ahead.",
+            "The weekend opens with measured laps at {track}.",
+            "This is the learning phase before the stopwatch matters most.",
+            "Practice gives him room to understand the circuit.",
+            "The first chapter of the session is about preparation."
+          ],
+          "calm": [
+            "Practice is under way at {track}, all under control.",
+            "He begins the practice programme at {track}.",
+            "The first job is to build a reference around {track}.",
+            "Viewers join him at the start of a practice run.",
+            "Track time begins with setup and rhythm in focus, all under control.",
+            "He rolls into practice with a full session ahead.",
+            "The weekend opens with measured laps at {track}.",
+            "This is the learning phase before the stopwatch matters most.",
+            "Practice gives him room to understand the circuit, all under control.",
+            "The first chapter of the session is about preparation."
+          ],
+          "focused": [
+            "Practice is under way at {track}, and his focus stays sharp.",
+            "He begins the practice programme at {track}.",
+            "The first job is to build a reference around {track}.",
+            "Viewers join him at the start of a practice run, all part of the plan.",
+            "Track time begins with setup and rhythm in focus.",
+            "He rolls into practice with a full session ahead.",
+            "The weekend opens with measured laps at {track}.",
+            "This is the learning phase before the stopwatch matters most.",
+            "Practice gives him room to understand the circuit.",
+            "The first chapter of the session is about preparation."
+          ],
+          "pushing": [
+            "Practice is under way at {track}.",
+            "He begins the practice programme at {track}.",
+            "The first job is to build a reference around {track}.",
+            "Viewers join him at the start of a practice run.",
+            "Track time begins with setup and rhythm in focus.",
+            "He rolls into practice with a full session ahead.",
+            "The weekend opens with measured laps at {track}.",
+            "This is the learning phase before the stopwatch matters most.",
+            "Practice gives him room to understand the circuit.",
+            "The first chapter of the session is about preparation."
+          ],
+          "high": [
+            "Practice is under way at {track}!",
+            "He begins the practice programme at {track}!",
+            "The first job is to build a reference around {track}!",
+            "Viewers join him at the start of a practice run!",
+            "Track time begins with setup and rhythm in focus!",
+            "He rolls into practice with a full session ahead!",
+            "The weekend opens with measured laps at {track}!",
+            "This is the learning phase before the stopwatch matters most!",
+            "Practice gives him room to understand the circuit!",
+            "The first chapter of the session is about preparation!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Trénink na okruhu {track} právě začíná.",
+            "Na trati {track} otevírá tréninkový program.",
+            "Prvním úkolem je postavit si referenci pro {track}.",
+            "Diváci se připojují na začátku tréninkové jízdy, další fáze se rýsuje.",
+            "Čas na trati začíná prací na nastavení a rytmu.",
+            "Do tréninku vyráží s celou jízdou před sebou, obraz závodu je jasný.",
+            "Víkend otevírají měřená kola na okruhu {track}.",
+            "Tohle je fáze učení před nejdůležitějším měřením času.",
+            "Trénink mu dává prostor pochopit okruh.",
+            "První kapitola jízdy patří přípravě, obraz závodu je jasný."
+          ],
+          "calm": [
+            "Trénink na okruhu {track} právě začíná.",
+            "Na trati {track} otevírá tréninkový program.",
+            "Prvním úkolem je postavit si referenci pro {track}.",
+            "Diváci se připojují na začátku tréninkové jízdy.",
+            "Čas na trati začíná prací na nastavení a rytmu.",
+            "Do tréninku vyráží s celou jízdou před sebou, bez zbytečného spěchu.",
+            "Víkend otevírají měřená kola na okruhu {track}.",
+            "Tohle je fáze učení před nejdůležitějším měřením času.",
+            "Trénink mu dává prostor pochopit okruh, všechno má pod kontrolou.",
+            "První kapitola jízdy patří přípravě, bez zbytečného spěchu."
+          ],
+          "focused": [
+            "Trénink na okruhu {track} právě začíná.",
+            "Na trati {track} otevírá tréninkový program.",
+            "Prvním úkolem je postavit si referenci pro {track}.",
+            "Diváci se připojují na začátku tréninkové jízdy, přesně podle plánu.",
+            "Čas na trati začíná prací na nastavení a rytmu.",
+            "Do tréninku vyráží s celou jízdou před sebou, každý detail má změřený.",
+            "Víkend otevírají měřená kola na okruhu {track}.",
+            "Tohle je fáze učení před nejdůležitějším měřením času.",
+            "Trénink mu dává prostor pochopit okruh, soustředění zůstává pevné.",
+            "První kapitola jízdy patří přípravě, každý detail má změřený."
+          ],
+          "pushing": [
+            "Trénink na okruhu {track} právě začíná, tlak dál roste.",
+            "Na trati {track} otevírá tréninkový program.",
+            "Prvním úkolem je postavit si referenci pro {track}.",
+            "Diváci se připojují na začátku tréninkové jízdy, bez náznaku polevení.",
+            "Čas na trati začíná prací na nastavení a rytmu, tlak dál roste.",
+            "Do tréninku vyráží s celou jízdou před sebou, tempo pořád zvedá.",
+            "Víkend otevírají měřená kola na okruhu {track}.",
+            "Tohle je fáze učení před nejdůležitějším měřením času.",
+            "Trénink mu dává prostor pochopit okruh, tlak dál roste.",
+            "První kapitola jízdy patří přípravě, tempo pořád zvedá."
+          ],
+          "high": [
+            "Trénink na okruhu {track} právě začíná, napětí stoupá!",
+            "Na trati {track} otevírá tréninkový program!",
+            "Prvním úkolem je postavit si referenci pro {track}!",
+            "Diváci se připojují na začátku tréninkové jízdy!",
+            "Čas na trati začíná prací na nastavení a rytmu, napětí stoupá!",
+            "Do tréninku vyráží s celou jízdou před sebou, závod kolem něj ožívá!",
+            "Víkend otevírají měřená kola na okruhu {track}!",
+            "Tohle je fáze učení před nejdůležitějším měřením času!",
+            "Trénink mu dává prostor pochopit okruh, napětí stoupá!",
+            "První kapitola jízdy patří přípravě, závod kolem něj ožívá!"
+          ]
+        }
+      }
+    },
+    "session_intro_qualify": {
+      "family": "session",
+      "event_types": [
+        "SESSION_INTRO_QUALIFY"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 44,
+      "cooldown_s": 300,
+      "slots": [
+        {
+          "name": "track",
+          "type": "label",
+          "example": "Spa-Francorchamps"
+        },
+        {
+          "name": "field_size",
+          "type": "int",
+          "example": 32
+        }
+      ],
+      "notes": "One qualifying opener per session; slot-light variants cover missing roster data.",
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "tts": {
+        "max_chars": 90,
+        "max_seconds": 5.5,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "status": "wired",
+      "needs_engineering": [],
+      "variants": {
+        "en": {
+          "neutral": [
+            "Qualifying begins at {track} with {field_size} cars in the field.",
+            "He starts the fight for grid position at {track}.",
+            "The session now turns every clean lap into a result.",
+            "Viewers are set for the fastest phase of the weekend.",
+            "One clear lap can reshape the whole starting order.",
+            "He enters qualifying with the stopwatch in charge.",
+            "The field is ready to define the grid, as the race story develops.",
+            "Preparation ends and outright lap time takes over.",
+            "The next minutes are about space, tyres, and one clean attempt.",
+            "Qualifying opens with no position guaranteed, and the picture is clear."
+          ],
+          "calm": [
+            "Qualifying begins at {track} with {field_size} cars in the field.",
+            "He starts the fight for grid position at {track}.",
+            "The session now turns every clean lap into a result.",
+            "Viewers are set for the fastest phase of the weekend.",
+            "One clear lap can reshape the whole starting order, all under control.",
+            "He enters qualifying with the stopwatch in charge.",
+            "The field is ready to define the grid, and the rhythm stays smooth.",
+            "Preparation ends and outright lap time takes over.",
+            "The next minutes are about space, tyres, and one clean attempt.",
+            "Qualifying opens with no position guaranteed, with no rush in the car."
+          ],
+          "focused": [
+            "Qualifying begins at {track} with {field_size} cars in the field.",
+            "He starts the fight for grid position at {track}.",
+            "The session now turns every clean lap into a result.",
+            "Viewers are set for the fastest phase of the weekend.",
+            "One clear lap can reshape the whole starting order.",
+            "He enters qualifying with the stopwatch in charge.",
+            "The field is ready to define the grid, and he is already looking ahead.",
+            "Preparation ends and outright lap time takes over.",
+            "The next minutes are about space, tyres, and one clean attempt.",
+            "Qualifying opens with no position guaranteed."
+          ],
+          "pushing": [
+            "Qualifying begins at {track} with {field_size} cars in the field.",
+            "He starts the fight for grid position at {track}.",
+            "The session now turns every clean lap into a result.",
+            "Viewers are set for the fastest phase of the weekend.",
+            "One clear lap can reshape the whole starting order.",
+            "He enters qualifying with the stopwatch in charge.",
+            "The field is ready to define the grid, and he keeps asking for more.",
+            "Preparation ends and outright lap time takes over.",
+            "The next minutes are about space, tyres, and one clean attempt.",
+            "Qualifying opens with no position guaranteed."
+          ],
+          "high": [
+            "Qualifying begins at {track} with {field_size} cars in the field!",
+            "He starts the fight for grid position at {track}!",
+            "The session now turns every clean lap into a result!",
+            "Viewers are set for the fastest phase of the weekend!",
+            "One clear lap can reshape the whole starting order!",
+            "He enters qualifying with the stopwatch in charge!",
+            "The field is ready to define the grid, and the momentum is surging!",
+            "Preparation ends and outright lap time takes over!",
+            "The next minutes are about space, tyres, and one clean attempt!",
+            "Qualifying opens with no position guaranteed!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Kvalifikace na {track} začíná pro pole {field_size} vozů.",
+            "Na trati {track} otevírá boj o místo na startu.",
+            "Každé čisté kolo se teď mění ve výsledek, příběh pokračuje.",
+            "Diváci jsou připravení na nejrychlejší část víkendu.",
+            "Jediné čisté kolo může přeskládat celý rošt.",
+            "Do kvalifikace vstupuje s časomírou jako hlavním soudcem.",
+            "Pole je připravené určit pořadí na startu, příběh pokračuje.",
+            "Příprava končí a rozhoduje absolutní čas kola, další fáze se rýsuje.",
+            "Další minuty budou o prostoru, pneumatikách a čistém pokusu.",
+            "Kvalifikace začíná bez jediné jisté pozice, obraz závodu je jasný."
+          ],
+          "calm": [
+            "Kvalifikace na {track} začíná pro pole {field_size} vozů.",
+            "Na trati {track} otevírá boj o místo na startu.",
+            "Každé čisté kolo se teď mění ve výsledek, rytmus zůstává plynulý.",
+            "Diváci jsou připravení na nejrychlejší část víkendu.",
+            "Jediné čisté kolo může přeskládat celý rošt, všechno má pod kontrolou.",
+            "Do kvalifikace vstupuje s časomírou jako hlavním soudcem.",
+            "Pole je připravené určit pořadí na startu, rytmus zůstává plynulý.",
+            "Příprava končí a rozhoduje absolutní čas kola, zvládá to bez nervozity.",
+            "Další minuty budou o prostoru, pneumatikách a čistém pokusu.",
+            "Kvalifikace začíná bez jediné jisté pozice, bez zbytečného spěchu."
+          ],
+          "focused": [
+            "Kvalifikace na {track} začíná pro pole {field_size} vozů.",
+            "Na trati {track} otevírá boj o místo na startu.",
+            "Každé čisté kolo se teď mění ve výsledek, už myslí na další krok.",
+            "Diváci jsou připravení na nejrychlejší část víkendu.",
+            "Jediné čisté kolo může přeskládat celý rošt, soustředění zůstává pevné.",
+            "Do kvalifikace vstupuje s časomírou jako hlavním soudcem.",
+            "Pole je připravené určit pořadí na startu, už myslí na další krok.",
+            "Příprava končí a rozhoduje absolutní čas kola, přesně podle plánu.",
+            "Další minuty budou o prostoru, pneumatikách a čistém pokusu.",
+            "Kvalifikace začíná bez jediné jisté pozice, každý detail má změřený."
+          ],
+          "pushing": [
+            "Kvalifikace na {track} začíná pro pole {field_size} vozů.",
+            "Na trati {track} otevírá boj o místo na startu.",
+            "Každé čisté kolo se teď mění ve výsledek, pořád hledá něco navíc.",
+            "Diváci jsou připravení na nejrychlejší část víkendu.",
+            "Jediné čisté kolo může přeskládat celý rošt, tlak dál roste.",
+            "Do kvalifikace vstupuje s časomírou jako hlavním soudcem.",
+            "Pole je připravené určit pořadí na startu, pořád hledá něco navíc.",
+            "Příprava končí a rozhoduje absolutní čas kola, bez náznaku polevení.",
+            "Další minuty budou o prostoru, pneumatikách a čistém pokusu.",
+            "Kvalifikace začíná bez jediné jisté pozice, tempo pořád zvedá."
+          ],
+          "high": [
+            "Kvalifikace na {track} začíná pro pole {field_size} vozů!",
+            "Na trati {track} otevírá boj o místo na startu!",
+            "Každé čisté kolo se teď mění ve výsledek, momentum nabírá sílu!",
+            "Diváci jsou připravení na nejrychlejší část víkendu!",
+            "Jediné čisté kolo může přeskládat celý rošt, napětí stoupá!",
+            "Do kvalifikace vstupuje s časomírou jako hlavním soudcem!",
+            "Pole je připravené určit pořadí na startu, momentum nabírá sílu!",
+            "Příprava končí a rozhoduje absolutní čas kola, tohle začíná být ostré!",
+            "Další minuty budou o prostoru, pneumatikách a čistém pokusu!",
+            "Kvalifikace začíná bez jediné jisté pozice, závod kolem něj ožívá!"
+          ]
+        }
+      }
+    },
+    "session_intro_race": {
+      "family": "session",
+      "event_types": [
+        "SESSION_INTRO_RACE"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 64,
+      "cooldown_s": 600,
+      "slots": [
+        {
+          "name": "track",
+          "type": "label",
+          "example": "Spa-Francorchamps"
+        },
+        {
+          "name": "field_size",
+          "type": "int",
+          "example": 32
+        }
+      ],
+      "notes": "One race opener before ordinary race beats; no topology change is made here.",
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "tts": {
+        "max_chars": 90,
+        "max_seconds": 5.5,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "status": "wired",
+      "needs_engineering": [],
+      "variants": {
+        "en": {
+          "neutral": [
+            "The race begins at {track} with {field_size} cars ready.",
+            "He joins a field of {field_size} for the main event.",
+            "The weekend now becomes a race for position.",
+            "Viewers have the full grid and the whole story ahead.",
+            "Strategy, traffic, and pace come together from here.",
+            "He starts the race chapter at {track}.",
+            "The field is formed and every position now matters.",
+            "The opening phase will set the shape of the race.",
+            "Practice and qualifying give way to direct competition.",
+            "The main event is ready to unfold, and the picture is clear."
+          ],
+          "calm": [
+            "The race begins at {track} with {field_size} cars ready.",
+            "He joins a field of {field_size} for the main event.",
+            "The weekend now becomes a race for position.",
+            "Viewers have the full grid and the whole story ahead.",
+            "Strategy, traffic, and pace come together from here, all under control.",
+            "He starts the race chapter at {track}.",
+            "The field is formed and every position now matters.",
+            "The opening phase will set the shape of the race.",
+            "Practice and qualifying give way to direct competition.",
+            "The main event is ready to unfold, with no rush in the car."
+          ],
+          "focused": [
+            "The race begins at {track} with {field_size} cars ready.",
+            "He joins a field of {field_size} for the main event.",
+            "The weekend now becomes a race for position.",
+            "Viewers have the full grid and the whole story ahead.",
+            "Strategy, traffic, and pace come together from here.",
+            "He starts the race chapter at {track}.",
+            "The field is formed and every position now matters.",
+            "The opening phase will set the shape of the race, all part of the plan.",
+            "Practice and qualifying give way to direct competition.",
+            "The main event is ready to unfold, with every detail measured."
+          ],
+          "pushing": [
+            "The race begins at {track} with {field_size} cars ready.",
+            "He joins a field of {field_size} for the main event.",
+            "The weekend now becomes a race for position.",
+            "Viewers have the full grid and the whole story ahead.",
+            "Strategy, traffic, and pace come together from here.",
+            "He starts the race chapter at {track}.",
+            "The field is formed and every position now matters.",
+            "The opening phase will set the shape of the race.",
+            "Practice and qualifying give way to direct competition.",
+            "The main event is ready to unfold, with the pace still building."
+          ],
+          "high": [
+            "The race begins at {track} with {field_size} cars ready!",
+            "He joins a field of {field_size} for the main event!",
+            "The weekend now becomes a race for position!",
+            "Viewers have the full grid and the whole story ahead!",
+            "Strategy, traffic, and pace come together from here!",
+            "He starts the race chapter at {track}!",
+            "The field is formed and every position now matters!",
+            "The opening phase will set the shape of the race!",
+            "Practice and qualifying give way to direct competition!",
+            "The main event is ready to unfold, with the race alive around him!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Závod na {track} začíná s polem {field_size} vozů.",
+            "Do hlavní jízdy nastupuje mezi {field_size} vozy.",
+            "Víkend se teď mění v přímý boj o pozice, příběh pokračuje.",
+            "Diváci mají před sebou celý rošt i celý příběh, další fáze se rýsuje.",
+            "Od téhle chvíle se spojuje strategie, provoz a tempo.",
+            "Na okruhu {track} otevírá závodní kapitolu.",
+            "Pole je seřazené a každá pozice má význam, příběh pokračuje.",
+            "Úvodní fáze určí podobu celého závodu, další fáze se rýsuje.",
+            "Trénink a kvalifikaci střídá přímá soutěž.",
+            "Hlavní část víkendu se může rozběhnout, obraz závodu je jasný."
+          ],
+          "calm": [
+            "Závod na {track} začíná s polem {field_size} vozů.",
+            "Do hlavní jízdy nastupuje mezi {field_size} vozy.",
+            "Víkend se teď mění v přímý boj o pozice, rytmus zůstává plynulý.",
+            "Diváci mají před sebou celý rošt i celý příběh.",
+            "Od téhle chvíle se spojuje strategie, provoz a tempo.",
+            "Na okruhu {track} otevírá závodní kapitolu.",
+            "Pole je seřazené a každá pozice má význam, rytmus zůstává plynulý.",
+            "Úvodní fáze určí podobu celého závodu, zvládá to bez nervozity.",
+            "Trénink a kvalifikaci střídá přímá soutěž, všechno má pod kontrolou.",
+            "Hlavní část víkendu se může rozběhnout, bez zbytečného spěchu."
+          ],
+          "focused": [
+            "Závod na {track} začíná s polem {field_size} vozů.",
+            "Do hlavní jízdy nastupuje mezi {field_size} vozy.",
+            "Víkend se teď mění v přímý boj o pozice, už myslí na další krok.",
+            "Diváci mají před sebou celý rošt i celý příběh, přesně podle plánu.",
+            "Od téhle chvíle se spojuje strategie, provoz a tempo.",
+            "Na okruhu {track} otevírá závodní kapitolu.",
+            "Pole je seřazené a každá pozice má význam, už myslí na další krok.",
+            "Úvodní fáze určí podobu celého závodu, přesně podle plánu.",
+            "Trénink a kvalifikaci střídá přímá soutěž, soustředění zůstává pevné.",
+            "Hlavní část víkendu se může rozběhnout, každý detail má změřený."
+          ],
+          "pushing": [
+            "Závod na {track} začíná s polem {field_size} vozů, tlak dál roste.",
+            "Do hlavní jízdy nastupuje mezi {field_size} vozy, tempo pořád zvedá.",
+            "Víkend se teď mění v přímý boj o pozice, pořád hledá něco navíc.",
+            "Diváci mají před sebou celý rošt i celý příběh, bez náznaku polevení.",
+            "Od téhle chvíle se spojuje strategie, provoz a tempo, tlak dál roste.",
+            "Na okruhu {track} otevírá závodní kapitolu.",
+            "Pole je seřazené a každá pozice má význam, pořád hledá něco navíc.",
+            "Úvodní fáze určí podobu celého závodu, bez náznaku polevení.",
+            "Trénink a kvalifikaci střídá přímá soutěž, tlak dál roste.",
+            "Hlavní část víkendu se může rozběhnout, tempo pořád zvedá."
+          ],
+          "high": [
+            "Závod na {track} začíná s polem {field_size} vozů, napětí stoupá!",
+            "Do hlavní jízdy nastupuje mezi {field_size} vozy!",
+            "Víkend se teď mění v přímý boj o pozice, momentum nabírá sílu!",
+            "Diváci mají před sebou celý rošt i celý příběh, tohle začíná být ostré!",
+            "Od téhle chvíle se spojuje strategie, provoz a tempo, napětí stoupá!",
+            "Na okruhu {track} otevírá závodní kapitolu!",
+            "Pole je seřazené a každá pozice má význam, momentum nabírá sílu!",
+            "Úvodní fáze určí podobu celého závodu, tohle začíná být ostré!",
+            "Trénink a kvalifikaci střídá přímá soutěž, napětí stoupá!",
+            "Hlavní část víkendu se může rozběhnout, závod kolem něj ožívá!"
+          ]
+        }
+      }
+    },
+    "sof_brief": {
+      "family": "session",
+      "event_types": [
+        "SOF_BRIEF"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 46,
+      "cooldown_s": 600,
+      "slots": [
+        {
+          "name": "sof",
+          "type": "label",
+          "example": "2 450",
+          "examples_by_locale": {
+            "en": "2,450",
+            "cs": "2 450"
+          }
+        },
+        {
+          "name": "sof_class",
+          "type": "label",
+          "example": "2 520",
+          "examples_by_locale": {
+            "en": "2,520",
+            "cs": "2 520"
+          }
+        },
+        {
+          "name": "field_size",
+          "type": "int",
+          "example": 32
+        }
+      ],
+      "notes": "Brief overall/class field strength; formula and emitter remain an engineering decision.",
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "tts": {
+        "max_chars": 90,
+        "max_seconds": 5.5,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "status": "wired",
+      "needs_engineering": [],
+      "variants": {
+        "en": {
+          "neutral": [
+            "Strength of field is {sof}, with his class at {sof_class}.",
+            "This field carries an overall rating of {sof}.",
+            "His class measures {sof_class} before the start.",
+            "Viewers are looking at a demanding group of competitors.",
+            "The numbers confirm that this will be a serious test.",
+            "A field of {field_size} gives the race real depth.",
+            "Class strength adds context to every position he gains.",
+            "The overall rating sets a high bar for the session.",
+            "This is a field where small mistakes will be expensive.",
+            "The competition level is clear before the first battle."
+          ],
+          "calm": [
+            "Strength of field is {sof}, with his class at {sof_class}.",
+            "This field carries an overall rating of {sof}, with no rush in the car.",
+            "His class measures {sof_class} before the start.",
+            "Viewers are looking at a demanding group of competitors.",
+            "The numbers confirm that this will be a serious test.",
+            "A field of {field_size} gives the race real depth.",
+            "Class strength adds context to every position he gains.",
+            "The overall rating sets a high bar for the session.",
+            "This is a field where small mistakes will be expensive.",
+            "The competition level is clear before the first battle."
+          ],
+          "focused": [
+            "Strength of field is {sof}, with his class at {sof_class}.",
+            "This field carries an overall rating of {sof}.",
+            "His class measures {sof_class} before the start.",
+            "Viewers are looking at a demanding group of competitors.",
+            "The numbers confirm that this will be a serious test.",
+            "A field of {field_size} gives the race real depth.",
+            "Class strength adds context to every position he gains.",
+            "The overall rating sets a high bar for the session.",
+            "This is a field where small mistakes will be expensive.",
+            "The competition level is clear before the first battle."
+          ],
+          "pushing": [
+            "Strength of field is {sof}, with his class at {sof_class}.",
+            "This field carries an overall rating of {sof}.",
+            "His class measures {sof_class} before the start.",
+            "Viewers are looking at a demanding group of competitors.",
+            "The numbers confirm that this will be a serious test.",
+            "A field of {field_size} gives the race real depth.",
+            "Class strength adds context to every position he gains.",
+            "The overall rating sets a high bar for the session.",
+            "This is a field where small mistakes will be expensive.",
+            "The competition level is clear before the first battle."
+          ],
+          "high": [
+            "Strength of field is {sof}, with his class at {sof_class}!",
+            "This field carries an overall rating of {sof}!",
+            "His class measures {sof_class} before the start!",
+            "Viewers are looking at a demanding group of competitors!",
+            "The numbers confirm that this will be a serious test!",
+            "A field of {field_size} gives the race real depth!",
+            "Class strength adds context to every position he gains!",
+            "The overall rating sets a high bar for the session!",
+            "This is a field where small mistakes will be expensive!",
+            "The competition level is clear before the first battle!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Síla pole je {sof}, jeho třída má {sof_class}.",
+            "Celé pole nese hodnocení {sof}, obraz závodu je jasný.",
+            "Jeho třída má před startem hodnotu {sof_class}, příběh pokračuje.",
+            "Diváci sledují náročnou skupinu soupeřů, další fáze se rýsuje.",
+            "Čísla potvrzují, že tohle bude vážná zkouška.",
+            "Pole {field_size} vozů dává závodu skutečnou hloubku.",
+            "Síla třídy přidává kontext ke každé získané pozici, příběh pokračuje.",
+            "Celkové hodnocení nastavuje vysokou laťku, další fáze se rýsuje.",
+            "V tomhle poli bude každá malá chyba drahá.",
+            "Úroveň konkurence je jasná ještě před prvním soubojem."
+          ],
+          "calm": [
+            "Síla pole je {sof}, jeho třída má {sof_class}.",
+            "Celé pole nese hodnocení {sof}, bez zbytečného spěchu.",
+            "Jeho třída má před startem hodnotu {sof_class}, rytmus zůstává plynulý.",
+            "Diváci sledují náročnou skupinu soupeřů, zvládá to bez nervozity.",
+            "Čísla potvrzují, že tohle bude vážná zkouška, všechno má pod kontrolou.",
+            "Pole {field_size} vozů dává závodu skutečnou hloubku.",
+            "Síla třídy přidává kontext ke každé získané pozici.",
+            "Celkové hodnocení nastavuje vysokou laťku, zvládá to bez nervozity.",
+            "V tomhle poli bude každá malá chyba drahá, všechno má pod kontrolou.",
+            "Úroveň konkurence je jasná ještě před prvním soubojem."
+          ],
+          "focused": [
+            "Síla pole je {sof}, jeho třída má {sof_class}.",
+            "Celé pole nese hodnocení {sof}, každý detail má změřený.",
+            "Jeho třída má před startem hodnotu {sof_class}, už myslí na další krok.",
+            "Diváci sledují náročnou skupinu soupeřů, přesně podle plánu.",
+            "Čísla potvrzují, že tohle bude vážná zkouška.",
+            "Pole {field_size} vozů dává závodu skutečnou hloubku.",
+            "Síla třídy přidává kontext ke každé získané pozici.",
+            "Celkové hodnocení nastavuje vysokou laťku, přesně podle plánu.",
+            "V tomhle poli bude každá malá chyba drahá, soustředění zůstává pevné.",
+            "Úroveň konkurence je jasná ještě před prvním soubojem."
+          ],
+          "pushing": [
+            "Síla pole je {sof}, jeho třída má {sof_class}, tlak dál roste.",
+            "Celé pole nese hodnocení {sof}, tempo pořád zvedá.",
+            "Jeho třída má před startem hodnotu {sof_class}, pořád hledá něco navíc.",
+            "Diváci sledují náročnou skupinu soupeřů, bez náznaku polevení.",
+            "Čísla potvrzují, že tohle bude vážná zkouška, tlak dál roste.",
+            "Pole {field_size} vozů dává závodu skutečnou hloubku.",
+            "Síla třídy přidává kontext ke každé získané pozici.",
+            "Celkové hodnocení nastavuje vysokou laťku, bez náznaku polevení.",
+            "V tomhle poli bude každá malá chyba drahá, tlak dál roste.",
+            "Úroveň konkurence je jasná ještě před prvním soubojem."
+          ],
+          "high": [
+            "Síla pole je {sof}, jeho třída má {sof_class}, napětí stoupá!",
+            "Celé pole nese hodnocení {sof}, závod kolem něj ožívá!",
+            "Jeho třída má před startem hodnotu {sof_class}, momentum nabírá sílu!",
+            "Diváci sledují náročnou skupinu soupeřů, tohle začíná být ostré!",
+            "Čísla potvrzují, že tohle bude vážná zkouška, napětí stoupá!",
+            "Pole {field_size} vozů dává závodu skutečnou hloubku!",
+            "Síla třídy přidává kontext ke každé získané pozici!",
+            "Celkové hodnocení nastavuje vysokou laťku, tohle začíná být ostré!",
+            "V tomhle poli bude každá malá chyba drahá, napětí stoupá!",
+            "Úroveň konkurence je jasná ještě před prvním soubojem!"
+          ]
+        }
+      }
+    },
+    "weather_brief": {
+      "family": "session",
+      "event_types": [
+        "WEATHER_BRIEF"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 34,
+      "cooldown_s": 600,
+      "slots": [
+        {
+          "name": "track",
+          "type": "label",
+          "example": "Spa-Francorchamps"
+        },
+        {
+          "name": "skies",
+          "type": "label",
+          "example": "partly cloudy"
+        },
+        {
+          "name": "air_temp",
+          "type": "label",
+          "example": "23 C"
+        },
+        {
+          "name": "track_temp",
+          "type": "label",
+          "example": "31 C"
+        },
+        {
+          "name": "wind_speed",
+          "type": "label",
+          "example": "4 m/s"
+        },
+        {
+          "name": "precipitation",
+          "type": "label",
+          "example": "light rain"
+        }
+      ],
+      "notes": "Pre-session forecast/current conditions brief; each line binds only the data it needs.",
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "tts": {
+        "max_chars": 90,
+        "max_seconds": 5.5,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "status": "wired",
+      "needs_engineering": [],
+      "variants": {
+        "en": {
+          "neutral": [
+            "The forecast calls for {skies} skies at {track}.",
+            "Air temperature is {air_temp}, with the track at {track_temp}.",
+            "Wind is running at {wind_speed} for this session.",
+            "Viewers should expect {precipitation} through the opening phase.",
+            "The circuit begins under {skies} conditions.",
+            "Weather adds another variable before the first lap.",
+            "Track temperature will shape the early tyre picture.",
+            "The forecast leaves strategy with something to consider.",
+            "Conditions are set, but the surface may still evolve.",
+            "The opening weather picture is now clear, and the picture is clear."
+          ],
+          "calm": [
+            "The forecast calls for {skies} skies at {track}.",
+            "Air temperature is {air_temp}, with the track at {track_temp}.",
+            "Wind is running at {wind_speed} for this session.",
+            "Viewers should expect {precipitation} through the opening phase.",
+            "The circuit begins under {skies} conditions, all under control.",
+            "Weather adds another variable before the first lap.",
+            "Track temperature will shape the early tyre picture.",
+            "The forecast leaves strategy with something to consider.",
+            "Conditions are set, but the surface may still evolve.",
+            "The opening weather picture is now clear, with no rush in the car."
+          ],
+          "focused": [
+            "The forecast calls for {skies} skies at {track}.",
+            "Air temperature is {air_temp}, with the track at {track_temp}.",
+            "Wind is running at {wind_speed} for this session.",
+            "Viewers should expect {precipitation} through the opening phase.",
+            "The circuit begins under {skies} conditions.",
+            "Weather adds another variable before the first lap.",
+            "Track temperature will shape the early tyre picture.",
+            "The forecast leaves strategy with something to consider.",
+            "Conditions are set, but the surface may still evolve.",
+            "The opening weather picture is now clear, with every detail measured."
+          ],
+          "pushing": [
+            "The forecast calls for {skies} skies at {track}.",
+            "Air temperature is {air_temp}, with the track at {track_temp}.",
+            "Wind is running at {wind_speed} for this session.",
+            "Viewers should expect {precipitation} through the opening phase.",
+            "The circuit begins under {skies} conditions.",
+            "Weather adds another variable before the first lap.",
+            "Track temperature will shape the early tyre picture.",
+            "The forecast leaves strategy with something to consider.",
+            "Conditions are set, but the surface may still evolve.",
+            "The opening weather picture is now clear, with the pace still building."
+          ],
+          "high": [
+            "The forecast calls for {skies} skies at {track}!",
+            "Air temperature is {air_temp}, with the track at {track_temp}!",
+            "Wind is running at {wind_speed} for this session!",
+            "Viewers should expect {precipitation} through the opening phase!",
+            "The circuit begins under {skies} conditions!",
+            "Weather adds another variable before the first lap!",
+            "Track temperature will shape the early tyre picture!",
+            "The forecast leaves strategy with something to consider!",
+            "Conditions are set, but the surface may still evolve!",
+            "The opening weather picture is now clear!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Předpověď pro {track} hlásí {skies} oblohu.",
+            "Vzduch má {air_temp}, trať je na {track_temp}, obraz závodu je jasný.",
+            "Vítr pro tuhle jízdu dosahuje {wind_speed}, příběh pokračuje.",
+            "Diváci mohou v úvodu čekat {precipitation}, další fáze se rýsuje.",
+            "Okruh začíná pod oblohou typu {skies}.",
+            "Počasí přidává další proměnnou ještě před prvním kolem.",
+            "Teplota trati ovlivní první práci pneumatik, příběh pokračuje.",
+            "Předpověď dává strategii další důvod k úvaze, další fáze se rýsuje.",
+            "Podmínky jsou dané, povrch se ale může dál měnit.",
+            "Úvodní obraz počasí je teď jasný, obraz závodu je jasný."
+          ],
+          "calm": [
+            "Předpověď pro {track} hlásí {skies} oblohu.",
+            "Vzduch má {air_temp}, trať je na {track_temp}, bez zbytečného spěchu.",
+            "Vítr pro tuhle jízdu dosahuje {wind_speed}, rytmus zůstává plynulý.",
+            "Diváci mohou v úvodu čekat {precipitation}, zvládá to bez nervozity.",
+            "Okruh začíná pod oblohou typu {skies}, všechno má pod kontrolou.",
+            "Počasí přidává další proměnnou ještě před prvním kolem.",
+            "Teplota trati ovlivní první práci pneumatik, rytmus zůstává plynulý.",
+            "Předpověď dává strategii další důvod k úvaze, zvládá to bez nervozity.",
+            "Podmínky jsou dané, povrch se ale může dál měnit.",
+            "Úvodní obraz počasí je teď jasný, bez zbytečného spěchu."
+          ],
+          "focused": [
+            "Předpověď pro {track} hlásí {skies} oblohu.",
+            "Vzduch má {air_temp}, trať je na {track_temp}, každý detail má změřený.",
+            "Vítr pro tuhle jízdu dosahuje {wind_speed}, už myslí na další krok.",
+            "Diváci mohou v úvodu čekat {precipitation}, přesně podle plánu.",
+            "Okruh začíná pod oblohou typu {skies}, soustředění zůstává pevné.",
+            "Počasí přidává další proměnnou ještě před prvním kolem.",
+            "Teplota trati ovlivní první práci pneumatik, už myslí na další krok.",
+            "Předpověď dává strategii další důvod k úvaze, přesně podle plánu.",
+            "Podmínky jsou dané, povrch se ale může dál měnit.",
+            "Úvodní obraz počasí je teď jasný, každý detail má změřený."
+          ],
+          "pushing": [
+            "Předpověď pro {track} hlásí {skies} oblohu.",
+            "Vzduch má {air_temp}, trať je na {track_temp}, tempo pořád zvedá.",
+            "Vítr pro tuhle jízdu dosahuje {wind_speed}, pořád hledá něco navíc.",
+            "Diváci mohou v úvodu čekat {precipitation}, bez náznaku polevení.",
+            "Okruh začíná pod oblohou typu {skies}, tlak dál roste.",
+            "Počasí přidává další proměnnou ještě před prvním kolem.",
+            "Teplota trati ovlivní první práci pneumatik, pořád hledá něco navíc.",
+            "Předpověď dává strategii další důvod k úvaze, bez náznaku polevení.",
+            "Podmínky jsou dané, povrch se ale může dál měnit, tlak dál roste.",
+            "Úvodní obraz počasí je teď jasný, tempo pořád zvedá."
+          ],
+          "high": [
+            "Předpověď pro {track} hlásí {skies} oblohu!",
+            "Vzduch má {air_temp}, trať je na {track_temp}, závod kolem něj ožívá!",
+            "Vítr pro tuhle jízdu dosahuje {wind_speed}, momentum nabírá sílu!",
+            "Diváci mohou v úvodu čekat {precipitation}, tohle začíná být ostré!",
+            "Okruh začíná pod oblohou typu {skies}, napětí stoupá!",
+            "Počasí přidává další proměnnou ještě před prvním kolem!",
+            "Teplota trati ovlivní první práci pneumatik, momentum nabírá sílu!",
+            "Předpověď dává strategii další důvod k úvaze, tohle začíná být ostré!",
+            "Podmínky jsou dané, povrch se ale může dál měnit, napětí stoupá!",
+            "Úvodní obraz počasí je teď jasný, závod kolem něj ožívá!"
+          ]
+        }
+      }
+    }
+  },
+  "proposed_slots": [
+    {
+      "slot": "track",
+      "type": "label",
+      "example": "Spa-Francorchamps - Grand Prix Pits",
+      "irsdk_session_source": "SessionInfo WeekendInfo.TrackDisplayName + optional WeekendInfo.TrackConfigName; existing master snapshot only keeps WeekendInfo.TrackID as track_id.",
+      "nodes": [
+        "session_intro_practice",
+        "session_intro_qualify",
+        "session_intro_race",
+        "weather_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "field_size",
+      "type": "int",
+      "example": 32,
+      "irsdk_session_source": "SessionInfo DriverInfo.Drivers[] count after excluding CarIsPaceCar != 0, IsSpectator != 0, and invalid CarIdx entries.",
+      "nodes": [
+        "session_intro_qualify",
+        "session_intro_race",
+        "sof_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "sof",
+      "type": "label",
+      "example": "2 450",
+      "irsdk_session_source": "Derived from SessionInfo DriverInfo.Drivers[].IRating for valid racing drivers; EVENT_ENGINE_V4_SOF_REMAIN_SPEC.md currently proposes the arithmetic mean.",
+      "nodes": [
+        "sof_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "sof_class",
+      "type": "label",
+      "example": "2 520",
+      "irsdk_session_source": "Derived from DriverInfo.Drivers[].IRating filtered by CarClassID equal to the player's DriverInfo.Drivers[DriverCarIdx].CarClassID.",
+      "nodes": [
+        "sof_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "skies",
+      "type": "label",
+      "example": "partly cloudy",
+      "irsdk_session_source": "Live telemetry Skies; SessionInfo fallback WeekendInfo.TrackSkies; pre-session forecast WeekendInfo.WeekendOptions.Skies.",
+      "nodes": [
+        "weather_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "air_temp",
+      "type": "label",
+      "example": "23 C",
+      "irsdk_session_source": "Live telemetry AirTemp; SessionInfo fallback WeekendInfo.TrackAirTemp; forecast WeekendInfo.WeekendOptions.WeatherTemp.",
+      "nodes": [
+        "weather_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "track_temp",
+      "type": "label",
+      "example": "31 C",
+      "irsdk_session_source": "Live telemetry TrackTempCrew preferred, then TrackTemp; SessionInfo fallback WeekendInfo.TrackSurfaceTemp.",
+      "nodes": [
+        "weather_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "wind_speed",
+      "type": "label",
+      "example": "4 m/s",
+      "irsdk_session_source": "Live telemetry WindVel; SessionInfo fallback WeekendInfo.TrackWindVel; forecast WeekendInfo.WeekendOptions.WindSpeed.",
+      "nodes": [
+        "weather_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    },
+    {
+      "slot": "precipitation",
+      "type": "label",
+      "example": "light rain",
+      "irsdk_session_source": "Live telemetry Precipitation, with TrackWetness and WeatherDeclaredWet as corroborating state. No precise forecast precipitation key is evidenced in master.",
+      "nodes": [
+        "weather_brief"
+      ],
+      "notes": "Wired in H4: envelope metrics + director slot_bindings (session_briefs sidecar; formatters from H1/H2/H3)."
+    }
+  ]
+}

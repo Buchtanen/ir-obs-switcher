@@ -12,6 +12,7 @@ from typing import Any, Literal
 from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_from_race_event
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
+from irswitch.commentary.session_briefs import SessionBriefsDetector
 from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.config import AppConfig
 from irswitch.events.engine import EventEngine
@@ -87,8 +88,10 @@ class OverlayRuntime:
         self._running = False
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
+        self.session_briefs = SessionBriefsDetector()
         self.session.add_reset_hook(self._reset_commentary)
         self.session.add_reset_hook(self.in_car.reset)
+        self.session.add_reset_hook(self.session_briefs.reset)
 
     def _init_managers(self, overlay: OverlaySettings) -> None:
         if overlay.event_engine.v2_payload:
@@ -118,10 +121,17 @@ class OverlayRuntime:
     def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
         """Attach T2 practice/quali emitters when feature flags are enabled."""
         if overlay.event_engine.practice or overlay.event_engine.quali_projection:
-            from irswitch.events.sector_split import SectorSplitEmitter
+            from irswitch.events.sector_split import SectorBestEmitter, SectorSplitEmitter
 
             self.engine.register(
                 SectorSplitEmitter(
+                    self._timing_store,
+                    overlay.events,
+                    overlay.events.priorities,
+                )
+            )
+            self.engine.register(
+                SectorBestEmitter(
                     self._timing_store,
                     overlay.events,
                     overlay.events.priorities,
@@ -202,15 +212,18 @@ class OverlayRuntime:
         self.commentary.sink = build_tts_sink(overlay.commentary)
         self.commentary.reset()
         self.in_car.reset()
+        self.session_briefs.reset()
 
-    def _observe_commentary(self, envelopes: list[EventEnvelope], now: float) -> None:
+    def _observe_commentary(self, envelopes: list[EventEnvelope], now: float):
+        """Observe envelopes; return the newest decision dict if any were recorded."""
         if not envelopes or self.commentary is None:
-            return
+            return None
         overlay = self._overlay_settings()
         self.commentary.settings = overlay.commentary
         sink = self.commentary.sink
         if isinstance(sink, ProcessTtsSink):
             sink.settings = overlay.commentary
+        before = len(self.commentary.decisions())
         try:
             self.commentary.observe(
                 envelopes,
@@ -221,6 +234,11 @@ class OverlayRuntime:
             )
         except Exception:
             logger.warning("commentary observe failed", exc_info=True)
+            return None
+        if len(self.commentary.decisions()) == before:
+            return None
+        decisions = self.commentary.decisions(1)
+        return decisions[-1] if decisions else None
 
     def _observe_in_car(self, state: RaceState, now: float) -> None:
         try:
@@ -230,6 +248,61 @@ class OverlayRuntime:
             return
         if envelope is not None:
             self._observe_commentary([envelope], now)
+
+    def _observe_session_briefs(self, state: RaceState, now: float) -> bool:
+        """Emit at most one session brief. True when spoken (defer in_car)."""
+        overlay = self._overlay_settings()
+        data = self._session_brief_data()
+        try:
+            envelope = self.session_briefs.tick(
+                state,
+                data,
+                now,
+                locale=overlay.language,
+            )
+        except Exception:
+            logger.warning("session briefs detector failed", exc_info=True)
+            return False
+        if envelope is None:
+            return False
+        decision = self._observe_commentary([envelope], now)
+        if decision is None:
+            # No decision row (commentary object missing) — consume to avoid spin.
+            self.session_briefs.acknowledge(envelope.event_type)
+            return False
+        reason = str(decision.get("reason") or "")
+        # Retry next frame when the voice path was only temporarily busy.
+        if reason in {"busy", "global_cooldown"}:
+            return False
+        self.session_briefs.acknowledge(envelope.event_type)
+        return str(decision.get("action") or "") == "spoken"
+
+    def _session_brief_data(self) -> dict[str, object] | None:
+        """Raw SessionInfo/telemetry mapping for H1/H2/H3 extractors."""
+        reader = self._reader
+        getter = getattr(reader, "last_telemetry_data", None)
+        if not callable(getter):
+            return None
+        try:
+            data = getter()
+        except Exception:
+            logger.debug("last_telemetry_data failed", exc_info=True)
+            return None
+        if isinstance(data, dict) and data:
+            return data
+        return None
+
+    def _observe_commentary_sidecars(self, state: RaceState, now: float) -> None:
+        """Run session briefs then in_car without starving either path.
+
+        Prefer speaking an early session intro before seating. When a brief
+        speaks this frame, defer ``ENTER_CAR`` to the next tick so in_car is
+        not marked announced while the director is busy.
+        """
+        spoken_brief = self._observe_session_briefs(state, now)
+        if spoken_brief:
+            return
+        self._observe_in_car(state, now)
 
     def _observe_timing(self, snap: TelemetrySnapshot) -> None:
         """Ingest player crossings into the timing store (Practice/Quali only)."""
@@ -370,7 +443,7 @@ class OverlayRuntime:
         self.bus.set_race(state)
         self._last_race = state
         self._sync_tape(state, now)
-        self._observe_in_car(state, now)
+        self._observe_commentary_sidecars(state, now)
         if self._idle_when_disconnected(state):
             return
         if self.session.in_warmup(now):

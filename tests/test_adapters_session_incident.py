@@ -100,7 +100,7 @@ def test_rival_threat_keeps_gap_and_speakable_target_label() -> None:
     assert envelope.target is not None
     assert envelope.target.display_name == "P8"
     bound = slot_bindings(envelope, "unknown")
-    assert bound["gap"] == 1.8
+    assert bound["gap"] == "1.80 s"
     assert bound["target_name"] == "P8"
 
 
@@ -196,7 +196,11 @@ def test_director_speaks_rival_threat_and_incident_from_live_shaped_envelopes() 
     spoken = director.observe([rival], None, 10.0)
     assert spoken is not None
     assert spoken.node_id == "rival_threat"
-    assert "P9" in spoken.text or "2.1" in spoken.text
+    # Densified cells may pick a slotless filler; live bindings must still be speech-ready.
+    bound = slot_bindings(rival, "unknown")
+    assert bound.get("target_name") == "P9"
+    assert bound.get("gap") == "2.10 s"
+    assert "{" not in spoken.text
 
     director.reset()
     incident = incident_race_event_to_envelope(

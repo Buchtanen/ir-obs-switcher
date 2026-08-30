@@ -148,6 +148,11 @@ class CommentarySettings:
     duck_ratio: float = 0.25
     duck_fade_ms: int = 750
     decision_log_size: int = 32
+    # Sector absolute-time speak path (HUD SECTOR_SPLIT stays independent).
+    sector_speak: bool = False
+    sector_speak_max_per_lap: int = 1
+    # Session intro / SoF / weather commentary sidecars (default off).
+    session_briefs: bool = False
 
 
 @dataclass(frozen=True)

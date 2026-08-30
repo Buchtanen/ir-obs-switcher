@@ -57,6 +57,15 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "SplitTimeInfo",
     "PlayerTrackSurface",
     "PlayerCarTowTime",
+    # Live weather for commentary session briefs (H3/H4).
+    "Skies",
+    "AirTemp",
+    "TrackTempCrew",
+    "TrackTemp",
+    "WindVel",
+    "Precipitation",
+    "TrackWetness",
+    "WeatherDeclaredWet",
 )
 
 

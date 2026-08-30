@@ -462,6 +462,24 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
+        sector_speak=_get_bool(
+            parser, "commentary", "sector_speak", commentary_defaults.sector_speak
+        ),
+        sector_speak_max_per_lap=max(
+            0,
+            min(
+                8,
+                _get_int(
+                    parser,
+                    "commentary",
+                    "sector_speak_max_per_lap",
+                    commentary_defaults.sector_speak_max_per_lap,
+                ),
+            ),
+        ),
+        session_briefs=_get_bool(
+            parser, "commentary", "session_briefs", commentary_defaults.session_briefs
+        ),
     )
 
     lhm_raw = ""

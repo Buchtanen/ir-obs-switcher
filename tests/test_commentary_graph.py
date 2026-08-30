@@ -13,7 +13,7 @@ from irswitch.commentary.graph import (
 from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 
-def test_default_graph_loads_fully_filled() -> None:
+def test_default_graph_loads_and_is_fully_filled() -> None:
     graph = load_sequence_graph()
     assert graph.version == 1
     assert "overtake" in graph.nodes
@@ -21,6 +21,12 @@ def test_default_graph_loads_fully_filled() -> None:
     assert graph.unfilled_cells() == []
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
+    # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs.
+    assert len(graph.nodes) == 32
+    assert "sector_split" in graph.nodes
+    assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
+    assert "session_intro_race" in graph.nodes
+    assert len(graph.edges) == 12
 
 
 def test_graph_event_types_are_in_catalog() -> None:

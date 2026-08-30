@@ -20,7 +20,7 @@ def test_lap_complete_bindings_from_live_metrics() -> None:
     )
     bound = slot_bindings(env, "unknown")
     assert bound["lap"] == 12
-    assert bound["lap_time"] == 92.456
+    assert bound["lap_time"] == "1:32.456"
 
 
 def test_position_gained_binds_old_and_new() -> None:
@@ -48,12 +48,14 @@ def test_hunting_without_target_name_still_has_gap_lines() -> None:
     )
     bound = slot_bindings(env, "unknown")
     assert bound.get("target_name") in (None, "")
-    assert bound["gap"] == 1.2
+    assert bound["gap"] == "1.20 s"
     texts = node.variant_bucket("en", "unknown")
     spoken = choose_filled_line(texts, bound, random.Random(0))
     assert spoken is not None
     assert "{target_name}" not in spoken
     assert "{gap}" not in spoken
+    # Lines that require both gap + target stay unbound; position-only lines still speak.
+    assert "1.2" not in spoken  # raw seconds must not appear; gap lines were skipped
 
 
 def test_rival_threat_with_live_metrics_speaks() -> None:
@@ -72,13 +74,18 @@ def test_rival_threat_with_live_metrics_speaks() -> None:
     assert choose_filled_line(texts, bound, random.Random(0)) is not None
 
 
-def test_rival_threat_without_name_or_gap_still_slot_unbound() -> None:
+def test_rival_threat_without_metrics_uses_slotless_filler_or_skips() -> None:
+    """Densified cells include slotless fillers; empty metrics must not leave {slots}."""
     graph = load_sequence_graph()
     node = graph.nodes["rival_threat"]
     env = make_envelope(event_type="RIVAL_THREAT", phase="ENTER", priority=60, metrics={})
     bound = slot_bindings(env, "unknown")
     texts = node.variant_bucket("en", "unknown")
-    assert choose_filled_line(texts, bound, random.Random(0)) is None
+    spoken = choose_filled_line(texts, bound, random.Random(0))
+    if spoken is None:
+        return
+    assert "{" not in spoken
+    assert "-1" not in spoken
 
 
 def test_director_speaks_lap_complete_from_live_shaped_envelope() -> None:
