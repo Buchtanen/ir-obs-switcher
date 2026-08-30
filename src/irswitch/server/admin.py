@@ -135,6 +135,10 @@ async def _probe_lhm() -> dict[str, Any]:
     return await asyncio.to_thread(_run)
 
 
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
 def _runtime_snapshot(runtime: Any | None, now: float) -> dict[str, Any]:
     if runtime is None or not hasattr(runtime, "status_snapshot"):
         return {}
@@ -164,10 +168,10 @@ def build_admin_status(
     sys_cfg = getattr(overlay_cfg, "system_info", None) if overlay_cfg is not None else None
     ee = getattr(overlay_cfg, "event_engine", None) if overlay_cfg is not None else None
 
-    bio_snap = snap.get("bio") if isinstance(snap.get("bio"), dict) else {}
-    system_snap = snap.get("system") if isinstance(snap.get("system"), dict) else {}
-    commentary_snap = snap.get("commentary") if isinstance(snap.get("commentary"), dict) else {}
-    tape_snap = snap.get("tape") if isinstance(snap.get("tape"), dict) else {}
+    bio_snap = _as_dict(snap.get("bio"))
+    system_snap = _as_dict(snap.get("system"))
+    commentary_snap = _as_dict(snap.get("commentary"))
+    tape_snap = _as_dict(snap.get("tape"))
 
     # Prefer live bus metrics for sysinfo detail numbers when present.
     system = bus.system
