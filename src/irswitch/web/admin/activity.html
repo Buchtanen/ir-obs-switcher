@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>irswitch admin — activity</title>
+  <link rel="stylesheet" href="/admin/web/css/admin.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <h1>Activity</h1>
+      <span class="ver" id="admin-version"></span>
+      <span class="live-dot" id="live-indicator">offline</span>
+    </header>
+    <nav class="nav" aria-label="Admin">
+      <a href="/admin">Overview</a>
+      <a href="/admin/extensions">Extensions</a>
+      <a href="/admin/features">Features</a>
+      <a class="active" href="/admin/activity">Activity</a>
+      <span class="sep" aria-hidden="true"></span>
+      <a href="/gr-status">Switcher event log</a>
+      <a href="/commentary">Commentary</a>
+    </nav>
+
+    <section class="section">
+      <h2>Live feed</h2>
+      <p class="hint">Merged switcher events, commentary speak/skip decisions, and active overlay widgets. Updates ~2s + on WS traffic.</p>
+      <div id="activity-panel" class="feed"></div>
+    </section>
+  </div>
+  <script src="/admin/web/js/admin.js"></script>
+  <script>
+    IrAdmin.startAdmin({
+      useSwitcherWs: true,
+      useOverlayWs: true,
+      refreshOnWs: true,
+      activityLimit: 120,
+      onStatus(status) {},
+      onActivity(act) {
+        document.getElementById("activity-panel").innerHTML = IrAdmin.renderActivity(act.items || []);
+      },
+    });
+  </script>
+</body>
+</html>
