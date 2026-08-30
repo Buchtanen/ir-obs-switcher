@@ -47,7 +47,7 @@ Rules:
 | --- | --- |
 | `nodes.*.event_types` / `phases` | Match catalog event + wire phase |
 | `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`) |
-| `slots` | `{position}`, `{gap}`, … bound from envelope metrics |
+| `slots` | `{position}`, `{gap}`, … bound from envelope metrics. Timing slots (`lap_time`, `gap`, `delta`, `segment_time`, `target_time`, `projected_time`) are spoken via `sdk_units`-style formatters in `slot_format.py`; sentinel / invalid values leave the slot unbound so that candidate line is skipped (re-draw). |
 | `hr_states` | Which BLE bands may pick this node |
 | `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
 | `edges` | Preferred next line (e.g. hunting → side_by_side → overtake) |
