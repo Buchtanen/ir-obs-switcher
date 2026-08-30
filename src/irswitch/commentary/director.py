@@ -108,6 +108,34 @@ class CommentaryDirector:
         self.decision_log_size = size
         self._decisions = deque(maxlen=size)
 
+    def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
+        """Public read-only status for dashboards. No side effects.
+
+        ``now`` and ``lastSpokeAt`` / ``busyUntil`` are **monotonic** seconds
+        (same clock as :meth:`observe`), not wall clock. Pass ``enabled`` when
+        the caller holds fresher config than :attr:`settings`.
+        """
+        enabled_flag = bool(self.settings.enabled if enabled is None else enabled)
+        available = bool(getattr(self.graph, "nodes", None))
+        busy_until = float(self._busy_until)
+        busy = now < busy_until
+        if not enabled_flag:
+            status = "disabled"
+        elif not available:
+            status = "idle"
+        elif busy:
+            status = "speaking"
+        else:
+            status = "ready"
+        return {
+            "enabled": enabled_flag,
+            "available": available,
+            "busy": busy,
+            "busyUntil": busy_until,
+            "status": status,
+            "lastSpokeAt": self._last.at if self._last is not None else None,
+        }
+
     def decisions(self, n: int = 20) -> list[dict[str, Any]]:
         """Newest-last chronological slice for HTTP/UI."""
         if n <= 0:
