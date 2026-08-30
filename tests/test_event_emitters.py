@@ -6,6 +6,7 @@ from irswitch.events.lap import LapEmitter
 from irswitch.events.pit import PitEmitter
 from irswitch.events.position import PositionEmitter
 from irswitch.events.session import SessionEmitter
+from irswitch.iracing.trk_loc import IN_PIT_STALL, ON_TRACK
 from irswitch.overlay.models import OpponentInfo, RaceState
 from irswitch.overlay.settings import (
     BattleSettings,
@@ -27,8 +28,11 @@ def _state(**overrides: object) -> RaceState:
         "best_lap_time": 94.5,
         "incidents": 2,
         "on_pit_road": False,
+        "player_track_surface": ON_TRACK,
     }
     base.update(overrides)
+    if overrides.get("on_pit_road") is True and "player_track_surface" not in overrides:
+        base["player_track_surface"] = IN_PIT_STALL
     return RaceState(**base)  # type: ignore[arg-type]
 
 
@@ -51,6 +55,20 @@ def test_hunting_candidate_then_enter_then_exit() -> None:
     emitter.tick(_state(opponent_ahead=far, gap_ahead=5.0, closing_rate_ahead=-0.1), t + 3.0)
     out = emitter.tick(_state(opponent_ahead=far, gap_ahead=5.0, closing_rate_ahead=-0.1), t + 4.6)
     assert any(e.phase == "exit" for e in out)
+
+
+def test_hunting_exits_immediately_when_session_finished() -> None:
+    emitter = BattleEmitter(
+        HuntingSettings(activation_delay=0.0, exit_delay=1.5), HuntingSettings()
+    )
+    ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3)
+    racing = _state(opponent_ahead=ahead, gap_ahead=2.0, closing_rate_ahead=0.3)
+    out = emitter.tick(racing, 10.0)
+    assert any(e.phase == "enter" and e.data["state"] == "hunting" for e in out)
+    out = emitter.tick(_state(session_finished=True, opponent_ahead=ahead, gap_ahead=2.0), 10.1)
+    assert any(e.phase == "exit" and e.data.get("reason") == "session_finished" for e in out)
+    assert emitter.hunting.state == "NONE"
+    assert emitter.tick(_state(session_finished=True), 10.2) == []
 
 
 def test_hunting_and_hunted_both_independent() -> None:

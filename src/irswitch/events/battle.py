@@ -30,6 +30,8 @@ class BattleEmitter:
     _hunting_peak: str = "hunting"
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
+        if state.session_finished:
+            return self._abort_active(state, now)
         events: list[CandidateEvent] = []
         events.extend(
             self._tick_direction(
@@ -133,6 +135,34 @@ class BattleEmitter:
         self.hunted = _Track()
         self._battle_for_position_active = False
         self._hunting_peak = "hunting"
+
+    def _abort_active(self, state: RaceState, now: float) -> list[CandidateEvent]:
+        events: list[CandidateEvent] = []
+        for track, name, priority, intensity_ladder, battle_state in (
+            (self.hunting, "battle", self.priorities.hunting, True, "hunting"),
+            (self.hunted, "battle", self.priorities.hunted, False, "hunted"),
+        ):
+            if track.state != "ACTIVE":
+                track.state = "NONE"
+                track.fail_since = None
+                track.target_car_idx = None
+                continue
+            exit_state = track.intensity if intensity_ladder else battle_state
+            events.append(
+                CandidateEvent(
+                    name=name,
+                    channel="battle",
+                    priority=priority,
+                    phase="exit",
+                    data={"state": exit_state, "reason": "session_finished"},
+                )
+            )
+            track.state = "NONE"
+            track.intensity = battle_state
+            track.fail_since = None
+            track.target_car_idx = None
+        events.extend(self._meta_battle_events(state, now))
+        return events
 
     def _tick_direction(
         self,

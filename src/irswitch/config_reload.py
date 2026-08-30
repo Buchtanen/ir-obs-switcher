@@ -113,6 +113,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "stream_chapters.start_title",
         "stream_chapters.trigger_session_types",
         "stream_chapters.session_titles",
+        "stream_chapters.youtube_vod",
         *(f"scenes.{mode.name}" for mode in DrivingMode),
     }
 )
@@ -177,6 +178,7 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
             config.stream_chapters.trigger_session_types
         ),
         "stream_chapters.session_titles": dict(config.stream_chapters.session_titles),
+        "stream_chapters.youtube_vod": config.stream_chapters.youtube_vod,
     }
     values.update(overlay_values(config.overlay))
     for mode in DrivingMode:

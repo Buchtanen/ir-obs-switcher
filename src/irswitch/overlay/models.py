@@ -65,6 +65,9 @@ class TelemetrySnapshot:
     player_lap_dist_pct: float | None = None
     stale_for_ms: float | None = None
     data_quality: str = "ok"  # ok/degraded/stale
+    player_track_surface: int | None = None
+    player_tow_time: float | None = None
+    sector_start_pcts: tuple[float, ...] = ()
 
     @classmethod
     def disconnected(cls, timestamp: float = 0.0) -> TelemetrySnapshot:
@@ -113,6 +116,8 @@ class RaceState:
     player_lap_dist_pct: float | None = None
     stale_for_ms: float | None = None
     data_quality: str = "ok"
+    player_track_surface: int | None = None
+    player_tow_time: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = _asdict(self)

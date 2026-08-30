@@ -176,8 +176,8 @@
     },
     {
       "path": "accents/event-visual-map.json",
-      "bytes": 30723,
-      "sha256": "939793929c96bc1cc3675c995c576f289db3d523857842d52b7c522e1c5cdbfc"
+      "bytes": 30780,
+      "sha256": "0dd72f8a9e278b9154c8cbde04e4660ab8b75c76aff3ecaf9dc7773ec75036fa"
     },
     {
       "path": "backgrounds/README.md",

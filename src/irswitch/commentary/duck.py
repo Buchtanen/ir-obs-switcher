@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import logging
 import math
 import threading
@@ -79,12 +80,16 @@ class VolumeDucker:
             self._depth += 1
             if self._depth != 1:
                 return
-            original = self.get_mul(name)
+            # Keep the first pre-duck OBS level until fade-in actually finishes.
+            # Re-reading OBS mid-ramp (or after a cancelled restore) stacks ratio→silence.
+            original = self._saved
             if original is None:
-                self._depth -= 1
-                logger.warning("commentary duck skipped: no volume for input=%s", name)
-                return
-            self._saved = original
+                original = self.get_mul(name)
+                if original is None:
+                    self._depth -= 1
+                    logger.warning("commentary duck skipped: no volume for input=%s", name)
+                    return
+                self._saved = original
             start = self._current if self._current is not None else original
             target = ducked_mul(original, self.ratio)
             self._fade_gen += 1
@@ -93,9 +98,9 @@ class VolumeDucker:
             return
         if not self._fade(name, start, target, gen):
             with self._lock:
-                if self._depth == 1 and self._fade_gen == gen:
-                    self._saved = None
-                    self._depth -= 1
+                failed = self._depth == 1 and self._fade_gen == gen
+            if failed:
+                self.force_restore()
 
     def exit(self) -> None:
         name = (self.input_name or "").strip()
@@ -111,7 +116,6 @@ class VolumeDucker:
             if self._depth != 0:
                 return
             target = self._saved
-            self._saved = None
             start = self._current if self._current is not None else target
             self._fade_gen += 1
             gen = self._fade_gen
@@ -119,10 +123,26 @@ class VolumeDucker:
             return
         if start is None:
             start = target
-        self._fade(name, start, target, gen)
+        restored = self._fade(name, start, target, gen)
         with self._lock:
             if self._fade_gen == gen:
                 self._current = None
+                if restored:
+                    self._saved = None
+
+    def force_restore(self) -> None:
+        """Instant restore to the first saved volume (shutdown / cancelled fade)."""
+        name = (self.input_name or "").strip()
+        with self._lock:
+            target = self._saved
+            self._fade_gen += 1
+            self._depth = 0
+            self._current = None
+            self._saved = None
+        if not name or target is None:
+            return
+        if not self.set_mul(name, target):
+            logger.warning("commentary duck force-restore failed input=%s", name)
 
     def _fade(self, name: str, start: float, end: float, gen: int) -> bool:
         duration_ms = max(0, int(self.fade_ms))
@@ -169,18 +189,28 @@ def _obs_set_mul(name: str, mul: float) -> bool:
 
 _shared_lock = threading.Lock()
 _shared_ducker: VolumeDucker | None = None
+_atexit_registered = False
+
+
+def restore_shared_ducker() -> None:
+    """Put OBS volume back if a duck is in flight (shutdown / crash path)."""
+    with _shared_lock:
+        ducker = _shared_ducker
+    if ducker is not None:
+        ducker.force_restore()
 
 
 def reset_shared_ducker() -> None:
     """Test helper: drop the process-wide ducker."""
     global _shared_ducker
+    restore_shared_ducker()
     with _shared_lock:
         _shared_ducker = None
 
 
 def ducker_from_settings(settings: CommentarySettings) -> VolumeDucker:
     """One ducker for the process so overlapping lines cannot double-duck."""
-    global _shared_ducker
+    global _shared_ducker, _atexit_registered
     with _shared_lock:
         if _shared_ducker is None:
             _shared_ducker = VolumeDucker(
@@ -190,8 +220,11 @@ def ducker_from_settings(settings: CommentarySettings) -> VolumeDucker:
                 get_mul=_obs_get_mul,
                 set_mul=_obs_set_mul,
             )
+            if not _atexit_registered:
+                atexit.register(restore_shared_ducker)
+                _atexit_registered = True
             return _shared_ducker
-        if _shared_ducker._depth == 0:
+        if _shared_ducker._depth == 0 and _shared_ducker._saved is None:
             _shared_ducker.input_name = settings.duck_input
             _shared_ducker.ratio = settings.duck_ratio
             _shared_ducker.fade_ms = settings.duck_fade_ms

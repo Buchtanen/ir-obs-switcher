@@ -160,3 +160,72 @@ def test_ducker_fades_out_and_in() -> None:
     assert len(calls) == 30
     assert calls[-1] == pytest.approx(1.0)
     assert sum(sleeps) == pytest.approx(1.4)
+
+
+def test_next_line_during_fade_in_does_not_ratchet_original() -> None:
+    """A new line mid fade-in must duck from the first saved volume, not OBS mid-ramp."""
+    store = {"A": 1.0}
+    interrupting = {"armed": False}
+    ducker: VolumeDucker
+
+    def sleep(_s: float) -> None:
+        if interrupting["armed"] and ducker._depth == 0:
+            interrupting["armed"] = False
+            ducker.enter()
+
+    ducker = VolumeDucker(
+        "A",
+        0.1,
+        lambda _n: store["A"],
+        lambda _n, m: store.__setitem__("A", m) or True,
+        fade_ms=200,
+        sleep=sleep,
+    )
+    ducker.enter()
+    interrupting["armed"] = True
+    ducker.exit()
+    assert store["A"] == pytest.approx(0.1)
+    ducker.exit()
+    assert store["A"] == pytest.approx(1.0)
+
+
+def test_repeated_fade_in_interrupts_do_not_stack_to_silence() -> None:
+    store = {"A": 1.0}
+    interrupting = {"armed": False}
+    ducker: VolumeDucker
+
+    def sleep(_s: float) -> None:
+        if interrupting["armed"] and ducker._depth == 0:
+            interrupting["armed"] = False
+            ducker.enter()
+
+    ducker = VolumeDucker(
+        "A",
+        0.1,
+        lambda _n: store["A"],
+        lambda _n, m: store.__setitem__("A", m) or True,
+        fade_ms=200,
+        sleep=sleep,
+    )
+    for _ in range(8):
+        ducker.enter()
+        interrupting["armed"] = True
+        ducker.exit()
+        ducker.exit()
+    assert store["A"] == pytest.approx(1.0)
+
+
+def test_force_restore_puts_volume_back() -> None:
+    store = {"A": 1.0}
+    ducker = VolumeDucker(
+        "A",
+        0.1,
+        lambda _n: store["A"],
+        lambda _n, m: store.__setitem__("A", m) or True,
+    )
+    ducker.enter()
+    assert store["A"] == pytest.approx(0.1)
+    ducker.force_restore()
+    assert store["A"] == pytest.approx(1.0)
+    assert ducker._depth == 0
+    assert ducker._saved is None

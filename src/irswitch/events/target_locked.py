@@ -17,7 +17,7 @@ class TargetLockedEmitter:
     _target_time: float | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:  # noqa: ARG002
-        if state.overlay_mode != "PRACTICE" or not state.connected:
+        if state.overlay_mode != "PRACTICE" or not state.connected or state.session_finished:
             return []
         target = state.best_lap_time
         if target is None or target <= 0:

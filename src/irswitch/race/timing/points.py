@@ -42,3 +42,12 @@ def default_minisectors(count: int = DEFAULT_MINISECTOR_COUNT) -> tuple[TimingPo
 
 def start_finish_point() -> TimingPoint:
     return TimingPoint(id="MS00", lap_dist_pct=0.0, label="START_FINISH")
+
+
+def default_sectors() -> tuple[TimingPoint, ...]:
+    """S1 / S2 intermediates + start/finish. Used for Practice/Quali split callouts."""
+    return (
+        TimingPoint(id="MS00", lap_dist_pct=0.0, label="START_FINISH"),
+        TimingPoint(id="S1", lap_dist_pct=1.0 / 3.0, label="S1"),
+        TimingPoint(id="S2", lap_dist_pct=2.0 / 3.0, label="S2"),
+    )
