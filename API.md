@@ -557,27 +557,32 @@ Získání posledních eventů z event logu.
 
 ### GET /api/admin/status
 
-Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher subset.
+Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher subset + server-side `health`.
 
 **URL**: `http://127.0.0.1:17321/api/admin/status`
 
 **Method**: `GET`
 
-**Response** (200 OK) — klíčová pole (`schemaVersion: 1`):
+**Response** (200 OK) — klíčová pole (`schemaVersion: 1`, additive):
 - `runtime.overlay` / `runtime.switcher` (bool)
+- `health` — server-side aggregation:
+  - `ready` (bool) — `false` jen když existuje alespoň jedna **blocking** položka
+  - `blocking[]` — `{id, reason, tip}` (např. iRacing/OBS disconnected)
+  - `warnings[]` — doporučené závislosti (LHM unreachable, sysinfo degraded, …); samy o sobě `ready` neflipují
 - `switcher` (object | null) — legacy snake_case subset: `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
 - `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
 - `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
+- `extensions.lhm.detail` — cache observability: `checkedAt`, `lastSuccessAt` (wall-clock epoch), `stale`, `errorCode`, `lastBaseUrl`, `sensorRows`, `connection`
 - `features.overlay` / `features.commentary` / `features.tape` — stejné osy; commentary `ready` = active+not busy
 - `features.eventEngine` — rollout flagy (`v2Payload`, `practice`, …)
 
-LHM probe je fail-soft (cache TTL + worker thread); HTTP 200 i při unreachable. Kontrakt: [`docs/admin_dashboard_spec.md`](docs/admin_dashboard_spec.md).
+Aggregator čte **public** `status_snapshot()` (overlay runtime) + LHM cache (`force=False`). LHM probe je fail-soft (TTL + worker thread); HTTP 200 i při unreachable. Kontrakt: [`docs/admin_dashboard_spec.md`](docs/admin_dashboard_spec.md).
 
 ---
 
 ### GET /api/admin/activity
 
-Merged activity feed (newest-first): switcher EventLog + commentary decisions + overlay **ephemeral** active widgets (do lifecycle ring).
+Merged activity feed (newest-first): switcher EventLog + commentary decisions + overlay **lifecycle ring** (`OverlayActivityLog`; bounded, `dedupeKey`, wall `occurredAt`).
 
 **URL**: `http://127.0.0.1:17321/api/admin/activity?limit=50`
 
@@ -597,12 +602,22 @@ Merged activity feed (newest-first): switcher EventLog + commentary decisions + 
       "message": "He takes P5 from Rossi.",
       "ephemeral": false,
       "data": { "nodeId": "overtake", "reason": "ok" }
+    },
+    {
+      "occurredAt": 1710000001.0,
+      "monoMs": 100000,
+      "dedupeKey": "overlay:hunting:ENTER:100000",
+      "source": "overlay",
+      "kind": "hunting",
+      "phase": "ENTER",
+      "message": "Widget hunting (ENTER)",
+      "ephemeral": false
     }
   ]
 }
 ```
 
-`occurredAt` = wall-clock UTC epoch seconds (všechny zdroje). `source`: `switcher` | `commentary` | `overlay`.
+`occurredAt` = wall-clock UTC epoch seconds (všechny zdroje). `source`: `switcher` | `commentary` | `overlay`. Overlay items are **lifecycle history**, not a live `active_events` dump.
 
 ---
 
@@ -703,7 +718,7 @@ Primární **admin shell** (live): overview + extensions + features + activity.
 - `/admin/activity` — merged live log
 - Static: `/admin/web/css/admin.css`, `/admin/web/js/admin.js`
 
-Live data: poll `GET /api/admin/status` + `GET /api/admin/activity` (~2 s) a WS `/ws` + `/ws/overlay`.
+Live data: poll `GET /api/admin/status` + `GET /api/admin/activity` (~2 s); optional WS invalidate (`/ws`, `/ws/overlay`) debounced — stránky otevírají jen potřebné sockety. Overview zobrazuje server-side `health`.
 
 ---
 

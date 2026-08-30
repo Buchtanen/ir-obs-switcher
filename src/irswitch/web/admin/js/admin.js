@@ -68,7 +68,9 @@
     if (ext.id === "ble") {
       meta = `device=${d.deviceName || "—"} · bpm=${d.bpm ?? "—"} · state=${d.hrState || "—"}`;
     } else if (ext.id === "lhm") {
-      meta = `url=${d.lastBaseUrl || d.baseUrl || "—"} · sensors=${d.sensorRows ?? 0} · ${d.connection || ""}`;
+      const stale = d.stale ? " · stale" : "";
+      const err = d.errorCode ? ` · err=${d.errorCode}` : "";
+      meta = `url=${d.lastBaseUrl || d.baseUrl || "—"} · sensors=${d.sensorRows ?? 0} · ${d.connection || ""}${stale}${err} · checked=${formatClock(d.checkedAt)}`;
     } else if (ext.id === "sysinfo") {
       meta = `cpu=${d.cpuTemp ?? "—"}°C / ${d.cpuPower ?? "—"}W · gpu=${d.gpuLoad ?? "—"}% · lhmReq=${d.lhmRequired ? d.lhmRequirementMode || "yes" : "no"}`;
     }
@@ -121,6 +123,25 @@
       </div>
       <div class="meta">mode=${escapeHtml(sw.mode || "—")} · scene=${escapeHtml(sw.current_scene || "—")} → ${escapeHtml(sw.target_scene || "—")}</div>
       <div class="hint">${escapeHtml(sw.reason || "")}</div>
+    </div>`;
+  }
+
+  function renderHealth(health) {
+    if (!health) return "";
+    const ready = !!health.ready;
+    const blocking = health.blocking || [];
+    const warnings = health.warnings || [];
+    if (ready && !warnings.length) {
+      return `<div class="health ok" role="status"><strong>ready</strong> — no blocking issues</div>`;
+    }
+    const cls = ready ? "health warn" : "health bad";
+    const title = ready ? "ready with warnings" : "not ready";
+    const lines = []
+      .concat(blocking.map((b) => `block:${b.id} — ${b.reason}${b.tip ? ` (${b.tip})` : ""}`))
+      .concat(warnings.map((w) => `warn:${w.id} — ${w.reason}${w.tip ? ` (${w.tip})` : ""}`));
+    return `<div class="${cls}" role="status">
+      <strong>${escapeHtml(title)}</strong>
+      <ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
     </div>`;
   }
 
@@ -245,6 +266,7 @@
     renderExtensionCard,
     renderFeatureCard,
     renderSwitcher,
+    renderHealth,
     renderActivity,
     pillEnabled,
     pillActive,

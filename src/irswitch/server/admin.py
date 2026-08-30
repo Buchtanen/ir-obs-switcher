@@ -10,19 +10,14 @@ from typing import Any
 from aiohttp import web
 
 from irswitch import __version__
-from irswitch.overlay.http import _file_response, get_overlay_bus
+from irswitch.overlay.http import _file_response, get_overlay_bus, get_overlay_runtime
+from irswitch.server.admin_health import evaluate_health
 from irswitch.server.event_log import get_event_log
 
 logger = logging.getLogger(__name__)
 
 ADMIN_SCHEMA_VERSION = 1
 _SOURCE_PRIORITY = {"commentary": 0, "overlay": 1, "switcher": 2}
-
-
-def _overlay_runtime() -> Any | None:
-    from irswitch.overlay import http as overlay_http
-
-    return getattr(overlay_http, "_overlay_runtime", None)
 
 
 def _app_config() -> Any | None:
@@ -32,9 +27,9 @@ def _app_config() -> Any | None:
 
 
 def _switcher_state() -> Any | None:
-    from irswitch.server.api import _current_state
+    from irswitch.server.api import get_current_state
 
-    return _current_state
+    return get_current_state()
 
 
 def _mono_to_wall(
@@ -116,7 +111,7 @@ def _feature_card(
 
 
 async def _probe_lhm() -> dict[str, Any]:
-    """Non-blocking LHM HTTP probe (worker thread). Uses module cache TTL."""
+    """Non-blocking LHM status read (worker thread). Prefer cache via force=False."""
 
     def _run() -> dict[str, Any]:
         from irswitch.system.lhm_http import lhm_connection_status
@@ -131,9 +126,24 @@ async def _probe_lhm() -> dict[str, Any]:
                 "sensor_rows": 0,
                 "status": "error",
                 "prerequisite_for": ["sysinfo.cpu_package"],
+                "checked_at": time.monotonic(),
+                "last_success_at": None,
+                "stale": True,
+                "error_code": "probe_exception",
             }
 
     return await asyncio.to_thread(_run)
+
+
+def _runtime_snapshot(runtime: Any | None, now: float) -> dict[str, Any]:
+    if runtime is None or not hasattr(runtime, "status_snapshot"):
+        return {}
+    try:
+        snap = runtime.status_snapshot(now)
+        return snap if isinstance(snap, dict) else {}
+    except Exception:
+        logger.debug("Overlay runtime status_snapshot failed", exc_info=True)
+        return {}
 
 
 def build_admin_status(
@@ -143,23 +153,33 @@ def build_admin_status(
 ) -> dict[str, Any]:
     """Aggregator used by GET /api/admin/status and tests."""
     now = time.monotonic() if now is None else now
+    now_wall = time.time()
     cfg = _app_config()
     overlay_cfg = getattr(cfg, "overlay", None) if cfg is not None else None
     bus = get_overlay_bus()
-    runtime = _overlay_runtime()
+    runtime = get_overlay_runtime()
+    snap = _runtime_snapshot(runtime, now)
     state = _switcher_state()
 
-    hr = getattr(overlay_cfg, "heart_rate", None) if overlay_cfg is not None else None
     sys_cfg = getattr(overlay_cfg, "system_info", None) if overlay_cfg is not None else None
-    commentary_cfg = getattr(overlay_cfg, "commentary", None) if overlay_cfg is not None else None
-    tape_cfg = getattr(overlay_cfg, "tape", None) if overlay_cfg is not None else None
     ee = getattr(overlay_cfg, "event_engine", None) if overlay_cfg is not None else None
 
-    bio = bus.bio
+    bio_snap = snap.get("bio") if isinstance(snap.get("bio"), dict) else {}
+    system_snap = snap.get("system") if isinstance(snap.get("system"), dict) else {}
+    commentary_snap = snap.get("commentary") if isinstance(snap.get("commentary"), dict) else {}
+    tape_snap = snap.get("tape") if isinstance(snap.get("tape"), dict) else {}
+
+    # Prefer live bus metrics for sysinfo detail numbers when present.
     system = bus.system
-    ble_enabled = bool(getattr(hr, "enabled", True))
-    ble_status = "disabled" if not ble_enabled else str(bio.status or "disconnected")
-    ble_available = runtime is not None
+    bio = bus.bio
+
+    ble_enabled = bool(
+        bio_snap.get("enabled", getattr(getattr(overlay_cfg, "heart_rate", None), "enabled", True))
+    )
+    ble_status = str(bio_snap.get("status") or bio.status or "disconnected")
+    if not ble_enabled:
+        ble_status = "disabled"
+    ble_available = bool(bio_snap.get("available", runtime is not None))
     ble_active = ble_enabled and ble_status in {"connected", "connecting", "reconnecting"}
 
     lhm = lhm or {
@@ -168,23 +188,32 @@ def build_admin_status(
         "sensor_rows": 0,
         "status": "unreachable",
         "prerequisite_for": ["sysinfo.cpu_package"],
+        "checked_at": now,
+        "last_success_at": None,
+        "stale": False,
+        "error_code": None,
     }
     lhm_reachable = bool(lhm.get("reachable"))
     sensor_rows = int(lhm.get("sensor_rows") or 0)
+    lhm_raw_status = str(lhm.get("status") or "unreachable")
 
-    sys_enabled = bool(getattr(sys_cfg, "enabled", True))
-    cpu_enabled = bool(getattr(sys_cfg, "cpu_enabled", True))
+    sys_enabled = bool(
+        system_snap.get(
+            "enabled", getattr(sys_cfg, "enabled", True) if sys_cfg is not None else True
+        )
+    )
+    cpu_enabled = bool(getattr(sys_cfg, "cpu_enabled", True) if sys_cfg is not None else True)
     lhm_required = sys_enabled and cpu_enabled
     requirement_mode = "recommended" if lhm_required else "optional"
     if not lhm_required:
         lhm_status = "not_required"
         lhm_active = False
         lhm_tip = None
-    elif lhm_reachable and sensor_rows > 0:
+    elif lhm_raw_status == "connected" or (lhm_reachable and sensor_rows > 0):
         lhm_status = "connected"
         lhm_active = True
         lhm_tip = None
-    elif lhm_reachable:
+    elif lhm_raw_status == "reachable_empty" or (lhm_reachable and sensor_rows == 0):
         lhm_status = "reachable_empty"
         lhm_active = False
         lhm_tip = (
@@ -192,7 +221,9 @@ def build_admin_status(
             "Enable File → Hardware → CPU."
         )
     else:
-        lhm_status = str(lhm.get("status") or "unreachable")
+        lhm_status = (
+            lhm_raw_status if lhm_raw_status in {"unreachable", "error", "stale"} else "unreachable"
+        )
         lhm_active = False
         lhm_tip = (
             "Start LibreHardwareMonitor → Options → Remote Web Server → Run; "
@@ -200,55 +231,53 @@ def build_admin_status(
         )
 
     has_package = system.cpu.temperature is not None or system.cpu.power is not None
-    sys_available = runtime is not None
+    sys_available = bool(system_snap.get("available", runtime is not None))
     sys_active = sys_enabled and sys_available
     if not sys_enabled:
         sys_status = "disabled"
     elif lhm_required and not lhm_reachable and not has_package:
         sys_status = "degraded"
-    elif sys_active:
-        sys_status = "sampling"
     else:
-        sys_status = "idle"
+        sys_status = str(system_snap.get("status") or ("sampling" if sys_active else "idle"))
 
-    overlay_enabled = bool(getattr(overlay_cfg, "enabled", True)) if overlay_cfg else True
-    overlay_available = runtime is not None
-    overlay_active = overlay_enabled and overlay_available
-    overlay_status = (
-        "disabled" if not overlay_enabled else ("running" if overlay_active else "idle")
+    overlay_enabled = bool(
+        snap.get("enabled", getattr(overlay_cfg, "enabled", True) if overlay_cfg else True)
+    )
+    overlay_available = bool(snap.get("available", runtime is not None))
+    overlay_running = bool(snap.get("running", False))
+    overlay_active = (
+        overlay_enabled and overlay_available and (overlay_running or runtime is not None)
+    )
+    overlay_status = str(
+        snap.get("status")
+        or ("disabled" if not overlay_enabled else ("running" if overlay_running else "idle"))
+    )
+    # Match Slice 1.1 product semantics: active = enabled && available (runtime present).
+    if runtime is not None and overlay_enabled:
+        overlay_active = True
+        if overlay_status == "idle" and overlay_running:
+            overlay_status = "running"
+
+    commentary_enabled = bool(commentary_snap.get("enabled", False))
+    commentary_available = bool(commentary_snap.get("available", False))
+    commentary_busy = bool(commentary_snap.get("busy", False))
+    commentary_active = commentary_enabled and commentary_available
+    commentary_status = str(
+        commentary_snap.get("status")
+        or (
+            "disabled"
+            if not commentary_enabled
+            else ("speaking" if commentary_busy else ("ready" if commentary_available else "idle"))
+        )
     )
 
-    commentary_enabled = bool(getattr(commentary_cfg, "enabled", False))
-    director = getattr(runtime, "commentary", None) if runtime is not None else None
-    commentary_available = director is not None
-    busy_until = float(getattr(director, "_busy_until", 0.0) or 0.0) if director else 0.0
-    commentary_busy = bool(director is not None and now < busy_until)
-    commentary_active = commentary_enabled and commentary_available
-    if not commentary_enabled:
-        commentary_status = "disabled"
-    elif not commentary_available:
-        commentary_status = "idle"
-    elif commentary_busy:
-        commentary_status = "speaking"
-    else:
-        commentary_status = "ready"
-
-    tape_enabled = bool(getattr(tape_cfg, "enabled", True))
-    tape_writer = getattr(runtime, "_tape", None) or getattr(runtime, "tape", None)
-    tape_path = getattr(tape_writer, "path", None) if tape_writer is not None else None
-    if callable(tape_path):
-        try:
-            tape_path = tape_path()
-        except Exception:
-            tape_path = None
-    tape_available = tape_writer is not None
-    tape_active = bool(tape_path)
-    if not tape_enabled:
-        tape_status = "disabled"
-    elif tape_active:
-        tape_status = "recording"
-    else:
-        tape_status = "idle"
+    tape_enabled = bool(tape_snap.get("enabled", True))
+    tape_available = bool(tape_snap.get("available", False))
+    tape_active = bool(tape_snap.get("pathOpen", False))
+    tape_status = str(
+        tape_snap.get("status")
+        or ("disabled" if not tape_enabled else ("recording" if tape_active else "idle"))
+    )
 
     switcher: dict[str, Any] | None = None
     if state is not None:
@@ -263,16 +292,30 @@ def build_admin_status(
             "session_type": getattr(state, "session_type", None),
         }
 
+    checked_at_mono = lhm.get("checked_at")
+    last_ok_mono = lhm.get("last_success_at")
     lhm_detail: dict[str, Any] = {
         "connection": "reachable" if lhm_reachable else "unreachable",
         "lastBaseUrl": lhm.get("base_url"),
         "sensorRows": sensor_rows,
         "prerequisiteFor": list(lhm.get("prerequisite_for") or ["sysinfo.cpu_package"]),
+        "checkedAt": (
+            _mono_to_wall(float(checked_at_mono), now_mono=now, now_wall=now_wall)
+            if checked_at_mono is not None
+            else None
+        ),
+        "lastSuccessAt": (
+            _mono_to_wall(float(last_ok_mono), now_mono=now, now_wall=now_wall)
+            if last_ok_mono is not None
+            else None
+        ),
+        "stale": bool(lhm.get("stale", False)),
+        "errorCode": lhm.get("error_code"),
     }
     if lhm_tip:
         lhm_detail["tip"] = lhm_tip
 
-    return {
+    payload = {
         "schemaVersion": ADMIN_SCHEMA_VERSION,
         "version": __version__,
         "runtime": {
@@ -289,11 +332,11 @@ def build_admin_status(
                 active=ble_active,
                 status=ble_status,
                 detail={
-                    "deviceName": bio.device_name,
-                    "bpm": bio.bpm,
-                    "hrState": bio.state,
-                    "source": getattr(hr, "source", "bluetooth"),
-                    "deviceFilter": getattr(hr, "device", "auto"),
+                    "deviceName": bio_snap.get("deviceName", bio.device_name),
+                    "bpm": bio_snap.get("bpm", bio.bpm),
+                    "hrState": bio_snap.get("hrState", bio.state),
+                    "source": bio_snap.get("source", "bluetooth"),
+                    "deviceFilter": bio_snap.get("deviceFilter", "auto"),
                 },
             ),
             "lhm": _extension_card(
@@ -334,6 +377,7 @@ def build_admin_status(
                 status=overlay_status,
                 theme=getattr(overlay_cfg, "theme", None) if overlay_cfg else None,
                 activeWidgets=len(bus.active_events or []),
+                mode=snap.get("mode"),
             ),
             "commentary": _feature_card(
                 enabled=commentary_enabled,
@@ -342,12 +386,15 @@ def build_admin_status(
                 status=commentary_status,
                 busy=commentary_busy,
                 runtime=commentary_available,
+                lastSpokeAt=commentary_snap.get("lastSpokeAt"),
             ),
             "tape": _feature_card(
                 enabled=tape_enabled,
                 available=tape_available,
                 active=tape_active,
                 status=tape_status,
+                path=tape_snap.get("path"),
+                sessionKey=tape_snap.get("sessionKey"),
             ),
             "eventEngine": {
                 "v2Payload": bool(getattr(ee, "v2_payload", False)),
@@ -359,6 +406,8 @@ def build_admin_status(
             },
         },
     }
+    payload["health"] = evaluate_health(payload)
+    return payload
 
 
 def _activity_sort_key(row: dict[str, Any]) -> tuple[float, int, str]:
@@ -397,7 +446,7 @@ async def build_admin_activity(*, limit: int = 50) -> dict[str, Any]:
     except Exception:
         logger.debug("Admin activity: switcher event log failed", exc_info=True)
 
-    runtime = _overlay_runtime()
+    runtime = get_overlay_runtime()
     director = getattr(runtime, "commentary", None) if runtime is not None else None
     if director is not None and hasattr(director, "decisions"):
         try:
@@ -437,43 +486,12 @@ async def build_admin_activity(*, limit: int = 50) -> dict[str, Any]:
 
     try:
         bus = get_overlay_bus()
-        for envelope in list(bus.active_events or [])[:limit]:
-            name = (
-                envelope.get("name")
-                or envelope.get("eventType")
-                or envelope.get("type")
-                or "widget"
-            )
-            phase = envelope.get("phase") or envelope.get("state") or ""
-            message = f"Widget {name}" + (f" ({phase})" if phase else "")
-            raw_ts = envelope.get("at") or envelope.get("ts") or envelope.get("timestamp")
-            if raw_ts is None:
-                occurred = now_wall
-                mono_ms = int(now_mono * 1000)
-            else:
-                raw = float(raw_ts)
-                # Heuristic only for inbound envelopes: large values ≈ wall already.
-                if raw > 1_000_000_000:
-                    occurred = raw
-                    mono_ms = int(now_mono * 1000)
-                else:
-                    occurred = _mono_to_wall(raw, now_mono=now_mono, now_wall=now_wall)
-                    mono_ms = int(raw * 1000)
-            dedupe = f"overlay:{name}:{phase}"
-            items.append(
-                {
-                    "occurredAt": occurred,
-                    "monoMs": mono_ms,
-                    "dedupeKey": dedupe,
-                    "source": "overlay",
-                    "kind": str(name),
-                    "message": message,
-                    "ephemeral": True,
-                    "data": envelope if isinstance(envelope, dict) else {},
-                }
-            )
+        activity_log = getattr(bus, "activity_log", None)
+        if activity_log is not None and hasattr(activity_log, "latest"):
+            for row in activity_log.latest(limit):
+                items.append(dict(row))
     except Exception:
-        logger.debug("Admin activity: overlay bus failed", exc_info=True)
+        logger.debug("Admin activity: overlay lifecycle log failed", exc_info=True)
 
     items.sort(key=_activity_sort_key)
     return {"schemaVersion": ADMIN_SCHEMA_VERSION, "items": items[:limit]}
