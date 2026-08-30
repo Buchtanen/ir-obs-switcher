@@ -114,6 +114,23 @@ decision_log_size = 32
 
 `duck_input` is the OBS source to lower while speaking (e.g. `Zvuk plochy`). Empty `duck_input` skips ducking. `duck_ratio` is the fraction of the original volume (0.25 = 25%). `duck_fade_ms` (default 750) ramps volume down before the line and back after; `0` is an instant jump. Overlapping lines share one ducker: the pre-duck volume is saved once and kept until fade-in **finishes**. A new line during fade-in must not re-read OBS (that stacked `duck_ratio` into silence). Shutdown/`atexit` force-restores if a fade was still in flight.
 
+### Sector speak (M4)
+
+Opt-in absolute sector-time commentary (Practice/Quali HUD splits stay on `event_engine.practice` / `quali_projection`):
+
+```ini
+sector_speak = false
+sector_speak_max_per_lap = 1
+```
+
+| Gate | Behavior |
+| --- | --- |
+| `sector_speak=false` (default) | Director skips `SECTOR_SPLIT` / `SECTOR_BEST` (`sector_speak_disabled`) |
+| Notability | `SECTOR_BEST` always notable; `SECTOR_SPLIT` needs emitter `notable=true` (gain ≥ 0.05 s vs session best) |
+| Per-lap cap | At most `sector_speak_max_per_lap` spoken sector lines per lap (`0` = mute) |
+| Graph | One `sector_split` node; `{sector}` is `S1`/`S2`/… text — not separate S1/S2/S3 nodes |
+| Time | `{segment_time}` via M1 `slot_format` (`m:ss.fff`) |
+
 Migration: new optional keys keep defaults. Existing `config.ini` stays silent until `enabled=true`.
 
 **Audio path (stream PC):** SAPI → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing; code sink stays `sapi`/`espeak`/`null`. See product suite T0/T1 and P4 note.

@@ -691,6 +691,126 @@
         }
       }
     },
+    "sector_split": {
+      "family": "timing",
+      "event_types": [
+        "SECTOR_SPLIT",
+        "SECTOR_BEST"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 44,
+      "cooldown_s": 12,
+      "slots": [
+        {
+          "name": "sector",
+          "type": "label",
+          "example": "S1"
+        },
+        {
+          "name": "segment_time",
+          "type": "time",
+          "example": "0:28.500"
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "One node for the sector-split family (S1/S2/S3 via {sector} slot). Live speak gated by commentary.sector_speak + notability + per-lap cap. HUD SECTOR_SPLIT remains independent.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's {sector} in {segment_time}.",
+            "He splits {sector} at {segment_time}.",
+            "{sector} comes back at {segment_time}.",
+            "Through {sector} in {segment_time}.",
+            "The clocks show {sector} at {segment_time}.",
+            "He posts {segment_time} across {sector}.",
+            "A clean run of {sector} takes {segment_time}.",
+            "Stopwatch reads {segment_time} for {sector}.",
+            "He banks another {sector} mark at {segment_time}.",
+            "That passage returns {segment_time} in {sector}.",
+            "The board lists {sector} at {segment_time}.",
+            "He closes the {sector} window in {segment_time}."
+          ],
+          "calm": [
+            "A measured {sector} at {segment_time}.",
+            "He eases through {sector} in {segment_time}.",
+            "{sector} looks tidy at {segment_time}.",
+            "Calm split: {sector} lands in {segment_time}.",
+            "He takes {sector} without fuss at {segment_time}.",
+            "Steady work around {sector} yields {segment_time}.",
+            "A controlled look at {sector} costs {segment_time}.",
+            "He keeps it simple past {sector} at {segment_time}.",
+            "Quiet progress shows {sector} in {segment_time}.",
+            "That {sector} check settles at {segment_time}.",
+            "He marks {sector} calmly with {segment_time}.",
+            "Composed pace through {sector} brings {segment_time}."
+          ],
+          "focused": [
+            "Focused work through {sector} in {segment_time}.",
+            "He nails the {sector} cut at {segment_time}.",
+            "{sector} looks precise at {segment_time}.",
+            "Sharp timing: {sector} returns {segment_time}.",
+            "He attacks the {sector} phase in {segment_time}.",
+            "Clean execution around {sector} yields {segment_time}.",
+            "A crisp {sector} stamp of {segment_time}.",
+            "He stays on it past {sector} at {segment_time}.",
+            "Exact split work: {sector} in {segment_time}.",
+            "That {sector} reference locks at {segment_time}.",
+            "He delivers the {sector} number in {segment_time}.",
+            "Precision past {sector} brings {segment_time}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "To je {sector} za {segment_time}.",
+            "V {sector} zajíždí {segment_time}.",
+            "{sector} hlásí {segment_time}.",
+            "Projíždí {sector} v čase {segment_time}.",
+            "Stopky ukazují {sector} za {segment_time}.",
+            "V úseku {sector} má {segment_time}.",
+            "Čistý průjezd {sector} stojí {segment_time}.",
+            "Časomíra čte {segment_time} pro {sector}.",
+            "Zapisuje značku {sector} v čase {segment_time}.",
+            "Průjezd vrací {segment_time} v {sector}.",
+            "Tabule uvádí {sector} na {segment_time}.",
+            "Uzavírá okno {sector} za {segment_time}."
+          ],
+          "calm": [
+            "Klidný {sector} za {segment_time}.",
+            "Volně projíždí {sector} v čase {segment_time}.",
+            "{sector} je upravený za {segment_time}.",
+            "Klidný mezičas: {sector} končí na {segment_time}.",
+            "Bez spěchu bere {sector} za {segment_time}.",
+            "Stabilní práce kolem {sector} dává {segment_time}.",
+            "Kontrolovaný pohled na {sector} stojí {segment_time}.",
+            "Jednoduše míjí {sector} za {segment_time}.",
+            "Tichý postup ukazuje {sector} za {segment_time}.",
+            "Kontrola {sector} sedí na {segment_time}.",
+            "Klidně značí {sector} časem {segment_time}.",
+            "Vyrovnané tempo skrz {sector} přináší {segment_time}."
+          ],
+          "focused": [
+            "Soustředěně skrz {sector} za {segment_time}.",
+            "Přesně bere řez {sector} za {segment_time}.",
+            "{sector} vypadá přesně za {segment_time}.",
+            "Ostré stopky: {sector} vrací {segment_time}.",
+            "Útočí na fázi {sector} v čase {segment_time}.",
+            "Čisté provedení kolem {sector} dává {segment_time}.",
+            "Úhledná pečeť {sector} za {segment_time}.",
+            "Drží tempo kolem {sector} za {segment_time}.",
+            "Přesná práce: {sector} za {segment_time}.",
+            "Reference {sector} sedí na {segment_time}.",
+            "Dodává číslo {sector} za {segment_time}.",
+            "Precizní průjezd kolem {sector} přináší {segment_time}."
+          ]
+        }
+      }
+    },
     "target_locked": {
       "family": "timing",
       "event_types": [

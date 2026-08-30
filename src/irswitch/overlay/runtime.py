@@ -117,10 +117,17 @@ class OverlayRuntime:
     def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
         """Attach T2 practice/quali emitters when feature flags are enabled."""
         if overlay.event_engine.practice or overlay.event_engine.quali_projection:
-            from irswitch.events.sector_split import SectorSplitEmitter
+            from irswitch.events.sector_split import SectorBestEmitter, SectorSplitEmitter
 
             self.engine.register(
                 SectorSplitEmitter(
+                    self._timing_store,
+                    overlay.events,
+                    overlay.events.priorities,
+                )
+            )
+            self.engine.register(
+                SectorBestEmitter(
                     self._timing_store,
                     overlay.events,
                     overlay.events.priorities,
