@@ -231,6 +231,16 @@ class CommentaryDirector:
             return None
         deferred = self._scheduler.pop_ready(now)
         if deferred is not None:
+            # Speak only the best deferred line; drop the rest (never drain queue).
+            for dropped in self._scheduler.clear():
+                self._record(
+                    action="skipped",
+                    reason="deferred_dropped",
+                    now=now,
+                    event_type=dropped.utterance.event_type,
+                    node_id=dropped.utterance.node_id,
+                    text=dropped.utterance.text,
+                )
             return self._speak_prepared(
                 deferred.utterance,
                 now=now,
@@ -263,9 +273,7 @@ class CommentaryDirector:
             return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
         return None
 
-    def _utterance_from_formatter(
-        self, envelope: EventEnvelope
-    ) -> CommentaryUtterance | None:
+    def _utterance_from_formatter(self, envelope: EventEnvelope) -> CommentaryUtterance | None:
         """Build a one-off utterance when the graph has no matching node."""
         formatter = self.filler_formatter
         if formatter is None:
@@ -379,9 +387,7 @@ class CommentaryDirector:
         for envelope in ranked:
             utterance = self._consider(envelope, emotion, now, commit=True)
             if utterance is not None:
-                return self._speak_prepared(
-                    utterance, now=now, reason="spoken", past=False
-                )
+                return self._speak_prepared(utterance, now=now, reason="spoken", past=False)
         return None
 
     def _hard_interrupt(self, now: float) -> None:
@@ -526,7 +532,7 @@ class CommentaryDirector:
                 emotion=resolved,
             )
             return None
-        bindings = slot_bindings(envelope, resolved)
+        bindings = slot_bindings(envelope, resolved, language=self.language)
         spoken = choose_filled_line(texts, bindings, self.rng, history=self._recent)
         if spoken is None:
             self._record(
@@ -701,23 +707,37 @@ def resolve_emotion(bio: BioState | None, use_hr: bool) -> str:
     return "unknown"
 
 
-def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
+def slot_bindings(
+    envelope: EventEnvelope,
+    emotion: str,
+    *,
+    language: str = "en",
+) -> dict[str, object]:
     """Bind envelope metrics for TTS fill.
 
     Timing slots (``lap_time``, ``gap``, ``delta``, …) are formatted for speech
     via ``format_spoken_bindings``; sentinels become ``None`` so unbound lines
     are skipped. Wire/envelope metrics stay numeric upstream.
+
+    Observer/narrative extras (``mode``, ``kind``, ``leader_name``) are localized
+    when *language* starts with ``cs``.
     """
     metrics = envelope.metrics
     subject = envelope.subject
     target = envelope.target
     sector = _spoken_sector_label(_first(metrics, "sector", "timingPointId"))
+    cs = language.lower().startswith("cs")
+    if cs:
+        mode = _first(metrics, "modeLabelCs", "modeLabel", "mode")
+    else:
+        mode = _first(metrics, "modeLabel", "mode")
     raw: dict[str, object] = {
         "position": _first(metrics, "newPosition", "position", "classPosition")
         or subject.class_position,
         "old_position": _first(metrics, "oldPosition"),
         "target_name": (target.display_name if target is not None else None)
-        or _first(metrics, "targetName"),
+        or _first(metrics, "targetName", "target_name"),
+        "leader_name": _first(metrics, "leaderName", "leader", "leader_name"),
         "lap": _first(metrics, "lap"),
         "lap_time": _first(metrics, "lapTime"),
         "delta": _first(metrics, "delta", "deltaToBest"),
@@ -742,8 +762,40 @@ def slot_bindings(envelope: EventEnvelope, emotion: str) -> dict[str, object]:
         "track_temp": _first(metrics, "track_temp", "trackTemp"),
         "wind_speed": _first(metrics, "wind_speed", "windSpeed"),
         "precipitation": _first(metrics, "precipitation"),
+        # P3/P4 observer narrative + aftermath (graph nodes).
+        "mode": mode,
+        "kind": _spoken_kind(_first(metrics, "kind"), cs=cs),
+        "fact": _first(metrics, "fact"),
     }
     return format_spoken_bindings(raw)
+
+
+def _spoken_kind(value: object, *, cs: bool) -> str | None:
+    """Map aftermath/narrative kind codes to short spoken phrases."""
+    if value is None or value == "":
+        return None
+    key = str(value).strip().lower()
+    if cs:
+        mapping = {
+            "stalled": "stojí",
+            "rolling": "stále v pohybu",
+            "back_under_way": "znovu jede",
+            "session_wrap": "konec",
+            "session_preview": "další",
+            "weather_change": "počasí",
+            "field_fact": "pole",
+        }
+    else:
+        mapping = {
+            "stalled": "stalled",
+            "rolling": "still rolling",
+            "back_under_way": "back under way",
+            "session_wrap": "wrap",
+            "session_preview": "preview",
+            "weather_change": "weather",
+            "field_fact": "field",
+        }
+    return mapping.get(key, str(value).strip())
 
 
 def _sector_envelope_notable(envelope: EventEnvelope) -> bool:

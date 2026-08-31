@@ -30,10 +30,42 @@ def test_park_and_pop_by_priority() -> None:
         settings=CommentarySchedulerSettings(defer_enabled=True, max_deferred=8)
     )
     assert sched.park(_utt("HUNTING"), priority=20, now=1.0)
-    assert sched.park(_utt("OVERTAKE"), priority=80, now=1.1)
+    # Lower-than-best is dropped; higher replaces the parked line.
+    assert sched.park(_utt("OVERTAKE"), priority=80, now=1.1) is True
+    assert len(sched) == 1
+    assert sched.park(_utt("HUNTING"), priority=20, now=1.2) is False
+    assert len(sched) == 1
     best = sched.pop_ready(2.0)
     assert best is not None
     assert best.utterance.event_type == "OVERTAKE"
+    assert len(sched) == 0
+
+
+def test_clear_drops_remainder_without_sequential_drain() -> None:
+    sched = SpeechScheduler(
+        settings=CommentarySchedulerSettings(defer_enabled=True, max_deferred=8)
+    )
+    # Force two items via internal heap (park itself keeps ≤1).
+    assert sched.park(_utt("OVERTAKE"), priority=80, now=1.0)
+    # Simulate a stale second entry still on the heap after pop.
+    import heapq
+
+    from irswitch.commentary.scheduler import DeferredSpeech, _HeapItem
+
+    leftover = _utt("HUNTING")
+    heapq.heappush(
+        sched._heap,
+        _HeapItem(
+            sort_key=(-20, 99.0, 9),
+            item=DeferredSpeech(utterance=leftover, priority=20, expires_at=99.0, parked_at=1.0),
+        ),
+    )
+    best = sched.pop_ready(2.0)
+    assert best is not None
+    dropped = sched.clear()
+    assert len(dropped) == 1
+    assert dropped[0].utterance.event_type == "HUNTING"
+    assert sched.pop_ready(3.0) is None
 
 
 def test_ttl_expiry() -> None:

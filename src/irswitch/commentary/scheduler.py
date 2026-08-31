@@ -30,7 +30,11 @@ class DeferredSpeech:
 
 @dataclass
 class SpeechScheduler:
-    """Park utterances while TTS is busy; flush by priority when idle."""
+    """Park at most one best utterance while TTS is busy; flush once when idle.
+
+    Lower-priority arrivals are dropped. After a deferred line is spoken, any
+    remaining parked items are cleared — the queue is never drained sequentially.
+    """
 
     settings: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
     _heap: list[_HeapItem] = field(default_factory=list)
@@ -58,27 +62,36 @@ class SpeechScheduler:
         return True
 
     def park(self, utterance: CommentaryUtterance, *, priority: int, now: float) -> bool:
-        """Queue utterance. Returns False if dropped (full / disabled)."""
+        """Queue best utterance only. Returns False if dropped (lower prio / disabled)."""
         if not self.settings.defer_enabled:
             return False
         self.expire(now)
-        if len(self._heap) >= max(1, int(self.settings.max_deferred)):
-            if not self._evict_lowest(priority):
+        incoming = int(priority)
+        if self._heap:
+            best_prio = max(entry.item.priority for entry in self._heap)
+            if incoming < best_prio:
                 return False
+            # Replace parked lower-or-equal priority — never grow a speak-all queue.
+            self._heap.clear()
         expires = now + self.ttl_for(utterance.event_type)
         self._seq += 1
         heapq.heappush(
             self._heap,
             _HeapItem(
-                sort_key=(-int(priority), float(expires), self._seq),
+                sort_key=(-incoming, float(expires), self._seq),
                 item=DeferredSpeech(
                     utterance=utterance,
-                    priority=int(priority),
+                    priority=incoming,
                     expires_at=expires,
                     parked_at=now,
                 ),
             ),
         )
+        # Cap is a safety net; policy keeps ≤1 best item.
+        max_n = max(1, int(self.settings.max_deferred))
+        while len(self._heap) > max_n:
+            if not self._evict_lowest(incoming):
+                break
         return True
 
     def expire(self, now: float) -> list[DeferredSpeech]:
@@ -102,6 +115,12 @@ class SpeechScheduler:
             return None
         entry = heapq.heappop(self._heap)
         return entry.item
+
+    def clear(self) -> list[DeferredSpeech]:
+        """Drop all parked items (after one deferred speak — no sequential drain)."""
+        dropped = [entry.item for entry in self._heap]
+        self._heap.clear()
+        return dropped
 
     def silence_due(self, *, last_spoke_at: float | None, now: float) -> bool:
         if last_spoke_at is None:

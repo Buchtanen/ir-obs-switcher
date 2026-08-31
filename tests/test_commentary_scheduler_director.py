@@ -53,12 +53,12 @@ def test_busy_defers_instead_of_drop() -> None:
     assert first is not None
     assert director.observe([_overtake(now_ms=10100)], None, 10.1) is None
     assert director.decisions(1)[-1]["reason"] == "deferred"
-    # After busy window, tick/observe flushes deferred.
-    after = 10.0 + first.estimated_seconds + 0.05
-    # Still inside global cooldown — should not flush yet.
-    assert director.tick(after) is None
-    after_cd = 10.0 + 4.0 + 0.05
-    spoken = director.tick(after_cd)
+    # Still busy or still in global cooldown — no flush yet.
+    mid = min(director._busy_until, director._global_ready_at) - 0.01
+    if mid > 10.0:
+        assert director.tick(mid) is None
+    flush_at = max(director._busy_until, director._global_ready_at) + 0.05
+    spoken = director.tick(flush_at)
     assert spoken is not None
     assert director.decisions(1)[-1]["reason"] == "spoken_deferred"
     assert spoken.past_framing is True
@@ -79,3 +79,38 @@ def test_hard_interrupt_clears_busy_for_incident() -> None:
     assert spoken.event_type == "INCIDENT"
     reasons = [d["reason"] for d in director.decisions(5)]
     assert "interrupted" in reasons
+
+
+def test_deferred_flush_speaks_one_not_whole_queue() -> None:
+    director = _director(defer=True)
+    first = director.observe([_overtake()], None, 10.0)
+    assert first is not None
+    # Two busy arrivals: lower then higher — only best stays parked.
+    assert (
+        director.observe(
+            [
+                make_envelope(
+                    event_type="HUNTING",
+                    phase="ENTER",
+                    mode="RACE",
+                    priority=40,
+                    monotonic_ms=10100,
+                    metrics={},
+                )
+            ],
+            None,
+            10.1,
+        )
+        is None
+    )
+    assert director.decisions(1)[-1]["reason"] in {"deferred", "deferred_dropped"}
+    assert director.observe([_incident(now_ms=10200)], None, 10.2) is None
+    assert director.decisions(1)[-1]["reason"] == "deferred"
+    flush_at = max(director._busy_until, director._global_ready_at) + 0.05
+    spoken = director.tick(flush_at)
+    assert spoken is not None
+    assert spoken.event_type == "INCIDENT"
+    assert director.decisions(1)[-1]["reason"] == "spoken_deferred"
+    # No second deferred flush — queue must be empty.
+    assert director.tick(flush_at + 5.0) is None
+    assert len(director._scheduler) == 0

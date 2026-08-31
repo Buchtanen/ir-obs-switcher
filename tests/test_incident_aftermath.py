@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.tts import NullTtsSink
+from irswitch.iracing.trk_loc import OFF_TRACK, ON_TRACK
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.settings import CommentarySettings
 from irswitch.race.aftermath import IncidentAftermathFsm
 from irswitch.race.observer import RaceObserver
-from irswitch.iracing.trk_loc import OFF_TRACK, ON_TRACK
 
 
 def _state(
@@ -121,7 +121,10 @@ def test_director_speaks_aftermath_via_formatter() -> None:
     spoken = director.observe([env], None, 10.0)
     assert spoken is not None
     assert spoken.event_type == "INCIDENT_AFTERMATH"
-    assert "rolling" in spoken.text.lower() or "Incident" in spoken.text
+    # Prefer authored graph node; formatter remains fallback when no node matches.
+    assert spoken.node_id in {"incident_aftermath", "fmt:incident_aftermath"}
+    assert spoken.text.strip().endswith((".", "!", "?"))
+    assert "{" not in spoken.text
 
 
 def test_reset_clears_aftermath_phase() -> None:

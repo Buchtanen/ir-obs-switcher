@@ -203,12 +203,23 @@ Lane/released stay HUD-only. **Issue #177.**
 
 ---
 
+## 7.1 Follow-up (post joint-test) — speech queue / busy truth
+
+**Doc:** [commentary_speech_queue_followup.md](commentary_speech_queue_followup.md) · **Issue [#180](https://github.com/Buchtanen/ir-obs-switcher/issues/180)**
+
+Diagnóza: SpeechScheduler drží ≤1 skeleton, ale `ProcessTtsSink` má **druhou** frontu a director busy je **odhad** → hrozí backlog pod schedulerem.  
+**Preferovaný další krok:** tenký slice (TTS depth ≤1 + observed busy), ne hned epic „Speech consumer“.  
+Full Gate→Queue→Consumer→LLM→TTS jen pokud thin slice nestačí.
+
+---
+
 ## 8. Docs impact
 
 | Doc | Akce |
 | --- | --- |
 | `docs/scenario_coverage_matrix.md` | inventory |
 | `docs/observers_decoupling_plan.md` | tento plán + locked answers |
+| `docs/commentary_speech_queue_followup.md` | post–P1 follow-up: TTS backpressure / busy truth (thin slice first) |
 | `CONFIG.md` / example.ini | až P1 (`[commentary.scheduler]`) |
 | `COMMENTARY_ENGINE.md` / `API.md` | až implementace |
 
