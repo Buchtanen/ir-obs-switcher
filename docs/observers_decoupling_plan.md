@@ -15,20 +15,20 @@
 | 2 | Hard interrupt TTS | **Ano**, INI flag `hard_interrupt` (default **false**, na stream PC zapnout po poslechu). |
 | 3 | Filler při max silence 33 s | Mix: (a) **počasí** ze iRSDK v čase (změna temp/vítr/…), (b) **vata z race facts** (leader, pozice hero, …). Strom rozhodne kdy co. |
 | 4 | Past-tense / „už to bylo“ | **Jen LLM framing** (žádné samostatné past-tense graph varianty jako primární řešení). |
-| 5 | Near field N | Viz §0.1 — default návrh **1 ahead + 1 behind** (jako dnes), volitelně rozšířit na 2+2 až bude RaceObserver. |
+| 5 | Near field N | **2 ahead + 2 behind** (produktové rozhodnutí). Battle emitter může dál řešit 1+1 pro HUD; RaceObserver drží 2+2 pro story / filler / stream memory. |
 
 ### 0.1 Co znamenalo „near field N“ (vysvětlení)
 
-Dnes battle/rival bere prakticky **jedno auto vpředu** a **jedno vzadu** (okamžití sousedé hero).
+Dnes battle/rival bere prakticky **jedno auto vpředu** a **jedno vzadu** (okamžití sousedé hero) pro HUD.
 
 „N“ = kolik sousedů si RaceObserver **pamatuje a pojmenovává** pro příběh:
 
 | N | Příklad |
 | --- | --- |
-| **1+1** (default) | „Honí Petra“ / „za ním je Karel“ — stejné jako teď |
-| **2+2** | „mezi Petrem a Honzou, za ním Karel a David“ — hustší pole, víc kontextu pro filler / stream memory |
+| **1+1** | „Honí Petra“ / „za ním je Karel“ — dnešní battle HUD |
+| **2+2** (locked) | „mezi Petrem a Honzou, za ním Karel a David“ — hustší pole pro filler / stream memory |
 
-Neznamená to sledovat celý grid. Jen okolí hero. **Default: 1+1**; 2+2 až když bude potřeba v P2/P4.
+Neznamená to sledovat celý grid. Jen okolí hero. **Locked: 2+2** pro RaceObserver.
 
 ---
 
@@ -94,7 +94,7 @@ Neznamená to sledovat celý grid. Jen okolí hero. **Default: 1+1**; 2+2 až kd
 
 ### 3.1 Scope
 
-- **Session:** pozice, near field (default 1+1), battle/pit/incident arcs.  
+- **Session:** pozice, near field (**2+2**), battle/pit/incident arcs.  
 - **Stream:** agregáty Practice→Quali→Race (bounded).  
 - **Weather watch:** iRSDK weather fields over time → event při **významné změně** (temp / wind / skies / precip thresholds), ne každý tick.
 
@@ -174,7 +174,7 @@ Peer `EventConsumer`s; behavior-preserving; tape parity.
 Defer + TTL + decision codes; `hard_interrupt` ini; silence 33 s s weather/field fact; LLM past framing; flags default off.
 
 ### P2 — RaceObserver MVP
-`StoryContext` 1+1; weather watch; session reset; slot bindings.
+`StoryContext` **2+2** near field; weather watch; session reset; slot bindings.
 
 ### P3 — Incident aftermath FSM
 Derived envelopes; commentary nodes; interrupt policy dle ini.
