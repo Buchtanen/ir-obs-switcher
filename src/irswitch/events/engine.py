@@ -36,7 +36,7 @@ class EventEngine:
         else:
             position_emitter = PositionEmitter(overlay.battle, pri)
         self.position = position_emitter
-        self.incident = IncidentEmitter(overlay.events, pri)
+        self.incident = IncidentEmitter(overlay.events, pri, overlay.race_observer)
         self.pit: PitEmitter | None
         self.session = SessionEmitter(overlay.events, pri)
         self._emitters: list[Any] = [

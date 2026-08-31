@@ -18,6 +18,8 @@ def _state(
     dist: float = 0.50,
     tow: float | None = None,
     connected: bool = True,
+    speed_mps: float | None = None,
+    overlay_mode: str = "RACE",
 ) -> RaceState:
     return RaceState(
         connected=connected,
@@ -25,10 +27,11 @@ def _state(
         player_track_surface=surface,
         player_lap_dist_pct=dist,
         player_tow_time=tow,
-        overlay_mode="RACE",
+        overlay_mode=overlay_mode,
         subsession_id="sub",
         session_num=1,
         class_position=5,
+        speed_mps=speed_mps,
     )
 
 
@@ -135,3 +138,95 @@ def test_reset_clears_aftermath_phase() -> None:
     fsm.reset()
     assert fsm._phase == "idle"
     assert fsm.take_pending() == []
+
+
+def test_on_track_speed_zero_stalled_then_back_under_way() -> None:
+    fsm = IncidentAftermathFsm()
+    fsm.tick(_state(incidents=1, dist=0.40, speed_mps=0.0), 1.0)
+    assert fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 1.1) == []
+    assert fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 1.8) == []
+    stalled = fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 2.4)
+    assert len(stalled) == 1
+    assert stalled[0].metrics["kind"] == "stalled"
+    assert fsm._phase == "stalled"
+
+    fsm.tick(_state(incidents=3, dist=0.40, speed_mps=15.0), 2.5)
+    recovered = fsm.tick(_state(incidents=3, dist=0.40, speed_mps=15.0), 3.2)
+    assert len(recovered) == 1
+    assert recovered[0].event_type == "BACK_UNDER_WAY"
+    assert fsm._phase == "idle"
+
+
+def test_off_track_with_speed_stays_stalled_then_one_back_under_way() -> None:
+    fsm = IncidentAftermathFsm()
+    fsm.tick(_state(incidents=1, dist=0.40, speed_mps=15.0), 1.0)
+    out = fsm.tick(_state(incidents=3, surface=OFF_TRACK, dist=0.40, speed_mps=15.0), 1.1)
+    assert len(out) == 1
+    assert out[0].metrics["kind"] == "stalled"
+    assert fsm._phase == "stalled"
+    assert fsm.tick(_state(incidents=3, surface=OFF_TRACK, dist=0.41, speed_mps=15.0), 2.0) == []
+
+    fsm.tick(_state(incidents=3, surface=ON_TRACK, dist=0.40, speed_mps=15.0), 2.5)
+    recovered = fsm.tick(_state(incidents=3, surface=ON_TRACK, dist=0.40, speed_mps=15.0), 3.2)
+    assert len(recovered) == 1
+    assert recovered[0].event_type == "BACK_UNDER_WAY"
+
+
+def test_director_same_tick_speaks_incident_not_aftermath() -> None:
+    observer = RaceObserver()
+    director = CommentaryDirector.from_defaults(
+        settings=CommentarySettings(enabled=True, cooldown_s=0.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    director.filler_formatter = lambda env: observer.format_filler_text(env, locale="en")
+    from irswitch.events.envelope import make_envelope
+
+    incident = make_envelope(
+        event_type="INCIDENT",
+        phase="RESULT",
+        mode="RACE",
+        priority=90,
+        monotonic_ms=10000,
+        metrics={"value": 2, "branch": "unknown"},
+    )
+    aftermath = make_envelope(
+        event_type="INCIDENT_AFTERMATH",
+        phase="RESULT",
+        mode="RACE",
+        priority=72,
+        monotonic_ms=10000,
+        metrics={"kind": "stalled", "value": 2},
+    )
+    spoken = director.observe([aftermath, incident], None, 10.0)
+    assert spoken is not None
+    assert spoken.event_type == "INCIDENT"
+    second = director.observe([aftermath], None, 10.0)
+    assert second is None
+
+
+def test_practice_recovery_keeps_back_under_way_name() -> None:
+    fsm = IncidentAftermathFsm()
+    fsm.tick(_state(incidents=1, overlay_mode="PRACTICE"), 1.0)
+    fsm.tick(_state(incidents=3, surface=OFF_TRACK, overlay_mode="PRACTICE"), 1.1)
+    fsm.tick(_state(incidents=3, surface=ON_TRACK, dist=0.40, overlay_mode="PRACTICE"), 2.5)
+    recovered = fsm.tick(
+        _state(incidents=3, surface=ON_TRACK, dist=0.403, overlay_mode="PRACTICE"),
+        3.4,
+    )
+    assert recovered[0].event_type == "BACK_UNDER_WAY"
+    assert recovered[0].mode == "PRACTICE"
+
+
+def test_delta_one_is_aftermath_only() -> None:
+    from irswitch.events.incident import IncidentEmitter
+    from irswitch.overlay.settings import EventPrioritySettings, EventSettings
+
+    emitter = IncidentEmitter(EventSettings(incident_min_delta=2), EventPrioritySettings())
+    emitter.tick(_state(incidents=2, surface=OFF_TRACK), 0.0)
+    assert emitter.tick(_state(incidents=3, surface=OFF_TRACK), 1.0) == []
+
+    fsm = IncidentAftermathFsm()
+    fsm.tick(_state(incidents=2, surface=OFF_TRACK), 0.0)
+    out = fsm.tick(_state(incidents=3, surface=OFF_TRACK), 1.0)
+    assert len(out) == 1
+    assert out[0].event_type == "INCIDENT_AFTERMATH"

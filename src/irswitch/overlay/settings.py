@@ -194,6 +194,8 @@ class RaceObserverSettings:
     """RaceObserver policy. N3/N5 add keys here — do not invent a second type."""
 
     leader_pace_cooldown_s: float = 300.0
+    # When true, INCIDENT metrics.branch is off_track | unknown. Default off until trusted.
+    incident_classify: bool = False
 
 
 @dataclass(frozen=True)

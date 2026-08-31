@@ -60,6 +60,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "commentary.gap_hunt_tts_in_practice",
         "commentary.gap_hunt_tts_in_qualifying",
         "race_observer.leader_pace_cooldown_s",
+        "race_observer.incident_classify",
         "commentary.llm_polish",
         "commentary.llm_base_url",
         "commentary.llm_model",

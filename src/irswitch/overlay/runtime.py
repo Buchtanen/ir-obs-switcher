@@ -86,6 +86,7 @@ class OverlayRuntime:
         self._origin = time.monotonic()
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
+        self._pending_derived_speech: list[EventEnvelope] = []
         self._tape = OverlaySessionTape()
         self._tape_decision_cursor = 0
         self._commentary_tape_cursor = 0
@@ -126,6 +127,7 @@ class OverlayRuntime:
         self.engine = EventEngine(overlay)
         self._register_timing_emitters(overlay)
         self._register_t4_emitters(overlay)
+        self._pending_derived_speech = []
         self.bus.set_active_events([])
         self.bus.set_active_stories_v4([])
         self._tape_decision_cursor = 0
@@ -268,7 +270,7 @@ class OverlayRuntime:
                 self.commentary.note_hero_names(names)
             derived = self.race_observer.take_derived_envelopes()
             if derived:
-                self._dispatch_speech_envelopes(derived, now)
+                self._pending_derived_speech.extend(derived)
         except Exception:
             logger.warning("RaceObserver observe failed", exc_info=True)
 
@@ -291,6 +293,13 @@ class OverlayRuntime:
     def _dispatch_speech_envelopes(self, envelopes: list[EventEnvelope], now: float) -> None:
         """Fan-out speech envelopes to peer consumers (not a HUD→commentary chain)."""
         self._event_fanout.emit(envelopes, now=now)
+
+    def _flush_pending_derived_speech(self, now: float) -> None:
+        """Speak derived envelopes after the engine tick so INCIDENT outranks aftermath."""
+        pending = self._pending_derived_speech
+        self._pending_derived_speech = []
+        if pending:
+            self._dispatch_speech_envelopes(pending, now)
 
     def notify_obs_stream_started(self, now: float) -> None:
         """OBS streaming rising edge → commentary-only STREAM_START. Fail-soft."""
@@ -619,12 +628,15 @@ class OverlayRuntime:
         self._tick_commentary_scheduler(now)
         self._drain_commentary_tape(now)
         if self._idle_when_disconnected(state):
+            self._pending_derived_speech.clear()
             return
         if self.session.in_warmup(now):
             # Suppress trend/semantic emitters during reconnect warm-up; still publish state.
+            self._pending_derived_speech.clear()
             self.bus.set_active_events(self.manager.active_events())
             return
         await self._emit_from_race(state, now)
+        self._flush_pending_derived_speech(now)
 
     async def _read_telemetry(self) -> TelemetrySnapshot:
         read_fn = getattr(self._reader, "read_telemetry", None)
@@ -645,6 +657,8 @@ class OverlayRuntime:
         return TelemetrySnapshot.disconnected(time.monotonic())
 
     async def _emit_from_race(self, state: RaceState, now: float) -> None:
+        overlay = self._overlay_settings()
+        self.engine.incident.apply_settings(overlay.race_observer)
         try:
             candidates = self.engine.tick(state, now, self.bus.bio)
         except Exception:

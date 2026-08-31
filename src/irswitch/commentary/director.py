@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 _SPEAK_PHASES = frozenset({"ENTER", "RESULT", "EXIT"})
 _SECTOR_SPEAK_EVENTS = frozenset({"SECTOR_SPLIT", "SECTOR_BEST"})
 _GAP_HUNT_EVENTS = frozenset({"HUNTING", "HUNTED"})
+_INCIDENT_PAIR_EVENTS = frozenset({"INCIDENT", "INCIDENT_AFTERMATH"})
 _SESSION_BRIEF_EVENTS = frozenset(
     {
         "SESSION_INTRO_PRACTICE",
@@ -384,6 +385,7 @@ class CommentaryDirector:
             key=lambda env: env.priority,
             reverse=True,
         )
+        ranked = _prefer_incident_over_aftermath(ranked)
         if envelopes and not ranked:
             self._record(
                 action="skipped",
@@ -562,6 +564,9 @@ class CommentaryDirector:
         opener_gate = self._opener_gate(envelope, now)
         if opener_gate is not None:
             return None
+        pair_gate = self._incident_pair_gate(envelope, now)
+        if pair_gate is not None:
+            return None
         node = self._pick_node(envelope, now)
         if node is None:
             synthetic = self._utterance_from_formatter(envelope)
@@ -731,6 +736,26 @@ class CommentaryDirector:
             return "session_briefs_disabled"
         return None
 
+    def _incident_pair_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        """At most one of INCIDENT / INCIDENT_AFTERMATH per tick. Prefer INCIDENT."""
+        if envelope.event_type not in _INCIDENT_PAIR_EVENTS:
+            return None
+        last = self._last
+        last_type = self._current_event_type
+        if last is None or last_type not in _INCIDENT_PAIR_EVENTS:
+            return None
+        if last.at != now:
+            return None
+        if last_type == envelope.event_type:
+            return None
+        self._record(
+            action="skipped",
+            reason="incident_pair",
+            now=now,
+            event_type=envelope.event_type,
+        )
+        return "incident_pair"
+
     def _opener_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         if envelope.event_type == STREAM_START:
             self.opener.note(STREAM_START, now)
@@ -788,6 +813,14 @@ class CommentaryDirector:
                 continue
             return node
         return None
+
+
+def _prefer_incident_over_aftermath(ranked: list[EventEnvelope]) -> list[EventEnvelope]:
+    """Same-tick list: drop INCIDENT_AFTERMATH when INCIDENT is also ranked."""
+    types = {env.event_type for env in ranked}
+    if "INCIDENT" in types and "INCIDENT_AFTERMATH" in types:
+        return [env for env in ranked if env.event_type != "INCIDENT_AFTERMATH"]
+    return ranked
 
 
 def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: float) -> bool:
