@@ -70,6 +70,9 @@ def test_feature_flags_default_off_and_language_en(tmp_path: Path) -> None:
     ) is False
     assert cfg.overlay.commentary.enabled is False
     assert cfg.overlay.commentary.use_hr_emotion is True
+    assert cfg.overlay.commentary.gap_hunt_tts_in_practice is False
+    assert cfg.overlay.commentary.gap_hunt_tts_in_qualifying is False
+    assert cfg.overlay.race_observer.leader_pace_cooldown_s == 300.0
     values = overlay_values(cfg.overlay)
     flag_keys = [k for k in values if k.startswith("event_engine.") or k.startswith("overlay.v4_")]
     assert len(flag_keys) == 8
@@ -112,6 +115,9 @@ audio_device = CABLE Input
 duck_input = Zvuk plochy
 duck_ratio = 0.25
 duck_fade_ms = 400
+gap_hunt_tts_in_practice = true
+[race_observer]
+leader_pace_cooldown_s = 120
 """)
     cfg = AppConfig.from_file(path)
     assert cfg.overlay.commentary.enabled is True
@@ -124,6 +130,8 @@ duck_fade_ms = 400
     assert cfg.overlay.commentary.duck_input == "Zvuk plochy"
     assert cfg.overlay.commentary.duck_ratio == 0.25
     assert cfg.overlay.commentary.duck_fade_ms == 400
+    assert cfg.overlay.commentary.gap_hunt_tts_in_practice is True
+    assert cfg.overlay.race_observer.leader_pace_cooldown_s == 120.0
     values = overlay_values(cfg.overlay)
     assert values["commentary.enabled"] is True
     assert values["commentary.audio_device"] == "CABLE Input"

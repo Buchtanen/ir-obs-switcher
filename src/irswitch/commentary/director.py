@@ -14,7 +14,13 @@ from irswitch.commentary.anti_repeat import (
     RecentUtteranceHistory,
     prefer_fresh_candidates,
 )
-from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
+from irswitch.commentary.graph import (
+    GraphEdge,
+    GraphNode,
+    SequenceGraph,
+    load_sequence_graph,
+    normalize_graph_mode,
+)
 from irswitch.commentary.opener import OPENER_EVENTS, STREAM_START, OpenerMutex
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
@@ -35,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 _SPEAK_PHASES = frozenset({"ENTER", "RESULT", "EXIT"})
 _SECTOR_SPEAK_EVENTS = frozenset({"SECTOR_SPLIT", "SECTOR_BEST"})
+_GAP_HUNT_EVENTS = frozenset({"HUNTING", "HUNTED"})
 _SESSION_BRIEF_EVENTS = frozenset(
     {
         "SESSION_INTRO_PRACTICE",
@@ -546,6 +553,9 @@ class CommentaryDirector:
         sector_gate = self._sector_speak_gate(envelope, now)
         if sector_gate is not None:
             return None
+        hunt_gate = self._gap_hunt_tts_gate(envelope, now)
+        if hunt_gate is not None:
+            return None
         briefs_gate = self._session_briefs_gate(envelope, now)
         if briefs_gate is not None:
             return None
@@ -686,6 +696,26 @@ class CommentaryDirector:
             )
             return "sector_lap_cap"
         return None
+
+    def _gap_hunt_tts_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        """Mute gap-hunt TTS in P/Q unless the commentary flags are on. HUD may still hunt."""
+        if envelope.event_type not in _GAP_HUNT_EVENTS:
+            return None
+        mode = normalize_graph_mode(envelope.mode)
+        allowed = True
+        if mode == "practice":
+            allowed = bool(getattr(self.settings, "gap_hunt_tts_in_practice", False))
+        elif mode == "qualify":
+            allowed = bool(getattr(self.settings, "gap_hunt_tts_in_qualifying", False))
+        if allowed:
+            return None
+        self._record(
+            action="skipped",
+            reason="gap_hunt_tts_disabled",
+            now=now,
+            event_type=envelope.event_type,
+        )
+        return "gap_hunt_tts_disabled"
 
     def _session_briefs_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         """Return a skip reason when session briefs stay silent; else None."""

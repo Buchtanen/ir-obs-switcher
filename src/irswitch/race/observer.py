@@ -12,6 +12,7 @@ from irswitch.iracing.drivers import speakable_name_mix_for_car
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
+from irswitch.overlay.settings import RaceObserverSettings
 from irswitch.race.aftermath import IncidentAftermathFsm
 from irswitch.race.narrative import StreamNarrativeFsm
 from irswitch.race.opponents import (
@@ -42,6 +43,7 @@ class RaceObserver:
 
     ahead_n: int = 2
     behind_n: int = 2
+    settings: RaceObserverSettings = field(default_factory=RaceObserverSettings)
     stream: StreamMemory = field(default_factory=StreamMemory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
@@ -52,6 +54,10 @@ class RaceObserver:
     _last_filler_kind: str | None = None
     _filler_cooldown_until: float = 0.0
     _after_session: bool = False
+    _leader_fact_until: float = 0.0
+
+    def apply_settings(self, settings: RaceObserverSettings) -> None:
+        self.settings = settings
 
     def reset_session(self) -> None:
         self._session_key = None
@@ -61,6 +67,7 @@ class RaceObserver:
         self._last_filler_kind = None
         self._filler_cooldown_until = 0.0
         self._after_session = False
+        self._leader_fact_until = 0.0
         self.aftermath.reset()
         self.narrative.reset_session()
 
@@ -216,18 +223,22 @@ class RaceObserver:
         start = 0
         if self._last_filler_kind in kind_cycle:
             start = (kind_cycle.index(self._last_filler_kind) + 1) % len(kind_cycle)
+        leader_cooldown = max(0.0, float(self.settings.leader_pace_cooldown_s))
+        text_key: str | None = None
         for offset in range(len(kind_cycle)):
             kind = kind_cycle[(start + offset) % len(kind_cycle)]
             if kind == "position" and pos is not None:
                 text_key = "position"
                 break
             if kind == "leader" and leader:
+                if leader_cooldown > 0.0 and now < self._leader_fact_until:
+                    continue
                 text_key = "leader"
                 break
             if kind == "gap" and target and gap is not None:
                 text_key = "gap"
                 break
-        else:
+        if text_key is None:
             return None
 
         metrics = {k: v for k, v in slots.items() if v is not None}
@@ -235,6 +246,8 @@ class RaceObserver:
         metrics["fact"] = text_key
         self._filler_cooldown_until = now + 15.0
         self._last_filler_kind = text_key
+        if text_key == "leader" and leader_cooldown > 0.0:
+            self._leader_fact_until = now + leader_cooldown
         return make_envelope(
             event_type="FIELD_FACT",
             phase="RESULT",

@@ -94,7 +94,7 @@ class OverlayRuntime:
         self._hud_live = False
         self._running = False
         self._event_fanout = EventFanout()
-        self.race_observer = RaceObserver()
+        self.race_observer = RaceObserver(settings=overlay.race_observer)
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
@@ -253,6 +253,8 @@ class OverlayRuntime:
         now: float,
     ) -> None:
         """Update RaceObserver story context; fail-soft (never break the race tick)."""
+        overlay = self._overlay_settings()
+        self.race_observer.apply_settings(overlay.race_observer)
         try:
             self.race_observer.observe(
                 snap,
@@ -312,6 +314,7 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         if self.commentary is None:
             self.commentary = self._build_commentary(overlay)
+            self.race_observer.apply_settings(overlay.race_observer)
             self._wire_race_observer_fillers()
             self._rebuild_event_fanout()
             return
@@ -322,6 +325,7 @@ class OverlayRuntime:
             on_polish_debug=self._llm_polish_tape_hook,
         )
         self.commentary.reset()
+        self.race_observer.apply_settings(overlay.race_observer)
         self._wire_race_observer_fillers()
         self._commentary_tape_cursor = 0
         self.in_car.reset()

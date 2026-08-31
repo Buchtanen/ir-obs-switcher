@@ -37,6 +37,18 @@ def _graph(*, filled: bool) -> object:
                         "en": {"neutral": ["Closing to {gap} seconds."] if filled else []},
                     },
                 },
+                "hunted": {
+                    "family": "battle",
+                    "event_types": ["HUNTED"],
+                    "phases": ["ENTER"],
+                    "speak_priority": 48,
+                    "cooldown_s": 16,
+                    "slots": [{"name": "gap", "type": "gap", "example": "1.0"}],
+                    "hr_states": ["unknown", "pushing"],
+                    "variants": {
+                        "en": {"neutral": ["Pressure from {gap} seconds."] if filled else []},
+                    },
+                },
                 "overtake": {
                     "family": "position",
                     "event_types": ["OVERTAKE"],
@@ -328,3 +340,52 @@ def test_observe_picks_off_track_branch_over_generic() -> None:
     second = director.observe([generic], None, 12.0)
     assert second is not None
     assert second.text == "Contact in the pack."
+
+
+def _hunt(mode: str, event_type: str = "HUNTING") -> object:
+    return make_envelope(
+        event_type=event_type,
+        phase="ENTER",
+        mode=mode,
+        priority=30,
+        metrics={"gap": 1.2},
+    )
+
+
+def test_gap_hunt_tts_muted_in_practice_and_qualifying() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True, cooldown_s=0.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    assert director.observe([_hunt("PRACTICE")], None, 1.0) is None
+    assert director.decisions(1)[-1]["reason"] == "gap_hunt_tts_disabled"
+    assert director.observe([_hunt("QUALIFYING", "HUNTED")], None, 2.0) is None
+    assert director.decisions(1)[-1]["reason"] == "gap_hunt_tts_disabled"
+
+
+def test_gap_hunt_tts_speaks_in_race() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True, cooldown_s=0.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    spoken = director.observe([_hunt("RACE")], None, 1.0)
+    assert spoken is not None
+    assert spoken.node_id == "hunting"
+
+
+def test_gap_hunt_tts_opt_in_practice() -> None:
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(
+            enabled=True,
+            cooldown_s=0.0,
+            use_hr_emotion=False,
+            gap_hunt_tts_in_practice=True,
+        ),
+        sink=NullTtsSink(),
+    )
+    spoken = director.observe([_hunt("PRACTICE")], None, 1.0)
+    assert spoken is not None
+    assert spoken.node_id == "hunting"

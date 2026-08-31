@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.tts import NullTtsSink
 from irswitch.events.envelope import make_envelope
 from irswitch.iracing.telemetry import extract_telemetry
 from irswitch.iracing.weather import WeatherSnapshot
+from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.models import RaceState
-from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
+from irswitch.overlay.runtime import OverlayRuntime
+from irswitch.overlay.settings import (
+    CommentarySchedulerSettings,
+    CommentarySettings,
+    OverlaySettings,
+    RaceObserverSettings,
+)
 from irswitch.race.observer import RaceObserver, _weather_changed
 from irswitch.race.opponents import relevant_ahead_behind, relevant_near_field
 
@@ -200,9 +209,40 @@ def test_director_silence_fill_uses_observer_formatter() -> None:
     assert director.decisions(1)[-1]["reason"] == "silence_fill"
 
 
+def test_leader_fact_cooldown_continues_rotation() -> None:
+    observer = RaceObserver(settings=RaceObserverSettings(leader_pace_cooldown_s=300.0))
+    snap = _snap_field(names=["Leader", "B", "Hero", "D", "E"])
+    state = RaceState(connected=True, overlay_mode="RACE", class_position=3, position=3)
+    observer.observe(snap, state, now=1.0)
+    first = observer.next_filler_envelope(5.0, locale="en")
+    assert first is not None
+    assert first.metrics.get("fact") == "position"
+    leader = observer.next_filler_envelope(25.0, locale="en")
+    assert leader is not None
+    assert leader.metrics.get("fact") == "leader"
+    observer._last_filler_kind = "position"
+    skipped = observer.next_filler_envelope(100.0, locale="en")
+    assert skipped is not None
+    assert skipped.metrics.get("fact") == "gap"
+    observer._last_filler_kind = "position"
+    later = observer.next_filler_envelope(330.0, locale="en")
+    assert later is not None
+    assert later.metrics.get("fact") == "leader"
+
+
 def test_weather_threshold_helpers() -> None:
     a = WeatherSnapshot(skies="clear", air_temp_c=20.0, track_temp_c=30.0, wind_speed_mps=2.0)
     b = WeatherSnapshot(skies="clear", air_temp_c=20.5, track_temp_c=30.0, wind_speed_mps=2.0)
     assert _weather_changed(a, b) is False
     c = WeatherSnapshot(skies="overcast", air_temp_c=20.0, track_temp_c=30.0, wind_speed_mps=2.0)
     assert _weather_changed(a, c) is True
+
+
+def test_overlay_runtime_constructs_and_reapplies_observer_settings() -> None:
+    overlay = OverlaySettings(race_observer=RaceObserverSettings(leader_pace_cooldown_s=90.0))
+    runtime = OverlayRuntime(lambda: SimpleNamespace(overlay=overlay), None, OverlayBus())
+    assert runtime.race_observer.settings.leader_pace_cooldown_s == 90.0
+    updated = OverlaySettings(race_observer=RaceObserverSettings(leader_pace_cooldown_s=15.0))
+    runtime._get_config = lambda: SimpleNamespace(overlay=updated)
+    runtime._reset_commentary()
+    assert runtime.race_observer.settings.leader_pace_cooldown_s == 15.0
