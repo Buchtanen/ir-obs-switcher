@@ -52,7 +52,6 @@ class RaceObserver:
     _last_filler_kind: str | None = None
     _filler_cooldown_until: float = 0.0
     _after_session: bool = False
-    _session_checkered: bool = False
 
     def reset_session(self) -> None:
         self._session_key = None
@@ -62,7 +61,6 @@ class RaceObserver:
         self._last_filler_kind = None
         self._filler_cooldown_until = 0.0
         self._after_session = False
-        self._session_checkered = False
         self.aftermath.reset()
         self.narrative.reset_session()
 
@@ -169,8 +167,7 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
         )
         self._context = ctx
-        self._after_session = bool(state.session_finished)
-        self._session_checkered = bool(state.session_checkered)
+        self._after_session = bool(state.mute_field or state.player_finished or state.session_finished)
         try:
             self.narrative.tick(state, now, session_key=key)
         except Exception:
@@ -188,7 +185,7 @@ class RaceObserver:
         ctx = self._context
         if ctx is None:
             return None
-        if self._after_session or self._session_checkered:
+        if self._after_session:
             return None
 
         if self._pending_weather_change is not None:

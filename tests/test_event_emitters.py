@@ -79,6 +79,29 @@ def test_hunting_exits_immediately_when_session_finished() -> None:
     assert emitter.tick(_state(session_finished=True), 10.2) == []
 
 
+def test_hunting_continues_when_checkered_but_player_not_finished() -> None:
+    emitter = BattleEmitter(
+        HuntingSettings(activation_delay=0.0, exit_delay=1.5, min_intensity_hold_s=0.0),
+        HuntingSettings(),
+    )
+    ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3)
+    racing = _state(opponent_ahead=ahead, gap_ahead=2.0, closing_rate_ahead=0.3)
+    assert any(e.phase == "enter" for e in emitter.tick(racing, 10.0))
+    still = _state(
+        opponent_ahead=ahead,
+        gap_ahead=2.0,
+        closing_rate_ahead=0.3,
+        session_checkered=True,
+        session_state=5,
+        player_finished=False,
+        mute_field=False,
+        session_finished=False,
+    )
+    out = emitter.tick(still, 10.1)
+    assert not any(e.data.get("reason") == "session_finished" for e in out)
+    assert emitter.hunting.state != "NONE"
+
+
 def test_hunting_and_hunted_both_independent() -> None:
     emitter = BattleEmitter(
         HuntingSettings(activation_delay=0.0, min_intensity_hold_s=0.0),

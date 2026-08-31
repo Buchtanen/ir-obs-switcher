@@ -79,7 +79,7 @@ Missing `[event_engine]` section → code defaults (flags off).
 
 **PitCycleGuard:** on pit road + **5 s** post-exit grace, suppresses **`trigger`/`enter` only** for `position_change`, `overtake`, `battle`, `rival_threat` (`update`/`exit` still pass).
 
-**Post-race:** after `session_finished` (`after_session`: S/F after checkered, or not flying at checkered, or CoolDown). Checkered (`SessionState` 5) alone does **not** mute widgets. Filter then keeps essentially finish / final EXIT.
+**Post-race:** after `mute_field` / `player_finished` (not field checkered alone), filter keeps essentially finish / final EXIT. Already in pits at checkered is not finish; CoolDown is the DNF fallback.
 
 **Channel caps (HUD):** battle 2; timing/position/exception/pit/bio/session 1.
 
@@ -161,7 +161,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Invalid lap | P/Q | Lap end with incident since lap start | yes | yes |
 | Link drop | All | Stale/degraded/disconnect | yes lifecycle | **no** |
 | Final lap | All\* | `is_final_lap` (no mode gate) | yes 95 | yes cd 60 |
-| Finish | All\* | `session_finished` today (`SessionState` 5\|6). N4 will split `session_checkered` / `player_finished` / `mute_field` | yes 100 | yes cd 120 |
+| Finish | All\* | `player_finished` (s/f or eligible pit after `session_checkered`; cooldown fallback). `session_finished` now aliases `mute_field`. Checkered **bit** is not finish. | yes 100 | yes cd 120 |
 | HR pressure | All | Bio `pushing`/`high` | yes | yes |
 | BLE lost | All | HR provider disconnect inject | yes | **no** |
 | Sysinfo bar | All | Continuous sample | persistent bar | n/a |

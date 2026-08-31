@@ -20,6 +20,7 @@ class SessionEmitter:
             self._finish_emitted = False
             return []
         out: list[CandidateEvent] = []
+        finished = bool(state.player_finished or state.session_finished)
         if state.is_final_lap and not self._final_emitted:
             self._final_emitted = True
             out.append(
@@ -36,7 +37,7 @@ class SessionEmitter:
                     duration=self._events.session_duration,
                 )
             )
-        if state.session_finished and not self._finish_emitted:
+        if finished and not self._finish_emitted:
             self._finish_emitted = True
             out.append(
                 CandidateEvent(
@@ -53,6 +54,6 @@ class SessionEmitter:
             )
         if not state.is_final_lap:
             self._final_emitted = False
-        if not state.session_finished:
+        if not finished:
             self._finish_emitted = False
         return out

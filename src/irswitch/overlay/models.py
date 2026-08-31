@@ -107,6 +107,8 @@ class RaceState:
     is_final_lap: bool = False
     session_finished: bool = False
     session_checkered: bool = False
+    player_finished: bool = False
+    mute_field: bool = False
     opponent_ahead: OpponentInfo | None = None
     opponent_behind: OpponentInfo | None = None
     gap_ahead: float | None = None

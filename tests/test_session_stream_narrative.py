@@ -39,6 +39,8 @@ def _state(
         overlay_mode=mode,
         session_finished=finished,
         session_checkered=checkered,
+        player_finished=finished,
+        mute_field=finished,
         class_position=position,
         subsession_id=sub,
         session_num=num,
@@ -74,7 +76,7 @@ def test_session_finished_emits_wrap_once() -> None:
     assert fsm.tick(_state(mode="RACE", finished=True), 3.0, session_key="100:2:t1") == []
 
 
-def test_on_track_checkered_emits_checkered_then_wrap_on_sf() -> None:
+def test_on_track_checkered_does_not_wrap_until_finished() -> None:
     fsm = StreamNarrativeFsm()
     fsm.tick(_state(mode="QUALIFYING"), 1.0, session_key="100:1:t1")
     out = fsm.tick(
@@ -82,16 +84,7 @@ def test_on_track_checkered_emits_checkered_then_wrap_on_sf() -> None:
         2.0,
         session_key="100:1:t1",
     )
-    assert [e.event_type for e in out] == ["SESSION_CHECKERED"]
-    assert out[0].metrics["kind"] == "session_checkered"
-    assert (
-        fsm.tick(
-            _state(mode="QUALIFYING", checkered=True, finished=False),
-            3.0,
-            session_key="100:1:t1",
-        )
-        == []
-    )
+    assert out == []
     wrap = fsm.tick(
         _state(mode="QUALIFYING", checkered=True, finished=True, position=2),
         4.0,
@@ -101,16 +94,15 @@ def test_on_track_checkered_emits_checkered_then_wrap_on_sf() -> None:
     assert wrap[0].metrics["reason"] == "session_finished"
 
 
-def test_pits_at_checkered_emits_wrap_only() -> None:
+def test_pits_at_checkered_without_player_finished_is_silent() -> None:
     fsm = StreamNarrativeFsm()
     fsm.tick(_state(mode="RACE"), 1.0, session_key="100:2:t1")
     out = fsm.tick(
-        _state(mode="RACE", checkered=True, finished=True, position=8),
+        _state(mode="RACE", checkered=True, finished=False, position=8),
         2.0,
         session_key="100:2:t1",
     )
-    assert [e.event_type for e in out] == ["SESSION_WRAP"]
-    assert "SESSION_CHECKERED" not in [e.event_type for e in out]
+    assert out == []
 
 
 def test_finished_then_change_does_not_double_wrap() -> None:

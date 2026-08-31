@@ -126,7 +126,7 @@ def test_field_fact_filler_rotates() -> None:
     assert second.metrics.get("fact") != first.metrics.get("fact")
 
 
-def test_filler_skips_after_checkered_and_after_session() -> None:
+def test_filler_still_runs_at_checkered_until_player_finished() -> None:
     observer = RaceObserver()
     snap = _snap_field(names=["Leader", "B", "Hero", "D", "E"])
     observer.observe(
@@ -137,10 +137,12 @@ def test_filler_skips_after_checkered_and_after_session() -> None:
             class_position=3,
             session_checkered=True,
             session_finished=False,
+            player_finished=False,
+            mute_field=False,
         ),
         now=1.0,
     )
-    assert observer.next_filler_envelope(5.0, locale="en") is None
+    assert observer.next_filler_envelope(5.0, locale="en") is not None
     observer.observe(
         snap,
         RaceState(
@@ -149,6 +151,8 @@ def test_filler_skips_after_checkered_and_after_session() -> None:
             class_position=3,
             session_checkered=True,
             session_finished=True,
+            player_finished=True,
+            mute_field=True,
         ),
         now=2.0,
     )

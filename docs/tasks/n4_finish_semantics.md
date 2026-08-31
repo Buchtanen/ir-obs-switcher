@@ -26,26 +26,26 @@ Mandatory grep/re-point (complete vs current readers of `state.session_finished`
 
 ## Acceptance criteria
 
-- [ ] Three booleans: `session_checkered` (`SessionState == 5`), `player_finished`, `mute_field` (follows player_finished)
-- [ ] `FINISH` only on `player_finished` rising
-- [ ] player_finished if: lap complete / dist wrap across s/f while session_checkered, **or** `OnPitRoad` false→true after checkered **and** was not on pit road when checkered started
-- [ ] `on_pit_road is None` is **unknown** — do not treat as False (dropout must not arm pit-rise finish)
-- [ ] Pit-rise uses `is_esc_teleport` (same as `should_begin_pit_cycle`) — ESC/teleport is not finish
-- [ ] `RaceContextAnalyzer.reset()` drops checkered/pit latch; no finish across disconnect
-- [ ] CoolDown without player_finished → one FINISH fallback
-- [ ] `filter_post_race` + battle abort use `mute_field` / `player_finished`, **not** state 5 alone
-- [ ] Hunting can still emit after state 5 until player_finished (test)
-- [ ] `SESSION_WRAP` does **not** fire on `session_checkered`; uses `player_finished` or session key change
-- [ ] N5 checkered flag ≠ FINISH
-- [ ] PR description lists every old `session_finished` call site
+- [x] Three booleans: `session_checkered` (`SessionState == 5`), `player_finished`, `mute_field` (follows player_finished)
+- [x] `FINISH` only on `player_finished` rising
+- [x] player_finished if: lap complete / dist wrap across s/f while session_checkered, **or** `OnPitRoad` false→true after checkered **and** was not on pit road when checkered started
+- [x] `on_pit_road is None` is **unknown** — do not treat as False (dropout must not arm pit-rise finish)
+- [x] Pit-rise uses `is_esc_teleport` (same as `should_begin_pit_cycle`) — ESC/teleport is not finish
+- [x] `RaceContextAnalyzer.reset()` drops checkered/pit latch; no finish across disconnect
+- [x] CoolDown without player_finished → one FINISH fallback
+- [x] `filter_post_race` + battle abort use `mute_field` / `player_finished`, **not** state 5 alone
+- [x] Hunting can still emit after state 5 until player_finished (test)
+- [x] `SESSION_WRAP` does **not** fire on `session_checkered`; uses `player_finished` or session key change
+- [x] N5 checkered flag ≠ FINISH
+- [x] PR description lists every old `session_finished` call site
 
 ## Test plan
 
-- [ ] State 5, hero mid-lap → no FINISH, hunting not aborted
-- [ ] Then lap/dist wrap → FINISH + mute once
-- [ ] Already on pit road at checkered → pit-rise does **not** finish
-- [ ] State 6 without cross → FINISH fallback
-- [ ] Existing session tests updated
+- [x] State 5, hero mid-lap → no FINISH, hunting not aborted
+- [x] Then lap/dist wrap → FINISH + mute once
+- [x] Already on pit road at checkered → pit-rise does **not** finish
+- [x] State 6 without cross → FINISH fallback
+- [x] Existing session tests updated
 
 ## Docs impact
 
