@@ -33,6 +33,7 @@ from irswitch.overlay.session import (
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
+from irswitch.race.observer import RaceObserver
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
@@ -91,10 +92,13 @@ class OverlayRuntime:
         self._hud_live = False
         self._running = False
         self._event_fanout = EventFanout()
+        self.race_observer = RaceObserver()
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
+        self._wire_race_observer_fillers()
         self._rebuild_event_fanout()
+        self.session.add_reset_hook(self.race_observer.reset_session)
         self.session.add_reset_hook(self._reset_commentary)
         self.session.add_reset_hook(self.in_car.reset)
         self.session.add_reset_hook(self.session_briefs.reset)
@@ -221,6 +225,40 @@ class OverlayRuntime:
             logger.warning("commentary graph failed to load", exc_info=True)
             return None
 
+    def _wire_race_observer_fillers(self) -> None:
+        """Hook RaceObserver silence fillers into the commentary director (peer path)."""
+        if self.commentary is None:
+            return
+        observer = self.race_observer
+
+        def _provider(now: float) -> EventEnvelope | None:
+            lang = self._overlay_settings().language
+            return observer.next_filler_envelope(now, locale=lang)
+
+        def _formatter(envelope: EventEnvelope) -> str | None:
+            lang = self._overlay_settings().language
+            return observer.format_filler_text(envelope, locale=lang)
+
+        self.commentary.filler_provider = _provider
+        self.commentary.filler_formatter = _formatter
+
+    def _observe_race_story(
+        self,
+        snap: TelemetrySnapshot,
+        state: RaceState,
+        now: float,
+    ) -> None:
+        """Update RaceObserver story context; fail-soft (never break the race tick)."""
+        try:
+            self.race_observer.observe(
+                snap,
+                state,
+                now=now,
+                telemetry_data=self._session_brief_data(),
+            )
+        except Exception:
+            logger.warning("RaceObserver observe failed", exc_info=True)
+
     def _apply_commentary_sink_settings(self, overlay: OverlaySettings) -> None:
         if self.commentary is None:
             return
@@ -245,6 +283,7 @@ class OverlayRuntime:
         overlay = self._overlay_settings()
         if self.commentary is None:
             self.commentary = self._build_commentary(overlay)
+            self._wire_race_observer_fillers()
             self._rebuild_event_fanout()
             return
         self.commentary.settings = overlay.commentary
@@ -254,6 +293,7 @@ class OverlayRuntime:
             on_polish_debug=self._llm_polish_tape_hook,
         )
         self.commentary.reset()
+        self._wire_race_observer_fillers()
         self._commentary_tape_cursor = 0
         self.in_car.reset()
         self.session_briefs.reset()
@@ -496,6 +536,7 @@ class OverlayRuntime:
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
+            self._observe_race_story(snap, state, now)
         self.bus.set_race(state)
         self._last_race = state
         self._sync_tape(state, now)

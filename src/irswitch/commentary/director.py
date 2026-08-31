@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import random
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -100,6 +101,8 @@ class CommentaryDirector:
     _sector_speaks_by_lap: dict[int, int] = field(default_factory=dict)
     _scheduler: SpeechScheduler = field(default_factory=SpeechScheduler)
     _current_event_type: str | None = None
+    filler_provider: Callable[[float], EventEnvelope | None] | None = None
+    filler_formatter: Callable[[EventEnvelope], str | None] | None = None
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -234,9 +237,66 @@ class CommentaryDirector:
             )
         last_at = self._last.at if self._last is not None else None
         if self._scheduler.silence_due(last_spoke_at=last_at, now=now):
-            # P2 RaceObserver fills weather/field facts; P1 only logs the gap.
+            spoken = self._speak_silence_filler(now)
+            if spoken is not None:
+                return spoken
             self._record(action="skipped", reason="silence_no_filler", now=now)
         return None
+
+    def _speak_silence_filler(self, now: float) -> CommentaryUtterance | None:
+        provider = self.filler_provider
+        if provider is None:
+            return None
+        try:
+            envelope = provider(now)
+        except Exception:
+            logger.warning("filler_provider failed", exc_info=True)
+            return None
+        if envelope is None:
+            return None
+        # Prefer graph node when authored; else template formatter from RaceObserver.
+        emotion = "unknown"
+        drafted = self._consider(envelope, emotion, now, commit=False)
+        if drafted is not None:
+            return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
+        formatter = self.filler_formatter
+        text = None
+        if formatter is not None:
+            try:
+                text = formatter(envelope)
+            except Exception:
+                logger.warning("filler_formatter failed", exc_info=True)
+                return None
+        if not text:
+            return None
+        from irswitch.commentary.graph import GraphNode, TtsLimits
+
+        node = GraphNode(
+            id="silence_fill",
+            family="session",
+            event_types=(envelope.event_type,),
+            phases=("RESULT",),
+            speak_priority=int(envelope.priority),
+            cooldown_s=15.0,
+            slots=(),
+            hr_states=("unknown",),
+            tts=TtsLimits(max_seconds=4.0),
+            variants={},
+        )
+        utterance = CommentaryUtterance(
+            node_id=node.id,
+            locale=self.language,
+            emotion="unknown",
+            text=text,
+            event_type=envelope.event_type,
+            event_id=envelope.event_id,
+            correlation_id=envelope.correlation_id,
+            estimated_seconds=min(4.0, max(0.8, len(text.split()) * 0.35)),
+            node=node,
+            priority=int(envelope.priority),
+            past_framing=False,
+        )
+        return self._speak_prepared(utterance, now=now, reason="silence_fill", past=False)
 
     def observe(
         self,

@@ -170,10 +170,12 @@ Hard interrupt **default false** (bezpečnější), zapne se na stream PC až po
 Peer `EventConsumer`s (`src/irswitch/events/fanout.py`); commentary via `CommentaryEventConsumer`; `_emit_from_race` dispatches speech through `EventFanout` while overlay still publishes wire to the bus. Behavior-preserving; tape parity. **Issue #166.**
 
 ### P1 — SpeechScheduler
-Defer + TTL + decision codes; `hard_interrupt` ini; silence 33 s s weather/field fact; LLM past framing; flags default off.
+Defer + TTL + decision codes (`deferred` / `spoken_deferred` / `deferred_expired` / `interrupted` / `silence_no_filler`); `hard_interrupt` ini (default false); silence 33 s (filler → P2); LLM past framing when `llm_polish`; flags default off. **Issue #168.**
 
-### P2 — RaceObserver MVP
-`StoryContext` **2+2** near field; weather watch; session reset; slot bindings.
+### P2 — RaceObserver MVP ✅
+`StoryContext` **2+2** near field; weather watch; session reset; slot bindings;
+silence filler via `filler_provider` / `filler_formatter` (`WEATHER_CHANGE` /
+`FIELD_FACT`). Wired in `OverlayRuntime`. **Issue #170.**
 
 ### P3 — Incident aftermath FSM
 Derived envelopes; commentary nodes; interrupt policy dle ini.
