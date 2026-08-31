@@ -26,9 +26,20 @@ COMMENTARY_ONLY_EVENTS = frozenset(
         "SESSION_WRAP",
         "SESSION_PREVIEW",
         "SESSION_CHECKERED",
+        "SESSION_FLAG",
+        "STREAM_START",
     }
 )
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})
+ALLOWED_GRAPH_MODES = frozenset({"practice", "qualify", "race", "warmup"})
+_MODE_ALIASES = {
+    "practice": "practice",
+    "qualify": "qualify",
+    "qualifying": "qualify",
+    "race": "race",
+    "warmup": "warmup",
+    "generic": "warmup",
+}
 ALLOWED_SLOT_TYPES = frozenset({"int", "time", "delta", "gap", "name", "label"})
 ALLOWED_SSML = frozenset({"break", "emphasis"})
 VARIANT_KEYS = ("neutral", "calm", "focused", "pushing", "high")
@@ -74,6 +85,8 @@ class GraphNode:
     notes: str = ""
     tts: TtsLimits = field(default_factory=TtsLimits)
     variants: dict[str, dict[str, tuple[str, ...]]] = field(default_factory=dict)
+    modes: tuple[str, ...] = ()
+    branch: str = ""
 
     def variant_bucket(self, locale: str, emotion: str) -> tuple[str, ...]:
         locale_map = self.variants.get(locale) or {}
@@ -109,16 +122,20 @@ class SequenceGraph:
         self,
         event_type: str,
         phase: str,
+        *,
+        mode: str | None = None,
+        branch: str | None = None,
     ) -> list[GraphNode]:
         key = event_type.strip().upper()
         phase_key = phase.strip().upper()
-        matched = [
+        pool = [
             node
             for node in self.nodes.values()
             if key in node.event_types and phase_key in node.phases
         ]
-        matched.sort(key=lambda item: item.speak_priority, reverse=True)
-        return matched
+        selected = _select_mode_branch(pool, mode=mode, branch=branch)
+        selected.sort(key=lambda item: item.speak_priority, reverse=True)
+        return selected
 
     def outgoing(self, node_id: str) -> list[GraphEdge]:
         return [edge for edge in self.edges if edge.source == node_id]
@@ -249,6 +266,13 @@ def _validate_node(node_id: str, payload: Any, known_events: set[str]) -> list[s
     for hr_state in payload.get("hr_states") or []:
         if hr_state not in ALLOWED_HR_STATES:
             errors.append(f"{prefix} bad hr_state: {hr_state!r}")
+    for mode in payload.get("modes") or []:
+        normalized = normalize_graph_mode(str(mode))
+        if normalized is None or normalized not in ALLOWED_GRAPH_MODES:
+            errors.append(f"{prefix} bad mode: {mode!r}")
+    branch = payload.get("branch")
+    if branch is not None and branch != "" and not isinstance(branch, str):
+        errors.append(f"{prefix}.branch must be a string")
     priority = payload.get("speak_priority")
     if not isinstance(priority, int) or priority < 0:
         errors.append(f"{prefix}.speak_priority must be a non-negative int")
@@ -284,6 +308,8 @@ def _parse_node(
         notes=str(payload.get("notes") or ""),
         tts=tts,
         variants=variants,
+        modes=_parse_modes(payload.get("modes")),
+        branch=str(payload.get("branch") or "").strip(),
     )
 
 
@@ -316,3 +342,66 @@ def _tts_limits(raw: dict[str, Any], base: TtsLimits | None = None) -> TtsLimits
         ssml_allowed=allowed or seed.ssml_allowed,
         require_terminal_punct=bool(raw.get("require_terminal_punct", seed.require_terminal_punct)),
     )
+
+
+def normalize_graph_mode(mode: str | None) -> str | None:
+    """Map envelope overlay_mode / JSON aliases onto graph ``modes`` tokens."""
+    if mode is None:
+        return None
+    text = str(mode).strip().lower()
+    if not text or text == "unknown":
+        return None
+    return _MODE_ALIASES.get(text)
+
+
+def _parse_modes(raw: object) -> tuple[str, ...]:
+    if not raw:
+        return ()
+    if isinstance(raw, str):
+        items = [raw]
+    elif isinstance(raw, (list, tuple)):
+        items = list(raw)
+    else:
+        return ()
+    seen: list[str] = []
+    for item in items:
+        normalized = normalize_graph_mode(str(item))
+        if normalized and normalized not in seen:
+            seen.append(normalized)
+    return tuple(seen)
+
+
+def _select_mode_branch(
+    pool: list[GraphNode],
+    *,
+    mode: str | None,
+    branch: str | None,
+) -> list[GraphNode]:
+    """Ladder: mode+branch → branch → mode → unrestricted. First non-empty tier wins."""
+    want_mode = normalize_graph_mode(mode)
+    want_branch = str(branch).strip() if branch else ""
+
+    def mode_ok(node: GraphNode) -> bool:
+        if not node.modes:
+            return True
+        if want_mode is None:
+            return False
+        return want_mode in node.modes
+
+    def branch_eq(node: GraphNode) -> bool:
+        return bool(node.branch) and node.branch == want_branch
+
+    def unbranched(node: GraphNode) -> bool:
+        return not node.branch
+
+    if want_branch:
+        exact = [node for node in pool if mode_ok(node) and branch_eq(node)]
+        if exact:
+            return exact
+        by_branch = [node for node in pool if branch_eq(node)]
+        if by_branch:
+            return by_branch
+    by_mode = [node for node in pool if mode_ok(node) and unbranched(node)]
+    if by_mode:
+        return by_mode
+    return [node for node in pool if not node.modes and unbranched(node)]

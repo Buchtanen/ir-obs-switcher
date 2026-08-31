@@ -54,6 +54,10 @@ def test_graph_event_types_are_in_catalog() -> None:
     for node in graph.nodes.values():
         for event_type in node.event_types:
             assert event_type in known, event_type
+    assert "STREAM_START" in COMMENTARY_ONLY_EVENTS
+    assert "SESSION_FLAG" in COMMENTARY_ONLY_EVENTS
+    assert "BACK_UNDER_WAY" in COMMENTARY_ONLY_EVENTS
+    assert "INCIDENT_RECOVERED" not in COMMENTARY_ONLY_EVENTS
 
 
 def test_nodes_for_ranks_by_speak_priority() -> None:
@@ -61,6 +65,95 @@ def test_nodes_for_ranks_by_speak_priority() -> None:
     nodes = graph.nodes_for("OVERTAKE", "RESULT")
     assert nodes
     assert nodes[0].id == "overtake"
+
+
+def _incident_graph() -> object:
+    return parse_sequence_graph(
+        {
+            "version": 1,
+            "locales": ["en"],
+            "nodes": {
+                "incident_generic": {
+                    "family": "exception",
+                    "event_types": ["INCIDENT"],
+                    "phases": ["RESULT"],
+                    "speak_priority": 90,
+                    "hr_states": ["unknown"],
+                    "variants": {"en": {"neutral": ["Contact."]}},
+                },
+                "incident_off_track": {
+                    "family": "exception",
+                    "event_types": ["INCIDENT"],
+                    "phases": ["RESULT"],
+                    "speak_priority": 40,
+                    "branch": "off_track",
+                    "hr_states": ["unknown"],
+                    "variants": {"en": {"neutral": ["Off track."]}},
+                },
+                "in_car_race": {
+                    "family": "session",
+                    "event_types": ["ENTER_CAR"],
+                    "phases": ["ENTER"],
+                    "speak_priority": 20,
+                    "modes": ["race"],
+                    "hr_states": ["unknown"],
+                    "variants": {"en": {"neutral": ["Race car."]}},
+                },
+                "in_car_any": {
+                    "family": "session",
+                    "event_types": ["ENTER_CAR"],
+                    "phases": ["ENTER"],
+                    "speak_priority": 10,
+                    "hr_states": ["unknown"],
+                    "variants": {"en": {"neutral": ["In the car."]}},
+                },
+            },
+            "edges": [],
+        }
+    )
+
+
+def test_branch_match_beats_higher_generic_priority() -> None:
+    graph = _incident_graph()
+    nodes = graph.nodes_for("INCIDENT", "RESULT", branch="off_track")
+    assert [node.id for node in nodes] == ["incident_off_track"]
+    fallback = graph.nodes_for("INCIDENT", "RESULT", branch="unknown")
+    assert fallback[0].id == "incident_generic"
+
+
+def test_mode_filter_prefers_matching_then_unrestricted() -> None:
+    graph = _incident_graph()
+    race = graph.nodes_for("ENTER_CAR", "ENTER", mode="RACE")
+    assert race[0].id == "in_car_race"
+    practice = graph.nodes_for("ENTER_CAR", "ENTER", mode="PRACTICE")
+    assert [node.id for node in practice] == ["in_car_any"]
+
+
+def test_stream_start_and_session_flag_graphs_load() -> None:
+    raw = {
+        "version": 1,
+        "locales": ["en"],
+        "nodes": {
+            "stream_start": {
+                "family": "session",
+                "event_types": ["STREAM_START"],
+                "phases": ["ENTER"],
+                "speak_priority": 1,
+                "hr_states": ["unknown"],
+            },
+            "session_flag": {
+                "family": "session",
+                "event_types": ["SESSION_FLAG"],
+                "phases": ["ENTER"],
+                "speak_priority": 1,
+                "hr_states": ["unknown"],
+            },
+        },
+        "edges": [],
+    }
+    graph = parse_sequence_graph(raw)
+    assert "stream_start" in graph.nodes
+    assert "session_flag" in graph.nodes
 
 
 def test_unknown_event_type_is_rejected() -> None:

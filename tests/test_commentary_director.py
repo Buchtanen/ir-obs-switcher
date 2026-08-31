@@ -267,3 +267,64 @@ def test_mixes_configured_hero_name_into_he_line() -> None:
     assert spoken.text.startswith("Richard ") or spoken.text.startswith("Buchtanen ")
     assert not spoken.text.startswith("He ")
     assert spoken.hero_name in {"Richard", "Buchtanen"}
+
+
+def test_observe_picks_off_track_branch_over_generic() -> None:
+    graph = parse_sequence_graph(
+        {
+            "version": 1,
+            "locales": ["en"],
+            "nodes": {
+                "incident_generic": {
+                    "family": "exception",
+                    "event_types": ["INCIDENT"],
+                    "phases": ["RESULT"],
+                    "speak_priority": 90,
+                    "hr_states": ["unknown"],
+                    "variants": {"en": {"neutral": ["Contact in the pack."]}},
+                },
+                "incident_off": {
+                    "family": "exception",
+                    "event_types": ["INCIDENT"],
+                    "phases": ["RESULT"],
+                    "speak_priority": 40,
+                    "branch": "off_track",
+                    "hr_states": ["unknown"],
+                    "variants": {"en": {"neutral": ["He's off the road."]}},
+                },
+            },
+            "edges": [
+                {
+                    "from": "incident_generic",
+                    "to": "incident_off",
+                    "when": {"same_correlation": True, "min_gap_s": 0.0, "max_gap_s": 30},
+                }
+            ],
+        }
+    )
+    director = CommentaryDirector(
+        graph=graph,
+        settings=CommentarySettings(enabled=True, cooldown_s=0.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+    )
+    off = make_envelope(
+        event_type="INCIDENT",
+        phase="RESULT",
+        priority=90,
+        correlation_id="inc:1",
+        metrics={"branch": "off_track"},
+    )
+    spoken = director.observe([off], None, 10.0)
+    assert spoken is not None
+    assert spoken.text == "He's off the road."
+
+    generic = make_envelope(
+        event_type="INCIDENT",
+        phase="RESULT",
+        priority=90,
+        correlation_id="inc:1",
+        metrics={"branch": "unknown"},
+    )
+    second = director.observe([generic], None, 12.0)
+    assert second is not None
+    assert second.text == "Contact in the pack."

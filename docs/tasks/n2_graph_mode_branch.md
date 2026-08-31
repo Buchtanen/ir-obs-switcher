@@ -21,24 +21,24 @@ Need mode/branch select without exploding cells. Shipped `nodes_for(event, phase
 
 ## Acceptance criteria
 
-- [ ] Optional `modes` and `branch` on nodes; missing fields = today’s behavior
-- [ ] Match ladder: event+phase+mode+branch → branch → mode → unfiltered
-- [ ] Filter **before** `_follow_edge`; edge target that fails mode/branch is ignored
-- [ ] Inside a remaining tier, highest `speak_priority` wins
-- [ ] `COMMENTARY_ONLY_EVENTS` **in this commit** includes `SESSION_FLAG` and `STREAM_START` (even with no graph nodes yet — so later JSON cannot fail the loader). Keep `BACK_UNDER_WAY`. **No** `INCIDENT_RECOVERED`
-- [ ] Tests: graph with `event_types: ["STREAM_START"]` loads; unknown type still errors
-- [ ] Per-node `tts.max_seconds` already parses; N11 sets the stream_start long cap + validator exception
-- [ ] Old graphs still parse
+- [x] Optional `modes` and `branch` on nodes; missing fields = today’s behavior
+- [x] Match ladder: event+phase+mode+branch → branch → mode → unfiltered
+- [x] Filter **before** `_follow_edge`; edge target that fails mode/branch is ignored
+- [x] Inside a remaining tier, highest `speak_priority` wins
+- [x] `COMMENTARY_ONLY_EVENTS` **in this commit** includes `SESSION_FLAG` and `STREAM_START` (even with no graph nodes yet — so later JSON cannot fail the loader). Keep `BACK_UNDER_WAY`. **No** `INCIDENT_RECOVERED`
+- [x] Tests: graph with `event_types: ["STREAM_START"]` loads; unknown type still errors
+- [x] Per-node `tts.max_seconds` already parses; N11 sets the stream_start long cap + validator exception
+- [x] Old graphs still parse
 
 ## Test plan
 
-- [ ] Ladder order
-- [ ] Generic incident does not steal an off_track node in the same event_type set
-- [ ] Default graph still loads (node count may stay 34 until N11)
+- [x] Ladder order
+- [x] Generic incident does not steal an off_track node in the same event_type set
+- [x] Default graph still loads (node count may stay 34 until N11)
 
 ## Docs impact
 
-- [ ] `COMMENTARY_ENGINE.md` select ladder
+- [x] `COMMENTARY_ENGINE.md` select ladder
 - [x] CONFIG — no
 
 ## Config impact

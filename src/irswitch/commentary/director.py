@@ -700,7 +700,14 @@ class CommentaryDirector:
         self._sector_speaks_by_lap[lap] = self._sector_speaks_by_lap.get(lap, 0) + 1
 
     def _pick_node(self, envelope: EventEnvelope, now: float) -> GraphNode | None:
-        candidates = self.graph.nodes_for(envelope.event_type, envelope.phase)
+        metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
+        branch = metrics.get("branch")
+        candidates = self.graph.nodes_for(
+            envelope.event_type,
+            envelope.phase,
+            mode=envelope.mode,
+            branch=str(branch) if branch is not None else None,
+        )
         if not candidates:
             return None
         if self._last is not None:

@@ -49,7 +49,9 @@ Rules:
 | Field | Role |
 | --- | --- |
 | `nodes.*.event_types` / `phases` | Match catalog event + wire phase |
-| `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`) |
+| `nodes.*.modes` | Optional. `practice` / `qualify` / `race` / `warmup`. Empty = all sessions. Envelope `PRACTICE`/`QUALIFYING`/`RACE`/`GENERIC` map onto those tokens. |
+| `nodes.*.branch` | Optional. Matches `envelope.metrics.branch` (e.g. `off_track`). Missing branch = generic fallback. |
+| `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`). After mode/branch filter, highest `speak_priority` wins. `_follow_edge` runs **only on the filtered set**. |
 | `slots` | `{position}`, `{gap}`, … bound from envelope metrics. Timing slots (`lap_time`, `gap`, `delta`, `segment_time`, `target_time`, `projected_time`) are spoken via `sdk_units`-style formatters in `slot_format.py`; sentinel / invalid values leave the slot unbound so that candidate line is skipped (re-draw). |
 | `hr_states` | Which BLE bands may pick this node |
 | `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
