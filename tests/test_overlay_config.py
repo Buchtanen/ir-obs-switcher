@@ -74,6 +74,7 @@ def test_feature_flags_default_off_and_language_en(tmp_path: Path) -> None:
     assert cfg.overlay.commentary.gap_hunt_tts_in_qualifying is False
     assert cfg.overlay.race_observer.leader_pace_cooldown_s == 300.0
     assert cfg.overlay.race_observer.incident_classify is False
+    assert cfg.overlay.race_observer.flags is False
     values = overlay_values(cfg.overlay)
     flag_keys = [k for k in values if k.startswith("event_engine.") or k.startswith("overlay.v4_")]
     assert len(flag_keys) == 8
@@ -120,6 +121,7 @@ gap_hunt_tts_in_practice = true
 [race_observer]
 leader_pace_cooldown_s = 120
 incident_classify = true
+flags = true
 """)
     cfg = AppConfig.from_file(path)
     assert cfg.overlay.commentary.enabled is True
@@ -135,6 +137,7 @@ incident_classify = true
     assert cfg.overlay.commentary.gap_hunt_tts_in_practice is True
     assert cfg.overlay.race_observer.leader_pace_cooldown_s == 120.0
     assert cfg.overlay.race_observer.incident_classify is True
+    assert cfg.overlay.race_observer.flags is True
     values = overlay_values(cfg.overlay)
     assert values["commentary.enabled"] is True
     assert values["commentary.audio_device"] == "CABLE Input"
@@ -142,6 +145,7 @@ incident_classify = true
     assert values["commentary.duck_ratio"] == 0.25
     assert values["commentary.duck_fade_ms"] == 400
     assert values["race_observer.incident_classify"] is True
+    assert values["race_observer.flags"] is True
 
 
 def test_session_tape_defaults_on(tmp_path: Path) -> None:

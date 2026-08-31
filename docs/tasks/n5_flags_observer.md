@@ -17,26 +17,26 @@
 
 ## Acceptance criteria
 
-- [ ] Rising edge only
-- [ ] Coalesce yellow family → one `yellow` speak
-- [ ] v1 names: `yellow`, `green`, `checkered` in overlay_mode RACE (other modes: log only / no speak)
-- [ ] Ignore start family
-- [ ] Per-flag cooldown
-- [ ] Checkered does not set `player_finished` and does not SESSION_WRAP
-- [ ] Feature flag default off
-- [ ] Register `SESSION_FLAG` in `COMMENTARY_ONLY_EVENTS` (coord N2)
+- [x] Rising edge only
+- [x] Coalesce yellow family → one `yellow` speak
+- [x] v1 names: `yellow`, `green`, `checkered` in overlay_mode RACE (other modes: log only / no speak)
+- [x] Ignore start family
+- [x] Per-flag cooldown
+- [x] Checkered does not set `player_finished` and does not SESSION_WRAP
+- [x] Feature flag default off
+- [x] Register `SESSION_FLAG` in `COMMENTARY_ONLY_EVENTS` (coord N2)
 
 ## Test plan
 
-- [ ] 0 → yellow bit → one event; hold → none
-- [ ] yellow+caution same tick → one
-- [ ] checkered bit → SESSION_FLAG not FINISH
-- [ ] cooldown
+- [x] 0 → yellow bit → one event; hold → none
+- [x] yellow+caution same tick → one
+- [x] checkered bit → SESSION_FLAG not FINISH
+- [x] cooldown
 
 ## Docs impact
 
-- [ ] Matrix flags row when shipped
-- [ ] CONFIG.md + example.ini
+- [x] Matrix flags row when shipped
+- [x] CONFIG.md + example.ini
 
 ## Config impact
 

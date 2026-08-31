@@ -597,6 +597,12 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             "incident_classify",
             ro_defaults.incident_classify,
         ),
+        flags=_get_bool(
+            parser,
+            "race_observer",
+            "flags",
+            ro_defaults.flags,
+        ),
     )
 
     lhm_raw = ""

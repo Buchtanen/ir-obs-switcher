@@ -196,6 +196,8 @@ class RaceObserverSettings:
     leader_pace_cooldown_s: float = 300.0
     # When true, INCIDENT metrics.branch is off_track | unknown. Default off until trusted.
     incident_classify: bool = False
+    # Race yellow/green/checkered SESSION_FLAG commentary. Default off.
+    flags: bool = False
 
 
 @dataclass(frozen=True)

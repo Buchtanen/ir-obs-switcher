@@ -1,7 +1,7 @@
 # Scenario coverage matrix (overlay · commentary · OBS)
 
 **Status:** inventory — **re-pinned 2026-08-31** vs umbrella #179 (P0 `EventFanout` peers; P5 `attack_range` / `pit_stopped` TTS shipped). Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.  
-**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 will split finish vs checkered — not shipped yet)
+**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 finish split shipped on the stacked epic; N5 `SESSION_FLAG` is commentary-only, gated)
 
 ## 0. Two session concepts — do not mix
 
@@ -163,6 +163,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Link drop | All | Stale/degraded/disconnect | yes lifecycle | **no** |
 | Final lap | All\* | `is_final_lap` (no mode gate) | yes 95 | yes cd 60 |
 | Finish | All\* | `player_finished` (s/f or eligible pit after `session_checkered`; cooldown fallback). `session_finished` now aliases `mute_field`. Checkered **bit** is not finish. | yes 100 | yes cd 120 |
+| Session flag Y/G/checkered | Race | `SessionFlags` rising edge. Yellow family coalesced. Start lights ignored. Gate `race_observer.flags` (default off). | no | yes COMMENTARY_ONLY `SESSION_FLAG` |
 | HR pressure | All | Bio `pushing`/`high` | yes | yes |
 | BLE lost | All | HR provider disconnect inject | yes | **no** |
 | Sysinfo bar | All | Continuous sample | persistent bar | n/a |
@@ -177,9 +178,9 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Enter car | All | no | yes `in_car` | `commentary.enabled`; skipped after_session |
 | Session intro P/Q/R | P/Q/R | no | opt | `session_briefs` |
 | SoF brief | R | no | opt | `session_briefs` |
-| Weather brief | All | no | opt | `session_briefs`; skipped after_session |
-| Session checkered | All | no | opt `session_checkered` | clock expired, still on out-lap; `session_briefs` |
-| Session wrap | All | no | opt `session_wrap` | after_session / session change; `session_briefs` |
+| Weather brief | All | no | opt | `session_briefs`; skipped after mute_field |
+| Session flag Y/G/checkered | Race | no | opt `SESSION_FLAG` | `race_observer.flags`; not `session_checkered` / SESSION_CHECKERED |
+| Session wrap | All | no | opt `session_wrap` | `player_finished` / session change; `session_briefs` |
 
 ## 5. Widget catalog notes
 

@@ -183,7 +183,7 @@ Derived `INCIDENT_AFTERMATH` (stalled/rolling) + `BACK_UNDER_WAY`; LapDistPct /
 surface / tow proxies + `RaceState.speed_mps` motion (N3; LapDistPct fallback;
 surface-first classify); template speech via director formatter fallback; fan-out
 to commentary. **Issue #172.**  
-**Next:** epic **N5 v1** (race yellow/green/checkered as `SESSION_FLAG`). N3 v1 shipped (`off_track` vs `unknown` on INCIDENT; Speed as motion, surface-first classify). Keep `BACK_UNDER_WAY`. No parallel FSM, no `INCIDENT_RECOVERED`.
+**Next:** N5 v1 shipped (`SESSION_FLAG` yellow/green/checkered). Stop for live listen.
 
 ### P4 — Stream narrative pre/post ✅
 `SESSION_WRAP` / `SESSION_PREVIEW` from RaceObserver at session boundaries;

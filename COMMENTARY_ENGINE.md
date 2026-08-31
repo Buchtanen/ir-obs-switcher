@@ -43,6 +43,7 @@ Rules:
 - Gap-hunt TTS (`HUNTING` / `HUNTED`) is off in practice/qualifying unless `commentary.gap_hunt_tts_in_practice` / `gap_hunt_tts_in_qualifying` is on. HUD hunting is unchanged. Race still speaks.
 - P/Q hunt-by-time is COMMENTARY_ONLY `PACE_HUNT` (`race/timing_hunt.py`): hero projected/best vs `CarIdxBestLapTime` of class P{n}. Unset times → silence. Quali HUD `position_attack` remains hero own PB.
 - `INCIDENT` `metrics.branch` is `off_track` or `unknown` only when `race_observer.incident_classify` is on (default off). Nearby cars are metrics, not spoken kinds. Same tick: speak at most one of engine `INCIDENT` (delta ≥ `incident_min_delta` default 2) and derived `INCIDENT_AFTERMATH` (any rise); INCIDENT wins. Aftermath classify is surface-first (off-track stays stalled even if Speed > 0). Speed is motion for on-track stalled/rolling and `BACK_UNDER_WAY`. No `INCIDENT_RECOVERED`.
+- Race `SESSION_FLAG` (`race/flags.py`) speaks yellow (caution family coalesced) / green / checkered on rising edges when `race_observer.flags` is on (default off). Start lights ignored. Checkered bit is not `FINISH` / `SESSION_WRAP`. Formatter fallback until N11 graph copy. Practice/qualify do not speak.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
 - BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
 - Fail-soft: graph load / observe errors must not break the race loop.

@@ -321,6 +321,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Set INCIDENT metrics.branch to off_track or unknown. Nearby cars stay metrics only. Default off.",
     ),
     FieldSpec(
+        "race_observer.flags",
+        "bool",
+        False,
+        True,
+        "race_observer",
+        "Speak race yellow/green/checkered as SESSION_FLAG. Start lights ignored. Default off.",
+    ),
+    FieldSpec(
         "commentary.llm_polish",
         "bool",
         False,
@@ -999,6 +1007,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "commentary.gap_hunt_tts_in_qualifying": s.commentary.gap_hunt_tts_in_qualifying,
         "race_observer.leader_pace_cooldown_s": s.race_observer.leader_pace_cooldown_s,
         "race_observer.incident_classify": s.race_observer.incident_classify,
+        "race_observer.flags": s.race_observer.flags,
         "commentary.llm_polish": s.commentary.llm_polish,
         "commentary.llm_base_url": s.commentary.llm_base_url,
         "commentary.llm_model": s.commentary.llm_model,

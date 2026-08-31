@@ -14,6 +14,7 @@ from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
 from irswitch.overlay.settings import RaceObserverSettings
 from irswitch.race.aftermath import IncidentAftermathFsm
+from irswitch.race.flags import SessionFlagFsm
 from irswitch.race.narrative import StreamNarrativeFsm
 from irswitch.race.opponents import (
     NearFieldCar,
@@ -49,6 +50,7 @@ class RaceObserver:
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
+    flags: SessionFlagFsm = field(default_factory=SessionFlagFsm)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -73,6 +75,7 @@ class RaceObserver:
         self.aftermath.reset()
         self.narrative.reset_session()
         self.timing_hunt.reset()
+        self.flags.reset()
 
     def reset_stream(self) -> None:
         self.reset_session()
@@ -80,9 +83,10 @@ class RaceObserver:
         self.narrative.reset_stream()
 
     def take_derived_envelopes(self) -> list[EventEnvelope]:
-        """Drain derived commentary envelopes (narrative, aftermath, timing hunt)."""
+        """Drain derived commentary envelopes (narrative, aftermath, flags, timing hunt)."""
         out = self.narrative.take_pending()
         out.extend(self.aftermath.take_pending())
+        out.extend(self.flags.take_pending())
         out.extend(self.timing_hunt.take_pending())
         return out
 
@@ -130,6 +134,7 @@ class RaceObserver:
             self._pending_weather_change = None
             self.aftermath.reset()
             self.timing_hunt.reset()
+            self.flags.reset()
             if key:
                 self.stream.note_session(key)
 
@@ -192,6 +197,10 @@ class RaceObserver:
             self.timing_hunt.tick(snap, state, now)
         except Exception:
             logger.warning("TimingHuntFsm.tick failed", exc_info=True)
+        try:
+            self.flags.tick(state, now, enabled=bool(self.settings.flags))
+        except Exception:
+            logger.warning("SessionFlagFsm.tick failed", exc_info=True)
         return ctx
 
     def next_filler_envelope(self, now: float, *, locale: str = "en") -> EventEnvelope | None:
@@ -325,6 +334,16 @@ class RaceObserver:
             if cs:
                 return f"Honí čas, který drží {int(pos)}. místo."
             return f"He's hunting the P{int(pos)} time."
+
+        if envelope.event_type == "SESSION_FLAG" or kind in {"yellow", "green", "checkered"}:
+            flag_kind = kind or str(metrics.get("branch") or "")
+            if flag_kind == "yellow":
+                return "Je žlutá." if cs else "Caution is out."
+            if flag_kind == "green":
+                return "Zelená vlajka." if cs else "Green flag."
+            if flag_kind == "checkered":
+                return "Šachovnice." if cs else "That's the checkered flag."
+            return None
 
         fact = str(metrics.get("fact") or "")
         pos = metrics.get("position")
