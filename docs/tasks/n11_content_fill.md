@@ -1,45 +1,40 @@
-# N11 — Content fill: new nodes EN+CS
+# N11 — Content fill (wave A only on landing)
 
 **Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §4  
-**Depends on:** N2 schema + the event types from N3, N5, N7, N8 (fill in waves as nodes land)  
-**Branch hint:** `feat/commentary-narrative-texts`  
-**Rule:** texts only in `sequence_graph.json` (+ assignment tests). No engine behavior.
+**Depends on:** N2 schema + N8 event type  
+**v1:** wave A only. P5 `attack_range` / `pit_stopped` already filled — do not redo.
 
 ## Context
 
-New watches are silent without lines. Voice: viewer-facing third person, CS+EN, validator, 4+ lines per emotion where the node allows. Stream start is **longer**; incidents in race stay short; practice off-track is **wordier**.
+P2–P4 derived types often speak via **templates** (`format_filler_text`). Graph nodes for those are optional polish, not a landing gate.
 
-## Owns / must not touch
+Stream start needs a **long** cap. Flags/incidents in v1 use `hr_states: ["unknown"]` if nodes exist at all.
 
-- **Owns:** `sequence_graph.json` variants, assignment briefs, density tests  
-- **Must not:** Python policy, new slots without the producing task  
+## Owns
 
-## Waves (can be separate PRs)
+- `sequence_graph.json` variants for wave A
+- density tests (node count will change)
+- Must not: Python policy; new slots without producer
 
-| Wave | Nodes | Notes |
-| --- | --- | --- |
-| A | `stream_start`, mode-specific `in_car_*` | Long TTS caps |
-| B | incident branches + recovered | Practice off-track longer |
-| C | `flag_*` | All sessions; mode filter |
-| D | `grid_wait`, `rolling_start`, `pace_hunt`, `leader_pace` | Recap slots |
+## Wave A (landing)
 
-## Acceptance criteria
+- [ ] `stream_start` EN+CS, slot-free line present, `tts.max_seconds` ≥ 15
+- [ ] Validator **exempts `STREAM_START` only** from `commentary.max_utterance_s` (default 6). Do not raise the global cap
+- [ ] Spoken stream_start holds `director._busy_until` for that duration (this **is** the opener mutex vs in-car)
+- [ ] `in_car` mode nodes **or** mode filter on existing node — do not delete generic until migrated
+- [ ] `validate_utterance` passes
+- [ ] viewer-facing third person
 
-- [ ] Each new node: EN+CS, emotions the node allows, ≥1 slot-free line when slots can be missing  
-- [ ] `validate_utterance` passes (long cap only on stream_start)  
-- [ ] No second-person driver radio  
-- [ ] Checkered flag copy ≠ finish copy  
-- [ ] Density test updated for node/line counts  
+## Later (not this landing)
 
-## Test plan
-
-- [ ] Existing graph validator + director bind tests for sample envelopes per branch  
-- [ ] Manual listen later on stream PC (not merge-blocking)  
+- B: off_track vs unknown incident copy (after N3)
+- C: flag yellow/green/checkered (after N5) — 1 line × 2 locales, not 5 emotions
+- D: grid/pace — only if N6/N7 ship
+- Optional: graph nodes replacing P2–P4 templates
 
 ## Docs impact
 
-- [ ] `docs/commentary_content_db_plan.md` wave checkbox  
-- [ ] Assignment markdown if we still generate briefs  
+- [ ] commentary_content_db_plan wave checkbox when A lands
 
 ## Config impact
 

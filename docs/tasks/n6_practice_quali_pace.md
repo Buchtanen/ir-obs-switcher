@@ -1,49 +1,48 @@
-# N6 — Practice/Quali: hunt by lap time, leader pace 5 min
+# N6 — Practice/Quali: gap-TTS off + hunt by rival lap time
 
-**Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §3.3, §6  
-**Depends on:** P2 (`StoryContext` / stream memory), existing `TimingStore` / quali projection  
-**Branch hint:** `feat/pq-pace-hunt`  
-**Parallel with:** N3/N5 if files stay `race/observer/timing_hunt.py` + battle **gate** only
+**Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §6  
+**Depends on:** N1 `CarIdxBestLapTime` on RaceState (N6b); P2 filler (N6a)  
+**Hard stop:** no usable `CarIdxBestLapTime` → **do not** ship PACE_HUNT; do **not** use DriverInfo
 
 ## Context
 
-In Practice/Quali the viewer cares about **the time that holds a position**, not the bumper gap. Current `BattleEmitter` hunting is gap/closing for all sessions. Leader time as vata must not repeat more than **once per 5 minutes**.
+P/Q viewer cares about the **time that holds a position**. `BattleEmitter` is gap-based for all sessions. `QualiEmitter.position_attack` labels P{n} from **hero own PB** — that is the wrong sport; quarantine or retarget, do not “reuse” it as hunt-by-time.
 
-Sector/lap improvement already exists (`PracticeEmitter`, `LapEmitter`, quali projection) — do not duplicate; only fill gaps (e.g. speak position change **with time** if the slot is missing).
+P2 already rotates FIELD_FACT including leader on a **15–20 s** cooldown. Leader 5 min = extra cooldown on that fact, not a new node.
 
-## Owns / must not touch
+## Owns
 
-- **Owns:** `TimingHuntWatch`, leader-pace field-fact policy (cooldown 300 s), config to **suppress gap-hunt TTS** in P/Q, tests  
-- **May touch:** `events/battle.py` only behind a session-mode gate (or commentary ignore list) — smallest possible diff  
-- **Must not:** race battle HUD, incident FSM, overlay widgets for hunting in P/Q unless already shown  
+- **N6a:** director or battle-adapter filter: no hunting/hunted TTS in PRACTICE/QUALIFYING; config keys below. HUD may still show hunting. Filter lives in **commentary** (or a thin adapter) — `events/` must not know about TTS (`py-architecture-layers.mdc`)
+- **N6a:** bootstrap `[race_observer]` in `config.example.ini` + `RaceObserverSettings` dataclass + loader + pass into `OverlayRuntime` / `RaceObserver()` (today: `RaceObserver()` with no settings, no re-apply in `_reset_commentary`). Later N3/N5 **add keys** to this dataclass — do not create a second type
+- **N6a:** `RaceObserver.next_filler_envelope` leader fact ≤ 1× / 300 s. Rotation `break`s on first eligible kind — leader cooldown must **`continue`** to the next kind or it suppresses the whole filler
+- **N6b:** `race/timing_hunt.py` only after N1 fixtures prove times; compare hero best/projected vs `CarIdxBestLapTime` of class P{n}
+- Must not: second filler path; DriverInfo times; duplicate PracticeEmitter sectors; `[event_engine]` TTS keys
 
 ## Acceptance criteria
 
-- [ ] `PACE_HUNT` (name TBD) when hero best or projected time is within a threshold of the time currently in P{n} (n = hero class pos − 1, or target locked)  
-- [ ] Uses lap time / projected, **not** `gap_ahead`  
-- [ ] Quali: prefer projected when confidence ≥ existing quali threshold; else best lap  
-- [ ] Practice: best valid lap vs class position times (document source: `CarIdx` best from DriverInfo/telemetry — **verify field exists** in N1 follow-up if missing; do not guess a var name in code)  
-- [ ] Gap-hunt commentary suppressed in PRACTICE and QUALIFYING by default; race unchanged  
-- [ ] Leader pace filler: max 1× / `leader_pace_cooldown_s` (default 300); skipped if a higher-priority timing/incident beat spoke recently  
-- [ ] Position gained/lost after a pass still uses existing emitters; add `lap_time` slot if cheap and tests show it is unbound today  
+- [ ] N6a: gap-hunt TTS suppressed in P/Q when config false (default)
+- [ ] N6a: race battle TTS unchanged
+- [ ] N6a: leader field fact cooldown 300 s; skip if a higher-priority beat spoke recently; **continue** rotation to next kind (do not `break` and mute all filler)
+- [ ] N6a: `[race_observer]` loads; `RaceObserver` constructed with settings; `_reset_commentary` re-applies
+- [ ] N6b: `CarIdxBestLapTime` all None → no envelope (silence)
+- [ ] N6b: never read DriverInfo for times
+- [ ] Quali `position_attack` either retargeted to rival time or documented as “own PB only” and not sold as hunt-P{n}
 
 ## Test plan
 
-- [ ] Unit: hero projected 0.05 s from P4 time → hunt P4 once; cooldown  
-- [ ] Unit: gap_ahead tiny in practice + flag off → no hunting TTS envelope from battle  
-- [ ] Unit: leader fact twice in 100 s → second suppressed  
-- [ ] Race: battle hunting still emits  
+- [ ] Practice + small gap_ahead + flag off → no hunting speech envelope
+- [ ] Race hunting still emits
+- [ ] Leader fact twice in 100 s → second suppressed; other filler kind still eligible in between
+- [ ] N6b: rival best 1:32.0, hero projected 1:32.04 → one hunt; all -1 → none
 
 ## Docs impact
 
-- [ ] Matrix battle vs timing-hunt rows  
-- [ ] `CONFIG.md` + example.ini  
-- [ ] Epic §6  
+- [ ] CONFIG.md + example.ini
+- [ ] Matrix battle vs timing-hunt
+- [ ] Epic §6
 
 ## Config impact
 
-- `event_engine.gap_hunt_tts_in_practice` default `false`  
-- `event_engine.gap_hunt_tts_in_qualifying` default `false`  
-- `race_observer.leader_pace_cooldown_s` default `300`  
-
-If DriverInfo does not expose others’ best laps, **stop and document** — do not invent; fall back to quali projection only.
+- `commentary.gap_hunt_tts_in_practice` default `false` (TTS gate, not HUD)
+- `commentary.gap_hunt_tts_in_qualifying` default `false`
+- `race_observer.leader_pace_cooldown_s` default `300` (N6a creates the section)

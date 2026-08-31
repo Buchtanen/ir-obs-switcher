@@ -1,58 +1,50 @@
-# N3 — Incident classifier, chain, aftermath, recovered
+# N3 — Incident v1: off_track vs unknown + Speed on P3 FSM
 
 **Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §2.3, §3.4  
-**Depends on:** N1, P3 aftermath FSM ([#174](https://github.com/Buchtanen/ir-obs-switcher/pull/174) / issue #172) already on the stack  
-**Blocks:** N11 incident copy, N10 log  
-**Branch hint:** `feat/incident-classifier-arc`  
-**Extends:** P3 — do not replace `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY`
+**Depends on:** N1 (`speed_mps` on `RaceState`), N2 (branch pick), N6a (`[race_observer]` settings already exist), P3 `race/aftermath.py` on #179  
+**Extends:** P3 — do **not** add `race/observer/incident.py` or `INCIDENT_RECOVERED`
 
 ## Context
 
-Today `IncidentEmitter` only sees `PlayerCarMyIncidentCount` delta ≥ `incident_min_delta`. P3 already adds stalled/rolling aftermath without Speed. This task adds **kinds**, **chains**, and richer **recovered** on top of that FSM.
+P3 already classifies stalled/rolling from TrkLoc + LapDistPct and emits `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY`. Generic `incident` also speaks (delta ≥ `incident_min_delta`, default 2). Aftermath fires on **any** count rise.
 
-iRSDK has **no incident-type enum**. This task is a documented heuristic + FSM.
+v1 does **not** claim car vs object or lost-control on air (5 Hz).
 
-## Owns / must not touch
+## Owns
 
-- **Owns:** new `src/irswitch/race/observer/incident.py` (or equivalent under `race/`), derived events from RaceObserver, commentary-only envelopes + adapter metrics `branch` / `confidence` / `chain`, tests  
-- **May adjust:** `race/aftermath.py` / observer wiring **after** P4 is on master; keep existing event names  
-- **Must not:** rewrite P3 from scratch, graph *texts* (N11), flag bits (N5), finish (N4)  
+- extend `race/aftermath.py` (Speed as **motion**, surface-first classify, LapDistPct fallback)
+- `events/incident.py` **or** adapter: `metrics.branch` = `off_track` | `unknown` on INCIDENT
+- tests (`test_incident_aftermath.py` + classify tests)
+- Must not: new recovery event name; graph mass texts (N11)
 
 ## Acceptance criteria
 
-- [ ] On incident increment, classify `off_track` | `lost_control` | `contact_car` | `contact_object` | `unknown` with `confidence`  
-- [ ] Nearby-car gate uses existing dist / lap-pct (thresholds in settings, documented)  
-- [ ] Chain: lost-control and/or off-track within window then contact → `metrics.chain=true`, one `correlation_id`  
-- [ ] Aftermath FSM: after incident, if speed below crawl for `T_stop` or slow band → not recovered; when speed ≥ roll for `T_hold` → `INCIDENT_RECOVERED` / `BACK_UNDER_WAY`  
-- [ ] Tow (`PlayerCarTowTime > 0`) and ESC teleport cancel the arc without “recovered”  
-- [ ] Practice/Quali: recovered **optional / quieter** (default: do not speak recovered in P/Q)  
-- [ ] Race: recovered speaks (scheduler still applies)  
-- [ ] Generic `incident` node still works if branch unbound (N2 fallback)  
-- [ ] Fail-soft; unit tests with fake clock cover each kind + chain + recovered + tow  
-- [ ] Feature flag default preserves old single `incident` speak until classify is on  
+- [ ] Classify `off_track` when surface is OffTrack around the tick; else `unknown`
+- [ ] Nearby car is a **metric** only, never a spoken kind
+- [ ] Tests: no neighbor + on-track + tick → `unknown` (not `contact_object`)
+- [ ] **Classify stays surface-first** (`_looks_stalled`: OffTrack / not-on-track / tow → `stalled` even if Speed > 0). Do **not** reclassify a moving off-track car as `rolling` (that skips `BACK_UNDER_WAY`)
+- [ ] Speed + LapDistPct = motion for (a) **on-track** stalled vs rolling and (b) stalled → `BACK_UNDER_WAY`. Speed missing → current LapDistPct only
+- [ ] Test with Speed **set**: off-track + Speed 15 m/s still `stalled`, then on-track + moving → one `BACK_UNDER_WAY`
+- [ ] Keep `BACK_UNDER_WAY`; no recovered TTS in PRACTICE/QUALIFYING
+- [ ] Same-tick **INCIDENT** (engine, delta≥2, prio 90) vs **INCIDENT_AFTERMATH** (derived, any rise, prio 72, fan-out bypass): speak at most one. Branch on INCIDENT is not a second competitor
+- [ ] Document `incident_min_delta` vs aftermath-any-rise: default leave delta=2; optional later commentary-only 1x off-track with cooldown (not this slice unless AC added)
+- [ ] Flag `race_observer.incident_classify` default `false` (key on the dataclass **N6a already created**; do not create a second settings type)
 
 ## Test plan
 
-- [ ] Unit: off-track surface vs count tick → `off_track` high confidence  
-- [ ] Unit: nearby car + tick → `contact_car`  
-- [ ] Unit: no neighbor + tick + on-track → `contact_object` or `unknown` (assert documented choice)  
-- [ ] Unit: yaw-rate spike then tick → `lost_control` then chain to contact  
-- [ ] Unit: speed 0 for N s then roll → recovered once; no double emit  
-- [ ] Unit: tow during aftermath → no recovered  
-- [ ] Existing `IncidentEmitter` tests: no double TTS when flag off  
+- [ ] Off-track + tick → branch off_track
+- [ ] On-track + tick → unknown
+- [ ] On-track + Speed 0 held → stalled; speed recover → BACK_UNDER_WAY once
+- [ ] Off-track + Speed > 0 → still stalled (regression vs Speed-primary)
+- [ ] Existing P3 tests still pass with Speed unset (fallback)
+- [ ] Same tick: INCIDENT + INCIDENT_AFTERMATH → only one spoken (scheduler or director test)
 
 ## Docs impact
 
-- [ ] Epic §2.3 confidence table stays accurate  
-- [ ] `COMMENTARY_ENGINE.md` new event types  
-- [ ] `CONFIG.md` + `config.example.ini` if flags/thresholds added  
-- [ ] `docs/scenario_coverage_matrix.md` incident row  
+- [ ] Epic refuse list stays accurate
+- [ ] CONFIG.md + example.ini if flag added
 
 ## Config impact
 
-Changed keys (proposal):
-
-- `race_observer.incident_classify` (default `false` until trusted)  
-- crawl / roll speed thresholds (m/s) and window seconds  
-
-Migration: off → today’s count-only incident.
+- `race_observer.incident_classify` default `false`
+- crawl/roll m/s thresholds

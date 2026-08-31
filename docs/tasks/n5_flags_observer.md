@@ -1,43 +1,43 @@
-# N5 — Session flags watcher (all sessions)
+# N5 — Flags v1 (race yellow / green / checkered)
 
 **Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §2.4  
-**Depends on:** N1 (`session_flags.py`), N2 for mode-specific nodes (can ship generic EN first)  
-**Branch hint:** `feat/session-flags-observer`  
-**Parallel with:** N3 **if** N3 does not own `events/` flag module (N5 owns flags only)
+**Depends on:** N1 decoder + flags on `RaceState`, N2 for `SESSION_FLAG` in `COMMENTARY_ONLY_EVENTS`, N6a for `[race_observer]` settings dataclass  
+**v1 reduced:** not all sessions, not full tree
 
 ## Context
 
-`SessionFlags` is extracted and ignored. We want rising-edge commentary in Practice, Quali, and Race, with a graph branch per flag. Checkered flag ≠ finish (N4).
+`SessionFlags` is extracted and ignored. v1 speaks three race beats. Start lights are **not** this task (N7 deferred). Checkered flag ≠ finish (N4).
 
-## Owns / must not touch
+## Owns
 
-- **Owns:** `race/observer/flags.py` (or `events/flags.py` if kept as a thin emitter), COMMENTARY_ONLY `SESSION_FLAG` (+ `metrics.flag`), tests  
-- **Must not:** finish semantics, incident FSM, `sequence_graph.json` mass text (stub node + N11)  
+- new `race/flags.py` (flat), called from `RaceObserver.observe`
+- formatter fallback in `observer.format_filler_text` until N11
+- tests
+- Must not: finish semantics, startHidden/Set/Go padding, graph mass texts
 
 ## Acceptance criteria
 
-- [ ] Rising edge per decoded flag name; falling edge silent unless we later add “green after yellow” as its own edge  
-- [ ] Coalesce yellow + yellowWaving + caution into one **yellow** speak (document mapping)  
-- [ ] Start bits Hidden/Ready/Set/Go are **not** this task’s rolling padding (N7); either ignore or emit raw for N7 to consume — pick ignore here  
-- [ ] Per-flag cooldown (yellow longer than blue)  
-- [ ] Works in P/Q/R; director uses mode layer when N2 is present  
-- [ ] Checkered flag event is `SESSION_FLAG` / branch `checkered`, never `FINISH`  
-- [ ] Feature flag default off  
+- [ ] Rising edge only
+- [ ] Coalesce yellow family → one `yellow` speak
+- [ ] v1 names: `yellow`, `green`, `checkered` in overlay_mode RACE (other modes: log only / no speak)
+- [ ] Ignore start family
+- [ ] Per-flag cooldown
+- [ ] Checkered does not set `player_finished` and does not SESSION_WRAP
+- [ ] Feature flag default off
+- [ ] Register `SESSION_FLAG` in `COMMENTARY_ONLY_EVENTS` (coord N2)
 
 ## Test plan
 
-- [ ] Unit: 0 → yellow bit → one event; held bits → none  
-- [ ] Unit: yellow+caution same tick → one coalesced event  
-- [ ] Unit: checkered bit does not create `finish` candidate  
-- [ ] Unit: cooldown suppresses chatter  
+- [ ] 0 → yellow bit → one event; hold → none
+- [ ] yellow+caution same tick → one
+- [ ] checkered bit → SESSION_FLAG not FINISH
+- [ ] cooldown
 
 ## Docs impact
 
-- [ ] Matrix new “flags” subsection  
-- [ ] `CONFIG.md` + example.ini  
-- [ ] `COMMENTARY_ENGINE.md` COMMENTARY_ONLY set  
+- [ ] Matrix flags row when shipped
+- [ ] CONFIG.md + example.ini
 
 ## Config impact
 
-- `race_observer.flags` default `false`  
-- Optional per-flag cooldown seconds  
+- `race_observer.flags` default `false`

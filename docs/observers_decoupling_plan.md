@@ -2,7 +2,7 @@
 
 **Status:** P0–P5 on joint umbrella [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (`feat/observers-decoupling-joint-test`)  
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
-**Product expansion (same umbrella, after P5):** [narrative_observers_epic.md](narrative_observers_epic.md) — N-tasks extend P0–P5; do not fork.  
+**Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — reshaped after two reviews vs this umbrella. N-tasks **extend** P0–P5. N9 cover cut. Incident v1 = off_track vs unknown; Speed is motion not classify-primary. Finish = three booleans (`session_checkered` ≠ checkered bit). Opener mutex. Landing order **N1 → N2 → N4 → N8 → N11 A**. Gap-hunt TTS keys live under `[commentary]`.  
 **Audience:** architecture / next epic planning
 
 ---
@@ -106,7 +106,7 @@ Neznamená to sledovat celý grid. Jen okolí hero. **Locked: 2+2** pro RaceObse
 | `BACK_UNDER_WAY` | Auto znovu jede |
 | `WEATHER_CHANGE` | Prahová změna počasí |
 | `FIELD_FACT` / silence fill | Leader / hero P / gap (pro 33 s watchdog) |
-| `RIVAL_REAPPEARS` | Stejný car znovu v near field |
+| `RIVAL_REAPPEARS` | Stejný car znovu v near field — **parked / cut from narrative epic v1** (unused in code) |
 | `SESSION_WRAP` / `SESSION_PREVIEW` | Hranice session |
 
 ### 3.3 Incident vs Finish (hlas + HUD)
@@ -182,18 +182,18 @@ silence filler via `filler_provider` / `filler_formatter` (`WEATHER_CHANGE` /
 Derived `INCIDENT_AFTERMATH` (stalled/rolling) + `BACK_UNDER_WAY`; LapDistPct /
 surface / tow proxies (no Speed field yet); template speech via director
 formatter fallback; fan-out to commentary. **Issue #172.**  
-**Next:** epic **N1** (real `Speed`) + **N3** (kinds / chain / recovered copy) extend this FSM — do not rewrite it.
+**Next:** epic **N1** (`Speed` on this FSM) + **N3 v1** (`off_track` vs `unknown` on INCIDENT metrics). Keep `BACK_UNDER_WAY`. No parallel FSM, no `INCIDENT_RECOVERED`.
 
 ### P4 — Stream narrative pre/post ✅
 `SESSION_WRAP` / `SESSION_PREVIEW` from RaceObserver at session boundaries;
 sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`.
 **Issue #175.**  
-**Next:** epic **N7** (grid / rolling start) + **N8** (stream start + in-car flavor) extend wrap/preview — do not replace them.
+**Next:** epic **N8** opener mutex + stream TTS (wrap stays gated by `session_briefs`). **N7 recap/rolling deferred.** Wrap must not fire on field checkered after N4.
 
 ### P5 — Content gaps ✅
 `ATTACK_RANGE` graph node (ENTER TTS); optional mid-pit `PIT_STOPPED` ENTER.
 Lane/released stay HUD-only. **Issue #177.**  
-**Next:** epic **N2** (graph mode/branch) + **N11** (more texts).
+**Next:** done for ATTACK_RANGE / PIT_STOPPED. Further copy = epic **N11 wave A** (stream_start / in_car only).
 
 ---
 

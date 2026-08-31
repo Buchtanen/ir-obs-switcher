@@ -1,41 +1,12 @@
-# N9 — Overlay stream cover + summary (optional)
+# N9 — Overlay stream cover — CUT from this epic
 
-**Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §5  
-**Depends on:** N8 `StreamStartContext` (or a tiny shared snapshot module extracted first)  
-**Branch hint:** `feat/overlay-stream-cover`  
-**UI:** verify in browser when implemented (full-bleed + hide)
+**Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §1.2, §5  
+**Status:** **CUT** — HUD / theme follow-up, not commentary umbrella work.
 
-## Context
+## Why cut
 
-Product: overlay **may** show a large graphic cover and a short summary at stream start (track, session, one-liner). This is **not** an OBS scene change. Optional vs N8 TTS.
+Human said overlay **may**. That is full-bleed z-order, theme art, i18n tokens, hide timing. Auto-hide on ENTER_CAR while 15 s TTS still plays desyncs picture and voice. Would stall this epic on CSS.
 
-## Owns / must not touch
+Commentary landing stops at `StreamStartContext` + TTS (N8).
 
-- **Owns:** overlay v4 state `stream_cover` (or equivalent), theme slot, CSS/layout, bus payload from snapshot, auto-hide, tests / demo fixture  
-- **Must not:** `logic/` OBS state machine, commentary director, EventEngine  
-
-## Acceptance criteria
-
-- [ ] When `overlay.stream_cover=true` and stream-start snapshot exists: full-bleed cover + summary tokens (track, session, optional SoF)  
-- [ ] Auto-hide after `stream_cover_s` **or** on `ENTER_CAR` / overlay_mode on-track — document winner (prefer ENTER_CAR else timeout)  
-- [ ] Default off; no cover on existing installs  
-- [ ] Does not steal battle/timing plates (z-order: cover above HUD until hidden)  
-- [ ] i18n EN+CS for summary tokens  
-- [ ] Theme can supply art; missing art → CSS fallback, no crash  
-
-## Test plan
-
-- [ ] Unit/protocol: envelope or bus flag shows then hides  
-- [ ] Overlay i18n keys exist  
-- [ ] Manual: browser overlay demo or `/overlay` — show cover, wait/hide, HUD returns  
-
-## Docs impact
-
-- [ ] Overlay theme docs / `OBS_BROWSER_SOURCE` if a second browser source is required (prefer **same** overlay URL)  
-- [ ] `CONFIG.md` + example.ini  
-- [ ] Matrix overlay column  
-
-## Config impact
-
-- `overlay.stream_cover` default `false`  
-- `overlay.stream_cover_s` default e.g. `12`  
+Reopen only after opener mutex exists and stream PC has listened to N8. New issue, not this stack.

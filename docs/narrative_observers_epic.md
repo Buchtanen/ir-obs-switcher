@@ -1,44 +1,81 @@
 # Narrative observers epic (stream → practice → quali → race → finish)
 
-**Status:** product + engineering plan (docs only)  
-**Date:** 2026-08-31  
+**Status:** product + engineering plan (docs only) — **reshaped 2026-08-31** after dual critical review vs umbrella code  
 **Depends on:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md), [observers_decoupling_plan.md](observers_decoupling_plan.md)  
-**Umbrella:** P0–P5 joint test [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (`feat/observers-decoupling-joint-test`) — this epic stacks **on that branch**, does not fork it.  
-**Task slices:** [docs/tasks/](tasks/) (`n1`…`n11`) — later commits on the same umbrella after #179 is the base; not 11 PRs to `master`.
+**Umbrella:** P0–P5 [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (`feat/observers-decoupling-joint-test`) — this epic stacks **on that branch**, does not fork it  
+**Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `story.py`). There is **no** `race/observer/` package.  
+**Task slices:** [docs/tasks/](tasks/) — sequential commits on this stacked branch, not extra PRs to `master`
 
-This epic expands the locked decoupling plan with the **broadcast story** we actually want: what speaks, what the overlay shows, and which watchers own which session.
+This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen.
+
+---
+
+## Review incorporated (2026-08-31)
+
+Two independent reviews (code vs P0–P5, product vs iRSDK). Verdict: **reshape, do not implement N1–N11 as originally written.**
+
+| Finding | Plan change |
+| --- | --- |
+| P3 already has stalled/rolling + `BACK_UNDER_WAY` | N3 **extends** `aftermath.py`; no second FSM; no `INCIDENT_RECOVERED` |
+| `IncidentEmitter` delta ≥ 2 vs aftermath any rise | Explicit policy: do not double-speak; document 1x off-track |
+| `session_finished` is mute + finish + wrap | Split **three** booleans (N4) |
+| Checkered **bit** ≠ `SessionState` 5 | Do not OR them into one `field_checkered` |
+| 5 Hz poll | No spoken `lost_control` / `contact_object` in v1 |
+| `CarIdxBestLapTime` is official, missing | N1 **required**; `DriverInfo` is **not** a lap-time source |
+| Four openers (stream / intro / in_car / preview) | **Opener mutex** — not “both can fire” |
+| P2–P4 derived types are template-only | N11 does not need to graph them first |
+| P5 `ATTACK_RANGE` / `PIT_STOPPED` already filled | Out of N11 |
+| Overlay cover is HUD/theme | **N9 cut** from this epic |
+| `session_briefs=false` silences wrap/preview | Product decision required before N7 |
+| N1 “parallel with P0” vs umbrella | N-tasks only on #179 |
+| Config key clash | One name: `gap_hunt_tts_in_practice` |
+
+### Second review (code, 2026-08-31)
+
+Independent pass against P0–P5 symbols. Incorporated below.
+
+| Finding | Plan change |
+| --- | --- |
+| §1.1 put N8 before N2; unknown `STREAM_START` fails `parse_sequence_graph` and kills all commentary | Landing: **N1 → N2 → N4 → N8 → N11 A** |
+| N8 “≥15 s” has no node yet; formatter fallback caps at 4 s; `director._speak` holds `_busy_until` for the node duration | N8 = bridge + mutex + type; **long copy is N11**; document busy-hold vs `commentary.max_utterance_s` |
+| `_looks_stalled` is **surface-first** (off-track ⇒ stalled even if moving); Speed-primary would drop `BACK_UNDER_WAY` | N3: Speed is motion **inside** stalled recovery / on-track classify — **not** a reclassify of off-track cars to `rolling` |
+| §1.1 `field_checkered` vs §2.5 `session_checkered` | Canonical: **`session_checkered`** (`SessionState == 5`). `field_checkered` = rejected OR'd name |
+| `event_engine.gap_hunt_tts_*` lives in HUD feature flags | Keys move to **`[commentary]`** (TTS gate; HUD may still hunt) |
+| `[race_observer]` does not exist; `RaceObserver()` takes no settings | **N6a** bootstraps section + dataclass + `OverlayRuntime` wiring (first `race_observer.*` in landing) |
+| N4 grep missed `events/target_locked.py`, `overlay/mock.py` | Listed in N4 |
+| Pit-rise: `bool(None)` is False; disconnect `reset()` drops latch; ESC teleport | N4 must reuse `is_esc_teleport` and define latch vs `RaceContextAnalyzer.reset()` |
+| Double-speak is **INCIDENT** (engine, delta≥2, prio 90) vs **INCIDENT_AFTERMATH** (derived, any rise, prio 72, fan-out bypass) — not generic vs branch on one envelope | N3 AC targets that pair |
+| `as_speed_mps` does not exist; helpers live in `sdk_units.py`; `reader.py` has duplicate var lists | N1 owns those files |
+| Matrix §4.3/§4.5/§6 still said attack_range/pit_stopped/chain gaps | Matrix re-pinned in this commit |
+| N2 `speak_priority` vs `director._follow_edge` | Filter mode/branch **first**, then edge-follow on the filtered set |
 
 ---
 
 ## 0. Product story (what we want)
 
-One stream, one voice, session-specific density. Watchers log what they saw. The sequence graph gets **depth** (mode + branch + edges), not a 5-D cell explosion.
+Still the north star. **v1 ships only the bold parts.**
 
 ```text
 OBS stream goes live
-  → long welcome TTS (context) + optional big overlay cover/summary
-Get in the car (often still in pit)
-  → Practice: next run / what this session is for
-  → Quali: why the lap matters
-  → Race: grid / start
+  → long welcome TTS with context          [v1, mutex]
+  → overlay cover                          [CUT — HUD follow-up]
+Get in the car (often pit)
+  → Practice / Quali / Race flavor         [v1, mutex vs intro]
 Practice / Quali
-  → incidents (off-track / contact car|object / lost-control)
-  → sector + lap-time improvement
-  → position gain/lost after a pass, with time
-  → hunt a *position by lap time*, not the bumper gap
-  → leader pace as vata, at most 1× / 5 min
-Race (different sport)
-  → short Quali recap while waiting for green
-  → rolling-start padding (new texts + maybe new beats)
-  → full battle + incident firehose
-  → aftermath: stalled/slow → rolling again = recovered
-  → chains: lost-control / off-track can become contact
-Flags in every session + graph branches
-Finish ≠ checkered announcement
-  → first: s/f crossing after checkered, or pit entry after checkered
+  → off-track vs generic incident          [v1]
+  → contact car vs object, lost-control    [NOT v1 — refuse on air]
+  → sector / lap improvement               [already shipped]
+  → hunt position BY LAP TIME, not gap     [v1 if CarIdxBestLapTime works]
+  → leader filler ≤ 1× / 5 min             [v1: extend P2 FIELD_FACT]
+Race
+  → quali recap + rolling novel            [defer after live listen]
+  → battles                                [keep BattleEmitter]
+  → Speed-based recovered on P3 FSM        [v1]
+  → yellow / green / checkered flags       [v1]; full flag tree later
+Finish ≠ checkered announcement            [v1]
 ```
 
-Voice stays **viewer-facing third person** (`COMMENTARY_ENGINE.md`). Overlay HUD priorities stay visual; voice has its own graph priorities + scheduler (P1).
+Voice: viewer-facing third person. HUD priorities stay visual.
 
 ---
 
@@ -46,323 +83,266 @@ Voice stays **viewer-facing third person** (`COMMENTARY_ENGINE.md`). Overlay HUD
 
 | Plan item | This epic |
 | --- | --- |
-| P0 fan-out | Keep (already in stack). Overlay and commentary are peers. |
-| P1 SpeechScheduler | Keep. Defer / hard_interrupt / 33 s silence. |
-| P2 RaceObserver MVP | Keep as **kernel**: `StoryContext` 2+2, weather, field facts, session reset. |
-| P3 incident aftermath | **Keep** (`INCIDENT_AFTERMATH` / `BACK_UNDER_WAY` on #174). **N1** adds `Speed`; **N3** adds kinds / chain / recovered copy on top of that FSM. |
-| P4 session wrap/preview | **Keep** (`SESSION_WRAP` / `SESSION_PREVIEW` on #176). **N7** adds grid/rolling; **N8** adds stream-start + in-car flavor. |
-| P5 content gaps | **Keep** (#179 / #178 `ATTACK_RANGE` + `PIT_STOPPED`). **N2** + **N11** add further graph layers/texts. |
-| Locked: near field 2+2, hard_interrupt ini, LLM past-only, finish still highest HUD prio | Unchanged. |
-
-P0–P5 live on umbrella **#179**. This epic stacks on that branch. Do not fork P3/P4/P5.
+| P0 fan-out | Keep. Peers, not chain. Matrix §1 re-pinned in this commit. |
+| P1 SpeechScheduler | Keep. |
+| P2 RaceObserver | Keep kernel. Leader 5 min = **extend** `next_filler_envelope`, do not add a second filler path. |
+| P3 aftermath | **Keep event names.** N1 `Speed` is motion (not classify-primary). N3 classify is **pre-step** on incident rise, not a parallel FSM. |
+| P4 wrap/preview | Keep. Wrap must **not** fire on field checkered after N4. Gated by `commentary.session_briefs` today — do not assume they are audible. |
+| P5 ATTACK_RANGE / PIT_STOPPED | **Done.** Not N11. |
+| `RIVAL_REAPPEARS` | Unused in code. **Cut** from this epic (delete or park in decoupling plan). |
 
 ---
 
-## 2. iRSDK: what we can actually know
+## 1.1 First landing (ordered commits on this stacked branch)
 
-Do **not** invent telemetry names. Extraction stays in `iracing/` (no policy).
+Do **not** start until #179 is the parent (already true).
+
+N2 **must** land before any new `event_types` string in `sequence_graph.json`. Unknown types fail `parse_sequence_graph` and `OverlayRuntime._build_commentary` returns `None` (all commentary dies).
+
+1. This docs reshape (this commit).
+2. **N1 extract:** `Speed` → `RaceState.speed_mps` via new `as_speed_mps` in `sdk_units.py` (0 valid, negative → None). `CarIdxBestLapTime` / `CarIdxLastLapTime` via `as_completed_lap_time`. `session_flags.py` decode. Also update `iracing/reader.py` duplicate var lists. **No** Yaw/accel. No speak.
+3. **N2** additive `modes` / `branch` + director pick. Register `STREAM_START` and `SESSION_FLAG` in `COMMENTARY_ONLY_EVENTS` here (nodes/copy come later). Mode/branch filter **before** `_follow_edge`.
+4. **N4 finish split** (wide audit): `session_checkered` / `player_finished` / `mute_field`. See §2.5.
+5. **N8 opener mutex + stream bridge** (no cover, no long copy). Default `commentary.stream_start=false`. Hook `obs_stream_started` → `get_overlay_runtime()`. Fail-soft.
+6. **N11 wave A only:** long `stream_start` node (`tts.max_seconds` ≥ 15, validator exception vs `commentary.max_utterance_s`) + mode `in_car`. Do not delete generic `in_car` until lines migrate.
+7. **N6a:** suppress gap-hunt **TTS** in P/Q (`commentary.gap_hunt_tts_in_practice` / `_qualifying` default `false`). Bootstrap `[race_observer]` + settings wiring. Leader fact 300 s. Race unchanged. HUD may still hunt.
+8. **N6b:** hunt-by-time **only if** N1 fixtures show usable `CarIdxBestLapTime`. Else skip speak. Fix or quarantine `QualiEmitter.position_attack` (hero PB as `P{n}`, not rival time).
+9. **N3 v1:** `off_track` vs `unknown` on INCIDENT; Speed as motion on P3 **without** flipping off-track→rolling; scheduler must not speak INCIDENT + INCIDENT_AFTERMATH the same tick. `BACK_UNDER_WAY` only.
+10. **N5 v1:** race yellow (coalesce caution family) / green / checkered as `SESSION_FLAG`. Ignore start lights. Default off.
+11. **Stop.** Live listen. Then maybe N7 one-liner recap (no rolling novel), then research lost-control, then HUD cover.
+
+---
+
+## 1.2 Cut from this epic / this landing
+
+- Spoken `contact_car`, `contact_object`, `lost_control`
+- Overlay cover (N9) — HUD/theme follow-up
+- N11 waves B–D (incident kinds, all flags, grid/pace dump)
+- Leader-pace as its own graph node (P2 `FIELD_FACT` + 300 s cooldown)
+- Rolling-start “scenarios”
+- N10 as public API (optional debug ring inside FSM commit)
+- Yaw/Velocity/Accel extract until a research slice exists
+- `DriverInfo` as lap times
+- `race/observer/` package
+
+---
+
+## 2. iRSDK
+
+Do **not** invent telemetry names. Extraction in `iracing/` only.
 
 ### 2.1 Already on `TelemetrySnapshot`
 
 | Var | Use |
 | --- | --- |
-| `PlayerCarMyIncidentCount` | Incident **counter only** — no type enum |
-| `PlayerTrackSurface` / `CarIdxTrackSurface` | `OffTrack=0`, `InPitStall=1`, `ApproachingPits=2`, `OnTrack=3` |
-| `CarDistAhead` / `CarDistBehind` / `CarIdxLapDistPct` | Nearby-car heuristic |
-| `OnPitRoad`, `PlayerCarTowTime` | Pit vs tow vs stalled |
-| `SessionFlags` | Present, **unused by emitters today** |
-| `SessionState` | 1 GetInCar, 2 Warmup, 3 **ParadeLaps**, 4 Racing, 5 Checkered, 6 CoolDown |
-| Weather live vars | Session briefs / P2 weather watch |
+| `PlayerCarMyIncidentCount` | Counter only — no type enum |
+| `PlayerTrackSurface` / `CarIdxTrackSurface` | OffTrack=0 … OnTrack=3 |
+| `CarDistAhead` / `CarDistBehind` / `CarIdxLapDistPct` | Nearby metric only — **not** proof of contact |
+| `OnPitRoad`, `PlayerCarTowTime` | Pit vs tow |
+| `SessionFlags` | Extracted, unused by emitters |
+| `SessionState` | 3 ParadeLaps, 4 Racing, 5 Checkered, 6 CoolDown |
+| `LapBestLapTime` / `LapLastLapTime` | **Player only** |
+| `CarIdxClassPosition` | Already extracted |
 
-### 2.2 Must extract (N1) — official names
+`DriverInfo` in this repo = names / iRating / class / spectator. **Not** a lap-time table.
 
-| Var | Unit | Why |
+### 2.2 Landing extract (N1) — official
+
+Verified against irsdkdocs. None of these names are invented.
+
+| Var | Unit | Landing |
 | --- | --- | --- |
-| `Speed` | m/s | Aftermath: stopped / crawling / rolling |
-| `Yaw` / `YawRate` | rad / rad·s⁻¹ | Lost-control |
-| `VelocityX`, `VelocityY` | m/s | Heading vs velocity slip |
-| `LatAccel`, `LongAccel` | m/s² | Spin / impact spike |
-| `SteeringWheelAngle` | rad | Optional support for lost-control |
+| `Speed` | m/s (0 valid) | **required** — `speed_mps` on snapshot + `RaceState`; aftermath **motion** (see N3, not classify-primary) |
+| `CarIdxBestLapTime` | s, disconnected `-1` | **required** — N6; sanitize with `as_completed_lap_time` |
+| `CarIdxLastLapTime` | s, `-1` | **required** companion |
+| `SessionFlags` decode | bits | **required** helper; no speak |
 
-Optional later (not required for N1): `PlayerCarInPitStall`, `YawNorth`.
+**Not in landing:** `Yaw`, `YawRate`, `VelocityX/Y`, `LatAccel`, `LongAccel`, `SteeringWheelAngle`. 5 Hz (`iracing.poll_hz`) cannot catch a yaw spike; `LatAccel` includes gravity. Research later.
 
-### 2.3 Incident kinds — **heuristic, not an SDK enum**
+Optional later (not v1): YAML `SessionInfo.Sessions[].ResultsPositions[].FastestTime` / `LastTime` if live arrays are all `-1`.
 
-iRacing does **not** publish “off-track vs car vs wall” as a typed incident. `PlayerCarMyIncidentCount` just ticks. Classification is a **confidence-tagged watch** over a short window (≈1–4 s) around the increment:
+### 2.3 Incident kinds — **on-air refuse**
 
-| Kind | Evidence (priority order) | Confidence |
+No SDK incident-type enum. `IncidentEmitter` default `incident_min_delta = 2` → many 1x off-tracks **never emit**. Aftermath FSM today fires on **any** count rise. Plan must not ignore that mismatch.
+
+| Kind | v1 speak? | Evidence |
 | --- | --- | --- |
-| `off_track` | `PlayerTrackSurface == OffTrack` held ≥ N ms around the tick | **high** (direct TrkLoc) |
-| `lost_control` | On-track (or just leaving): `YawRate` spike and/or velocity-heading mismatch + speed still material | **medium** |
-| `contact_car` | Increment + another car within distance/lap-pct gate (and/or tiny `CarDistAhead/Behind`) | **medium** |
-| `contact_object` | Increment + **no** nearby car + not a clean off-track story (wall / unknown) | **low–medium** |
-| `chain` | `lost_control` and/or `off_track` in window **then** contact | **medium** (composition) |
+| `off_track` | **yes** (high) | `PlayerTrackSurface == OffTrack` around a tick |
+| `unknown` | **yes** (generic incident) | everything else |
+| nearby car | **metric only** | never “he hit X” |
+| `contact_car` / `contact_object` | **refuse** | 5 Hz correlation, not fact |
+| `lost_control` | **refuse** | undersampled; banked `LatAccel` lies |
 
-If evidence conflicts, emit the **most specific** kind plus `metrics.chain` / `metrics.confidence`. Never claim car-vs-wall as fact when confidence is low — graph lines must have a slot-free / vague fallback.
+Chain copy, if any: “then contact” after off-track — never wall vs car.
 
-Practice copy: **more text** on off-track; contact split when confidence allows; lost-control as its own branch.
+**Double-speak (real pair):** `INCIDENT` from `IncidentEmitter` (delta ≥ `incident_min_delta` default 2, HUD prio 90, EventEngine + `filter_post_race`) vs `INCIDENT_AFTERMATH` from `IncidentAftermathFsm` (any count rise, prio 72, `take_derived_envelopes` → `EventFanout`, **bypasses** engine arbitration). A `metrics.branch` on the one INCIDENT envelope cannot compete with itself (`_pick_node` returns one node). v1: set `metrics.branch` = `off_track` \| `unknown` on INCIDENT; aftermath stays P3. Scheduler: **do not speak INCIDENT and INCIDENT_AFTERMATH in the same tick** (defer or drop the lower-prio derived).
+
+**1x off-track:** leave `incident_min_delta` unless we add an explicit commentary-only 1x path with a hard cooldown (separate AC, default off).
 
 ### 2.4 Flags
 
-Decode `SessionFlags` bits in `iracing/` (pure helper). Speak on **rising edges** with per-flag cooldown. Product-relevant bits:
+Decode in `iracing/session_flags.py`. Bits match `irsdk_Flags`.
 
-| Bit (hex) | Name | Speak? |
-| --- | ---: | --- |
-| `0x00000001` | checkered | **yes, as flag** — not finish |
-| `0x00000002` | white | yes (race; rare elsewhere) |
-| `0x00000004` | green | yes (start / restart) |
-| `0x00000008` / `0x00000100` | yellow / yellowWaving | yes |
-| `0x00000010` | red | yes |
-| `0x00000020` | blue | yes (being lapped) |
-| `0x00004000` / `0x00008000` | caution / cautionWaving | yes (often with yellow) |
-| `0x00010000` | black | yes |
-| `0x00020000` | disqualify | yes, rare |
-| `0x00100000` | repair (meatball) | yes |
-| `0x10000000`…`0x80000000` | startHidden / Ready / Set / Go | rolling/standing start padding |
-| `0x00040000` | servicible | no TTS (pit service permission) |
+**Checkered flag bit** = this client is **shown** the flag. **`SessionState == 5`** = session in checkered. **Do not OR** them into one field used for hero finish.
 
-Same watcher in Practice/Quali/Race; **graph nodes** differ by `overlay_mode` (N2).
+v1 speak (N5): race **yellow** (coalesce `yellow` / `yellowWaving` / `caution` / `cautionWaving`) / **green** / **checkered**. StartHidden/Ready/Set/Go belong to N7 (deferred). Default off.
 
-### 2.5 Finish (today vs wanted)
+### 2.5 Finish — three booleans
 
-Today (`race/context.py`): `session_finished = SessionState in {5, 6}` and `SessionEmitter` fires `finish` on that edge. `filter_post_race` then mutes almost everything.
+Today `session_finished = SessionState in {5, 6}` and that one flag:
 
-Wanted:
+- fires `FINISH` (`SessionEmitter`)
+- mutes field (`filter_post_race`)
+- aborts hunting (`BattleEmitter`)
+- silences P/Q/sectors/pits
+- fires `SESSION_WRAP`
+- stops timing ingest
 
-| Signal | Meaning |
+Product: checkered is a **flag**, not hero result. Finish = first **s/f crossing after the session is checkered**, or **pit-road rising after checkered if the car was not already on pit road**. CoolDown without those = DNF fallback.
+
+| Boolean | Meaning |
 | --- | --- |
-| Field checkered | `SessionState == 5` (or checkered flag bit) — **flag beat**, not hero finish |
-| Player finished | first of: **lap complete / s/f crossing** while field is checkered, **or** pit-road entry after checkered |
-| Fallback | `SessionState == 6` CoolDown if the hero never crossed (DNF / tow / DC) — still emit finish once |
+| `session_checkered` | `SessionState == 5` (session, not client bit) |
+| `player_finished` | hero done (cross / eligible pit / cooldown fallback) |
+| `mute_field` | post-race filter + battle abort — **must follow `player_finished`**, not checkered |
 
-Split the boolean. Do **not** keep using `session_finished` as both “mute the field” and “hero done”. See **N4**.
+`session_finished` is deprecated as a dual-use name. N4 must grep every call site: `race/context.py`, `events/session.py`, `events/session_phase.py`, `events/engine.py`, `events/battle.py`, `events/practice.py`, `events/quali.py`, `events/sector_split.py`, `events/pit_story.py`, `events/target_locked.py`, `race/narrative.py`, `overlay/mock.py`, plus tests that construct `session_finished=`.
+
+Pit-rise finish: only if `OnPitRoad` was **false** when checkered started (otherwise no rising edge, or false finish for cars already in pits). Latch rules N4 must write:
+
+- `bool(snap.on_pit_road)` today turns `None` into `False` — a dropout looks like “on track”; recovery then looks like pit-rise finish. Treat `None` as unknown (do not arm / do not fire).
+- Reuse `iracing.trk_loc.is_esc_teleport` (already used by `should_begin_pit_cycle`) so ESC/teleport is not a finish.
+- `RaceContextAnalyzer.reset()` on disconnect must **drop** the checkered/pit latch; do not finish across a reconnect.
+
+`SESSION_WRAP` moves off the checkered edge → `player_finished` or session-key change (P4 already wraps on key change).
+
+HUD finish plate stays highest prio when `player_finished` fires. N5 checkered flag is a different beat.
 
 ---
 
-## 3. RaceObserver — proposed shape (the strong one)
+## 3. RaceObserver — extend what shipped
 
-Not an LLM loop. Not a second EventEngine. A **stateful interpreter** next to emitters: memory + derived candidates + watcher logs. Emitters keep atomic edges (lap, gap hunt in race, pit FSM). The observer owns **arcs** that need memory.
+Not a second EventEngine. Not an LLM. Watches are extra ticks inside existing `RaceObserver.observe()` (`aftermath.tick`, `narrative.tick` today). New modules stay **flat** under `race/`.
 
-```text
-TelemetrySnapshot
-        │
-RaceContextAnalyzer → RaceState          (hero, 1+1 HUD neighbors, lap flags)
-        │
-        ├─ EventEngine emitters          (atomic: lap, battle-gap, pit, …)
-        │
-        └─ RaceObserver                  (this epic)
-              StoryContext (P2): hero + 2+2, weather, stream memory
-              watches (N3–N7): incident, flags, pace, timing-hunt, grid, finish
-              session policy: Practice | Quali | Race
-              → derived CandidateEvent[]  (COMMENTARY_ONLY unless HUD is explicit)
-        │
-        ▼
-Shared arbitration → fan-out → OverlaySink | CommentaryPath | Tape
-```
+Derived COMMENTARY_ONLY envelopes **bypass EventEngine arbitration** (drain → fan-out). Plan must set speak_priority/cooldowns knowing incident HUD is 90 and aftermath is 72.
 
-### 3.1 Kernel (issue #170 / P2 — do not redesign)
+### 3.1 Kernel (P2 — do not redesign)
 
-- `StoryContext`: hero + **2 ahead + 2 behind**, names, gaps, class positions  
-- Bounded stream memory keyed by `(SubSessionID, SessionNum)` plus a small **weekend bag** (last quali result → race recap)  
-- Weather thresholds → `WEATHER_CHANGE`  
-- Field facts for 33 s silence (P1), **except** leader-pace which is capped **1× / 5 min** (N6 policy)  
-- Fail-soft; never throw into the race loop  
+`StoryContext` 2+2, weather, `StreamMemory` (sessions + rivals only — **no quali bag yet**). Field facts 15–20 s rotation. Leader 5 min = extra cooldown on the **leader** fact, not a new event type.
 
-Battle HUD may stay 1+1. Observer 2+2 is for story / filler / chains.
+### 3.2 v1 watches
 
-### 3.2 Watches (new)
-
-| Watch | Emits | Session |
+| Watch | Module | Session |
 | --- | --- | --- |
-| `IncidentWatch` | kind, chain, aftermath, recovered | all (copy differs) |
-| `PaceWatch` | stalled / slow / rolling using `Speed` | mainly race aftermath; practice recovery optional |
-| `FlagWatch` | rising-edge flags | all |
-| `TimingHuntWatch` | hunt **position by lap/projected time** | Practice + Quali only |
-| `GridWatch` | wait-for-green, parade/rolling padding, quali recap | Race |
-| `FinishWatch` | player finished (cross or pit) | Race (and timed quali if we ever need it) |
+| Aftermath (P3) + Speed | `aftermath.py` | all; recovered TTS race-only |
+| Flags rising-edge | new `race/flags.py`, called from observer | v1: race yellow/green/checkered |
+| Finish (N4) | `context.py` state + `session.py` | race |
+| Timing hunt | new `race/timing_hunt.py` **iff** N1 times work | P/Q |
+| Stream start | new bridge `main.py` → overlay runtime (does **not** exist today) | once per OBS rising edge |
+| Grid/rolling | **not v1** | — |
 
-Each watch: `tick(ctx, state, snap, now) -> list[DerivedEvent]`. Shared monotonic clock. Each decision **logged** (N10).
+Signature: match shipped `tick(state, now)` plus fields copied onto `RaceState` by N1. Do not invent `tick(ctx, snap)` until a dedicated observer refactor (not in landing).
 
-### 3.3 Session policies (strategy, not a 2000-line `if`)
+### 3.3 Session policies (v1)
 
-**Practice** — viewer cares about the run, not bumper wars:
+**Practice / Quali:** gap-hunt **TTS** off by default; HUD may still hunt. Timing-hunt = hero best/projected vs `CarIdxBestLapTime` of the car in P{n}. If array is all None, **silence** (no DriverInfo fallback). Quali `position_attack` is **not** this sport — quarantine or retarget.
 
-- Incident branches with **longer off-track** copy  
-- Sector gain/loss and lap PB (existing `PracticeEmitter` / `LapEmitter` — do not duplicate)  
-- After a **pass**: position gained/lost + time (existing position path; observer may add a “with time” slot if missing)  
-- **Hunting** = “this lap/best is attacking P{n}’s time”, **not** `gap_ahead`  
-- Gate or ignore `BattleEmitter` gap-hunt in PRACTICE (config, default: suppress gap-hunt TTS in P/Q)  
-- Leader reference time: filler, **≤ 1× / 5 min**, never on cooldown of a better beat  
+**Race:** keep `BattleEmitter` gap hunt. Speed on P3 recovered. Flags v1. No rolling novel.
 
-**Quali** — same skeleton as practice, plus existing projection / hot lap / position attack. Timing-hunt aligns with “can this lap take P{n}”. Gap-hunt still off for TTS.
+### 3.4 Incident arc
 
-**Race** — different sport:
-
-- Gap hunting / hunted / SBS / overtake: **keep BattleEmitter** (this is real traffic)  
-- Observer adds: quali recap on grid, rolling-start vata, flag story, incident chains + recovered, finish crossing  
-- Full comment density; P1 scheduler + hard_interrupt is the safety valve  
-- After lost-control or incident: PaceWatch until rolling `BACK_UNDER_WAY` / `INCIDENT_RECOVERED`  
-
-### 3.4 Incident arc FSM (N3)
-
-```text
-IDLE
-  → LOST_CONTROL? (physics, optional)
-  → OFF_TRACK?    (TrkLoc)
-  → CONTACT?      (count↑ + car|object)
-  → AFTERMATH     (speed < crawl for T_stop, or slow < T_slow)
-       → RECOVERED (speed ≥ roll for T_hold) 
-       → TOWED     (PlayerCarTowTime > 0)
-       → RESET     (ESC teleport / session change)
-```
-
-Windows are time-based (monotonic), not frames. A chain is one `correlation_id`. Practice may speak the first kind loudly and skip recovered; race speaks recovered when the car actually goes again.
-
-### 3.5 What RaceObserver must not do
-
-- Call TTS or know overlay widgets  
-- Re-implement lap/sector math (`TimingStore` already exists)  
-- Re-implement gap hunting for race HUD  
-- Unbounded transcript  
-- LLM to decide event types  
+P3 FSM is authoritative (`idle → classify → stalled | rolling → BACK_UNDER_WAY`). **Classify stays surface-first:** `_looks_stalled` today is True on OffTrack / not-on-track / tow **without reading motion** — that is the only path that can later emit `BACK_UNDER_WAY`. N3 must **not** make Speed primary if that reclassifies a still-rolling off-track car as `rolling` (idle, no recovery beat). Speed + LapDistPct = motion for (a) on-track stalled vs rolling and (b) stalled → `BACK_UNDER_WAY`. Speed missing → keep current LapDistPct. No rename to `INCIDENT_RECOVERED`.
 
 ---
 
-## 4. Sequence graph — more layers without combinatorics
+## 4. Sequence graph
 
-Today: `node → variants[locale][emotion]` (graph v1). Edges are weak preferences.
+Today: `nodes_for(event, phase)` only. P2–P4 derived types often have **no graph node** — they speak via `format_filler_text`. P5 attack_range / pit_stopped **are** filled.
 
-**Do not** add `emotion × mode × branch × locale` cells. That is unauthorable.
+v1 N2: optional `modes` + `branch` on nodes; director match ladder. **Trap:** generic `incident` must not outrank `off_track` via `speak_priority` — branch match wins the tier, then priority.
 
-**Do** add **selectable nodes** (graph v2, additive):
+v1 content (N11 A): `stream_start` (long `tts.max_seconds` ≥ 15) + `in_car` mode filters. `hr_states: ["unknown"]` for those. Keep generic `in_car` until migrated.
 
-```text
-nodes_for(event_type, phase, mode, branch) →
-  1. event + phase + mode + branch
-  2. event + phase + branch
-  3. event + phase + mode
-  4. event + phase          (today)
-```
-
-- **Mode layer:** `overlay_mode` filter on the node (`PRACTICE` / `QUALIFYING` / `RACE`).  
-- **Branch layer:** `metrics.branch` (`off_track`, `contact_car`, `contact_object`, `lost_control`, `recovered`, `yellow`, …).  
-- **Sequence layer:** edges between those nodes (`lost_control` → `contact_car`, `incident` → `incident_recovered`).  
-- **Length layer:** per-node `tts.max_seconds` / `max_chars` (already exists). Stream welcome uses a **long** cap (e.g. 18 s / ~280 chars); race incidents stay short.
-
-New node families (content in N11, schema in N2):
-
-| Node id (proposal) | Event | Notes |
-| --- | --- | --- |
-| `stream_start` | `STREAM_START` | Long welcome; context slots |
-| `in_car_practice` / `_qualify` / `_race` | `ENTER_CAR` | Replace generic-only `in_car` via mode select |
-| `incident_off_track` | `INCIDENT` branch | More text in P/Q |
-| `incident_contact_car` / `_object` / `_lost_control` | `INCIDENT` | Fallback generic `incident` remains |
-| `incident_recovered` | `INCIDENT_RECOVERED` | Race |
-| `flag_*` | `SESSION_FLAG` | One node per speakable flag, mode-filtered lines |
-| `rolling_start` / `grid_wait` | `ROLLING_START` / `GRID_WAIT` | Race padding + quali recap slots |
-| `pace_hunt` | `PACE_HUNT` | P/Q position-by-time |
-| `leader_pace` | `FIELD_FACT` branch `leader` | 5 min cap in observer, not graph |
-| `finish` | `FINISH` | Only player finished (N4) |
-| `flag_checkered` | `SESSION_FLAG` | Checkered **flag**, not finish |
-
-`ATTACK_RANGE` TTS stays a small P5 leftover unless a node is cheap once N2 exists.
+Do not cartesian-product flags × modes × emotions.
 
 ---
 
-## 5. Stream start + overlay cover
+## 5. Opener mutex (required)
 
-Two consumers, **one snapshot** (`StreamStartContext`): track, session type, field size, SoF if known, weather one-liner, weekend name.
+Today they are separate machines and **will talk over each other** if N8 “both can fire” stands. Runtime already defers `ENTER_CAR` when a session brief speaks.
 
-| Surface | Behavior |
+| Situation | One winner |
 | --- | --- |
-| TTS | Longer commentary; trigger from existing OBS edge `obs_stream_started` in `main.py` (fail-soft if overlay runtime missing). Feature flag default **off**. |
-| Overlay | Optional **full-bleed cover + summary** (N9). Not an OBS scene switch. Auto-hide after timeout or `ENTER_CAR`. |
+| OBS live, not seated | `STREAM_START` only |
+| Seated, same session, no stream-start this tick | `ENTER_CAR` **or** session intro, not both |
+| Session change, stream already live | `SESSION_WRAP` then **one** of preview **or** intro |
+| Race pre-green | recap **instead of** a second race intro (N7, not v1) |
+| Stream start while already in car | welcome only; **do not** replay in-car |
 
-Cover is optional (“mohl”). TTS welcome is in-scope for N8 even if N9 slips.
+N8 must **add** `main.py` → overlay/commentary bridge (`obs_stream_started` today only refreshes YouTube). Use existing `overlay/http.py` `get_overlay_runtime` / `set_overlay_runtime` — no new global. Fail-soft.
 
-In-car in the pit is **not** stream start: `InCarDetector` already fires once per seated stint; N8 adds **mode-specific copy** (next practice attempt / quali stakes / race start). Session intros (`session_briefs`) stay the once-per-session track/SoF/weather pack — do not merge them into in-car.
-
----
-
-## 6. Hunting: two different sports
-
-| Session | “Hunting” means | Owner |
-| --- | --- | --- |
-| Practice / Quali | Hero lap or projected vs the time that currently holds P{n} | `TimingHuntWatch` (N6) |
-| Race | Gap + closing on the car ahead/behind | existing `BattleEmitter` |
-
-Leader time in P/Q is **not** hunting. It is filler, max **1× / 5 minutes**, skipped if a better timing/incident beat is fresh.
+Cover (N9) is **out**. Auto-hide vs 15 s TTS would desync anyway.
 
 ---
 
-## 7. Parallel plan (do not launch agents until this is approved)
+## 6. Hunting: two sports
 
-### sequential (dependencies)
-
-```text
-Umbrella #179 (P0–P5 joint test)
-  → this docs epic (stacked here)
-  → N-tasks as later commits on the same umbrella (not extra PRs to master)
-```
-
-Do **not** start N-task implementation until umbrella #179 is the base (joint test). Then sequential commits on that same branch.
-
-### commit slices on the umbrella (not extra PRs to master)
-
-| Slice | Owns | Must not clash in the same commit |
+| Session | Meaning | Owner |
 | --- | --- | --- |
-| **N1** iRSDK extract | `iracing/telemetry.py` additive vars, `overlay/models.py` additive fields, new `iracing/session_flags.py` | emitters / director |
-| **N2** graph select | `commentary/graph.py`, validator | director until texts exist |
-| **This docs slice** | `docs/narrative_observers_epic.md`, `docs/tasks/*` | runtime |
+| P/Q | time that holds P{n} | N6b + `CarIdxBestLapTime` |
+| Race | gap + closing | `BattleEmitter` |
 
-### skip / later
-
-- OBS scene for cover (stay overlay browser source)  
-- Official iRacing incident-type enum (does not exist)  
-- LLM event picker  
-- New TTS engine / new pip deps  
-- Past-tense duplicate graph cells  
+Leader time: P2 field fact, **1× / 300 s**, skip if a better beat just spoke.
 
 ---
 
-## 8. Config impact (planned, not in this PR)
+## 7. Sequencing
 
-| Key | Default | Task |
+All on `cursor/narrative-observers-epic-4749` (base #179). See §1.1. No parallel PRs to `master`. Shared files (`context.py`, `observer.py`, `graph.py`, `runtime.py`) = sequential commits.
+
+---
+
+## 8. Config (planned)
+
+| Key | Default | When |
 | --- | --- | --- |
-| existing `[commentary.scheduler].*` | safe/off | P1 |
+| `[commentary.scheduler].*` | safe/off | P1 shipped |
 | `commentary.stream_start` | `false` | N8 |
-| `overlay.stream_cover` | `false` | N9 |
-| `event_engine.gap_hunt_in_practice` / `_qualifying` | `false` (TTS suppress) | N6 |
-| `race_observer.leader_pace_cooldown_s` | `300` | N6 |
-| `race_observer.incident_classify` | `true` once shipped | N3 |
-| flag speak cooldowns | per flag | N5 |
+| `commentary.gap_hunt_tts_in_practice` | `false` | N6a — TTS only; not `[event_engine]` (HUD feature flags) |
+| `commentary.gap_hunt_tts_in_qualifying` | `false` | N6a |
+| `race_observer.leader_pace_cooldown_s` | `300` | N6a — **N6a creates** `[race_observer]` + settings dataclass + `OverlayRuntime` wiring (`RaceObserver()` today takes no settings) |
+| `race_observer.incident_classify` | `false` until trusted | N3 (add key to the N6a dataclass) |
+| `race_observer.flags` | `false` | N5 |
+| `commentary.session_briefs` | already `false` | wrap/preview/N7 stay silent unless on |
 
-No default chatter increase on existing installs until flags are opted in (same posture as `commentary.enabled`).
+No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `event_engine.gap_hunt_tts_*`.
 
----
-
-## 9. Docs / test posture
-
-- This PR: **docs only**. TDD-exception: no runtime.  
-- Each N-task: unit tests with fake clock + synthetic snapshots (mandatory for FSMs).  
-- Live iRacing: manual on stream PC after flags on; never required to merge a slice.  
-- Update `CONFIG.md` + `config.example.ini` + `COMMENTARY_ENGINE.md` + this epic’s status when a slice ships.  
-- `API.md` only if watcher log or cover state is exposed.
+`STREAM_START` node `tts.max_seconds` ≥ 15 **holds** `director._busy_until` for that duration (opener mutex). That exceeds `commentary.max_utterance_s` (default 6). N11 validator may exempt `STREAM_START` only — do not silently raise the global cap.
 
 ---
 
-## 10. Issue-ready task index
+## 9. Docs / test
 
-| ID | Doc | Issue when approved |
+- Behavior change → tests with fake clock + synthetic snapshots.
+- N4: hunting still emits after `SessionState=5` until `player_finished`.
+- N3: delta=1 aftermath-only vs delta≥2 incident+aftermath policy test.
+- Matrix §1 / §4.3 `attack_range` / §4.5 `pit_stopped` / §6 chain item re-pinned in this commit. Later slices still tick their rows when they ship.
+- TDD-exception only for this docs reshape.
+
+---
+
+## 10. Task index (post-review)
+
+| ID | Doc | v1? |
 | --- | --- | --- |
-| N1 | [n1_irsdk_dynamics_flags.md](tasks/n1_irsdk_dynamics_flags.md) | extract Speed/yaw/flags |
-| N2 | [n2_graph_mode_branch.md](tasks/n2_graph_mode_branch.md) | graph select layers |
-| N3 | [n3_incident_classifier.md](tasks/n3_incident_classifier.md) | kinds + chain + recovered |
-| N4 | [n4_finish_semantics.md](tasks/n4_finish_semantics.md) | finish ≠ checkered |
-| N5 | [n5_flags_observer.md](tasks/n5_flags_observer.md) | flags all sessions |
-| N6 | [n6_practice_quali_pace.md](tasks/n6_practice_quali_pace.md) | hunt-by-time + leader 5 min |
-| N7 | [n7_race_start.md](tasks/n7_race_start.md) | quali recap + rolling start |
-| N8 | [n8_stream_start_incar.md](tasks/n8_stream_start_incar.md) | welcome TTS + in-car flavor |
-| N9 | [n9_overlay_cover.md](tasks/n9_overlay_cover.md) | optional big cover |
-| N10 | [n10_watcher_log.md](tasks/n10_watcher_log.md) | observer decision log |
-| N11 | [n11_content_fill.md](tasks/n11_content_fill.md) | EN+CS lines for new nodes |
+| N1 | [n1_irsdk_dynamics_flags.md](tasks/n1_irsdk_dynamics_flags.md) | yes — Speed + CarIdx times + flag decode |
+| N2 | [n2_graph_mode_branch.md](tasks/n2_graph_mode_branch.md) | yes — schema + director pick; **before N8** |
+| N3 | [n3_incident_classifier.md](tasks/n3_incident_classifier.md) | reduced — off_track vs unknown; Speed = motion not classify-primary |
+| N4 | [n4_finish_semantics.md](tasks/n4_finish_semantics.md) | yes — three booleans |
+| N5 | [n5_flags_observer.md](tasks/n5_flags_observer.md) | reduced — Y/G/checkered race |
+| N6 | [n6_practice_quali_pace.md](tasks/n6_practice_quali_pace.md) | split a/b; N6a bootstraps `[race_observer]` |
+| N7 | [n7_race_start.md](tasks/n7_race_start.md) | **defer** |
+| N8 | [n8_stream_start_incar.md](tasks/n8_stream_start_incar.md) | yes — mutex + bridge; copy in N11 |
+| N9 | [n9_overlay_cover.md](tasks/n9_overlay_cover.md) | **CUT** |
+| N10 | [n10_watcher_log.md](tasks/n10_watcher_log.md) | debug-only / defer API |
+| N11 | [n11_content_fill.md](tasks/n11_content_fill.md) | wave A only |

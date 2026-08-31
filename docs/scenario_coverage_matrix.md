@@ -1,9 +1,7 @@
 # Scenario coverage matrix (overlay · commentary · OBS)
 
-**Status:** inventory (docs only)  
-**Source of truth analyzed:** `feat/ollama-vod-joint-test` @ `0997ffc` (reconciled into this docs branch)  
-**Independent review:** second Cursor model vs code, confidence **96/100**  
-**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md)
+**Status:** inventory — **re-pinned 2026-08-31** vs umbrella #179 (P0 `EventFanout` peers; P5 `attack_range` / `pit_stopped` TTS shipped). Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.  
+**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 will split finish vs checkered — not shipped yet)
 
 ## 0. Two session concepts — do not mix
 
@@ -128,7 +126,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | --- | --- | --- | --- | --- | --- |
 | Hunting | All\* | Gap ahead &lt; enter + closing, activation delay | yes persistent | yes (+ APPROACH) | No `overlay_mode` gate; abort on finish |
 | Approach | All\* | Intensity ~1.5 s gap | yes | partial (shares `hunting`) | |
-| Attack range | All\* | Gap ≤ ~0.8 s | yes | **no** dedicated node | Known gap |
+| Attack range | All\* | Gap ≤ ~0.8 s | yes | yes node `attack_range` (P5) | |
 | Side by side | All\* | Gap ≤ ~0.35 s | yes | yes | |
 | Hunted | All\* | Mirror behind | yes | yes | PitCycleGuard |
 | Battle for position | All\* | Hunting ∧ hunted active | yes prio 30 | partial → `side_by_side` node | |
@@ -150,7 +148,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | --- | --- | --- | --- | --- |
 | Pit entry | `on_pit_road`↑ + `should_begin_pit_cycle` (prior on-track; reject lobby spawn/tow/finished) | yes | yes | story or simple |
 | Pit lane | FSM on pit, not stopped | yes | **no** | `pit_story` |
-| Pit stopped | Dist eps held 1.5 s | yes | **no** | `pit_story` |
+| Pit stopped | Dist eps held 1.5 s | yes | yes node `pit_stopped` (P5) | `pit_story` |
 | Pit released | Moving again on pit road | yes | **no** | `pit_story` |
 | Pit exit | `on_pit_road`↓ | yes | yes `back_on_track` | |
 | Pit outcome | End of cycle / net delta | yes | yes (`PIT_OUTCOME`\|`PIT_EXIT`) | `pit_story` |
@@ -163,7 +161,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Invalid lap | P/Q | Lap end with incident since lap start | yes | yes |
 | Link drop | All | Stale/degraded/disconnect | yes lifecycle | **no** |
 | Final lap | All\* | `is_final_lap` (no mode gate) | yes 95 | yes cd 60 |
-| Finish | All\* | `session_finished` (no mode gate) | yes 100 | yes cd 120 |
+| Finish | All\* | `session_finished` today (`SessionState` 5\|6). N4 will split `session_checkered` / `player_finished` / `mute_field` | yes 100 | yes cd 120 |
 | HR pressure | All | Bio `pushing`/`high` | yes | yes |
 | BLE lost | All | HR provider disconnect inject | yes | **no** |
 | Sysinfo bar | All | Continuous sample | persistent bar | n/a |
@@ -201,12 +199,12 @@ From `event_catalog.json` fallbacks:
 
 ## 6. Known gaps (product)
 
-1. `ATTACK_RANGE` — HUD yes, TTS via graph node `attack_range` (P5)  
-2. `PIT_LANE` / `PIT_RELEASED` — HUD yes, TTS no; `PIT_STOPPED` optional mid-pit TTS (P5)  
+1. `ATTACK_RANGE` — HUD + TTS node `attack_range` (P5 on #179)  
+2. `PIT_LANE` / `PIT_RELEASED` — HUD yes, TTS no; `PIT_STOPPED` TTS node shipped (P5)  
 3. `LINK_DROP`, `BLE_LOST`, CPU/GPU — no TTS (CPU/GPU not live emitters)  
 4. `TIME_LOST` / `SECTOR_SPLIT` — plate fallback / sector speak opt-in  
 5. Reserved bio plates without emitters  
-6. OverlayRuntime chains commentary observe after HUD publish (see decoupling plan)
+6. Overlay + commentary are **peers** via `EventFanout` (P0). Sidecars (`InCarDetector`, `SessionBriefsDetector`) still feed commentary only.
 
 ## 7. Evidence map
 
