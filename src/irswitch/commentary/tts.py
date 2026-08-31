@@ -46,6 +46,8 @@ class CommentaryUtterance:
     correlation_id: str
     estimated_seconds: float
     node: GraphNode
+    priority: int = 0
+    past_framing: bool = False
 
 
 @dataclass(frozen=True)
@@ -59,15 +61,23 @@ class TtsSink(Protocol):
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop."""
 
+    def interrupt(self) -> None:
+        """Best-effort cancel queued/in-flight speech (hard interrupt)."""
+
 
 @dataclass
 class NullTtsSink:
     """Records utterances for tests and dry-runs. No audio."""
 
     spoken: list[CommentaryUtterance] = field(default_factory=list)
+    interrupted: int = 0
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         self.spoken.append(utterance)
+
+    def interrupt(self) -> None:
+        self.interrupted += 1
+        self.spoken.clear()
 
 
 @dataclass
@@ -94,6 +104,7 @@ class ProcessTtsSink:
     _pending: int = field(default=0, init=False, repr=False)
     _speaking: bool = field(default=False, init=False, repr=False)
     _idle: threading.Condition = field(default_factory=threading.Condition, repr=False)
+    _interrupt: threading.Event = field(default_factory=threading.Event, repr=False)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop."""
@@ -104,6 +115,23 @@ class ProcessTtsSink:
             self._pending += 1
         self._ensure_worker()
         self._queue.put(utterance)
+
+    def interrupt(self) -> None:
+        """Drop queued speaks; signal worker to skip remaining work best-effort."""
+        self._interrupt.set()
+        dropped = 0
+        while True:
+            try:
+                self._queue.get_nowait()
+                dropped += 1
+            except queue.Empty:
+                break
+        if dropped:
+            with self._idle:
+                self._pending = max(0, self._pending - dropped)
+                if self._pending == 0 and not self._speaking:
+                    self._idle.notify_all()
+        self._interrupt.clear()
 
     def pending_count(self) -> int:
         """Queued + in-flight speaks (test / diagnostics)."""
@@ -151,16 +179,24 @@ class ProcessTtsSink:
                         self._idle.notify_all()
 
     def _speak(self, utterance: CommentaryUtterance) -> None:
+        if self._interrupt.is_set():
+            return
         spoken_text = utterance.text
+        past = bool(utterance.past_framing) and getattr(
+            self.settings.scheduler, "llm_past_framing", True
+        )
         if self.settings.llm_polish:
             outcome = polish_skeleton(
                 utterance.text,
                 utterance.node,
                 self.settings,
+                past=past,
             )
             spoken_text = outcome.text
             self._emit_polish_debug(utterance, outcome)
         with ducker_from_settings(self.settings):
+            if self._interrupt.is_set():
+                return
             result = speak_text(
                 spoken_text,
                 locale=utterance.locale,

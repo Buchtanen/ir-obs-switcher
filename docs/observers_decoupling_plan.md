@@ -1,6 +1,6 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** design proposal — product answers locked 2026-08-31; **P0 fan-out in progress** (`feat/event-consumer-fanout`, issue #166)  
+**Status:** design proposal — product answers locked 2026-08-31; **P0 done (#167)**; **P1 SpeechScheduler in progress** (`feat/commentary-speech-scheduler`, issue #168)  
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Audience:** architecture / next epic planning
 

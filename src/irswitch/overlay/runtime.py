@@ -259,6 +259,19 @@ class OverlayRuntime:
         self.session_briefs.reset()
         self._rebuild_event_fanout()
 
+    def _tick_commentary_scheduler(self, now: float) -> None:
+        """Flush deferred speech / silence watchdog once per race frame."""
+        if self.commentary is None:
+            return
+        overlay = self._overlay_settings()
+        if not overlay.commentary.enabled:
+            return
+        try:
+            self.commentary.settings = overlay.commentary
+            self.commentary.tick(now, self.bus.bio)
+        except Exception:
+            logger.warning("commentary scheduler tick failed", exc_info=True)
+
     def _observe_commentary(self, envelopes: list[EventEnvelope], now: float):
         """Observe envelopes; return the newest decision dict if any were recorded."""
         if not envelopes or self.commentary is None:
@@ -487,6 +500,7 @@ class OverlayRuntime:
         self._last_race = state
         self._sync_tape(state, now)
         self._observe_commentary_sidecars(state, now)
+        self._tick_commentary_scheduler(now)
         self._drain_commentary_tape(now)
         if self._idle_when_disconnected(state):
             return

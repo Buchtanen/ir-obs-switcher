@@ -145,7 +145,7 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     node = graph.nodes["hunting"]
     captured: list[dict] = []
 
-    def fake_polish(skeleton, _node, settings, *, opener=None):  # noqa: ARG001
+    def fake_polish(skeleton, _node, settings, *, opener=None, past=False):  # noqa: ARG001
         return type(
             "O",
             (),
@@ -190,7 +190,8 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     assert captured[0]["outcome"] == "ok"
 
 
-def test_build_tts_sink_omits_hook_when_polish_off() -> None:
+def test_build_tts_sink_omits_hook_when_polish_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("irswitch.commentary.tts.detect_backend", lambda preferred="auto": "sapi")
     sink = build_tts_sink(CommentarySettings(llm_polish=False, tts_backend="sapi"))
     assert isinstance(sink, ProcessTtsSink)
     assert sink.on_polish_debug is None

@@ -13,6 +13,7 @@ from irswitch.models import DrivingMode
 from irswitch.overlay.i18n import normalize_language as normalize_overlay_language
 from irswitch.overlay.settings import (
     BattleSettings,
+    CommentarySchedulerSettings,
     CommentarySettings,
     EventEngineFeatureSettings,
     EventPrioritySettings,
@@ -331,6 +332,33 @@ def _normalize_tts_backend(value: str) -> str:
     return key if key in {"auto", "sapi", "espeak", "null"} else "auto"
 
 
+def _load_commentary_scheduler(
+    parser: configparser.ConfigParser,
+    defaults: CommentarySchedulerSettings,
+) -> CommentarySchedulerSettings:
+    section = "commentary.scheduler"
+    return CommentarySchedulerSettings(
+        defer_enabled=_get_bool(parser, section, "defer_enabled", defaults.defer_enabled),
+        hard_interrupt=_get_bool(parser, section, "hard_interrupt", defaults.hard_interrupt),
+        max_deferred=max(
+            1,
+            min(32, _get_int(parser, section, "max_deferred", defaults.max_deferred)),
+        ),
+        default_ttl_s=max(
+            1.0, _get_float(parser, section, "default_ttl_s", defaults.default_ttl_s)
+        ),
+        incident_ttl_s=max(
+            1.0, _get_float(parser, section, "incident_ttl_s", defaults.incident_ttl_s)
+        ),
+        max_silence_s=max(
+            5.0, _get_float(parser, section, "max_silence_s", defaults.max_silence_s)
+        ),
+        llm_past_framing=_get_bool(
+            parser, section, "llm_past_framing", defaults.llm_past_framing
+        ),
+    )
+
+
 def _clamp_tts_rate(value: int) -> int:
     return max(-10, min(10, int(value)))
 
@@ -516,6 +544,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
+        scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
     )
 
     lhm_raw = ""
