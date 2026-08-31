@@ -22,6 +22,13 @@ class _Track:
     last_update_gap: float | None = None
 
 
+def _payload_gap(payload: dict) -> float | None:
+    gap = payload.get("gap")
+    if isinstance(gap, bool) or not isinstance(gap, (int, float)):
+        return None
+    return float(gap)
+
+
 @dataclass
 class BattleEmitter:
     hunting_cfg: HuntingSettings
@@ -253,11 +260,7 @@ class BattleEmitter:
                     track.state = "ACTIVE"
                     track.intensity_since = now
                     track.last_update_at = now
-                    track.last_update_gap = (
-                        float(payload["gap"])
-                        if isinstance(payload.get("gap"), (int, float))
-                        else None
-                    )
+                    track.last_update_gap = _payload_gap(payload)
                     events.append(
                         CandidateEvent(
                             name=event_name,
@@ -278,9 +281,7 @@ class BattleEmitter:
                 track.fail_since = None
                 track.intensity_since = now
                 track.last_update_at = now
-                track.last_update_gap = (
-                    float(payload["gap"]) if isinstance(payload.get("gap"), (int, float)) else None
-                )
+                track.last_update_gap = _payload_gap(payload)
                 events.append(
                     CandidateEvent(
                         name=event_name,
@@ -350,8 +351,7 @@ class BattleEmitter:
         now: float,
         cfg: HuntingSettings,
     ) -> CandidateEvent | None:
-        gap = payload.get("gap")
-        gap_f = float(gap) if isinstance(gap, (int, float)) else None
+        gap_f = _payload_gap(payload)
         interval = max(0.25, float(cfg.update_min_interval_s))
         epsilon = max(0.0, float(cfg.update_gap_epsilon_s))
         gap_moved = (
@@ -411,9 +411,7 @@ class BattleEmitter:
             track.intensity = next_state
             track.intensity_since = now
             track.last_update_at = now
-            track.last_update_gap = (
-                float(payload["gap"]) if isinstance(payload.get("gap"), (int, float)) else None
-            )
+            track.last_update_gap = _payload_gap(payload)
             events.append(
                 CandidateEvent(
                     name=event_name,
