@@ -1,6 +1,6 @@
 ---
 name: subagents
-description: Decides when to launch Task subagents vs doing the work in the parent agent. Use when considering parallel agents, worktrees, explore, generalPurpose, verifier, docs-keeper, issue-steward, /parallel-plan, /flow, or spawning more than one agent.
+description: Decides when to launch Task subagents vs doing the work in the parent agent. Use when considering parallel agents, worktrees, explore, generalPurpose, verifier, docs-keeper, issue-steward, /parallel-plan, /flow, /hotfix, or spawning more than one agent.
 ---
 
 # Subagenti (irswitch)
@@ -29,6 +29,7 @@ Paralelní **upravující** agenti jen po `/parallel-plan` **a** schválení už
 
 - Needle: známý soubor/třída/endpoint → Grep/Read v parentovi
 - Překryv souborů, zvlášť `logic/` + `iracing/` + API v jednom burstu
+- Overlay HUD cluster v jednom burstu: `display-v4.js`, `overlay.js`, `src/irswitch/overlay/i18n.py`, `web/overlay/index.html` (plus navázané CSS). Paralelně max commentary **graph** vs `iracing/` extract, ne vs HUD.
 - Společný state machine / API kontrakt
 - Změna kódu bez schválení
 - Commit / push / PR z subagenta bez výslovného „commit/push/PR“

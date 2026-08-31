@@ -8,14 +8,24 @@ alwaysApply: false
 
 Prefer **structured, intent-based** logs over noisy traces.
 
-Core event types to keep consistent (examples):
-- `state_changed`
-- `scene_switch`
-- `override_applied`
+**INFO** (once per change, greppable in a live session):
+
+- `state_changed` / `scene_switch` / `override_applied`
 - `connection_lost` / `connection_restored`
+- session identity: `Session info updated: type=…`
+- `stream_chapter …`
+- commentary director: spoken / rejected (reason)
+- overlay tape open / overlay_mode change
+
+**DEBUG** (will drown tape triage if left at INFO):
+
+- BLE reconnect / HR sample jitter
+- OBS websocket flicker / per-poll stream status
+- per-tick emitter “no emit”
+- `commentary` / `llm_polish` tape rows (already DEBUG-gated)
 
 Rules:
-- log **why** a decision happened (reason, inputs), not just “what”
-- avoid per-frame/per-poll spam
-- errors should be actionable; expected states should be info/debug
 
+- log **why** a decision happened (reason, inputs), not just “what”
+- no per-frame/per-poll spam
+- errors actionable; expected states (iRacing disconnected, BLE idle) are debug/info, not error

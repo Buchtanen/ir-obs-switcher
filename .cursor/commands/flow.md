@@ -2,6 +2,8 @@
 
 Proveď kompletní workflow pro aktuální změny v repu (bez zbytečných refactorů).
 
+Hot-fix bez PR → `/hotfix` (repro, test, restart). Tento command je na issue → QA → PR popis.
+
 ## Pravidla
 - Bez nových závislostí (instalace jen po explicitním souhlasu).
 - Pokud je behavior change bez testů: explicitní TDD-exception + alternativní verifikace.
@@ -28,6 +30,7 @@ Proveď kompletní workflow pro aktuální změny v repu (bez zbytečných refac
 4) **QA**
    - Použij subagenta `/verifier`:
      - spusť relevantní checky (ruff/black/mypy/pytest nebo repo skripty)
+     - overlay JS v diffu: `?v=` lockstep (command `/qa`)
      - dej PASS/BAD report + konkrétní next kroky
 
 5) **PR popis**

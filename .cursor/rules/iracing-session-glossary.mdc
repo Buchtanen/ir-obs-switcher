@@ -1,0 +1,17 @@
+---
+description: Session vs stream vs DrivingMode vs overlay_mode — do not mix iRSDK weekend with OBS stream
+globs: src/irswitch/iracing/**/*.py,src/irswitch/overlay/**/*.py,src/irswitch/events/**/*.py,src/irswitch/commentary/**/*.py,src/irswitch/race/**/*.py,src/irswitch/logic/stream_chapters.py,src/irswitch/logic/youtube_chapters.py,src/irswitch/main.py,tests/test_extractors.py,tests/test_stream_chapters.py,tests/test_reader.py
+alwaysApply: false
+---
+
+## Session / stream naming (hard)
+
+Full glossary: skill `iracing-session-glossary`.
+
+- Live session type = `SessionInfo.Sessions[SessionNum].SessionType` via `extract_session_type()`. **Never** `WeekendInfo.EventType`.
+- **One extract path:** `SwitchState.session_type` and `TelemetrySnapshot.session_type` both call `extract_session_type()` on a dump that includes YAML `SessionInfo`. `read_session_info()` without `SessionInfo` is not a second algorithm.
+- `session_type`: `Practice` / `Qualify` / `Race` / `Warmup` / `Test`. Not `QUALIFYING`.
+- `overlay_mode`: `PRACTICE` / `QUALIFYING` / `RACE` / `GENERIC` via `overlay_mode_from_session_type()`.
+- `DrivingMode.RACE` = on-track in-car (also Practice/Quali). Do not gate emitters on it.
+- OBS **stream** ≠ iRacing **session**. Chapters / `t_stream` = OBS clock. `t_session` = `SessionTime`.
+- `RaceState` / `race/` run in every overlay mode. `SessionEmitter` is not Race-only.

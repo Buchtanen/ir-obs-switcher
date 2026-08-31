@@ -24,6 +24,7 @@ Ověřit, že změny v repu jsou konzistentní s pravidly a že kvalita je OK:
      - `python -m black --check src tests`
      - `python -m mypy src` (pokud je mypy k dispozici)
      - `python -m pytest` (pokud je to relevantní a dostupné)
+   - když diff obsahuje `src/irswitch/web/overlay/`: stejný `OVERLAY_ASSET_VER` / `?v=` v `overlay.js`, `index.html`, `demo-v4.js`
 3) Výsledek zformátuj jako report:
    - PASS: co prošlo + jaký příkaz
    - BAD: co spadlo + zkrácený error + co s tím

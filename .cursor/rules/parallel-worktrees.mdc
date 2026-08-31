@@ -12,6 +12,7 @@ Origin is **GitHub** `Buchtanen/ir-obs-switcher`. Issues, PRs, and CI go through
 Use multiple agents and git worktrees only when tasks are **independent**:
 
 - different files (do not split overlapping `logic/` + `iracing/` + API in one burst)
+- **never split** overlay HUD: `display-v4.js`, `overlay.js`, `overlay/i18n.py`, `index.html`, overlay CSS — one agent, sequential
 - each task: own branch (see `05-git-branching-convention.mdc`) + own GitHub issue
 - one worktree per branch; never commit on `master`
 

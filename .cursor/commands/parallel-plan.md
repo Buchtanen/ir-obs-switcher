@@ -7,6 +7,7 @@ Kdy který subagent (a kdy vůbec): skill `subagents`.
 ## Pravidla
 - Hosting je **GitHub** (`Buchtanen/ir-obs-switcher`), ne GitLab.
 - Paralelně jen to, co nesdílí soubory a nemá společný state machine / API kontrakt.
+- Overlay HUD (`display-v4.js`, `overlay.js`, `overlay/i18n.py`, `index.html`) = **sequential**, nikdy parallel split.
 - Každý úkol: vlastní větev + vlastní issue (AC / test plan / docs impact).
 - Překryv → sekvenčně, ne „10 agentů a stash“.
 
