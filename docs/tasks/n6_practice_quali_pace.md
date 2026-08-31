@@ -24,22 +24,22 @@ P2 already rotates FIELD_FACT including leader on a **15–20 s** cooldown. Lead
 - [x] N6a: race battle TTS unchanged
 - [x] N6a: leader field fact cooldown 300 s; skip if a higher-priority beat spoke recently; **continue** rotation to next kind (do not `break` and mute all filler)
 - [x] N6a: `[race_observer]` loads; `RaceObserver` constructed with settings; `_reset_commentary` re-applies
-- [ ] N6b: `CarIdxBestLapTime` all None → no envelope (silence)
-- [ ] N6b: never read DriverInfo for times
-- [ ] Quali `position_attack` either retargeted to rival time or documented as “own PB only” and not sold as hunt-P{n}
+- [x] N6b: `CarIdxBestLapTime` all None → no envelope (silence)
+- [x] N6b: never read DriverInfo for times
+- [x] Quali `position_attack` either retargeted to rival time or documented as “own PB only” and not sold as hunt-P{n}
 
 ## Test plan
 
 - [x] Practice + small gap_ahead + flag off → no hunting speech envelope
 - [x] Race hunting still emits
 - [x] Leader fact twice in 100 s → second suppressed; other filler kind still eligible in between
-- [ ] N6b: rival best 1:32.0, hero projected 1:32.04 → one hunt; all -1 → none
+- [x] N6b: rival best 1:32.0, hero projected 1:32.04 → one hunt; all -1 → none
 
 ## Docs impact
 
 - [x] CONFIG.md + example.ini
-- [ ] Matrix battle vs timing-hunt
-- [ ] Epic §6
+- [x] Matrix battle vs timing-hunt
+- [x] Epic §6
 
 ## Config impact
 

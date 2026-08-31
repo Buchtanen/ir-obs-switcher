@@ -41,6 +41,7 @@ Rules:
 - `STREAM_START` is a commentary-only envelope from the OBS streaming rising edge (`commentary.stream_start`, default off). Graph node `stream_start` is a long slot-free welcome (`tts.max_seconds` ≥ 15); the process timeout uses that node cap so `commentary.max_utterance_s` (default 6) stays unchanged. An **opener mutex** (120 s) plus director `_busy_until` lets at most one of stream start / in-car / session intro / preview speak.
 - Mode-specific `in_car_practice` / `in_car_qualify` / `in_car_race` nodes outrank generic `in_car` when `envelope.mode` matches. Generic `in_car` remains for warmup until those lines migrate.
 - Gap-hunt TTS (`HUNTING` / `HUNTED`) is off in practice/qualifying unless `commentary.gap_hunt_tts_in_practice` / `gap_hunt_tts_in_qualifying` is on. HUD hunting is unchanged. Race still speaks.
+- P/Q hunt-by-time is COMMENTARY_ONLY `PACE_HUNT` (`race/timing_hunt.py`): hero projected/best vs `CarIdxBestLapTime` of class P{n}. Unset times → silence. Quali HUD `position_attack` remains hero own PB.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
 - BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
 - Fail-soft: graph load / observe errors must not break the race loop.

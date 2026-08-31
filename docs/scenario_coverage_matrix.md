@@ -124,7 +124,8 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 
 | Situation | Session | Trigger | W | C | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Hunting | All\* | Gap ahead &lt; enter + closing, activation delay | yes persistent | yes (+ APPROACH) | No `overlay_mode` gate; abort on finish |
+| Hunting | All\* | Gap ahead &lt; enter + closing, activation delay | yes persistent | P/Q TTS off by default; race yes | No overlay_mode gate on HUD; abort on player finish. Gap TTS: `commentary.gap_hunt_tts_in_*` |
+| Pace hunt | P/Q | Hero projected/best vs class P{n} `CarIdxBestLapTime` | no | yes `PACE_HUNT` | Silence if times unset; never DriverInfo. Quali `position_attack` is own PB, not this |
 | Approach | All\* | Intensity ~1.5 s gap | yes | partial (shares `hunting`) | |
 | Attack range | All\* | Gap ≤ ~0.8 s | yes | yes node `attack_range` (P5) | |
 | Side by side | All\* | Gap ≤ ~0.35 s | yes | yes | |

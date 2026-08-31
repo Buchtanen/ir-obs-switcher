@@ -23,6 +23,7 @@ from irswitch.race.opponents import (
     same_class,
 )
 from irswitch.race.story import HeroSnapshot, StoryContext, StreamMemory
+from irswitch.race.timing_hunt import TimingHuntFsm
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class RaceObserver:
     stream: StreamMemory = field(default_factory=StreamMemory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
+    timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -70,6 +72,7 @@ class RaceObserver:
         self._leader_fact_until = 0.0
         self.aftermath.reset()
         self.narrative.reset_session()
+        self.timing_hunt.reset()
 
     def reset_stream(self) -> None:
         self.reset_session()
@@ -77,9 +80,10 @@ class RaceObserver:
         self.narrative.reset_stream()
 
     def take_derived_envelopes(self) -> list[EventEnvelope]:
-        """Drain derived commentary envelopes (narrative then aftermath)."""
+        """Drain derived commentary envelopes (narrative, aftermath, timing hunt)."""
         out = self.narrative.take_pending()
         out.extend(self.aftermath.take_pending())
+        out.extend(self.timing_hunt.take_pending())
         return out
 
     @property
@@ -125,6 +129,7 @@ class RaceObserver:
             self._last_weather = None
             self._pending_weather_change = None
             self.aftermath.reset()
+            self.timing_hunt.reset()
             if key:
                 self.stream.note_session(key)
 
@@ -183,6 +188,10 @@ class RaceObserver:
             self.aftermath.tick(state, now)
         except Exception:
             logger.warning("IncidentAftermathFsm.tick failed", exc_info=True)
+        try:
+            self.timing_hunt.tick(snap, state, now)
+        except Exception:
+            logger.warning("TimingHuntFsm.tick failed", exc_info=True)
         return ctx
 
     def next_filler_envelope(self, now: float, *, locale: str = "en") -> EventEnvelope | None:
@@ -308,6 +317,14 @@ class RaceObserver:
             if cs:
                 return f"Další: {label}."
             return f"Up next: {label}."
+
+        if envelope.event_type == "PACE_HUNT" or kind == "pace_hunt":
+            pos = metrics.get("position")
+            if pos is None:
+                return None
+            if cs:
+                return f"Honí čas, který drží {int(pos)}. místo."
+            return f"He's hunting the P{int(pos)} time."
 
         fact = str(metrics.get("fact") or "")
         pos = metrics.get("position")

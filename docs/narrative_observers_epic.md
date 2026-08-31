@@ -245,7 +245,7 @@ Signature: match shipped `tick(state, now)` plus fields copied onto `RaceState` 
 
 ### 3.3 Session policies (v1)
 
-**Practice / Quali:** gap-hunt **TTS** off by default; HUD may still hunt. Timing-hunt = hero best/projected vs `CarIdxBestLapTime` of the car in P{n}. If array is all None, **silence** (no DriverInfo fallback). Quali `position_attack` is **not** this sport — quarantine or retarget.
+**Practice / Quali:** gap-hunt **TTS** off by default; HUD may still hunt. Timing-hunt (`PACE_HUNT`) = hero best/projected vs `CarIdxBestLapTime` of the car in P{n}. If array is all None, **silence** (no DriverInfo fallback). Quali `position_attack` stays **own PB only**, not hunt-P{n}.
 
 **Race:** keep `BattleEmitter` gap hunt. Speed on P3 recovered. Flags v1. No rolling novel.
 
