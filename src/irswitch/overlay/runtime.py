@@ -290,6 +290,24 @@ class OverlayRuntime:
         """Fan-out speech envelopes to peer consumers (not a HUD→commentary chain)."""
         self._event_fanout.emit(envelopes, now=now)
 
+    def notify_obs_stream_started(self, now: float) -> None:
+        """OBS streaming rising edge → commentary-only STREAM_START. Fail-soft."""
+        overlay = self._overlay_settings()
+        if not overlay.commentary.stream_start:
+            return
+        if not overlay.commentary.enabled:
+            return
+        if self.commentary is None:
+            return
+        try:
+            from irswitch.commentary.stream_context import make_stream_start_envelope
+
+            envelope = make_stream_start_envelope(now)
+            self.commentary.opener.note("STREAM_START", now)
+            self._dispatch_speech_envelopes([envelope], now)
+        except Exception:
+            logger.warning("STREAM_START commentary failed", exc_info=True)
+
     def _reset_commentary(self) -> None:
         overlay = self._overlay_settings()
         if self.commentary is None:
@@ -439,8 +457,8 @@ class OverlayRuntime:
     def _observe_timing(self, snap: TelemetrySnapshot, *, session_finished: bool = False) -> None:
         """Ingest player crossings (Practice/Quali). Keep the checkered out-lap.
 
-        CoolDown always stops. The tick that becomes ``after_session`` (S/F after
-        checkered) still ingests, then later ticks skip.
+        CoolDown always stops. The tick that becomes player_finished / mute_field
+        still ingests, then later ticks skip.
         """
         if snap.session_state not in (5, 6):
             self._timing_after_session = False
@@ -586,7 +604,9 @@ class OverlayRuntime:
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
-            self._observe_timing(snap, session_finished=state.session_finished)
+            self._observe_timing(
+                snap, session_finished=bool(state.mute_field or state.session_finished)
+            )
             self._observe_race_story(snap, state, now)
         self.bus.set_race(state)
         self._last_race = state

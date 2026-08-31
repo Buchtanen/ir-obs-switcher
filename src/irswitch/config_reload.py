@@ -56,6 +56,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "commentary.sector_speak",
         "commentary.sector_speak_max_per_lap",
         "commentary.session_briefs",
+        "commentary.stream_start",
         "commentary.llm_polish",
         "commentary.llm_base_url",
         "commentary.llm_model",

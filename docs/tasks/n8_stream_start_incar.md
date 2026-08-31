@@ -23,25 +23,24 @@ Generic `in_car` graph is already dense. Add mode select; do not delete generic 
 
 ## Acceptance criteria
 
-- [ ] Mutex table implemented (one winner per situation)
-- [ ] Stream start while already seated → welcome only, no second in-car
-- [ ] Seated + intro: ENTER_CAR **or** intro, not both (existing brief-defer may be reused)
-- [ ] `STREAM_START` once per OBS rising edge; silent until N11 adds a node (test: envelope emitted, director `no_node` / no crash)
-- [ ] Do **not** add a 15 s graph node here (unknown/missing node must not fail graph load — N2 already registered the type)
-- [ ] `commentary.stream_start` default `false`
-- [ ] Fail-soft: stream still starts if commentary / overlay runtime missing
+- [x] Mutex table implemented (one winner per situation)
+- [x] Stream start while already seated → welcome only, no second in-car
+- [x] Seated + intro: ENTER_CAR **or** intro, not both (existing brief-defer may be reused)
+- [x] `STREAM_START` once per OBS rising edge; silent until N11 adds a node (test: envelope emitted, director `no_node` / no crash)
+- [x] Do **not** add a 15 s graph node here (unknown/missing node must not fail graph load — N2 already registered the type)
+- [x] `commentary.stream_start` default `false`
+- [x] Fail-soft: stream still starts if commentary / overlay runtime missing
 
 ## Test plan
 
-- [ ] Stream edge → one envelope; repeat tick none; director no_node until N11
-- [ ] Already in-car + stream start → no ENTER_CAR this window
-- [ ] Existing in_car / session_briefs tests pass
+- [x] Stream edge → one envelope; repeat tick none; director no_node until N11
+- [x] Already in-car + stream start → no ENTER_CAR this window
+- [x] Existing in_car / session_briefs tests pass
 
 ## Docs impact
 
-- [ ] COMMENTARY_ENGINE STREAM_START + mutex
-- [ ] CONFIG.md + example.ini
-- [ ] commentary_product_suite P3 pointer
+- [x] COMMENTARY_ENGINE STREAM_START + mutex
+- [x] CONFIG.md + example.ini
 
 ## Config impact
 

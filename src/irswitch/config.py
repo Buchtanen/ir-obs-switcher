@@ -515,6 +515,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         session_briefs=_get_bool(
             parser, "commentary", "session_briefs", commentary_defaults.session_briefs
         ),
+        stream_start=_get_bool(
+            parser, "commentary", "stream_start", commentary_defaults.stream_start
+        ),
         llm_polish=_get_bool(parser, "commentary", "llm_polish", commentary_defaults.llm_polish),
         llm_base_url=_get_str(
             parser, "commentary", "llm_base_url", commentary_defaults.llm_base_url

@@ -171,6 +171,7 @@ class CommentarySettings:
     sector_speak_max_per_lap: int = 1
     # Session intro / SoF / weather commentary sidecars (default off).
     session_briefs: bool = False
+    stream_start: bool = False
     # Optional remote LLM style polish (Ollama OpenAI-compatible). Default off.
     llm_polish: bool = False
     llm_base_url: str = "http://127.0.0.1:11434/v1"

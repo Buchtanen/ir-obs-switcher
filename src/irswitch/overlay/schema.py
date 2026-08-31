@@ -279,6 +279,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Speak once-per-session intro / SoF / weather briefs (commentary sidecars; default off).",
     ),
     FieldSpec(
+        "commentary.stream_start",
+        "bool",
+        False,
+        True,
+        "commentary",
+        "Speak a welcome line when OBS streaming starts (commentary-only; default off).",
+    ),
+    FieldSpec(
         "commentary.llm_polish",
         "bool",
         False,
@@ -952,6 +960,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "commentary.sector_speak": s.commentary.sector_speak,
         "commentary.sector_speak_max_per_lap": s.commentary.sector_speak_max_per_lap,
         "commentary.session_briefs": s.commentary.session_briefs,
+        "commentary.stream_start": s.commentary.stream_start,
         "commentary.llm_polish": s.commentary.llm_polish,
         "commentary.llm_base_url": s.commentary.llm_base_url,
         "commentary.llm_model": s.commentary.llm_model,

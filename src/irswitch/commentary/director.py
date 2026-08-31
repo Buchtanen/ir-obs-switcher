@@ -15,6 +15,7 @@ from irswitch.commentary.anti_repeat import (
     prefer_fresh_candidates,
 )
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
+from irswitch.commentary.opener import OPENER_EVENTS, STREAM_START, OpenerMutex
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
 from irswitch.commentary.speech_hero import mix_hero_name, resolve_hero_names
@@ -108,6 +109,7 @@ class CommentaryDirector:
     filler_provider: Callable[[float], EventEnvelope | None] | None = None
     filler_formatter: Callable[[EventEnvelope], str | None] | None = None
     _iracing_hero_names: tuple[str, ...] = field(default_factory=tuple)
+    opener: OpenerMutex = field(default_factory=OpenerMutex)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -176,6 +178,7 @@ class CommentaryDirector:
         self._sector_speaks_by_lap.clear()
         self._scheduler.reset()
         self._current_event_type = None
+        self.opener.reset()
         self._sync_scheduler_settings()
 
     def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
@@ -517,6 +520,8 @@ class CommentaryDirector:
         self._global_ready_at = now + self.settings.cooldown_s
         self._last = _LastSpoken(spoken.node_id, spoken.correlation_id, now)
         self._current_event_type = spoken.event_type
+        if spoken.event_type in OPENER_EVENTS:
+            self.opener.note(spoken.event_type, now)
         self._recent.remember(spoken.text)
         self.sink.enqueue(spoken)
         self._record(
@@ -543,6 +548,9 @@ class CommentaryDirector:
             return None
         briefs_gate = self._session_briefs_gate(envelope, now)
         if briefs_gate is not None:
+            return None
+        opener_gate = self._opener_gate(envelope, now)
+        if opener_gate is not None:
             return None
         node = self._pick_node(envelope, now)
         if node is None:
@@ -692,6 +700,21 @@ class CommentaryDirector:
             )
             return "session_briefs_disabled"
         return None
+
+    def _opener_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        if envelope.event_type == STREAM_START:
+            self.opener.note(STREAM_START, now)
+            return None
+        reason = self.opener.skip_reason(envelope.event_type, now)
+        if reason is None:
+            return None
+        self._record(
+            action="skipped",
+            reason=reason,
+            now=now,
+            event_type=envelope.event_type,
+        )
+        return reason
 
     def _note_sector_spoken(self, envelope: EventEnvelope) -> None:
         if envelope.event_type not in _SECTOR_SPEAK_EVENTS:
