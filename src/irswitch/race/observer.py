@@ -12,6 +12,7 @@ from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_we
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
 from irswitch.race.aftermath import IncidentAftermathFsm
+from irswitch.race.narrative import StreamNarrativeFsm
 from irswitch.race.opponents import (
     NearFieldCar,
     class_position_of,
@@ -42,6 +43,7 @@ class RaceObserver:
     behind_n: int = 2
     stream: StreamMemory = field(default_factory=StreamMemory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
+    narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -57,14 +59,18 @@ class RaceObserver:
         self._last_filler_kind = None
         self._filler_cooldown_until = 0.0
         self.aftermath.reset()
+        self.narrative.reset_session()
 
     def reset_stream(self) -> None:
         self.reset_session()
         self.stream.reset_stream()
+        self.narrative.reset_stream()
 
     def take_derived_envelopes(self) -> list[EventEnvelope]:
-        """Drain derived commentary envelopes (aftermath / back under way)."""
-        return self.aftermath.take_pending()
+        """Drain derived commentary envelopes (narrative then aftermath)."""
+        out = self.narrative.take_pending()
+        out.extend(self.aftermath.take_pending())
+        return out
 
     @property
     def context(self) -> StoryContext | None:
@@ -153,6 +159,10 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
         )
         self._context = ctx
+        try:
+            self.narrative.tick(state, now, session_key=key)
+        except Exception:
+            logger.warning("StreamNarrativeFsm.tick failed", exc_info=True)
         try:
             self.aftermath.tick(state, now)
         except Exception:
@@ -255,6 +265,23 @@ class RaceObserver:
 
         if envelope.event_type == "BACK_UNDER_WAY" or kind == "back_under_way":
             return "Znovu jede." if cs else "He's back under way."
+
+        if envelope.event_type == "SESSION_WRAP" or kind == "session_wrap":
+            label = metrics.get("modeLabelCs" if cs else "modeLabel") or metrics.get("mode")
+            pos = metrics.get("position")
+            if cs:
+                if pos is not None:
+                    return f"Konec: {label}, P{int(pos)}."
+                return f"Konec session: {label}."
+            if pos is not None:
+                return f"That's a wrap on {label}, P{int(pos)}."
+            return f"That's a wrap on {label}."
+
+        if envelope.event_type == "SESSION_PREVIEW" or kind == "session_preview":
+            label = metrics.get("modeLabelCs" if cs else "modeLabel") or metrics.get("mode")
+            if cs:
+                return f"Další: {label}."
+            return f"Up next: {label}."
 
         fact = str(metrics.get("fact") or "")
         pos = metrics.get("position")

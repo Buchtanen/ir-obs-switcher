@@ -182,8 +182,10 @@ Derived `INCIDENT_AFTERMATH` (stalled/rolling) + `BACK_UNDER_WAY`; LapDistPct /
 surface / tow proxies (no Speed field yet); template speech via director
 formatter fallback; fan-out to commentary. **Issue #172.**
 
-### P4 — Stream narrative pre/post
-SESSION_WRAP/PREVIEW; sequencovat se `session_briefs`.
+### P4 — Stream narrative pre/post ✅
+`SESSION_WRAP` / `SESSION_PREVIEW` from RaceObserver at session boundaries;
+sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`.
+**Issue #175.**
 
 ### P5 — Content gaps
 `ATTACK_RANGE` TTS, mid-pit optional, …

@@ -40,6 +40,8 @@ _SESSION_BRIEF_EVENTS = frozenset(
         "SESSION_INTRO_RACE",
         "SOF_BRIEF",
         "WEATHER_BRIEF",
+        "SESSION_WRAP",
+        "SESSION_PREVIEW",
     }
 )
 DEFAULT_DECISION_LOG_SIZE = 32
