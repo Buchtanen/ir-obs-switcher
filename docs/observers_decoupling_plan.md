@@ -1,7 +1,6 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** design proposal — product answers locked 2026-08-31  
-**Branch intent:** docs only until AC approved  
+**Status:** design proposal — product answers locked 2026-08-31; **P0 fan-out in progress** (`feat/event-consumer-fanout`, issue #166)  
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Audience:** architecture / next epic planning
 
@@ -168,7 +167,7 @@ Hard interrupt **default false** (bezpečnější), zapne se na stream PC až po
 ## 6. Fázovaný plán
 
 ### P0 — Decouple fan-out
-Peer `EventConsumer`s; behavior-preserving; tape parity.
+Peer `EventConsumer`s (`src/irswitch/events/fanout.py`); commentary via `CommentaryEventConsumer`; `_emit_from_race` dispatches speech through `EventFanout` while overlay still publishes wire to the bus. Behavior-preserving; tape parity. **Issue #166.**
 
 ### P1 — SpeechScheduler
 Defer + TTL + decision codes; `hard_interrupt` ini; silence 33 s s weather/field fact; LLM past framing; flags default off.

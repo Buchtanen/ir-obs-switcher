@@ -22,8 +22,8 @@ TelemetrySnapshot
   → EventEngine (emitters) → CandidateEvent[]
   → EventManager(V2) arbitration (priority, cooldown, PitCycleGuard, post-race filter)
   → EventEnvelope / wire
-       → OverlayBus (HUD widgets)
-       → CommentaryDirector.observe()   ← today chained inside OverlayRuntime
+       → OverlayBus (HUD widgets)          ← peer path
+       → EventFanout → CommentaryConsumer  ← peer path (P0; was chained in OverlayRuntime)
             → anti-repeat → optional LLM polish → TTS sink
 ```
 

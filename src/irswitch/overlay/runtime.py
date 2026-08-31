@@ -10,6 +10,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_from_race_event
+from irswitch.commentary.consumer import CommentaryEventConsumer
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.session_briefs import SessionBriefsDetector
@@ -17,6 +18,7 @@ from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.config import AppConfig
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope
+from irswitch.events.fanout import EventFanout
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.iracing.sectors import resolve_sector_points_from_pcts
@@ -88,9 +90,11 @@ class OverlayRuntime:
         self._last_race = RaceState()
         self._hud_live = False
         self._running = False
+        self._event_fanout = EventFanout()
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
+        self._rebuild_event_fanout()
         self.session.add_reset_hook(self._reset_commentary)
         self.session.add_reset_hook(self.in_car.reset)
         self.session.add_reset_hook(self.session_briefs.reset)
@@ -227,10 +231,21 @@ class OverlayRuntime:
                 self._llm_polish_tape_hook if overlay.commentary.llm_polish else None
             )
 
+    def _rebuild_event_fanout(self) -> None:
+        """Register peer consumers after accepted envelopes (commentary today)."""
+        self._event_fanout.clear()
+        if self.commentary is not None:
+            self._event_fanout.register(CommentaryEventConsumer(self._observe_commentary))
+
+    def _dispatch_speech_envelopes(self, envelopes: list[EventEnvelope], now: float) -> None:
+        """Fan-out speech envelopes to peer consumers (not a HUD→commentary chain)."""
+        self._event_fanout.emit(envelopes, now=now)
+
     def _reset_commentary(self) -> None:
         overlay = self._overlay_settings()
         if self.commentary is None:
             self.commentary = self._build_commentary(overlay)
+            self._rebuild_event_fanout()
             return
         self.commentary.settings = overlay.commentary
         self.commentary.language = overlay.language
@@ -242,6 +257,7 @@ class OverlayRuntime:
         self._commentary_tape_cursor = 0
         self.in_car.reset()
         self.session_briefs.reset()
+        self._rebuild_event_fanout()
 
     def _observe_commentary(self, envelopes: list[EventEnvelope], now: float):
         """Observe envelopes; return the newest decision dict if any were recorded."""
@@ -513,14 +529,14 @@ class OverlayRuntime:
                 )
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self._publish(wire, now)
-                self._observe_commentary(
+                self._dispatch_speech_envelopes(
                     merge_speech_envelopes(race_event, envelopes, now=now, mode=state.overlay_mode),
                     now,
                 )
             for race_event, envelopes in self.manager_v2.tick(now, mode=state.overlay_mode):
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self._publish(wire, now)
-                self._observe_commentary(envelopes, now)
+                self._dispatch_speech_envelopes(envelopes, now)
             self.bus.set_active_events(self.manager_v2.active_events())
             self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
             self._drain_tape_side(now)
@@ -532,7 +548,7 @@ class OverlayRuntime:
                 await self._publish(event.to_envelope(), now)
                 speech = speech_envelope_from_race_event(event, now=now, mode=state.overlay_mode)
                 if speech is not None:
-                    self._observe_commentary([speech], now)
+                    self._dispatch_speech_envelopes([speech], now)
         for expired in self.manager.tick(now):
             await self._publish(expired.to_envelope(), now)
         self.bus.set_active_events(self.manager.active_events())
