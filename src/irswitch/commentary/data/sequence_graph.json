@@ -5014,6 +5014,273 @@
         ],
         "require_terminal_punct": true
       }
+    },
+    "attack_range": {
+      "family": "battle",
+      "event_types": [
+        "ATTACK_RANGE"
+      ],
+      "phases": [
+        "ENTER"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 14,
+      "slots": [
+        {
+          "name": "gap",
+          "type": "gap",
+          "example": "0.5"
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Rossi"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "P5 gap fill. ENTER only. Between hunting/approach and side_by_side.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is in attack range of {target_name}, gap {gap}.",
+            "Attack range now — {target_name} is only {gap} ahead.",
+            "From P{position} he has {target_name} in range at {gap}.",
+            "The gap is {gap}, and a move on {target_name} is live.",
+            "He has closed to attack range on {target_name}.",
+            "{target_name} sits {gap} ahead with pressure building.",
+            "Attack range at {gap} gives him a real look at {target_name}.",
+            "P{position} turns into a launching pad behind {target_name}.",
+            "He is close enough that {target_name} must defend.",
+            "The chase becomes an attack with {gap} left to {target_name}.",
+            "Viewers can see {target_name} under immediate threat.",
+            "He holds attack range on {target_name} from P{position}."
+          ],
+          "focused": [
+            "Gap {gap} to {target_name}, and he is set for a measured move.",
+            "Attack range, clean and precise, on {target_name}.",
+            "From P{position} he times the attack on {target_name} at {gap}.",
+            "He keeps {target_name} in range without forcing the issue.",
+            "The gap is {gap}, and every line toward {target_name} is calculated.",
+            "{target_name} is reachable, and he stays composed at {gap}.",
+            "Attack range arrives with patience still intact.",
+            "P{position} becomes a platform for a clean pass on {target_name}.",
+            "He shadows {target_name} at {gap} with clear intent.",
+            "The window on {target_name} is open, and he measures it.",
+            "Viewers see a controlled attack forming on {target_name}.",
+            "He holds attack range on {target_name} with discipline."
+          ],
+          "pushing": [
+            "He is right on {target_name} now, gap {gap} and hunting hard.",
+            "Attack range! He is all over {target_name} from P{position}.",
+            "Gap {gap} — he is forcing the issue on {target_name}.",
+            "He piles pressure on {target_name} in attack range.",
+            "The charge reaches {target_name} with only {gap} left.",
+            "{target_name} is under fire as the gap hits {gap}.",
+            "Attack range and he keeps the throttle planted.",
+            "P{position} becomes a threat lane behind {target_name}.",
+            "He refuses to lift while {target_name} sits at {gap}.",
+            "The attack on {target_name} is fully switched on.",
+            "Viewers can feel the move building on {target_name}.",
+            "He lives in attack range of {target_name} and keeps pushing."
+          ],
+          "high": [
+            "Gap {gap}! He is in attack range of {target_name}!",
+            "Right there on {target_name}! This move is live!",
+            "Attack range from P{position} — {target_name} is in trouble!",
+            "Only {gap} to {target_name}, and the strike is coming!",
+            "He is all over {target_name} in attack range!",
+            "{target_name} has nowhere left with the gap at {gap}!",
+            "Attack range! The next corner decides it!",
+            "P{position} turns into a full assault on {target_name}!",
+            "He has {target_name} boxed in at {gap}!",
+            "The crowd can see the attack landing on {target_name}!",
+            "Gap tumbling! {target_name} must answer now!",
+            "Attack range locked on {target_name} — this is the moment!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Je v útočné vzdálenosti na {target_name}, odstup {gap}.",
+            "Útočná zóna — {target_name} je jen {gap} vpředu.",
+            "Z {position}. místa má {target_name} na dosah s odstupem {gap}.",
+            "Odstup {gap} a útok na {target_name} je na stole.",
+            "Dotáhl se do útočné vzdálenosti na {target_name}.",
+            "{target_name} je {gap} vpředu a tlak roste.",
+            "Útočná zóna s odstupem {gap} dává šanci na {target_name}.",
+            "{position}. místo se mění ve startovní rampu za {target_name}.",
+            "Je tak blízko, že {target_name} musí bránit.",
+            "Honění se mění v útok, zbývá {gap} na {target_name}.",
+            "Diváci vidí {target_name} pod přímým tlakem.",
+            "Drží útočnou vzdálenost na {target_name} z {position}. místa."
+          ],
+          "focused": [
+            "Odstup {gap} na {target_name} a chystá čistý manévr.",
+            "Útočná zóna, klidně a přesně na {target_name}.",
+            "Z {position}. místa časuje útok na {target_name} při {gap}.",
+            "Drží {target_name} na dosah, aniž by nic netlačil.",
+            "Odstup {gap} a každá stopa k {target_name} je propočítaná.",
+            "{target_name} je na dosah a on zůstává soustředěný při {gap}.",
+            "Útočná zóna přichází s trpělivostí.",
+            "{position}. místo je platforma pro čistý útok na {target_name}.",
+            "Stíní {target_name} s odstupem {gap} a jasným záměrem.",
+            "Okno na {target_name} je otevřené a on ho měří.",
+            "Diváci vidí kontrolovaný útok na {target_name}.",
+            "Drží útočnou vzdálenost na {target_name} s disciplínou."
+          ],
+          "pushing": [
+            "Sedí na {target_name}, odstup {gap} a tlačí naplno.",
+            "Útočná zóna! Z {position}. místa je {target_name} pod palbou.",
+            "Odstup {gap} — nutí {target_name} k odpovědi.",
+            "V útočné vzdálenosti žene {target_name} pod tlak.",
+            "Nápor dosahuje na {target_name}, zbývá jen {gap}.",
+            "{target_name} je pod palbou, odstup klesl na {gap}.",
+            "Útočná zóna a plyn zůstává na podlaze.",
+            "{position}. místo se mění v útočnou stopu za {target_name}.",
+            "Neubere, dokud je {target_name} na {gap}.",
+            "Útok na {target_name} je plně spuštěný.",
+            "Diváci cítí, jak se manévr na {target_name} rodí.",
+            "Žije v útočné vzdálenosti na {target_name} a dál tlačí."
+          ],
+          "high": [
+            "Odstup {gap}! Je v útočné zóně na {target_name}!",
+            "Hned na {target_name}! Manévr je na spadnutí!",
+            "Útočná zóna z {position}. místa — {target_name} je v ohrožení!",
+            "Jen {gap} na {target_name} a úder přichází!",
+            "Visí na {target_name} v útočné vzdálenosti!",
+            "{target_name} už nemá kam uhnout při odstupu {gap}!",
+            "Útočná zóna! Další zatáčka to rozhodne!",
+            "{position}. místo se mění v plný útok na {target_name}!",
+            "Má {target_name} zatlačeného na {gap}!",
+            "Diváci vidí, jak útok na {target_name} dopadá!",
+            "Odstup padá! {target_name} musí odpovědět teď!",
+            "Útočná zóna na {target_name} — tohle je moment!"
+          ]
+        }
+      }
+    },
+    "pit_stopped": {
+      "family": "pit",
+      "event_types": [
+        "PIT_STOPPED"
+      ],
+      "phases": [
+        "ENTER"
+      ],
+      "speak_priority": 48,
+      "cooldown_s": 25,
+      "slots": [
+        {
+          "name": "position",
+          "type": "int",
+          "example": 8
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "P5 optional mid-pit beat. ENTER only for stopped; skip lane/released chatter.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is stopped in the box.",
+            "Stationary for service from P{position}.",
+            "The car is stopped and the crew is on it.",
+            "Pit stop in progress at the box.",
+            "He sits still while the service unfolds.",
+            "The mid-stop pause holds from P{position}.",
+            "Crew work begins with the car fully stopped.",
+            "Viewers wait through the stationary service beat.",
+            "He is parked for the stop, nothing rushed.",
+            "The box holds him while the work runs.",
+            "A clean stop keeps the pit story simple.",
+            "Service continues while he remains stopped."
+          ],
+          "calm": [
+            "Easy stop in the box from P{position}.",
+            "He settles and waits through the service.",
+            "Calm in the box while the crew works.",
+            "No drama at the stop — just stationary service.",
+            "He rests the car cleanly for the crew.",
+            "The pause in the box stays measured.",
+            "Pit work unfolds without any rush.",
+            "Viewers see a quiet mid-stop from P{position}.",
+            "He holds still and lets the stop breathe.",
+            "The box stop is tidy and unhurried.",
+            "A calm hold keeps the service stable.",
+            "He waits out the stop with composure."
+          ],
+          "focused": [
+            "Stopped in the box, and he is ready to go.",
+            "Stationary from P{position}, watching the crew.",
+            "He holds the box stop with sharp focus.",
+            "The car is stopped; release timing is next.",
+            "Mid-stop focus while service finishes.",
+            "He stays precise through the stationary beat.",
+            "Pit work continues and he stays locked in.",
+            "Viewers see a focused hold in the box.",
+            "From P{position} he waits for a clean release.",
+            "The stop is still, and his timing stays sharp.",
+            "He measures the service window without fidgeting.",
+            "Stationary now — the exit cue is coming."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Stojí v boxu.",
+            "Stojí na servisu z {position}. místa.",
+            "Auto stojí a mechanici jsou u něj.",
+            "Zastávka v boxu právě probíhá.",
+            "Stojí v klidu, zatímco servis běží.",
+            "Prostřední část zastávky drží z {position}. místa.",
+            "Práce v boxu začíná s autem v klidu.",
+            "Diváci čekají na stacionární část servisu.",
+            "Stojí na zastávce, nic se neuspěchá.",
+            "Box ho drží, dokud práce doběhne.",
+            "Čistá zastávka udržuje pit story jednoduchou.",
+            "Servis pokračuje, zatímco zůstává stát."
+          ],
+          "calm": [
+            "Klidná zastávka v boxu z {position}. místa.",
+            "Usadí se a čeká na dokončení servisu.",
+            "V boxu je klid, zatímco mechanici pracují.",
+            "Bez dramatu — jen stacionární servis.",
+            "Nechá auto v klidu pro práci týmu.",
+            "Pauza v boxu zůstává měřená.",
+            "Práce v boxu běží bez spěchu.",
+            "Diváci vidí klidnou prostřední část zastávky.",
+            "Stojí a nechá zastávku dýchat.",
+            "Zastávka v boxu je úhledná a bez spěchu.",
+            "Klidné stání drží servis stabilní.",
+            "Čeká na konec zastávky s přehledem."
+          ],
+          "focused": [
+            "Stojí v boxu a je připravený vyjet.",
+            "Stojí z {position}. místa a sleduje tým.",
+            "Drží zastávku v boxu se soustředěním.",
+            "Auto stojí; další je načasování výjezdu.",
+            "Soustředění uprostřed zastávky, dokud servis doběhne.",
+            "Zůstává přesný během stání.",
+            "Práce v boxu pokračuje a on zůstává ve střehu.",
+            "Diváci vidí soustředěné stání v boxu.",
+            "Z {position}. místa čeká na čistý výjezd.",
+            "Zastávka je v klidu a jeho timing zůstává ostrý.",
+            "Měří servisní okno bez zbytečného pohybu.",
+            "Teď stojí — signál k výjezdu přijde."
+          ]
+        }
+      }
     }
   },
   "edges": [
@@ -5123,6 +5390,42 @@
         "same_correlation": false,
         "min_gap_s": 0.2,
         "max_gap_s": 8
+      }
+    },
+    {
+      "from": "hunting",
+      "to": "attack_range",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 1.0,
+        "max_gap_s": 30
+      }
+    },
+    {
+      "from": "attack_range",
+      "to": "side_by_side",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.5,
+        "max_gap_s": 20
+      }
+    },
+    {
+      "from": "pit_entry",
+      "to": "pit_stopped",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 40
+      }
+    },
+    {
+      "from": "pit_stopped",
+      "to": "back_on_track",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 60
       }
     }
   ]

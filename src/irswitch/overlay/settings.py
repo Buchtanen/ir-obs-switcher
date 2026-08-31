@@ -138,6 +138,19 @@ class OverlayTapeSettings:
 
 
 @dataclass(frozen=True)
+class CommentarySchedulerSettings:
+    """Busy-defer / silence / interrupt policy. All safe defaults off."""
+
+    defer_enabled: bool = False
+    hard_interrupt: bool = False
+    max_deferred: int = 8
+    default_ttl_s: float = 12.0
+    incident_ttl_s: float = 45.0
+    max_silence_s: float = 33.0
+    llm_past_framing: bool = True
+
+
+@dataclass(frozen=True)
 class CommentarySettings:
     """Spoken commentary rollout. Default off; no audio until enabled on stream PC."""
 
@@ -165,6 +178,7 @@ class CommentarySettings:
     llm_timeout_s: float = 8.0
     llm_temperature: float = 0.45
     llm_max_tokens: int = 220
+    scheduler: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
 
 
 @dataclass(frozen=True)

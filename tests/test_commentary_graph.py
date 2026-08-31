@@ -22,11 +22,11 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
     # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs.
-    assert len(graph.nodes) == 32
+    assert len(graph.nodes) == 34
     assert "sector_split" in graph.nodes
     assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
     assert "session_intro_race" in graph.nodes
-    assert len(graph.edges) == 12
+    assert len(graph.edges) == 16
 
 
 def test_graph_event_types_are_in_catalog() -> None:

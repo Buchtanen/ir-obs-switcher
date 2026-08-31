@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from irswitch.overlay.models import TelemetrySnapshot
 
 # irsdk_TrkLoc: -1 NotInWorld, 0 OffTrack, 1 InPitStall, 2 AproachingPits, 3 OnTrack
@@ -88,12 +90,42 @@ def relevant_ahead_behind(
     Ignores pit, not-in-world, and cars a lap down/up when a closer class
     neighbour exists.
     """
+    ahead, behind = relevant_near_field(snap, ahead_n=1, behind_n=1)
+    return (
+        ahead[0].car_idx if ahead else None,
+        behind[0].car_idx if behind else None,
+    )
+
+
+@dataclass(frozen=True)
+class NearFieldCar:
+    """One neighbour in race-distance order relative to the hero."""
+
+    car_idx: int
+    gap_s: float
+    class_position: int | None = None
+    overall_position: int | None = None
+    display_name: str | None = None
+
+
+def relevant_near_field(
+    snap: TelemetrySnapshot,
+    *,
+    ahead_n: int = 2,
+    behind_n: int = 2,
+) -> tuple[list[NearFieldCar], list[NearFieldCar]]:
+    """Return up to ``ahead_n`` / ``behind_n`` same-class neighbours by gap.
+
+    Ahead list is nearest-first (smallest positive gap first). Behind list is
+    nearest-first (smallest absolute gap first). Used by RaceObserver story
+    memory (product default 2+2); battle HUD still uses :func:`relevant_ahead_behind`.
+    """
     player_idx = snap.player_car_idx
     if player_idx is None:
-        return None, None
+        return [], []
     player_dist = race_distance(snap, player_idx)
     if player_dist is None:
-        return None, None
+        return [], []
 
     n = max(
         len(snap.car_idx_lap_dist_pct),
@@ -101,13 +133,11 @@ def relevant_ahead_behind(
         len(snap.car_idx_position),
         0,
     )
-    ahead_idx: int | None = None
-    ahead_gap = 1e9
-    behind_idx: int | None = None
-    behind_gap = 1e9
-
     player_cp = snap.class_position or class_position_of(snap, player_idx)
+    ahead_cand: list[NearFieldCar] = []
+    behind_cand: list[NearFieldCar] = []
 
+    names = snap.car_idx_driver_name
     for car_idx in range(n):
         if not is_active_racer(snap, car_idx, player_idx):
             continue
@@ -116,19 +146,33 @@ def relevant_ahead_behind(
         gap = estimated_gap_seconds(snap, player_idx, car_idx)
         if gap is None:
             continue
-        # Skip cars more than ~0.7 laps away (lapped traffic) unless they
-        # are the immediate class-position neighbour.
         other_cp = class_position_of(snap, car_idx)
         neighbour = (
             player_cp is not None and other_cp is not None and abs(other_cp - player_cp) == 1
         )
         if abs(gap) > 0.7 * (snap.last_lap_time or 90.0) and not neighbour:
             continue
-        if gap > 0 and gap < ahead_gap:
-            ahead_gap = gap
-            ahead_idx = car_idx
-        elif gap < 0 and -gap < behind_gap:
-            behind_gap = -gap
-            behind_idx = car_idx
+        name = names[car_idx] if 0 <= car_idx < len(names) else None
+        car = NearFieldCar(
+            car_idx=car_idx,
+            gap_s=float(gap),
+            class_position=other_cp,
+            overall_position=overall_position_of(snap, car_idx),
+            display_name=name if name else None,
+        )
+        if gap > 0:
+            ahead_cand.append(car)
+        elif gap < 0:
+            behind_cand.append(
+                NearFieldCar(
+                    car_idx=car.car_idx,
+                    gap_s=-car.gap_s,
+                    class_position=car.class_position,
+                    overall_position=car.overall_position,
+                    display_name=car.display_name,
+                )
+            )
 
-    return ahead_idx, behind_idx
+    ahead_cand.sort(key=lambda c: c.gap_s)
+    behind_cand.sort(key=lambda c: c.gap_s)
+    return ahead_cand[: max(0, ahead_n)], behind_cand[: max(0, behind_n)]

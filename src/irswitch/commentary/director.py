@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import random
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -14,6 +15,7 @@ from irswitch.commentary.anti_repeat import (
     prefer_fresh_candidates,
 )
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
+from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
 from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink, TtsSink, build_tts_sink
 from irswitch.commentary.validator import (
@@ -25,7 +27,7 @@ from irswitch.commentary.validator import (
 from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
-from irswitch.overlay.settings import CommentarySettings
+from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,8 @@ _SESSION_BRIEF_EVENTS = frozenset(
         "SESSION_INTRO_RACE",
         "SOF_BRIEF",
         "WEATHER_BRIEF",
+        "SESSION_WRAP",
+        "SESSION_PREVIEW",
     }
 )
 DEFAULT_DECISION_LOG_SIZE = 32
@@ -97,6 +101,10 @@ class CommentaryDirector:
         default_factory=lambda: RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
     )
     _sector_speaks_by_lap: dict[int, int] = field(default_factory=dict)
+    _scheduler: SpeechScheduler = field(default_factory=SpeechScheduler)
+    _current_event_type: str | None = None
+    filler_provider: Callable[[float], EventEnvelope | None] | None = None
+    filler_formatter: Callable[[EventEnvelope], str | None] | None = None
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -105,6 +113,7 @@ class CommentaryDirector:
             self._recent = RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
         if not isinstance(self._sector_speaks_by_lap, dict):
             self._sector_speaks_by_lap = {}
+        self._sync_scheduler_settings()
 
     @classmethod
     def from_defaults(
@@ -133,6 +142,9 @@ class CommentaryDirector:
         self._decisions = deque(maxlen=size)
         self._recent.clear()
         self._sector_speaks_by_lap.clear()
+        self._scheduler.reset()
+        self._current_event_type = None
+        self._sync_scheduler_settings()
 
     def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
         """Public read-only status for dashboards. No side effects.
@@ -192,6 +204,107 @@ class CommentaryDirector:
             )
         )
 
+    def _sync_scheduler_settings(self) -> None:
+        sched = getattr(self.settings, "scheduler", None)
+        if isinstance(sched, CommentarySchedulerSettings):
+            self._scheduler.settings = sched
+        else:
+            self._scheduler.settings = CommentarySchedulerSettings()
+
+    def tick(self, now: float, bio: BioState | None = None) -> CommentaryUtterance | None:
+        """Idle flush / silence watchdog. Call once per race frame when enabled."""
+        if not self.settings.enabled:
+            return None
+        if not self._scheduler.settings.defer_enabled:
+            return None
+        self._sync_scheduler_settings()
+        for expired in self._scheduler.expire(now):
+            self._record(
+                action="skipped",
+                reason="deferred_expired",
+                now=now,
+                event_type=expired.utterance.event_type,
+                node_id=expired.utterance.node_id,
+                text=expired.utterance.text,
+            )
+        if now < self._busy_until or now < self._global_ready_at:
+            return None
+        deferred = self._scheduler.pop_ready(now)
+        if deferred is not None:
+            return self._speak_prepared(
+                deferred.utterance,
+                now=now,
+                reason="spoken_deferred",
+                past=True,
+            )
+        last_at = self._last.at if self._last is not None else None
+        if self._scheduler.silence_due(last_spoke_at=last_at, now=now):
+            spoken = self._speak_silence_filler(now)
+            if spoken is not None:
+                return spoken
+            self._record(action="skipped", reason="silence_no_filler", now=now)
+        return None
+
+    def _speak_silence_filler(self, now: float) -> CommentaryUtterance | None:
+        provider = self.filler_provider
+        if provider is None:
+            return None
+        try:
+            envelope = provider(now)
+        except Exception:
+            logger.warning("filler_provider failed", exc_info=True)
+            return None
+        if envelope is None:
+            return None
+        # Prefer graph node when authored; else template formatter from RaceObserver.
+        emotion = "unknown"
+        drafted = self._consider(envelope, emotion, now, commit=False)
+        if drafted is not None:
+            return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
+        return None
+
+    def _utterance_from_formatter(
+        self, envelope: EventEnvelope
+    ) -> CommentaryUtterance | None:
+        """Build a one-off utterance when the graph has no matching node."""
+        formatter = self.filler_formatter
+        if formatter is None:
+            return None
+        try:
+            text = formatter(envelope)
+        except Exception:
+            logger.warning("filler_formatter failed", exc_info=True)
+            return None
+        if not text:
+            return None
+        from irswitch.commentary.graph import GraphNode, TtsLimits
+
+        node = GraphNode(
+            id=f"fmt:{envelope.event_type.lower()}",
+            family="session",
+            event_types=(envelope.event_type,),
+            phases=("RESULT",),
+            speak_priority=int(envelope.priority),
+            cooldown_s=8.0,
+            slots=(),
+            hr_states=("unknown",),
+            tts=TtsLimits(max_seconds=4.0),
+            variants={},
+        )
+        return CommentaryUtterance(
+            node_id=node.id,
+            locale=self.language,
+            emotion="unknown",
+            text=text,
+            event_type=envelope.event_type,
+            event_id=envelope.event_id,
+            correlation_id=envelope.correlation_id,
+            estimated_seconds=min(4.0, max(0.8, len(text.split()) * 0.35)),
+            node=node,
+            priority=int(envelope.priority),
+            past_framing=False,
+        )
+
     def observe(
         self,
         envelopes: list[EventEnvelope],
@@ -205,16 +318,13 @@ class CommentaryDirector:
             if envelopes:
                 self._record(action="skipped", reason="disabled", now=now)
             return None
+        self._sync_scheduler_settings()
         if language is not None:
             self.language = normalize_language(language)
-        if now < self._busy_until:
-            if envelopes:
-                self._record(action="skipped", reason="busy", now=now)
-            return None
-        if now < self._global_ready_at:
-            if envelopes:
-                self._record(action="skipped", reason="global_cooldown", now=now)
-            return None
+
+        flushed = self.tick(now, bio)
+        if flushed is not None and not envelopes:
+            return flushed
 
         ranked = sorted(
             (env for env in envelopes if env.phase in _SPEAK_PHASES),
@@ -229,28 +339,141 @@ class CommentaryDirector:
                 event_type=envelopes[0].event_type,
             )
             return None
+
+        busy = now < self._busy_until
+        if busy and ranked:
+            top = ranked[0]
+            if self._scheduler.should_hard_interrupt(
+                top.event_type, current_event_type=self._current_event_type
+            ):
+                self._hard_interrupt(now)
+                busy = False
+            elif self._scheduler.settings.defer_enabled:
+                return self._park_ranked(ranked, bio, now)
+            else:
+                self._record(
+                    action="skipped",
+                    reason="busy",
+                    now=now,
+                    event_type=top.event_type,
+                )
+                return None
+
+        if now < self._global_ready_at:
+            if envelopes:
+                self._record(
+                    action="skipped",
+                    reason="global_cooldown",
+                    now=now,
+                    event_type=ranked[0].event_type if ranked else "",
+                )
+            return flushed
+
+        if flushed is not None:
+            # Already spoke a deferred line this tick; park new arrivals if any.
+            if ranked and self._scheduler.settings.defer_enabled:
+                self._park_ranked(ranked, bio, now)
+            return flushed
+
         emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
         for envelope in ranked:
-            utterance = self._consider(envelope, emotion, now)
+            utterance = self._consider(envelope, emotion, now, commit=True)
             if utterance is not None:
-                self.sink.enqueue(utterance)
-                self._record(
-                    action="spoken",
-                    reason="spoken",
-                    now=now,
-                    event_type=envelope.event_type,
-                    node_id=utterance.node_id,
-                    emotion=utterance.emotion,
-                    text=utterance.text,
+                return self._speak_prepared(
+                    utterance, now=now, reason="spoken", past=False
                 )
-                return utterance
         return None
+
+    def _hard_interrupt(self, now: float) -> None:
+        interrupt = getattr(self.sink, "interrupt", None)
+        if callable(interrupt):
+            try:
+                interrupt()
+            except Exception:
+                logger.warning("tts interrupt failed", exc_info=True)
+        self._busy_until = now
+        self._global_ready_at = now
+        self._record(action="skipped", reason="interrupted", now=now)
+
+    def _park_ranked(
+        self,
+        ranked: list[EventEnvelope],
+        bio: BioState | None,
+        now: float,
+    ) -> CommentaryUtterance | None:
+        emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
+        for envelope in ranked:
+            draft = self._consider(envelope, emotion, now, commit=False)
+            if draft is None:
+                continue
+            ok = self._scheduler.park(draft, priority=envelope.priority, now=now)
+            self._record(
+                action="skipped",
+                reason="deferred" if ok else "deferred_dropped",
+                now=now,
+                event_type=envelope.event_type,
+                node_id=draft.node_id,
+                text=draft.text,
+            )
+            return None
+        self._record(
+            action="skipped",
+            reason="busy",
+            now=now,
+            event_type=ranked[0].event_type if ranked else "",
+        )
+        return None
+
+    def _speak_prepared(
+        self,
+        utterance: CommentaryUtterance,
+        *,
+        now: float,
+        reason: str,
+        past: bool,
+    ) -> CommentaryUtterance:
+        spoken = utterance
+        if past and utterance.past_framing is False:
+            spoken = CommentaryUtterance(
+                node_id=utterance.node_id,
+                locale=utterance.locale,
+                emotion=utterance.emotion,
+                text=utterance.text,
+                event_type=utterance.event_type,
+                event_id=utterance.event_id,
+                correlation_id=utterance.correlation_id,
+                estimated_seconds=utterance.estimated_seconds,
+                node=utterance.node,
+                priority=utterance.priority,
+                past_framing=True,
+            )
+        # Commit timing if this was a draft (deferred path).
+        duration = spoken.estimated_seconds
+        self._cooldowns[spoken.node_id] = now + spoken.node.cooldown_s
+        self._busy_until = now + duration
+        self._global_ready_at = now + self.settings.cooldown_s
+        self._last = _LastSpoken(spoken.node_id, spoken.correlation_id, now)
+        self._current_event_type = spoken.event_type
+        self._recent.remember(spoken.text)
+        self.sink.enqueue(spoken)
+        self._record(
+            action="spoken",
+            reason=reason,
+            now=now,
+            event_type=spoken.event_type,
+            node_id=spoken.node_id,
+            emotion=spoken.emotion,
+            text=spoken.text,
+        )
+        return spoken
 
     def _consider(
         self,
         envelope: EventEnvelope,
         emotion: str,
         now: float,
+        *,
+        commit: bool = True,
     ) -> CommentaryUtterance | None:
         sector_gate = self._sector_speak_gate(envelope, now)
         if sector_gate is not None:
@@ -260,14 +483,17 @@ class CommentaryDirector:
             return None
         node = self._pick_node(envelope, now)
         if node is None:
-            self._record(
-                action="skipped",
-                reason="no_node",
-                now=now,
-                event_type=envelope.event_type,
-            )
-            return None
-        if now < self._cooldowns.get(node.id, 0.0):
+            synthetic = self._utterance_from_formatter(envelope)
+            if synthetic is None:
+                self._record(
+                    action="skipped",
+                    reason="no_node",
+                    now=now,
+                    event_type=envelope.event_type,
+                )
+                return None
+            return synthetic
+        if commit and now < self._cooldowns.get(node.id, 0.0):
             self._record(
                 action="skipped",
                 reason="node_cooldown",
@@ -333,12 +559,14 @@ class CommentaryDirector:
             node.tts.max_seconds,
             max(estimate_seconds(spoken, ssml=spoken if "<" in spoken else None), 0.6),
         )
-        self._cooldowns[node.id] = now + node.cooldown_s
-        self._busy_until = now + duration
-        self._global_ready_at = now + self.settings.cooldown_s
-        self._last = _LastSpoken(node.id, envelope.correlation_id, now)
-        self._recent.remember(spoken)
-        self._note_sector_spoken(envelope)
+        if commit:
+            self._cooldowns[node.id] = now + node.cooldown_s
+            self._busy_until = now + duration
+            self._global_ready_at = now + self.settings.cooldown_s
+            self._last = _LastSpoken(node.id, envelope.correlation_id, now)
+            self._recent.remember(spoken)
+            self._note_sector_spoken(envelope)
+            self._current_event_type = envelope.event_type
         return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
@@ -349,6 +577,8 @@ class CommentaryDirector:
             correlation_id=envelope.correlation_id,
             estimated_seconds=duration,
             node=node,
+            priority=int(envelope.priority),
+            past_framing=False,
         )
 
     def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:

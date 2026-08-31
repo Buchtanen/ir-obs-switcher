@@ -72,8 +72,8 @@ def _expected_density(node_id: str) -> int:
 
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
     graph = load_sequence_graph()
-    assert len(graph.nodes) == 32
-    assert len(graph.edges) == 12
+    assert len(graph.nodes) == 34
+    assert len(graph.edges) == 16
     assert graph.unfilled_cells() == []
     assert SESSION_BRIEF_NODES <= set(graph.nodes)
 
@@ -103,7 +103,7 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                     )
                 total += len(lines)
     # 2832 prior densified lines + 5 brief nodes × 2 locales × 5 emotions × 10
-    assert total == 3332
+    assert total == 3500
 
 
 def test_append_patch_exactly_matches_graph_tails() -> None:

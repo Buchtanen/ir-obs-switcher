@@ -674,7 +674,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `[stream_chapters].*` (enabled, titles, triggers, youtube_vod)
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 - `overlay.language`, `overlay.v4_*`, `overlay.session_tape` a všechny `event_engine.*` flagy
-- `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`, `commentary.audio_device`, `commentary.duck_input`, `commentary.duck_ratio`, `commentary.duck_fade_ms`, `commentary.decision_log_size`, `commentary.sector_speak`, `commentary.sector_speak_max_per_lap`, `commentary.session_briefs`, `commentary.llm_polish`, `commentary.llm_base_url`, `commentary.llm_model`, `commentary.llm_timeout_s`, `commentary.llm_temperature`, `commentary.llm_max_tokens`
+- `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`, `commentary.audio_device`, `commentary.duck_input`, `commentary.duck_ratio`, `commentary.duck_fade_ms`, `commentary.decision_log_size`, `commentary.sector_speak`, `commentary.sector_speak_max_per_lap`, `commentary.session_briefs`, `commentary.llm_polish`, `commentary.llm_base_url`, `commentary.llm_model`, `commentary.llm_timeout_s`, `commentary.llm_temperature`, `commentary.llm_max_tokens`, `commentary.scheduler.defer_enabled`, `commentary.scheduler.hard_interrupt`, `commentary.scheduler.max_deferred`, `commentary.scheduler.default_ttl_s`, `commentary.scheduler.incident_ttl_s`, `commentary.scheduler.max_silence_s`, `commentary.scheduler.llm_past_framing`
 
 ### Vyžaduje restart procesu
 
@@ -702,6 +702,8 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 **Migration:** new optional `commentary.session_briefs` (default `false`). Existing `config.ini` stays silent on intros/SoF/weather until explicitly enabled (still requires `commentary.enabled=true` for live speak).
 
 **Migration:** new optional `commentary.llm_polish` and `commentary.llm_*` keys (default off / LAN Ollama defaults). Enable only when a reachable OpenAI-compatible endpoint exists; polish runs on the TTS worker thread and falls back to the skeleton on failure.
+
+**Migration:** new optional `[commentary.scheduler]` (defaults keep legacy drop-on-busy). `defer_enabled=false`, `hard_interrupt=false`, `max_deferred=8`, `default_ttl_s=12`, `incident_ttl_s=45`, `max_silence_s=33`, `llm_past_framing=true`. When `defer_enabled=true`, busy arrivals park by priority/TTL and flush as `spoken_deferred` (LLM past framing only if `llm_polish=true`). `hard_interrupt` may clear the TTS queue for incident envelopes (not while finish/final_lap is current). Silence watchdog logs `silence_no_filler` until RaceObserver supplies weather/field facts (P2).
 **Full V4 demo profile** (mirrored in `config/config.example.ini`; production code defaults stay off until you opt in):
 
 ```ini

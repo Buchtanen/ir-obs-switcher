@@ -7,11 +7,11 @@ from irswitch.overlay.i18n import CATALOGS
 
 _FAMILY_OVERLAY_HINTS: dict[str, tuple[str, ...]] = {
     "timing": ("lap.complete", "lap.personal_best"),
-    "battle": ("battle.hunting", "battle.hunted", "battle.side_by_side"),
+    "battle": ("battle.hunting", "battle.hunted", "battle.side_by_side", "battle.attack_range"),
     "position": ("position.gained", "position.lost", "position.overtake"),
     "exception": ("incident",),
     "session": ("session.final_lap", "session.finish"),
-    "pit": ("pit.entry", "pit.exit", "pit.outcome"),
+    "pit": ("pit.entry", "pit.exit", "pit.outcome", "pit.stopped"),
     "bio": ("bio.hr_pressure", "bio.hr_high"),
 }
 

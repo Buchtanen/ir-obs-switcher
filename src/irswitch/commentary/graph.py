@@ -19,6 +19,12 @@ COMMENTARY_ONLY_EVENTS = frozenset(
         "SESSION_INTRO_RACE",
         "SOF_BRIEF",
         "WEATHER_BRIEF",
+        "WEATHER_CHANGE",
+        "FIELD_FACT",
+        "INCIDENT_AFTERMATH",
+        "BACK_UNDER_WAY",
+        "SESSION_WRAP",
+        "SESSION_PREVIEW",
     }
 )
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})

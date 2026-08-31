@@ -26,6 +26,15 @@ _SYSTEM_PROMPT = (
     "Commentary only — no meta commentary about being an AI."
 )
 
+_SYSTEM_PROMPT_PAST = (
+    "You are polishing a TV race call that already happened moments ago.\n"
+    "Keep EVERY fact from SKELETON. Do not add new numbers, names, or events.\n"
+    "Rewrite in past tense / 'already happened' framing for viewers catching up.\n"
+    "Never invent yellows, overtakes, final lap, Stay tuned, or BPM.\n"
+    "Viewers only, third person. One or two short sentences.\n"
+    "Commentary only — no meta commentary about being an AI."
+)
+
 
 @dataclass(frozen=True)
 class PolishOutcome:
@@ -52,17 +61,22 @@ class PolishOutcome:
         }
 
 
-def build_polish_request(skeleton: str, settings: CommentarySettings) -> dict[str, Any]:
+def build_polish_request(
+    skeleton: str, settings: CommentarySettings, *, past: bool = False
+) -> dict[str, Any]:
+    system = _SYSTEM_PROMPT_PAST if past else _SYSTEM_PROMPT
+    user = (
+        f"SKELETON:\n{skeleton.strip()}\nRewrite as a brief past call now."
+        if past
+        else f"SKELETON:\n{skeleton.strip()}\nWrite the live call now."
+    )
     return {
         "model": settings.llm_model,
         "temperature": settings.llm_temperature,
         "max_tokens": settings.llm_max_tokens,
         "messages": [
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": f"SKELETON:\n{skeleton.strip()}\nWrite the live call now.",
-            },
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
         ],
     }
 
@@ -73,6 +87,7 @@ def polish_skeleton(
     settings: CommentarySettings,
     *,
     opener: Any | None = None,
+    past: bool = False,
 ) -> PolishOutcome:
     """Blocking HTTP polish. Never raises; returns skeleton on failure."""
     text = (skeleton or "").strip()
@@ -93,7 +108,7 @@ def polish_skeleton(
             request={},
         )
 
-    payload = build_polish_request(text, settings)
+    payload = build_polish_request(text, settings, past=past)
     url = _chat_completions_url(settings.llm_base_url)
     if urlparse(url).scheme not in {"http", "https"}:
         return PolishOutcome(
