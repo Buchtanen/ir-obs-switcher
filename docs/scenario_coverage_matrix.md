@@ -3,7 +3,7 @@
 **Status:** inventory (docs only)  
 **Source of truth analyzed:** `feat/ollama-vod-joint-test` @ `0997ffc` (reconciled into this docs branch)  
 **Independent review:** second Cursor model vs code, confidence **96/100**  
-**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md)
+**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md)
 
 ## 0. Two session concepts — do not mix
 
