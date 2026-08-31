@@ -259,31 +259,37 @@ class CommentaryDirector:
         drafted = self._consider(envelope, emotion, now, commit=False)
         if drafted is not None:
             return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
+        return None
+
+    def _utterance_from_formatter(
+        self, envelope: EventEnvelope
+    ) -> CommentaryUtterance | None:
+        """Build a one-off utterance when the graph has no matching node."""
         formatter = self.filler_formatter
-        text = None
-        if formatter is not None:
-            try:
-                text = formatter(envelope)
-            except Exception:
-                logger.warning("filler_formatter failed", exc_info=True)
-                return None
+        if formatter is None:
+            return None
+        try:
+            text = formatter(envelope)
+        except Exception:
+            logger.warning("filler_formatter failed", exc_info=True)
+            return None
         if not text:
             return None
         from irswitch.commentary.graph import GraphNode, TtsLimits
 
         node = GraphNode(
-            id="silence_fill",
+            id=f"fmt:{envelope.event_type.lower()}",
             family="session",
             event_types=(envelope.event_type,),
             phases=("RESULT",),
             speak_priority=int(envelope.priority),
-            cooldown_s=15.0,
+            cooldown_s=8.0,
             slots=(),
             hr_states=("unknown",),
             tts=TtsLimits(max_seconds=4.0),
             variants={},
         )
-        utterance = CommentaryUtterance(
+        return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
             emotion="unknown",
@@ -296,7 +302,6 @@ class CommentaryDirector:
             priority=int(envelope.priority),
             past_framing=False,
         )
-        return self._speak_prepared(utterance, now=now, reason="silence_fill", past=False)
 
     def observe(
         self,
@@ -476,13 +481,16 @@ class CommentaryDirector:
             return None
         node = self._pick_node(envelope, now)
         if node is None:
-            self._record(
-                action="skipped",
-                reason="no_node",
-                now=now,
-                event_type=envelope.event_type,
-            )
-            return None
+            synthetic = self._utterance_from_formatter(envelope)
+            if synthetic is None:
+                self._record(
+                    action="skipped",
+                    reason="no_node",
+                    now=now,
+                    event_type=envelope.event_type,
+                )
+                return None
+            return synthetic
         if commit and now < self._cooldowns.get(node.id, 0.0):
             self._record(
                 action="skipped",

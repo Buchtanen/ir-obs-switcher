@@ -177,8 +177,10 @@ Defer + TTL + decision codes (`deferred` / `spoken_deferred` / `deferred_expired
 silence filler via `filler_provider` / `filler_formatter` (`WEATHER_CHANGE` /
 `FIELD_FACT`). Wired in `OverlayRuntime`. **Issue #170.**
 
-### P3 — Incident aftermath FSM
-Derived envelopes; commentary nodes; interrupt policy dle ini.
+### P3 — Incident aftermath FSM ✅
+Derived `INCIDENT_AFTERMATH` (stalled/rolling) + `BACK_UNDER_WAY`; LapDistPct /
+surface / tow proxies (no Speed field yet); template speech via director
+formatter fallback; fan-out to commentary. **Issue #172.**
 
 ### P4 — Stream narrative pre/post
 SESSION_WRAP/PREVIEW; sequencovat se `session_briefs`.

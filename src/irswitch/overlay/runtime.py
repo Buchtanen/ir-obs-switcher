@@ -256,6 +256,9 @@ class OverlayRuntime:
                 now=now,
                 telemetry_data=self._session_brief_data(),
             )
+            derived = self.race_observer.take_derived_envelopes()
+            if derived:
+                self._dispatch_speech_envelopes(derived, now)
         except Exception:
             logger.warning("RaceObserver observe failed", exc_info=True)
 

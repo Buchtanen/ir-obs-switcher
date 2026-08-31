@@ -11,6 +11,7 @@ from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
+from irswitch.race.aftermath import IncidentAftermathFsm
 from irswitch.race.opponents import (
     NearFieldCar,
     class_position_of,
@@ -40,6 +41,7 @@ class RaceObserver:
     ahead_n: int = 2
     behind_n: int = 2
     stream: StreamMemory = field(default_factory=StreamMemory)
+    aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -54,10 +56,15 @@ class RaceObserver:
         self._pending_weather_change = None
         self._last_filler_kind = None
         self._filler_cooldown_until = 0.0
+        self.aftermath.reset()
 
     def reset_stream(self) -> None:
         self.reset_session()
         self.stream.reset_stream()
+
+    def take_derived_envelopes(self) -> list[EventEnvelope]:
+        """Drain derived commentary envelopes (aftermath / back under way)."""
+        return self.aftermath.take_pending()
 
     @property
     def context(self) -> StoryContext | None:
@@ -72,9 +79,8 @@ class RaceObserver:
         telemetry_data: Mapping[str, Any] | None = None,
     ) -> StoryContext:
         """Update story context from telemetry + race state. Fail-soft."""
-        del now  # reserved for future rate limits
         try:
-            return self._observe(snap, state, telemetry_data=telemetry_data)
+            return self._observe(snap, state, now=now, telemetry_data=telemetry_data)
         except Exception:
             logger.warning("RaceObserver.observe failed", exc_info=True)
             empty = StoryContext(
@@ -90,6 +96,7 @@ class RaceObserver:
         snap: TelemetrySnapshot,
         state: RaceState,
         *,
+        now: float,
         telemetry_data: Mapping[str, Any] | None,
     ) -> StoryContext:
         key = build_session_key(
@@ -101,6 +108,7 @@ class RaceObserver:
             self._session_key = key
             self._last_weather = None
             self._pending_weather_change = None
+            self.aftermath.reset()
             if key:
                 self.stream.note_session(key)
 
@@ -126,10 +134,10 @@ class RaceObserver:
             weather = extract_weather(telemetry_data, prefer="live")
             self._note_weather(weather)
 
+        overlay_mode = state.overlay_mode or overlay_mode_from_session_type(snap.session_type)
         ctx = StoryContext(
             session_key=key,
-            overlay_mode=state.overlay_mode
-            or overlay_mode_from_session_type(snap.session_type),
+            overlay_mode=overlay_mode,
             hero=HeroSnapshot(
                 car_idx=snap.player_car_idx,
                 class_position=state.class_position or snap.class_position,
@@ -145,6 +153,10 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
         )
         self._context = ctx
+        try:
+            self.aftermath.tick(state, now)
+        except Exception:
+            logger.warning("IncidentAftermathFsm.tick failed", exc_info=True)
         return ctx
 
     def next_filler_envelope(self, now: float, *, locale: str = "en") -> EventEnvelope | None:
@@ -213,7 +225,7 @@ class RaceObserver:
         )
 
     def format_filler_text(self, envelope: EventEnvelope, *, locale: str = "en") -> str | None:
-        """Template lines when graph has no FIELD_FACT / WEATHER_CHANGE node."""
+        """Template lines when graph has no FIELD_FACT / WEATHER_CHANGE / aftermath node."""
         metrics = envelope.metrics or {}
         kind = str(metrics.get("kind") or "")
         cs = locale.lower().startswith("cs")
@@ -227,6 +239,22 @@ class RaceObserver:
             if cs:
                 return "Počasí se mění: " + ", ".join(str(p) for p in parts) + "."
             return "Weather update: " + ", ".join(str(p) for p in parts) + "."
+
+        if envelope.event_type == "INCIDENT_AFTERMATH":
+            if kind == "stalled":
+                return (
+                    "Stojí. Čeká se, až se znovu rozjede."
+                    if cs
+                    else "He's stalled. Waiting to get going again."
+                )
+            return (
+                "Incident a pořád v pohybu."
+                if cs
+                else "Incident there, and he's still rolling."
+            )
+
+        if envelope.event_type == "BACK_UNDER_WAY" or kind == "back_under_way":
+            return "Znovu jede." if cs else "He's back under way."
 
         fact = str(metrics.get("fact") or "")
         pos = metrics.get("position")
