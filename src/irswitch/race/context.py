@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from irswitch.iracing.session_flags import decode_session_flags
 from irswitch.overlay.models import OpponentInfo, RaceState, TelemetrySnapshot
 from irswitch.overlay.session import overlay_mode_from_session_type
 from irswitch.overlay.settings import BattleSettings
@@ -91,6 +92,7 @@ class RaceContextAnalyzer:
             player_track_surface=snap.player_track_surface,
             player_tow_time=snap.player_tow_time,
         )
+        flags = decode_session_flags(snap.session_flags)
 
         return RaceState(
             connected=True,
@@ -128,6 +130,14 @@ class RaceContextAnalyzer:
             data_quality=snap.data_quality,
             player_track_surface=snap.player_track_surface,
             player_tow_time=snap.player_tow_time,
+            speed_mps=snap.speed_mps,
+            session_flags=snap.session_flags,
+            session_flag_names=flags.names,
+            flag_checkered=flags.checkered,
+            flag_yellow=flags.yellow,
+            flag_green=flags.green,
+            car_idx_best_lap_time=snap.car_idx_best_lap_time,
+            car_idx_last_lap_time=snap.car_idx_last_lap_time,
         )
 
 

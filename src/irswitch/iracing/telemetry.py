@@ -15,6 +15,7 @@ from irswitch.iracing.sdk_units import (
     as_lap_dist_pct,
     as_non_negative_int,
     as_session_laps_remain,
+    as_speed_mps,
 )
 from irswitch.iracing.sectors import sector_start_pcts
 from irswitch.overlay.models import TelemetrySnapshot
@@ -53,6 +54,9 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "CarIdxPosition",
     "CarIdxOnPitRoad",
     "CarIdxEstTime",
+    "CarIdxBestLapTime",
+    "CarIdxLastLapTime",
+    "Speed",
     "CarIdxTrackSurface",
     "DriverInfo",
     "SplitTimeInfo",
@@ -103,6 +107,10 @@ def _pct_tuple(value: object) -> tuple[float | None, ...]:
 
 def _est_time_tuple(value: object) -> tuple[float | None, ...]:
     return tuple(as_est_time(item) for item in _as_sequence(value))
+
+
+def _completed_lap_tuple(value: object) -> tuple[float | None, ...]:
+    return tuple(as_completed_lap_time(item) for item in _as_sequence(value))
 
 
 def _int_tuple(value: object) -> tuple[int | None, ...]:
@@ -195,7 +203,10 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         car_idx_position=_position_tuple(data.get("CarIdxPosition")),
         car_idx_on_pit_road=_bool_tuple(data.get("CarIdxOnPitRoad")),
         car_idx_est_time=_est_time_tuple(data.get("CarIdxEstTime")),
+        car_idx_best_lap_time=_completed_lap_tuple(data.get("CarIdxBestLapTime")),
+        car_idx_last_lap_time=_completed_lap_tuple(data.get("CarIdxLastLapTime")),
         car_idx_track_surface=_int_tuple(data.get("CarIdxTrackSurface")),
+        speed_mps=as_speed_mps(data.get("Speed")),
         car_idx_driver_name=driver_names_by_car_idx(data.get("DriverInfo")),
         session_num=as_int(data.get("SessionNum")),
         subsession_id=str(subsession) if subsession is not None else None,

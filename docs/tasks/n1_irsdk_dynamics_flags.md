@@ -24,19 +24,19 @@ Must not: emitters, director, `runtime.py`, invent DriverInfo lap times, Yaw/acc
 
 ## Acceptance criteria
 
-- [ ] Extract `Speed` via `as_speed_mps` in `sdk_units.py` (0 valid, negative → None). Field name on snapshot/`RaceState`: **`speed_mps`**
-- [ ] Extract `CarIdxBestLapTime` / `CarIdxLastLapTime` via existing `as_completed_lap_time` per slot (`-1` / 0 → None)
-- [ ] `session_flags.py` maps official `irsdk_Flags` bits; unknown ignored
-- [ ] Missing keys stay None; extract never raises
-- [ ] `RaceState` has the new fields (not snapshot-only)
-- [ ] Unit tests: bits, combined flags, sentinel Speed/times, empty extract, `as_speed_mps` table
-- [ ] No speak / no HUD behavior change
+- [x] Extract `Speed` via `as_speed_mps` in `sdk_units.py` (0 valid, negative → None). Field name on snapshot/`RaceState`: **`speed_mps`**
+- [x] Extract `CarIdxBestLapTime` / `CarIdxLastLapTime` via existing `as_completed_lap_time` per slot (`-1` / 0 → None)
+- [x] `session_flags.py` maps official `irsdk_Flags` bits; unknown ignored
+- [x] Missing keys stay None; extract never raises
+- [x] `RaceState` has the new fields (not snapshot-only)
+- [x] Unit tests: bits, combined flags, sentinel Speed/times, empty extract, `as_speed_mps` table
+- [x] No speak / no HUD behavior change
 
 ## Test plan
 
-- [ ] Each documented flag bit → name
-- [ ] `CarIdxBestLapTime` `-1` → None in tuple
-- [ ] Existing telemetry / race-context tests pass
+- [x] Each documented flag bit → name
+- [x] `CarIdxBestLapTime` `-1` → None in tuple
+- [x] Existing telemetry / race-context tests pass
 
 ## Docs impact
 

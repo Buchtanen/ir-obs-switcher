@@ -10,6 +10,7 @@ from irswitch.iracing.sdk_units import (
     as_non_negative_int,
     as_session_laps_remain,
     as_session_time_remain,
+    as_speed_mps,
     format_delta,
     format_gap,
     format_lap_time,
@@ -67,6 +68,17 @@ def test_format_delta_and_gap() -> None:
     assert format_session_clock(94) == "1:34"
 
 
+def test_speed_mps_zero_valid_negative_none() -> None:
+    assert as_speed_mps(0) == 0.0
+    assert as_speed_mps(0.0) == 0.0
+    assert as_speed_mps(42.5) == 42.5
+    assert as_speed_mps(-1) is None
+    assert as_speed_mps(None) is None
+    assert as_speed_mps(True) is None
+    assert as_speed_mps(float("nan")) is None
+    assert as_speed_mps(float("inf")) is None
+
+
 def test_extract_telemetry_sanitizes_sdk_garbage() -> None:
     snap = extract_telemetry(
         {
@@ -79,6 +91,9 @@ def test_extract_telemetry_sanitizes_sdk_garbage() -> None:
             "LapCompleted": -1,
             "CarIdxLapDistPct": [-1.0, 0.4],
             "CarIdxEstTime": [-1.0, 12.0],
+            "CarIdxBestLapTime": [-1.0, 94.2],
+            "CarIdxLastLapTime": [0, 93.1],
+            "Speed": -1,
             "CarIdxLapCompleted": [-1, 3],
             "CarIdxPosition": [0, 4],
         },
@@ -93,6 +108,9 @@ def test_extract_telemetry_sanitizes_sdk_garbage() -> None:
     assert snap.lap_completed is None
     assert snap.car_idx_lap_dist_pct == (None, 0.4)
     assert snap.car_idx_est_time == (None, 12.0)
+    assert snap.car_idx_best_lap_time == (None, 94.2)
+    assert snap.car_idx_last_lap_time == (None, 93.1)
+    assert snap.speed_mps is None
     assert snap.car_idx_lap_completed == (None, 3)
     assert snap.car_idx_position == (None, 4)
 

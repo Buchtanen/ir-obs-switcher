@@ -238,6 +238,9 @@ class IRacingReader:
                     "CamCameraState",
                     "IsOnTrackSession",
                     "SessionFlags",
+                    "Speed",
+                    "CarIdxBestLapTime",
+                    "CarIdxLastLapTime",
                     "WeekendInfo",
                     "SessionInfo",
                 ]
@@ -302,6 +305,7 @@ class IRacingReader:
             "SessionTime",
             "IsOnTrackSession",
             "SessionFlags",
+            "Speed",
         ]
 
         try:

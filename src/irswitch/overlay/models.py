@@ -53,8 +53,11 @@ class TelemetrySnapshot:
     car_idx_position: tuple[int | None, ...] = ()
     car_idx_on_pit_road: tuple[bool | None, ...] = ()
     car_idx_est_time: tuple[float | None, ...] = ()
+    car_idx_best_lap_time: tuple[float | None, ...] = ()
+    car_idx_last_lap_time: tuple[float | None, ...] = ()
     car_idx_track_surface: tuple[int | None, ...] = ()
     car_idx_driver_name: tuple[str | None, ...] = ()
+    speed_mps: float | None = None
     # Session / quality (Event Engine normalized input — optional until adapter fills them)
     session_num: int | None = None
     subsession_id: str | None = None
@@ -125,6 +128,14 @@ class RaceState:
     data_quality: str = "ok"
     player_track_surface: int | None = None
     player_tow_time: float | None = None
+    speed_mps: float | None = None
+    session_flags: int | None = None
+    session_flag_names: tuple[str, ...] = ()
+    flag_checkered: bool = False
+    flag_yellow: bool = False
+    flag_green: bool = False
+    car_idx_best_lap_time: tuple[float | None, ...] = ()
+    car_idx_last_lap_time: tuple[float | None, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         data = _asdict(self)

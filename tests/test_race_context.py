@@ -42,6 +42,35 @@ def test_extract_telemetry_null_safe() -> None:
     assert snap.connected is True
     assert snap.position is None
     assert snap.car_idx_lap_dist_pct == ()
+    assert snap.speed_mps is None
+    assert snap.car_idx_best_lap_time == ()
+    assert snap.car_idx_last_lap_time == ()
+    assert snap.session_flags is None
+
+
+def test_analyzer_copies_speed_times_and_decoded_flags() -> None:
+    snap = extract_telemetry(
+        {
+            "PlayerCarIdx": 0,
+            "Speed": 28.5,
+            "SessionFlags": 0x00000001 | 0x00000008,
+            "CarIdxBestLapTime": [91.2, -1],
+            "CarIdxLastLapTime": [90.0, 0],
+            "SessionState": 4,
+        },
+        1.0,
+    )
+    assert snap.speed_mps == 28.5
+    state = RaceContextAnalyzer().analyze(snap)
+    assert state.speed_mps == 28.5
+    assert state.session_flags == 0x00000009
+    assert state.session_flag_names == ("checkered", "yellow")
+    assert state.flag_checkered is True
+    assert state.flag_yellow is True
+    assert state.flag_green is False
+    assert state.car_idx_best_lap_time == (91.2, None)
+    assert state.car_idx_last_lap_time == (90.0, None)
+    assert state.session_finished is False
 
 
 def test_extract_player_track_surface_and_tow() -> None:
