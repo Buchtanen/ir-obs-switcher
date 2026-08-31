@@ -18,12 +18,12 @@ Stream start needs a **long** cap. Flags/incidents in v1 use `hr_states: ["unkno
 
 ## Wave A (landing)
 
-- [ ] `stream_start` EN+CS, slot-free line present, `tts.max_seconds` ≥ 15
-- [ ] Validator **exempts `STREAM_START` only** from `commentary.max_utterance_s` (default 6). Do not raise the global cap
-- [ ] Spoken stream_start holds `director._busy_until` for that duration (this **is** the opener mutex vs in-car)
-- [ ] `in_car` mode nodes **or** mode filter on existing node — do not delete generic until migrated
-- [ ] `validate_utterance` passes
-- [ ] viewer-facing third person
+- [x] `stream_start` EN+CS, slot-free line present, `tts.max_seconds` ≥ 15
+- [x] Validator **exempts `STREAM_START` only** from `commentary.max_utterance_s` (default 6). Do not raise the global cap
+- [x] Spoken stream_start holds `director._busy_until` for that duration (this **is** the opener mutex vs in-car)
+- [x] `in_car` mode nodes **or** mode filter on existing node — do not delete generic until migrated
+- [x] `validate_utterance` passes
+- [x] viewer-facing third person
 
 ## Later (not this landing)
 
@@ -34,7 +34,7 @@ Stream start needs a **long** cap. Flags/incidents in v1 use `hr_states: ["unkno
 
 ## Docs impact
 
-- [ ] commentary_content_db_plan wave checkbox when A lands
+- [x] commentary_content_db_plan wave checkbox when A lands
 
 ## Config impact
 

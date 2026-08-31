@@ -16,6 +16,7 @@ from irswitch.commentary.tts import (
     detect_backend,
     select_sapi_output_name,
     speak_text,
+    speak_timeout_s,
 )
 from irswitch.overlay.settings import CommentarySettings
 
@@ -278,3 +279,21 @@ def test_process_sink_queue_invariant_single_worker(monkeypatch: Any) -> None:
     assert len(workers_seen) == 1
     assert sink._worker is not None
     assert sink._worker.ident in workers_seen
+
+
+def test_speak_timeout_exempts_stream_start_from_global_cap() -> None:
+    settings = CommentarySettings(max_utterance_s=6.0)
+    overtake = _sample_utterance()
+    assert speak_timeout_s(settings, event_type="OVERTAKE", node=overtake.node) == 20.0
+    stream_node = GraphNode(
+        id="stream_start",
+        family="session",
+        event_types=("STREAM_START",),
+        phases=("ENTER",),
+        speak_priority=1,
+        cooldown_s=1.0,
+        slots=(),
+        hr_states=("unknown",),
+        tts=TtsLimits(max_chars=220, max_seconds=16.0),
+    )
+    assert speak_timeout_s(settings, event_type="STREAM_START", node=stream_node) == 26.0

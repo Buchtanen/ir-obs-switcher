@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from types import SimpleNamespace
 
 from irswitch.commentary.director import CommentaryDirector
@@ -13,6 +14,7 @@ from irswitch.commentary.stream_context import (
     notify_overlay_stream_started,
 )
 from irswitch.commentary.tts import NullTtsSink
+from irswitch.commentary.validator import estimate_seconds, validate_utterance
 from irswitch.events.envelope import make_envelope
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.http import reset_overlay_server, set_overlay_runtime
@@ -44,15 +46,18 @@ def test_stream_start_envelope_is_commentary_only() -> None:
     assert env.phase == "ENTER"
 
 
-def test_director_stream_start_is_silent_without_node() -> None:
+def test_director_speaks_stream_start_and_holds_busy() -> None:
     director = CommentaryDirector(
         graph=load_sequence_graph(),
         settings=CommentarySettings(enabled=True, stream_start=True, cooldown_s=0.0),
         sink=NullTtsSink(),
+        rng=random.Random(0),
     )
     spoken = director.observe([make_stream_start_envelope(1.0)], None, 1.0)
-    assert spoken is None
-    assert director.decisions(1)[-1]["reason"] == "no_node"
+    assert spoken is not None
+    assert spoken.node_id == "stream_start"
+    assert spoken.estimated_seconds >= 10.0
+    assert director._busy_until >= 1.0 + spoken.estimated_seconds - 0.01
     enter = make_envelope(
         event_type="ENTER_CAR",
         phase="RESULT",
@@ -60,7 +65,25 @@ def test_director_stream_start_is_silent_without_node() -> None:
         priority=38,
     )
     assert director.observe([enter], None, 1.1) is None
+    assert director.decisions(1)[-1]["reason"] == "busy"
+    after_tts = 1.0 + spoken.estimated_seconds + 0.05
+    assert director.observe([enter], None, after_tts) is None
     assert director.decisions(1)[-1]["reason"] == "opener_mutex"
+
+
+def test_stream_start_lines_exceed_global_utterance_cap_but_validate() -> None:
+    node = load_sequence_graph().nodes["stream_start"]
+    assert node.tts.max_seconds >= 15.0
+    assert node.slots == ()
+    global_cap = 6.0
+    long_enough = 0
+    for locale in ("en", "cs"):
+        for line in node.variant_bucket(locale, "unknown"):
+            assert "{" not in line
+            assert validate_utterance(line, node) == []
+            if estimate_seconds(line) > global_cap:
+                long_enough += 1
+    assert long_enough >= 4
 
 
 def test_notify_missing_runtime_does_not_raise() -> None:

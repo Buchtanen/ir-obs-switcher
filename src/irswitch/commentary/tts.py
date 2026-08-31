@@ -26,6 +26,7 @@ from irswitch.overlay.settings import CommentarySettings
 logger = logging.getLogger(__name__)
 
 BACKENDS = ("auto", "sapi", "espeak", "null")
+STREAM_START_EVENT = "STREAM_START"
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
 PolishDebugHook = Callable[[dict[str, Any]], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
@@ -280,7 +281,11 @@ class ProcessTtsSink:
                 rate=self.settings.tts_rate,
                 backend=self.settings.tts_backend,
                 device=self.settings.audio_device,
-                timeout_s=max(self.settings.max_utterance_s + 10.0, 20.0),
+                timeout_s=speak_timeout_s(
+                    self.settings,
+                    event_type=utterance.event_type,
+                    node=utterance.node,
+                ),
                 runner=self.runner,
             )
         self.last_result = result
@@ -332,6 +337,24 @@ def build_tts_sink(
         settings=cfg,
         on_polish_debug=on_polish_debug if cfg.llm_polish else None,
     )
+
+
+def speak_timeout_s(
+    settings: CommentarySettings,
+    *,
+    event_type: str = "",
+    node: GraphNode | None = None,
+) -> float:
+    """Subprocess TTS timeout. STREAM_START may exceed commentary.max_utterance_s."""
+    cap = float(settings.max_utterance_s)
+    types = {str(event_type).strip().upper()}
+    if node is not None:
+        types.update(str(item).upper() for item in node.event_types)
+        if STREAM_START_EVENT in types:
+            cap = max(cap, float(node.tts.max_seconds))
+    elif STREAM_START_EVENT in types:
+        cap = max(cap, 16.0)
+    return max(cap + 10.0, 20.0)
 
 
 def speak_text(

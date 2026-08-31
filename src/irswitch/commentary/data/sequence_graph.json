@@ -3926,6 +3926,163 @@
         }
       }
     },
+    "stream_start": {
+      "family": "session",
+      "event_types": [
+        "STREAM_START"
+      ],
+      "phases": [
+        "ENTER"
+      ],
+      "speak_priority": 70,
+      "cooldown_s": 300,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "tts": {
+        "max_chars": 220,
+        "max_seconds": 16.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "notes": "N11 wave A. OBS stream rising edge. Long slot-free welcome; viewer third person. Node tts cap 16s; do not raise commentary.max_utterance_s.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The stream is live, and he is the driver we follow from here. Viewers stay with the car, the fights for position, and the calls that shape this session until the story reaches its end.",
+            "Welcome to the broadcast. He sits in the car as this session begins, and the camera stays on the laps, the gaps, and the choices that will decide how this afternoon unfolds.",
+            "He is out for this session as the stream comes online. The next stretch is about rhythm, rivals, and the moments that turn a quiet run into a story worth following to the flag.",
+            "The cameras are live on his car as the session gets under way. Viewers stay with traffic, pit calls, and the late-stint pressure that decides whether this story ends in reward."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Přenos je živý a on je jezdec, kterého odsud sledujeme. Diváci zůstávají u vozu, u soubojů o pozice i u rozhodnutí, která tuhle jízdu povedou až k cíli.",
+            "Vysílání začíná. Sedí v autě na startu téhle jízdy a kamera zůstává u kol, u mezer i u voleb, které rozhodnou, jak se odpoledne vyvine.",
+            "Do téhle jízdy vyráží ve chvíli, kdy přenos nabíhá. Další úsek bude o rytmu, o soupeřích a o momentech, které z klidného kola udělají příběh hodný sledování až k cíli.",
+            "Kamery jsou na jeho voze, jakmile se jízda rozjíždí. Diváci zůstávají u provozu, boxových voleb i pozdního tlaku, který rozhodne, čím tenhle příběh skončí."
+          ]
+        }
+      }
+    },
+    "in_car_practice": {
+      "family": "session",
+      "event_types": [
+        "ENTER_CAR"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
+      "speak_priority": 40,
+      "cooldown_s": 45,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "modes": [
+        "practice"
+      ],
+      "notes": "N11 wave A. Practice in-car; generic in_car remains for warmup until migrated.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is in the car for practice.",
+            "Belted in, and the practice run can begin.",
+            "The cockpit is his for this practice session.",
+            "He settles in as practice time starts."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Sedí v autě na trénink.",
+            "Pásy jsou utažené a tréninková jízda může začít.",
+            "Kokpit je jeho pro tuhle tréninkovou relaci.",
+            "Usazuje se, jakmile začíná čas na trénink."
+          ]
+        }
+      }
+    },
+    "in_car_qualify": {
+      "family": "session",
+      "event_types": [
+        "ENTER_CAR"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
+      "speak_priority": 40,
+      "cooldown_s": 45,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "notes": "N11 wave A. Qualifying in-car; generic in_car remains for warmup until migrated.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is in the car for qualifying.",
+            "Belted in, and the stopwatch session can begin.",
+            "The cockpit is his for this qualifying run.",
+            "He settles in as qualifying time starts."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Sedí v autě na kvalifikaci.",
+            "Pásy jsou utažené a měřená jízda může začít.",
+            "Kokpit je jeho pro tuhle kvalifikační jízdu.",
+            "Usazuje se, jakmile začíná čas na kolo."
+          ]
+        }
+      }
+    },
+    "in_car_race": {
+      "family": "session",
+      "event_types": [
+        "ENTER_CAR"
+      ],
+      "phases": [
+        "RESULT",
+        "ENTER"
+      ],
+      "speak_priority": 40,
+      "cooldown_s": 45,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "modes": [
+        "race"
+      ],
+      "notes": "N11 wave A. Race in-car; generic in_car remains for warmup until migrated.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is in the car for the race.",
+            "Belted in, and the race stint can begin.",
+            "The cockpit is his for this race.",
+            "He settles in as the race gets under way."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Sedí v autě na závod.",
+            "Pásy jsou utažené a závodní stint může začít.",
+            "Kokpit je jeho pro tenhle závod.",
+            "Usazuje se, jakmile se závod dává do pohybu."
+          ]
+        }
+      }
+    },
     "pit_outcome": {
       "family": "pit",
       "event_types": [

@@ -22,12 +22,16 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
     # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs
-    # + session_checkered out-lap node.
-    assert len(graph.nodes) == 41
+    # + observer fillers + session_checkered + N11 wave A (stream_start + mode in_car).
+    assert len(graph.nodes) == 45
     assert "sector_split" in graph.nodes
     assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
     assert "session_intro_race" in graph.nodes
     assert "session_checkered" in graph.nodes
+    assert "stream_start" in graph.nodes
+    assert graph.nodes["stream_start"].event_types == ("STREAM_START",)
+    assert graph.nodes["stream_start"].tts.max_seconds >= 15.0
+    assert graph.nodes["in_car_race"].modes == ("race",)
     assert len(graph.edges) == 20
 
 
@@ -127,6 +131,20 @@ def test_mode_filter_prefers_matching_then_unrestricted() -> None:
     assert race[0].id == "in_car_race"
     practice = graph.nodes_for("ENTER_CAR", "ENTER", mode="PRACTICE")
     assert [node.id for node in practice] == ["in_car_any"]
+
+
+def test_live_graph_picks_mode_in_car_then_generic() -> None:
+    graph = load_sequence_graph()
+    race = graph.nodes_for("ENTER_CAR", "RESULT", mode="RACE")
+    assert race[0].id == "in_car_race"
+    practice = graph.nodes_for("ENTER_CAR", "RESULT", mode="PRACTICE")
+    assert practice[0].id == "in_car_practice"
+    qualify = graph.nodes_for("ENTER_CAR", "RESULT", mode="QUALIFYING")
+    assert qualify[0].id == "in_car_qualify"
+    warmup = graph.nodes_for("ENTER_CAR", "RESULT", mode="GENERIC")
+    assert warmup[0].id == "in_car"
+    stream = graph.nodes_for("STREAM_START", "ENTER")
+    assert stream[0].id == "stream_start"
 
 
 def test_stream_start_and_session_flag_graphs_load() -> None:

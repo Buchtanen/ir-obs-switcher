@@ -360,3 +360,21 @@ def test_director_maps_mock_events_to_expected_nodes() -> None:
         )
         assert spoken is not None, event_type
         assert spoken.node_id == node_id
+
+
+def test_director_speaks_race_in_car_mode_node() -> None:
+    director = CommentaryDirector(
+        graph=load_sequence_graph(),
+        settings=CommentarySettings(enabled=True, cooldown_s=0.1),
+        sink=NullTtsSink(),
+        language="en",
+        rng=random.Random(2),
+    )
+    spoken = director.observe(
+        [make_envelope(event_type="ENTER_CAR", phase="RESULT", mode="RACE")],
+        None,
+        10.0,
+    )
+    assert spoken is not None
+    assert spoken.node_id == "in_car_race"
+    assert spoken.text
