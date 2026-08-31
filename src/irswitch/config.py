@@ -489,6 +489,33 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         session_briefs=_get_bool(
             parser, "commentary", "session_briefs", commentary_defaults.session_briefs
         ),
+        llm_polish=_get_bool(parser, "commentary", "llm_polish", commentary_defaults.llm_polish),
+        llm_base_url=_get_str(
+            parser, "commentary", "llm_base_url", commentary_defaults.llm_base_url
+        ).rstrip("/"),
+        llm_model=_get_str(parser, "commentary", "llm_model", commentary_defaults.llm_model),
+        llm_timeout_s=max(
+            0.5,
+            _get_float(parser, "commentary", "llm_timeout_s", commentary_defaults.llm_timeout_s),
+        ),
+        llm_temperature=max(
+            0.0,
+            min(
+                2.0,
+                _get_float(
+                    parser, "commentary", "llm_temperature", commentary_defaults.llm_temperature
+                ),
+            ),
+        ),
+        llm_max_tokens=max(
+            32,
+            min(
+                800,
+                _get_int(
+                    parser, "commentary", "llm_max_tokens", commentary_defaults.llm_max_tokens
+                ),
+            ),
+        ),
     )
 
     lhm_raw = ""
