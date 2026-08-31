@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from irswitch.events.adapters.battle import battle_race_event_to_envelope
 from irswitch.events.adapters.bio import bio_race_event_to_envelope
+from irswitch.events.adapters.exception_extra import (
+    incident_race_event_to_envelope,
+    invalid_lap_race_event_to_envelope,
+)
 from irswitch.events.adapters.lap import lap_race_event_to_envelope
 from irswitch.events.adapters.pit import pit_race_event_to_envelope
 from irswitch.events.adapters.position import position_race_event_to_envelope
@@ -18,14 +22,20 @@ TOKENS_REQUIRED = frozenset(
         "battle.approach",
         "battle.attack_range",
         "battle.side_by_side",
+        "battle.battle_for_position",
+        "battle.won",
         "lap.complete",
         "lap.personal_best",
         "position.gained",
         "position.lost",
         "position.overtake",
+        "position.rival_threat",
         "session.final_lap",
         "session.finish",
         "incident",
+        "exception.incident",
+        "exception.invalid_lap",
+        "exception.link_drop",
         "pit.entry",
         "pit.lane",
         "pit.stopped",
@@ -35,6 +45,9 @@ TOKENS_REQUIRED = frozenset(
         "bio.hr_high",
         "bio.hr_pressure",
         "ble.lost",
+        "timing.gain_found",
+        "timing.sector_best",
+        "timing.sector_split",
     }
 )
 
@@ -46,13 +59,18 @@ CS_DIFFERS_FROM_EN = frozenset(
         "battle.approach",
         "battle.attack_range",
         "battle.side_by_side",
+        "battle.battle_for_position",
+        "battle.won",
         "lap.complete",
         "lap.personal_best",
         "position.gained",
         "position.lost",
         "position.overtake",
+        "position.rival_threat",
         "session.final_lap",
         "session.finish",
+        "exception.invalid_lap",
+        "exception.link_drop",
         "pit.entry",
         "pit.lane",
         "pit.stopped",
@@ -62,6 +80,9 @@ CS_DIFFERS_FROM_EN = frozenset(
         "bio.hr_high",
         "bio.hr_pressure",
         "ble.lost",
+        "timing.gain_found",
+        "timing.sector_best",
+        "timing.sector_split",
     }
 )
 
@@ -73,6 +94,8 @@ def _headline_from_adapter(event: RaceEvent) -> str | None:
         position_race_event_to_envelope,
         pit_race_event_to_envelope,
         bio_race_event_to_envelope,
+        incident_race_event_to_envelope,
+        invalid_lap_race_event_to_envelope,
     ):
         envelope = adapter(event, session_id="sub:1", mode="RACE", now=1.0)
         if envelope is not None:
@@ -223,6 +246,38 @@ def test_adapter_copy_tokens_resolve_en_and_cs() -> None:
             timestamp=0.0,
             data={"state": "hr_pressure", "bpm": 160},
         ),
+        RaceEvent(
+            name="battle",
+            channel="battle",
+            priority=30,
+            phase="enter",
+            timestamp=0.0,
+            data={"state": "battle_for_position", "gap": 0.5},
+        ),
+        RaceEvent(
+            name="rival_threat",
+            channel="alert",
+            priority=70,
+            phase="enter",
+            timestamp=0.0,
+            data={"gap": 1.0, "closingRate": 0.5, "targetCarIdx": 3, "targetName": "X"},
+        ),
+        RaceEvent(
+            name="incident",
+            channel="alert",
+            priority=90,
+            phase="trigger",
+            timestamp=0.0,
+            data={"value": 2, "total": 4},
+        ),
+        RaceEvent(
+            name="invalid_lap",
+            channel="alert",
+            priority=88,
+            phase="trigger",
+            timestamp=0.0,
+            data={"lap": 4},
+        ),
     ]
 
     seen: set[str] = set()
@@ -237,6 +292,59 @@ def test_adapter_copy_tokens_resolve_en_and_cs() -> None:
     assert "pit.outcome" in seen
     assert "position.overtake" in seen
     assert "battle.side_by_side" in seen
+    assert "battle.battle_for_position" in seen
+    assert "position.rival_threat" in seen
+    assert "exception.incident" in seen
+    assert "exception.invalid_lap" in seen
+
+
+def test_rival_threat_and_battle_for_position_set_max_hold() -> None:
+    rival = position_race_event_to_envelope(
+        RaceEvent(
+            name="rival_threat",
+            channel="alert",
+            priority=70,
+            phase="enter",
+            timestamp=0.0,
+            data={"gap": 1.0, "closingRate": 0.5, "targetCarIdx": 3},
+        ),
+        session_id="s",
+        mode="RACE",
+        now=1.0,
+    )
+    assert rival is not None
+    assert rival.presentation.max_hold_ms == 8000
+
+    duel = battle_race_event_to_envelope(
+        RaceEvent(
+            name="battle",
+            channel="battle",
+            priority=30,
+            phase="enter",
+            timestamp=0.0,
+            data={"state": "battle_for_position"},
+        ),
+        session_id="s",
+        mode="RACE",
+        now=1.0,
+    )
+    assert duel is not None
+    assert duel.presentation.max_hold_ms == 8000
+    hunting = battle_race_event_to_envelope(
+        RaceEvent(
+            name="battle",
+            channel="battle",
+            priority=20,
+            phase="enter",
+            timestamp=0.0,
+            data={"state": "hunting", "gap": 1.0},
+        ),
+        session_id="s",
+        mode="RACE",
+        now=1.0,
+    )
+    assert hunting is not None
+    assert hunting.presentation.max_hold_ms == 0
 
 
 def test_pit_lane_adapter_emits_pit_lane_token() -> None:

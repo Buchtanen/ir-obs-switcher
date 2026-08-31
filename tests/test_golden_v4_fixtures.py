@@ -158,6 +158,17 @@ def test_session_bio_exception_subtitles_do_not_reuse_headline_tokens() -> None:
     assert 'resolveCopy(copy.statusToken) || sample.subtitle || "RACE COMPLETE"' in js
 
 
+def test_display_v4_headline_and_active_hold_contract() -> None:
+    """Unknown copy tokens fall back to sample title; ACTIVE respects maxHoldMs."""
+    js = display_v4_js()
+    assert "function resolveHeadline(token, sampleTitle, stateKey)" in js
+    assert "function scheduleHoldTimer(node, key, envelope, phase, golden)" in js
+    assert "function preemptStickyFamilyPeers(familyName, keepKey, phase)" in js
+    assert "resolveHeadline(copy.headlineToken, sample.title, stateKey)" in js
+    assert "maxHoldMs" in js
+    assert "preemptStickyFamilyPeers(familyName, key, phase)" in js
+
+
 def test_v4_copy_uses_absolute_plate_slots() -> None:
     """Copy must use V3-aligned absolute slots — not a centered 1fr grid (text too high)."""
     from v4_css_geometry import assert_rule_px, css_rule_block, rule_decls

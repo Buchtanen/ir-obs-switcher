@@ -33,6 +33,13 @@ def test_jsonl_roundtrip_strips_secrets(tmp_path: Path) -> None:
     assert "password" not in rows[0]
     assert rows[1]["type"] == "snapshot"
     assert strip_secrets({"token": "x", "a": 1}) == {"a": 1}
+    assert strip_secrets(
+        {
+            "copy": {"headlineToken": "position.rival_threat", "statusToken": ""},
+            "password": "nope",
+            "access_token": "nope",
+        }
+    ) == {"copy": {"headlineToken": "position.rival_threat", "statusToken": ""}}
 
 
 @pytest.mark.asyncio
