@@ -207,9 +207,7 @@ Lane/released stay HUD-only. **Issue #177.**
 
 **Doc:** [commentary_speech_queue_followup.md](commentary_speech_queue_followup.md) · **Issue [#180](https://github.com/Buchtanen/ir-obs-switcher/issues/180)**
 
-Diagnóza: SpeechScheduler drží ≤1 skeleton, ale `ProcessTtsSink` má **druhou** frontu a director busy je **odhad** → hrozí backlog pod schedulerem.  
-**Preferovaný další krok:** tenký slice (TTS depth ≤1 + observed busy), ne hned epic „Speech consumer“.  
-Full Gate→Queue→Consumer→LLM→TTS jen pokud thin slice nestačí.
+**Thin slice (T1–T4) on joint-test branch:** TTS pending depth ≤1 + director busy = estimate **or** `sink.is_busy()`. Epic Gate→Queue→Consumer jen pokud to nestačí.
 
 ---
 

@@ -156,7 +156,7 @@ class CommentaryDirector:
         enabled_flag = bool(self.settings.enabled if enabled is None else enabled)
         available = bool(getattr(self.graph, "nodes", None))
         busy_until = float(self._busy_until)
-        busy = now < busy_until
+        busy = self._is_busy(now)
         if not enabled_flag:
             status = "disabled"
         elif not available:
@@ -227,7 +227,7 @@ class CommentaryDirector:
                 node_id=expired.utterance.node_id,
                 text=expired.utterance.text,
             )
-        if now < self._busy_until or now < self._global_ready_at:
+        if now < self._busy_until or now < self._global_ready_at or self._sink_busy():
             return None
         deferred = self._scheduler.pop_ready(now)
         if deferred is not None:
@@ -348,7 +348,7 @@ class CommentaryDirector:
             )
             return None
 
-        busy = now < self._busy_until
+        busy = self._is_busy(now)
         if busy and ranked:
             top = ranked[0]
             if self._scheduler.should_hard_interrupt(
@@ -389,6 +389,26 @@ class CommentaryDirector:
             if utterance is not None:
                 return self._speak_prepared(utterance, now=now, reason="spoken", past=False)
         return None
+
+    def _is_busy(self, now: float) -> bool:
+        """Estimate busy OR sink still speaking/waiting (#180)."""
+        return now < self._busy_until or self._sink_busy()
+
+    def _sink_busy(self) -> bool:
+        probe = getattr(self.sink, "is_busy", None)
+        if callable(probe):
+            try:
+                return bool(probe())
+            except Exception:
+                logger.debug("tts is_busy probe failed", exc_info=True)
+                return False
+        pending = getattr(self.sink, "pending_count", None)
+        if callable(pending):
+            try:
+                return int(pending()) > 0
+            except Exception:
+                logger.debug("tts pending_count probe failed", exc_info=True)
+        return False
 
     def _hard_interrupt(self, now: float) -> None:
         interrupt = getattr(self.sink, "interrupt", None)

@@ -81,6 +81,25 @@ def test_hard_interrupt_clears_busy_for_incident() -> None:
     assert "interrupted" in reasons
 
 
+def test_observed_busy_defers_after_estimate_expires() -> None:
+    """#180: sink.is_busy keeps director busy even when estimate elapsed."""
+    director = _director(defer=True)
+    sink = director.sink
+    assert isinstance(sink, NullTtsSink)
+    first = director.observe([_overtake()], None, 10.0)
+    assert first is not None
+    sink.force_busy = True
+    later = max(director._busy_until, director._global_ready_at) + 1.0
+    assert director.observe([_overtake(now_ms=20000)], None, later) is None
+    assert director.decisions(1)[-1]["reason"] == "deferred"
+    assert director.tick(later) is None
+    sink.force_busy = False
+    spoken = director.tick(later + 0.01)
+    assert spoken is not None
+    assert director.decisions(1)[-1]["reason"] == "spoken_deferred"
+    assert spoken.past_framing is True
+
+
 def test_deferred_flush_speaks_one_not_whole_queue() -> None:
     director = _director(defer=True)
     first = director.observe([_overtake()], None, 10.0)

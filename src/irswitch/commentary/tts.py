@@ -64,30 +64,51 @@ class TtsSink(Protocol):
     def interrupt(self) -> None:
         """Best-effort cancel queued/in-flight speech (hard interrupt)."""
 
+    def is_busy(self) -> bool:
+        """True while a speak is in-flight or waiting (observed busy)."""
+
 
 @dataclass
 class NullTtsSink:
-    """Records utterances for tests and dry-runs. No audio."""
+    """Records utterances for tests and dry-runs. No audio.
+
+    Instant by default (``is_busy`` false). Set ``force_busy`` to simulate a
+    stuck sink for observed-busy / defer tests.
+    """
 
     spoken: list[CommentaryUtterance] = field(default_factory=list)
     interrupted: int = 0
+    force_busy: bool = False
+    dropped: list[CommentaryUtterance] = field(default_factory=list)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
+        if self.force_busy and self.spoken:
+            # Depth ≤1: keep higher-or-equal priority, drop the other.
+            prev = self.spoken[-1]
+            if int(utterance.priority) < int(prev.priority):
+                self.dropped.append(utterance)
+                return
+            self.dropped.append(prev)
+            self.spoken[-1] = utterance
+            return
         self.spoken.append(utterance)
 
     def interrupt(self) -> None:
         self.interrupted += 1
         self.spoken.clear()
+        self.force_busy = False
+
+    def is_busy(self) -> bool:
+        return bool(self.force_busy)
 
 
 @dataclass
 class ProcessTtsSink:
     """Speaks via a single serial worker thread (queue + one consumer).
 
-    ``enqueue`` only appends history and puts on an unbounded queue — never
-    waits for SAPI/espeak or duck fades. Concurrent enqueues cannot start two
-    speaks at once; duck enter/exit stays on that one worker path and remains
-    nested-safe via the shared ``VolumeDucker``.
+    ``enqueue`` never waits for SAPI/espeak or duck fades. At most **one**
+    waiter behind the in-flight speak (replace-by-priority); no sequential
+    drain of a deep TTS backlog. Duck enter/exit stays on that one worker.
     """
 
     settings: CommentarySettings
@@ -107,12 +128,40 @@ class ProcessTtsSink:
     _interrupt: threading.Event = field(default_factory=threading.Event, repr=False)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
-        """Accept a validated line. Must not block the race loop."""
+        """Accept a validated line. Must not block the race loop.
+
+        Keeps at most one queued waiter. If a waiter already exists, replace it
+        when incoming priority is higher-or-equal; otherwise drop incoming.
+        """
         self.spoken.append(utterance)
         if len(self.spoken) > 32:
             del self.spoken[:-16]
+
+        accepted = True
         with self._idle:
-            self._pending += 1
+            waiters = self._pending - (1 if self._speaking else 0)
+            if waiters >= 1:
+                try:
+                    old = self._queue.get_nowait()
+                except queue.Empty:
+                    old = None
+                if old is not None:
+                    self._pending = max(0, self._pending - 1)
+                    if int(utterance.priority) < int(old.priority):
+                        self._pending += 1
+                        self._queue.put(old)
+                        accepted = False
+            if accepted:
+                self._pending += 1
+
+        if not accepted:
+            logger.debug(
+                "tts enqueue dropped lower-prio node=%s prio=%s",
+                utterance.node_id,
+                utterance.priority,
+            )
+            return
+
         self._ensure_worker()
         self._queue.put(utterance)
 
@@ -132,6 +181,11 @@ class ProcessTtsSink:
                 if self._pending == 0 and not self._speaking:
                     self._idle.notify_all()
         self._interrupt.clear()
+
+    def is_busy(self) -> bool:
+        """True while speaking or a waiter is queued (#180 observed busy)."""
+        with self._idle:
+            return self._pending > 0 or self._speaking
 
     def pending_count(self) -> int:
         """Queued + in-flight speaks (test / diagnostics)."""

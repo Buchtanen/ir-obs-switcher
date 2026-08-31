@@ -1,7 +1,6 @@
 # Commentary speech pipeline — follow-up design
 
-**Status:** design follow-up — tracking **[#180](https://github.com/Buchtanen/ir-obs-switcher/issues/180)** (not scheduled for #179 joint merge)  
-**Branch context:** after observers decoupling joint test (`feat/observers-decoupling-joint-test` / PR #179)  
+**Status:** **thin slice implemented** on `feat/observers-decoupling-joint-test` / PR #179 — **[#180](https://github.com/Buchtanen/ir-obs-switcher/issues/180)**  
 **Parent plan:** [observers_decoupling_plan.md](observers_decoupling_plan.md) (P1 SpeechScheduler)  
 **Related:** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md), `CONFIG.md` `[commentary.scheduler]`  
 **Critical review:** incorporated below (§5); reviewer agent 2026-08-31  
@@ -18,13 +17,13 @@ events → Director (gate + SpeechScheduler ≤1 skeleton)
            → [TTS worker queue] → LLM polish → SAPI/espeak
 ```
 
-| Layer | Role today |
+| Layer | Role (thin slice) |
 | --- | --- |
-| `CommentaryDirector` | Priority, busy estimate (`_busy_until = now + estimated_seconds`), global cooldown, graph pick, defer ≤1 |
+| `CommentaryDirector` | Priority, busy = **estimate OR** `sink.is_busy()`, global cooldown, graph pick, defer ≤1 |
 | `SpeechScheduler` | Park **at most one** best skeleton while “busy”; TTL; drop lower prio; **no sequential drain** of deferred |
-| `ProcessTtsSink` | **Second** queue (`SimpleQueue`); worker does polish then speak |
+| `ProcessTtsSink` | Serial worker; **at most one waiter** (replace-by-priority); polish then speak |
 
-**Failure mode:** director thinks it is free when the TTS worker still has skeletons (and optional LLM up to `llm_timeout_s`). That reintroduces backlog / sequential speak under the scheduler. LLM never sees “candidates” — only whatever already reached the worker.
+**Former failure mode (fixed in thin slice):** director free while TTS still had a deep queue → backlog under the scheduler. LLM still only polishes the in-flight item.
 
 Locked product rules that must stay true:
 
@@ -80,11 +79,11 @@ Stability > elegance. Fix the dual-queue bug **without** a new EventFanout peer 
 
 ### 3.1 Acceptance criteria (thin slice)
 
-- [ ] With `defer_enabled=true`, rapid high-rate envelopes do not produce a multi-item TTS backlog (instrument or test with fake slow speak).
-- [ ] Decision tape still uses `deferred` / `spoken_deferred` / `deferred_dropped` / `deferred_expired` / `busy` / `interrupted`.
-- [ ] `hard_interrupt=true` still clears sink pending + sets interrupt flag; duck restores.
-- [ ] `llm_polish=false` path unchanged latency profile (no extra waits).
-- [ ] Unit tests do not require real SAPI; Null sink exposes `pending`/`speaking` fakes.
+- [x] With `defer_enabled=true`, rapid high-rate envelopes do not produce a multi-item TTS backlog (instrument or test with fake slow speak).
+- [x] Decision tape still uses `deferred` / `spoken_deferred` / `deferred_dropped` / `deferred_expired` / `busy` / `interrupted`.
+- [x] `hard_interrupt=true` still clears sink pending + sets interrupt flag; duck restores.
+- [x] `llm_polish=false` path unchanged latency profile (no extra waits).
+- [x] Unit tests do not require real SAPI; `NullTtsSink.force_busy` + `ProcessTtsSink.is_busy` / depth≤1 tests.
 
 ### 3.2 Config (thin slice)
 
@@ -147,7 +146,7 @@ Rename/clarify ownership only if T1–T4 are insufficient:
 - Default INI stays safe (`defer_enabled` / `hard_interrupt` opt-in).
 - No change to graph content or RaceObserver envelopes in the thin slice.
 - Preserve decision reasons for GR/debug tape compatibility.
-- After thin slice: update `COMMENTARY_ENGINE.md` “speak path” section + this doc status → `implemented (thin)`.
+- Thin slice landed: `COMMENTARY_ENGINE.md` TTS notes + this doc status → `implemented (thin)`.
 
 ---
 

@@ -26,7 +26,9 @@ def _ok_run(
     return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
 
 
-def _sample_utterance(text: str = "You take P5.", event_id: str = "e1") -> CommentaryUtterance:
+def _sample_utterance(
+    text: str = "You take P5.", event_id: str = "e1", *, priority: int = 0
+) -> CommentaryUtterance:
     node = GraphNode(
         id="overtake",
         family="position",
@@ -48,6 +50,7 @@ def _sample_utterance(text: str = "You take P5.", event_id: str = "e1") -> Comme
         correlation_id="c1",
         estimated_seconds=1.0,
         node=node,
+        priority=priority,
     )
 
 
@@ -159,13 +162,18 @@ def test_process_sink_enqueues_without_blocking(monkeypatch: Any) -> None:
 
 
 def test_process_sink_serialises_concurrent_speaks(monkeypatch: Any) -> None:
-    """Concurrent enqueue must not run two speaks (or duck cycles) at once."""
+    """Concurrent enqueue must not run two speaks (or duck cycles) at once.
+
+    Depth ≤1 (#180): only the in-flight line plus at most one waiter survive;
+    later equal-priority enqueues replace the waiter.
+    """
     reset_shared_ducker()
     store = {"Desktop": 1.0}
     duck_depths: list[int] = []
     active = {"n": 0, "max": 0}
     speak_order: list[str] = []
     lock = threading.Lock()
+    first_started = threading.Event()
 
     def get_mul(name: str) -> float | None:
         return store[name]
@@ -184,12 +192,12 @@ def test_process_sink_serialises_concurrent_speaks(monkeypatch: Any) -> None:
             speak_order.append(text)
             from irswitch.commentary.duck import ducker_from_settings
 
-            # Depth observed on shared ducker while speak runs (enter already done).
             ducker = ducker_from_settings(
                 CommentarySettings(duck_input="Desktop", duck_ratio=0.25, duck_fade_ms=0)
             )
             duck_depths.append(ducker._depth)
-        time.sleep(0.04)
+        first_started.set()
+        time.sleep(0.08)
         with lock:
             active["n"] -= 1
         return TtsResult(backend="null", spoken=True, error=None)
@@ -200,17 +208,47 @@ def test_process_sink_serialises_concurrent_speaks(monkeypatch: Any) -> None:
     )
     sink = ProcessTtsSink(settings=settings)
 
-    for i in range(5):
-        sink.enqueue(_sample_utterance(text=f"line-{i}", event_id=f"e{i}"))
+    sink.enqueue(_sample_utterance(text="line-0", event_id="e0", priority=50))
+    assert first_started.wait(timeout=1.0)
+    for i in range(1, 5):
+        sink.enqueue(_sample_utterance(text=f"line-{i}", event_id=f"e{i}", priority=50))
 
     assert sink.wait_idle(timeout_s=3.0)
     assert active["max"] == 1
-    assert speak_order == [f"line-{i}" for i in range(5)]
-    # Serial worker: each speak sees duck depth 1 (no overlapping nested enters).
-    assert duck_depths == [1, 1, 1, 1, 1]
+    # First in-flight + last waiter replacement only.
+    assert speak_order == ["line-0", "line-4"]
+    assert duck_depths == [1, 1]
     assert store["Desktop"] == 1.0
     assert sink.pending_count() == 0
+    assert sink.is_busy() is False
     reset_shared_ducker()
+
+
+def test_process_sink_depth_one_keeps_higher_priority(monkeypatch: Any) -> None:
+    gate = threading.Event()
+    first_started = threading.Event()
+    speak_order: list[str] = []
+
+    def blocked_speak(text: str, **_kwargs: Any) -> TtsResult:
+        speak_order.append(text)
+        first_started.set()
+        gate.wait(timeout=2.0)
+        return TtsResult(backend="null", spoken=True, error=None)
+
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", blocked_speak)
+    sink = ProcessTtsSink(CommentarySettings(tts_backend="null"))
+    sink.enqueue(_sample_utterance(text="first", event_id="a", priority=40))
+    assert first_started.wait(timeout=1.0)
+    assert sink.is_busy()
+    sink.enqueue(_sample_utterance(text="low", event_id="b", priority=20))
+    sink.enqueue(_sample_utterance(text="high", event_id="c", priority=90))
+    with sink._idle:
+        waiters = sink._pending - (1 if sink._speaking else 0)
+    assert waiters == 1
+    gate.set()
+    assert sink.wait_idle(timeout_s=2.0)
+    assert speak_order == ["first", "high"]
+    assert sink.pending_count() == 0
 
 
 def test_process_sink_queue_invariant_single_worker(monkeypatch: Any) -> None:
