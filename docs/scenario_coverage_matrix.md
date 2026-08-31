@@ -199,8 +199,8 @@ From `event_catalog.json` fallbacks:
 
 ## 6. Known gaps (product)
 
-1. `ATTACK_RANGE` — HUD yes, dedicated TTS no  
-2. `PIT_LANE` / `PIT_STOPPED` / `PIT_RELEASED` — HUD yes, TTS no  
+1. `ATTACK_RANGE` — HUD yes, TTS via graph node `attack_range` (P5)  
+2. `PIT_LANE` / `PIT_RELEASED` — HUD yes, TTS no; `PIT_STOPPED` optional mid-pit TTS (P5)  
 3. `LINK_DROP`, `BLE_LOST`, CPU/GPU — no TTS (CPU/GPU not live emitters)  
 4. `TIME_LOST` / `SECTOR_SPLIT` — plate fallback / sector speak opt-in  
 5. Reserved bio plates without emitters  

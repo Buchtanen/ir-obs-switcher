@@ -187,8 +187,9 @@ formatter fallback; fan-out to commentary. **Issue #172.**
 sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`.
 **Issue #175.**
 
-### P5 — Content gaps
-`ATTACK_RANGE` TTS, mid-pit optional, …
+### P5 — Content gaps ✅
+`ATTACK_RANGE` graph node (ENTER TTS); optional mid-pit `PIT_STOPPED` ENTER.
+Lane/released stay HUD-only. **Issue #177.**
 
 ---
 
