@@ -23,7 +23,9 @@ Proveď kompletní workflow pro aktuální změny v repu (bez zbytečných refac
 3) **Docs impact**
    - Použij subagenta `/docs-keeper`:
      - z diffu odvoď, které docs jsou relevantní (dle `docs-map.mdc`)
-     - udělej minimální update (nebo explicitně „Docs: no change (reason …)”)
+     - **povinně** `docs/dokumentace/` (domeny + inflight) nebo `Docs: no change (reason …)`
+     - skill `.cursor/skills/dokumentace/SKILL.md`
+     - udělej minimální update
 
 4) **QA**
    - Použij subagenta `/verifier`:

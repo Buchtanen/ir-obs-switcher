@@ -17,7 +17,7 @@ Paralelní **upravující** agenti jen po `/parallel-plan` **a** schválení už
 |-----|-----|
 | `explore` | Neznámé místo v kódu, víc cest/jmen, „jak to funguje“ |
 | `generalPurpose` | Složitý výzkum / multi-step bez vlastního typu |
-| `docs-keeper` | Po změně chování/config/CI — docs contract (`/flow`, `/docs-impact`) |
+| `docs-keeper` | Po změně kódu/config/CI — docs contract včetně `docs/dokumentace/` (`/flow`, `/docs-impact`, skill `dokumentace`) |
 | `issue-steward` | Issue + dev diary přes GitHub MCP (`/flow`, `/ensure-issue`) |
 | `verifier` | Po úpravách kódu/doků/CI — lint/test report (`/qa`) |
 | `ci-investigator` | Jeden padající PR check |

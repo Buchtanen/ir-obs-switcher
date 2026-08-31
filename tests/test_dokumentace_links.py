@@ -44,3 +44,35 @@ def test_dokumentace_relative_links_resolve() -> None:
 def test_readme_points_at_dokumentace() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "docs/dokumentace/README.md" in readme
+
+
+def test_handover_wiring_exists() -> None:
+    assert (ROOT / ".cursor" / "skills" / "dokumentace" / "SKILL.md").is_file()
+    hook = ROOT / ".cursor" / "hooks" / "dokumentace_handover.py"
+    assert hook.is_file()
+    example = (ROOT / ".cursor" / "hooks.example.json").read_text(encoding="utf-8")
+    assert "dokumentace_handover.py" in example
+    keeper = (ROOT / ".cursor" / "agents" / "docs-keeper.md").read_text(encoding="utf-8")
+    assert "docs/dokumentace" in keeper
+    work_item = (ROOT / ".cursor" / "rules" / "02-work-item-definition.mdc").read_text(
+        encoding="utf-8"
+    )
+    assert "docs/dokumentace/" in work_item
+
+
+def test_handover_hook_domain_pages_exist() -> None:
+    import importlib.util
+
+    path = ROOT / ".cursor" / "hooks" / "dokumentace_handover.py"
+    spec = importlib.util.spec_from_file_location("dokumentace_handover", path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    missing = []
+    for _prefix, doc in mod.DOMAIN_BY_PREFIX:
+        if not (ROOT / doc).is_file():
+            missing.append(doc)
+    for _src, doc in mod.FILE_TO_DOC.items():
+        if not (ROOT / doc).is_file():
+            missing.append(doc)
+    assert missing == []

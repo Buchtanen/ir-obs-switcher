@@ -1,6 +1,6 @@
 # Dokumentace irswitch — mapa pro lidi i modely
 
-**Čti tohle dřív, než začneš grepovat `src/`.**
+**Čti tohle dřív, než začneš grepovat `src/`.** Po změně kódu **stejnou složku zase aktualizuj** (skill `dokumentace`, `/docs-keeper`). Tichý skip není OK — buď page, nebo `Docs: no change (reason …)`.
 
 Tato složka je **architektonický index**: co který modul dělá, kde končí jeho pravomoc, kam tečou data, a co je teprve v otevřených PR (není na `master`).
 

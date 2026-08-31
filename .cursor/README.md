@@ -23,12 +23,16 @@ Proto je `.cursor/hooks.json` **gitignored** (lokální opt-in). V repu je jen t
    - buď přidej výjimku pro repo/skripty (podle interní policy),
    - nebo hooks nepoužívej (kvalitu pokrývá `/qa` + lokální git hooky v `scripts/`).
 
-### Dokumentace kódu (před grepem)
+### Dokumentace kódu (před grepem **a** po změně)
 - `docs/dokumentace/README.md` — mapa domén a lookup
 - `docs/dokumentace/inflight/` — otevřené PR, které ještě nejsou na `master`
-- Rule: `.cursor/rules/09-dokumentace-index.mdc` (always apply)
+- Rule: `.cursor/rules/09-dokumentace-index.mdc` (always apply) — číst **i aktualizovat**
+- Skill: `.cursor/skills/dokumentace/SKILL.md` — handover checklist
+- `/flow` → `/docs-keeper` musí vzít `docs/dokumentace/` (nebo `Docs: no change (reason …)`)
+- Cursor **stop hook** `dokumentace_handover.py` — reminder když `src/` změněný a index ne; jen při opt-in hooks (Windows default off, viz výše)
 
 ### Skills
+- `dokumentace` — údržba `docs/dokumentace/` po každé změně `src/irswitch/`
 - `pr-semver-label` — povinný `semver:*` label na každý PR do `master`
 - `restart-irswitch` — start/stop/restart služby, port 17321, SSLKEYLOGFILE, `/health`
 - `youtube-oauth` — volitelný YouTube title (ne scene switch)

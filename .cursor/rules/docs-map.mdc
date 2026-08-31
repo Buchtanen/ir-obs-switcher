@@ -34,12 +34,38 @@ When you change… you must review/update…
 - **Cursor automation (rules / skills / commands / agents)**
   - `.cursor/README.md`
 
-- **Architecture / module boundaries / new package under `src/irswitch/`**
-  - `docs/dokumentace/` (index + the matching `domeny/*.md`)
+- **Architecture / module boundaries / any `src/irswitch/` package**
+  - matching `docs/dokumentace/domeny/*.md` (table below)
+  - `docs/dokumentace/architektura.md` + `mapa-souboru.md` when files or data flow change
   - `docs/dokumentace/inflight/` when the change exists only on an open PR
 
 - **Open PR that adds modules not yet on `master`**
   - `docs/dokumentace/inflight/` (do not describe them as shipped in `domeny/`)
+
+## `src/irswitch/` → `docs/dokumentace/domeny/`
+
+| Changed path | Update |
+| --- | --- |
+| `iracing/` | `domeny/iracing.md` |
+| `obs/` | `domeny/obs.md` |
+| `logic/` | `domeny/logic.md` |
+| `server/` | `domeny/server.md` |
+| `overlay/` | `domeny/overlay.md` |
+| `events/` | `domeny/events.md` |
+| `commentary/` | `domeny/commentary.md` |
+| `race/` | `domeny/race.md` |
+| `sampling/` | `domeny/sampling.md` |
+| `bio/` | `domeny/bio.md` |
+| `system/` | `domeny/system.md` |
+| `util/` | `domeny/util.md` |
+| `web/` | `domeny/web.md` |
+| `main.py`, `models.py` | `domeny/runtime.md` |
+| `config.py`, `config_reload.py` | `domeny/config.md` |
+| `i18n.py` | `domeny/i18n.md` |
+| `oauth.py` | `domeny/oauth-youtube.md` |
+| `tests/`, `.github/` | `domeny/testy-ci.md` (only if test/CI contract changes) |
+
+Typo / format-only: `Docs: no change (reason …)` in the PR. Still tick the `docs/dokumentace/` checkbox.
 
 PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`).
 

@@ -15,6 +15,7 @@ Spusť ověření kvality změn. Cíl je co nejvíc odpovídat CI a dát jasný 
 
 ## Postup
 1) Zjisti co se měnilo (diff) a podle toho zvol rozsah testů.
+   Když diff sahá na `src/irswitch/` a **ne** na `docs/dokumentace/`, v **risks** (nebo **bad**, pokud je to behavior) uveď chybějící domain page.
 2) Pusť lokální checky (preferuj existující repo skripty):
    - pokud existuje `run_tests.ps1` / `run_tests.sh`, použij je
    - jinak minimálně:

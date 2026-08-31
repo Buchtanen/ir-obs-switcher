@@ -26,8 +26,9 @@ Evidence:
 - Manual: <steps + result>
 
 Docs:
-- Updated: <files>
+- Updated: <files — include docs/dokumentace/domeny/… when src/irswitch changed>
 - Pending: <files>
+- Or: Docs: no change (reason …)
 
 Next:
 - ...

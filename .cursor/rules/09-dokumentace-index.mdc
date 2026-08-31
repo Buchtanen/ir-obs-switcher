@@ -1,9 +1,9 @@
 ---
-description: Read docs/dokumentace before grepping source
+description: Read and update docs/dokumentace on every task
 alwaysApply: true
 ---
 
-## Lookup order (agents)
+## Lookup order (before code)
 
 Before grepping `src/` or inventing a new module:
 
@@ -13,4 +13,19 @@ Before grepping `src/` or inventing a new module:
 
 INI keys stay in `CONFIG.md`. HTTP payloads stay in `API.md`. Specs under `docs/*_plan.md` / `docs/*_spec.md` are not runtime truth unless the domain page says they shipped.
 
-Open PRs (#179 observers, #181 narrative, stacked on #179) are documented under `docs/dokumentace/inflight/`. Do not implement a second `RaceObserver` / `EventFanout` / `SpeechScheduler` on `master` while those PRs are open.
+Open PRs that add modules not yet on `master` live under `docs/dokumentace/inflight/`. Do not implement a second `RaceObserver` / `EventFanout` / `SpeechScheduler` on `master` while those PRs are open.
+
+## Maintain after every change (handover)
+
+This is not optional “nice docs”. Same bar as CONFIG.md for config keys.
+
+When `src/irswitch/`, overlay/events/commentary/race behavior, tests/CI contract, or an open-PR module changes:
+
+- update the matching `docs/dokumentace/domeny/*.md` (path map: `docs-map.mdc`)
+- update `architektura.md` / `mapa-souboru.md` / index when files or data flow change
+- if it exists only on an open PR: `docs/dokumentace/inflight/`, not as shipped in `domeny/`
+- otherwise write **`Docs: no change (reason …)`** in the PR/diary
+
+Do **not** finish `/flow`, a PR, or a task with a `src/irswitch/` diff and a silent docs skip.
+
+Skill: `.cursor/skills/dokumentace/SKILL.md`. Cursor `stop` hook reminds only if hooks are opted in.

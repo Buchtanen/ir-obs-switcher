@@ -27,6 +27,14 @@ Konflikt: **kód na aktuální větvi vyhrává**. Když index a kód nesedí, o
 4. Grep až když víš balík (`iracing/`, `logic/`, …). Hledej v tom balíku, ne v celém `src/` napoprvé.
 5. Scene switch a overlay jsou **dva pipeline**. Nemíchej je.
 
+## Údržba (každý task)
+
+Index je živý kontrakt, ne jednorázový dump.
+
+Po změně kódu aktualizuj matching `domeny/*.md` (mapa v `.cursor/rules/docs-map.mdc`). Nový soubor / tok → `mapa-souboru.md` + `architektura.md`. Jen na otevřeném PR → [inflight/](inflight/README.md). Jinak v PR napiš `Docs: no change (reason …)`.
+
+Tohle hlídá skill `dokumentace`, `/docs-keeper` ve `/flow`, PR checklist a (opt-in) Cursor stop hook. **Nespoléhej na hook** — na Windows jsou Cursor hooks často vypnuté.
+
 ## Hranice vrstev (neměnit bez explicitního zadání)
 
 Převzato z `.cursor/rules/py-architecture-layers.mdc`:

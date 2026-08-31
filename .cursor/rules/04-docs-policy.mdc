@@ -21,7 +21,8 @@ Update **all relevant docs in this repo** (not just one file). Typical mapping:
 - **Release process / semver labeling** → `RELEASE_POLICY.md` (and related docs)
 - **VR / dashboard specifics** → `VR_SUPPORT.md`, `RACELAB_VR_SETUP.md`
 - **Cursor automation** → `.cursor/README.md` (and the changed rule/skill/command files)
-- **Architecture / new `src/irswitch/` package** → `docs/dokumentace/` (index + domain page); in-flight PRs → `docs/dokumentace/inflight/`
+- **`src/irswitch/` behavior, files, or layer boundaries** → matching `docs/dokumentace/domeny/*.md` (see `docs-map.mdc`); in-flight PRs → `docs/dokumentace/inflight/`
+- Silent skip is not allowed: update the page **or** write `Docs: no change (reason …)`
 
 ## PR requirement
 

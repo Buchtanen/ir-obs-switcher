@@ -50,6 +50,7 @@ Zajisti, že aktuální práce má GitHub issue, aby bylo kam psát dev diary.
 - [ ] BUILD_AND_DEPLOY.md
 - [ ] VR_SUPPORT.md / RACELAB_VR_SETUP.md
 - [ ] .cursor/README.md (if rules/skills/commands change)
+- [ ] docs/dokumentace/ (domeny/*.md and/or inflight/; or “no change” + reason)
 - [ ] Other: ...
 
 ## Config impact (if any)

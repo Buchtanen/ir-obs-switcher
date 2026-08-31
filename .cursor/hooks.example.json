@@ -10,6 +10,11 @@
       {
         "command": "python .cursor/hooks/shell_guard.py"
       }
+    ],
+    "stop": [
+      {
+        "command": "python .cursor/hooks/dokumentace_handover.py"
+      }
     ]
   }
 }

@@ -13,7 +13,8 @@ Before merge:
   - explicit `TDD-exception` + alternative verification (see `03-tdd-test-drive-policy.mdc`)
 - **Docs**:
   - updated relevant docs (see `04-docs-policy.mdc`)
-  - PR includes Docs impact checklist
+  - `src/irswitch/` diff → matching `docs/dokumentace/domeny/*.md` **or** explicit `Docs: no change (reason …)`
+  - PR includes Docs impact checklist (including `docs/dokumentace/`)
 - **Config**:
   - if config changed: `CONFIG.md` + `config/config.example.ini` updated
   - migration note included when needed

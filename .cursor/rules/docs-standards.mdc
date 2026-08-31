@@ -16,4 +16,5 @@ When updating docs:
 - prefer minimal changes but keep them complete
 - include migration notes when config/API behavior changes
 - avoid duplicating the same truth in 3 files; use links where possible
+- module/architecture truth lives in `docs/dokumentace/` — update the matching `domeny/*.md` when `src/irswitch/` changes (see `docs-map.mdc`)
 

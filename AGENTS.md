@@ -6,9 +6,10 @@ This file is intentionally short to avoid duplicating the canonical rules.
 Authoritative rules live in:
 - `.cursor/rules/*.mdc`
 
-**Architecture / module map (read before grepping `src/`):**
+**Architecture / module map (read before grepping `src/`; update after changing it):**
 - `docs/dokumentace/README.md`
 - In-flight open PRs: `docs/dokumentace/inflight/README.md`
+- Skill: `.cursor/skills/dokumentace/SKILL.md`
 
 Task skills (start/restart, YouTube OAuth) live in:
 - `.cursor/skills/*/SKILL.md`
