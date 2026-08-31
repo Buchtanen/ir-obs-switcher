@@ -206,6 +206,30 @@ class OverlaySessionTape:
             return
         self._write(now, state, {"type": "stories", "activeStories": list(stories)})
 
+    def record_commentary(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """Speak/skip row from CommentaryDirector (debug evaluation)."""
+        if self._path is None:
+            return
+        self._write(
+            now,
+            state,
+            {
+                "type": "commentary",
+                "action": entry.get("action"),
+                "reason": entry.get("reason"),
+                "eventType": entry.get("eventType"),
+                "nodeId": entry.get("nodeId"),
+                "emotion": entry.get("emotion"),
+                "text": entry.get("text"),
+            },
+        )
+
+    def record_llm_polish(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """One remote polish attempt (request/response for offline review)."""
+        if self._path is None:
+            return
+        self._write(now, state, {"type": "llm_polish", **entry})
+
     def _open(self, state: RaceState, now: float, settings: OverlaySettings, key: str) -> None:
         directory = Path(safe_tape_dir(settings.tape.directory))
         try:
