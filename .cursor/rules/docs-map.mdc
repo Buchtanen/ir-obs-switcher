@@ -34,5 +34,12 @@ When you change… you must review/update…
 - **Cursor automation (rules / skills / commands / agents)**
   - `.cursor/README.md`
 
+- **Architecture / module boundaries / new package under `src/irswitch/`**
+  - `docs/dokumentace/` (index + the matching `domeny/*.md`)
+  - `docs/dokumentace/inflight/` when the change exists only on an open PR
+
+- **Open PR that adds modules not yet on `master`**
+  - `docs/dokumentace/inflight/` (do not describe them as shipped in `domeny/`)
+
 PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`).
 

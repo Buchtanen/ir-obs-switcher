@@ -1,0 +1,16 @@
+---
+description: Read docs/dokumentace before grepping source
+alwaysApply: true
+---
+
+## Lookup order (agents)
+
+Before grepping `src/` or inventing a new module:
+
+1. `docs/dokumentace/README.md` — domain lookup table
+2. The matching file under `docs/dokumentace/domeny/`
+3. If the work might touch `race/`, `events/`, `commentary/`, or `overlay/runtime.py`: `docs/dokumentace/inflight/README.md`
+
+INI keys stay in `CONFIG.md`. HTTP payloads stay in `API.md`. Specs under `docs/*_plan.md` / `docs/*_spec.md` are not runtime truth unless the domain page says they shipped.
+
+Open PRs (#179 observers, #181 narrative, stacked on #179) are documented under `docs/dokumentace/inflight/`. Do not implement a second `RaceObserver` / `EventFanout` / `SpeechScheduler` on `master` while those PRs are open.

@@ -23,6 +23,11 @@ Proto je `.cursor/hooks.json` **gitignored** (lokální opt-in). V repu je jen t
    - buď přidej výjimku pro repo/skripty (podle interní policy),
    - nebo hooks nepoužívej (kvalitu pokrývá `/qa` + lokální git hooky v `scripts/`).
 
+### Dokumentace kódu (před grepem)
+- `docs/dokumentace/README.md` — mapa domén a lookup
+- `docs/dokumentace/inflight/` — otevřené PR, které ještě nejsou na `master`
+- Rule: `.cursor/rules/09-dokumentace-index.mdc` (always apply)
+
 ### Skills
 - `pr-semver-label` — povinný `semver:*` label na každý PR do `master`
 - `restart-irswitch` — start/stop/restart služby, port 17321, SSLKEYLOGFILE, `/health`

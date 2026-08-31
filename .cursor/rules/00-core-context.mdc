@@ -18,6 +18,8 @@ alwaysApply: true
 
 ## Primary docs
 
+- `docs/dokumentace/README.md` — domain/module map; **read before grepping `src/`**
+- `docs/dokumentace/inflight/README.md` — open PRs that are not on `master` yet
 - `README.md` (how to run, dashboards)
 - `CONFIG.md` + `config/config.example.ini` (configuration contract)
 - `API.md` (REST/WS)

@@ -27,8 +27,15 @@ Představ si situaci:
 
 ---
 
+## Dokumentace (čti před kódem)
+
+Architektura, hranice modulů a otevřené PR: **[docs/dokumentace/README.md](docs/dokumentace/README.md)**.
+
+Agenti i lidé: nejdřív lookup v tom indexu, až potom grep `src/`. In-flight větve (observers #179, narrative #181) jsou v [docs/dokumentace/inflight/](docs/dokumentace/inflight/README.md) — na `master` ty moduly ještě nejsou.
+
 ## Obsah
 
+- [Dokumentace (čti před kódem)](#dokumentace-čti-před-kódem)
 - [Quick Start](#quick-start)
   - [Instalace](#1-instalace)
   - [Konfigurace](#2-konfigurace)
@@ -304,6 +311,7 @@ Pro **restart bez ručního startu** použij GR **Restart Service** / `POST /res
 
 ## Další dokumentace
 
+- **[docs/dokumentace/README.md](docs/dokumentace/README.md)** — mapa domén (`iracing/`, `logic/`, `overlay/`, `events/`, `commentary/`, …), runtime toky, in-flight PR. **Výchozí vstup** než se sáhne do kódu.
 - **[CONFIG.md](CONFIG.md)** - Kompletní popis konfigurace
 - **[COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md)** - Komentář / TTS: graf sekvencí, EN mock (in-car / lap / pit / back on track), validator, zadání textů
 - **[docs/commentary_content_db_plan.md](docs/commentary_content_db_plan.md)** - Plán content DB (JSON graf) + vlny plnění textů + handoff na textový model
