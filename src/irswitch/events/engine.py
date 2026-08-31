@@ -76,7 +76,9 @@ class EventEngine:
                     type(emitter).__name__,
                     exc_info=True,
                 )
-        return filter_post_race(events, session_finished=bool(state.mute_field or state.session_finished))
+        return filter_post_race(
+            events, session_finished=bool(state.mute_field or state.session_finished)
+        )
 
     @staticmethod
     def _tick_emitter(
