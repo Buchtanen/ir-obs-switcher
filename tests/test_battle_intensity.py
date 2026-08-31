@@ -21,8 +21,16 @@ def _state(**overrides: object) -> RaceState:
     return RaceState(**base)  # type: ignore[arg-type]
 
 
-def _hunting_cfg() -> HuntingSettings:
-    return HuntingSettings(activation_delay=0.0, exit_delay=1.5)
+def _hunting_cfg(**overrides: object) -> HuntingSettings:
+    base = {
+        "activation_delay": 0.0,
+        "exit_delay": 1.5,
+        "min_intensity_hold_s": 0.0,
+        "update_min_interval_s": 0.0,
+        "update_gap_epsilon_s": 0.0,
+    }
+    base.update(overrides)
+    return HuntingSettings(**base)  # type: ignore[arg-type]
 
 
 def test_hunting_progresses_to_attack_range() -> None:
@@ -125,3 +133,29 @@ def test_battle_adapter_maps_attack_range_envelope() -> None:
     assert envelope.event_type == "ATTACK_RANGE"
     assert envelope.presentation.variant == "attack_range"
     assert envelope.copy.headline_token == "battle.attack_range"
+
+
+def test_intensity_hold_blocks_fast_ladder_swap() -> None:
+    cfg = _hunting_cfg(min_intensity_hold_s=2.5, update_min_interval_s=10.0)
+    emitter = BattleEmitter(cfg, cfg)
+    ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3)
+    out = emitter.tick(
+        _state(opponent_ahead=ahead, gap_ahead=2.0, closing_rate_ahead=0.3),
+        1.0,
+    )
+    assert any(e.phase == "enter" and e.data["state"] == "hunting" for e in out)
+
+    close = OpponentInfo(car_idx=17, position=6, gap=0.6, closing_rate=0.25)
+    out = emitter.tick(
+        _state(opponent_ahead=close, gap_ahead=0.6, closing_rate_ahead=0.25),
+        2.0,
+    )
+    assert not any(e.phase == "enter" and e.data["state"] == "approach" for e in out)
+    assert emitter.hunting.intensity == "hunting"
+
+    out = emitter.tick(
+        _state(opponent_ahead=close, gap_ahead=0.6, closing_rate_ahead=0.25),
+        4.0,
+    )
+    assert any(e.phase == "enter" and e.data["state"] == "approach" for e in out)
+    assert emitter.hunting.intensity == "approach"

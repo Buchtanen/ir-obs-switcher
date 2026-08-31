@@ -50,10 +50,9 @@ def test_choose_filled_line_without_history_stays_deterministic() -> None:
 
 
 def test_filler_tail_quota_deprioritizes_shared_ending() -> None:
-    history = RecentUtteranceHistory(size=8, max_similar_tails=2, tail_tokens=3)
+    history = RecentUtteranceHistory(size=8, max_similar_tails=1, tail_tokens=3)
     history.remember("Rossi closes, to je tlak.")
-    history.remember("Gap shrinks, to je tlak.")
-    # Two similar tails already in the ring → shared-tail candidates drop out.
+    # One similar tail already in the ring → shared-tail candidates drop out.
     candidates = [
         "New battle, to je tlak.",
         "Completely different finish here.",

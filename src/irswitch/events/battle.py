@@ -17,6 +17,16 @@ class _Track:
     fail_since: float | None = None
     target_car_idx: int | None = None
     intensity: str = "hunting"
+    intensity_since: float = 0.0
+    last_update_at: float = 0.0
+    last_update_gap: float | None = None
+
+
+def _payload_gap(payload: dict) -> float | None:
+    gap = payload.get("gap")
+    if isinstance(gap, bool) or not isinstance(gap, (int, float)):
+        return None
+    return float(gap)
 
 
 @dataclass
@@ -248,6 +258,9 @@ class BattleEmitter:
                 track.fail_since = None
                 if cfg.activation_delay <= 0:
                     track.state = "ACTIVE"
+                    track.intensity_since = now
+                    track.last_update_at = now
+                    track.last_update_gap = _payload_gap(payload)
                     events.append(
                         CandidateEvent(
                             name=event_name,
@@ -266,6 +279,9 @@ class BattleEmitter:
                 track.state = "ACTIVE"
                 track.intensity = battle_state
                 track.fail_since = None
+                track.intensity_since = now
+                track.last_update_at = now
+                track.last_update_gap = _payload_gap(payload)
                 events.append(
                     CandidateEvent(
                         name=event_name,
@@ -286,18 +302,21 @@ class BattleEmitter:
                             priority=priority,
                             payload=payload,
                             next_state=active_state,
+                            now=now,
+                            cfg=cfg,
                         )
                     )
                 else:
-                    events.append(
-                        CandidateEvent(
-                            name=event_name,
-                            channel="battle",
-                            priority=priority,
-                            phase="update",
-                            data=payload,
-                        )
+                    update = self._maybe_update(
+                        track=track,
+                        event_name=event_name,
+                        priority=priority,
+                        payload=payload,
+                        now=now,
+                        cfg=cfg,
                     )
+                    if update is not None:
+                        events.append(update)
             else:
                 if track.fail_since is None:
                     track.fail_since = now
@@ -323,6 +342,37 @@ class BattleEmitter:
         return events
 
     @staticmethod
+    def _maybe_update(
+        *,
+        track: _Track,
+        event_name: str,
+        priority: int,
+        payload: dict,
+        now: float,
+        cfg: HuntingSettings,
+    ) -> CandidateEvent | None:
+        gap_f = _payload_gap(payload)
+        interval = max(0.25, float(cfg.update_min_interval_s))
+        epsilon = max(0.0, float(cfg.update_gap_epsilon_s))
+        gap_moved = (
+            gap_f is not None
+            and track.last_update_gap is not None
+            and abs(gap_f - track.last_update_gap) >= epsilon
+        )
+        due = track.last_update_at <= 0.0 or (now - track.last_update_at) >= interval
+        if not due and not gap_moved:
+            return None
+        track.last_update_at = now
+        track.last_update_gap = gap_f
+        return CandidateEvent(
+            name=event_name,
+            channel="battle",
+            priority=priority,
+            phase="update",
+            data=payload,
+        )
+
+    @staticmethod
     def _apply_intensity_change(
         *,
         track: _Track,
@@ -330,9 +380,25 @@ class BattleEmitter:
         priority: int,
         payload: dict,
         next_state: str,
+        now: float,
+        cfg: HuntingSettings,
     ) -> list[CandidateEvent]:
         events: list[CandidateEvent] = []
+        hold = max(0.0, float(cfg.min_intensity_hold_s))
         if next_state != track.intensity:
+            held = now - track.intensity_since if track.intensity_since > 0 else hold
+            if held < hold:
+                update = BattleEmitter._maybe_update(
+                    track=track,
+                    event_name=event_name,
+                    priority=priority,
+                    payload={**payload, "state": track.intensity},
+                    now=now,
+                    cfg=cfg,
+                )
+                if update is not None:
+                    events.append(update)
+                return events
             events.append(
                 CandidateEvent(
                     name=event_name,
@@ -343,6 +409,9 @@ class BattleEmitter:
                 )
             )
             track.intensity = next_state
+            track.intensity_since = now
+            track.last_update_at = now
+            track.last_update_gap = _payload_gap(payload)
             events.append(
                 CandidateEvent(
                     name=event_name,
@@ -353,13 +422,14 @@ class BattleEmitter:
                 )
             )
             return events
-        events.append(
-            CandidateEvent(
-                name=event_name,
-                channel="battle",
-                priority=priority,
-                phase="update",
-                data={**payload, "state": track.intensity},
-            )
+        update = BattleEmitter._maybe_update(
+            track=track,
+            event_name=event_name,
+            priority=priority,
+            payload={**payload, "state": track.intensity},
+            now=now,
+            cfg=cfg,
         )
+        if update is not None:
+            events.append(update)
         return events

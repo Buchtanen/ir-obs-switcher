@@ -14,16 +14,18 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from irswitch.commentary.duck import ducker_from_settings
 from irswitch.commentary.graph import GraphNode
+from irswitch.commentary.polish import PolishOutcome, polish_skeleton
 from irswitch.overlay.settings import CommentarySettings
 
 logger = logging.getLogger(__name__)
 
 BACKENDS = ("auto", "sapi", "espeak", "null")
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
+PolishDebugHook = Callable[[dict[str, Any]], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
 
 _SAPI_VOICES_SCRIPT = """\
@@ -83,6 +85,7 @@ class ProcessTtsSink:
     last_error: str | None = None
     last_result: TtsResult | None = None
     runner: SpeakRunner | None = None
+    on_polish_debug: PolishDebugHook | None = None
     _queue: queue.SimpleQueue[CommentaryUtterance] = field(
         default_factory=queue.SimpleQueue, repr=False
     )
@@ -148,9 +151,18 @@ class ProcessTtsSink:
                         self._idle.notify_all()
 
     def _speak(self, utterance: CommentaryUtterance) -> None:
+        spoken_text = utterance.text
+        if self.settings.llm_polish:
+            outcome = polish_skeleton(
+                utterance.text,
+                utterance.node,
+                self.settings,
+            )
+            spoken_text = outcome.text
+            self._emit_polish_debug(utterance, outcome)
         with ducker_from_settings(self.settings):
             result = speak_text(
-                utterance.text,
+                spoken_text,
                 locale=utterance.locale,
                 voice=self.settings.tts_voice,
                 rate=self.settings.tts_rate,
@@ -163,6 +175,20 @@ class ProcessTtsSink:
         self.last_error = result.error
         if result.error:
             logger.warning("tts speak failed backend=%s error=%s", result.backend, result.error)
+
+    def _emit_polish_debug(self, utterance: CommentaryUtterance, outcome: PolishOutcome) -> None:
+        hook = self.on_polish_debug
+        if hook is None:
+            return
+        try:
+            hook(
+                outcome.debug_record(
+                    node_id=utterance.node_id,
+                    event_type=utterance.event_type,
+                )
+            )
+        except Exception:
+            logger.debug("commentary polish debug hook failed", exc_info=True)
 
 
 def detect_backend(preferred: str = "auto") -> str:
@@ -182,11 +208,18 @@ def detect_backend(preferred: str = "auto") -> str:
     return "null"
 
 
-def build_tts_sink(settings: CommentarySettings | None = None) -> TtsSink:
+def build_tts_sink(
+    settings: CommentarySettings | None = None,
+    *,
+    on_polish_debug: PolishDebugHook | None = None,
+) -> TtsSink:
     cfg = settings or CommentarySettings()
     if detect_backend(cfg.tts_backend) == "null":
         return NullTtsSink()
-    return ProcessTtsSink(settings=cfg)
+    return ProcessTtsSink(
+        settings=cfg,
+        on_polish_debug=on_polish_debug if cfg.llm_polish else None,
+    )
 
 
 def speak_text(

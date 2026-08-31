@@ -29,6 +29,11 @@ class HuntingSettings:
     side_by_side_enter_gap: float = 0.35
     side_by_side_exit_gap: float = 0.45
     intensity_min_closing_rate: float = 0.15
+    # Floor between intensity ladder swaps (exit→enter). Matches presentation minHoldMs.
+    min_intensity_hold_s: float = 2.5
+    # Throttle UPDATE spam while intensity is unchanged.
+    update_min_interval_s: float = 1.0
+    update_gap_epsilon_s: float = 0.08
 
 
 @dataclass(frozen=True)
@@ -153,6 +158,13 @@ class CommentarySettings:
     sector_speak_max_per_lap: int = 1
     # Session intro / SoF / weather commentary sidecars (default off).
     session_briefs: bool = False
+    # Optional remote LLM style polish (Ollama OpenAI-compatible). Default off.
+    llm_polish: bool = False
+    llm_base_url: str = "http://127.0.0.1:11434/v1"
+    llm_model: str = "qwen2.5:3b"
+    llm_timeout_s: float = 8.0
+    llm_temperature: float = 0.45
+    llm_max_tokens: int = 220
 
 
 @dataclass(frozen=True)

@@ -30,6 +30,8 @@ iRacing / BLE HR
     → TtsSink (Windows SAPI / espeak-ng / NullTtsSink)
 ```
 
+**Experiment (not wired):** optional remote LLM *skeleton polish* (style only, facts from app) — see [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md).
+
 Rules:
 
 - Hook **accepted envelopes only**. Raw candidates are too noisy.
@@ -162,10 +164,10 @@ After densify, `rng.choice` alone can loop the same ~8 lines or shared Czech fil
 
 | Constant | Default | Role |
 | --- | --- | --- |
-| `DEFAULT_HISTORY_SIZE` | 16 | Global ring of recently spoken normalized lines |
-| `DEFAULT_TAIL_TOKENS` | 4 | Last *N* tokens compared for shared filler tails |
-| `DEFAULT_MAX_SIMILAR_TAILS` | 2 | Cap similar tails inside the ring before deprioritize |
-| `DEFAULT_TAIL_RATIO` | 0.82 | `SequenceMatcher` threshold for near-duplicate tails |
+| `DEFAULT_HISTORY_SIZE` | 24 | Global ring of recently spoken normalized lines |
+| `DEFAULT_TAIL_TOKENS` | 5 | Last-N tokens compared for filler endings |
+| `DEFAULT_MAX_SIMILAR_TAILS` | 1 | Max similar tails allowed in the ring before deprioritize |
+| `DEFAULT_TAIL_RATIO` | 0.78 | SequenceMatcher threshold for near-duplicate tails |
 
 Algorithm in `choose_filled_line(..., history=...)`:
 

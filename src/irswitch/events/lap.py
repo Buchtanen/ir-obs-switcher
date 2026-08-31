@@ -12,20 +12,33 @@ class LapEmitter:
         self._events = events
         self._priorities = priorities
         self._last_completed: int | None = None
+        self._incidents_at_lap_start: int | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:  # noqa: ARG002
         if not state.connected or state.lap_completed is None:
             return []
         prev = self._last_completed
+        incidents = state.incidents if state.incidents is not None else 0
         if prev is None or state.lap_completed < prev:
             self._last_completed = state.lap_completed
+            self._incidents_at_lap_start = incidents
             return []
         if state.lap_completed == prev:
             return []
         # iRSDK often holds LapLastLapTime at -1 until the lap is scored.
-        if state.last_lap_time is None:
+        if state.last_lap_time is None or state.last_lap_time <= 0:
             return []
+        start_incidents = (
+            self._incidents_at_lap_start if self._incidents_at_lap_start is not None else 0
+        )
+        # Incident during the just-finished lap → INVALID_LAP owns the story.
+        if incidents > start_incidents:
+            self._last_completed = state.lap_completed
+            self._incidents_at_lap_start = incidents
+            return []
+
         self._last_completed = state.lap_completed
+        self._incidents_at_lap_start = incidents
 
         personal_best = False
         if (
@@ -70,3 +83,7 @@ class LapEmitter:
                 cooldown=self._events.lap_cooldown,
             )
         ]
+
+    def reset(self) -> None:
+        self._last_completed = None
+        self._incidents_at_lap_start = None

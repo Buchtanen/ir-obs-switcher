@@ -35,6 +35,7 @@ from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, Timi
 from irswitch.race.timing.points import default_sectors
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
 from irswitch.server.task_registry import TaskRegistry
+from irswitch.util.logging import get_runtime_log_level
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ class OverlayRuntime:
         self._pending_envelopes: list[dict[str, Any]] = []
         self._tape = OverlaySessionTape()
         self._tape_decision_cursor = 0
+        self._commentary_tape_cursor = 0
         self._stories_sig: tuple[tuple[object, ...], ...] | None = None
         self._last_race = RaceState()
         self._hud_live = False
@@ -116,6 +118,7 @@ class OverlayRuntime:
         self.bus.set_active_events([])
         self.bus.set_active_stories_v4([])
         self._tape_decision_cursor = 0
+        self._commentary_tape_cursor = 0
         self._stories_sig = None
 
     def _register_timing_emitters(self, overlay: OverlaySettings) -> None:
@@ -190,17 +193,39 @@ class OverlayRuntime:
         self._timing_store.reset()
         self._sector_sig = sig
 
+    def _tape_debug_enabled(self) -> bool:
+        """Commentary / LLM polish tape rows only while runtime log level is DEBUG."""
+        return get_runtime_log_level() == "DEBUG"
+
+    def _llm_polish_tape_hook(self, record: dict[str, Any]) -> None:
+        if not self._tape_debug_enabled() or self.mode == "replay":
+            return
+        self._tape.record_llm_polish(record, time.monotonic(), self._last_race)
+
     def _build_commentary(self, overlay: OverlaySettings) -> CommentaryDirector | None:
         """Load the sequence graph once. Fail-soft if the JSON is broken."""
         try:
             return CommentaryDirector.from_defaults(
                 overlay.commentary,
                 language=overlay.language,
-                sink=build_tts_sink(overlay.commentary),
+                sink=build_tts_sink(
+                    overlay.commentary,
+                    on_polish_debug=self._llm_polish_tape_hook,
+                ),
             )
         except Exception:
             logger.warning("commentary graph failed to load", exc_info=True)
             return None
+
+    def _apply_commentary_sink_settings(self, overlay: OverlaySettings) -> None:
+        if self.commentary is None:
+            return
+        sink = self.commentary.sink
+        if isinstance(sink, ProcessTtsSink):
+            sink.settings = overlay.commentary
+            sink.on_polish_debug = (
+                self._llm_polish_tape_hook if overlay.commentary.llm_polish else None
+            )
 
     def _reset_commentary(self) -> None:
         overlay = self._overlay_settings()
@@ -209,8 +234,12 @@ class OverlayRuntime:
             return
         self.commentary.settings = overlay.commentary
         self.commentary.language = overlay.language
-        self.commentary.sink = build_tts_sink(overlay.commentary)
+        self.commentary.sink = build_tts_sink(
+            overlay.commentary,
+            on_polish_debug=self._llm_polish_tape_hook,
+        )
         self.commentary.reset()
+        self._commentary_tape_cursor = 0
         self.in_car.reset()
         self.session_briefs.reset()
 
@@ -219,10 +248,7 @@ class OverlayRuntime:
         if not envelopes or self.commentary is None:
             return None
         overlay = self._overlay_settings()
-        self.commentary.settings = overlay.commentary
-        sink = self.commentary.sink
-        if isinstance(sink, ProcessTtsSink):
-            sink.settings = overlay.commentary
+        self._apply_commentary_sink_settings(overlay)
         before = len(self.commentary.decisions())
         try:
             self.commentary.observe(
@@ -237,6 +263,7 @@ class OverlayRuntime:
             return None
         if len(self.commentary.decisions()) == before:
             return None
+        # Tape rows are drained via _drain_commentary_tape (DEBUG-gated).
         decisions = self.commentary.decisions(1)
         return decisions[-1] if decisions else None
 
@@ -444,6 +471,7 @@ class OverlayRuntime:
         self._last_race = state
         self._sync_tape(state, now)
         self._observe_commentary_sidecars(state, now)
+        self._drain_commentary_tape(now)
         if self._idle_when_disconnected(state):
             return
         if self.session.in_warmup(now):
@@ -496,6 +524,7 @@ class OverlayRuntime:
             self.bus.set_active_events(self.manager_v2.active_events())
             self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
             self._drain_tape_side(now)
+            self._drain_commentary_tape(now)
             return
         for candidate in candidates:
             event = self.manager.submit(candidate, now)
@@ -507,6 +536,7 @@ class OverlayRuntime:
         for expired in self.manager.tick(now):
             await self._publish(expired.to_envelope(), now)
         self.bus.set_active_events(self.manager.active_events())
+        self._drain_commentary_tape(now)
 
     def _sync_tape(self, state: RaceState, now: float) -> None:
         if self.mode == "replay":
@@ -538,6 +568,16 @@ class OverlayRuntime:
                 return
             self._stories_sig = sig
             self._tape.record_stories(stories, now, self._last_race)
+
+    def _drain_commentary_tape(self, now: float) -> None:
+        if not self._tape_debug_enabled() or self.mode == "replay" or self.commentary is None:
+            return
+        decisions = self.commentary.decisions()
+        if len(decisions) < self._commentary_tape_cursor:
+            self._commentary_tape_cursor = 0
+        for entry in decisions[self._commentary_tape_cursor :]:
+            self._tape.record_commentary(entry, now, self._last_race)
+        self._commentary_tape_cursor = len(decisions)
 
     async def _tick_system(self) -> None:
         overlay = self._overlay_settings()

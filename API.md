@@ -938,7 +938,14 @@ Každý řádek má hodiny v sekundách:
 | `t_session` | iRacing `SessionTime` |
 | `t_green` | od prvního `SessionState=4` (Racing) na tomto tape |
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `stream_origin`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`scene`/`green`.
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`.
+
+Řádky `commentary` a `llm_polish` se zapisují **jen při runtime DEBUG** (`GET/POST /logging/level` → `DEBUG`) — pro offline vyhodnocení speak/skip a LLM request/response bez spamu na disk. Ostatní tape typy (`event`, `decision`, …) zůstávají pod `[overlay] session_tape`.
+
+| Typ | Obsah |
+|-----|--------|
+| `commentary` | speak/skip z CommentaryDirector (`action`, `reason`, `eventType`, `nodeId`, `text`, …) |
+| `llm_polish` | jeden polish pokus (`outcome`, `skeleton`, `spoken`, `request`, `response`, `latencyMs`, …) |
 
 **Event catalog**
 

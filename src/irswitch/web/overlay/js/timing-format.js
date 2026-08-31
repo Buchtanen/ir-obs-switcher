@@ -38,6 +38,22 @@ export function fmtGap(seconds, digits = 2) {
   return `${Math.abs(n).toFixed(digits)} s`;
 }
 
+/** Closing rate: ``0.40 s/s``. */
+export function fmtRate(secondsPerSecond, digits = 2) {
+  const n = finiteNumber(secondsPerSecond);
+  if (n == null) return HUD_PLACEHOLDER;
+  return `${n.toFixed(digits)} s/s`;
+}
+
+/** Heart-rate delta vs baseline: ``+16 bpm``. */
+export function fmtBpmDelta(deltaBpm, digits = 0) {
+  const n = finiteNumber(deltaBpm);
+  if (n == null) return HUD_PLACEHOLDER;
+  const body = Math.abs(n).toFixed(digits);
+  const sign = n > 0 ? "+" : n < 0 ? "-" : "";
+  return `${sign}${body} bpm`;
+}
+
 /** SessionTime / remain as ``m:ss`` or ``h:mm:ss``. */
 export function fmtSessionClock(seconds) {
   const n = finiteNumber(seconds);
