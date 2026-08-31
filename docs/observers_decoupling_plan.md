@@ -1,7 +1,8 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** design proposal — product answers locked 2026-08-31; **P0 done (#167)**; **P1 SpeechScheduler in progress** (`feat/commentary-speech-scheduler`, issue #168)  
+**Status:** P0–P5 on joint umbrella [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (`feat/observers-decoupling-joint-test`)  
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
+**Product expansion (same umbrella, after P5):** [narrative_observers_epic.md](narrative_observers_epic.md) — N-tasks extend P0–P5; do not fork.  
 **Audience:** architecture / next epic planning
 
 ---
@@ -180,16 +181,19 @@ silence filler via `filler_provider` / `filler_formatter` (`WEATHER_CHANGE` /
 ### P3 — Incident aftermath FSM ✅
 Derived `INCIDENT_AFTERMATH` (stalled/rolling) + `BACK_UNDER_WAY`; LapDistPct /
 surface / tow proxies (no Speed field yet); template speech via director
-formatter fallback; fan-out to commentary. **Issue #172.**
+formatter fallback; fan-out to commentary. **Issue #172.**  
+**Next:** epic **N1** (real `Speed`) + **N3** (kinds / chain / recovered copy) extend this FSM — do not rewrite it.
 
 ### P4 — Stream narrative pre/post ✅
 `SESSION_WRAP` / `SESSION_PREVIEW` from RaceObserver at session boundaries;
 sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`.
-**Issue #175.**
+**Issue #175.**  
+**Next:** epic **N7** (grid / rolling start) + **N8** (stream start + in-car flavor) extend wrap/preview — do not replace them.
 
 ### P5 — Content gaps ✅
 `ATTACK_RANGE` graph node (ENTER TTS); optional mid-pit `PIT_STOPPED` ENTER.
-Lane/released stay HUD-only. **Issue #177.**
+Lane/released stay HUD-only. **Issue #177.**  
+**Next:** epic **N2** (graph mode/branch) + **N11** (more texts).
 
 ---
 
@@ -209,6 +213,7 @@ Lane/released stay HUD-only. **Issue #177.**
 | --- | --- |
 | `docs/scenario_coverage_matrix.md` | inventory |
 | `docs/observers_decoupling_plan.md` | tento plán + locked answers |
+| `docs/narrative_observers_epic.md` | product expansion + N1–N11 task index |
 | `CONFIG.md` / example.ini | až P1 (`[commentary.scheduler]`) |
 | `COMMENTARY_ENGINE.md` / `API.md` | až implementace |
 
