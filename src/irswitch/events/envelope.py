@@ -102,7 +102,8 @@ class EventPresentation:
     accent: str = "primary"
     preferred_state: str = "ACTIVE"
     min_hold_ms: int = 2500
-    max_hold_ms: int = 12000
+    # 0 = no client-side max hold for ACTIVE/ENTER (story stays until EXIT).
+    max_hold_ms: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {

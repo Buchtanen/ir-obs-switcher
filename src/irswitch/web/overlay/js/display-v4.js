@@ -78,6 +78,15 @@ function resolveCopy(token) {
   return copyCatalog[token] || token;
 }
 
+/** Prefer catalog label; never show unknown token when sample title exists. */
+function resolveHeadline(token, sampleTitle, stateKey) {
+  if (token) {
+    const labeled = copyCatalog[token];
+    if (labeled) return labeled;
+  }
+  return sampleTitle || stateKey || token || "";
+}
+
 function prefersReducedMotion() {
   return (
     motionDisabled ||
@@ -576,7 +585,7 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   if (stateKey === "hunting") {
     text(subtitle, resolveCopy("battle.closing_in") || sample.subtitle || "CLOSING IN");
@@ -656,7 +665,7 @@ function fillPositionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   const delta =
     metrics.delta ??
@@ -706,7 +715,7 @@ function fillPitCopy(node, envelope, stateKey, sample, metrics, copy) {
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   const duration =
     metrics.pitDurationProxy ?? metrics.duration ?? metrics.lapTime ?? sample.value ?? null;
@@ -773,7 +782,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   if (stateKey === "hr_pressure") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE INTENSITY");
@@ -796,7 +805,7 @@ function fillSessionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
   const phase = String(envelope.phase || "RESULT").toUpperCase();
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   if (stateKey === "final_lap") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ONE MORE PUSH");
@@ -823,7 +832,7 @@ function fillExceptionCopy(node, envelope, stateKey, sample, metrics, copy) {
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   if (stateKey === "incident") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "COALESCED UPDATE");
@@ -849,7 +858,7 @@ function fillTimingCopy(node, envelope, stateKey, sample, metrics, copy) {
   const subtitle = node.querySelector(".subtitle");
   const value = node.querySelector(".value");
   const meta = node.querySelector(".meta");
-  const headline = resolveCopy(copy.headlineToken) || sample.title || stateKey;
+  const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
   if (stateKey === "target") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "ME VS TARGET");
@@ -985,6 +994,35 @@ function enforceFamilyCap(familyName) {
   }
 }
 
+/** RESULT position plates must clear sticky rival_threat ACTIVE peers. */
+function preemptStickyFamilyPeers(familyName, keepKey, phase) {
+  if (familyName !== "position" || phase !== "RESULT") return;
+  for (const [key, node] of [...DisplayV4.active.entries()]) {
+    if (key === keepKey) continue;
+    if (node.dataset.family !== familyName) continue;
+    const peerPhase = String(node.dataset.phase || "").toUpperCase();
+    if (peerPhase === "ACTIVE" || peerPhase === "ENTER") {
+      DisplayV4.hide(key);
+    }
+  }
+}
+
+function scheduleHoldTimer(node, key, envelope, phase, golden) {
+  clearTimeout(node._exitTimer);
+  if (golden || isGoldenLayout()) return;
+  if (phase === "RESULT") {
+    const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
+    node._exitTimer = setTimeout(() => DisplayV4.hide(key), hold);
+    return;
+  }
+  if (phase === "ACTIVE" || phase === "ENTER") {
+    const maxHold = Number(envelope.presentation?.maxHoldMs || 0);
+    if (maxHold > 0) {
+      node._exitTimer = setTimeout(() => DisplayV4.hide(key), maxHold);
+    }
+  }
+}
+
 export async function initV4(options = {}) {
   theme = options.theme || theme;
   language = options.language || language;
@@ -1087,7 +1125,10 @@ export const DisplayV4 = {
     let node = this.active.get(key);
     const created = !node;
     if (!node) {
-      if (!golden) enforceFamilyCap(familyName);
+      if (!golden) {
+        preemptStickyFamilyPeers(familyName, key, phase);
+        enforceFamilyCap(familyName);
+      }
       node = this._create(stateKey, familyName, options.container);
       this.active.set(key, node);
     } else if (node.dataset.state !== stateKey) {
@@ -1110,13 +1151,7 @@ export const DisplayV4 = {
     if (created && golden) node.classList.add("visible");
     else if (created) requestAnimationFrame(() => node.classList.add("visible"));
     else node.classList.add("visible");
-    if (phase === "RESULT" && !golden && !isGoldenLayout()) {
-      const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
-      clearTimeout(node._exitTimer);
-      node._exitTimer = setTimeout(() => this.hide(key), hold);
-    } else {
-      clearTimeout(node._exitTimer);
-    }
+    scheduleHoldTimer(node, key, envelope, phase, golden);
     return node;
   },
 
@@ -1460,11 +1495,12 @@ export function v4FixtureBattleForPosition(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 25,
     metrics: { position: 7, gapAhead: 0.42, gapBehind: 0.38 },
-    copy: { headlineToken: "", statusToken: "" },
+    copy: { headlineToken: "battle.battle_for_position", statusToken: "" },
     widget: "battle",
     variant: "battle_for_position",
     accent: "warning",
     preferredState: "ACTIVE",
+    presentation: { maxHoldMs: 8000 },
   });
 }
 
@@ -1544,11 +1580,12 @@ export function v4FixtureRivalThreat(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 65,
     metrics: { position: 8, rivalPosition: 7, projectedGap: 0.24 },
-    copy: { headlineToken: "", statusToken: "" },
+    copy: { headlineToken: "position.rival_threat", statusToken: "" },
     widget: "position",
     variant: "rival_threat",
     accent: "warning",
     preferredState: "ACTIVE",
+    presentation: { maxHoldMs: 8000 },
   });
 }
 
@@ -1718,7 +1755,7 @@ export function v4FixtureIncident(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 90,
     metrics: { value: 2, total: 5 },
-    copy: { headlineToken: "incident", statusToken: "" },
+    copy: { headlineToken: "exception.incident", statusToken: "" },
     widget: "exception",
     variant: "incident",
     accent: "warning",
@@ -1734,7 +1771,7 @@ export function v4FixtureInvalidLap(sequence = 1) {
     sequence,
     priority: 88,
     metrics: { lap: 4 },
-    copy: { headlineToken: "", statusToken: "" },
+    copy: { headlineToken: "exception.invalid_lap", statusToken: "" },
     widget: "exception",
     variant: "invalid_lap",
     accent: "alert",
@@ -1750,7 +1787,7 @@ export function v4FixtureLinkDrop(sequence = 1, phase = "ACTIVE") {
     sequence,
     priority: 92,
     metrics: {},
-    copy: { headlineToken: "", statusToken: "" },
+    copy: { headlineToken: "exception.link_drop", statusToken: "" },
     widget: "exception",
     variant: "link_drop",
     accent: "alert",

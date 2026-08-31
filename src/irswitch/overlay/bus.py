@@ -16,7 +16,28 @@ from irswitch.overlay.protocol import snapshot_envelope, state_envelope, state_s
 
 logger = logging.getLogger(__name__)
 
-_SECRET_KEYS = ("password", "token", "secret", "client_secret")
+# Exact key match only — substring "token" must NOT match headlineToken/statusToken.
+_SECRET_KEYS = frozenset(
+    {
+        "password",
+        "token",
+        "secret",
+        "client_secret",
+        "access_token",
+        "refresh_token",
+        "api_token",
+        "auth_token",
+        "id_token",
+    }
+)
+_SECRET_SUFFIXES = ("_password", "_secret")
+
+
+def _is_secret_key(key: str) -> bool:
+    lowered = key.lower().replace("-", "_")
+    if lowered in _SECRET_KEYS:
+        return True
+    return any(lowered.endswith(suffix) for suffix in _SECRET_SUFFIXES)
 
 
 class OverlayBus:
@@ -115,11 +136,14 @@ class OverlayBus:
 
 
 def strip_secrets(payload: dict[str, Any]) -> dict[str, Any]:
-    """Drop secret-looking keys before JSONL recording."""
+    """Drop secret-looking keys before JSONL recording.
+
+    Uses exact / suffix match so overlay copy fields like ``headlineToken``
+    are preserved on session tapes.
+    """
     cleaned: dict[str, Any] = {}
     for key, value in payload.items():
-        lowered = key.lower()
-        if any(token in lowered for token in _SECRET_KEYS):
+        if _is_secret_key(key):
             continue
         if isinstance(value, dict):
             cleaned[key] = strip_secrets(value)

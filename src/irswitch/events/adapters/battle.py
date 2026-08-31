@@ -71,6 +71,8 @@ def battle_race_event_to_envelope(
     )
     tone = "warning" if battle_state in {"hunted", "battle_for_position"} else "primary"
     preferred = "RESULT" if battle_state == "battle_won" else "ACTIVE"
+    # Meta duel plate: cap client hold so it cannot stick after EXIT is missed.
+    max_hold_ms = 8000 if battle_state == "battle_for_position" else 0
     target_name = event.data.get("targetName")
     return make_envelope(
         event_type=event_type,
@@ -97,5 +99,6 @@ def battle_race_event_to_envelope(
             variant=battle_state,
             accent=tone,
             preferred_state=preferred,
+            max_hold_ms=max_hold_ms,
         ),
     )

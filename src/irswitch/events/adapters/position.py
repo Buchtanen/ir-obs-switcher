@@ -131,6 +131,8 @@ def position_race_event_to_envelope(
                 variant=catalog_state,
                 accent=_accent_for(event_type),
                 preferred_state="ACTIVE",
+                # Sticky ACTIVE without EXIT was blocking POSITION_GAINED (family cap 1).
+                max_hold_ms=8000,
             ),
         )
 
