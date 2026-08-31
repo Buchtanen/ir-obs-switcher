@@ -16,6 +16,19 @@ from irswitch.overlay.models import TelemetrySnapshot
 
 logger = logging.getLogger(__name__)
 
+# YAML weekend row lives here. Live telemetry has no SessionType var in modern irsdk.
+SESSION_INFO_VARS: tuple[str, ...] = (
+    "SessionType",
+    "SessionName",
+    "SessionNum",
+    "SessionTotalSessions",
+    "SessionTime",
+    "SessionState",
+    "SessionStateNum",
+    "WeekendInfo",
+    "SessionInfo",
+)
+
 
 def _as_int(value: object) -> int | None:
     """Best-effort conversion of SDK values to int."""
@@ -226,6 +239,7 @@ class IRacingReader:
                     "IsOnTrackSession",
                     "SessionFlags",
                     "WeekendInfo",
+                    "SessionInfo",
                 ]
                 for name in common_vars:
                     try:
@@ -247,17 +261,9 @@ class IRacingReader:
         if not self.is_connected():
             return None
 
-        # Variables for session type detection
-        session_var_names = [
-            "SessionType",  # 0=test, 1=practice, 2=qualify, 3=warmup, 4=race
-            "SessionName",  # Name of the session
-            "SessionNum",  # Session number in weekend (0-based)
-            "SessionTotalSessions",  # Total number of sessions in weekend
-            "SessionTime",  # Current session time
-            "SessionState",  # Session state string
-            "SessionStateNum",  # Session state number
-            "WeekendInfo",  # Weekend info (may contain total sessions)
-        ]
+        # Variables for session type detection. SessionType is legacy; current
+        # session is SessionInfo.Sessions[SessionNum] (YAML).
+        session_var_names = list(SESSION_INFO_VARS)
 
         try:
             data = await asyncio.wait_for(
@@ -461,6 +467,17 @@ class IRacingReader:
     def last_telemetry_data(self) -> dict[str, object]:
         """Copy of the raw var dict from the last successful ``read_telemetry``."""
         return dict(self._last_telemetry_data)
+
+    def session_sdk_payload(self) -> dict[str, object]:
+        """Telemetry dump when YAML SessionInfo is already in the overlay cache.
+
+        ``SessionNum`` alone is not identity — live irsdk has no SessionType var.
+        Empty when overlay has not read YAML yet — caller should ``read_session_info``.
+        """
+        cached = self.last_telemetry_data()
+        if cached.get("SessionInfo") is not None:
+            return cached
+        return {}
 
     async def read_telemetry(self) -> TelemetrySnapshot:
         """

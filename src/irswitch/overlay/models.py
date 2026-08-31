@@ -84,6 +84,12 @@ class TelemetrySnapshot:
 
 @dataclass(frozen=True)
 class RaceState:
+    """Interpreted overlay state for **every** session row (Practice/Qualify/Race).
+
+    Historical name — not Race-session-only. ``overlay_mode`` is the HUD mode
+    (PRACTICE/QUALIFYING/RACE/GENERIC), not ``DrivingMode`` and not CLI input.
+    """
+
     connected: bool = False
     player_car_idx: int | None = None
     position: int | None = None

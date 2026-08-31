@@ -2,9 +2,12 @@
 
 from irswitch.iracing.extractors import (
     extract_mode,
+    extract_session_fields,
+    extract_session_name,
     extract_session_num,
     extract_session_type,
     extract_total_sessions,
+    resolve_session_identity,
 )
 from irswitch.models import DrivingMode
 
@@ -134,16 +137,152 @@ def test_extract_session_type_from_session_name() -> None:
     assert extract_session_type(data) == "Warmup"
 
 
-def test_extract_session_type_from_weekend_info() -> None:
-    """Test extracting session type from WeekendInfo.EventType."""
-    data = {"WeekendInfo": {"EventType": "Practice"}}
-    assert extract_session_type(data) == "Practice"
-
-    data = {"WeekendInfo": {"EventType": "Qualify"}}
+def test_extract_session_type_from_session_info_row() -> None:
+    """Live path: SessionInfo.Sessions[SessionNum], not WeekendInfo.EventType."""
+    data = {
+        "SessionNum": 1,
+        "WeekendInfo": {"EventType": "Race"},
+        "SessionInfo": {
+            "Sessions": [
+                {"SessionType": "Practice", "SessionName": "PRACTICE"},
+                {"SessionType": "Lone Qualify", "SessionName": "QUALIFY"},
+                {"SessionType": "Race", "SessionName": "RACE"},
+            ]
+        },
+    }
     assert extract_session_type(data) == "Qualify"
 
+
+def test_extract_session_type_follows_session_num_on_race_weekend() -> None:
+    """Switcher chapters need Practice→Qualify→Race from SessionNum, not EventType."""
+    weekend = {
+        "WeekendInfo": {"EventType": "Race"},
+        "SessionInfo": {
+            "Sessions": [
+                {"SessionType": "Practice", "SessionName": "PRACTICE"},
+                {"SessionType": "Lone Qualify", "SessionName": "QUALIFY"},
+                {"SessionType": "Race", "SessionName": "RACE"},
+            ]
+        },
+    }
+    assert extract_session_type({**weekend, "SessionNum": 0}) == "Practice"
+    assert extract_session_type({**weekend, "SessionNum": 1}) == "Qualify"
+    assert extract_session_type({**weekend, "SessionNum": 2}) == "Race"
+
+
+def test_extract_session_type_ignores_event_type_without_session_info() -> None:
+    data = {"SessionNum": 1, "WeekendInfo": {"EventType": "Race"}}
+    assert extract_session_type(data) is None
+    kept = resolve_session_identity(
+        data,
+        prev_type="Qualify",
+        prev_name="QUALIFY",
+        prev_num=1,
+        prev_total=3,
+    )
+    assert kept == ("Qualify", "QUALIFY", 1, 3)
+
+
+def test_extract_session_name_prefers_session_info_row() -> None:
+    data = {
+        "SessionNum": 1,
+        "SessionName": None,
+        "WeekendInfo": {"EventName": "Okayama International Raceway"},
+        "SessionInfo": {
+            "Sessions": [
+                {"SessionType": "Practice", "SessionName": "PRACTICE"},
+                {"SessionType": "Lone Qualify", "SessionName": "QUALIFY"},
+            ]
+        },
+    }
+    assert extract_session_name(data) == "QUALIFY"
+
+
+def test_extract_total_sessions_from_session_info_rows() -> None:
+    data = {
+        "SessionInfo": {
+            "Sessions": [
+                {"SessionType": "Practice"},
+                {"SessionType": "Qualify"},
+                {"SessionType": "Race"},
+            ]
+        }
+    }
+    assert extract_total_sessions(data) == 3
+
+
+def test_extract_session_fields_from_session_info_row() -> None:
+    data = {
+        "SessionNum": 1,
+        "WeekendInfo": {"EventType": "Race", "EventName": "Okayama"},
+        "SessionInfo": {
+            "Sessions": [
+                {"SessionType": "Practice", "SessionName": "PRACTICE"},
+                {"SessionType": "Lone Qualify", "SessionName": "QUALIFY"},
+                {"SessionType": "Race", "SessionName": "RACE"},
+            ]
+        },
+    }
+    assert extract_session_fields(data) == ("Qualify", "QUALIFY", 1, 3)
+
+
+def test_resolve_session_identity_follows_session_num() -> None:
+    weekend = {
+        "WeekendInfo": {"EventType": "Race"},
+        "SessionInfo": {
+            "Sessions": [
+                {"SessionType": "Practice", "SessionName": "PRACTICE"},
+                {"SessionType": "Lone Qualify", "SessionName": "QUALIFY"},
+                {"SessionType": "Race", "SessionName": "RACE"},
+            ]
+        },
+    }
+    practice = resolve_session_identity({**weekend, "SessionNum": 0})
+    qualify = resolve_session_identity({**weekend, "SessionNum": 1}, prev_type=practice[0])
+    race = resolve_session_identity({**weekend, "SessionNum": 2}, prev_type=qualify[0])
+    assert practice[0] == "Practice"
+    assert qualify[0] == "Qualify"
+    assert race[0] == "Race"
+
+
+def test_resolve_session_identity_keeps_previous_when_dump_empty() -> None:
+    assert resolve_session_identity(
+        {},
+        prev_type="Practice",
+        prev_name="PRACTICE",
+        prev_num=0,
+        prev_total=3,
+    ) == ("Practice", "PRACTICE", 0, 3)
+    assert resolve_session_identity(
+        None,
+        prev_type="Qualify",
+        prev_name="QUALIFY",
+        prev_num=1,
+        prev_total=3,
+    ) == ("Qualify", "QUALIFY", 1, 3)
+
+
+def test_resolve_session_identity_clears_test_session() -> None:
+    assert resolve_session_identity(
+        {"SessionType": 0, "SessionName": "Test"},
+        prev_type="Practice",
+        prev_name="PRACTICE",
+        prev_num=0,
+        prev_total=1,
+    ) == (None, None, None, None)
+
+
+def test_extract_session_type_ignores_weekend_event_type_race() -> None:
+    """EventType=Race must not label Practice/Qualify sessions as Race."""
     data = {"WeekendInfo": {"EventType": "Race"}}
-    assert extract_session_type(data) == "Race"
+    assert extract_session_type(data) is None
+
+
+def test_extract_session_type_from_weekend_info() -> None:
+    """Weekend EventType alone is not a session type (product, not session)."""
+    assert extract_session_type({"WeekendInfo": {"EventType": "Practice"}}) is None
+    assert extract_session_type({"WeekendInfo": {"EventType": "Qualify"}}) is None
+    assert extract_session_type({"WeekendInfo": {"EventType": "Race"}}) is None
 
 
 def test_extract_session_type_priority() -> None:

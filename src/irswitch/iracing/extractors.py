@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 from irswitch.models import DrivingMode
 
@@ -130,60 +130,131 @@ def _session_type_from_label(raw: object) -> str | None:
     return None
 
 
+def _as_mapping(value: object) -> Mapping[str, object] | None:
+    if isinstance(value, Mapping):
+        return value
+    if hasattr(value, "__dict__"):
+        raw = getattr(value, "__dict__", None)
+        if isinstance(raw, Mapping):
+            return raw
+    return None
+
+
+def _session_row_from_session_info(data: Mapping[str, object]) -> Mapping[str, object] | None:
+    """Current weekend session row: SessionInfo.Sessions[SessionNum]."""
+    info = _as_mapping(data.get("SessionInfo"))
+    if info is None:
+        return None
+    sessions = info.get("Sessions")
+    if not isinstance(sessions, Sequence) or isinstance(sessions, (str, bytes)):
+        return None
+    session_num = as_int(data.get("SessionNum"))
+    if session_num is None or session_num < 0 or session_num >= len(sessions):
+        return None
+    return _as_mapping(sessions[session_num])
+
+
+def _coerce_session_type_value(raw: object) -> str | None:
+    """Numeric legacy map or label string → Practice/Qualify/Race/…"""
+    if raw is None:
+        return None
+    st = as_int(raw)
+    if st is not None:
+        type_map = {
+            0: "Test",
+            1: "Practice",
+            2: "Qualify",
+            3: "Warmup",
+            4: "Race",
+        }
+        if st in type_map:
+            return type_map[st]
+    return _session_type_from_label(raw)
+
+
 def extract_session_type(data: Mapping[str, object]) -> str | None:
+    """Extract current session type from iRacing SDK data.
+
+    Prefer ``SessionInfo.Sessions[SessionNum].SessionType`` (YAML). There is no
+    live ``SessionType`` telemetry var in modern irsdk; falling back to
+    ``WeekendInfo.EventType`` mis-labels Practice/Qualify as Race on race
+    weekends (sectors + session briefs break).
     """
-    Extract session type from iRacing SDK data.
-
-    Returns:
-        Session type string: "Practice", "Qualify", "Race", "Warmup", "Test", or None
-    """
-    session_type = data.get("SessionType")
-    session_name = data.get("SessionName")
-
-    # Try SessionType first (numeric: 0=test, 1=practice, 2=qualify, 3=warmup, 4=race)
-    if session_type is not None:
-        st = as_int(session_type)
-        if st is not None:
-            type_map = {
-                0: "Test",
-                1: "Practice",
-                2: "Qualify",
-                3: "Warmup",
-                4: "Race",
-            }
-            if st in type_map:
-                return type_map[st]
-        labeled = _session_type_from_label(session_type)
-        if labeled:
-            return labeled
-
-    # Fallback: try to parse SessionName
-    if session_name is not None:
-        labeled = _session_type_from_label(session_name)
-        if labeled:
-            return labeled
-
-    # Try WeekendInfo.EventType as fallback
-    weekend_info = data.get("WeekendInfo")
-    if weekend_info is not None:
-        if isinstance(weekend_info, dict):
-            event_type = weekend_info.get("EventType")
-        elif hasattr(weekend_info, "__dict__"):
-            event_type = weekend_info.__dict__.get("EventType")
-        elif hasattr(weekend_info, "EventType"):
-            event_type = weekend_info.EventType
-        else:
-            event_type = None
-
-        if event_type is not None:
-            labeled = _session_type_from_label(event_type)
+    row = _session_row_from_session_info(data)
+    if row is not None:
+        for key in ("SessionType", "SessionName"):
+            labeled = _coerce_session_type_value(row.get(key))
             if labeled:
                 return labeled
-            event_type_str = str(event_type).strip()
-            if event_type_str:
-                return event_type_str
 
+    # Legacy / partial fixtures: top-level SessionType or SessionName.
+    for key in ("SessionType", "SessionName"):
+        labeled = _coerce_session_type_value(data.get(key))
+        if labeled:
+            return labeled
+
+    # Do **not** use WeekendInfo.EventType — that is the weekend product
+    # (often "Race"), not the active session.
     return None
+
+
+def extract_session_name(data: Mapping[str, object]) -> str | None:
+    """Display name of the active session row (not WeekendInfo.EventName)."""
+    row = _session_row_from_session_info(data)
+    if row is not None:
+        for key in ("SessionName", "SessionType"):
+            raw = row.get(key)
+            if raw is None or raw == "":
+                continue
+            text = str(raw).strip()
+            if text:
+                return text
+    raw = data.get("SessionName")
+    if raw is None or raw == "":
+        return None
+    text = str(raw).strip()
+    return text or None
+
+
+def extract_session_fields(
+    data: Mapping[str, object],
+) -> tuple[str | None, str | None, int | None, int | None]:
+    """session_type, session_name, session_num, total_sessions from one SDK mapping."""
+    return (
+        extract_session_type(data),
+        extract_session_name(data),
+        extract_session_num(data),
+        extract_total_sessions(data),
+    )
+
+
+def resolve_session_identity(
+    data: Mapping[str, object] | None,
+    *,
+    prev_type: str | None = None,
+    prev_name: str | None = None,
+    prev_num: int | None = None,
+    prev_total: int | None = None,
+) -> tuple[str | None, str | None, int | None, int | None]:
+    """Map one SDK dump onto SwitchState session fields.
+
+    Test sessions clear identity. A tick that extracts no session_type keeps
+    previous values so a SessionNum-only dump cannot wipe Practice/Qualify/Race
+    or invent Race from WeekendInfo.EventType.
+    """
+    if not data:
+        return prev_type, prev_name, prev_num, prev_total
+    session_type, session_name, session_num, total_sessions = extract_session_fields(data)
+    if session_type == "Test":
+        return None, None, None, None
+    if session_type is None:
+        return (
+            prev_type,
+            prev_name if session_name is None else session_name,
+            prev_num if session_num is None else session_num,
+            prev_total if total_sessions is None else total_sessions,
+        )
+    return session_type, session_name, session_num, total_sessions
 
 
 def extract_session_num(data: Mapping[str, object]) -> int | None:
@@ -218,6 +289,12 @@ def extract_total_sessions(data: Mapping[str, object]) -> int | None:
         value = as_int(data.get("SessionTotalSessions"))
         if value is not None:
             return value
+
+    info = _as_mapping(data.get("SessionInfo"))
+    if info is not None:
+        sessions = info.get("Sessions")
+        if isinstance(sessions, Sequence) and not isinstance(sessions, (str, bytes)) and sessions:
+            return len(sessions)
 
     # Try WeekendInfo first (if it's a dict/object with sessions)
     weekend_info = data.get("WeekendInfo")

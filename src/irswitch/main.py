@@ -17,9 +17,8 @@ from irswitch.commentary.duck import restore_shared_ducker
 from irswitch.config import AppConfig
 from irswitch.i18n import set_language
 from irswitch.iracing.extractors import (
-    extract_session_num,
-    extract_session_type,
-    extract_total_sessions,
+    extract_session_fields,
+    resolve_session_identity,
 )
 from irswitch.iracing.reader import IRacingReader
 from irswitch.logic.policy import Policy
@@ -39,6 +38,7 @@ from irswitch.server.api import (
     get_app_config,
     get_current_state,
     get_restart_mode,
+    get_stream_chapter_tracker,
     set_app_config,
     set_current_state,
     set_oauth_manager,
@@ -373,9 +373,9 @@ async def main_loop(
                 session_num = None
                 session_name = None
                 if session_info:
-                    session_type = extract_session_type(session_info)
-                    session_num = extract_session_num(session_info)
-                    session_name = session_info.get("SessionName")
+                    session_type, session_name, session_num, _total = extract_session_fields(
+                        session_info
+                    )
                     logger.info(
                         f"Session info during loading: type={session_type}, num={session_num}, name={session_name}"
                     )
@@ -498,6 +498,10 @@ async def main_loop(
                             )
 
                         stream_stopped_after_quit = True
+                        try:
+                            get_stream_chapter_tracker().prepare_vod_flush()
+                        except Exception:
+                            logger.exception("Failed arming YouTube VOD chapter flush after QUIT")
 
                 # Reset QUIT to CONNECTING after 15 seconds (regardless of stream status)
                 if elapsed_ms >= quit_reset_seconds * 1000:
@@ -764,74 +768,20 @@ async def main_loop(
             )
 
             if is_actual_race_garage_lobby and iracing_actually_connected:
-                if new_state.mode != current_state.mode or new_state.session_type is None:
-                    # Mode changed to RACE/GARAGE/LOBBY or session info not yet set
-                    session_info = await reader.read_session_info()
-                    if session_info:
-                        session_type = extract_session_type(session_info)
-                        session_num = extract_session_num(session_info)
-                        total_sessions = extract_total_sessions(session_info)
-                        # Also try direct SessionTotalSessions from iRacing
-                        if total_sessions is None:
-                            session_total_raw = session_info.get("SessionTotalSessions")
-                            if isinstance(session_total_raw, (int, float)):
-                                total_sessions = int(session_total_raw)
-                            elif isinstance(session_total_raw, str):
-                                try:
-                                    total_sessions = int(session_total_raw)
-                                except ValueError:
-                                    pass
-
-                        session_name_raw = session_info.get("SessionName")
-                        session_name = str(session_name_raw) if session_name_raw else None
-                        # Try WeekendInfo for session name if SessionName is not available
-                        if not session_name:
-                            weekend_info = session_info.get("WeekendInfo")
-                            if weekend_info is not None:
-                                if isinstance(weekend_info, dict):
-                                    # Try common session name fields in WeekendInfo
-                                    session_name_val = (
-                                        weekend_info.get("SessionName")
-                                        or weekend_info.get("SessionDisplayName")
-                                        or weekend_info.get("EventName")
-                                    )
-                                    session_name = (
-                                        str(session_name_val) if session_name_val else None
-                                    )
-                                elif hasattr(weekend_info, "__dict__"):
-                                    session_name_val = (
-                                        weekend_info.__dict__.get("SessionName")
-                                        or weekend_info.__dict__.get("SessionDisplayName")
-                                        or weekend_info.__dict__.get("EventName")
-                                    )
-                                    session_name = (
-                                        str(session_name_val) if session_name_val else None
-                                    )
-                                elif hasattr(weekend_info, "SessionName"):
-                                    session_name = str(weekend_info.SessionName)
-                                elif hasattr(weekend_info, "SessionDisplayName"):
-                                    session_name = str(weekend_info.SessionDisplayName)
-                                elif hasattr(weekend_info, "EventName"):
-                                    session_name = str(weekend_info.EventName)
-                        # Ignore Test sessions - don't set session info for Test
-                        if session_type == "Test":
-                            session_type = None
-                            session_num = None
-                            session_name = None
-                            total_sessions = None
-                        elif session_type or session_name or session_num is not None:
-                            # Format session_num as "x of y" if total_sessions is available
-                            session_num_display = None
-                            if session_num is not None:
-                                if total_sessions is not None and total_sessions > 0:
-                                    # Convert 0-based to 1-based for display: "1 of 3"
-                                    session_num_display = f"{session_num + 1} of {total_sessions}"
-                                else:
-                                    # Just show 1-based number: "1"
-                                    session_num_display = str(session_num + 1)
-                            logger.info(
-                                f"Session info updated: type={session_type}, num={session_num_display}, name={session_name}"
-                            )
+                # Overlay telemetry already has SessionInfo YAML. Re-extract every
+                # tick so Practice→Qualify→Race updates while driving mode stays RACE.
+                session_info = reader.session_sdk_payload()
+                if not session_info:
+                    session_info = await reader.read_session_info() or {}
+                session_type, session_name, session_num, total_sessions = resolve_session_identity(
+                    session_info,
+                    prev_type=new_state.session_type,
+                    prev_name=new_state.session_name,
+                    prev_num=new_state.session_num,
+                    prev_total=(
+                        new_state.total_sessions if hasattr(new_state, "total_sessions") else None
+                    ),
+                )
 
             # Update state with session info if changed
             if (
@@ -841,6 +791,15 @@ async def main_loop(
                 or total_sessions
                 != (new_state.total_sessions if hasattr(new_state, "total_sessions") else None)
             ):
+                session_num_display = None
+                if session_num is not None:
+                    if total_sessions is not None and total_sessions > 0:
+                        session_num_display = f"{session_num + 1} of {total_sessions}"
+                    else:
+                        session_num_display = str(session_num + 1)
+                logger.info(
+                    f"Session info updated: type={session_type}, num={session_num_display}, name={session_name}"
+                )
                 new_state = SwitchState(
                     connected_iracing=new_state.connected_iracing,
                     connected_obs=new_state.connected_obs,
@@ -1252,10 +1211,14 @@ async def run_service(
     config: AppConfig,
     config_path: str,
     *,
-    overlay_mode: str = "live",
+    overlay_input: str = "live",
     replay_path: str | None = None,
 ) -> None:
-    """Run the service with all components."""
+    """Run the service with all components.
+
+    ``overlay_input`` is the pipeline source (live/mock/replay), not HUD
+    ``overlay_mode`` (PRACTICE/QUALIFYING/RACE).
+    """
     # Setup logging (always to console, optionally to file)
     setup_logging(
         level=config.log_level,
@@ -1557,9 +1520,9 @@ async def run_service(
         bus = get_overlay_bus()
         set_overlay_bus(bus)
         resolved_mode: OverlayMode = "live"
-        if overlay_mode == "mock":
+        if overlay_input == "mock":
             resolved_mode = "mock"
-        elif overlay_mode == "replay":
+        elif overlay_input == "replay":
             resolved_mode = "replay"
         overlay_runtime = OverlayRuntime(
             get_app_config,
@@ -1570,7 +1533,7 @@ async def run_service(
         )
         set_overlay_runtime(overlay_runtime)
         overlay_task = asyncio.create_task(overlay_runtime.run(), name="overlay_runtime")
-        logger.info("Overlay pipeline started (mode=%s)", overlay_mode)
+        logger.info("Overlay pipeline started (input=%s)", overlay_input)
     except Exception:
         logger.warning("Overlay pipeline failed to start", exc_info=True)
 
@@ -1705,18 +1668,18 @@ def main() -> int:
         print(f"Error loading config: {e}", file=sys.stderr)
         return 1
 
-    overlay_mode = "live"
+    overlay_input = "live"
     if args.mock:
-        overlay_mode = "mock"
+        overlay_input = "mock"
     elif args.replay:
-        overlay_mode = "replay"
+        overlay_input = "replay"
 
     try:
         asyncio.run(
             run_service(
                 config,
                 args.config,
-                overlay_mode=overlay_mode,
+                overlay_input=overlay_input,
                 replay_path=args.replay,
             )
         )

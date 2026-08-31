@@ -42,7 +42,7 @@ from irswitch.util.logging import get_runtime_log_level
 
 logger = logging.getLogger(__name__)
 
-OverlayMode = Literal["live", "mock", "replay"]
+OverlayMode = Literal["live", "mock", "replay"]  # pipeline input; not HUD overlay_mode
 
 
 class OverlayRuntime:

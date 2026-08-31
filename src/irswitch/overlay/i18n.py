@@ -106,8 +106,12 @@ def catalog_for(language: str | None) -> Mapping[str, str]:
 
 
 def resolve_copy(token: str, language: str = DEFAULT_LANGUAGE) -> str:
-    """Resolve a copy token: requested locale, then English, then the token."""
-    return catalog_for(language).get(token) or EN.get(token) or token
+    """Resolve a copy token: requested locale, then English.
+
+    Unknown tokens return ``""`` so HUD sample titles can apply. Returning the
+    raw key leaked ``exception.*`` / ``position.rival_threat`` on the overlay.
+    """
+    return catalog_for(language).get(token) or EN.get(token) or ""
 
 
 def copy_catalog_for_renderer(language: str | None = None) -> dict[str, str]:

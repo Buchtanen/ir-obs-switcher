@@ -27,7 +27,7 @@ Cache bump + restart: skill `restart-irswitch`. Tape diagnosis: skill `overlay-t
 1. Adapter sets `headlineToken` / `statusToken` (e.g. `position.rival_threat`).
 2. Add the **same** key to `EN` and `CS` in `overlay/i18n.py` in the same change.
 3. Title path: `resolveHeadline(token, sample.title, stateKey)` — catalog, else sample, else stateKey.
-4. Do not rely on `resolveCopy` returning the raw token as success (`label || token` still leaks keys on subtitles).
+4. Do not rely on `resolveCopy` returning the raw token as success (it returns `""`; `resolveHeadline` uses sample).
 5. Pytest: golden / i18n tests that the new key exists and the raw dotted key is not the displayed title.
 
 ## Golden vs live

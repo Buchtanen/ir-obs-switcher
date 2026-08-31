@@ -10,5 +10,6 @@ Full skill: `overlay-hud-copy`. Cache bump on restart: `restart-irswitch`.
 
 - HUD tokens live in `src/irswitch/overlay/i18n.py` (`EN` + `CS`). Not `sequence_graph.json` (speech) and not `irswitch.i18n` (dashboards).
 - New `headlineToken` / `statusToken` → same key in **both** catalogs in the same change.
-- `?layout=golden` / demo is not acceptance. Live OBS CEF needs `?v=` lockstep + Browser Source **Refresh cache**.
+- Unknown tokens resolve to `""` (not the dotted key) so sample titles can apply.
+- `?layout=golden` / demo is not acceptance. Live OBS CEF needs `?v=` lockstep (including theme CSS) + Browser Source **Refresh cache**.
 - Do not spawn a second agent on `display-v4.js` / `overlay.js` / `i18n.py` / `index.html`.

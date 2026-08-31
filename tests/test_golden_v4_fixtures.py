@@ -111,6 +111,14 @@ def test_display_v4_js_has_unique_fixture_exports() -> None:
     assert "dataset.v4Manifest" in js
 
 
+def test_rival_threat_copy_uses_live_rival_position_not_sample_p8() -> None:
+    """Live RIVAL_THREAT has rivalPosition/gap; manifest sample value is hardcoded P8."""
+    js = (web_root() / "overlay" / "js" / "display-v4.js").read_text(encoding="utf-8")
+    assert 'stateKey === "rival_threat"' in js
+    assert "metrics.position ?? metrics.rivalPosition" in js
+    assert "resolveTargetName(metrics, envelope)" in js
+
+
 def test_golden_gallery_clips_glow_overflow() -> None:
     from v4_css_geometry import rule_decls
 
@@ -165,6 +173,7 @@ def test_display_v4_headline_and_active_hold_contract() -> None:
     assert "function scheduleHoldTimer(node, key, envelope, phase, golden)" in js
     assert "function preemptStickyFamilyPeers(familyName, keepKey, phase)" in js
     assert "resolveHeadline(copy.headlineToken, sample.title, stateKey)" in js
+    assert "return labelForToken(token) || token" not in js
     assert "maxHoldMs" in js
     assert "preemptStickyFamilyPeers(familyName, key, phase)" in js
 

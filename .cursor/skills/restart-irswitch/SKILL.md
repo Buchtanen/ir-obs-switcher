@@ -40,11 +40,11 @@ This token is **not** the package version. Do **not** bump `pyproject.toml`.
 
 | File | What |
 |------|------|
-| `src/irswitch/web/overlay/js/overlay.js` | `const OVERLAY_ASSET_VER = "…"` (dynamic `import(…?v=${OVERLAY_ASSET_VER})`) |
-| `src/irswitch/web/overlay/index.html` | `?v=` on `overlay.css`, `display-v4.css`, `overlay.js` |
+| `src/irswitch/web/overlay/js/overlay.js` | `const OVERLAY_ASSET_VER = "…"` (dynamic `import` + theme `applyTheme`) |
+| `src/irswitch/web/overlay/index.html` | `?v=` on `overlay.css`, `display-v4.css`, theme CSS, `overlay.js` |
 | `src/irswitch/web/overlay/js/demo-v4.js` | static `import` `?v=` on `display.js` and `display-v4.js` |
 
-Do not leave mixed versions. Theme CSS in `index.html` has no `?v=` — if only a theme file changed, still bump the three `index.html` links so CEF refetches the document.
+Do not leave mixed versions. `tests/test_overlay_asset_ver.py` checks lockstep.
 
 4. Then restart the service (below).
 5. Tell the user: OBS Browser Source on the overlay URL → **Refresh cache** (or hide/show the source). Service restart + `?v=` is not enough if CEF still holds `index.html`.
