@@ -75,6 +75,18 @@ def test_polish_uses_mock_http_response() -> None:
     assert outcome.request["model"] == settings.llm_model
 
 
+def test_polish_rejects_non_http_scheme() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(
+        llm_polish=True,
+        llm_base_url="file:///tmp/evil",
+    )
+    outcome = polish_skeleton("Gap 0.42 to Smith.", node, settings)
+    assert outcome.outcome == "fallback_error"
+    assert outcome.text == "Gap 0.42 to Smith."
+
+
 def test_polish_timeout_falls_back_to_skeleton() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]

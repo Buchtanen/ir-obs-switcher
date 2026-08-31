@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlparse
 
 from irswitch.commentary.graph import GraphNode
 from irswitch.commentary.validator import validate_utterance
@@ -94,6 +95,15 @@ def polish_skeleton(
 
     payload = build_polish_request(text, settings)
     url = _chat_completions_url(settings.llm_base_url)
+    if urlparse(url).scheme not in {"http", "https"}:
+        return PolishOutcome(
+            text=text,
+            outcome="fallback_error",
+            latency_ms=0.0,
+            skeleton=text,
+            request=payload,
+            response={"error": "llm_base_url must be http(s)"},
+        )
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url,
@@ -106,7 +116,8 @@ def polish_skeleton(
         if opener is not None:
             raw = opener(req, timeout=settings.llm_timeout_s)
         else:
-            with urllib.request.urlopen(req, timeout=settings.llm_timeout_s) as resp:
+            # Scheme validated above (http/https only).
+            with urllib.request.urlopen(req, timeout=settings.llm_timeout_s) as resp:  # nosec B310
                 raw = resp.read()
     except TimeoutError:
         latency = (time.monotonic() - started) * 1000.0
