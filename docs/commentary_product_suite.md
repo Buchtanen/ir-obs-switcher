@@ -2,7 +2,8 @@
 
 **Status:** active prep (build gradually on content branch)  
 **Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 (engine) + this content PR  
-**Audience:** stream viewers (broadcast voice).
+**Audience:** stream viewers (broadcast voice).  
+**Related (research):** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md) — LAN Ollama skeleton-polish PoC; not in product packages yet.
 
 ## 0. How we test (your order — source of truth)
 

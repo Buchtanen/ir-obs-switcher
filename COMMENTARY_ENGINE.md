@@ -30,6 +30,8 @@ iRacing / BLE HR
     → TtsSink (Windows SAPI / espeak-ng / NullTtsSink)
 ```
 
+**Experiment (not wired):** optional remote LLM *skeleton polish* (style only, facts from app) — see [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md).
+
 Rules:
 
 - Hook **accepted envelopes only**. Raw candidates are too noisy.
