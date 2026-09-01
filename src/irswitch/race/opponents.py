@@ -155,24 +155,27 @@ def relevant_near_field(
         name = names[car_idx] if 0 <= car_idx < len(names) else None
         car = NearFieldCar(
             car_idx=car_idx,
-            gap_s=float(gap),
+            gap_s=abs(float(gap)),
             class_position=other_cp,
             overall_position=overall_position_of(snap, car_idx),
             display_name=name if name else None,
         )
+        if player_cp is not None and other_cp is not None:
+            if other_cp < player_cp:
+                ahead_cand.append(car)
+            elif other_cp > player_cp:
+                behind_cand.append(car)
+            continue
         if gap > 0:
             ahead_cand.append(car)
         elif gap < 0:
-            behind_cand.append(
-                NearFieldCar(
-                    car_idx=car.car_idx,
-                    gap_s=-car.gap_s,
-                    class_position=car.class_position,
-                    overall_position=car.overall_position,
-                    display_name=car.display_name,
-                )
-            )
+            behind_cand.append(car)
 
-    ahead_cand.sort(key=lambda c: c.gap_s)
-    behind_cand.sort(key=lambda c: c.gap_s)
+    def _class_rank(car: NearFieldCar) -> tuple[int, float]:
+        if player_cp is not None and car.class_position is not None:
+            return (abs(car.class_position - player_cp), car.gap_s)
+        return (99, car.gap_s)
+
+    ahead_cand.sort(key=_class_rank)
+    behind_cand.sort(key=_class_rank)
     return ahead_cand[: max(0, ahead_n)], behind_cand[: max(0, behind_n)]

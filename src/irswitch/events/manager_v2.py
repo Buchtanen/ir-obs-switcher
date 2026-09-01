@@ -171,7 +171,9 @@ class EventManagerV2:
             return []
         stamped = self._stamp(base)
         envelopes = [stamped]
-        if stamped.phase == "ENTER" and stamped.presentation.preferred_state == "ACTIVE":
+        if stamped.phase == "EXIT":
+            self._remove_active_v4(stamped.correlation_id)
+        elif stamped.phase == "ENTER" and stamped.presentation.preferred_state == "ACTIVE":
             active = self._stamp(replace(stamped, phase="ACTIVE"))
             envelopes.append(active)
             self._sync_active_v4(active)

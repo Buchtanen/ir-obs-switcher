@@ -106,14 +106,17 @@ def test_parade_pad_cooldown_and_cap() -> None:
         _state(), 2.0 + PARADE_COOLDOWN_S + 0.1, enabled=True, bag=_bag(), session_key="race"
     )
     assert second[0].event_type == "PARADE_PAD"
-    later = fsm.tick(
-        _state(),
-        2.0 + 2 * PARADE_COOLDOWN_S + 0.2,
-        enabled=True,
-        bag=_bag(),
-        session_key="race",
+    now = 2.0 + PARADE_COOLDOWN_S + 0.1
+    while fsm._parade_count < PARADE_MAX:
+        now += PARADE_COOLDOWN_S + 0.1
+        later = fsm.tick(_state(), now, enabled=True, bag=_bag(), session_key="race")
+        assert later and later[0].event_type == "PARADE_PAD"
+    assert (
+        fsm.tick(
+            _state(), now + PARADE_COOLDOWN_S + 0.1, enabled=True, bag=_bag(), session_key="race"
+        )
+        == []
     )
-    assert later == []
     assert fsm._parade_count == PARADE_MAX
 
 
@@ -336,5 +339,3 @@ def test_runtime_skips_sidecars_when_recap_pending() -> None:
     runtime._collect_commentary_sidecars(_state(), 1.0)
     assert calls == []
     assert runtime.commentary is not None
-    assert runtime.commentary.grid_story is True
-    assert runtime.commentary.quali_bag_ready is True

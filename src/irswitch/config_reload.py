@@ -128,6 +128,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "events.priorities.lap_complete",
         "events.priorities.personal_best",
         "events.priorities.position_change",
+        "events.priorities.leader_change",
         "events.priorities.incident",
         "events.priorities.final_lap",
         "events.priorities.finish",

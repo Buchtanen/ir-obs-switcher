@@ -219,6 +219,20 @@ _DEBUG_CATALOG: dict[str, dict] = {
         "phase": "trigger",
         "data": {"direction": "loss", "oldPosition": 7, "newPosition": 8, "delta": -1},
     },
+    "leader_change": {
+        "name": "leader_change",
+        "channel": "alert",
+        "priority": 75,
+        "phase": "trigger",
+        "data": {
+            "oldLeaderName": "Nash",
+            "targetCarIdx": 9,
+            "targetName": "Knaus",
+            "heroIsLeader": False,
+            "position": 4,
+            "p1Name": "Knaus",
+        },
+    },
     "overtake": {
         "name": "overtake",
         "channel": "alert",

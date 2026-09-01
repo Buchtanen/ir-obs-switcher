@@ -65,6 +65,8 @@ class RaceObserver:
     _filler_cooldown_until: float = 0.0
     _after_session: bool = False
     _leader_fact_until: float = 0.0
+    _last_race: RaceState | None = None
+    _was_on_pit_road: bool = False
 
     def apply_settings(self, settings: RaceObserverSettings) -> None:
         self.settings = settings
@@ -78,6 +80,8 @@ class RaceObserver:
         self._filler_cooldown_until = 0.0
         self._after_session = False
         self._leader_fact_until = 0.0
+        self._last_race = None
+        self._was_on_pit_road = False
         self.history.clear()
         self.aftermath.reset()
         self.narrative.reset_session()
@@ -204,8 +208,10 @@ class RaceObserver:
             weather=weather,
             stream_sessions=tuple(self.stream.sessions_seen),
             recent_beats=self.history.snapshot(),
+            quali_bag=self.stream.quali_bag(),
         )
         self._context = ctx
+        self._last_race = state
         self._after_session = bool(
             state.mute_field or state.player_finished or state.session_finished
         )
@@ -245,7 +251,11 @@ class RaceObserver:
         ctx = self._context
         if ctx is None:
             return None
-        if self._after_session:
+        race = self._last_race
+        traffic = _traffic_filler_kind(race, self._was_on_pit_road)
+        if race is not None:
+            self._was_on_pit_road = race.on_pit_road
+        if self._after_session and traffic not in {"pit", "in_lap", "out_lap"}:
             return None
 
         if self._pending_weather_change is not None:
@@ -271,6 +281,32 @@ class RaceObserver:
                 kind="WEATHER_CHANGE",
                 emitted=True,
                 reason="weather_change",
+                confidence=1.0,
+                now=now,
+            )
+            return env
+
+        if traffic:
+            metrics = {k: v for k, v in ctx.slot_bindings().items() if v is not None}
+            metrics["kind"] = "field_fact"
+            metrics["fact"] = traffic
+            self._filler_cooldown_until = now + 12.0
+            self._last_filler_kind = traffic
+            env = make_envelope(
+                event_type="FIELD_FACT",
+                phase="RESULT",
+                mode=ctx.overlay_mode,
+                priority=_FIELD_FACT_PRIORITY,
+                monotonic_ms=int(now * 1000),
+                metrics=metrics,
+                correlation_id=f"field:{ctx.session_key or 'na'}:{traffic}",
+            )
+            note(
+                self.watches,
+                watch="briefs",
+                kind="FIELD_FACT",
+                emitted=True,
+                reason=traffic,
                 confidence=1.0,
                 now=now,
             )
@@ -362,13 +398,15 @@ class RaceObserver:
         if envelope.event_type == "SESSION_WRAP" or kind == "session_wrap":
             label = metrics.get("modeLabelCs" if cs else "modeLabel") or metrics.get("mode")
             pos = metrics.get("position")
+            p1, p2, p3 = metrics.get("p1Name"), metrics.get("p2Name"), metrics.get("p3Name")
+            podium = f" P1 {p1}, P2 {p2}, P3 {p3}." if p1 and p2 and p3 else ""
             if cs:
                 if pos is not None:
-                    return f"Konec: {label}, P{int(pos)}."
-                return f"Konec session: {label}."
+                    return f"Konec: {label}, P{int(pos)}.{podium}"
+                return f"Konec session: {label}.{podium}"
             if pos is not None:
-                return f"That's a wrap on {label}, P{int(pos)}."
-            return f"That's a wrap on {label}."
+                return f"That's a wrap on {label}, P{int(pos)}.{podium}"
+            return f"That's a wrap on {label}.{podium}"
 
         if envelope.event_type == "SESSION_CHECKERED" or kind == "session_checkered":
             label = metrics.get("modeLabelCs" if cs else "modeLabel") or metrics.get("mode")
@@ -433,6 +471,14 @@ class RaceObserver:
             if cs:
                 return f"Na {target} ztrácí {gap_s:.1f} s."
             return f"Gap to {target} is {gap_s:.1f} seconds."
+        if fact == "parade":
+            return "Pořád na formovačce." if cs else "Still on the formation lap."
+        if fact == "pit":
+            return "Je v boxech." if cs else "He is in the pits."
+        if fact == "in_lap":
+            return "Míří do boxů." if cs else "He is on the in-lap."
+        if fact == "out_lap":
+            return "Vyjíždí z boxů." if cs else "He is on the out-lap."
         return None
 
     def _note_weather(self, weather: WeatherSnapshot) -> None:
@@ -442,6 +488,20 @@ class RaceObserver:
             return
         if _weather_changed(prev, weather):
             self._pending_weather_change = weather
+
+
+def _traffic_filler_kind(race: RaceState | None, was_on_pit_road: bool) -> str | None:
+    if race is None:
+        return None
+    if race.on_pit_road:
+        return "pit"
+    if race.player_track_surface == 2:
+        return "in_lap"
+    if was_on_pit_road and not race.on_pit_road:
+        return "out_lap"
+    if race.overlay_mode == "RACE" and race.session_state == 3:
+        return "parade"
+    return None
 
 
 def _weather_changed(prev: WeatherSnapshot, cur: WeatherSnapshot) -> bool:

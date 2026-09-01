@@ -638,6 +638,12 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             "position_change",
             defaults.events.priorities.position_change,
         ),
+        leader_change=_get_int(
+            parser,
+            "events.priorities",
+            "leader_change",
+            defaults.events.priorities.leader_change,
+        ),
         overtake=_get_int(
             parser, "events.priorities", "overtake", defaults.events.priorities.overtake
         ),

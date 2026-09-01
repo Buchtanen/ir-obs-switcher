@@ -23,6 +23,7 @@ from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
+from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.stream import (
     ConfigUpdate,
     FillerResult,
@@ -36,7 +37,7 @@ from irswitch.iracing.session_context import extract_session_context
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.consumer import OverlayConsumer
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
-from irswitch.overlay.models import RaceState, TelemetrySnapshot
+from irswitch.overlay.models import BioState, RaceState, SystemState, TelemetrySnapshot
 from irswitch.overlay.session import (
     SessionCoordinator,
     build_session_key,
@@ -51,6 +52,7 @@ from irswitch.race.observer import RaceObserver
 from irswitch.race.pipeline import AcceptedRecord, RacePipeline, build_situation_payload
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
+from irswitch.race.watcher_log import WatcherLog
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
 from irswitch.server.task_registry import TaskRegistry
 from irswitch.util.logging import get_runtime_log_level
@@ -58,6 +60,33 @@ from irswitch.util.logging import get_runtime_log_level
 logger = logging.getLogger(__name__)
 
 OverlayMode = Literal["live", "mock", "replay"]  # pipeline input; not HUD overlay_mode
+
+_SITUATION_SUPPRESS_TYPES = frozenset(
+    {
+        "HUNTING",
+        "APPROACH",
+        "ATTACK_RANGE",
+        "SIDE_BY_SIDE",
+        "HUNTED",
+        "BATTLE_FOR_POSITION",
+        "INCIDENT",
+        "INCIDENT_AFTERMATH",
+        "FINAL_LAP",
+        "FINISH",
+        "SESSION_CHECKERED",
+        "SESSION_FLAG",
+        "SESSION_WRAP",
+        "SESSION_INTRO_RACE",
+        "ENTER_CAR",
+        "STREAM_START",
+        "PIT_ENTRY",
+        "PIT_LANE",
+        "PIT_STOPPED",
+        "PIT_RELEASED",
+        "PIT_EXIT",
+        "PIT_OUTCOME",
+    }
+)
 
 
 class RaceRuntime:
@@ -117,6 +146,8 @@ class RaceRuntime:
         self._tape_decision_cursor = 0
         self._stories_sig: tuple[tuple[object, ...], ...] | None = None
         self._last_race = RaceState()
+        self._last_bio = BioState()
+        self._last_system = SystemState()
         self._last_snapshot = TelemetrySnapshot()
         self._hud_live = False
         self._running = False
@@ -128,13 +159,27 @@ class RaceRuntime:
             director = CommentaryDirector.from_defaults(
                 overlay.commentary, language=overlay.language
             )
-        director.watcher_log = self.race_observer.watches
+        director.watcher_log = WatcherLog()
         self.commentary_consumer = CommentaryConsumer(
             self._commentary_subscription,
             director,
             self._commentary_settings,
             decision_hook=self._record_commentary_decision,
         )
+        director.filler_formatter = lambda envelope: self.race_observer.format_filler_text(
+            envelope, locale=self._overlay_settings().language
+        )
+        sink = director.sink
+        previous_spoken = getattr(sink, "on_spoken_text", None)
+
+        def _spoken(text: str) -> None:
+            if callable(previous_spoken):
+                previous_spoken(text)
+            self._tts_final_tape_hook(text)
+
+        if hasattr(sink, "on_spoken_text"):
+            sink.on_spoken_text = _spoken
+        self._stream_start_emitted = False
         self._commentary_available = True
         self.overlay_consumer = OverlayConsumer(
             self._overlay_subscription,
@@ -228,8 +273,6 @@ class RaceRuntime:
         self._register_t4_emitters(overlay)
         self._pending_derived_speech = []
         self._pending_stream_records = []
-        self.bus.set_active_events([])
-        self.bus.set_active_stories_v4([])
         self._tape_decision_cursor = 0
         self._stories_sig = None
 
@@ -315,6 +358,21 @@ class RaceRuntime:
             return
         self._tape.record_llm_polish(record, time.monotonic(), self._last_race)
 
+    def _tts_final_tape_hook(self, text: str) -> None:
+        if not self._tape_debug_enabled() or self.mode == "replay":
+            return
+        if not (text or "").strip():
+            return
+        self._tape.record_commentary(
+            {
+                "action": "spoken",
+                "reason": "tts_final",
+                "text": text,
+            },
+            time.monotonic(),
+            self._last_race,
+        )
+
     def _build_commentary(self, overlay: OverlaySettings) -> CommentaryDirector | None:
         """Load the sequence graph once. Fail-soft if the JSON is broken."""
         try:
@@ -351,9 +409,25 @@ class RaceRuntime:
                 self._pending_derived_speech.extend(derived)
         except Exception:
             logger.warning("RaceObserver observe failed", exc_info=True)
+        self._maybe_emit_stream_start_if_live(now)
+
+    def _maybe_emit_stream_start_if_live(self, now: float) -> None:
+        """Speak STREAM_START when OBS is already live at connect (no rising edge)."""
+        if getattr(self, "_stream_start_emitted", False):
+            return
+        try:
+            from irswitch.server.metrics import get_metrics
+
+            if get_metrics().stream_started_ts is None:
+                return
+        except Exception:
+            return
+        self.notify_obs_stream_started(now)
 
     def notify_obs_stream_started(self, now: float) -> None:
         """OBS streaming rising edge → commentary-only STREAM_START. Fail-soft."""
+        if getattr(self, "_stream_start_emitted", False):
+            return
         overlay = self._overlay_settings()
         if not overlay.commentary.stream_start:
             return
@@ -370,8 +444,10 @@ class RaceRuntime:
             self.pipeline.publish_envelopes(
                 [envelope],
                 source="stream_start",
-                accepted_monotonic_ms=int(now * 1000),
+                accepted_monotonic_ms=int(time.monotonic() * 1000),
+                poll_interval_ms=self._poll_interval_ms(),
             )
+            self._stream_start_emitted = True
         except Exception:
             logger.warning("STREAM_START commentary failed", exc_info=True)
 
@@ -449,7 +525,29 @@ class RaceRuntime:
             return data
         return None
 
-    def _capture_context(self, state: RaceState, now: float) -> None:
+    def _empty_hud(self) -> dict[str, Any]:
+        return {"active_events": [], "active_stories_v4": []}
+
+    def _current_hud(self) -> dict[str, Any]:
+        if self.manager_v2 is not None:
+            return {
+                "active_events": list(self.manager_v2.active_events()),
+                "active_stories_v4": list(self.manager_v2.active_stories_v4()),
+            }
+        return {
+            "active_events": list(self.manager.active_events()),
+            "active_stories_v4": [],
+        }
+
+    def _poll_interval_ms(self) -> int:
+        hz = self._race_hz()
+        if hz <= 0:
+            return 200
+        return max(1, int(1000.0 / hz))
+
+    def _capture_context(
+        self, state: RaceState, now: float, *, hud: dict[str, Any] | None = None
+    ) -> None:
         overlay = self._overlay_settings()
         telemetry_data = self._session_brief_data()
         self.driver_facts.refresh(
@@ -460,7 +558,7 @@ class RaceRuntime:
         )
         self.pipeline.capture_context(
             race=state,
-            bio=self.bus.bio,
+            bio=self._last_bio,
             story=self.race_observer.context,
             telemetry_data=telemetry_data,
             captured_monotonic_ms=int(now * 1000),
@@ -468,6 +566,9 @@ class RaceRuntime:
             commentary_enabled=bool(overlay.commentary.enabled),
             config_generation=self._config_generation,
             driver_profiles=self.driver_facts.profiles_snapshot(),
+            system=self._last_system,
+            hud=self._empty_hud() if hud is None else hud,
+            grid_story=bool(overlay.race_observer.grid_story),
         )
 
     def _reset_situation_facts(self) -> None:
@@ -479,7 +580,10 @@ class RaceRuntime:
     ) -> AcceptedRecord | None:
         if state.overlay_mode != "RACE" or not state.connected or state.mute_field:
             return None
-        if any(record.envelope.priority > 28 for record in existing):
+        if any(
+            record.envelope.priority > 28 or record.envelope.event_type in _SITUATION_SUPPRESS_TYPES
+            for record in existing
+        ):
             return None
         situation = build_situation_payload(state, self._session_brief_data(), int(now * 1000))
         phase = str(situation.get("race_phase") or "unknown")
@@ -508,7 +612,7 @@ class RaceRuntime:
             return
         session_id = self._session_id(self._last_race)
         self.pipeline.reset_session(session_id, reason="context_bootstrap")
-        self._capture_context(self._last_race, now)
+        self._capture_context(self._last_race, now, hud=self._current_hud())
 
     def _collect_filler_response(self, now: float) -> AcceptedRecord | None:
         request = self.commentary_consumer.take_filler_request()
@@ -531,10 +635,6 @@ class RaceRuntime:
 
     def _collect_commentary_sidecars(self, state: RaceState, now: float) -> list[AcceptedRecord]:
         """Normalize direct sidecars into producer records in deterministic order."""
-        overlay = self._overlay_settings()
-        if self.commentary is not None:
-            self.commentary.grid_story = bool(overlay.race_observer.grid_story)
-            self.commentary.quali_bag_ready = self.race_observer.stream.quali_bag() is not None
         if any(env.event_type == QUALI_RECAP for env in self._pending_derived_speech):
             return []
         records: list[AcceptedRecord] = []
@@ -592,7 +692,7 @@ class RaceRuntime:
             return OverlaySettings()
         return cfg.overlay
 
-    def _idle_when_disconnected(self, state: RaceState) -> bool:
+    def _idle_when_disconnected(self, state: RaceState, now: float | None = None) -> bool:
         """Blank live HUD when iRacing telemetry is gone. True → skip emitters."""
         if state.connected:
             self._hud_live = True
@@ -600,9 +700,9 @@ class RaceRuntime:
         if self._hud_live:
             self._reset_event_pipeline()
             self._hud_live = False
-        else:
-            self.bus.set_active_events([])
-            self.bus.set_active_stories_v4([])
+        captured = now if now is not None else time.monotonic()
+        self._last_race = state
+        self._capture_context(state, captured, hud=self._empty_hud())
         return True
 
     def _race_hz(self) -> float:
@@ -623,12 +723,9 @@ class RaceRuntime:
                     break
 
         if self.mode == "replay" and self._replay_path:
-            from irswitch.overlay.replay import OverlayReplayer
-
-            logger.info("Overlay replay: %s", self._replay_path)
             self._running = True
             try:
-                await OverlayReplayer(self._replay_path, self.bus).run()
+                await self._run_replay(Path(self._replay_path))
             finally:
                 self._running = False
             return
@@ -643,7 +740,6 @@ class RaceRuntime:
         self._registry.spawn(
             "overlay_system", SamplingScheduler("system", self._system_hz, self._tick_system).run()
         )
-        self._registry.spawn("overlay_flush", self._flush_loop())
         if self.mode != "mock":
             self._registry.spawn("overlay_bio", self._run_bio())
         try:
@@ -658,15 +754,33 @@ class RaceRuntime:
             self.stop_event_capture()
             raise
 
-    async def _flush_loop(self) -> None:
-        while True:
+    async def _run_replay(self, path: Path) -> None:
+        if is_n12_replay(path):
+            logger.info("N12 replay: %s", path)
+            self._registry.spawn("overlay_consumer", self._overlay_supervisor.run())
+            self._registry.spawn("commentary_consumer", self._commentary_supervisor.run())
             try:
-                await self.bus.flush_state()
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                logger.debug("Overlay flush failed", exc_info=True)
-            await asyncio.sleep(0.15)
+                await load_n12_replay(path).replay(self._event_fanout)
+                await self._drain_consumer_queues()
+            finally:
+                self._event_fanout.close()
+                await self._registry.cancel_all()
+                self._close_commentary_sink()
+            return
+        from irswitch.overlay.replay import OverlayReplayer
+
+        logger.info("Overlay replay: %s", path)
+        await OverlayReplayer(str(path), self.bus).run()
+
+    async def _drain_consumer_queues(self, timeout_s: float = 1.0) -> None:
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            overlay = self._overlay_subscription.snapshot(producer_stream_sequence=0)
+            commentary = self._commentary_subscription.snapshot(producer_stream_sequence=0)
+            if overlay.depth == 0 and commentary.depth == 0:
+                await asyncio.sleep(0.05)
+                return
+            await asyncio.sleep(0.02)
 
     async def _tick_race(self) -> None:
         now = time.monotonic()
@@ -674,7 +788,7 @@ class RaceRuntime:
         filler_record = self._collect_filler_response(now)
         if self.mode == "mock":
             state = mock_race_state(now - self._origin)
-            self.bus.set_bio(mock_bio_state(now - self._origin))
+            self._last_bio = mock_bio_state(now - self._origin)
             self.session.observe(
                 session_key=build_session_key(
                     subsession_id="mock",
@@ -708,17 +822,15 @@ class RaceRuntime:
             )
             self._observe_race_story(snap, state, now)
         self.pipeline.reset_session(self._session_id(state), reason="session_changed")
-        self.bus.set_race(state)
         self._last_race = state
         self._sync_tape(state, now)
-        self._capture_context(state, now)
-        if self._idle_when_disconnected(state):
+        if self._idle_when_disconnected(state, now):
             self._pending_derived_speech.clear()
             return
         if self.session.in_warmup(now):
             # Suppress trend/semantic emitters during reconnect warm-up; still publish state.
             self._pending_derived_speech.clear()
-            self.bus.set_active_events(self.manager.active_events())
+            self._capture_context(state, now, hud=self._current_hud())
             return
         records = await self._emit_from_race(state, now)
         for envelope in self._pending_derived_speech:
@@ -737,7 +849,12 @@ class RaceRuntime:
             self.race_observer.note_accepted([record.envelope for record in records])
         except Exception:
             logger.warning("RaceObserver accepted history failed", exc_info=True)
-        self.pipeline.publish_records(records, accepted_monotonic_ms=int(now * 1000))
+        self._capture_context(state, now, hud=self._current_hud())
+        self.pipeline.publish_records(
+            records,
+            accepted_monotonic_ms=int(time.monotonic() * 1000),
+            poll_interval_ms=self._poll_interval_ms(),
+        )
 
     async def _read_telemetry(self) -> TelemetrySnapshot:
         read_fn = getattr(self._reader, "read_telemetry", None)
@@ -762,7 +879,7 @@ class RaceRuntime:
         overlay = self._overlay_settings()
         self.engine.incident.apply_settings(overlay.race_observer)
         try:
-            candidates = self.engine.tick(state, now, self.bus.bio)
+            candidates = self.engine.tick(state, now, self._last_bio)
         except Exception:
             logger.warning("EventEngine tick failed", exc_info=True)
             return records
@@ -784,8 +901,6 @@ class RaceRuntime:
             for race_event, envelopes in self.manager_v2.tick(now, mode=state.overlay_mode):
                 wires = self.manager_v2.publish_wire(envelopes, race_event)
                 records.extend(_accepted_records(envelopes, wires, source="event_engine"))
-            self.bus.set_active_events(self.manager_v2.active_events())
-            self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
             self._drain_tape_side(now)
             return records
         for candidate in candidates:
@@ -818,7 +933,6 @@ class RaceRuntime:
                 correlation_id=expired.name,
             )
             records.append(AcceptedRecord(envelope, "event_engine", wire))
-        self.bus.set_active_events(self.manager.active_events())
         return records
 
     def _sync_tape(self, state: RaceState, now: float) -> None:
@@ -850,7 +964,8 @@ class RaceRuntime:
     async def _tick_system(self) -> None:
         overlay = self._overlay_settings()
         if self.mode == "mock":
-            self.bus.set_system(mock_system_state(time.monotonic() - self._origin))
+            self._last_system = mock_system_state(time.monotonic() - self._origin)
+            self._capture_context(self._last_race, time.monotonic(), hud=self._current_hud())
             return
         if not overlay.system_info.enabled:
             return
@@ -860,14 +975,15 @@ class RaceRuntime:
             self._system = SystemInfoProvider(overlay.system_info, overlay.sampling)
         else:
             self._system.apply_settings(overlay.system_info, overlay.sampling)
-        fps = self.bus.race.fps
-        ft = self.bus.race.frametime_ms
+        fps = self._last_race.fps
+        ft = self._last_race.frametime_ms
         try:
             state = await asyncio.to_thread(self._system.sample, fps=fps, frametime_ms=ft)
         except Exception:
             logger.warning("System info sample failed", exc_info=True)
             return
-        self.bus.set_system(state)
+        self._last_system = state
+        self._capture_context(self._last_race, time.monotonic(), hud=self._current_hud())
 
     async def _run_bio(self) -> None:
         overlay = self._overlay_settings()
@@ -878,9 +994,9 @@ class RaceRuntime:
         def _on_state(bio_state: Any) -> None:
             prev = self._prev_bio_status
             self._prev_bio_status = bio_state.status
-            self.bus.set_bio(bio_state)
+            self._last_bio = bio_state
+            now = time.monotonic()
             if prev in {"connected"} and bio_state.status in {"disconnected", "reconnecting"}:
-                now = time.monotonic()
                 if self.manager_v2 is not None:
                     race_event, envelopes = self.manager_v2.inject("ble_lost", now)
                     wires = self.manager_v2.publish_wire(envelopes, race_event)
@@ -893,8 +1009,6 @@ class RaceRuntime:
                     self._pending_stream_records.extend(
                         _accepted_records(speech, wires, source="event_engine")
                     )
-                    self.bus.set_active_events(self.manager_v2.active_events())
-                    self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
                 else:
                     event = self.manager.inject("ble_lost", now)
                     if event is not None:
@@ -910,7 +1024,7 @@ class RaceRuntime:
                         self._pending_stream_records.append(
                             AcceptedRecord(envelope, "event_engine", event.to_envelope())
                         )
-                        self.bus.set_active_events(self.manager.active_events())
+            self._capture_context(self._last_race, now, hud=self._current_hud())
 
         self._bio = BleHeartRateProvider(overlay.heart_rate, overlay.sampling, on_state=_on_state)
         await self._bio.run()
@@ -1060,7 +1174,7 @@ class RaceRuntime:
                 if not enabled:
                     snapshot.update({"enabled": False, "status": "disabled", "connected": False})
                 return snapshot
-            state = self.bus.bio
+            state = self._last_bio
             return {
                 "enabled": enabled,
                 "available": False,

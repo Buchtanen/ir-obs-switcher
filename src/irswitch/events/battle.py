@@ -265,6 +265,22 @@ class BattleEmitter:
             and closing is not None
             and closing >= 0.0
         )
+        if battle_state == "hunted":
+            hero_cp = state.class_position if state.class_position is not None else state.position
+            field_n = state.class_field_size
+            behind_cp = getattr(target, "class_position", None) if target is not None else None
+            last = (
+                hero_cp is not None
+                and field_n is not None
+                and int(field_n) > 0
+                and int(hero_cp) >= int(field_n)
+            )
+            inverted = (
+                hero_cp is not None and behind_cp is not None and int(behind_cp) <= int(hero_cp)
+            )
+            if last or inverted or target is None:
+                enter_ok = False
+                stay_ok = False
 
         active_state = (
             resolve_hunting_intensity(gap, closing, track.intensity, cfg)
@@ -298,6 +314,8 @@ class BattleEmitter:
                             **payload,
                             "state": track.intensity if intensity_ladder else battle_state,
                             "reason": "target_change",
+                            "targetCarIdx": track.target_car_idx,
+                            "relationEpoch": track.relation_epoch,
                         },
                     )
                 )

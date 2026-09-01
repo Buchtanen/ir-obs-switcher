@@ -9,7 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from irswitch.events.stream import thaw_context
 from irswitch.overlay.bus import OverlayBus
+from irswitch.overlay.consumer import OverlayConsumer
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.replay import OverlayReplayer
 from irswitch.overlay.runtime import OverlayRuntime
@@ -172,7 +174,8 @@ def test_overlay_runtime_constructs_with_practice_emitters() -> None:
     assert "SectorSplitEmitter" in names
 
 
-def test_overlay_runtime_disconnect_clears_stories() -> None:
+@pytest.mark.asyncio
+async def test_overlay_runtime_disconnect_clears_stories() -> None:
     """Link drop / iRacing quit must blank the HUD, not leave hunting + SYSINFO."""
     overlay = OverlaySettings(event_engine=EventEngineFeatureSettings(v2_payload=True))
     bus = OverlayBus()
@@ -182,6 +185,13 @@ def test_overlay_runtime_disconnect_clears_stories() -> None:
     bus.set_active_events([{"name": "hunting"}])
     assert runtime._idle_when_disconnected(_race(connected=False)) is True
     assert runtime._hud_live is False
+    payload = runtime.pipeline.context_payload
+    assert payload is not None
+    context = thaw_context(payload)
+    assert context["hud"]["active_events"] == []
+    assert context["hud"]["active_stories_v4"] == []
+    consumer = OverlayConsumer(runtime._overlay_subscription, bus)
+    await consumer.apply_latest_presentation()
     assert bus.active_stories_v4 == []
     assert bus.active_events == []
     assert runtime._idle_when_disconnected(_race(connected=True)) is False

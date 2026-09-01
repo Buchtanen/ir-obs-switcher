@@ -478,7 +478,7 @@ def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
     assert "lead" not in outcome.text.lower()
 
 
-def test_process_sink_skips_speak_when_retry_exhausted(
+def test_process_sink_speaks_skeleton_when_retry_exhausted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     graph = load_sequence_graph()
@@ -529,7 +529,7 @@ def test_process_sink_skips_speak_when_retry_exhausted(
             node=node,
         )
     )
-    assert spoken == []
+    assert spoken == ["Adamson is ahead."]
 
 
 def test_runtime_debug_gate_for_tape(monkeypatch: pytest.MonkeyPatch) -> None:

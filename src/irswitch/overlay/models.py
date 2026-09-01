@@ -97,6 +97,12 @@ class RaceState:
     player_car_idx: int | None = None
     position: int | None = None
     class_position: int | None = None
+    class_field_size: int | None = None
+    leader_car_idx: int | None = None
+    leader_name: str | None = None
+    p1_name: str | None = None
+    p2_name: str | None = None
+    p3_name: str | None = None
     lap: int | None = None
     lap_completed: int | None = None
     current_lap_time: float | None = None

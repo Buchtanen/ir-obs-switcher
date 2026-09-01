@@ -44,6 +44,9 @@ class StreamNarrativeFsm:
     _key: str | None = None
     _mode: str = "GENERIC"
     _position: int | None = None
+    _p1: str | None = None
+    _p2: str | None = None
+    _p3: str | None = None
     _finished: bool = False
     _wrapped_keys: set[str] = field(default_factory=set)
     _previewed_keys: set[str] = field(default_factory=set)
@@ -55,6 +58,9 @@ class StreamNarrativeFsm:
         self._key = None
         self._mode = "GENERIC"
         self._position = None
+        self._p1 = None
+        self._p2 = None
+        self._p3 = None
         self._finished = False
 
     def reset_stream(self) -> None:
@@ -95,6 +101,9 @@ class StreamNarrativeFsm:
                         mode=self._mode,
                         position=self._position,
                         reason="session_change",
+                        p1=self._p1,
+                        p2=self._p2,
+                        p3=self._p3,
                     )
                 )
                 self._wrapped_keys.add(self._key)
@@ -103,6 +112,9 @@ class StreamNarrativeFsm:
             self._key = session_key
             self._mode = mode
             self._position = position
+            self._p1 = state.p1_name
+            self._p2 = state.p2_name
+            self._p3 = state.p3_name
             self._finished = finished
             if prev_had and session_key not in self._previewed_keys:
                 produced.append(
@@ -126,6 +138,9 @@ class StreamNarrativeFsm:
 
         self._mode = mode
         self._position = position
+        self._p1 = state.p1_name
+        self._p2 = state.p2_name
+        self._p3 = state.p3_name
 
         if finished and not self._finished and session_key not in self._wrapped_keys:
             produced.append(
@@ -135,6 +150,9 @@ class StreamNarrativeFsm:
                     mode=mode,
                     position=position,
                     reason="session_finished",
+                    p1=state.p1_name,
+                    p2=state.p2_name,
+                    p3=state.p3_name,
                 )
             )
             self._wrapped_keys.add(session_key)
@@ -179,6 +197,9 @@ class StreamNarrativeFsm:
         mode: str,
         position: int | None,
         reason: str,
+        p1: str | None = None,
+        p2: str | None = None,
+        p3: str | None = None,
     ) -> EventEnvelope:
         metrics: dict[str, object] = {
             "kind": "session_wrap",
@@ -190,6 +211,12 @@ class StreamNarrativeFsm:
         }
         if position is not None:
             metrics["position"] = position
+        if p1:
+            metrics["p1Name"] = p1
+        if p2:
+            metrics["p2Name"] = p2
+        if p3:
+            metrics["p3Name"] = p3
         return make_envelope(
             event_type="SESSION_WRAP",
             phase="RESULT",

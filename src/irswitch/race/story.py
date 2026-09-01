@@ -127,6 +127,7 @@ class StoryContext:
     weather: WeatherSnapshot | None = None
     stream_sessions: tuple[str, ...] = ()
     recent_beats: tuple[StoryBeat, ...] = ()
+    quali_bag: QualiBag | None = None
 
     def slot_bindings(self) -> dict[str, Any]:
         """Flat metrics useful for FIELD_FACT / WEATHER_CHANGE speech."""

@@ -26,6 +26,23 @@ from irswitch.events.stream import (
 REPLAY_SCHEMA_VERSION = "n12-replay/1"
 
 
+def is_n12_replay(path: Path) -> bool:
+    """True when the file starts with a canonical n12-replay/1 header."""
+    try:
+        raw = path.read_bytes().splitlines()
+    except OSError:
+        return False
+    for line in raw:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            return False
+        return isinstance(row, dict) and row.get("schema") == REPLAY_SCHEMA_VERSION
+    return False
+
+
 class N12ReplayWriter:
     """Append canonical rows; contexts precede the first referencing batch."""
 

@@ -48,7 +48,7 @@ Rules:
 - P/Q hunt-by-time is COMMENTARY_ONLY `PACE_HUNT` (`race/timing_hunt.py`): hero projected/best vs `CarIdxBestLapTime` of class P{n}. Unset times → silence. Quali HUD `position_attack` remains hero own PB.
 - `INCIDENT` `metrics.branch` is `off_track` or `unknown` only when `race_observer.incident_classify` is on (default off). Nearby cars are metrics, not spoken kinds. Graph nodes `incident_off_track` / `incident_unknown` (N11 B); unclassified envelopes still use generic `incident`. Same tick: speak at most one of engine `INCIDENT` (delta ≥ `incident_min_delta` default 2) and derived `INCIDENT_AFTERMATH` (any rise); INCIDENT wins. Aftermath classify is surface-first (off-track stays stalled even if Speed > 0). Speed is motion for on-track stalled/rolling and `BACK_UNDER_WAY`. No `INCIDENT_RECOVERED`.
 - Race `SESSION_FLAG` (`race/flags.py`) speaks yellow (caution family coalesced) / green / checkered on rising edges when `race_observer.flags` is on (default off). Start lights ignored. Checkered bit is not `FINISH` / `SESSION_WRAP`. Graph one-liners `session_flag_*` (N11 C); formatter remains fallback. Practice/qualify do not speak.
-- Race-start `QUALI_RECAP` / `PARADE_PAD` (`race/grid_story.py`) when `race_observer.grid_story` is on (default off). Recap is an opener and replaces `SESSION_INTRO_RACE` when the stream quali bag exists. Parade pads stop on Racing or green. Not gated by `session_briefs`. Graph copy N11 D; formatter remains fallback.
+- Race-start `QUALI_RECAP` / `PARADE_PAD` (`race/grid_story.py`) when `race_observer.grid_story` is on (default off). Recap is an opener and replaces `SESSION_INTRO_RACE` when the stream quali bag exists. Parade pads repeat until Racing or green (20 s, cap 12). Not gated by `session_briefs`. Graph copy N11 D; formatter remains fallback.
 - Watcher decision ring (`race/watcher_log.py`, size 64): DEBUG + in-memory last-N for flags / incidents / aftermath / hunt / grid_story / briefs. Director records `graph_hit`, `formatter_fallback`, and `generic_suppressed` (branch incident node spoke instead of generic). No public GET; not in `/commentary` status.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
 - BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
@@ -77,7 +77,7 @@ Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDAT
 
 The compact `commentary-facts/1` block contains only the selected beat/path, session, hero, target/front/rear roles, 2+2 field snapshot, HR band and four recent lines. Missing values are omitted. EN and CS use separate deterministic clauses and separate polish system prompts. Two-front role swaps are rejected as `two_front_polarity_conflict`.
 
-All 53 active graph nodes and all 22 edges have compatibility tests. `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
+All 54 active graph nodes and all 24 edges have compatibility tests. `leader_change` (prio 75) speaks class P1 changes; do not invent an on-track pass. Parade pads repeat until green (cap 12, 20 s). `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
 
 ## TTS validator
 

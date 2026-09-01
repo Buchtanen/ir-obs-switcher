@@ -56,7 +56,7 @@ class CommentaryConsumer:
         self._processed_ids: set[str] = set()
         self._processed_order: list[str] = []
         self.director.filler_provider = self._request_filler
-        self.director.filler_formatter = None
+        self.director.on_decision = self._forward_decision
 
     async def run(self) -> None:
         self.running = True
@@ -160,6 +160,9 @@ class CommentaryConsumer:
                 continue
             envelope = thaw_envelope(accepted.envelope)
             self._apply_context_bindings(envelope, context, latest)
+            if self._situation_no_longer_current(context, latest):
+                self._strip_situation_slots(envelope)
+                self._record_skip("situation_context_stale", now, envelope.event_type)
             age_s = max(0.0, now - (batch.accepted_monotonic_ms / 1000.0))
             ttl_s = self.director.event_ttl_s(envelope.event_type)
             if age_s > ttl_s:
@@ -168,7 +171,13 @@ class CommentaryConsumer:
                 self._remember(accepted.event_id)
                 continue
             if age_s > 3.0:
+                had_situation = any(
+                    key in envelope.metrics
+                    for key in ("current_lap", "lap_context", "race_phase", "remaining_context")
+                )
                 self._remove_stale_dynamic_bindings(envelope)
+                if had_situation:
+                    self._record_skip("situation_context_stale", now, envelope.event_type)
             envelopes.append(envelope)
             self._remember(accepted.event_id)
         if not envelopes:
@@ -176,7 +185,6 @@ class CommentaryConsumer:
         envelopes = self._prefer_two_front(envelopes, latest, now)
         if not envelopes:
             return
-        before = len(self.director.decisions(10_000))
         settings, language = self._settings_snapshot()
         self.director.observe(
             envelopes,
@@ -185,7 +193,6 @@ class CommentaryConsumer:
             enabled=settings.enabled,
             language=language,
         )
-        self._emit_new_decisions(before, now)
 
     def _prefer_two_front(
         self,
@@ -307,9 +314,7 @@ class CommentaryConsumer:
         try:
             context = thaw_context(latest_payload)
             self._apply_settings()
-            before = len(self.director.decisions(10_000))
             self.director.tick(time.monotonic(), self._bio_from_context(context))
-            self._emit_new_decisions(before, time.monotonic())
         except Exception as exc:
             self.failures += 1
             self.last_error = f"{type(exc).__name__}: {exc}"
@@ -368,6 +373,9 @@ class CommentaryConsumer:
         hero = hero if isinstance(hero, dict) else {}
         names = hero.get("speakable_names")
         self.director.note_hero_names(names if isinstance(names, list) else ())
+        config = context.get("config")
+        config = config if isinstance(config, dict) else {}
+        self.director.grid_story = bool(story.get("grid_story") or config.get("grid_story"))
         self.director.quali_bag_ready = bool(story.get("quali_bag"))
 
     @staticmethod
@@ -391,6 +399,21 @@ class CommentaryConsumer:
             ),
             state=str(data.get("hr_state") or "unknown"),
         )
+
+    @staticmethod
+    def _situation_no_longer_current(embedded: dict[str, Any], latest: dict[str, Any]) -> bool:
+        sit = embedded.get("situation")
+        latest_sit = latest.get("situation")
+        if not isinstance(sit, dict) or not isinstance(latest_sit, dict) or not sit:
+            return False
+        if sit.get("current_lap") != latest_sit.get("current_lap"):
+            return True
+        return sit.get("race_phase") != latest_sit.get("race_phase")
+
+    @staticmethod
+    def _strip_situation_slots(envelope: EventEnvelope) -> None:
+        for key in ("current_lap", "lap_context", "race_phase", "remaining_context"):
+            envelope.metrics.pop(key, None)
 
     @staticmethod
     def _remove_stale_dynamic_bindings(envelope: EventEnvelope) -> None:
@@ -425,12 +448,10 @@ class CommentaryConsumer:
     def _record_skip(self, reason: str, now: float, event_type: str = "") -> None:
         self.director.record_external_skip(reason=reason, now=now, event_type=event_type)
 
-    def _emit_new_decisions(self, before: int, now: float) -> None:
+    def _forward_decision(self, entry: dict[str, Any], now: float) -> None:
         if self._decision_hook is None:
             return
-        decisions = self.director.decisions(10_000)
-        for entry in decisions[before:]:
-            self._decision_hook(entry, now)
+        self._decision_hook(entry, now)
 
     @staticmethod
     def _drain_queue(queue: asyncio.Queue[Any]) -> None:

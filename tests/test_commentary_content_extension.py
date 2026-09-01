@@ -72,8 +72,10 @@ WAVE_A_DENSITY = 4
 WAVE_B_NODES = {"incident_off_track", "incident_unknown"}
 WAVE_C_NODES = {"session_flag_yellow", "session_flag_green", "session_flag_checkered"}
 WAVE_D_NODES = {"quali_recap", "parade_pad"}
+WAVE_LEADER_NODES = {"leader_change"}
 WAVE_BCD_SPARSE = 1
 WAVE_BD_DENSITY = 4
+WAVE_LEADER_DENSITY = 3
 
 
 def _expected_density(node_id: str) -> int:
@@ -91,13 +93,15 @@ def _expected_density(node_id: str) -> int:
         return WAVE_BCD_SPARSE
     if node_id in WAVE_B_NODES or node_id in WAVE_D_NODES:
         return WAVE_BD_DENSITY
+    if node_id in WAVE_LEADER_NODES:
+        return WAVE_LEADER_DENSITY
     return 12
 
 
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
     graph = load_sequence_graph()
-    assert len(graph.nodes) == 53
-    assert len(graph.edges) == 22
+    assert len(graph.nodes) == 54
+    assert len(graph.edges) == 24
     assert graph.unfilled_cells() == []
     assert SESSION_BRIEF_NODES <= set(graph.nodes)
     assert WAVE_A_NODES <= set(graph.nodes)
@@ -130,8 +134,8 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                         bound,
                     )
                 total += len(lines)
-    # Densified graph + W4/H4 briefs + observer fillers + session_checkered + N11A (72) + N11 B/C/D (38).
-    assert total == 4238
+    # Densified graph + W4/H4 briefs + observer fillers + session_checkered + N11A (72) + N11 B/C/D (38) + leader_change (18).
+    assert total == 4256
 
 
 def test_append_patch_exactly_matches_graph_tails() -> None:

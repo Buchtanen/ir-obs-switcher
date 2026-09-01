@@ -129,7 +129,7 @@ Docs + status only first. **VAD remains OS routing.** No new dep unless approved
 | P3–P5 | Queued |
 | P6 | Deferred |
 | N12 V2a async isolation | Implemented on integration branch; Windows/OBS live validation pending |
-| #195 graph-path composer | Implemented on the N12 integration branch; 53 nodes / 22 edges covered, live Ollama listen pending |
+| #195 graph-path composer | Implemented on the N12 integration branch; 54 nodes / 24 edges covered (includes `leader_change`) |
 
 ---
 

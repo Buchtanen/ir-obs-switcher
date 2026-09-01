@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import asdict, is_dataclass
 from typing import Any, NamedTuple, cast
@@ -26,6 +27,8 @@ from irswitch.iracing.sdk_units import (
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.race.story import StoryContext
 
+logger = logging.getLogger(__name__)
+
 
 class RacePipeline:
     """Single producer for accepted identities and immutable stream batches."""
@@ -41,6 +44,7 @@ class RacePipeline:
         self._context_version = 0
         self._batch_sequence = 0
         self._context_payload: FrozenContextSnapshot | None = None
+        self._captured_monotonic_ms = 0
         self._session_id = self.sequence_allocator.session_id
 
     @property
@@ -61,6 +65,7 @@ class RacePipeline:
         self._context_version = 0
         self._batch_sequence = 0
         self._context_payload = None
+        self._captured_monotonic_ms = 0
         reset = SessionReset(old, normalized, reason, self.fanout.next_stream_sequence())
         self.fanout.publish(reset)
         return reset
@@ -77,6 +82,9 @@ class RacePipeline:
         commentary_enabled: bool,
         config_generation: int = 0,
         driver_profiles: dict[str, object] | None = None,
+        system: Any | None = None,
+        hud: dict[str, Any] | None = None,
+        grid_story: bool = False,
     ) -> FrozenContextSnapshot:
         self._context_version += 1
         payload = build_context_payload(
@@ -91,8 +99,12 @@ class RacePipeline:
             commentary_enabled=commentary_enabled,
             config_generation=config_generation,
             driver_profiles=driver_profiles,
+            system=system,
+            hud=hud,
+            grid_story=grid_story,
         )
         self._context_payload = freeze_context(payload)
+        self._captured_monotonic_ms = captured_monotonic_ms
         self.fanout.publish_context(self._context_payload)
         return self._context_payload
 
@@ -103,6 +115,7 @@ class RacePipeline:
         source: str,
         accepted_monotonic_ms: int,
         overlay_wires: list[dict[str, Any] | None] | None = None,
+        poll_interval_ms: int = 200,
     ) -> FrozenAcceptedEventBatch | None:
         if overlay_wires is not None and len(overlay_wires) != len(envelopes):
             raise ValueError("overlay_wires must align with envelopes")
@@ -113,6 +126,7 @@ class RacePipeline:
                 for envelope, wire in zip(envelopes, wires, strict=True)
             ],
             accepted_monotonic_ms=accepted_monotonic_ms,
+            poll_interval_ms=poll_interval_ms,
         )
 
     def publish_records(
@@ -120,6 +134,7 @@ class RacePipeline:
         records: list[AcceptedRecord],
         *,
         accepted_monotonic_ms: int,
+        poll_interval_ms: int = 200,
     ) -> FrozenAcceptedEventBatch | None:
         if not records:
             return None
@@ -153,6 +168,18 @@ class RacePipeline:
             context_payload=self._context_payload,
             events=tuple(accepted),
         )
+        if context_stale_at_accept(
+            captured_ms=self._captured_monotonic_ms,
+            accepted_ms=accepted_monotonic_ms,
+            poll_interval_ms=poll_interval_ms,
+        ):
+            logger.warning(
+                "context_stale_at_accept captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
+                self._captured_monotonic_ms,
+                accepted_monotonic_ms,
+                accepted_monotonic_ms - self._captured_monotonic_ms,
+                poll_interval_ms,
+            )
         self.fanout.publish(batch)
         return batch
 
@@ -176,10 +203,19 @@ def build_context_payload(
     commentary_enabled: bool,
     config_generation: int,
     driver_profiles: dict[str, object] | None,
+    system: Any | None = None,
+    hud: dict[str, Any] | None = None,
+    grid_story: bool = False,
 ) -> dict[str, Any]:
     story_payload = _jsonable(asdict(story)) if story is not None else {}
     story_payload["driver_profiles"] = driver_profiles or {}
+    story_payload["grid_story"] = grid_story
     situation = build_situation_payload(race, telemetry_data, captured_monotonic_ms)
+    system_payload = _jsonable(system.to_dict()) if system is not None else {}
+    hud_payload = {
+        "active_events": list((hud or {}).get("active_events") or []),
+        "active_stories_v4": list((hud or {}).get("active_stories_v4") or []),
+    }
     return {
         "schema_version": CONTEXT_SCHEMA_VERSION,
         "version": version,
@@ -205,12 +241,27 @@ def build_context_payload(
         },
         "story": story_payload,
         "situation": situation,
+        "system": system_payload,
+        "hud": hud_payload,
         "config": {
             "generation": config_generation,
             "language": language,
             "commentary_enabled": commentary_enabled,
+            "grid_story": grid_story,
         },
     }
+
+
+def context_stale_at_accept(
+    *,
+    captured_ms: int,
+    accepted_ms: int,
+    poll_interval_ms: int,
+) -> bool:
+    """True when publish/accept lagged capture by more than one producer poll."""
+    if poll_interval_ms <= 0:
+        return False
+    return max(0, accepted_ms - captured_ms) > poll_interval_ms
 
 
 def build_situation_payload(
@@ -238,6 +289,7 @@ def build_situation_payload(
         progress = _clamp(1.0 - (remaining / total_time))
         source = "time"
 
+    racing = race.session_state == 4 or race.flag_green
     if race.player_finished:
         phase = "finished"
     elif race.session_checkered:
@@ -246,6 +298,8 @@ def build_situation_payload(
         phase = "final_lap"
     elif race.overlay_mode != "RACE" or progress is None:
         phase = "unknown"
+    elif race.session_state is not None and not racing:
+        phase = "opening"
     elif progress < 0.2:
         phase = "opening"
     elif progress < 0.7:

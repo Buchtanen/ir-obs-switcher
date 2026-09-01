@@ -51,6 +51,37 @@ _SECONDS = re.compile(r"\bseconds?\b", re.IGNORECASE)
 _LIVE_CALL = re.compile(r"^\s*Live Call\s*:", re.IGNORECASE)
 _HERO_PREFIX = re.compile(r"^([A-Z][a-z]{2,})\.\s+([A-Z][a-z]{2,})\b")
 _THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+_WORD_NUM = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+}
+_P_TOKEN = re.compile(
+    r"\bp\s*-?\s*(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|"
+    r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
+    r"nineteen|twenty|thirty)\b",
+    re.IGNORECASE,
+)
+_S_TOKEN = re.compile(r"\bs\s*(\d+|one|two|three)\b", re.IGNORECASE)
 
 _FACT_LOCK = (
     "Keep EVERY fact from SKELETON. Do not add new numbers, names, or events.\n"
@@ -70,6 +101,7 @@ _FACT_LOCK = (
     "rivals are the other named drivers.\n"
     "Never open with the featured driver's name and a comma (not 'Richard, ...'). "
     "Never open with Name. then the rest of the call. Talk about the driver; do not address them.\n"
+    "Ignore prior commentary. Use only SKELETON numbers, names, and P/S marks.\n"
 )
 
 _FACT_LOCK_CS = (
@@ -165,7 +197,24 @@ def fact_violation_codes(
         codes.append("hero_vocative")
     if _two_front_polarity_conflict(po, fact_pack):
         codes.append("two_front_polarity_conflict")
+    if _token_set(po, _P_TOKEN) - _token_set(sk, _P_TOKEN):
+        codes.append("invented_position")
+    if _token_set(po, _S_TOKEN) - _token_set(sk, _S_TOKEN):
+        codes.append("invented_sector")
     return codes
+
+
+def _token_set(text: str, pattern: re.Pattern[str]) -> set[int]:
+    found: set[int] = set()
+    for match in pattern.finditer(text or ""):
+        token = match.group(1).lower()
+        if token.isdigit():
+            found.add(int(token))
+            continue
+        mapped = _WORD_NUM.get(token)
+        if mapped is not None:
+            found.add(mapped)
+    return found
 
 
 def _two_front_polarity_conflict(
@@ -282,9 +331,9 @@ def _user_content(
     )
     parts = [f"SKELETON:\n{skeleton}\n{instruction}"]
     if fact_pack:
+        safe = {key: value for key, value in fact_pack.items() if key != "recent"}
         parts.append(
-            "FACTS:\n"
-            + json.dumps(fact_pack, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+            "FACTS:\n" + json.dumps(safe, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
         )
     if composition_path:
         parts.append("COMPOSITION_PATH: " + " -> ".join(str(item) for item in composition_path))

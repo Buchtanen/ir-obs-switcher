@@ -15,6 +15,28 @@ FACT_PACK_VERSION = "commentary-facts/1"
 MAX_FACTS = 4
 MAX_GRAPH_NODES = 3
 _SLOT = re.compile(r"\{([a-z0-9_]+)\}", re.IGNORECASE)
+_LIGHT_COMPOSE = frozenset(
+    {
+        "STREAM_START",
+        "ENTER_CAR",
+        "SESSION_INTRO_PRACTICE",
+        "SESSION_INTRO_QUALIFY",
+        "SESSION_INTRO_RACE",
+        "SESSION_PREVIEW",
+        "SESSION_WRAP",
+        "SOF_BRIEF",
+        "WEATHER_BRIEF",
+        "WEATHER_CHANGE",
+        "FIELD_FACT",
+        "PARADE_PAD",
+        "QUALI_RECAP",
+        "INCIDENT",
+        "INCIDENT_AFTERMATH",
+        "SESSION_FLAG",
+        "SESSION_CHECKERED",
+        "LEADER_CHANGE",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -100,8 +122,8 @@ def build_skeleton(
         if len(selected_facts) >= MAX_FACTS:
             break
 
-    # A composer result must really be composed: at least two parts and facts.
-    if len(selected) < 2 or len(selected_facts) < 2:
+    min_parts = 1 if envelope.event_type in _LIGHT_COMPOSE else 2
+    if len(selected) < min_parts or len(selected_facts) < min_parts:
         return None
     text = _join_clauses(selected)
     fact_pack = _fact_pack(
@@ -262,6 +284,7 @@ def _history_label(node_id: str, target: str | None, *, cs: bool) -> str:
             "incident_aftermath": "přes jeho následky",
             "session_checkered": "od šachovnicové vlajky",
             "session_wrap": "přes shrnutí jízdy",
+            "leader_change": (f"od změny lídra na {target}" if target else "od změny lídra"),
         }
     else:
         labels = {
@@ -280,6 +303,9 @@ def _history_label(node_id: str, target: str | None, *, cs: bool) -> str:
             "incident_aftermath": "through its aftermath",
             "session_checkered": "from the checkered flag",
             "session_wrap": "through the session wrap",
+            "leader_change": (
+                f"from the lead change to {target}" if target else "from the lead change"
+            ),
         }
     return labels.get(node_id, "")
 
@@ -412,6 +438,64 @@ def _current_clauses(
                 ),
                 details,
             )
+
+    if event == "LEADER_CHANGE":
+        old_leader = _bound(bindings, "leader_name") or _bound(bindings, "old_leader_name")
+        if name and old_leader:
+            return (
+                _Clause(
+                    "beat",
+                    (
+                        f"{name} přebírá vedení po {old_leader}"
+                        if cs
+                        else f"{name} takes the lead from {old_leader}"
+                    ),
+                    ("target:name", "leader:name"),
+                ),
+                details,
+            )
+        if name:
+            return (
+                _Clause(
+                    "beat",
+                    f"{name} jde do čela" if cs else f"{name} takes the lead",
+                    ("target:name", "beat:lead"),
+                ),
+                details,
+            )
+
+    if event == "SESSION_WRAP":
+        p1 = _bound(bindings, "p1_name")
+        p2 = _bound(bindings, "p2_name")
+        p3 = _bound(bindings, "p3_name")
+        extra: list[_Clause] = []
+        if p1 and p2 and p3:
+            extra.append(
+                _Clause(
+                    "detail",
+                    (
+                        f"první tři: {p1}, {p2}, {p3}"
+                        if cs
+                        else f"the top three are {p1}, {p2}, and {p3}"
+                    ),
+                    ("field:podium",),
+                )
+            )
+        if position:
+            return (
+                _Clause(
+                    "beat",
+                    (
+                        f"končí na {position}. místě"
+                        if cs
+                        else f"He finishes the session in P{position}"
+                    ),
+                    ("hero:position", "beat:wrap"),
+                ),
+                extra,
+            )
+        if extra:
+            return extra[0], extra[1:]
 
     if event == "POSITION_LOST":
         if position and name:

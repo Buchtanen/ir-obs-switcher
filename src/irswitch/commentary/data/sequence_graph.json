@@ -5974,6 +5974,76 @@
         }
       }
     },
+    "leader_change": {
+      "family": "position",
+      "event_types": [
+        "LEADER_CHANGE"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 75,
+      "cooldown_s": 8,
+      "slots": [
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Nash"
+        },
+        {
+          "name": "leader_name",
+          "type": "name",
+          "example": "Knaus"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 4
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing"
+      ],
+      "notes": "Class P1 car changed. Do not invent an on-track pass.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{target_name} takes the lead from {leader_name}.",
+            "New leader: {target_name}.",
+            "The lead changes. {target_name} is now P1."
+          ],
+          "focused": [
+            "{target_name} takes the lead from {leader_name}.",
+            "New leader: {target_name}.",
+            "{target_name} is the new leader."
+          ],
+          "pushing": [
+            "{target_name} grabs the lead from {leader_name}.",
+            "Lead change. {target_name} is out front.",
+            "{target_name} seizes P1 from {leader_name}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} přebírá vedení po {leader_name}.",
+            "Nový lídr: {target_name}.",
+            "Vedení se mění. {target_name} je P1."
+          ],
+          "focused": [
+            "{target_name} přebírá vedení po {leader_name}.",
+            "Nový lídr: {target_name}.",
+            "{target_name} je nový lídr."
+          ],
+          "pushing": [
+            "{target_name} bere vedení po {leader_name}.",
+            "Změna v čele. {target_name} je první.",
+            "{target_name} bere P1 po {leader_name}."
+          ]
+        }
+      }
+    },
     "session_wrap": {
       "family": "session",
       "event_types": [
@@ -6886,6 +6956,24 @@
         "same_correlation": true,
         "min_gap_s": 0.4,
         "max_gap_s": 12
+      }
+    },
+    {
+      "from": "overtake",
+      "to": "leader_change",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.4,
+        "max_gap_s": 20
+      }
+    },
+    {
+      "from": "leader_change",
+      "to": "hunting",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 1.0,
+        "max_gap_s": 40
       }
     },
     {

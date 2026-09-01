@@ -88,6 +88,7 @@ class EventPrioritySettings:
     projected_lap: int = 42
     position_attack: int = 55
     position_change: int = 70
+    leader_change: int = 75
     overtake: int = 80
     incident: int = 90
     pit: int = 50

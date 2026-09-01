@@ -294,15 +294,15 @@ class ProcessTtsSink:
                 )
             outcome = polish_skeleton(spoken_text, utterance.node, self.settings, **polish_kwargs)
             self._emit_polish_debug(utterance, outcome)
-            if not (outcome.text or "").strip():
-                return
-            spoken_text = numbers_to_words(outcome.text, utterance.locale)
-            spoken_text = mix_hero_name(
-                spoken_text,
-                utterance.hero_names,
-                utterance.locale,
-                name=utterance.hero_name,
-            )
+            polished = (outcome.text or "").strip()
+            if polished:
+                spoken_text = numbers_to_words(polished, utterance.locale)
+                spoken_text = mix_hero_name(
+                    spoken_text,
+                    utterance.hero_names,
+                    utterance.locale,
+                    name=utterance.hero_name,
+                )
             if not spoken_text.strip():
                 return
         with ducker_from_settings(self.settings):

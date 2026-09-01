@@ -126,6 +126,7 @@ class CommentaryDirector:
     grid_story: bool = False
     quali_bag_ready: bool = False
     watcher_log: WatcherLog | None = None
+    on_decision: Callable[[dict[str, Any], float], None] | None = None
     _composition_context: dict[str, Any] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
@@ -263,17 +264,22 @@ class CommentaryDirector:
         emotion: str = "",
         text: str = "",
     ) -> None:
-        self._decisions.append(
-            SpeakDecision(
-                action=action,
-                reason=reason,
-                event_type=event_type,
-                node_id=node_id,
-                emotion=emotion,
-                text=text,
-                at=now,
-            )
+        decision = SpeakDecision(
+            action=action,
+            reason=reason,
+            event_type=event_type,
+            node_id=node_id,
+            emotion=emotion,
+            text=text,
+            at=now,
         )
+        self._decisions.append(decision)
+        hook = self.on_decision
+        if hook is not None:
+            try:
+                hook(decision.to_dict(), now)
+            except Exception:
+                logger.debug("commentary decision hook failed", exc_info=True)
         self._mirror_watcher(
             action=action,
             reason=reason,
@@ -1016,7 +1022,10 @@ def slot_bindings(
         "old_position": _first(metrics, "oldPosition"),
         "target_name": (target.display_name if target is not None else None)
         or _first(metrics, "targetName", "target_name"),
-        "leader_name": _first(metrics, "leaderName", "leader", "leader_name"),
+        "leader_name": _first(metrics, "oldLeaderName", "leaderName", "leader", "leader_name"),
+        "p1_name": _first(metrics, "p1Name", "p1_name"),
+        "p2_name": _first(metrics, "p2Name", "p2_name"),
+        "p3_name": _first(metrics, "p3Name", "p3_name"),
         "lap": _first(metrics, "lap"),
         "lap_time": _first(metrics, "lapTime"),
         "delta": _first(metrics, "delta", "deltaToBest"),
