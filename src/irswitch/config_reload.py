@@ -62,6 +62,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "race_observer.leader_pace_cooldown_s",
         "race_observer.incident_classify",
         "race_observer.flags",
+        "race_observer.grid_story",
         "commentary.llm_polish",
         "commentary.llm_base_url",
         "commentary.llm_model",

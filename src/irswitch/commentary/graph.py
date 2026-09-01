@@ -29,6 +29,8 @@ COMMENTARY_ONLY_EVENTS = frozenset(
         "SESSION_FLAG",
         "STREAM_START",
         "PACE_HUNT",
+        "QUALI_RECAP",
+        "PARADE_PAD",
     }
 )
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})

@@ -29,7 +29,7 @@ Stream start needs a **long** cap. Flags/incidents in v1 use `hr_states: ["unkno
 
 - B: off_track vs unknown incident copy (after N3)
 - C: flag yellow/green/checkered (after N5) — 1 line × 2 locales, not 5 emotions
-- D: grid/pace — only if N6/N7 ship
+- D: grid/pace graph copy — N7 ships formatter-only `QUALI_RECAP` / `PARADE_PAD`
 - Optional: graph nodes replacing P2–P4 templates
 
 ## Docs impact

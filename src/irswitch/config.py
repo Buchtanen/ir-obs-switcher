@@ -603,6 +603,12 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             "flags",
             ro_defaults.flags,
         ),
+        grid_story=_get_bool(
+            parser,
+            "race_observer",
+            "grid_story",
+            ro_defaults.grid_story,
+        ),
     )
 
     lhm_raw = ""

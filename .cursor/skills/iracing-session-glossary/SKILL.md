@@ -83,7 +83,7 @@ Map only via `overlay_mode_from_session_type(session_type)`. Warmup/Test/unknown
 | Which row inside it | `session_num` (0-based) |
 | Reset overlay stores | `session_key` = `{subsession}:{session_num}:{track}` |
 | Commentary brief once | `(SubSessionID, SessionNum)` |
-| Memory across Practice→Race | `StreamMemory` / `reset_stream()` — OBS-stream scoped |
+| Memory across Practice→Race | `StreamMemory` / `reset_stream()` — OBS-stream scoped (sessions, rivals, quali bag) |
 | VOD chapter offset | OBS stream duration (`offset_seconds`), not `SessionTime` |
 | Tape replay sleep | `t_mono` |
 | Tape sync to VOD | `t_stream`, else `t_session`, else `t_mono` (`t`) |

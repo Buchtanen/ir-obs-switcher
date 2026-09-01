@@ -29,6 +29,7 @@ def test_opener_mutex_stream_start_blocks_in_car() -> None:
     lock.note("STREAM_START", 1.0)
     assert lock.skip_reason("ENTER_CAR", 2.0) == "opener_mutex"
     assert lock.skip_reason("SESSION_INTRO_RACE", 2.0) == "opener_mutex"
+    assert lock.skip_reason("QUALI_RECAP", 2.0) == "opener_mutex"
     assert lock.skip_reason("STREAM_START", 2.0) is None
     assert lock.skip_reason("OVERTAKE", 2.0) is None
     assert lock.skip_reason("ENTER_CAR", 12.0) is None

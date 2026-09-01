@@ -164,6 +164,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Final lap | All\* | `is_final_lap` (no mode gate) | yes 95 | yes cd 60 |
 | Finish | All\* | `player_finished` (s/f or eligible pit after `session_checkered`; cooldown fallback). `session_finished` now aliases `mute_field`. Checkered **bit** is not finish. | yes 100 | yes cd 120 |
 | Session flag Y/G/checkered | Race | `SessionFlags` rising edge. Yellow family coalesced. Start lights ignored. Gate `race_observer.flags` (default off). | no | yes COMMENTARY_ONLY `SESSION_FLAG` |
+| Quali recap + parade pad | Race | Stream quali bag + `SessionState` 3. Gate `race_observer.grid_story` (default off). | no | yes COMMENTARY_ONLY `QUALI_RECAP` / `PARADE_PAD` |
 | HR pressure | All | Bio `pushing`/`high` | yes | yes |
 | BLE lost | All | HR provider disconnect inject | yes | **no** |
 | Sysinfo bar | All | Continuous sample | persistent bar | n/a |
@@ -176,11 +177,13 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Situation | Session | W | C | Gate |
 | --- | --- | --- | --- | --- |
 | Enter car | All | no | yes `in_car` | `commentary.enabled`; skipped after_session |
-| Session intro P/Q/R | P/Q/R | no | opt | `session_briefs` |
+| Session intro P/Q/R | P/Q/R | no | opt | `session_briefs`; race intro skipped when `grid_story` + bag |
 | SoF brief | R | no | opt | `session_briefs` |
 | Weather brief | All | no | opt | `session_briefs`; skipped after mute_field |
 | Session flag Y/G/checkered | Race | no | opt `SESSION_FLAG` | `race_observer.flags`; not `session_checkered` / SESSION_CHECKERED |
 | Session wrap | All | no | opt `session_wrap` | `player_finished` / session change; `session_briefs` |
+| Quali recap | Race | no | opt `QUALI_RECAP` | `race_observer.grid_story`; replaces race intro when bag exists |
+| Parade pad | Race | no | opt `PARADE_PAD` | `grid_story`; stop on SessionState 4 or green |
 
 ## 5. Widget catalog notes
 

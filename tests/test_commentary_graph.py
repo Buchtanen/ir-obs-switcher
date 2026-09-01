@@ -61,6 +61,8 @@ def test_graph_event_types_are_in_catalog() -> None:
     assert "STREAM_START" in COMMENTARY_ONLY_EVENTS
     assert "PACE_HUNT" in COMMENTARY_ONLY_EVENTS
     assert "SESSION_FLAG" in COMMENTARY_ONLY_EVENTS
+    assert "QUALI_RECAP" in COMMENTARY_ONLY_EVENTS
+    assert "PARADE_PAD" in COMMENTARY_ONLY_EVENTS
     assert "BACK_UNDER_WAY" in COMMENTARY_ONLY_EVENTS
     assert "INCIDENT_RECOVERED" not in COMMENTARY_ONLY_EVENTS
 

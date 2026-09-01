@@ -59,7 +59,7 @@ Garage UI is `IsGarageVisible`, not stall physics. See rule `iracing-sdk-semanti
 | `RaceState.session_finished` | overlay | alias of `mute_field` |
 | `build_session_key` | overlay reset | `subsession:session_num:track` |
 | `StreamChapter.session_type` | VOD markers | same Title Case strings |
-| `StreamMemory` | RaceObserver | survives session changes until OBS stream reset |
+| `StreamMemory` | RaceObserver | survives session changes until OBS stream reset; quali bag = class position + best lap |
 
 `RaceState` / `RaceObserver` / `RaceContextAnalyzer` are **historical names**.
 They interpret telemetry for every overlay mode.

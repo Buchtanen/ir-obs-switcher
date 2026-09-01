@@ -3,8 +3,8 @@
 **Status:** landing on `master` after umbrella [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) merged (2026-09-01). Rebased + adapted finish/checkered vs `SessionEndTracker`.  
 **Depends on:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md), [observers_decoupling_plan.md](observers_decoupling_plan.md)  
 **Umbrella:** P0–P5 [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) — merged. This epic targets **`master`**.  
-**Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `session_end.py`, `story.py`). There is **no** `race/observer/` package.  
-**Task slices:** [docs/tasks/](tasks/) — sequential commits on this branch. **Stop for live listen** after N5.
+**Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `session_end.py`, `story.py`, `grid_story.py`). There is **no** `race/observer/` package.  
+**Task slices:** [docs/tasks/](tasks/) — sequential commits on this branch. N7 landed as opt-in (`race_observer.grid_story`); live listen still decides density.
 
 This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen.
 
@@ -68,7 +68,7 @@ Practice / Quali
   → hunt position BY LAP TIME, not gap     [v1 if CarIdxBestLapTime works]
   → leader filler ≤ 1× / 5 min             [v1: extend P2 FIELD_FACT]
 Race
-  → quali recap + rolling novel            [defer after live listen]
+  → quali recap + parade padding      [opt-in `grid_story`; not a rolling novel]
   → battles                                [keep BattleEmitter]
   → Speed-based recovered on P3 FSM        [v1]
   → yellow / green / checkered flags       [v1]; full flag tree later
@@ -109,7 +109,7 @@ N2 **must** land before any new `event_types` string in `sequence_graph.json`. U
 8. **N6b:** hunt-by-time **only if** N1 fixtures show usable `CarIdxBestLapTime`. Else skip speak. Fix or quarantine `QualiEmitter.position_attack` (hero PB as `P{n}`, not rival time).
 9. **N3 v1:** `off_track` vs `unknown` on INCIDENT; Speed as motion on P3 **without** flipping off-track→rolling; scheduler must not speak INCIDENT + INCIDENT_AFTERMATH the same tick. `BACK_UNDER_WAY` only.
 10. **N5 v1:** race yellow (coalesce caution family) / green / checkered as `SESSION_FLAG`. Ignore start lights. Default off.
-11. **Stop.** Live listen. Then maybe N7 one-liner recap (no rolling novel), then research lost-control, then HUD cover.
+11. Live listen (density). N7 one-liner recap + parade pad is **opt-in** (`race_observer.grid_story`). Then research lost-control, then HUD cover.
 
 ---
 
@@ -185,7 +185,7 @@ Decode in `iracing/session_flags.py`. Bits match `irsdk_Flags`.
 
 **Checkered flag bit** = this client is **shown** the flag. **`SessionState == 5`** = session in checkered. **Do not OR** them into one field used for hero finish.
 
-v1 speak (N5): race **yellow** (coalesce `yellow` / `yellowWaving` / `caution` / `cautionWaving`) / **green** / **checkered**. StartHidden/Ready/Set/Go belong to N7 (deferred). Default off.
+v1 speak (N5): race **yellow** (coalesce `yellow` / `yellowWaving` / `caution` / `cautionWaving`) / **green** / **checkered**. Start lights stay silent. Default off.
 
 ### 2.5 Finish — three booleans
 
@@ -228,7 +228,7 @@ Derived COMMENTARY_ONLY envelopes **bypass EventEngine arbitration** (drain → 
 
 ### 3.1 Kernel (P2 — do not redesign)
 
-`StoryContext` 2+2, weather, `StreamMemory` (sessions + rivals only — **no quali bag yet**). Field facts 15–20 s rotation. Leader 5 min = extra cooldown on the **leader** fact, not a new event type.
+`StoryContext` 2+2, weather, `StreamMemory` (sessions + rivals + **quali bag**: class position + best lap seconds). Field facts 15–20 s rotation. Leader 5 min = extra cooldown on the **leader** fact, not a new event type.
 
 ### 3.2 v1 watches
 
@@ -239,7 +239,7 @@ Derived COMMENTARY_ONLY envelopes **bypass EventEngine arbitration** (drain → 
 | Finish (N4) | `context.py` state + `session.py` | race |
 | Timing hunt | new `race/timing_hunt.py` **iff** N1 times work | P/Q |
 | Stream start | new bridge `main.py` → overlay runtime (does **not** exist today) | once per OBS rising edge |
-| Grid/rolling | **not v1** | — |
+| Grid/rolling | N7 `grid_story.py` | race; opt-in |
 
 Signature: match shipped `tick(state, now)` plus fields copied onto `RaceState` by N1. Do not invent `tick(ctx, snap)` until a dedicated observer refactor (not in landing).
 
@@ -247,7 +247,7 @@ Signature: match shipped `tick(state, now)` plus fields copied onto `RaceState` 
 
 **Practice / Quali:** gap-hunt **TTS** off by default; HUD may still hunt. Timing-hunt (`PACE_HUNT`) = hero best/projected vs `CarIdxBestLapTime` of the car in P{n}. If array is all None, **silence** (no DriverInfo fallback). Quali `position_attack` stays **own PB only**, not hunt-P{n}.
 
-**Race:** keep `BattleEmitter` gap hunt. Speed on P3 recovered. Flags v1. No rolling novel.
+**Race:** keep `BattleEmitter` gap hunt. Speed on P3 recovered. Flags v1. N7 recap + parade pad when `grid_story` is on (not a rolling novel).
 
 ### 3.4 Incident arc
 
@@ -276,7 +276,7 @@ Today they are separate machines and **will talk over each other** if N8 “both
 | OBS live, not seated | `STREAM_START` only |
 | Seated, same session, no stream-start this tick | `ENTER_CAR` **or** session intro, not both |
 | Session change, stream already live | `SESSION_WRAP` then **one** of preview **or** intro |
-| Race pre-green | recap **instead of** a second race intro (N7, not v1) |
+| Race pre-green | recap **instead of** a second race intro (N7, `grid_story`) |
 | Stream start while already in car | welcome only; **do not** replay in-car |
 
 N8 must **add** `main.py` → overlay/commentary bridge (`obs_stream_started` today only refreshes YouTube). Use existing `overlay/http.py` `get_overlay_runtime` / `set_overlay_runtime` — no new global. Fail-soft.
@@ -313,7 +313,8 @@ All on `cursor/narrative-observers-epic-4749` (base #179). See §1.1. No paralle
 | `race_observer.leader_pace_cooldown_s` | `300` | N6a — **N6a creates** `[race_observer]` + settings dataclass + `OverlayRuntime` wiring (`RaceObserver()` today takes no settings) |
 | `race_observer.incident_classify` | `false` until trusted | N3 (add key to the N6a dataclass) |
 | `race_observer.flags` | `false` | N5 |
-| `commentary.session_briefs` | already `false` | wrap/preview/N7 stay silent unless on |
+| `race_observer.grid_story` | `false` | N7 recap + parade pad; independent of `session_briefs` |
+| `commentary.session_briefs` | already `false` | wrap/preview stay silent unless on |
 
 No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `event_engine.gap_hunt_tts_*`.
 
@@ -341,7 +342,7 @@ No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `eve
 | N4 | [n4_finish_semantics.md](tasks/n4_finish_semantics.md) | yes — three booleans |
 | N5 | [n5_flags_observer.md](tasks/n5_flags_observer.md) | reduced — Y/G/checkered race |
 | N6 | [n6_practice_quali_pace.md](tasks/n6_practice_quali_pace.md) | split a/b; N6a bootstraps `[race_observer]` |
-| N7 | [n7_race_start.md](tasks/n7_race_start.md) | **defer** |
+| N7 | [n7_race_start.md](tasks/n7_race_start.md) | **yes** — opt-in `grid_story`; no rolling novel |
 | N8 | [n8_stream_start_incar.md](tasks/n8_stream_start_incar.md) | yes — mutex + bridge; copy in N11 |
 | N9 | [n9_overlay_cover.md](tasks/n9_overlay_cover.md) | **CUT** |
 | N10 | [n10_watcher_log.md](tasks/n10_watcher_log.md) | debug-only / defer API |

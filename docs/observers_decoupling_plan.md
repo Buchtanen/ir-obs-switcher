@@ -189,7 +189,7 @@ to commentary. **Issue #172.**
 `SESSION_WRAP` / `SESSION_PREVIEW` from RaceObserver at session boundaries;
 sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`.
 **Issue #175.**  
-**Next:** epic **N8** opener mutex + stream TTS (wrap stays gated by `session_briefs`). **N7 recap/rolling deferred.** Wrap must not fire on field checkered after N4.
+**Next:** epic **N8** opener mutex + stream TTS (wrap stays gated by `session_briefs`). **N7 recap/parade pad** is opt-in `race_observer.grid_story` (not `session_briefs`). Wrap must not fire on field checkered after N4.
 
 ### P5 — Content gaps ✅
 `ATTACK_RANGE` graph node (ENTER TTS); optional mid-pit `PIT_STOPPED` ENTER.

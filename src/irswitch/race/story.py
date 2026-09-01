@@ -5,8 +5,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from irswitch.iracing.sdk_units import as_completed_lap_time
 from irswitch.iracing.weather import WeatherSnapshot
 from irswitch.race.opponents import NearFieldCar
+
+
+@dataclass(frozen=True)
+class QualiBag:
+    """Hero quali result remembered across the OBS stream (not YAML ResultsPositions)."""
+
+    class_position: int
+    best_lap_s: float | None = None
 
 
 @dataclass(frozen=True)
@@ -60,6 +69,8 @@ class StreamMemory:
     max_sessions: int = 8
     sessions_seen: list[str] = field(default_factory=list)
     rival_seen: dict[int, str] = field(default_factory=dict)
+    quali_class_position: int | None = None
+    quali_best_lap_s: float | None = None
 
     def note_session(self, session_key: str) -> None:
         if not session_key:
@@ -80,6 +91,22 @@ class StreamMemory:
             for key in keys:
                 self.rival_seen.pop(key, None)
 
+    def note_quali(self, class_position: int | None, best_lap_s: float | None) -> None:
+        """Keep last-good quali class position and official best lap (seconds)."""
+        if class_position is not None and int(class_position) > 0:
+            self.quali_class_position = int(class_position)
+        seconds = as_completed_lap_time(best_lap_s)
+        if seconds is not None:
+            self.quali_best_lap_s = seconds
+
+    def quali_bag(self) -> QualiBag | None:
+        """None when this stream never saw a quali class position."""
+        if self.quali_class_position is None:
+            return None
+        return QualiBag(self.quali_class_position, self.quali_best_lap_s)
+
     def reset_stream(self) -> None:
         self.sessions_seen.clear()
         self.rival_seen.clear()
+        self.quali_class_position = None
+        self.quali_best_lap_s = None

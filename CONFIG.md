@@ -683,6 +683,7 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `race_observer.leader_pace_cooldown_s`
 - `race_observer.incident_classify`
 - `race_observer.flags`
+- `race_observer.grid_story`
 
 ### Vyžaduje restart procesu
 
@@ -709,6 +710,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[race_observer]` `leader_pace_cooldown_s` (default `300`) — minimum seconds between leader field-fact fillers. Other filler kinds (position/gap/weather) still rotate; missing section uses the default. Later incident/flag keys land on this same section.
 - `[race_observer]` `incident_classify` (default `false`) — when true, HUD/commentary `INCIDENT` envelopes set `metrics.branch` to `off_track` (`PlayerTrackSurface == OffTrack` around the tick) or `unknown`. Nearby cars (`nearbyCarIdx` / `nearbyGap`) are metrics only — never a spoken kind (`contact_object` is refused). Leave off until trusted. Same-tick speech: engine `INCIDENT` (delta ≥ `events.incident_min_delta`, default **2**, prio 90) wins over derived `INCIDENT_AFTERMATH` (any count rise, prio 72). 1× off-track therefore speaks aftermath only unless you lower `incident_min_delta`. Speed motion for P3 aftermath is not INI: stalled ≤ 1.0 m/s, rolling ≥ 2.5 m/s (`race/aftermath.py`); missing Speed still uses LapDistPct. Classify stays surface-first (off-track/tow is stalled even if Speed > 0) so `BACK_UNDER_WAY` can still fire. No `INCIDENT_RECOVERED`.
 - `[race_observer]` `flags` (default `false`) — when true, race `SESSION_FLAG` commentary on rising yellow (coalesced `yellow` / `yellowWaving` / `caution` / `cautionWaving`), green, or checkered. Practice/qualify log only. Start lights (`startHidden`/`Ready`/`Set`/`Go`) are ignored. Checkered **bit** is not `FINISH` and does not `SESSION_WRAP` (N4 finish booleans stay separate). Per-kind cooldown 12 s (code constant). Missing key = off.
+- `[race_observer]` `grid_story` (default `false`) — when true, one `QUALI_RECAP` from the stream quali bag (class position + best lap seconds captured during Qualify) and up to two ParadeLaps pads (`PARADE_PAD`, 25 s cooldown). Padding stops on `SessionState == 4` or a green flag (N5 still speaks green). Missing bag → skip recap. Replaces `SESSION_INTRO_RACE` (director reason `grid_story_replaces_intro`); does **not** turn on `session_briefs`. Start lights stay silent. Missing key = off.
 
 
 
@@ -725,6 +727,8 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 **Migration:** new optional `[race_observer]` `incident_classify` (default `false`). Missing key = generic INCIDENT (no `metrics.branch`). Aftermath still fires on any incident-count rise. `events.incident_min_delta` stays 2.
 
 **Migration:** new optional `[race_observer]` `flags` (default `false`). Missing key = no SESSION_FLAG speech. Checkered bit still does not finish the player.
+
+**Migration:** new optional `[race_observer]` `grid_story` (default `false`). Missing key = no quali recap / parade pad. Independent of `commentary.session_briefs`.
 
 
 **Migration:** optional `commentary.driver_name` / `commentary.driver_nickname` (empty default). Commentary mixes these with he/him/his. When both empty, uses iRacing `UserName` first+last tokens (a single token if the username has only one word).

@@ -34,6 +34,7 @@ from irswitch.overlay.session import (
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
+from irswitch.race.grid_story import QUALI_RECAP
 from irswitch.race.observer import RaceObserver
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
@@ -461,7 +462,16 @@ class OverlayRuntime:
         Prefer speaking an early session intro before seating. When a brief
         speaks this frame, defer ``ENTER_CAR`` to the next tick so in_car is
         not marked announced while the director is busy.
+
+        When a QUALI_RECAP is queued for the post-engine flush, skip sidecars
+        this tick so intro/in-car cannot steal the opener window.
         """
+        overlay = self._overlay_settings()
+        if self.commentary is not None:
+            self.commentary.grid_story = bool(overlay.race_observer.grid_story)
+            self.commentary.quali_bag_ready = self.race_observer.stream.quali_bag() is not None
+        if any(env.event_type == QUALI_RECAP for env in self._pending_derived_speech):
+            return
         spoken_brief = self._observe_session_briefs(state, now)
         if spoken_brief:
             return

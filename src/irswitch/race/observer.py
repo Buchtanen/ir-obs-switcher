@@ -9,12 +9,14 @@ from typing import Any
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.drivers import speakable_name_mix_for_car
+from irswitch.iracing.sdk_units import as_completed_lap_time, format_lap_time
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
 from irswitch.overlay.settings import RaceObserverSettings
 from irswitch.race.aftermath import IncidentAftermathFsm
 from irswitch.race.flags import SessionFlagFsm
+from irswitch.race.grid_story import GridStoryFsm
 from irswitch.race.narrative import StreamNarrativeFsm
 from irswitch.race.opponents import (
     NearFieldCar,
@@ -51,6 +53,7 @@ class RaceObserver:
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
     flags: SessionFlagFsm = field(default_factory=SessionFlagFsm)
+    grid_story: GridStoryFsm = field(default_factory=GridStoryFsm)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -76,6 +79,7 @@ class RaceObserver:
         self.narrative.reset_session()
         self.timing_hunt.reset()
         self.flags.reset()
+        self.grid_story.reset()
 
     def reset_stream(self) -> None:
         self.reset_session()
@@ -88,6 +92,7 @@ class RaceObserver:
         out.extend(self.aftermath.take_pending())
         out.extend(self.flags.take_pending())
         out.extend(self.timing_hunt.take_pending())
+        out.extend(self.grid_story.take_pending())
         return out
 
     @property
@@ -135,6 +140,7 @@ class RaceObserver:
             self.aftermath.reset()
             self.timing_hunt.reset()
             self.flags.reset()
+            self.grid_story.reset()
             if key:
                 self.stream.note_session(key)
 
@@ -165,6 +171,11 @@ class RaceObserver:
             self._note_weather(weather)
 
         overlay_mode = state.overlay_mode or overlay_mode_from_session_type(snap.session_type)
+        if overlay_mode == "QUALIFYING":
+            self.stream.note_quali(
+                state.class_position or snap.class_position,
+                state.best_lap_time if state.best_lap_time is not None else snap.best_lap_time,
+            )
         ctx = StoryContext(
             session_key=key,
             overlay_mode=overlay_mode,
@@ -203,6 +214,16 @@ class RaceObserver:
             self.flags.tick(state, now, enabled=bool(self.settings.flags))
         except Exception:
             logger.warning("SessionFlagFsm.tick failed", exc_info=True)
+        try:
+            self.grid_story.tick(
+                state,
+                now,
+                enabled=bool(self.settings.grid_story),
+                bag=self.stream.quali_bag(),
+                session_key=key,
+            )
+        except Exception:
+            logger.warning("GridStoryFsm.tick failed", exc_info=True)
         return ctx
 
     def next_filler_envelope(self, now: float, *, locale: str = "en") -> EventEnvelope | None:
@@ -346,6 +367,25 @@ class RaceObserver:
             if flag_kind == "checkered":
                 return "Šachovnice." if cs else "That's the checkered flag."
             return None
+
+        if envelope.event_type == "QUALI_RECAP" or kind == "quali_recap":
+            pos = metrics.get("position")
+            if pos is None:
+                return None
+            spoken_time = None
+            seconds = as_completed_lap_time(metrics.get("lapTime"))
+            if seconds is not None:
+                spoken_time = format_lap_time(seconds)
+            if cs:
+                if spoken_time:
+                    return f"Kvalifikoval se na {int(pos)}. místě časem {spoken_time}."
+                return f"Kvalifikoval se na {int(pos)}. místo."
+            if spoken_time:
+                return f"He qualified P{int(pos)} in {spoken_time}."
+            return f"He qualified P{int(pos)}."
+
+        if envelope.event_type == "PARADE_PAD" or kind == "parade_pad":
+            return "Pořád na formovačce." if cs else "Still on the formation lap."
 
         fact = str(metrics.get("fact") or "")
         pos = metrics.get("position")

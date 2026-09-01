@@ -16,7 +16,8 @@ SESSION_INTROS = frozenset(
         "SESSION_INTRO_RACE",
     }
 )
-OPENER_EVENTS = frozenset({STREAM_START, ENTER_CAR, SESSION_PREVIEW}) | SESSION_INTROS
+QUALI_RECAP = "QUALI_RECAP"
+OPENER_EVENTS = frozenset({STREAM_START, ENTER_CAR, SESSION_PREVIEW, QUALI_RECAP}) | SESSION_INTROS
 
 
 @dataclass
@@ -24,7 +25,7 @@ class OpenerMutex:
     """At most one opener family speaks inside ``hold_s``.
 
     STREAM_START always wins the window (welcome, no replay in-car).
-    ENTER_CAR and session intro/preview share the same lock.
+    ENTER_CAR and session intro/preview/quali recap share the same lock.
     SESSION_WRAP is not an opener.
     """
 

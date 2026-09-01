@@ -118,6 +118,9 @@ class CommentaryDirector:
     filler_formatter: Callable[[EventEnvelope], str | None] | None = None
     _iracing_hero_names: tuple[str, ...] = field(default_factory=tuple)
     opener: OpenerMutex = field(default_factory=OpenerMutex)
+    # N7: race_observer.grid_story — skip SESSION_INTRO_RACE when the quali bag exists.
+    grid_story: bool = False
+    quali_bag_ready: bool = False
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -724,6 +727,14 @@ class CommentaryDirector:
 
     def _session_briefs_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         """Return a skip reason when session briefs stay silent; else None."""
+        if envelope.event_type == "SESSION_INTRO_RACE" and self.grid_story and self.quali_bag_ready:
+            self._record(
+                action="skipped",
+                reason="grid_story_replaces_intro",
+                now=now,
+                event_type=envelope.event_type,
+            )
+            return "grid_story_replaces_intro"
         if envelope.event_type not in _SESSION_BRIEF_EVENTS:
             return None
         if not getattr(self.settings, "session_briefs", False):

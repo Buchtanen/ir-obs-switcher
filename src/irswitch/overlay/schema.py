@@ -329,6 +329,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Speak race yellow/green/checkered as SESSION_FLAG. Start lights ignored. Default off.",
     ),
     FieldSpec(
+        "race_observer.grid_story",
+        "bool",
+        False,
+        True,
+        "race_observer",
+        "Speak one quali recap and ParadeLaps padding. Replaces SESSION_INTRO_RACE when the bag exists. Default off.",
+    ),
+    FieldSpec(
         "commentary.llm_polish",
         "bool",
         False,
@@ -1008,6 +1016,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "race_observer.leader_pace_cooldown_s": s.race_observer.leader_pace_cooldown_s,
         "race_observer.incident_classify": s.race_observer.incident_classify,
         "race_observer.flags": s.race_observer.flags,
+        "race_observer.grid_story": s.race_observer.grid_story,
         "commentary.llm_polish": s.commentary.llm_polish,
         "commentary.llm_base_url": s.commentary.llm_base_url,
         "commentary.llm_model": s.commentary.llm_model,

@@ -198,6 +198,8 @@ class RaceObserverSettings:
     incident_classify: bool = False
     # Race yellow/green/checkered SESSION_FLAG commentary. Default off.
     flags: bool = False
+    # Quali recap + ParadeLaps padding. Default off. Independent of session_briefs.
+    grid_story: bool = False
 
 
 @dataclass(frozen=True)
