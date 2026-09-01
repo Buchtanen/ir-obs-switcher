@@ -25,7 +25,7 @@ from irswitch.race.opponents import (
     relevant_near_field,
     same_class,
 )
-from irswitch.race.story import HeroSnapshot, StoryContext, StreamMemory
+from irswitch.race.story import HeroSnapshot, StoryContext, StoryHistory, StreamMemory
 from irswitch.race.timing_hunt import TimingHuntFsm
 from irswitch.race.watcher_log import WatcherLog, note
 
@@ -50,6 +50,7 @@ class RaceObserver:
     behind_n: int = 2
     settings: RaceObserverSettings = field(default_factory=RaceObserverSettings)
     stream: StreamMemory = field(default_factory=StreamMemory)
+    history: StoryHistory = field(default_factory=StoryHistory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
@@ -77,6 +78,7 @@ class RaceObserver:
         self._filler_cooldown_until = 0.0
         self._after_session = False
         self._leader_fact_until = 0.0
+        self.history.clear()
         self.aftermath.reset()
         self.narrative.reset_session()
         self.timing_hunt.reset()
@@ -97,6 +99,11 @@ class RaceObserver:
         out.extend(self.timing_hunt.take_pending())
         out.extend(self.grid_story.take_pending())
         return out
+
+    def note_accepted(self, envelopes: list[EventEnvelope]) -> None:
+        """Remember accepted facts for later graph-path composition; never derive truth here."""
+        for envelope in envelopes:
+            self.history.note(envelope)
 
     @property
     def context(self) -> StoryContext | None:
@@ -196,6 +203,7 @@ class RaceObserver:
             leader_class_position=leader_cp,
             weather=weather,
             stream_sessions=tuple(self.stream.sessions_seen),
+            recent_beats=self.history.snapshot(),
         )
         self._context = ctx
         self._after_session = bool(

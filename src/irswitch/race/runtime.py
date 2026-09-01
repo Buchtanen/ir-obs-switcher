@@ -366,6 +366,7 @@ class RaceRuntime:
             envelope = make_stream_start_envelope(now)
             self.commentary_consumer.note_stream_start_accepted(now)
             self._ensure_context(now)
+            self.race_observer.note_accepted([envelope])
             self.pipeline.publish_envelopes(
                 [envelope],
                 source="stream_start",
@@ -732,6 +733,10 @@ class RaceRuntime:
         situation_fact = self._collect_situation_fact(state, now, records)
         if situation_fact is not None:
             records.append(situation_fact)
+        try:
+            self.race_observer.note_accepted([record.envelope for record in records])
+        except Exception:
+            logger.warning("RaceObserver accepted history failed", exc_info=True)
         self.pipeline.publish_records(records, accepted_monotonic_ms=int(now * 1000))
 
     async def _read_telemetry(self) -> TelemetrySnapshot:
