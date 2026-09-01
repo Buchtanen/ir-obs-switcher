@@ -353,9 +353,7 @@ def _load_commentary_scheduler(
         max_silence_s=max(
             5.0, _get_float(parser, section, "max_silence_s", defaults.max_silence_s)
         ),
-        llm_past_framing=_get_bool(
-            parser, section, "llm_past_framing", defaults.llm_past_framing
-        ),
+        llm_past_framing=_get_bool(parser, section, "llm_past_framing", defaults.llm_past_framing),
     )
 
 
@@ -543,6 +541,22 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                     parser, "commentary", "llm_max_tokens", commentary_defaults.llm_max_tokens
                 ),
             ),
+        ),
+        llm_max_attempts=max(
+            1,
+            min(
+                8,
+                _get_int(
+                    parser,
+                    "commentary",
+                    "llm_max_attempts",
+                    commentary_defaults.llm_max_attempts,
+                ),
+            ),
+        ),
+        driver_name=_get_str(parser, "commentary", "driver_name", commentary_defaults.driver_name),
+        driver_nickname=_get_str(
+            parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
         ),
         scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
     )

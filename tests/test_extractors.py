@@ -8,6 +8,7 @@ from irswitch.iracing.extractors import (
     extract_session_type,
     extract_total_sessions,
     resolve_session_identity,
+    session_identity_changed,
 )
 from irswitch.models import DrivingMode
 
@@ -368,3 +369,9 @@ def test_extract_total_sessions_priority() -> None:
     """Test that SessionTotalSessions has priority over WeekendInfo."""
     data = {"SessionTotalSessions": 3, "WeekendInfo": {"Sessions": 5}}
     assert extract_total_sessions(data) == 3
+
+
+def test_session_identity_changed() -> None:
+    assert not session_identity_changed("Race", "RACE", 2, 3, "Race", "RACE", 2, 3)
+    assert session_identity_changed("Race", "RACE", 2, 3, "Qualify", "QUALIFY", 1, 3)
+    assert session_identity_changed("Race", "RACE", 2, None, "Race", "RACE", 2, 3)

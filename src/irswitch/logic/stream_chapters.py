@@ -1,7 +1,7 @@
 """In-memory stream chapter markers for WS / status.
 
-YouTube VOD description writes live in ``obs.youtube_vod`` (called from the API
-layer when ``[stream_chapters] youtube_vod = true``).
+YouTube VOD description writes after the stream ends in ``obs.youtube_vod``
+(called from the API layer when ``[stream_chapters] youtube_vod = true``).
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ STREAM_FLICKER_DEBOUNCE_S = 2.0
 
 DEFAULT_TRIGGER_SESSION_TYPES: tuple[str, ...] = ("Practice", "Qualify", "Race")
 DEFAULT_START_TITLE = "Stream start"
+DEFAULT_END_TITLE = "Stream end"
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,7 @@ class StreamChaptersSettings:
 
     enabled: bool = False
     start_title: str = DEFAULT_START_TITLE
+    end_title: str = DEFAULT_END_TITLE
     trigger_session_types: tuple[str, ...] = DEFAULT_TRIGGER_SESSION_TYPES
     # Lowercase session_type -> display title
     session_titles: Mapping[str, str] = field(default_factory=dict)
@@ -91,6 +93,9 @@ class StreamChapterTracker:
         self._pending_stop_mono: float | None = None
         self._last_session_type: str | None = None
         self._pending_new: list[StreamChapter] = []
+        self._last_offset = 0
+        self._end_appended = False
+        self._vod_flush_pending = False
 
     @property
     def settings(self) -> StreamChaptersSettings:
@@ -105,10 +110,28 @@ class StreamChapterTracker:
             self._streaming = False
             self._pending_stop_mono = None
             self._last_session_type = None
+            self._vod_flush_pending = False
 
     def clear(self) -> None:
         self._chapters.clear()
         self._pending_new.clear()
+        self._end_appended = False
+        self._last_offset = 0
+        self._vod_flush_pending = False
+
+    def consume_vod_flush(self) -> bool:
+        """True once after stream end / QUIT freeze, until the next arm."""
+        if not self._vod_flush_pending:
+            return False
+        self._vod_flush_pending = False
+        return True
+
+    def prepare_vod_flush(self) -> None:
+        """Arm a YouTube VOD rewrite without waiting for OBS streaming=false."""
+        if not self._settings.enabled or not self._chapters:
+            return
+        self._append_end_if_needed()
+        self._vod_flush_pending = True
 
     def chapters(self) -> list[StreamChapter]:
         return list(self._chapters)
@@ -154,24 +177,35 @@ class StreamChapterTracker:
         )
         return chapter
 
+    def _append_end_if_needed(self) -> None:
+        title = (self._settings.end_title or "").strip()
+        if not title or self._end_appended or not self._chapters:
+            return
+        last = self._chapters[-1]
+        offset = max(self._last_offset, last.offset_seconds)
+        if offset - last.offset_seconds < 10:
+            return
+        self._append(title=title, offset_seconds=offset, session_type=None)
+        self._end_appended = True
+
     def _start_stream(self, duration_current: float | None, session_type: str | None) -> None:
         self.clear()
         self._streaming = True
         self._pending_stop_mono = None
         self._last_session_type = session_type
+        self._last_offset = 0
         self._append(
             title=self._settings.start_title,
             offset_seconds=0,
             session_type=None,
         )
-        # duration_current unused for start (always 0); kept for API symmetry
         _ = duration_current
 
     def _confirm_stop(self) -> None:
-        self.clear()
+        self._append_end_if_needed()
         self._streaming = False
         self._pending_stop_mono = None
-        self._last_session_type = None
+        self._vod_flush_pending = True
 
     def update(
         self,
@@ -208,6 +242,7 @@ class StreamChapterTracker:
                     self._start_stream(duration_current_seconds, normalized)
                 else:
                     self._maybe_session_chapter(normalized, duration_current_seconds)
+                self._last_offset = _offset_seconds(duration_current_seconds)
             else:
                 if self._streaming and self._pending_stop_mono is None:
                     self._pending_stop_mono = now
@@ -256,6 +291,9 @@ def load_stream_chapters_settings(parser: configparser.ConfigParser) -> StreamCh
     if not start_title:
         start_title = defaults.start_title
 
+    raw_end = parser.get("stream_chapters", "end_title", fallback=defaults.end_title)
+    end_title = raw_end.strip() if raw_end is not None else defaults.end_title
+
     raw_triggers = parser.get(
         "stream_chapters",
         "trigger_session_types",
@@ -287,6 +325,7 @@ def load_stream_chapters_settings(parser: configparser.ConfigParser) -> StreamCh
     return StreamChaptersSettings(
         enabled=enabled,
         start_title=start_title,
+        end_title=end_title,
         trigger_session_types=triggers,
         session_titles=titles,
         youtube_vod=youtube_vod,

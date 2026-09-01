@@ -69,11 +69,14 @@ def _accent_for(event_type: str) -> str:
 def _rival_metrics(data: dict[str, Any]) -> dict[str, Any]:
     """Keep emitter gap/target fields; prefer real names / P# over fake copy."""
     metrics = {key: data[key] for key in _RIVAL_METRIC_KEYS if key in data}
+    rival_pos = data.get("rivalPosition")
     if metrics.get("targetName") in (None, ""):
-        rival_pos = data.get("rivalPosition")
         if rival_pos is not None:
             metrics["targetName"] = f"P{rival_pos}"
         # No invented "the car behind" — leave unnamed when DriverInfo is missing.
+    # Widget historically read metrics.position (manifest sample is P8).
+    if "position" not in metrics and rival_pos is not None:
+        metrics["position"] = rival_pos
     return metrics
 
 

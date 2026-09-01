@@ -103,6 +103,7 @@ class RaceState:
     on_pit_road: bool = False
     is_final_lap: bool = False
     session_finished: bool = False
+    session_checkered: bool = False
     opponent_ahead: OpponentInfo | None = None
     opponent_behind: OpponentInfo | None = None
     gap_ahead: float | None = None

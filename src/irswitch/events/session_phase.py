@@ -6,7 +6,8 @@ from irswitch.iracing.trk_loc import is_esc_teleport, is_on_track, is_towing
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.protocol import CandidateEvent
 
-# After checkered/cooldown, keep finish (and EXIT so widgets can leave).
+# After after_session (S/F post-checkered, pits at checkered, or CoolDown).
+# SessionState=5 alone is only the session clock, not this driver's end.
 POST_RACE_KEEP_NAMES = frozenset({"finish", "final_lap"})
 
 

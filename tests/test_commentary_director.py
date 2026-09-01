@@ -15,10 +15,10 @@ def _graph(*, filled: bool) -> object:
     if filled:
         variants = {
             "en": {
-                "neutral": ["You take P{position} from {target_name}."],
-                "pushing": ["Now. P{position} is yours."],
+                "neutral": ["He takes P{position} from {target_name}."],
+                "pushing": ["Now. P{position} is his."],
             },
-            "cs": {"neutral": ["Bereš P{position}."]},
+            "cs": {"neutral": ["Bere P{position}."]},
         }
     return parse_sequence_graph(
         {
@@ -102,7 +102,7 @@ def test_speaks_filled_variant_and_binds_slots() -> None:
     )
     spoken = director.observe([_overtake()], None, 10.0)
     assert spoken is not None
-    assert spoken.text == "You take P5 from Rossi."
+    assert spoken.text == "He takes P5 from Rossi."
     assert spoken.node_id == "overtake"
     assert spoken.emotion == "unknown"
     assert sink.spoken[-1].text == spoken.text
@@ -118,7 +118,7 @@ def test_hr_pushing_selects_emotion_variant() -> None:
     spoken = director.observe([_overtake()], bio, 10.0)
     assert spoken is not None
     assert spoken.emotion == "pushing"
-    assert spoken.text == "Now. P5 is yours."
+    assert spoken.text == "Now. P5 is his."
 
 
 def test_missing_hr_is_unknown() -> None:
@@ -221,3 +221,49 @@ def test_decision_log_records_slot_unbound() -> None:
     )
     assert director.observe([env], None, 10.0) is None
     assert director.decisions(1)[-1]["reason"] == "slot_unbound"
+
+
+def test_mixes_configured_hero_name_into_he_line() -> None:
+    graph = parse_sequence_graph(
+        {
+            "version": 1,
+            "locales": ["en"],
+            "nodes": {
+                "hunting": {
+                    "family": "battle",
+                    "event_types": ["HUNTING"],
+                    "phases": ["ENTER"],
+                    "speak_priority": 50,
+                    "cooldown_s": 1,
+                    "slots": [{"name": "gap", "type": "gap", "example": "1.0"}],
+                    "hr_states": ["unknown"],
+                    "variants": {
+                        "en": {"neutral": ["He closes to {gap}."]},
+                    },
+                }
+            },
+            "edges": [],
+        }
+    )
+    director = CommentaryDirector(
+        graph=graph,
+        settings=CommentarySettings(
+            enabled=True,
+            cooldown_s=0.5,
+            use_hr_emotion=False,
+            driver_name="Richard",
+            driver_nickname="Buchtanen",
+        ),
+        sink=NullTtsSink(),
+    )
+    env = make_envelope(
+        event_type="HUNTING",
+        phase="ENTER",
+        priority=50,
+        metrics={"gap": 1.0},
+    )
+    spoken = director.observe([env], None, 10.0)
+    assert spoken is not None
+    assert spoken.text.startswith("Richard ") or spoken.text.startswith("Buchtanen ")
+    assert not spoken.text.startswith("He ")
+    assert spoken.hero_name in {"Richard", "Buchtanen"}

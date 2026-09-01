@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import random
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -17,6 +17,7 @@ from irswitch.commentary.anti_repeat import (
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, load_sequence_graph
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
+from irswitch.commentary.speech_hero import mix_hero_name, resolve_hero_names
 from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink, TtsSink, build_tts_sink
 from irswitch.commentary.validator import (
     estimate_seconds,
@@ -42,6 +43,7 @@ _SESSION_BRIEF_EVENTS = frozenset(
         "WEATHER_BRIEF",
         "SESSION_WRAP",
         "SESSION_PREVIEW",
+        "SESSION_CHECKERED",
     }
 )
 DEFAULT_DECISION_LOG_SIZE = 32
@@ -105,6 +107,7 @@ class CommentaryDirector:
     _current_event_type: str | None = None
     filler_provider: Callable[[float], EventEnvelope | None] | None = None
     filler_formatter: Callable[[EventEnvelope], str | None] | None = None
+    _iracing_hero_names: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -113,7 +116,36 @@ class CommentaryDirector:
             self._recent = RecentUtteranceHistory(size=DEFAULT_HISTORY_SIZE)
         if not isinstance(self._sector_speaks_by_lap, dict):
             self._sector_speaks_by_lap = {}
+        if not isinstance(self._iracing_hero_names, tuple):
+            self._iracing_hero_names = tuple(self._iracing_hero_names or ())
         self._sync_scheduler_settings()
+
+    def note_hero_names(self, names: Sequence[str] | None) -> None:
+        """iRacing-derived first/last tokens; config override still wins at mix time."""
+        cleaned: list[str] = []
+        for raw in names or ():
+            token = str(raw).strip() if raw else ""
+            if token and token not in cleaned:
+                cleaned.append(token)
+        self._iracing_hero_names = tuple(cleaned)
+
+    def hero_names(self) -> tuple[str, ...]:
+        cfg = self.settings
+        return resolve_hero_names(
+            driver_name=getattr(cfg, "driver_name", "") or "",
+            driver_nickname=getattr(cfg, "driver_nickname", "") or "",
+            iracing_names=self._iracing_hero_names,
+        )
+
+    def _apply_hero_mix(self, text: str) -> tuple[str, tuple[str, ...], str | None]:
+        names = self.hero_names()
+        mixed = mix_hero_name(text, names, self.language, rng=self.rng)
+        chosen = None
+        for token in names:
+            if token and token in mixed:
+                chosen = token
+                break
+        return mixed, names, chosen
 
     @classmethod
     def from_defaults(
@@ -285,6 +317,7 @@ class CommentaryDirector:
             return None
         if not text:
             return None
+        text, hero_names, hero_name = self._apply_hero_mix(text)
         from irswitch.commentary.graph import GraphNode, TtsLimits
 
         node = GraphNode(
@@ -296,7 +329,7 @@ class CommentaryDirector:
             cooldown_s=8.0,
             slots=(),
             hr_states=("unknown",),
-            tts=TtsLimits(max_seconds=4.0),
+            tts=TtsLimits(),
             variants={},
         )
         return CommentaryUtterance(
@@ -307,10 +340,12 @@ class CommentaryDirector:
             event_type=envelope.event_type,
             event_id=envelope.event_id,
             correlation_id=envelope.correlation_id,
-            estimated_seconds=min(4.0, max(0.8, len(text.split()) * 0.35)),
+            estimated_seconds=min(node.tts.max_seconds, max(0.8, len(text.split()) * 0.35)),
             node=node,
             priority=int(envelope.priority),
             past_framing=False,
+            hero_names=hero_names,
+            hero_name=hero_name,
         )
 
     def observe(
@@ -472,6 +507,8 @@ class CommentaryDirector:
                 node=utterance.node,
                 priority=utterance.priority,
                 past_framing=True,
+                hero_names=utterance.hero_names,
+                hero_name=utterance.hero_name,
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
@@ -564,6 +601,7 @@ class CommentaryDirector:
                 emotion=resolved,
             )
             return None
+        spoken, hero_names, hero_name = self._apply_hero_mix(spoken)
         issues = validate_utterance(spoken, node)
         if issues:
             logger.info(
@@ -605,6 +643,8 @@ class CommentaryDirector:
             node=node,
             priority=int(envelope.priority),
             past_framing=False,
+            hero_names=hero_names,
+            hero_name=hero_name,
         )
 
     def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:
@@ -802,6 +842,7 @@ def _spoken_kind(value: object, *, cs: bool) -> str | None:
             "back_under_way": "znovu jede",
             "session_wrap": "konec",
             "session_preview": "další",
+            "session_checkered": "šachovnice",
             "weather_change": "počasí",
             "field_fact": "pole",
         }
@@ -812,6 +853,7 @@ def _spoken_kind(value: object, *, cs: bool) -> str | None:
             "back_under_way": "back under way",
             "session_wrap": "wrap",
             "session_preview": "preview",
+            "session_checkered": "checkered",
             "weather_change": "weather",
             "field_fact": "field",
         }

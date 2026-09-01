@@ -40,11 +40,18 @@ def bio_race_event_to_envelope(
         return None
 
     phase = legacy_trigger_to_phase(event.phase, default="ENTER")
-    metrics = {
-        key: event.data[key]
-        for key in ("bpm", "baselineBpm", "deltaBpm", "hrState")
-        if key in event.data
-    }
+    metrics: dict[str, object] = {}
+    for key in ("bpm", "baselineBpm", "deltaBpm", "hrState"):
+        if key not in event.data:
+            continue
+        value = event.data[key]
+        if key == "hrState":
+            metrics[key] = value
+            continue
+        try:
+            metrics[key] = int(round(float(value)))
+        except (TypeError, ValueError):
+            metrics[key] = value
     return make_envelope(
         event_type=event_type,
         phase=phase,

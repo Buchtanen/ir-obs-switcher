@@ -81,7 +81,7 @@ Missing `[event_engine]` section → code defaults (flags off).
 
 **PitCycleGuard:** on pit road + **5 s** post-exit grace, suppresses **`trigger`/`enter` only** for `position_change`, `overtake`, `battle`, `rival_threat` (`update`/`exit` still pass).
 
-**Post-race:** after `session_finished`, filter keeps essentially finish / final EXIT.
+**Post-race:** after `session_finished` (`after_session`: S/F after checkered, or not flying at checkered, or CoolDown). Checkered (`SessionState` 5) alone does **not** mute widgets. Filter then keeps essentially finish / final EXIT.
 
 **Channel caps (HUD):** battle 2; timing/position/exception/pit/bio/session 1.
 
@@ -160,7 +160,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Situation | Session | Trigger | W | C |
 | --- | --- | --- | --- | --- |
 | Incident | All | Incidents ↑ ≥ `incident_min_delta` (default 2) | yes prio 90 | yes pri 88 |
-| Invalid lap | All | Lap end with incident since lap start | yes | yes |
+| Invalid lap | P/Q | Lap end with incident since lap start | yes | yes |
 | Link drop | All | Stale/degraded/disconnect | yes lifecycle | **no** |
 | Final lap | All\* | `is_final_lap` (no mode gate) | yes 95 | yes cd 60 |
 | Finish | All\* | `session_finished` (no mode gate) | yes 100 | yes cd 120 |
@@ -175,10 +175,12 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 
 | Situation | Session | W | C | Gate |
 | --- | --- | --- | --- | --- |
-| Enter car | All | no | yes `in_car` | `commentary.enabled` |
+| Enter car | All | no | yes `in_car` | `commentary.enabled`; skipped after_session |
 | Session intro P/Q/R | P/Q/R | no | opt | `session_briefs` |
 | SoF brief | R | no | opt | `session_briefs` |
-| Weather brief | All | no | opt | `session_briefs` |
+| Weather brief | All | no | opt | `session_briefs`; skipped after_session |
+| Session checkered | All | no | opt `session_checkered` | clock expired, still on out-lap; `session_briefs` |
+| Session wrap | All | no | opt `session_wrap` | after_session / session change; `session_briefs` |
 
 ## 5. Widget catalog notes
 

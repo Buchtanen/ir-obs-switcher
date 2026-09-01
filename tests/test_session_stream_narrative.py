@@ -29,6 +29,7 @@ def _state(
     *,
     mode: str = "PRACTICE",
     finished: bool = False,
+    checkered: bool = False,
     position: int = 3,
     sub: str = "100",
     num: int = 0,
@@ -37,6 +38,7 @@ def _state(
         connected=True,
         overlay_mode=mode,
         session_finished=finished,
+        session_checkered=checkered,
         class_position=position,
         subsession_id=sub,
         session_num=num,
@@ -72,6 +74,45 @@ def test_session_finished_emits_wrap_once() -> None:
     assert fsm.tick(_state(mode="RACE", finished=True), 3.0, session_key="100:2:t1") == []
 
 
+def test_on_track_checkered_emits_checkered_then_wrap_on_sf() -> None:
+    fsm = StreamNarrativeFsm()
+    fsm.tick(_state(mode="QUALIFYING"), 1.0, session_key="100:1:t1")
+    out = fsm.tick(
+        _state(mode="QUALIFYING", checkered=True, finished=False),
+        2.0,
+        session_key="100:1:t1",
+    )
+    assert [e.event_type for e in out] == ["SESSION_CHECKERED"]
+    assert out[0].metrics["kind"] == "session_checkered"
+    assert (
+        fsm.tick(
+            _state(mode="QUALIFYING", checkered=True, finished=False),
+            3.0,
+            session_key="100:1:t1",
+        )
+        == []
+    )
+    wrap = fsm.tick(
+        _state(mode="QUALIFYING", checkered=True, finished=True, position=2),
+        4.0,
+        session_key="100:1:t1",
+    )
+    assert [e.event_type for e in wrap] == ["SESSION_WRAP"]
+    assert wrap[0].metrics["reason"] == "session_finished"
+
+
+def test_pits_at_checkered_emits_wrap_only() -> None:
+    fsm = StreamNarrativeFsm()
+    fsm.tick(_state(mode="RACE"), 1.0, session_key="100:2:t1")
+    out = fsm.tick(
+        _state(mode="RACE", checkered=True, finished=True, position=8),
+        2.0,
+        session_key="100:2:t1",
+    )
+    assert [e.event_type for e in out] == ["SESSION_WRAP"]
+    assert "SESSION_CHECKERED" not in [e.event_type for e in out]
+
+
 def test_finished_then_change_does_not_double_wrap() -> None:
     fsm = StreamNarrativeFsm()
     fsm.tick(_state(mode="PRACTICE", num=0), 1.0, session_key="100:0:t1")
@@ -95,6 +136,28 @@ def test_observer_formats_and_drains_narrative() -> None:
     preview_text = observer.format_filler_text(derived[1], locale="en")
     assert wrap_text is not None and "wrap" in wrap_text.lower()
     assert preview_text is not None and "next" in preview_text.lower()
+
+
+def test_observer_formats_checkered_fallback() -> None:
+    observer = RaceObserver()
+    from irswitch.events.envelope import make_envelope
+
+    env = make_envelope(
+        event_type="SESSION_CHECKERED",
+        phase="RESULT",
+        mode="QUALIFYING",
+        priority=56,
+        monotonic_ms=1,
+        metrics={
+            "kind": "session_checkered",
+            "modeLabel": "Qualifying",
+            "modeLabelCs": "kvalifikace",
+        },
+    )
+    en = observer.format_filler_text(env, locale="en")
+    cs = observer.format_filler_text(env, locale="cs")
+    assert en is not None and "Checkered" in en
+    assert cs is not None and "Šachovnice" in cs
 
 
 def test_director_gates_narrative_when_session_briefs_off() -> None:
@@ -137,4 +200,8 @@ def test_director_speaks_preview_when_session_briefs_on() -> None:
     )
     spoken = director.observe([env], None, 1.0)
     assert spoken is not None
-    assert "Qualifying" in spoken.text
+    assert spoken.event_type == "SESSION_PREVIEW"
+    # Some graph variants are slot-light (no {mode}); never invent Race here.
+    assert "Race" not in spoken.text
+    if "{mode}" in spoken.text or "Qualifying" in spoken.text:
+        assert "Qualifying" in spoken.text

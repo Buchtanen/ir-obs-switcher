@@ -106,12 +106,31 @@ def test_extract_telemetry_session_type_from_session_name() -> None:
 
 def test_extract_telemetry_session_ids_from_weekend_info() -> None:
     snap = extract_telemetry(
-        {"WeekendInfo": {"SubSessionID": 777, "TrackID": 123, "EventType": "Race"}},
+        {
+            "SessionNum": 2,
+            "WeekendInfo": {"SubSessionID": 777, "TrackID": 123, "EventType": "Race"},
+            "SessionInfo": {
+                "Sessions": [
+                    {"SessionType": "Practice"},
+                    {"SessionType": "Qualify"},
+                    {"SessionType": "Race"},
+                ]
+            },
+        },
         1.0,
     )
     assert snap.subsession_id == "777"
     assert snap.track_id == "123"
     assert snap.session_type == "Race"
+
+
+def test_extract_telemetry_ignores_event_type_without_session_row() -> None:
+    snap = extract_telemetry(
+        {"WeekendInfo": {"SubSessionID": 777, "TrackID": 123, "EventType": "Race"}},
+        1.0,
+    )
+    assert snap.subsession_id == "777"
+    assert snap.session_type is None
 
 
 def test_telemetry_vars_include_session_identity() -> None:
@@ -120,6 +139,7 @@ def test_telemetry_vars_include_session_identity() -> None:
     for name in (
         "SessionType",
         "SessionName",
+        "SessionInfo",
         "SubSessionID",
         "TrackID",
         "WeekendInfo",

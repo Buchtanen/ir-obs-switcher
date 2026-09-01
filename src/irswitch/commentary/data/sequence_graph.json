@@ -5,8 +5,8 @@
     "cs"
   ],
   "default_tts": {
-    "max_chars": 90,
-    "max_seconds": 5.5,
+    "max_chars": 160,
+    "max_seconds": 13.0,
     "ssml_allowed": [
       "break",
       "emphasis"
@@ -3265,11 +3265,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}, as the race story develops.",
             "His race is complete and the result is official.",
             "The closing chapter records P{position}.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line."
           ],
@@ -3283,11 +3283,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result, all under control.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}, and the rhythm stays smooth.",
             "His race is complete and the result is official.",
             "The closing chapter records P{position}, all under control.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line, handled without any fuss."
           ],
@@ -3301,11 +3301,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}.",
             "His race is complete and the result is official, all part of the plan.",
             "The closing chapter records P{position}, and his focus stays sharp.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line, all part of the plan."
           ],
@@ -3319,11 +3319,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}, and he keeps asking for more.",
             "His race is complete and the result is official.",
             "The closing chapter records P{position}, and the pressure keeps rising.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line."
           ],
@@ -3337,11 +3337,11 @@
             "His full race story closes at the chequered flag!",
             "Viewers can now put P{position} beside this drive!",
             "He turns the final lap into a confirmed result!",
-            "Every earlier sequence ends with this classification!",
+            "Every earlier sequence ends with this classification in P{position}!",
             "The line settles the day in P{position}, and the momentum is surging!",
             "His race is complete and the result is official!",
             "The closing chapter records P{position}, and the tension is climbing!",
-            "He reaches the flag with the whole stint behind him!",
+            "He reaches the flag in P{position} with the whole stint behind him!",
             "P{position} is the lasting number from this race!",
             "The commentary closes as he crosses the line!"
           ]
@@ -3357,11 +3357,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka, příběh pokračuje.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek.",
-            "Všechny předchozí sekvence končí touhle klasifikací.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
             "Cílová čára uzavírá den na {position}. místě, příběh pokračuje.",
             "Jeho závod je hotový a výsledek je potvrzený, další fáze se rýsuje.",
             "Závěrečná kapitola zapisuje {position}. místo.",
-            "K vlajce přijíždí s celým stintem za sebou, obraz závodu je jasný.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, obraz závodu je jasný.",
             "Trvalým číslem z tohohle závodu je {position}. místo, příběh pokračuje.",
             "Komentář se uzavírá jeho průjezdem cílem, další fáze se rýsuje."
           ],
@@ -3375,11 +3375,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek, všechno má pod kontrolou.",
-            "Všechny předchozí sekvence končí touhle klasifikací.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
             "Cílová čára uzavírá den na {position}. místě, rytmus zůstává plynulý.",
             "Jeho závod je hotový a výsledek je potvrzený, zvládá to bez nervozity.",
             "Závěrečná kapitola zapisuje {position}. místo.",
-            "K vlajce přijíždí s celým stintem za sebou, bez zbytečného spěchu.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, bez zbytečného spěchu.",
             "Trvalým číslem z tohohle závodu je {position}. místo.",
             "Komentář se uzavírá jeho průjezdem cílem, zvládá to bez nervozity."
           ],
@@ -3393,11 +3393,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek.",
-            "Všechny předchozí sekvence končí touhle klasifikací.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
             "Cílová čára uzavírá den na {position}. místě, už myslí na další krok.",
             "Jeho závod je hotový a výsledek je potvrzený, přesně podle plánu.",
             "Závěrečná kapitola zapisuje {position}. místo.",
-            "K vlajce přijíždí s celým stintem za sebou, každý detail má změřený.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, každý detail má změřený.",
             "Trvalým číslem z tohohle závodu je {position}. místo.",
             "Komentář se uzavírá jeho průjezdem cílem, přesně podle plánu."
           ],
@@ -3411,11 +3411,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek, tlak dál roste.",
-            "Všechny předchozí sekvence končí touhle klasifikací, tempo pořád zvedá.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě, tempo pořád zvedá.",
             "Cílová čára uzavírá den na {position}. místě, pořád hledá něco navíc.",
             "Jeho závod je hotový a výsledek je potvrzený, bez náznaku polevení.",
             "Závěrečná kapitola zapisuje {position}. místo, tlak dál roste.",
-            "K vlajce přijíždí s celým stintem za sebou, tempo pořád zvedá.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, tempo pořád zvedá.",
             "Trvalým číslem z tohohle závodu je {position}. místo.",
             "Komentář se uzavírá jeho průjezdem cílem, bez náznaku polevení."
           ],
@@ -3429,11 +3429,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka, momentum nabírá sílu!",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo!",
             "Poslední kolo proměňuje v potvrzený výsledek, napětí stoupá!",
-            "Všechny předchozí sekvence končí touhle klasifikací!",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě!",
             "Cílová čára uzavírá den na {position}. místě, momentum nabírá sílu!",
             "Jeho závod je hotový a výsledek je potvrzený, tohle začíná být ostré!",
             "Závěrečná kapitola zapisuje {position}. místo, napětí stoupá!",
-            "K vlajce přijíždí s celým stintem za sebou, závod kolem něj ožívá!",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, závod kolem něj ožívá!",
             "Trvalým číslem z tohohle závodu je {position}. místo!",
             "Komentář se uzavírá jeho průjezdem cílem, tohle začíná být ostré!"
           ]
@@ -4309,8 +4309,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -4475,8 +4475,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -4641,8 +4641,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -4820,8 +4820,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5006,8 +5006,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5399,8 +5399,8 @@
       ],
       "notes": "P3 aftermath. Kind distinguishes stalled vs rolling.",
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5550,8 +5550,8 @@
       ],
       "notes": "P3 recovery after stalled aftermath.",
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5772,8 +5772,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5904,8 +5904,140 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      }
+    },
+    "session_checkered": {
+      "family": "session",
+      "event_types": [
+        "SESSION_CHECKERED"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 56,
+      "cooldown_s": 20,
+      "slots": [
+        {
+          "name": "mode",
+          "type": "label",
+          "example": "Qualifying",
+          "examples_by_locale": {
+            "en": "Qualifying",
+            "cs": "kvalifikace"
+          }
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Session clock expired (checkered). Driver may still finish the flying lap.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The clock is done. This lap in {mode} still counts.",
+            "Flags are out. He may finish the flyer already started.",
+            "Session time has expired on {mode}.",
+            "Checkered here is only the timer, not his personal stop.",
+            "One more run to the stripe before {mode} is over for him.",
+            "Viewers see the flags while he is still on a hot lap.",
+            "Time is up. The flying lap remains live.",
+            "He keeps this lap until the line after the clock.",
+            "No extra laps after this one. The stripe still matters.",
+            "Broadcast stays with this flyer until he takes the flag.",
+            "{mode} has no more green. This flyer still has a finish.",
+            "He is still racing to the line after the session clock."
+          ],
+          "calm": [
+            "The clock is done, and this lap in {mode} still counts.",
+            "Flags are out. He can finish the flyer without rush.",
+            "Session time has expired on {mode}, all under control.",
+            "Checkered is only the timer. His lap is still open.",
+            "One measured run to the stripe, then {mode} is done.",
+            "Viewers see the flags while he stays composed on a flyer.",
+            "Time is up. The flying lap is still allowed.",
+            "He brings this lap to the line after the clock, calmly.",
+            "No extra laps after this one. The stripe still decides.",
+            "The broadcast waits on this flyer until he takes the flag.",
+            "{mode} is out of green time. This lap still has a close.",
+            "After the clock he rolls to the line with no panic."
+          ],
+          "focused": [
+            "The clock is done. This lap in {mode} still has to be clean.",
+            "Flags are out. He finishes the flyer already started.",
+            "Session time has expired on {mode}. Every metre still counts.",
+            "Checkered is the timer. His job is the line.",
+            "One more run to the stripe, then {mode} is closed for him.",
+            "Viewers see the flags while he commits to the flying lap.",
+            "Time is up. The flying lap is still the only job.",
+            "He takes this lap to the line after the clock, fully locked in.",
+            "No extra laps after this one. The stripe is the whole point.",
+            "Broadcast stays with this flyer until he nails the flag.",
+            "{mode} has no more green. This flyer still needs a finish.",
+            "After the clock he hunts the line with a clear plan."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Šachovnice. Tohle kolo v {mode} ještě platí.",
+            "Čas session skončil. Rozjeté kolo se smí dokončit.",
+            "Vlajky jsou venku. Stále míří k cíli.",
+            "Šachovnice značí konec času, ne konec tohoto kola.",
+            "Ještě jeden průjezd cílem a {mode} pro něj končí.",
+            "Diváci vidí vlajky, auto pořád skládá kolo.",
+            "Čas vypršel. Letové kolo zůstává živé.",
+            "Tohle kolo drží až na čáru po vypršení času.",
+            "Další kolo už nebude. Cílová čára pořád rozhoduje.",
+            "Vysílání zůstává u letového kola až do cíle.",
+            "{mode} už nemá zelenou. Tohle kolo se ještě počítá.",
+            "Po vypršení času pořád míří k čáře."
+          ],
+          "calm": [
+            "Šachovnice. Tohle kolo v {mode} ještě platí, bez spěchu.",
+            "Čas session skončil. Rozjeté kolo se smí v klidu dokončit.",
+            "Vlajky jsou venku. K cíli jde plynule.",
+            "Šachovnice je jen konec času. Kolo zůstává otevřené.",
+            "Ještě jeden klidný průjezd cílem a {mode} pro něj končí.",
+            "Diváci vidí vlajky, tempo zůstává srovnané.",
+            "Čas vypršel. Letové kolo se pořád smí uzavřít.",
+            "Tohle kolo veze k čáře po vypršení času, bez nervozity.",
+            "Další kolo už nebude. Čára pořád stačí rozhodnout.",
+            "Vysílání čeká na letové kolo až do cíle.",
+            "{mode} už nemá zelenou. Tohle kolo se ještě v klidu počítá.",
+            "Po vypršení času dojíždí k čáře s jistotou."
+          ],
+          "focused": [
+            "Šachovnice. Tohle kolo v {mode} musí dovést čistě.",
+            "Čas session skončil. Rozjeté kolo se dokončí přesně.",
+            "Vlajky jsou venku. Každý metr k cíli pořád platí.",
+            "Šachovnice je timer. Úkol je cílová čára.",
+            "Ještě jeden přesný průjezd cílem a {mode} pro něj končí.",
+            "Diváci vidí vlajky, soustředění na letové kolo drží.",
+            "Čas vypršel. Letové kolo je teď jediná práce.",
+            "Tohle kolo veze k čáře po vypršení času, plně zaměřený.",
+            "Další kolo už nebude. Čára je celý zbývající úkol.",
+            "Vysílání zůstává u letového kola, dokud nevezme cíl.",
+            "{mode} už nemá zelenou. Tohle kolo ještě potřebuje závěr.",
+            "Po vypršení času jde k čáře podle plánu."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -6021,8 +6153,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.0,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -6129,8 +6261,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.0,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -6299,6 +6431,15 @@
       "when": {
         "same_correlation": true,
         "min_gap_s": 0.5,
+        "max_gap_s": 90
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "session_wrap",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.2,
         "max_gap_s": 90
       }
     },

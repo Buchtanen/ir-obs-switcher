@@ -27,6 +27,7 @@ Obě metody jsou volitelne - pokud neni nastavena zadna, aplikace funguje normal
 - Ziskava nazev streamu (`title`) z YouTube
 - Ziskava popis streamu (`description`) z YouTube
 - Zobrazuje tyto informace v GR Dashboardu
+- Pri `stream_chapters.youtube_vod = true` po stopu streamu zapise kapitoly do VOD description a prepisuje radek `Track:` z WeekendInfo (ne ponecha sablonu Imola)
 
 **Kdy se API vola**:
 - Pouze kdyz je stream vybran v OBS Broadcast Manager
@@ -127,7 +128,7 @@ Pro zvyseni bezpecnosti muzes omezit API klic:
    - **User support email**: tvuj Gmail ucet
    - **Developer contact email**: tvuj Gmail ucet
 4. Klikni na **Save and Continue**
-5. Na SCOPES klikni **Save and Continue**. Aplikace pri `/oauth/initiate` pozaduje scope `https://www.googleapis.com/auth/youtube` (sprava YouTube uctu), aby mohla zapisovat VOD kapitoly. Readonly token z minula staci na cteni title; pro `youtube_vod` musis consent zopakovat.
+5. Na SCOPES klikni **Save and Continue**. Aplikace pri `/oauth/initiate` pozaduje scope `https://www.googleapis.com/auth/youtube` (sprava YouTube uctu), aby mohla zapisovat VOD kapitoly **po skonceni streamu**. Readonly token z minula staci na cteni title; pro `youtube_vod` musis consent zopakovat (`GET /oauth/status` → `token.youtube_write`).
 6. Na TEST USERS klikni **Add Users** a pridej tvuj Gmail ucet
 7. Klikni na **Save and Continue**
 

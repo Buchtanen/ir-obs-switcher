@@ -16,6 +16,7 @@ class HeroSnapshot:
     overall_position: int | None
     lap: int | None
     display_name: str | None = None
+    speakable_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

@@ -38,6 +38,7 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "SessionNum",
     "SessionType",
     "SessionName",
+    "SessionInfo",
     "SubSessionID",
     "TrackID",
     "WeekendInfo",

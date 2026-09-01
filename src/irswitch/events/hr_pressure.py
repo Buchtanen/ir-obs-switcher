@@ -66,11 +66,14 @@ class HrPressureEmitter:
     def _event(self, *, phase: str, bio: BioState, now: float) -> CandidateEvent:
         data: dict[str, object] = {
             "state": "hr_pressure",
-            "bpm": bio.bpm,
-            "baselineBpm": bio.baseline_bpm,
-            "deltaBpm": bio.delta_bpm,
             "hrState": bio.state,
         }
+        if bio.bpm is not None:
+            data["bpm"] = int(round(float(bio.bpm)))
+        if bio.baseline_bpm is not None:
+            data["baselineBpm"] = int(round(float(bio.baseline_bpm)))
+        if bio.delta_bpm is not None:
+            data["deltaBpm"] = int(round(float(bio.delta_bpm)))
         return CandidateEvent(
             name="hr_pressure",
             channel="bio",

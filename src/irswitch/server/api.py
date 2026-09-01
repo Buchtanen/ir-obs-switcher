@@ -18,6 +18,7 @@ from aiohttp.web_ws import WebSocketResponse
 from irswitch import __version__
 from irswitch.config import AppConfig
 from irswitch.logic.stream_chapters import StreamChaptersSettings, StreamChapterTracker
+from irswitch.logic.youtube_chapters import token_allows_video_update
 from irswitch.oauth import OAuthError, create_oauth_manager
 from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
 from irswitch.server.dashboards import (
@@ -65,7 +66,7 @@ _shutdown_event: asyncio.Event | None = None
 _oauth_manager: OAuthManager | None = None  # YouTube OAuth manager
 _task_registry = TaskRegistry()
 _stream_chapter_tracker = StreamChapterTracker()
-_last_vod_sig: tuple[tuple[int, str], ...] | None = None
+VOD_FLUSH_RETRY_DELAYS_S = (0.0, 30.0, 180.0, 600.0)
 
 
 def _sync_stream_chapters_settings(settings: StreamChaptersSettings) -> None:
@@ -82,7 +83,7 @@ def get_stream_chapter_tracker() -> StreamChapterTracker:
 
 def reset_state() -> None:
     """Reset global state (for testing)."""
-    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry, _stream_chapter_tracker, _last_vod_sig
+    global _current_state, _state_machine, _websocket_clients, _obs_client, _reader, _restart_mode_active, _shutdown_event, _task_registry, _stream_chapter_tracker
     _current_state = None
     _state_machine = None
     _websocket_clients = set()
@@ -93,7 +94,6 @@ def reset_state() -> None:
     _task_registry = TaskRegistry()
     _config_container[0] = None
     _stream_chapter_tracker = StreamChapterTracker()
-    _last_vod_sig = None
     from irswitch.overlay.http import reset_overlay_server
 
     reset_overlay_server()
@@ -205,37 +205,58 @@ async def _send_ws_message(message: str) -> None:
     _websocket_clients -= disconnected
 
 
-async def _maybe_push_youtube_vod_chapters() -> None:
-    """Patch YouTube VOD description with current chapter timestamps. Fail-soft."""
-    global _last_vod_sig
+def _weekend_track_for_vod() -> str | None:
+    """WeekendInfo display name remembered by overlay runtime. Fail-soft."""
     try:
-        settings = _stream_chapter_tracker.settings
-        if not settings.enabled or not settings.youtube_vod:
-            return
-        chapters = _stream_chapter_tracker.chapters()
-        if not chapters:
-            _last_vod_sig = None
-            return
-        sig = tuple((c.offset_seconds, c.title) for c in chapters)
-        if sig == _last_vod_sig:
-            return
-        oauth = get_oauth_manager()
-        if oauth is None:
-            return
-        video_id = _obs_client.get_cached_broadcast_id() if _obs_client is not None else None
-        if not video_id:
-            return
-        from irswitch.obs.youtube_vod import push_youtube_vod_chapters
+        from irswitch.overlay.http import get_overlay_runtime
 
-        ok = await push_youtube_vod_chapters(
-            oauth_manager=oauth,
-            video_id=str(video_id),
-            chapters=chapters,
-        )
-        if ok:
-            _last_vod_sig = sig
+        runtime = get_overlay_runtime()
+        getter = getattr(runtime, "weekend_track", None)
+        if not callable(getter):
+            return None
+        track = getter()
+        if isinstance(track, str) and track.strip():
+            return track.strip()
     except Exception:
-        logger.exception("youtube VOD chapters spawn failed")
+        return None
+    return None
+
+
+async def _flush_youtube_vod_chapters_after_stop(
+    video_id: str | None,
+    chapters: list,
+) -> None:
+    """Rewrite YouTube description after stream end. Retries while the VOD processes."""
+    if not chapters:
+        return
+    from irswitch.obs.youtube_vod import push_youtube_vod_chapters
+
+    snapshot = list(chapters)
+    vid = str(video_id).strip() if video_id else ""
+    for attempt, delay in enumerate(VOD_FLUSH_RETRY_DELAYS_S, start=1):
+        if delay:
+            await asyncio.sleep(delay)
+        try:
+            oauth = get_oauth_manager()
+            if oauth is None:
+                continue
+            if not vid and _obs_client is not None:
+                cached = _obs_client.get_cached_broadcast_id()
+                vid = str(cached).strip() if cached else ""
+            if not vid:
+                logger.info("youtube VOD chapters flush skipped: no broadcast_id")
+                continue
+            ok = await push_youtube_vod_chapters(
+                oauth_manager=oauth,
+                video_id=vid,
+                chapters=snapshot,
+                force=True,
+                track=_weekend_track_for_vod(),
+            )
+            if ok:
+                logger.info("youtube VOD chapters flush ok attempt=%s", attempt)
+        except Exception:
+            logger.exception("youtube VOD chapters flush attempt=%s failed", attempt)
 
 
 async def _broadcast_chapter_events(chapters: list) -> None:
@@ -253,10 +274,15 @@ async def _broadcast_state_update(state: SwitchState) -> None:
     # Always build status so stream chapter tracker advances even with 0 clients.
     status = await _get_status_dict(state)
     new_chapters = _stream_chapter_tracker.take_pending()
-    if _stream_chapter_tracker.settings.youtube_vod:
+    flush = _stream_chapter_tracker.consume_vod_flush()
+    if flush and _stream_chapter_tracker.settings.youtube_vod:
+        video_id = _obs_client.get_cached_broadcast_id() if _obs_client is not None else None
         _task_registry.spawn(
             "youtube_vod_chapters",
-            _maybe_push_youtube_vod_chapters(),
+            _flush_youtube_vod_chapters_after_stop(
+                video_id,
+                _stream_chapter_tracker.chapters(),
+            ),
             replace=True,
         )
 
@@ -1164,6 +1190,7 @@ async def handle_oauth_status(request: web.Request) -> web.Response:
             token_info = {
                 "expires_in_seconds": token.expires_in_seconds(),
                 "is_expired": token.is_expired(),
+                "youtube_write": token_allows_video_update(token.scope),
             }
 
             # If OAuth is authenticated but OBS client doesn't have the manager, update it

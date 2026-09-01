@@ -101,6 +101,7 @@ def mock_reader() -> MagicMock:
     reader.is_process_running.return_value = False
     reader.read_mode = AsyncMock(return_value=DrivingMode.IDLE)
     reader.read_session_info = AsyncMock(return_value=None)
+    reader.session_sdk_payload.return_value = {}
     return reader
 
 

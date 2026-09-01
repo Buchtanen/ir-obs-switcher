@@ -257,6 +257,25 @@ def resolve_session_identity(
     return session_type, session_name, session_num, total_sessions
 
 
+def session_identity_changed(
+    prev_type: str | None,
+    prev_name: str | None,
+    prev_num: int | None,
+    prev_total: int | None,
+    session_type: str | None,
+    session_name: str | None,
+    session_num: int | None,
+    total_sessions: int | None,
+) -> bool:
+    """True when extracted identity differs from the last committed SwitchState."""
+    return (
+        session_type != prev_type
+        or session_name != prev_name
+        or session_num != prev_num
+        or total_sessions != prev_total
+    )
+
+
 def extract_session_num(data: Mapping[str, object]) -> int | None:
     """
     Extract session number from iRacing SDK data.

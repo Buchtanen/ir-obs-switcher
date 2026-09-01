@@ -43,8 +43,7 @@ def _snap_field(
     if names is not None:
         data["DriverInfo"] = {
             "Drivers": [
-                {"CarIdx": i, "UserName": name or f"Car{i}"}
-                for i, name in enumerate(names)
+                {"CarIdx": i, "UserName": name or f"Car{i}"} for i, name in enumerate(names)
             ]
         }
     return extract_telemetry(data, timestamp=1.0)
@@ -125,6 +124,35 @@ def test_field_fact_filler_rotates() -> None:
     second = observer.next_filler_envelope(25.0, locale="en")
     assert second is not None
     assert second.metrics.get("fact") != first.metrics.get("fact")
+
+
+def test_filler_skips_after_checkered_and_after_session() -> None:
+    observer = RaceObserver()
+    snap = _snap_field(names=["Leader", "B", "Hero", "D", "E"])
+    observer.observe(
+        snap,
+        RaceState(
+            connected=True,
+            overlay_mode="RACE",
+            class_position=3,
+            session_checkered=True,
+            session_finished=False,
+        ),
+        now=1.0,
+    )
+    assert observer.next_filler_envelope(5.0, locale="en") is None
+    observer.observe(
+        snap,
+        RaceState(
+            connected=True,
+            overlay_mode="RACE",
+            class_position=3,
+            session_checkered=True,
+            session_finished=True,
+        ),
+        now=2.0,
+    )
+    assert observer.next_filler_envelope(30.0, locale="en") is None
 
 
 def test_director_silence_fill_uses_observer_formatter() -> None:

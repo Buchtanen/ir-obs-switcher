@@ -78,6 +78,32 @@ def test_hr_pressure_envelope_maps_catalog() -> None:
     assert envelope.copy.headline_token == "bio.hr_high"
 
 
+def test_hr_pressure_envelope_rounds_float_bpm() -> None:
+    envelope = bio_race_event_to_envelope(
+        RaceEvent(
+            name="hr_pressure",
+            channel="bio",
+            priority=35,
+            phase="enter",
+            timestamp=1.0,
+            data={
+                "state": "hr_pressure",
+                "bpm": 147.6,
+                "baselineBpm": 118.2,
+                "deltaBpm": 29.4,
+                "hrState": "high",
+            },
+        ),
+        session_id="sub:1",
+        mode="RACE",
+        now=5.0,
+    )
+    assert envelope is not None
+    assert envelope.metrics["bpm"] == 148
+    assert envelope.metrics["baselineBpm"] == 118
+    assert envelope.metrics["deltaBpm"] == 29
+
+
 def test_pit_story_lane_envelope_uses_lane_token() -> None:
     envelope = pit_race_event_to_envelope(
         RaceEvent(

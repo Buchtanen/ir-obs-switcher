@@ -22,6 +22,7 @@ from irswitch.events.fanout import EventFanout
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.iracing.sectors import resolve_sector_points_from_pcts
+from irswitch.iracing.session_context import extract_session_context
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
@@ -71,6 +72,7 @@ class OverlayRuntime:
         self._timing_store = TimingStore()
         self._segment_ref = SegmentReferenceTracker()
         self._sector_sig: tuple[str, ...] | None = None
+        self._timing_after_session = False
         self._register_timing_emitters(overlay)
         self._register_t4_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
@@ -96,6 +98,7 @@ class OverlayRuntime:
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
+        self._weekend_track: str | None = None
         self._wire_race_observer_fillers()
         self._rebuild_event_fanout()
         self.session.add_reset_hook(self.race_observer.reset_session)
@@ -191,6 +194,7 @@ class OverlayRuntime:
         self._timing_detector.reset()
         self._timing_store.reset()
         self._sector_sig = None
+        self._timing_after_session = False
 
     def _apply_sector_points(self, snap: TelemetrySnapshot) -> None:
         points = resolve_sector_points_from_pcts(snap.sector_start_pcts)
@@ -256,6 +260,10 @@ class OverlayRuntime:
                 now=now,
                 telemetry_data=self._session_brief_data(),
             )
+            if self.commentary is not None:
+                ctx = self.race_observer.context
+                names = ctx.hero.speakable_names if ctx is not None else ()
+                self.commentary.note_hero_names(names)
             derived = self.race_observer.take_derived_envelopes()
             if derived:
                 self._dispatch_speech_envelopes(derived, now)
@@ -320,6 +328,7 @@ class OverlayRuntime:
         if not envelopes or self.commentary is None:
             return None
         overlay = self._overlay_settings()
+        self.commentary.settings = overlay.commentary
         self._apply_commentary_sink_settings(overlay)
         before = len(self.commentary.decisions())
         try:
@@ -376,6 +385,30 @@ class OverlayRuntime:
         self.session_briefs.acknowledge(envelope.event_type)
         return str(decision.get("action") or "") == "spoken"
 
+    def weekend_track(self) -> str | None:
+        """Last WeekendInfo display name for YouTube ``Track:`` rewrite."""
+        if self._weekend_track:
+            return self._weekend_track
+        briefs_track = getattr(self.session_briefs, "last_track", None)
+        if callable(briefs_track):
+            value = briefs_track()
+            return value if isinstance(value, str) and value.strip() else None
+        if isinstance(briefs_track, str) and briefs_track.strip():
+            return briefs_track.strip()
+        return None
+
+    def _remember_weekend_track(self) -> None:
+        data = self._session_brief_data()
+        if not data:
+            return
+        try:
+            ctx = extract_session_context(data)
+        except Exception:
+            return
+        track = ctx.track if ctx is not None else None
+        if track:
+            self._weekend_track = track
+
     def _session_brief_data(self) -> dict[str, object] | None:
         """Raw SessionInfo/telemetry mapping for H1/H2/H3 extractors."""
         reader = self._reader
@@ -403,15 +436,26 @@ class OverlayRuntime:
             return
         self._observe_in_car(state, now)
 
-    def _observe_timing(self, snap: TelemetrySnapshot) -> None:
-        """Ingest player crossings into the timing store (Practice/Quali only)."""
-        if snap.session_state in (5, 6):
+    def _observe_timing(self, snap: TelemetrySnapshot, *, session_finished: bool = False) -> None:
+        """Ingest player crossings (Practice/Quali). Keep the checkered out-lap.
+
+        CoolDown always stops. The tick that becomes ``after_session`` (S/F after
+        checkered) still ingests, then later ticks skip.
+        """
+        if snap.session_state not in (5, 6):
+            self._timing_after_session = False
+        if snap.session_state == 6 or self._timing_after_session:
+            self._timing_after_session = True
             return
         mode = overlay_mode_from_session_type(snap.session_type)
         if mode not in {"PRACTICE", "QUALIFYING"}:
+            if session_finished:
+                self._timing_after_session = True
             return
         self._apply_sector_points(snap)
         if snap.player_car_idx is None or snap.player_lap_dist_pct is None:
+            if session_finished:
+                self._timing_after_session = True
             return
         lap_number = snap.lap_completed if snap.lap_completed is not None else snap.lap
         quality = snap.data_quality if snap.data_quality else "ok"
@@ -428,6 +472,8 @@ class OverlayRuntime:
                 valid_at_crossing=valid,
                 data_quality=quality,
             )
+        if session_finished:
+            self._timing_after_session = True
 
     def _overlay_settings(self) -> OverlaySettings:
         cfg = self._get_config()
@@ -524,6 +570,7 @@ class OverlayRuntime:
             )
         else:
             snap = await self._read_telemetry()
+            self._remember_weekend_track()
             self.session.observe(
                 session_key=build_session_key(
                     subsession_id=snap.subsession_id,
@@ -533,12 +580,13 @@ class OverlayRuntime:
                 connected=snap.connected,
                 now=now,
             )
-            self._observe_timing(snap)
+            self._apply_sector_points(snap)
             try:
                 state = self.analyzer.analyze(snap)
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
+            self._observe_timing(snap, session_finished=state.session_finished)
             self._observe_race_story(snap, state, now)
         self.bus.set_race(state)
         self._last_race = state

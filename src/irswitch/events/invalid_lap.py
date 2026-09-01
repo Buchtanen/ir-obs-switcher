@@ -19,6 +19,8 @@ class InvalidLapEmitter:
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:  # noqa: ARG002
         if not state.connected or state.lap_completed is None:
             return []
+        if state.overlay_mode not in {"PRACTICE", "QUALIFYING"}:
+            return []
         lap = state.lap_completed
         incidents = state.incidents if state.incidents is not None else 0
         if self._last_lap is None:

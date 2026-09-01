@@ -19,6 +19,8 @@ from typing import Any, Protocol
 from irswitch.commentary.duck import ducker_from_settings
 from irswitch.commentary.graph import GraphNode
 from irswitch.commentary.polish import PolishOutcome, polish_skeleton
+from irswitch.commentary.speech_hero import mix_hero_name
+from irswitch.commentary.speech_numbers import numbers_to_words
 from irswitch.overlay.settings import CommentarySettings
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,8 @@ class CommentaryUtterance:
     node: GraphNode
     priority: int = 0
     past_framing: bool = False
+    hero_names: tuple[str, ...] = ()
+    hero_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -235,19 +239,37 @@ class ProcessTtsSink:
     def _speak(self, utterance: CommentaryUtterance) -> None:
         if self._interrupt.is_set():
             return
-        spoken_text = utterance.text
+        # Digits + compact units → words; mix hero name if the line is pronouns-only.
+        spoken_text = numbers_to_words(utterance.text, utterance.locale)
+        spoken_text = mix_hero_name(
+            spoken_text,
+            utterance.hero_names,
+            utterance.locale,
+            name=utterance.hero_name,
+        )
         past = bool(utterance.past_framing) and getattr(
             self.settings.scheduler, "llm_past_framing", True
         )
         if self.settings.llm_polish:
             outcome = polish_skeleton(
-                utterance.text,
+                spoken_text,
                 utterance.node,
                 self.settings,
                 past=past,
+                driver_names=utterance.hero_names,
             )
-            spoken_text = outcome.text
             self._emit_polish_debug(utterance, outcome)
+            if not (outcome.text or "").strip():
+                return
+            spoken_text = numbers_to_words(outcome.text, utterance.locale)
+            spoken_text = mix_hero_name(
+                spoken_text,
+                utterance.hero_names,
+                utterance.locale,
+                name=utterance.hero_name,
+            )
+            if not spoken_text.strip():
+                return
         with ducker_from_settings(self.settings):
             if self._interrupt.is_set():
                 return

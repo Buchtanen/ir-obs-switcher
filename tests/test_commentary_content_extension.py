@@ -67,13 +67,17 @@ def _expected_density(node_id: str) -> int:
         return 16
     if node_id in SESSION_BRIEF_NODES:
         return 10
+    if node_id == "field_fact":
+        return 14
+    if node_id == "weather_change":
+        return 13
     return 12
 
 
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
     graph = load_sequence_graph()
-    assert len(graph.nodes) == 34
-    assert len(graph.edges) == 16
+    assert len(graph.nodes) == 41
+    assert len(graph.edges) == 20
     assert graph.unfilled_cells() == []
     assert SESSION_BRIEF_NODES <= set(graph.nodes)
 
@@ -102,8 +106,8 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                         bound,
                     )
                 total += len(lines)
-    # 2832 prior densified lines + 5 brief nodes × 2 locales × 5 emotions × 10
-    assert total == 3500
+    # Densified graph + W4/H4 briefs + observer fillers + session_checkered (72).
+    assert total == 4064
 
 
 def test_append_patch_exactly_matches_graph_tails() -> None:

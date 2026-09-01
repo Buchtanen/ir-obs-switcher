@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
+from irswitch.iracing.drivers import speakable_name_mix_for_car
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
@@ -50,6 +51,8 @@ class RaceObserver:
     _pending_weather_change: WeatherSnapshot | None = None
     _last_filler_kind: str | None = None
     _filler_cooldown_until: float = 0.0
+    _after_session: bool = False
+    _session_checkered: bool = False
 
     def reset_session(self) -> None:
         self._session_key = None
@@ -58,6 +61,8 @@ class RaceObserver:
         self._pending_weather_change = None
         self._last_filler_kind = None
         self._filler_cooldown_until = 0.0
+        self._after_session = False
+        self._session_checkered = False
         self.aftermath.reset()
         self.narrative.reset_session()
 
@@ -121,17 +126,21 @@ class RaceObserver:
         ahead: list[NearFieldCar] = []
         behind: list[NearFieldCar] = []
         if snap.connected and snap.player_car_idx is not None:
-            ahead, behind = relevant_near_field(
-                snap, ahead_n=self.ahead_n, behind_n=self.behind_n
-            )
+            ahead, behind = relevant_near_field(snap, ahead_n=self.ahead_n, behind_n=self.behind_n)
             self.stream.note_rivals([*ahead, *behind])
 
         hero_name = None
+        hero_names: tuple[str, ...] = ()
         if snap.player_car_idx is not None:
             names = snap.car_idx_driver_name
             idx = snap.player_car_idx
             if 0 <= idx < len(names) and names[idx]:
                 hero_name = names[idx]
+            if telemetry_data is not None:
+                driver_info = telemetry_data.get("DriverInfo")
+                hero_names = speakable_name_mix_for_car(driver_info, idx)
+        if not hero_names and hero_name:
+            hero_names = (hero_name,)
 
         leader_name, leader_cp = _find_leader(snap)
 
@@ -150,6 +159,7 @@ class RaceObserver:
                 overall_position=state.position or snap.position,
                 lap=state.lap or snap.lap,
                 display_name=hero_name,
+                speakable_names=hero_names,
             ),
             ahead=tuple(ahead),
             behind=tuple(behind),
@@ -159,6 +169,8 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
         )
         self._context = ctx
+        self._after_session = bool(state.session_finished)
+        self._session_checkered = bool(state.session_checkered)
         try:
             self.narrative.tick(state, now, session_key=key)
         except Exception:
@@ -175,6 +187,8 @@ class RaceObserver:
             return None
         ctx = self._context
         if ctx is None:
+            return None
+        if self._after_session or self._session_checkered:
             return None
 
         if self._pending_weather_change is not None:
@@ -257,11 +271,7 @@ class RaceObserver:
                     if cs
                     else "He's stalled. Waiting to get going again."
                 )
-            return (
-                "Incident a pořád v pohybu."
-                if cs
-                else "Incident there, and he's still rolling."
-            )
+            return "Incident a pořád v pohybu." if cs else "Incident there, and he's still rolling."
 
         if envelope.event_type == "BACK_UNDER_WAY" or kind == "back_under_way":
             return "Znovu jede." if cs else "He's back under way."
@@ -277,6 +287,12 @@ class RaceObserver:
                 return f"That's a wrap on {label}, P{int(pos)}."
             return f"That's a wrap on {label}."
 
+        if envelope.event_type == "SESSION_CHECKERED" or kind == "session_checkered":
+            label = metrics.get("modeLabelCs" if cs else "modeLabel") or metrics.get("mode")
+            if cs:
+                return f"Šachovnice. Tohle kolo v {label} ještě platí."
+            return f"Checkered. This lap in {label} still counts."
+
         if envelope.event_type == "SESSION_PREVIEW" or kind == "session_preview":
             label = metrics.get("modeLabelCs" if cs else "modeLabel") or metrics.get("mode")
             if cs:
@@ -291,11 +307,7 @@ class RaceObserver:
         if fact == "position" and pos is not None:
             return f"Jede na P{int(pos)}." if cs else f"He runs P{int(pos)}."
         if fact == "leader" and leader:
-            return (
-                f"V čele je {leader}."
-                if cs
-                else f"The leader is {leader}."
-            )
+            return f"V čele je {leader}." if cs else f"The leader is {leader}."
         if fact == "gap" and target and gap is not None:
             gap_s = float(gap)
             if cs:

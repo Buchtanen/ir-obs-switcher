@@ -2719,11 +2719,11 @@
         "His full race story closes at the chequered flag.",
         "Viewers can now put P{position} beside this drive.",
         "He turns the final lap into a confirmed result.",
-        "Every earlier sequence ends with this classification.",
+        "Every earlier sequence ends with this classification in P{position}.",
         "The line settles the day in P{position}, as the race story develops.",
         "His race is complete and the result is official.",
         "The closing chapter records P{position}.",
-        "He reaches the flag with the whole stint behind him.",
+        "He reaches the flag in P{position} with the whole stint behind him.",
         "P{position} is the lasting number from this race.",
         "The commentary closes as he crosses the line."
       ]
@@ -2739,11 +2739,11 @@
         "His full race story closes at the chequered flag.",
         "Viewers can now put P{position} beside this drive.",
         "He turns the final lap into a confirmed result, all under control.",
-        "Every earlier sequence ends with this classification.",
+        "Every earlier sequence ends with this classification in P{position}.",
         "The line settles the day in P{position}, and the rhythm stays smooth.",
         "His race is complete and the result is official.",
         "The closing chapter records P{position}, all under control.",
-        "He reaches the flag with the whole stint behind him.",
+        "He reaches the flag in P{position} with the whole stint behind him.",
         "P{position} is the lasting number from this race.",
         "The commentary closes as he crosses the line, handled without any fuss."
       ]
@@ -2759,11 +2759,11 @@
         "His full race story closes at the chequered flag.",
         "Viewers can now put P{position} beside this drive.",
         "He turns the final lap into a confirmed result.",
-        "Every earlier sequence ends with this classification.",
+        "Every earlier sequence ends with this classification in P{position}.",
         "The line settles the day in P{position}.",
         "His race is complete and the result is official, all part of the plan.",
         "The closing chapter records P{position}, and his focus stays sharp.",
-        "He reaches the flag with the whole stint behind him.",
+        "He reaches the flag in P{position} with the whole stint behind him.",
         "P{position} is the lasting number from this race.",
         "The commentary closes as he crosses the line, all part of the plan."
       ]
@@ -2779,11 +2779,11 @@
         "His full race story closes at the chequered flag.",
         "Viewers can now put P{position} beside this drive.",
         "He turns the final lap into a confirmed result.",
-        "Every earlier sequence ends with this classification.",
+        "Every earlier sequence ends with this classification in P{position}.",
         "The line settles the day in P{position}, and he keeps asking for more.",
         "His race is complete and the result is official.",
         "The closing chapter records P{position}, and the pressure keeps rising.",
-        "He reaches the flag with the whole stint behind him.",
+        "He reaches the flag in P{position} with the whole stint behind him.",
         "P{position} is the lasting number from this race.",
         "The commentary closes as he crosses the line."
       ]
@@ -2799,11 +2799,11 @@
         "His full race story closes at the chequered flag!",
         "Viewers can now put P{position} beside this drive!",
         "He turns the final lap into a confirmed result!",
-        "Every earlier sequence ends with this classification!",
+        "Every earlier sequence ends with this classification in P{position}!",
         "The line settles the day in P{position}, and the momentum is surging!",
         "His race is complete and the result is official!",
         "The closing chapter records P{position}, and the tension is climbing!",
-        "He reaches the flag with the whole stint behind him!",
+        "He reaches the flag in P{position} with the whole stint behind him!",
         "P{position} is the lasting number from this race!",
         "The commentary closes as he crosses the line!"
       ]
@@ -2819,11 +2819,11 @@
         "Celý závodní příběh uzavírá šachovnicová vlajka, příběh pokračuje.",
         "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
         "Poslední kolo proměňuje v potvrzený výsledek.",
-        "Všechny předchozí sekvence končí touhle klasifikací.",
+        "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
         "Cílová čára uzavírá den na {position}. místě, příběh pokračuje.",
         "Jeho závod je hotový a výsledek je potvrzený, další fáze se rýsuje.",
         "Závěrečná kapitola zapisuje {position}. místo.",
-        "K vlajce přijíždí s celým stintem za sebou, obraz závodu je jasný.",
+        "K vlajce přijíždí na {position}. místě s celým stintem za sebou, obraz závodu je jasný.",
         "Trvalým číslem z tohohle závodu je {position}. místo, příběh pokračuje.",
         "Komentář se uzavírá jeho průjezdem cílem, další fáze se rýsuje."
       ]
@@ -2839,11 +2839,11 @@
         "Celý závodní příběh uzavírá šachovnicová vlajka.",
         "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
         "Poslední kolo proměňuje v potvrzený výsledek, všechno má pod kontrolou.",
-        "Všechny předchozí sekvence končí touhle klasifikací.",
+        "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
         "Cílová čára uzavírá den na {position}. místě, rytmus zůstává plynulý.",
         "Jeho závod je hotový a výsledek je potvrzený, zvládá to bez nervozity.",
         "Závěrečná kapitola zapisuje {position}. místo.",
-        "K vlajce přijíždí s celým stintem za sebou, bez zbytečného spěchu.",
+        "K vlajce přijíždí na {position}. místě s celým stintem za sebou, bez zbytečného spěchu.",
         "Trvalým číslem z tohohle závodu je {position}. místo.",
         "Komentář se uzavírá jeho průjezdem cílem, zvládá to bez nervozity."
       ]
@@ -2859,11 +2859,11 @@
         "Celý závodní příběh uzavírá šachovnicová vlajka.",
         "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
         "Poslední kolo proměňuje v potvrzený výsledek.",
-        "Všechny předchozí sekvence končí touhle klasifikací.",
+        "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
         "Cílová čára uzavírá den na {position}. místě, už myslí na další krok.",
         "Jeho závod je hotový a výsledek je potvrzený, přesně podle plánu.",
         "Závěrečná kapitola zapisuje {position}. místo.",
-        "K vlajce přijíždí s celým stintem za sebou, každý detail má změřený.",
+        "K vlajce přijíždí na {position}. místě s celým stintem za sebou, každý detail má změřený.",
         "Trvalým číslem z tohohle závodu je {position}. místo.",
         "Komentář se uzavírá jeho průjezdem cílem, přesně podle plánu."
       ]
@@ -2879,11 +2879,11 @@
         "Celý závodní příběh uzavírá šachovnicová vlajka.",
         "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
         "Poslední kolo proměňuje v potvrzený výsledek, tlak dál roste.",
-        "Všechny předchozí sekvence končí touhle klasifikací, tempo pořád zvedá.",
+        "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě, tempo pořád zvedá.",
         "Cílová čára uzavírá den na {position}. místě, pořád hledá něco navíc.",
         "Jeho závod je hotový a výsledek je potvrzený, bez náznaku polevení.",
         "Závěrečná kapitola zapisuje {position}. místo, tlak dál roste.",
-        "K vlajce přijíždí s celým stintem za sebou, tempo pořád zvedá.",
+        "K vlajce přijíždí na {position}. místě s celým stintem za sebou, tempo pořád zvedá.",
         "Trvalým číslem z tohohle závodu je {position}. místo.",
         "Komentář se uzavírá jeho průjezdem cílem, bez náznaku polevení."
       ]
@@ -2899,11 +2899,11 @@
         "Celý závodní příběh uzavírá šachovnicová vlajka, momentum nabírá sílu!",
         "Diváci si k téhle jízdě mohou zapsat {position}. místo!",
         "Poslední kolo proměňuje v potvrzený výsledek, napětí stoupá!",
-        "Všechny předchozí sekvence končí touhle klasifikací!",
+        "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě!",
         "Cílová čára uzavírá den na {position}. místě, momentum nabírá sílu!",
         "Jeho závod je hotový a výsledek je potvrzený, tohle začíná být ostré!",
         "Závěrečná kapitola zapisuje {position}. místo, napětí stoupá!",
-        "K vlajce přijíždí s celým stintem za sebou, závod kolem něj ožívá!",
+        "K vlajce přijíždí na {position}. místě s celým stintem za sebou, závod kolem něj ožívá!",
         "Trvalým číslem z tohohle závodu je {position}. místo!",
         "Komentář se uzavírá jeho průjezdem cílem, tohle začíná být ostré!"
       ]

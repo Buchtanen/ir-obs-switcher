@@ -75,7 +75,7 @@ async def test_speak_calls_tts_after_validation(app: web.Application) -> None:
             async with TestClient(server) as client:
                 resp = await client.post(
                     "/api/commentary/speak",
-                    json={"text": "You take P5 from Rossi.", "nodeId": "overtake"},
+                    json={"text": "He takes P5 from Rossi.", "nodeId": "overtake"},
                     headers={CSRF_HEADER: CSRF_VALUE},
                 )
                 body = await resp.json()

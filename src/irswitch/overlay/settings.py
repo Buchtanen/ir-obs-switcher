@@ -157,7 +157,7 @@ class CommentarySettings:
     enabled: bool = False
     use_hr_emotion: bool = True
     cooldown_s: float = 4.0
-    max_utterance_s: float = 6.0
+    max_utterance_s: float = 14.0
     tts_backend: str = "auto"
     tts_voice: str = ""
     tts_rate: int = 0
@@ -175,9 +175,13 @@ class CommentarySettings:
     llm_polish: bool = False
     llm_base_url: str = "http://127.0.0.1:11434/v1"
     llm_model: str = "qwen2.5:3b"
-    llm_timeout_s: float = 8.0
+    llm_timeout_s: float = 12.0
     llm_temperature: float = 0.45
-    llm_max_tokens: int = 220
+    llm_max_tokens: int = 360
+    llm_max_attempts: int = 5
+    # Spoken hero identity. Empty = iRacing UserName first/last tokens.
+    driver_name: str = ""
+    driver_nickname: str = ""
     scheduler: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
 
 

@@ -247,3 +247,9 @@ def test_qualify_intro_binds_track_and_field_size() -> None:
     spoken = director.observe([env], None, 5.0)
     assert spoken is not None
     assert spoken.node_id == "session_intro_qualify"
+
+
+def test_session_briefs_skip_after_session() -> None:
+    det = SessionBriefsDetector()
+    data = _session_data()
+    assert det.tick(_state(session_finished=True), data, 1.0) is None

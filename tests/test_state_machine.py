@@ -419,3 +419,31 @@ def test_post_load_race_still_switches_after_debounce() -> None:
         state = sm.tick(state, DrivingMode.RACE, "Practice")
         assert state.target_scene == "VR"
         assert "debounced" in state.reason or "mode:RACE" in state.reason
+
+
+def test_tick_preserves_total_sessions(
+    state_machine: StateMachine, initial_state: SwitchState
+) -> None:
+    seeded = SwitchState(
+        connected_iracing=True,
+        connected_obs=True,
+        autoswitch=True,
+        override_scene=None,
+        override_until=None,
+        mode=DrivingMode.RACE,
+        target_scene="Race",
+        current_scene="Race",
+        last_switch_ts=None,
+        reason="seed",
+        session_type="Race",
+        session_name="RACE",
+        session_num=2,
+        total_sessions=3,
+    )
+    from unittest.mock import patch
+
+    with patch("irswitch.logic.state_machine.now_ms", return_value=1_000_000):
+        out = state_machine.tick(seeded, DrivingMode.RACE, "Race")
+    assert out.total_sessions == 3
+    assert out.session_type == "Race"
+    assert out.session_num == 2

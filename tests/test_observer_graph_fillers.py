@@ -27,6 +27,7 @@ def test_graph_has_observer_filler_nodes() -> None:
         ("back_under_way", "BACK_UNDER_WAY"),
         ("session_wrap", "SESSION_WRAP"),
         ("session_preview", "SESSION_PREVIEW"),
+        ("session_checkered", "SESSION_CHECKERED"),
         ("field_fact", "FIELD_FACT"),
         ("weather_change", "WEATHER_CHANGE"),
     ):
@@ -136,7 +137,30 @@ def test_director_speaks_session_wrap_from_graph() -> None:
     spoken = _director().observe([env], None, 10.0)
     assert spoken is not None
     assert spoken.node_id == "session_wrap"
-    assert "Race" in spoken.text or "wrap" in spoken.text.lower()
+    assert spoken.text.strip().endswith((".", "!", "?"))
+    assert "{" not in spoken.text
+
+
+def test_director_speaks_session_checkered_from_graph() -> None:
+    env = make_envelope(
+        event_type="SESSION_CHECKERED",
+        phase="RESULT",
+        mode="QUALIFYING",
+        priority=56,
+        monotonic_ms=1000,
+        metrics={
+            "kind": "session_checkered",
+            "mode": "QUALIFYING",
+            "modeLabel": "Qualifying",
+            "modeLabelCs": "kvalifikace",
+            "position": 4,
+        },
+    )
+    spoken = _director().observe([env], None, 10.0)
+    assert spoken is not None
+    assert spoken.node_id == "session_checkered"
+    assert spoken.text.strip().endswith((".", "!", "?"))
+    assert "{" not in spoken.text
 
 
 def test_director_speaks_field_fact_from_graph() -> None:

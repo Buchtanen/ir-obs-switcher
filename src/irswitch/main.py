@@ -19,6 +19,7 @@ from irswitch.i18n import set_language
 from irswitch.iracing.extractors import (
     extract_session_fields,
     resolve_session_identity,
+    session_identity_changed,
 )
 from irswitch.iracing.reader import IRacingReader
 from irswitch.logic.policy import Policy
@@ -775,21 +776,24 @@ async def main_loop(
                     session_info = await reader.read_session_info() or {}
                 session_type, session_name, session_num, total_sessions = resolve_session_identity(
                     session_info,
-                    prev_type=new_state.session_type,
-                    prev_name=new_state.session_name,
-                    prev_num=new_state.session_num,
-                    prev_total=(
-                        new_state.total_sessions if hasattr(new_state, "total_sessions") else None
-                    ),
+                    prev_type=current_state.session_type,
+                    prev_name=current_state.session_name,
+                    prev_num=current_state.session_num,
+                    prev_total=current_state.total_sessions,
                 )
 
-            # Update state with session info if changed
-            if (
-                session_type != new_state.session_type
-                or session_name != new_state.session_name
-                or session_num != new_state.session_num
-                or total_sessions
-                != (new_state.total_sessions if hasattr(new_state, "total_sessions") else None)
+            # Log only when identity actually changed vs committed state.
+            # Always copy extracted fields onto new_state if the SM dropped them
+            # (historically total_sessions) so we do not spam the same line.
+            if session_identity_changed(
+                current_state.session_type,
+                current_state.session_name,
+                current_state.session_num,
+                current_state.total_sessions,
+                session_type,
+                session_name,
+                session_num,
+                total_sessions,
             ):
                 session_num_display = None
                 if session_num is not None:
@@ -800,6 +804,16 @@ async def main_loop(
                 logger.info(
                     f"Session info updated: type={session_type}, num={session_num_display}, name={session_name}"
                 )
+            if session_identity_changed(
+                new_state.session_type,
+                new_state.session_name,
+                new_state.session_num,
+                new_state.total_sessions,
+                session_type,
+                session_name,
+                session_num,
+                total_sessions,
+            ):
                 new_state = SwitchState(
                     connected_iracing=new_state.connected_iracing,
                     connected_obs=new_state.connected_obs,
