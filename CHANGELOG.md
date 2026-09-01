@@ -5,6 +5,23 @@ Všechny významné změny v projektu budou zdokumentovány v tomto souboru.
 Formát je založen na [Keep a Changelog](https://keepachangelog.com/cs/1.0.0/),
 a tento projekt dodržuje [Semantic Versioning](https://semver.org/lang/cs/).
 
+## [1.3.0] — 2026-09-01
+
+### Features
+
+* observers decoupling joint test: EventFanout, SpeechScheduler, RaceObserver, incident aftermath, session wrap/preview, ATTACK_RANGE / PIT_STOPPED ([#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179))
+* retry LLM polish on the same skeleton, fact-lock, skip TTS when polish fails ([#191](https://github.com/Buchtanen/ir-obs-switcher/issues/191))
+* live admin dashboard for extensions and activity ([#129](https://github.com/Buchtanen/ir-obs-switcher/pull/129))
+* commentary engine, session briefs, stream chapter markers, Pit Wall V4 themes ([#120](https://github.com/Buchtanen/ir-obs-switcher/pull/120), [#124](https://github.com/Buchtanen/ir-obs-switcher/pull/124), [#118](https://github.com/Buchtanen/ir-obs-switcher/pull/118), [#127](https://github.com/Buchtanen/ir-obs-switcher/pull/127), [#152](https://github.com/Buchtanen/ir-obs-switcher/pull/152))
+* post-race mute, official sectors, YouTube VOD chapters, target names ([#151](https://github.com/Buchtanen/ir-obs-switcher/pull/151))
+* optional LLM skeleton polish ([#163](https://github.com/Buchtanen/ir-obs-switcher/pull/163))
+
+### Bug Fixes
+
+* overlay raw copy tokens and ACTIVE hold ([#165](https://github.com/Buchtanen/ir-obs-switcher/pull/165))
+* BLE HR from advertised 0x180D ([#116](https://github.com/Buchtanen/ir-obs-switcher/pull/116))
+* overlay session tape from switcher session type ([#126](https://github.com/Buchtanen/ir-obs-switcher/pull/126))
+
 ## [1.2.0] — 2026-08-28
 
 ### Features
