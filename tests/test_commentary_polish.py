@@ -269,6 +269,7 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     node = graph.nodes["hunting"]
     captured: list[dict] = []
     forwarded: dict[str, object] = {}
+    final_spoken: list[str] = []
 
     def fake_polish(
         skeleton,
@@ -305,7 +306,11 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     )
 
     settings = CommentarySettings(llm_polish=True, tts_backend="null")
-    sink = ProcessTtsSink(settings=settings, on_polish_debug=captured.append)
+    sink = ProcessTtsSink(
+        settings=settings,
+        on_polish_debug=captured.append,
+        on_spoken_text=final_spoken.append,
+    )
     from irswitch.commentary.tts import CommentaryUtterance
 
     sink._speak(
@@ -328,6 +333,7 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     assert forwarded["locale"] == "en"
     assert forwarded["fact_pack"] == {"version": "commentary-facts/1"}
     assert forwarded["composition_path"] == ("beat", "detail")
+    assert final_spoken == ["Polished line."]
 
 
 def test_build_tts_sink_omits_hook_when_polish_off(monkeypatch: pytest.MonkeyPatch) -> None:

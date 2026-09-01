@@ -137,6 +137,12 @@ class CommentaryDirector:
             self._sector_speaks_by_lap = {}
         if not isinstance(self._iracing_hero_names, tuple):
             self._iracing_hero_names = tuple(self._iracing_hero_names or ())
+        if (
+            hasattr(self.sink, "on_spoken_text")
+            and getattr(self.sink, "on_spoken_text", None) is None
+        ):
+            sink_with_hook: Any = self.sink
+            sink_with_hook.on_spoken_text = self._recent.remember
         self._sync_scheduler_settings()
 
     def note_hero_names(self, names: Sequence[str] | None) -> None:

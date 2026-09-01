@@ -29,6 +29,7 @@ BACKENDS = ("auto", "sapi", "espeak", "null")
 STREAM_START_EVENT = "STREAM_START"
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
 PolishDebugHook = Callable[[dict[str, Any]], None]
+SpokenTextHook = Callable[[str], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
 
 _SAPI_VOICES_SCRIPT = """\
@@ -131,6 +132,7 @@ class ProcessTtsSink:
     last_result: TtsResult | None = None
     runner: SpeakRunner | None = None
     on_polish_debug: PolishDebugHook | None = None
+    on_spoken_text: SpokenTextHook | None = None
     _queue: queue.SimpleQueue[CommentaryUtterance | object] = field(
         default_factory=queue.SimpleQueue, repr=False
     )
@@ -325,6 +327,11 @@ class ProcessTtsSink:
         self.last_error = result.error
         if result.error:
             logger.warning("tts speak failed backend=%s error=%s", result.backend, result.error)
+        elif result.spoken and self.on_spoken_text is not None:
+            try:
+                self.on_spoken_text(spoken_text)
+            except Exception:
+                logger.debug("commentary final-spoken hook failed", exc_info=True)
 
     def _emit_polish_debug(self, utterance: CommentaryUtterance, outcome: PolishOutcome) -> None:
         hook = self.on_polish_debug
