@@ -1,6 +1,6 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (2026-09-01). Narrative landing continues on `master` (#181).  
+**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (2026-09-01). Narrative landing continues on `master` (#181). **Commentary Director V2 / N12 async isolation is specified, not implemented.**
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — reshaped after two reviews vs this umbrella. N-tasks **extend** P0–P5. N9 cover cut. Incident v1 = off_track vs unknown; Speed is motion not classify-primary. Finish = three booleans (`session_checkered` ≠ checkered bit). Opener mutex. Landing order **N1 → N2 → N4 → N8 → N11 A**. Gap-hunt TTS keys live under `[commentary]`.  
 **Audience:** architecture / next epic planning
@@ -87,6 +87,121 @@ Neznamená to sledovat celý grid. Jen okolí hero. **Locked: 2+2** pro RaceObse
 | OverlaySink | HUD | Gateovat commentary |
 | CommentaryPath | Výběr, defer, hard-interrupt (flag), LLM framing, TTS | Měnit HUD priority |
 | OBS SM | Scény | Zůstat oddělená |
+
+### 2.1 Current gap after P0
+
+P0 changed the naming and failure boundary, but not the execution model:
+
+- `OverlayRuntime` still owns telemetry sampling, `RaceObserver`, event arbitration,
+  overlay publication, `CommentaryDirector`, scheduler, and TTS wiring;
+- `EventFanout.emit()` calls consumers synchronously in registration order;
+- overlay wire publication is awaited before commentary dispatch;
+- commentary reads `OverlayBus.bio` and RaceObserver filler callbacks through
+  `OverlayRuntime`;
+- `ENTER_CAR`, session briefs, stream start, and some derived envelopes can call
+  the commentary path directly instead of entering one shared accepted stream;
+- RaceObserver-derived envelopes are drained after the engine tick and bypass
+  shared arbitration.
+
+The current code isolates exceptions, but a slow consumer still occupies the
+same race tick and overlay remains the composition root for commentary. That is
+not the independent model required for Commentary Director V2.
+
+### 2.2 Commentary Director V2 — independent async consumers
+
+Locked product invariant: **one race observation pipeline, one accepted event
+stream, two independent consumers**. Overlay and commentary receive the same
+accepted event identity and sequence, but neither waits for the other to finish.
+
+```text
+ iRSDK / OBS edges / bio / configured watches
+                    │
+                    ▼
+        RacePipeline + one RaceObserver
+   (RaceState, EventEngine, watch modules)
+                    │ candidates
+                    ▼
+       shared arbitration + identity stamp
+                    │ AcceptedEventBatch
+                    ▼
+             AsyncEventFanout
+             enqueue both first
+              ┌─────┴─────┐
+              ▼           ▼
+     overlay_queue   commentary_queue
+              │           │
+              ▼           ▼
+      OverlayConsumer   CommentaryConsumer
+      async task A      async task B
+      HUD/bus/tape      Director/scheduler/TTS
+```
+
+Execution rules:
+
+1. There is exactly one telemetry read, `RaceContextAnalyzer`, `EventEngine`,
+   `EventManagerV2`, and `RaceObserver` instance for the live pipeline.
+2. RaceObserver owns story memory and runs multiple deterministic watch modules;
+   it emits candidates only. It does not call overlay, director, scheduler, or
+   TTS.
+3. Engine and RaceObserver candidates enter the same arbitration/stamping step.
+   A commentary-only audience marker may make overlay ignore an event, but both
+   consumers still observe the same accepted envelope and event id.
+4. Fan-out enqueues an immutable/isolated batch to **both** queues before either
+   consumer work is awaited. It never executes consumer callbacks inline.
+5. Ordering is guaranteed inside each consumer by `(session_id, sequence)`.
+   Completion order between overlay and commentary is deliberately undefined.
+6. Each consumer owns its state, reset handling, queue policy, errors, and
+   status. No import or callback may form `overlay -> commentary` or
+   `commentary -> overlay`.
+7. The first slice uses two supervised `asyncio.Task` workers in the single
+   Windows service process. The message contract must be serializable and share
+   no mutable state so either worker can later move behind an IPC transport into
+   a separate OS process without changing producers or event semantics.
+
+Shared arbitration owns factual acceptance, dedupe, correlation, and identity;
+it does **not** merge HUD presentation budget with speech budget. Overlay hold /
+priority and CommentaryScheduler defer/TTL remain consumer-local decisions after
+dequeue. A candidate valid for any declared audience becomes one accepted event
+that both consumers can account for.
+
+`AcceptedEventBatch` must carry at least `session_id`, producer batch sequence,
+accepted monotonic time, an immutable tuple/copy of envelopes, and the version
+of the read-only context snapshot used for slot/HR decisions. `EventEnvelope`
+is currently mutable (`stamp()` and mutable `metrics`); the fan-out boundary
+must freeze, clone, or serialize it before enqueueing so one consumer cannot
+change what the other sees.
+
+Continuous `RaceState`/bio data is not an overlay-owned backchannel. Publish a
+read-only, versioned context snapshot (or an explicit state message) from the
+producer lane. Overlay uses it for HUD state; commentary uses only the fields
+needed for HR, slots, and story context.
+
+### 2.3 Queue, overload, and lifecycle contract
+
+- One bounded queue per consumer; no shared work queue, because a shared queue
+  would load-balance events instead of broadcasting them.
+- Healthy-path proof: both consumers receive the exact same event ids and
+  sequences. Consumer-local filtering happens only after dequeue.
+- The producer never awaits TTS, WebSocket clients, overlay rendering, or a
+  consumer queue becoming free.
+- Overflow is deterministic and visible. Preserve `FINISH`, `INCIDENT`, opener,
+  `RESULT`, and `EXIT`; coalesce stale `ACTIVE`/`UPDATE` by dedupe key before
+  evicting a lower-priority item. Commentary may expire an utterance by its
+  event-time TTL, never silently reinterpret it as current.
+- Record per consumer: queue depth/capacity, last enqueued and processed
+  sequence, lag milliseconds, coalesced/dropped totals and reasons, task state,
+  last error, and restart count.
+- A consumer exception is caught inside that worker and cannot cancel the
+  producer or sibling. Restart uses bounded backoff. Repeated failure degrades
+  only that consumer.
+- Startup creates both queues and workers before the producer starts publishing.
+  Shutdown stops publishing, drains only within a bounded deadline, cancels
+  both workers, awaits them, then restores TTS ducking / closes tape.
+- Session reset is an ordered control message or accepted event boundary. Hidden
+  cross-object reset callbacks are not allowed across consumer ownership.
+
+All producer and consumer timing uses monotonic time. Queue delay is measured;
+it is not added to cooldowns as if the event occurred later.
 
 ---
 
@@ -196,6 +311,17 @@ sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`
 Lane/released stay HUD-only. **Issue #177.**  
 **Next:** done for ATTACK_RANGE / PIT_STOPPED. Further copy = epic **N11 wave A** (stream_start / in_car only).
 
+### V2 / N12 — Commentary Director async isolation (specified)
+
+Extract the race/event producer from `OverlayRuntime`; make overlay and
+commentary independently supervised async consumers with separate bounded
+queues and identical accepted event identity. Unify direct sidecars and
+RaceObserver-derived events behind the same arbitration/fan-out boundary.
+Detailed handover and acceptance criteria: [N12](tasks/n12_async_consumers.md).
+
+V2/N12 is a follow-up after the #181 live listen. It does not change P0–P5 behavior,
+current INI defaults, or the #181 landing order.
+
 ---
 
 ## 7. Nedělat v prvním PR
@@ -224,6 +350,7 @@ Lane/released stay HUD-only. **Issue #177.**
 | `docs/observers_decoupling_plan.md` | tento plán + locked answers |
 | `docs/commentary_speech_queue_followup.md` | post–P1 follow-up: TTS backpressure / busy truth (thin slice first) |
 | `docs/narrative_observers_epic.md` | product expansion + N1–N11 task index |
+| `docs/tasks/n12_async_consumers.md` | Commentary Director V2 producer/fan-out/consumer refactor |
 | `CONFIG.md` / example.ini | až P1 (`[commentary.scheduler]`) |
 | `COMMENTARY_ENGINE.md` / `API.md` | až implementace |
 
