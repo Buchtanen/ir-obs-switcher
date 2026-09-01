@@ -10,7 +10,7 @@ Tento dokument popisuje, **kde žije verze** a jak se **zobrazuje** v aplikaci. 
 
 ## Kde je verze evidována
 
-1. **`pyproject.toml`** (single source of truth)
+1. **`pyproject.toml`** (runtime / build)
    ```toml
    [project]
    version = "0.7.0"
@@ -18,17 +18,26 @@ Tento dokument popisuje, **kde žije verze** a jak se **zobrazuje** v aplikaci. 
    - Bump probíhá v **Release PR**, ne v běžných feature/fix PR.
    - Používá se při buildu a distribuci.
 
-2. **`src/irswitch/__init__.py`**
+2. **`.release-please-manifest.json`** (poslední vydaná verze pro Release Please)
+   ```json
+   { ".": "0.7.0" }
+   ```
+   - Musí být **stejné** `X.Y.Z` jako `pyproject.toml` a tag `vX.Y.Z`.
+   - Když zaostane, Release Please další Release PR **neotevře**.
+   - CI: `scripts/check_release_please_lock.py`.
+
+3. **`src/irswitch/__init__.py`**
    - Načítá verzi dynamicky (`resolve_version()`).
    - **Není potřeba ručně aktualizovat.**
 
-3. **`CHANGELOG.md`**
+4. **`CHANGELOG.md`**
    - Sekce podle verzí (např. `## [0.7.0] - …`).
-   - Aktualizuje se v Release PR spolu s `pyproject.toml`.
+   - Aktualizuje se v Release PR spolu s `pyproject.toml` a manifestem.
 
-4. **Git tag `vX.Y.Z`**
+5. **Git tag `vX.Y.Z`**
    - Vzniká **až po merge Release PR** (ne ručně).
    - Spouští release pipeline (build + GitHub Release).
+   - Workflow tag **neudělá**, pokud pyproject != manifest.
 
 ---
 
@@ -38,13 +47,16 @@ Shrnutí z [RELEASE_POLICY.md](RELEASE_POLICY.md):
 
 1. Běžné PR do `master` mají **přesně jeden** label: `semver:major` / `semver:minor` / `semver:patch` / `semver:none`.
 2. Merge do `master` aktualizuje (nebo vytvoří) **Release PR**, který akumuluje změny od posledního tagu.
-3. Merge **Release PR** bumpne `pyproject.toml` + `CHANGELOG.md`, vytvoří tag `vX.Y.Z` a spustí release.
+3. Merge **Release PR** bumpne `pyproject.toml` + `CHANGELOG.md` + `.release-please-manifest.json`, vytvoří tag `vX.Y.Z` a spustí release.
 
 ### Co nedělat
 
 - **Nebumpuj** `project.version` v běžných PR.
+- **Nebumpuj** `pyproject.toml` bez `.release-please-manifest.json`.
 - **Netaguj ručně** (`git tag v…`) jako primární release flow.
 - **Nespoléhej** na commit-hook bump (`fix:` / `feat:` / `rel:`) — to už **není** řídící mechanismus releasu.
+
+Když po merge `semver:*` nevznikne Release PR: viz [RELEASE_POLICY.md](RELEASE_POLICY.md) (sync manifestu, ne ruční bump pyproject). Skill: `release-please-manifest`.
 
 > Historické skripty/hooky kolem version bumpu mohou v `scripts/` ještě existovat; pro releasování je nepoužívej. Zdroj pravdy je Release PR + [RELEASE_POLICY.md](RELEASE_POLICY.md).
 

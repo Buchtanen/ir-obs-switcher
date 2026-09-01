@@ -68,6 +68,8 @@ _FACT_LOCK = (
     "(not Richard Ohanian).\n"
     "Never you/your/jsi/tvůj to the featured driver. Viewers hear about the protagonist; "
     "rivals are the other named drivers.\n"
+    "Never open with the featured driver's name and a comma (not 'Richard, ...'). "
+    "Never open with Name. then the rest of the call. Talk about the driver; do not address them.\n"
 )
 
 
@@ -79,7 +81,8 @@ def _hero_lock(driver_names: Sequence[str]) -> str:
         f"The featured driver is {shown}, the protagonist of the call. "
         "Speak about that driver in third person (name mixed with he/him/his). "
         "Other named people are rivals, not the featured driver. "
-        "Never address the featured driver as you/your; this is for stream viewers, not pit radio.\n"
+        "Never address the featured driver as you/your; this is for stream viewers, not pit radio. "
+        "Do not open with their name plus a comma or a lone Name. sentence.\n"
     )
 
 
@@ -119,7 +122,11 @@ def _expansion_code(skeleton: str, content: str, tts: TtsLimits) -> str | None:
     return None
 
 
-def fact_violation_codes(skeleton: str, polished: str) -> list[str]:
+def fact_violation_codes(
+    skeleton: str,
+    polished: str,
+    driver_names: Sequence[str] = (),
+) -> list[str]:
     """Reject VOD-style inversions the 3B model repeats. Empty = fact-ok."""
     sk = skeleton or ""
     po = polished or ""
@@ -143,17 +150,42 @@ def fact_violation_codes(skeleton: str, polished: str) -> list[str]:
         glued = f"{fused.group(1)} {fused.group(2)}"
         if re.search(rf"\b{re.escape(glued)}\b", po) and glued not in sk:
             codes.append("hero_name_fusion")
+    if _hero_vocative(po, driver_names):
+        codes.append("hero_vocative")
     return codes
 
 
-def _reject_codes(skeleton: str, content: str, node: GraphNode) -> list[str]:
+def _hero_vocative(text: str, names: Sequence[str]) -> bool:
+    """True when the line opens by addressing the featured driver."""
+    raw = (text or "").lstrip()
+    if not raw:
+        return False
+    for name in names:
+        token = str(name).strip()
+        if not token:
+            continue
+        # Richard, that's a lap.
+        if re.match(rf"^{re.escape(token)}\s*,", raw, flags=re.IGNORECASE):
+            return True
+        # Richard. That's a lap.
+        if re.match(rf"^{re.escape(token)}\.\s+\S", raw, flags=re.IGNORECASE):
+            return True
+    return False
+
+
+def _reject_codes(
+    skeleton: str,
+    content: str,
+    node: GraphNode,
+    driver_names: Sequence[str] = (),
+) -> list[str]:
     codes: list[str] = []
     expand = _expansion_code(skeleton, content, node.tts)
     if expand:
         codes.append(expand)
     issues = validate_utterance(content, node)
     codes.extend(item.code for item in issues)
-    for code in fact_violation_codes(skeleton, content):
+    for code in fact_violation_codes(skeleton, content, driver_names):
         if code not in codes:
             codes.append(code)
     return codes
@@ -411,7 +443,7 @@ def polish_skeleton(
             last_response = compact
             continue
 
-        codes = _reject_codes(text, content, node)
+        codes = _reject_codes(text, content, node, driver_names)
         last_response = {**compact, "validatorCodes": codes}
         if codes:
             continue

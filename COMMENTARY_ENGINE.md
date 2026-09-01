@@ -14,8 +14,9 @@ Texts are filled later by another model. This repo owns the graph, validator, as
 Commentary is **for the stream audience**, not pit-wall radio to the driver.
 
 - EN: third person / broadcast, mixing the driver's name or nickname with he/him/his (“Richard is closing on Rossi.” / “That's a lap for Buchtanen.”)
-- CS: třetí osoba / komentář pro diváky, jméno nebo přezdívka namíchaná s zájmeny (“Richard uzavírá kolo.” / “Buchtanen. Kolo je hotové.”)
+- CS: třetí osoba / komentář pro diváky, jméno nebo přezdívka namíchaná se zájmeny (“Richard uzavírá kolo.” / “To je kolo pro Buchtanena.”)
 - Never second person to the driver (“You take P5”, “Jsi pátý” as address)
+- Never a vocative opener: not `{target_name}, ...` and not `Richard, that's a lap` / `Richard. That's a lap`. Commentary talks **about** the driver, not **to** them.
 - Light viewer asides OK; keep one breath; slots unchanged
 
 ## Pipeline
@@ -80,6 +81,8 @@ Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDAT
 - SSML that is not well-formed, or tags outside `break` / `emphasis`
 - `<break time>` over 500 ms
 - estimated duration / char cap
+- second-person to the driver (`you` / `jsi`)
+- vocative name-slot opener (`{target_name}, ...`)
 
 ## Assignments for the text model
 
@@ -94,7 +97,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). Optional LLM polish restyles the authored skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), or a fact-lock hit (invented lead/pole, chase→lead, West→westward, seconds→cm) retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the sequence graph. If every attempt fails → `retry_exhausted` and **TTS is skipped** (skeleton is not spoken). Node TTS (~160 chars / 13 s) is the authored ceiling, not a dump budget. Before polish/TTS, digit tokens **and compact units** (`m/s`, `°C`/`23 C`, gap `s`, `%`, `bpm`) are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his (`speech_hero.mix_hero_name`; config `driver_name` / `driver_nickname`, else iRacing UserName) — EN prefix `Name.` is skipped when the line already names another person. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). Optional LLM polish restyles the authored skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), a vocative opener (`Richard, ...` / `Richard. That's a lap`), or a fact-lock hit (invented lead/pole, chase→lead, West→westward, seconds→cm) retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the sequence graph. If every attempt fails → `retry_exhausted` and **TTS is skipped** (skeleton is not spoken). Node TTS (~160 chars / 13 s) is the authored ceiling, not a dump budget. Before polish/TTS, digit tokens **and compact units** (`m/s`, `°C`/`23 C`, gap `s`, `%`, `bpm`) are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only (`speech_hero.mix_hero_name`; config `driver_name` / `driver_nickname`, else iRacing UserName). Pronoun-free lines stay unchanged — no `Name. rest` / `Name, rest` prefix (that talks *to* the driver). Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test

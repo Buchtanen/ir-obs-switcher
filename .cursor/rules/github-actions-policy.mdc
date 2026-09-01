@@ -20,4 +20,5 @@ Rules:
 
 Release process:
 - respect Release PR model (release-please). Do not reintroduce manual tagging as default.
+- never create a `vX.Y.Z` tag when `pyproject.toml` and `.release-please-manifest.json` disagree (`scripts/check_release_please_lock.py`).
 

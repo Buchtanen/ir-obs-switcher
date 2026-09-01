@@ -117,6 +117,7 @@ def _render_node(
             "3–6 spoken sentences per emotion (target ~4; denser matrix).",
             "Address the **stream viewer** (broadcast / third person about the driver).",
             "Never second-person to the driver. Use slots verbatim (`{position}`).",
+            "Never open with a name slot and a comma (`{target_name}, ...`). Talk about them, not to them.",
             "One breath per line. Terminal `.` `!` or `?`.",
             "",
         ]

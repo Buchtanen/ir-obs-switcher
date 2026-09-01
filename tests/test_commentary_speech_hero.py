@@ -46,19 +46,23 @@ def test_picks_nickname_from_pool() -> None:
     assert "He " not in text
 
 
-def test_english_prefix_when_no_pronoun() -> None:
-    text = mix_hero_name("That's a best lap without fuss.", ("Richard",), "en")
-    assert text == "Richard. That's a best lap without fuss."
+def test_english_does_not_prefix_vocative_when_no_pronoun() -> None:
+    src = "That's a best lap without fuss."
+    text = mix_hero_name(src, ("Richard",), "en")
+    assert text == src
+    assert not text.startswith("Richard.")
+    assert not text.startswith("Richard,")
 
 
-def test_english_skips_prefix_when_another_person_is_named() -> None:
+def test_english_skips_when_another_person_is_named() -> None:
     assert mix_hero_name("Ohanian is closing.", ("Richard",), "en") == "Ohanian is closing."
     assert mix_hero_name("West is coming back.", ("Richard",), "en") == "West is coming back."
 
 
-def test_czech_on_and_prefix() -> None:
+def test_czech_on_replace_without_vocative_prefix() -> None:
     assert mix_hero_name("On uzavírá kolo.", ("Richard",), "cs") == "Richard uzavírá kolo."
-    assert mix_hero_name("Kolo je hotové.", ("Richard",), "cs") == "Richard. Kolo je hotové."
+    src = "Kolo je hotové."
+    assert mix_hero_name(src, ("Richard",), "cs") == src
 
 
 def test_resolve_config_beats_iracing() -> None:

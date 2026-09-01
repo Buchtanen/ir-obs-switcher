@@ -18,13 +18,19 @@ Breaking change rule:
   - body containing `BREAKING CHANGE: ...`
 
 Release PR:
-- you don’t create it manually
-- release PR updates `pyproject.toml` version + `CHANGELOG.md` (+ manifest)
+- you don’t create it manually (first reaction after a `semver:*` merge is wait for Release Please)
+- release PR updates `pyproject.toml` version + `CHANGELOG.md` + `.release-please-manifest.json` (`"."` must equal the new version)
 - merging release PR creates tag `vX.Y.Z` and runs release pipeline
+
+Lockstep (required):
+- `pyproject.toml` `[project].version` == `.release-please-manifest.json` `"."` == latest tag `vX.Y.Z`
+- CI fails PRs that bump `project.version` unless the PR has `autorelease: pending`
+- Manifest-only sync (`semver:none`) is allowed when RP is stuck because the manifest lagged
 
 Do not:
 - tag manually
 - bump version in normal PRs (version bump happens in release PR)
+- bump `pyproject.toml` without the manifest (that is how 1.2.0 blocked the next Release PR)
 
-Reference: `RELEASE_POLICY.md`
+Reference: `RELEASE_POLICY.md`, skill `release-please-manifest`
 

@@ -8,65 +8,6 @@ from random import Random
 
 _EN_PRONOUN = re.compile(r"\b(He's|he's|He is|he is|Himself|himself|His|his|Him|him|He|he)\b")
 _CS_ON = re.compile(r"\b(On|on)\b")
-_TITLE_TOKEN = re.compile(r"\b([A-Z][a-z]{2,})\b")
-_PREFIX_STOP = frozenset(
-    {
-        "the",
-        "that",
-        "this",
-        "these",
-        "those",
-        "after",
-        "before",
-        "another",
-        "his",
-        "her",
-        "its",
-        "wind",
-        "air",
-        "track",
-        "practice",
-        "qualifying",
-        "qualify",
-        "race",
-        "session",
-        "heart",
-        "viewers",
-        "broadcast",
-        "conditions",
-        "temperature",
-        "clock",
-        "gap",
-        "field",
-        "order",
-        "lap",
-        "best",
-        "personal",
-        "audience",
-        "checkered",
-        "chequered",
-        "flag",
-        "flags",
-        "live",
-        "call",
-        "every",
-        "commentary",
-        "kolo",
-        "závod",
-        "cílová",
-        "šachovnicová",
-        "konec",
-        "vlajka",
-        "dojezd",
-        "klasifikace",
-        "diváci",
-        "poslední",
-        "všechny",
-        "jeho",
-        "závěrečná",
-        "komentář",
-    }
-)
 
 
 def resolve_hero_names(
@@ -111,7 +52,10 @@ def mix_hero_name(
     rng: Random | None = None,
     name: str | None = None,
 ) -> str:
-    """Replace the first 3rd-person pronoun (or prefix CS/EN) with a hero name.
+    """Replace the first 3rd-person pronoun with a hero name.
+
+    Do not prefix ``Name. rest`` or ``Name, rest`` — that reads as address
+    (talks *to* the driver). Leave pronoun-free lines unchanged.
 
     Idempotent when any *names* token is already in *text*. Empty-safe.
     """
@@ -131,28 +75,9 @@ def mix_hero_name(
     cs = (locale or "en").strip().lower().startswith(("cs", "cz"))
     if cs:
         replaced, n = _CS_ON.subn(chosen, raw, count=1)
-        if n:
-            return replaced
-        if _has_other_person_name(raw, pool):
-            return raw
-        return f"{chosen}. {raw}"
+        return replaced if n else raw
     replaced, n = _EN_PRONOUN.subn(lambda m: _en_form(m.group(1), chosen), raw, count=1)
-    if n:
-        return replaced
-    if _has_other_person_name(raw, pool):
-        return raw
-    return f"{chosen}. {raw}"
-
-
-def _has_other_person_name(text: str, hero_names: Sequence[str]) -> bool:
-    heroes = {str(n).strip().lower() for n in hero_names if n and str(n).strip()}
-    for match in _TITLE_TOKEN.finditer(text or ""):
-        token = match.group(1)
-        low = token.lower()
-        if low in heroes or low in _PREFIX_STOP:
-            continue
-        return True
-    return False
+    return replaced if n else raw
 
 
 def _pick_name(pool: Sequence[str], text: str, rng: Random | None) -> str:

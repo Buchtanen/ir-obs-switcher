@@ -31,10 +31,13 @@ jobs:
           manifest-file: .release-please-manifest.json
           target-branch: master
 
-      # skip-github-release skips RP tag push; release.yml builds on tag push.
+      # skip-github-release skips RP's GitHub Release; we tag here so release.yml runs.
+      # Never tag when pyproject.toml and the manifest disagree — that is how
+      # v1.2.0 was created while the manifest stayed at 1.1.0 and blocked the next RP.
       - name: Ensure release tag exists for current version
         run: |
           set -euo pipefail
+          python3 scripts/check_release_please_lock.py
           VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           TAG="v${VERSION}"
           if git rev-parse "${TAG}" >/dev/null 2>&1; then

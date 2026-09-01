@@ -730,8 +730,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 
 **Migration:** new optional `[race_observer]` `grid_story` (default `false`). Missing key = no quali recap / parade pad. Independent of `commentary.session_briefs`.
 
-
-**Migration:** optional `commentary.driver_name` / `commentary.driver_nickname` (empty default). Commentary mixes these with he/him/his. When both empty, uses iRacing `UserName` first+last tokens (a single token if the username has only one word).
+**Migration:** optional `commentary.driver_name` / `commentary.driver_nickname` (empty default). Commentary mixes these with he/him/his only. Pronoun-free lines are not prefixed with `Name.` / `Name,` (that reads as talking *to* the driver). When both empty, uses iRacing `UserName` first+last tokens (a single token if the username has only one word).
 
 **Migration:** new optional `[commentary.scheduler]` (defaults keep legacy drop-on-busy). `defer_enabled=false`, `hard_interrupt=false`, `max_deferred=8`, `default_ttl_s=12`, `incident_ttl_s=45`, `max_silence_s=33`, `llm_past_framing=true`. When `defer_enabled=true`, busy arrivals park **at most one best** line by priority/TTL (lower priority → `deferred_dropped`); idle flush speaks that one as `spoken_deferred` and clears any remainder — the queue is never spoken sequentially. LLM past framing only if `llm_polish=true`. `hard_interrupt` may clear the TTS queue for incident envelopes (not while finish/final_lap is current). Silence watchdog logs `silence_no_filler` until RaceObserver supplies weather/field facts (P2).
 **Full V4 demo profile** (mirrored in `config/config.example.ini`; production code defaults stay off until you opt in):

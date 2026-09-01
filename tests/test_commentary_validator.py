@@ -36,6 +36,17 @@ def test_rejects_address_to_driver() -> None:
     assert "address_driver" in issues_as_codes(validate_utterance("Jsi pátý na trati.", node))
 
 
+def test_rejects_name_slot_vocative_opener() -> None:
+    node = _node()
+    assert "vocative_opener" in issues_as_codes(
+        validate_utterance("{target_name}, that was a clean pass.", node)
+    )
+    assert (
+        issues_as_codes(validate_utterance("{target_name} is behind after a clean pass.", node))
+        == []
+    )
+
+
 def test_rejects_missing_terminal_punct_and_all_caps() -> None:
     node = _node()
     assert "terminal_punct" in issues_as_codes(validate_utterance("you take the place", node))
