@@ -182,6 +182,19 @@ def test_viewer_voice_has_no_direct_second_person_address() -> None:
     assert findings == []
 
 
+def test_viewer_voice_name_slots_are_not_vocative_openers() -> None:
+    vocative = re.compile(r"^\s*\{([a-z0-9_]+)\}\s*,")
+    findings: list[tuple[str, str, str]] = []
+    for node, locale, _emotion, line in _active_rows():
+        match = vocative.match(line)
+        if not match:
+            continue
+        types = {slot.name: slot.type for slot in node.slots}
+        if types.get(match.group(1)) == "name":
+            findings.append((node.id, locale, line))
+    assert findings == []
+
+
 def test_deterministic_sixty_line_self_check_against_current_validator() -> None:
     rows = _active_rows()
     sample = random.Random(20260830).sample(rows, 60)

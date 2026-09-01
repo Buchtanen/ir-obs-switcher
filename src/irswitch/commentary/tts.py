@@ -239,7 +239,7 @@ class ProcessTtsSink:
     def _speak(self, utterance: CommentaryUtterance) -> None:
         if self._interrupt.is_set():
             return
-        # Digits + compact units → words; mix hero name if the line is pronouns-only.
+        # Digits + compact units → words; mix hero name via he/him/his only.
         spoken_text = numbers_to_words(utterance.text, utterance.locale)
         spoken_text = mix_hero_name(
             spoken_text,
