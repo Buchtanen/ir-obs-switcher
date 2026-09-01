@@ -1,10 +1,10 @@
 # Commentary LLM — skeleton polish PoC
 
-**Status:** researched / LAN-tested (no production wiring yet)  
-**Date:** 2026-08-31  
+**Status:** LAN-tested; optional live polish behind `commentary.llm_polish` (default off)  
+**Date:** 2026-09-01  
 **Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), sequence graph + director pipeline  
 **Hardware under test:** Ubuntu NTB, NVIDIA RTX A1000 Laptop 4GB, Ollama `qwen2.5:3b` @ LAN  
-**Decision:** no fine-tuning for now; optional remote polish later, default off
+**Decision:** live inference stays `qwen2.5:3b` on the A1000. A 4090 is optional later fine-tuning of that same 3B, not a different runtime model.
 
 ## 1. Goal
 
@@ -29,7 +29,7 @@ emitters / briefs / RaceState / Bio
   → SKELETON (app)
   → optional LLM polish (style)
   → validate + fact guards
-  → TTS  |  fail → authored variant / skeleton
+  → TTS  |  fail after retries → skip speak (no skeleton)
 ```
 
 This is **not** “replace emitters with an LLM tree.” The tree still decides *when* and *what is true*; the model only changes *how it sounds*.
@@ -52,15 +52,17 @@ This is **not** “replace emitters with an LLM tree.” The tree still decides 
 ### System (short beats — chase / PB)
 
 ```text
-You are polishing a TV race call for stream viewers.
+Polish a TV race call for stream viewers (not pit radio).
 Keep EVERY fact from SKELETON. Do not add new numbers, names, or events.
 Never invent yellows, overtakes, final lap, Stay tuned, or BPM.
-Viewers only, third person. Write exactly 3 sentences. Commentary only.
+Viewers only, third person. Same sentence count as the skeleton; do not add a sentence.
+Hard cap {cap} characters for this skeleton (not the full node TTS ceiling).
+Do not pad, welcome, or recap. Commentary only.
 ```
 
-### System (session welcome — longer OK)
+### System (session welcome)
 
-Same fact-lock rules; allow **5–7 sentences**, warm broadcast-host energy; still no invented battles/gaps.
+Same fact-lock. Polish may restyle, not grow a second sentence. Authored graph lines may use the ~160 / 13 s node budget when they already carry two true facts.
 
 ### User
 
@@ -118,7 +120,7 @@ CommentaryDirector.observe (sync, tick)
 
 | Option | Idea | Verdict |
 |--------|------|---------|
-| **A. PolishingTtsSink** | Wrap `ProcessTtsSink`; polish on serial worker; timeout → speak skeleton | **Recommended** |
+| **A. PolishingTtsSink** | Wrap `ProcessTtsSink`; polish on serial worker; timeout/fact-fail → retry then skip TTS | **Shipped** |
 | B. TextProvider in director | Deferred speak / async task ownership | More churn, easy to break fail-soft |
 | C. Parallel dry-run only | Log polish, speak authored | Safe A/B tooling, not product voice |
 | D. `tts_backend=ollama` | Confuses TTS with text rewrite | Reject as primary design |
@@ -127,7 +129,7 @@ CommentaryDirector.observe (sync, tick)
 
 - `commentary/polish.py` — OpenAI-compatible client (`aiohttp`), timeout, null polisher  
 - Optional `skeleton.py` — build skeleton string from bindings + beat metadata  
-- Config (default **off**): `llm_polish`, `llm_base_url`, `llm_model`, `llm_timeout_s`  
+- Config (default **off**): `llm_polish`, `llm_base_url`, `llm_model`, `llm_timeout_s`, `llm_max_attempts`  
 - Re-validate polished text; fact guards (binding values must appear); decision log `polish: ok|fallback`  
 - Tests: timeout, reject bad polish, `llm_polish=false` bit-identical path  
 - Docs: `CONFIG.md`, `config.example.ini`, this doc + `COMMENTARY_ENGINE.md` pipeline note  
@@ -143,15 +145,15 @@ CommentaryDirector.observe (sync, tick)
 
 ### Risks
 
-- Latency 1–5 s → timeout + skeleton fallback; intros tolerate longer  
-- Graph `max_chars≈90` vs long welcome → either higher limits on brief nodes, or polish-off for long intros, or separate “long call” budget  
+- Latency 1–5 s → retries inside `llm_timeout_s`; exhausted → skip TTS (no skeleton)  
+- Graph node TTS ~160 / 13 s vs long welcome → polish is skeleton-relative; authored two-fact lines may use the node budget  
 - Fact drift → reject polish  
 - CS locale → dedicated system prompt + fixtures  
 - Ollama down → never raise into race loop  
 
 ## 7. Explicit non-goals (now)
 
-- Fine-tuning / LoRA (revisit after contract is stable in production)  
+- Fine-tuning / LoRA on a 4090 (revisit after the A1000 3B contract is stable)  
 - Replacing Event Engine or sequence graph topology with an LLM  
 - On-box training on the A1000 (serve only; train elsewhere if ever)
 

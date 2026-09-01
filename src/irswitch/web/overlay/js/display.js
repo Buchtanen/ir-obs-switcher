@@ -502,8 +502,16 @@ export const DisplayManager = {
       text(meta, `P${data.position ?? "—"}  P${data.classPosition ?? "—"} IN CLASS`);
     } else if (name === "heart_rate") {
       text(kicker, "HEART RATE");
-      text(title, `${data.bpm ?? "—"} BPM`);
-      text(meta, data.delta != null ? `+${data.delta}` : "");
+      const bpm =
+        data.bpm != null && Number.isFinite(Number(data.bpm))
+          ? String(Math.round(Number(data.bpm)))
+          : "—";
+      text(title, `${bpm} BPM`);
+      const delta =
+        data.delta != null && Number.isFinite(Number(data.delta))
+          ? Math.round(Number(data.delta))
+          : null;
+      text(meta, delta != null ? `+${delta}` : "");
     } else if (name === "ble_lost") {
       text(kicker, "SENSOR");
       text(title, "HEART SENSOR LOST");
@@ -576,10 +584,11 @@ export function applySysinfo(system, bio) {
     33,
   );
   const n = bio && bio.bpm != null ? Number(bio.bpm) : null;
-  setMod("hr", n != null ? String(n) : "—", n, 128, 138);
+  const hrLabel = n != null && Number.isFinite(n) ? String(Math.round(n)) : "—";
+  setMod("hr", hrLabel, n != null && Number.isFinite(n) ? Math.round(n) : null, 128, 138);
   const hr = document.getElementById("hr");
   if (hr) {
-    if (n != null && n > 0) {
+    if (n != null && Number.isFinite(n) && n > 0) {
       hr.style.setProperty("--hr-beat", `${Math.max(0.4, Math.min(1.2, 60 / n)).toFixed(2)}s`);
     } else {
       hr.style.removeProperty("--hr-beat");

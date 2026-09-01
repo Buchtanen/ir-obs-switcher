@@ -12,10 +12,7 @@ from irswitch.race.opponents import (
     overall_position_of,
     relevant_ahead_behind,
 )
-
-# iRacing SessionState: 4 Racing, 5 Checkered, 6 CoolDown
-_SESSION_CHECKERED = 5
-_SESSION_COOLDOWN = 6
+from irswitch.race.session_end import SessionEndTracker
 
 
 class RaceContextAnalyzer:
@@ -28,12 +25,14 @@ class RaceContextAnalyzer:
         self._behind_history = GapHistory(window_seconds=window)
         self._last_ahead_idx: int | None = None
         self._last_behind_idx: int | None = None
+        self._session_end = SessionEndTracker()
 
     def reset(self) -> None:
         self._ahead_history.clear()
         self._behind_history.clear()
         self._last_ahead_idx = None
         self._last_behind_idx = None
+        self._session_end.reset()
 
     def analyze(self, snap: TelemetrySnapshot) -> RaceState:
         player_idx = snap.player_car_idx
@@ -85,7 +84,13 @@ class RaceContextAnalyzer:
         remain = snap.session_laps_remain
         session_state = snap.session_state or 0
         is_final = bool(remain is not None and 0 < remain <= 1.05 and session_state == 4)
-        finished = session_state in {_SESSION_CHECKERED, _SESSION_COOLDOWN}
+        session_checkered, session_finished = self._session_end.update(
+            session_state=snap.session_state,
+            lap_completed=snap.lap_completed,
+            on_pit_road=bool(snap.on_pit_road),
+            player_track_surface=snap.player_track_surface,
+            player_tow_time=snap.player_tow_time,
+        )
 
         return RaceState(
             connected=True,
@@ -100,7 +105,8 @@ class RaceContextAnalyzer:
             incidents=snap.incidents,
             on_pit_road=bool(snap.on_pit_road),
             is_final_lap=is_final,
-            session_finished=finished,
+            session_finished=session_finished,
+            session_checkered=session_checkered,
             opponent_ahead=opponent_ahead,
             opponent_behind=opponent_behind,
             gap_ahead=gap_ahead,

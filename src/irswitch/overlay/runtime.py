@@ -10,6 +10,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_from_race_event
+from irswitch.commentary.consumer import CommentaryEventConsumer
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.session_briefs import SessionBriefsDetector
@@ -17,9 +18,11 @@ from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.config import AppConfig
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope
+from irswitch.events.fanout import EventFanout
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.iracing.sectors import resolve_sector_points_from_pcts
+from irswitch.iracing.session_context import extract_session_context
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
@@ -31,6 +34,7 @@ from irswitch.overlay.session import (
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
+from irswitch.race.observer import RaceObserver
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
@@ -39,7 +43,7 @@ from irswitch.util.logging import get_runtime_log_level
 
 logger = logging.getLogger(__name__)
 
-OverlayMode = Literal["live", "mock", "replay"]
+OverlayMode = Literal["live", "mock", "replay"]  # pipeline input; not HUD overlay_mode
 
 
 class OverlayRuntime:
@@ -68,6 +72,7 @@ class OverlayRuntime:
         self._timing_store = TimingStore()
         self._segment_ref = SegmentReferenceTracker()
         self._sector_sig: tuple[str, ...] | None = None
+        self._timing_after_session = False
         self._register_timing_emitters(overlay)
         self._register_t4_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
@@ -88,9 +93,15 @@ class OverlayRuntime:
         self._last_race = RaceState()
         self._hud_live = False
         self._running = False
+        self._event_fanout = EventFanout()
+        self.race_observer = RaceObserver()
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
+        self._weekend_track: str | None = None
+        self._wire_race_observer_fillers()
+        self._rebuild_event_fanout()
+        self.session.add_reset_hook(self.race_observer.reset_session)
         self.session.add_reset_hook(self._reset_commentary)
         self.session.add_reset_hook(self.in_car.reset)
         self.session.add_reset_hook(self.session_briefs.reset)
@@ -183,6 +194,7 @@ class OverlayRuntime:
         self._timing_detector.reset()
         self._timing_store.reset()
         self._sector_sig = None
+        self._timing_after_session = False
 
     def _apply_sector_points(self, snap: TelemetrySnapshot) -> None:
         points = resolve_sector_points_from_pcts(snap.sector_start_pcts)
@@ -217,6 +229,47 @@ class OverlayRuntime:
             logger.warning("commentary graph failed to load", exc_info=True)
             return None
 
+    def _wire_race_observer_fillers(self) -> None:
+        """Hook RaceObserver silence fillers into the commentary director (peer path)."""
+        if self.commentary is None:
+            return
+        observer = self.race_observer
+
+        def _provider(now: float) -> EventEnvelope | None:
+            lang = self._overlay_settings().language
+            return observer.next_filler_envelope(now, locale=lang)
+
+        def _formatter(envelope: EventEnvelope) -> str | None:
+            lang = self._overlay_settings().language
+            return observer.format_filler_text(envelope, locale=lang)
+
+        self.commentary.filler_provider = _provider
+        self.commentary.filler_formatter = _formatter
+
+    def _observe_race_story(
+        self,
+        snap: TelemetrySnapshot,
+        state: RaceState,
+        now: float,
+    ) -> None:
+        """Update RaceObserver story context; fail-soft (never break the race tick)."""
+        try:
+            self.race_observer.observe(
+                snap,
+                state,
+                now=now,
+                telemetry_data=self._session_brief_data(),
+            )
+            if self.commentary is not None:
+                ctx = self.race_observer.context
+                names = ctx.hero.speakable_names if ctx is not None else ()
+                self.commentary.note_hero_names(names)
+            derived = self.race_observer.take_derived_envelopes()
+            if derived:
+                self._dispatch_speech_envelopes(derived, now)
+        except Exception:
+            logger.warning("RaceObserver observe failed", exc_info=True)
+
     def _apply_commentary_sink_settings(self, overlay: OverlaySettings) -> None:
         if self.commentary is None:
             return
@@ -227,10 +280,22 @@ class OverlayRuntime:
                 self._llm_polish_tape_hook if overlay.commentary.llm_polish else None
             )
 
+    def _rebuild_event_fanout(self) -> None:
+        """Register peer consumers after accepted envelopes (commentary today)."""
+        self._event_fanout.clear()
+        if self.commentary is not None:
+            self._event_fanout.register(CommentaryEventConsumer(self._observe_commentary))
+
+    def _dispatch_speech_envelopes(self, envelopes: list[EventEnvelope], now: float) -> None:
+        """Fan-out speech envelopes to peer consumers (not a HUD→commentary chain)."""
+        self._event_fanout.emit(envelopes, now=now)
+
     def _reset_commentary(self) -> None:
         overlay = self._overlay_settings()
         if self.commentary is None:
             self.commentary = self._build_commentary(overlay)
+            self._wire_race_observer_fillers()
+            self._rebuild_event_fanout()
             return
         self.commentary.settings = overlay.commentary
         self.commentary.language = overlay.language
@@ -239,15 +304,31 @@ class OverlayRuntime:
             on_polish_debug=self._llm_polish_tape_hook,
         )
         self.commentary.reset()
+        self._wire_race_observer_fillers()
         self._commentary_tape_cursor = 0
         self.in_car.reset()
         self.session_briefs.reset()
+        self._rebuild_event_fanout()
+
+    def _tick_commentary_scheduler(self, now: float) -> None:
+        """Flush deferred speech / silence watchdog once per race frame."""
+        if self.commentary is None:
+            return
+        overlay = self._overlay_settings()
+        if not overlay.commentary.enabled:
+            return
+        try:
+            self.commentary.settings = overlay.commentary
+            self.commentary.tick(now, self.bus.bio)
+        except Exception:
+            logger.warning("commentary scheduler tick failed", exc_info=True)
 
     def _observe_commentary(self, envelopes: list[EventEnvelope], now: float):
         """Observe envelopes; return the newest decision dict if any were recorded."""
         if not envelopes or self.commentary is None:
             return None
         overlay = self._overlay_settings()
+        self.commentary.settings = overlay.commentary
         self._apply_commentary_sink_settings(overlay)
         before = len(self.commentary.decisions())
         try:
@@ -304,6 +385,30 @@ class OverlayRuntime:
         self.session_briefs.acknowledge(envelope.event_type)
         return str(decision.get("action") or "") == "spoken"
 
+    def weekend_track(self) -> str | None:
+        """Last WeekendInfo display name for YouTube ``Track:`` rewrite."""
+        if self._weekend_track:
+            return self._weekend_track
+        briefs_track = getattr(self.session_briefs, "last_track", None)
+        if callable(briefs_track):
+            value = briefs_track()
+            return value if isinstance(value, str) and value.strip() else None
+        if isinstance(briefs_track, str) and briefs_track.strip():
+            return briefs_track.strip()
+        return None
+
+    def _remember_weekend_track(self) -> None:
+        data = self._session_brief_data()
+        if not data:
+            return
+        try:
+            ctx = extract_session_context(data)
+        except Exception:
+            return
+        track = ctx.track if ctx is not None else None
+        if track:
+            self._weekend_track = track
+
     def _session_brief_data(self) -> dict[str, object] | None:
         """Raw SessionInfo/telemetry mapping for H1/H2/H3 extractors."""
         reader = self._reader
@@ -331,15 +436,26 @@ class OverlayRuntime:
             return
         self._observe_in_car(state, now)
 
-    def _observe_timing(self, snap: TelemetrySnapshot) -> None:
-        """Ingest player crossings into the timing store (Practice/Quali only)."""
-        if snap.session_state in (5, 6):
+    def _observe_timing(self, snap: TelemetrySnapshot, *, session_finished: bool = False) -> None:
+        """Ingest player crossings (Practice/Quali). Keep the checkered out-lap.
+
+        CoolDown always stops. The tick that becomes ``after_session`` (S/F after
+        checkered) still ingests, then later ticks skip.
+        """
+        if snap.session_state not in (5, 6):
+            self._timing_after_session = False
+        if snap.session_state == 6 or self._timing_after_session:
+            self._timing_after_session = True
             return
         mode = overlay_mode_from_session_type(snap.session_type)
         if mode not in {"PRACTICE", "QUALIFYING"}:
+            if session_finished:
+                self._timing_after_session = True
             return
         self._apply_sector_points(snap)
         if snap.player_car_idx is None or snap.player_lap_dist_pct is None:
+            if session_finished:
+                self._timing_after_session = True
             return
         lap_number = snap.lap_completed if snap.lap_completed is not None else snap.lap
         quality = snap.data_quality if snap.data_quality else "ok"
@@ -356,6 +472,8 @@ class OverlayRuntime:
                 valid_at_crossing=valid,
                 data_quality=quality,
             )
+        if session_finished:
+            self._timing_after_session = True
 
     def _overlay_settings(self) -> OverlaySettings:
         cfg = self._get_config()
@@ -452,6 +570,7 @@ class OverlayRuntime:
             )
         else:
             snap = await self._read_telemetry()
+            self._remember_weekend_track()
             self.session.observe(
                 session_key=build_session_key(
                     subsession_id=snap.subsession_id,
@@ -461,16 +580,19 @@ class OverlayRuntime:
                 connected=snap.connected,
                 now=now,
             )
-            self._observe_timing(snap)
+            self._apply_sector_points(snap)
             try:
                 state = self.analyzer.analyze(snap)
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
+            self._observe_timing(snap, session_finished=state.session_finished)
+            self._observe_race_story(snap, state, now)
         self.bus.set_race(state)
         self._last_race = state
         self._sync_tape(state, now)
         self._observe_commentary_sidecars(state, now)
+        self._tick_commentary_scheduler(now)
         self._drain_commentary_tape(now)
         if self._idle_when_disconnected(state):
             return
@@ -513,14 +635,14 @@ class OverlayRuntime:
                 )
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self._publish(wire, now)
-                self._observe_commentary(
+                self._dispatch_speech_envelopes(
                     merge_speech_envelopes(race_event, envelopes, now=now, mode=state.overlay_mode),
                     now,
                 )
             for race_event, envelopes in self.manager_v2.tick(now, mode=state.overlay_mode):
                 for wire in self.manager_v2.publish_wire(envelopes, race_event):
                     await self._publish(wire, now)
-                self._observe_commentary(envelopes, now)
+                self._dispatch_speech_envelopes(envelopes, now)
             self.bus.set_active_events(self.manager_v2.active_events())
             self.bus.set_active_stories_v4(self.manager_v2.active_stories_v4())
             self._drain_tape_side(now)
@@ -532,7 +654,7 @@ class OverlayRuntime:
                 await self._publish(event.to_envelope(), now)
                 speech = speech_envelope_from_race_event(event, now=now, mode=state.overlay_mode)
                 if speech is not None:
-                    self._observe_commentary([speech], now)
+                    self._dispatch_speech_envelopes([speech], now)
         for expired in self.manager.tick(now):
             await self._publish(expired.to_envelope(), now)
         self.bus.set_active_events(self.manager.active_events())

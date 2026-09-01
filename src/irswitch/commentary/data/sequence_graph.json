@@ -5,8 +5,8 @@
     "cs"
   ],
   "default_tts": {
-    "max_chars": 90,
-    "max_seconds": 5.5,
+    "max_chars": 160,
+    "max_seconds": 13.0,
     "ssml_allowed": [
       "break",
       "emphasis"
@@ -3265,11 +3265,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}, as the race story develops.",
             "His race is complete and the result is official.",
             "The closing chapter records P{position}.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line."
           ],
@@ -3283,11 +3283,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result, all under control.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}, and the rhythm stays smooth.",
             "His race is complete and the result is official.",
             "The closing chapter records P{position}, all under control.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line, handled without any fuss."
           ],
@@ -3301,11 +3301,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}.",
             "His race is complete and the result is official, all part of the plan.",
             "The closing chapter records P{position}, and his focus stays sharp.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line, all part of the plan."
           ],
@@ -3319,11 +3319,11 @@
             "His full race story closes at the chequered flag.",
             "Viewers can now put P{position} beside this drive.",
             "He turns the final lap into a confirmed result.",
-            "Every earlier sequence ends with this classification.",
+            "Every earlier sequence ends with this classification in P{position}.",
             "The line settles the day in P{position}, and he keeps asking for more.",
             "His race is complete and the result is official.",
             "The closing chapter records P{position}, and the pressure keeps rising.",
-            "He reaches the flag with the whole stint behind him.",
+            "He reaches the flag in P{position} with the whole stint behind him.",
             "P{position} is the lasting number from this race.",
             "The commentary closes as he crosses the line."
           ],
@@ -3337,11 +3337,11 @@
             "His full race story closes at the chequered flag!",
             "Viewers can now put P{position} beside this drive!",
             "He turns the final lap into a confirmed result!",
-            "Every earlier sequence ends with this classification!",
+            "Every earlier sequence ends with this classification in P{position}!",
             "The line settles the day in P{position}, and the momentum is surging!",
             "His race is complete and the result is official!",
             "The closing chapter records P{position}, and the tension is climbing!",
-            "He reaches the flag with the whole stint behind him!",
+            "He reaches the flag in P{position} with the whole stint behind him!",
             "P{position} is the lasting number from this race!",
             "The commentary closes as he crosses the line!"
           ]
@@ -3357,11 +3357,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka, příběh pokračuje.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek.",
-            "Všechny předchozí sekvence končí touhle klasifikací.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
             "Cílová čára uzavírá den na {position}. místě, příběh pokračuje.",
             "Jeho závod je hotový a výsledek je potvrzený, další fáze se rýsuje.",
             "Závěrečná kapitola zapisuje {position}. místo.",
-            "K vlajce přijíždí s celým stintem za sebou, obraz závodu je jasný.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, obraz závodu je jasný.",
             "Trvalým číslem z tohohle závodu je {position}. místo, příběh pokračuje.",
             "Komentář se uzavírá jeho průjezdem cílem, další fáze se rýsuje."
           ],
@@ -3375,11 +3375,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek, všechno má pod kontrolou.",
-            "Všechny předchozí sekvence končí touhle klasifikací.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
             "Cílová čára uzavírá den na {position}. místě, rytmus zůstává plynulý.",
             "Jeho závod je hotový a výsledek je potvrzený, zvládá to bez nervozity.",
             "Závěrečná kapitola zapisuje {position}. místo.",
-            "K vlajce přijíždí s celým stintem za sebou, bez zbytečného spěchu.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, bez zbytečného spěchu.",
             "Trvalým číslem z tohohle závodu je {position}. místo.",
             "Komentář se uzavírá jeho průjezdem cílem, zvládá to bez nervozity."
           ],
@@ -3393,11 +3393,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek.",
-            "Všechny předchozí sekvence končí touhle klasifikací.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě.",
             "Cílová čára uzavírá den na {position}. místě, už myslí na další krok.",
             "Jeho závod je hotový a výsledek je potvrzený, přesně podle plánu.",
             "Závěrečná kapitola zapisuje {position}. místo.",
-            "K vlajce přijíždí s celým stintem za sebou, každý detail má změřený.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, každý detail má změřený.",
             "Trvalým číslem z tohohle závodu je {position}. místo.",
             "Komentář se uzavírá jeho průjezdem cílem, přesně podle plánu."
           ],
@@ -3411,11 +3411,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka.",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo.",
             "Poslední kolo proměňuje v potvrzený výsledek, tlak dál roste.",
-            "Všechny předchozí sekvence končí touhle klasifikací, tempo pořád zvedá.",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě, tempo pořád zvedá.",
             "Cílová čára uzavírá den na {position}. místě, pořád hledá něco navíc.",
             "Jeho závod je hotový a výsledek je potvrzený, bez náznaku polevení.",
             "Závěrečná kapitola zapisuje {position}. místo, tlak dál roste.",
-            "K vlajce přijíždí s celým stintem za sebou, tempo pořád zvedá.",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, tempo pořád zvedá.",
             "Trvalým číslem z tohohle závodu je {position}. místo.",
             "Komentář se uzavírá jeho průjezdem cílem, bez náznaku polevení."
           ],
@@ -3429,11 +3429,11 @@
             "Celý závodní příběh uzavírá šachovnicová vlajka, momentum nabírá sílu!",
             "Diváci si k téhle jízdě mohou zapsat {position}. místo!",
             "Poslední kolo proměňuje v potvrzený výsledek, napětí stoupá!",
-            "Všechny předchozí sekvence končí touhle klasifikací!",
+            "Všechny předchozí sekvence končí touhle klasifikací na {position}. místě!",
             "Cílová čára uzavírá den na {position}. místě, momentum nabírá sílu!",
             "Jeho závod je hotový a výsledek je potvrzený, tohle začíná být ostré!",
             "Závěrečná kapitola zapisuje {position}. místo, napětí stoupá!",
-            "K vlajce přijíždí s celým stintem za sebou, závod kolem něj ožívá!",
+            "K vlajce přijíždí na {position}. místě s celým stintem za sebou, závod kolem něj ožívá!",
             "Trvalým číslem z tohohle závodu je {position}. místo!",
             "Komentář se uzavírá jeho průjezdem cílem, tohle začíná být ostré!"
           ]
@@ -4309,8 +4309,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -4475,8 +4475,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -4641,8 +4641,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -4820,8 +4820,8 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5006,8 +5006,1263 @@
         }
       },
       "tts": {
-        "max_chars": 90,
-        "max_seconds": 5.5,
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      }
+    },
+    "attack_range": {
+      "family": "battle",
+      "event_types": [
+        "ATTACK_RANGE"
+      ],
+      "phases": [
+        "ENTER"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 14,
+      "slots": [
+        {
+          "name": "gap",
+          "type": "gap",
+          "example": "0.5"
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Rossi"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "P5 gap fill. ENTER only. Between hunting/approach and side_by_side.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is in attack range of {target_name}, gap {gap}.",
+            "Attack range now — {target_name} is only {gap} ahead.",
+            "From P{position} he has {target_name} in range at {gap}.",
+            "The gap is {gap}, and a move on {target_name} is live.",
+            "He has closed to attack range on {target_name}.",
+            "{target_name} sits {gap} ahead with pressure building.",
+            "Attack range at {gap} gives him a real look at {target_name}.",
+            "P{position} turns into a launching pad behind {target_name}.",
+            "He is close enough that {target_name} must defend.",
+            "The chase becomes an attack with {gap} left to {target_name}.",
+            "Viewers can see {target_name} under immediate threat.",
+            "He holds attack range on {target_name} from P{position}."
+          ],
+          "focused": [
+            "Gap {gap} to {target_name}, and he is set for a measured move.",
+            "Attack range, clean and precise, on {target_name}.",
+            "From P{position} he times the attack on {target_name} at {gap}.",
+            "He keeps {target_name} in range without forcing the issue.",
+            "The gap is {gap}, and every line toward {target_name} is calculated.",
+            "{target_name} is reachable, and he stays composed at {gap}.",
+            "Attack range arrives with patience still intact.",
+            "P{position} becomes a platform for a clean pass on {target_name}.",
+            "He shadows {target_name} at {gap} with clear intent.",
+            "The window on {target_name} is open, and he measures it.",
+            "Viewers see a controlled attack forming on {target_name}.",
+            "He holds attack range on {target_name} with discipline."
+          ],
+          "pushing": [
+            "He is right on {target_name} now, gap {gap} and hunting hard.",
+            "Attack range! He is all over {target_name} from P{position}.",
+            "Gap {gap} — he is forcing the issue on {target_name}.",
+            "He piles pressure on {target_name} in attack range.",
+            "The charge reaches {target_name} with only {gap} left.",
+            "{target_name} is under fire as the gap hits {gap}.",
+            "Attack range and he keeps the throttle planted.",
+            "P{position} becomes a threat lane behind {target_name}.",
+            "He refuses to lift while {target_name} sits at {gap}.",
+            "The attack on {target_name} is fully switched on.",
+            "Viewers can feel the move building on {target_name}.",
+            "He lives in attack range of {target_name} and keeps pushing."
+          ],
+          "high": [
+            "Gap {gap}! He is in attack range of {target_name}!",
+            "Right there on {target_name}! This move is live!",
+            "Attack range from P{position} — {target_name} is in trouble!",
+            "Only {gap} to {target_name}, and the strike is coming!",
+            "He is all over {target_name} in attack range!",
+            "{target_name} has nowhere left with the gap at {gap}!",
+            "Attack range! The next corner decides it!",
+            "P{position} turns into a full assault on {target_name}!",
+            "He has {target_name} boxed in at {gap}!",
+            "The crowd can see the attack landing on {target_name}!",
+            "Gap tumbling! {target_name} must answer now!",
+            "Attack range locked on {target_name} — this is the moment!"
+          ],
+          "calm": [
+            "Gap {gap} to {target_name}, and he sits there without fuss.",
+            "Attack range on {target_name}, taken at an easy pace.",
+            "From P{position} he has {target_name} in range at {gap}.",
+            "He holds {target_name} at {gap} with no hurry in it.",
+            "The gap is {gap}, and the look at {target_name} stays quiet.",
+            "{target_name} is reachable at {gap}, and he keeps it simple.",
+            "Attack range arrives without any drama.",
+            "P{position} puts him quietly behind {target_name}.",
+            "He shadows {target_name} at {gap} and lets it settle.",
+            "The window on {target_name} is there, and he stays easy.",
+            "Viewers see a soft hold on {target_name} in attack range.",
+            "He keeps attack range on {target_name} without pressing."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Je v útočné vzdálenosti na {target_name}, odstup {gap}.",
+            "Útočná zóna — {target_name} je jen {gap} vpředu.",
+            "Z {position}. místa má {target_name} na dosah s odstupem {gap}.",
+            "Odstup {gap} a útok na {target_name} je na stole.",
+            "Dotáhl se do útočné vzdálenosti na {target_name}.",
+            "{target_name} je {gap} vpředu a tlak roste.",
+            "Útočná zóna s odstupem {gap} dává šanci na {target_name}.",
+            "{position}. místo se mění ve startovní rampu za {target_name}.",
+            "Je tak blízko, že {target_name} musí bránit.",
+            "Honění se mění v útok, zbývá {gap} na {target_name}.",
+            "Diváci vidí {target_name} pod přímým tlakem.",
+            "Drží útočnou vzdálenost na {target_name} z {position}. místa."
+          ],
+          "focused": [
+            "Odstup {gap} na {target_name} a chystá čistý manévr.",
+            "Útočná zóna, klidně a přesně na {target_name}.",
+            "Z {position}. místa časuje útok na {target_name} při {gap}.",
+            "Drží {target_name} na dosah, aniž by nic netlačil.",
+            "Odstup {gap} a každá stopa k {target_name} je propočítaná.",
+            "{target_name} je na dosah a on zůstává soustředěný při {gap}.",
+            "Útočná zóna přichází s trpělivostí.",
+            "{position}. místo je platforma pro čistý útok na {target_name}.",
+            "Stíní {target_name} s odstupem {gap} a jasným záměrem.",
+            "Okno na {target_name} je otevřené a on ho měří.",
+            "Diváci vidí kontrolovaný útok na {target_name}.",
+            "Drží útočnou vzdálenost na {target_name} s disciplínou."
+          ],
+          "pushing": [
+            "Sedí na {target_name}, odstup {gap} a tlačí naplno.",
+            "Útočná zóna! Z {position}. místa je {target_name} pod palbou.",
+            "Odstup {gap} — nutí {target_name} k odpovědi.",
+            "V útočné vzdálenosti žene {target_name} pod tlak.",
+            "Nápor dosahuje na {target_name}, zbývá jen {gap}.",
+            "{target_name} je pod palbou, odstup klesl na {gap}.",
+            "Útočná zóna a plyn zůstává na podlaze.",
+            "{position}. místo se mění v útočnou stopu za {target_name}.",
+            "Neubere, dokud je {target_name} na {gap}.",
+            "Útok na {target_name} je plně spuštěný.",
+            "Diváci cítí, jak se manévr na {target_name} rodí.",
+            "Žije v útočné vzdálenosti na {target_name} a dál tlačí."
+          ],
+          "high": [
+            "Odstup {gap}! Je v útočné zóně na {target_name}!",
+            "Hned na {target_name}! Manévr je na spadnutí!",
+            "Útočná zóna z {position}. místa — {target_name} je v ohrožení!",
+            "Jen {gap} na {target_name} a úder přichází!",
+            "Visí na {target_name} v útočné vzdálenosti!",
+            "{target_name} už nemá kam uhnout při odstupu {gap}!",
+            "Útočná zóna! Další zatáčka to rozhodne!",
+            "{position}. místo se mění v plný útok na {target_name}!",
+            "Má {target_name} zatlačeného na {gap}!",
+            "Diváci vidí, jak útok na {target_name} dopadá!",
+            "Odstup padá! {target_name} musí odpovědět teď!",
+            "Útočná zóna na {target_name} — tohle je moment!"
+          ],
+          "calm": [
+            "Odstup {gap} na {target_name}, sedí tam bez spěchu.",
+            "Útočná zóna na {target_name}, klidným tempem.",
+            "Z {position}. místa má {target_name} na dosah při {gap}.",
+            "Drží {target_name} na {gap} bez zbytečného tlaku.",
+            "Odstup {gap} a pohled na {target_name} zůstává klidný.",
+            "{target_name} je na dosah při {gap} a on to zjednodušuje.",
+            "Útočná zóna přichází bez dramatu.",
+            "{position}. místo ho tiše postaví za {target_name}.",
+            "Stíní {target_name} s odstupem {gap} a nechá to usadit.",
+            "Okno na {target_name} je tu a on zůstává v klidu.",
+            "Diváci vidí měkké držení {target_name} v útočné zóně.",
+            "Drží útočnou vzdálenost na {target_name} bez tlačení."
+          ]
+        }
+      }
+    },
+    "pit_stopped": {
+      "family": "pit",
+      "event_types": [
+        "PIT_STOPPED"
+      ],
+      "phases": [
+        "ENTER"
+      ],
+      "speak_priority": 48,
+      "cooldown_s": 25,
+      "slots": [
+        {
+          "name": "position",
+          "type": "int",
+          "example": 8
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "P5 optional mid-pit beat. ENTER only for stopped; skip lane/released chatter.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is stopped in the box.",
+            "Stationary for service from P{position}.",
+            "The car is stopped and the crew is on it.",
+            "Pit stop in progress at the box.",
+            "He sits still while the service unfolds.",
+            "The mid-stop pause holds from P{position}.",
+            "Crew work begins with the car fully stopped.",
+            "Viewers wait through the stationary service beat.",
+            "He is parked for the stop, nothing rushed.",
+            "The box holds him while the work runs.",
+            "A clean stop keeps the pit story simple.",
+            "Service continues while he remains stopped."
+          ],
+          "calm": [
+            "Easy stop in the box from P{position}.",
+            "He settles and waits through the service.",
+            "Calm in the box while the crew works.",
+            "No drama at the stop — just stationary service.",
+            "He rests the car cleanly for the crew.",
+            "The pause in the box stays measured.",
+            "Pit work unfolds without any rush.",
+            "Viewers see a quiet mid-stop from P{position}.",
+            "He holds still and lets the stop breathe.",
+            "The box stop is tidy and unhurried.",
+            "A calm hold keeps the service stable.",
+            "He waits out the stop with composure."
+          ],
+          "focused": [
+            "Stopped in the box, and he is ready to go.",
+            "Stationary from P{position}, watching the crew.",
+            "He holds the box stop with sharp focus.",
+            "The car is stopped; release timing is next.",
+            "Mid-stop focus while service finishes.",
+            "He stays precise through the stationary beat.",
+            "Pit work continues and he stays locked in.",
+            "Viewers see a focused hold in the box.",
+            "From P{position} he waits for a clean release.",
+            "The stop is still, and his timing stays sharp.",
+            "He measures the service window without fidgeting.",
+            "Stationary now — the exit cue is coming."
+          ],
+          "pushing": [
+            "Stopped hard in the box — crew is already on it.",
+            "He hits the marks and sits still for service.",
+            "Box stop locked; work starts right away.",
+            "Stationary from P{position}, and the pace of the stop is up.",
+            "He is parked and the service is moving fast.",
+            "The mid-stop holds with urgency in the box.",
+            "Crew swarm the stopped car without delay.",
+            "Viewers see a sharp, stationary beat in the box.",
+            "From P{position} he stays put while the stop drives on.",
+            "Stopped clean — the box work does not linger.",
+            "He holds the box stop and waits for a quick release.",
+            "Service presses on while he remains fully stopped."
+          ],
+          "high": [
+            "He is stopped in the box and every second counts!",
+            "Stationary from P{position} — this stop cannot drag!",
+            "The car is planted and the crew is racing the clock!",
+            "Box stop locked in; the service window is tight!",
+            "He sits still while the pit work hits full speed!",
+            "Mid-stop pressure peaks with the car fully stopped!",
+            "Crew work explodes around the stopped car!",
+            "Viewers feel the urgency of this stationary stop!",
+            "From P{position} he waits through a high-stakes service!",
+            "The box holds him and the stop is on a knife edge!",
+            "He is parked for a stop that has no spare time!",
+            "Service burns through while he stays locked in place!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Stojí v boxu.",
+            "Stojí na servisu z {position}. místa.",
+            "Auto stojí a mechanici jsou u něj.",
+            "Zastávka v boxu právě probíhá.",
+            "Stojí v klidu, zatímco servis běží.",
+            "Prostřední část zastávky drží z {position}. místa.",
+            "Práce v boxu začíná s autem v klidu.",
+            "Diváci čekají na stacionární část servisu.",
+            "Stojí na zastávce, nic se neuspěchá.",
+            "Box ho drží, dokud práce doběhne.",
+            "Čistá zastávka udržuje pit story jednoduchou.",
+            "Servis pokračuje, zatímco zůstává stát."
+          ],
+          "calm": [
+            "Klidná zastávka v boxu z {position}. místa.",
+            "Usadí se a čeká na dokončení servisu.",
+            "V boxu je klid, zatímco mechanici pracují.",
+            "Bez dramatu — jen stacionární servis.",
+            "Nechá auto v klidu pro práci týmu.",
+            "Pauza v boxu zůstává měřená.",
+            "Práce v boxu běží bez spěchu.",
+            "Diváci vidí klidnou prostřední část zastávky.",
+            "Stojí a nechá zastávku dýchat.",
+            "Zastávka v boxu je úhledná a bez spěchu.",
+            "Klidné stání drží servis stabilní.",
+            "Čeká na konec zastávky s přehledem."
+          ],
+          "focused": [
+            "Stojí v boxu a je připravený vyjet.",
+            "Stojí z {position}. místa a sleduje tým.",
+            "Drží zastávku v boxu se soustředěním.",
+            "Auto stojí; další je načasování výjezdu.",
+            "Soustředění uprostřed zastávky, dokud servis doběhne.",
+            "Zůstává přesný během stání.",
+            "Práce v boxu pokračuje a on zůstává ve střehu.",
+            "Diváci vidí soustředěné stání v boxu.",
+            "Z {position}. místa čeká na čistý výjezd.",
+            "Zastávka je v klidu a jeho timing zůstává ostrý.",
+            "Měří servisní okno bez zbytečného pohybu.",
+            "Teď stojí — signál k výjezdu přijde."
+          ],
+          "pushing": [
+            "Tvrdě stojí v boxu — mechanici už jsou u něj.",
+            "Trefí značky a zůstává stát kvůli servisu.",
+            "Zastávka v boxu drží; práce startuje hned.",
+            "Stojí z {position}. místa a tempo zastávky stoupá.",
+            "Stojí a servis běží naplno.",
+            "Prostřední část zastávky drží s naléhavostí v boxu.",
+            "Mechanici se hned vrhají na stojící auto.",
+            "Diváci vidí ostrý, stacionární moment v boxu.",
+            "Z {position}. místa zůstává stát, zatímco zastávka jede.",
+            "Stojí čistě — práce v boxu se nezdržuje.",
+            "Drží zastávku v boxu a čeká na rychlý výjezd.",
+            "Servis tlačí dál, zatímco zůstává plně stát."
+          ],
+          "high": [
+            "Stojí v boxu a každá vteřina se počítá!",
+            "Stojí z {position}. místa — zastávka nesmí táhnout!",
+            "Auto je usazené a mechanici honí čas!",
+            "Zastávka v boxu drží; servisní okno je těsné!",
+            "Stojí, zatímco práce v boxu nabírá plné tempo!",
+            "Tlak uprostřed zastávky vrcholí se stojícím autem!",
+            "Práce okolo stojícího vozu teď šlape naplno!",
+            "Diváci cítí naléhavost téhle stacionární zastávky!",
+            "Z {position}. místa čeká na servis pod tlakem!",
+            "Box ho drží a zastávka stojí na hraně!",
+            "Stojí na zastávce, kde není čas nazbyt!",
+            "Servis jede naplno, zatímco zůstává zaklesnutý na místě!"
+          ]
+        }
+      }
+    },
+    "incident_aftermath": {
+      "family": "exception",
+      "event_types": [
+        "INCIDENT_AFTERMATH"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 72,
+      "cooldown_s": 12,
+      "slots": [
+        {
+          "name": "kind",
+          "type": "label",
+          "example": "stalled"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 7
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "P3 aftermath. Kind distinguishes stalled vs rolling.",
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "variants": {
+        "en": {
+          "neutral": [
+            "After the contact he is {kind}.",
+            "Status check: {kind}.",
+            "The car is {kind} following that moment.",
+            "From P{position} he is {kind} after the hit.",
+            "He is {kind} as the field moves on.",
+            "Aftermath from P{position} — the picture is clear.",
+            "He holds P{position} while the dust settles.",
+            "From P{position} the recovery story begins.",
+            "The incident is over, and the next beat is recovery.",
+            "Viewers wait to see how he gathers it up.",
+            "A short pause after contact before the race resumes.",
+            "He settles the car and looks for a way forward."
+          ],
+          "focused": [
+            "He is {kind}, already measuring the next move.",
+            "Composed check: {kind}.",
+            "After the hit he is {kind}, focus intact.",
+            "From P{position} he is {kind} and resets cleanly.",
+            "He is {kind} while he rebuilds the line.",
+            "From P{position} he tidies the aftermath with care.",
+            "P{position} holds while he gathers the car.",
+            "He resets from P{position} without rushing the wheel.",
+            "The contact is logged; he works the recovery now.",
+            "Viewers see a measured aftermath, no panic.",
+            "He gathers the car and plans the next clean lap.",
+            "A controlled hold after the hit keeps options open."
+          ],
+          "pushing": [
+            "He is {kind}, hunting a way back.",
+            "Aftermath: {kind} — but the fight is not done.",
+            "After that hit he is {kind}, refusing to quit.",
+            "From P{position} he is {kind} and already pushing.",
+            "He is {kind}, yet keeps the pressure alive.",
+            "P{position} takes the hit, and he wants straight back.",
+            "From P{position} he shakes it off and digs in.",
+            "He claws at recovery from P{position}.",
+            "Contact done — he wants pace back immediately.",
+            "Viewers see him fighting through the aftermath.",
+            "The hit costs a beat, not the whole charge.",
+            "He refuses to let the incident end the push."
+          ],
+          "high": [
+            "He is {kind} after that hit!",
+            "Look at that — {kind}!",
+            "Aftermath live: he is {kind}!",
+            "From P{position} he is {kind}!",
+            "He is {kind}, and the field surges past!",
+            "Big hit from P{position} — what a moment!",
+            "P{position} in the thick of it after contact!",
+            "From P{position} the recovery scramble starts!",
+            "Contact, then chaos — can he gather it?",
+            "Viewers erupt as the aftermath unfolds!",
+            "That hit changes everything in an instant!",
+            "The race keeps flying while he recovers!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Po kontaktu {kind}.",
+            "Kontrola: {kind}.",
+            "Vůz {kind} po tomhle momentu.",
+            "Z {position}. místa {kind} po zásahu.",
+            "Situace: {kind}, zatímco peloton jede dál.",
+            "Dozvuk z {position}. místa — obraz je jasný.",
+            "Drží {position}. místo, dokud se prach neusadí.",
+            "Z {position}. místa začíná příběh návratu.",
+            "Incident je pryč a další fáze je zotavení.",
+            "Diváci čekají, jak to srovná.",
+            "Krátká pauza po kontaktu, než závod znovu naskočí.",
+            "Usazuje vůz a hledá cestu dál."
+          ],
+          "focused": [
+            "Teď {kind} a už měří další krok.",
+            "Klidná kontrola: {kind}.",
+            "Po zásahu {kind}, soustředění drží.",
+            "Z {position}. místa {kind} a čistě resetuje.",
+            "Zůstává {kind}, zatímco skládá stopu.",
+            "Z {position}. místa uklízí dozvuk s rozvahou.",
+            "{position}. místo drží, dokud vůz nesrovná.",
+            "Z {position}. místa resetuje bez spěchu.",
+            "Kontakt je zapsaný; teď pracuje na návratu.",
+            "Diváci vidí měřený dozvuk bez paniky.",
+            "Srovnává vůz a plánuje čisté kolo.",
+            "Kontrolovaný hold po zásahu nechává možnosti otevřené."
+          ],
+          "pushing": [
+            "Teď {kind}, a už hledá cestu zpět.",
+            "Dozvuk: {kind} — boj ale nekončí.",
+            "Po tom zásahu {kind}, vzdát se nechce.",
+            "Z {position}. místa {kind} a hned zase tlačí.",
+            "Po kontaktu {kind}, tlak ale nepouští.",
+            "{position}. místo bere zásah a on chce hned zpět.",
+            "Z {position}. místa to setřese a zakope se.",
+            "Z {position}. místa se drápe zpátky do tempa.",
+            "Kontakt hotový — tempo chce hned zpátky.",
+            "Diváci vidí, jak se protlouká dozvukem.",
+            "Zásah bere jen takt, ne celý nápor.",
+            "Nenechá incident ukončit tlak."
+          ],
+          "high": [
+            "Po tom zásahu {kind}!",
+            "Podívejte — {kind}!",
+            "Dozvuk live: {kind}!",
+            "Z {position}. místa {kind}!",
+            "Teď {kind} a peloton se žene kolem!",
+            "Tvrdý zásah z {position}. místa — co za moment!",
+            "{position}. místo uprostřed chaosu po kontaktu!",
+            "Z {position}. místa začíná scramble o návrat!",
+            "Kontakt, pak chaos — srovná to?",
+            "Diváci vybuchují, jak dozvuk nabírá sílu!",
+            "Ten zásah mění všechno v jednom okamžiku!",
+            "Závod letí dál, zatímco se zotavuje!"
+          ]
+        }
+      }
+    },
+    "back_under_way": {
+      "family": "exception",
+      "event_types": [
+        "BACK_UNDER_WAY"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 68,
+      "cooldown_s": 10,
+      "slots": [
+        {
+          "name": "position",
+          "type": "int",
+          "example": 7
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "P3 recovery after stalled aftermath.",
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is back under way.",
+            "Rolling again after the stall.",
+            "The car is moving once more.",
+            "He rejoins from P{position}.",
+            "Back under way from P{position}.",
+            "Motion returns from P{position}.",
+            "He finds drive and continues the lap.",
+            "The stall ends and he rolls forward.",
+            "Viewers see him moving again.",
+            "Recovery sticks — he is under way.",
+            "He gets going and rejoins the race flow.",
+            "The aftermath closes as he rolls on."
+          ],
+          "calm": [
+            "Easy now — he is back under way.",
+            "He rolls on without any fuss.",
+            "Calm recovery, and the car is moving.",
+            "From P{position} he eases back into motion.",
+            "Back under way from P{position}, no rush.",
+            "A quiet restart from P{position}.",
+            "He gathers pace gently after the stall.",
+            "The car breathes and rolls forward again.",
+            "Viewers see a tidy return to motion.",
+            "He settles into a clean restart.",
+            "No drama — just rolling again.",
+            "The recovery stays measured and smooth."
+          ],
+          "focused": [
+            "Back under way, and he is locked in.",
+            "He rolls again with a clear plan.",
+            "Motion returns; focus stays sharp.",
+            "From P{position} he is back under way.",
+            "P{position} rejoins with precise throttle.",
+            "He restarts from P{position} without waste.",
+            "The stall ends and he rebuilds the line.",
+            "He gathers the car and commits forward.",
+            "Viewers see a focused return to pace.",
+            "Recovery done — next task is clean rhythm.",
+            "He is moving, already shaping the lap.",
+            "Under way again, every input measured."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Znovu se rozjíždí.",
+            "Po stání zase jede.",
+            "Vůz je znovu v pohybu.",
+            "Vrací se z {position}. místa.",
+            "Znovu v chodu z {position}. místa.",
+            "Pohyb se vrací z {position}. místa.",
+            "Najde pohon a pokračuje v kole.",
+            "Stání končí a valí se dopředu.",
+            "Diváci vidí, že zase jede.",
+            "Návrat drží — je znovu v chodu.",
+            "Rozjíždí se a napojuje se na rytmus závodu.",
+            "Dozvuk končí, jakmile zase jede."
+          ],
+          "calm": [
+            "V klidu — znovu se rozjíždí.",
+            "Valí dál bez zbytečného spěchu.",
+            "Klidný návrat a vůz zase jede.",
+            "Z {position}. místa se tiše vrací do pohybu.",
+            "Znovu v chodu z {position}. místa, bez spěchu.",
+            "Klidný restart z {position}. místa.",
+            "Po stání nabírá tempo zvolna.",
+            "Vůz se nadechne a zase se rozjede.",
+            "Diváci vidí úhledný návrat do pohybu.",
+            "Usadí se do čistého restartu.",
+            "Bez dramatu — prostě zase jede.",
+            "Návrat zůstává měřený a hladký."
+          ],
+          "focused": [
+            "Znovu v chodu a plně soustředěný.",
+            "Rozjíždí se s jasným plánem.",
+            "Pohyb je zpět; fokus zůstává ostrý.",
+            "Z {position}. místa je znovu v chodu.",
+            "Z {position}. místa se napojuje s přesným plynem.",
+            "Restart z {position}. místa bez zbytečného odpadu.",
+            "Stání končí a skládá stopu znovu.",
+            "Srovná vůz a jde dopředu.",
+            "Diváci vidí soustředěný návrat do tempa.",
+            "Návrat hotový — další je čistý rytmus.",
+            "Už jede a hned skládá kolo.",
+            "Znovu v chodu, každý zásah měřený."
+          ]
+        }
+      }
+    },
+    "session_wrap": {
+      "family": "session",
+      "event_types": [
+        "SESSION_WRAP"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 58,
+      "cooldown_s": 20,
+      "slots": [
+        {
+          "name": "mode",
+          "type": "label",
+          "example": "Race",
+          "examples_by_locale": {
+            "en": "Race",
+            "cs": "závod"
+          }
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "P4 end of a session on the stream.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's a wrap on {mode}.",
+            "{mode} comes to a close on the stream.",
+            "{mode} ends with him in P{position}.",
+            "He closes {mode} in P{position}.",
+            "Viewers just saw the end of {mode}.",
+            "The chapter on {mode} is complete.",
+            "{mode} is done, and the stream moves on.",
+            "Final picture from {mode}: P{position}.",
+            "That session chapter is closed for the stream.",
+            "One chapter ends, and the story keeps moving.",
+            "He leaves {mode} behind as the broadcast continues.",
+            "The stream marks the end of {mode}."
+          ],
+          "calm": [
+            "That's a wrap on {mode}, all under control.",
+            "{mode} comes to a close on the stream.",
+            "{mode} ends with him in P{position}.",
+            "He closes {mode} in P{position}, with no rush in the car.",
+            "Viewers just saw the end of {mode}.",
+            "The chapter on {mode} is complete, rhythm still smooth.",
+            "{mode} is done, and the stream moves on.",
+            "Final picture from {mode}: P{position}.",
+            "That session chapter is closed for the stream.",
+            "One chapter ends, and the story keeps moving.",
+            "He leaves {mode} behind as the broadcast continues.",
+            "The stream marks the end of {mode}, without drama."
+          ],
+          "focused": [
+            "That's a wrap on {mode}.",
+            "{mode} comes to a close on the stream.",
+            "{mode} ends with him in P{position}.",
+            "He closes {mode} in P{position}, every detail measured.",
+            "Viewers just saw the end of {mode}.",
+            "The chapter on {mode} is complete, all part of the plan.",
+            "{mode} is done, and the stream moves on.",
+            "Final picture from {mode}: P{position}.",
+            "That session chapter is closed for the stream.",
+            "One chapter ends, and the story keeps moving.",
+            "He leaves {mode} behind, already thinking ahead.",
+            "The stream marks the end of {mode}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Za námi je {mode}.",
+            "Končí {mode}.",
+            "Diváci právě viděli konec: {mode}.",
+            "Tahle část končí: {mode}.",
+            "Stream uzavírá kapitolu: {mode}.",
+            "Konec: {mode}, výsledek P{position}.",
+            "Uzavírá se {mode} na P{position}.",
+            "Závěr: {mode}, P{position}.",
+            "Jedna kapitola streamu je uzavřená.",
+            "Příběh jde dál, tahle část padá.",
+            "Stream značí konec: {mode}.",
+            "Pro diváky končí {mode}."
+          ],
+          "calm": [
+            "Za námi je {mode}, rytmus zůstává plynulý.",
+            "Končí {mode}.",
+            "Diváci právě viděli konec: {mode}.",
+            "Tahle část končí: {mode}, bez zbytečného spěchu.",
+            "Stream uzavírá kapitolu: {mode}.",
+            "Konec: {mode}, výsledek P{position}.",
+            "Uzavírá se {mode} na P{position}.",
+            "Závěr: {mode}, P{position}.",
+            "Jedna kapitola streamu je uzavřená.",
+            "Příběh jde dál, tahle část padá.",
+            "Stream značí konec: {mode}, všechno má pod kontrolou.",
+            "Pro diváky končí {mode}, zvládá to bez nervozity."
+          ],
+          "focused": [
+            "Za námi je {mode}, už myslí na další krok.",
+            "Končí {mode}.",
+            "Diváci právě viděli konec: {mode}.",
+            "Tahle část končí: {mode}, přesně podle plánu.",
+            "Stream uzavírá kapitolu: {mode}.",
+            "Konec: {mode}, výsledek P{position}.",
+            "Uzavírá se {mode} na P{position}.",
+            "Závěr: {mode}, P{position}.",
+            "Jedna kapitola streamu je uzavřená.",
+            "Příběh jde dál, tahle část padá.",
+            "Stream značí konec: {mode}, soustředění zůstává pevné.",
+            "Pro diváky končí {mode}, každý detail má změřený."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      }
+    },
+    "session_preview": {
+      "family": "session",
+      "event_types": [
+        "SESSION_PREVIEW"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 52,
+      "cooldown_s": 20,
+      "slots": [
+        {
+          "name": "mode",
+          "type": "label",
+          "example": "Qualifying",
+          "examples_by_locale": {
+            "en": "Qualifying",
+            "cs": "kvalifikace"
+          }
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "P4 upcoming session after wrap.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Up next on the stream: {mode}.",
+            "The next chapter is {mode}.",
+            "Viewers now turn to {mode}.",
+            "{mode} is about to begin.",
+            "He heads into {mode} next.",
+            "Coming up after the wrap: {mode}.",
+            "The story continues with {mode}.",
+            "Next: {mode}, starting from P{position}.",
+            "He rolls into {mode} from P{position}.",
+            "Another chapter is ready for the stream.",
+            "The broadcast looks ahead to what follows.",
+            "{mode} is the next piece of the weekend."
+          ],
+          "calm": [
+            "Up next on the stream: {mode}.",
+            "The next chapter is {mode}, with no rush in the car.",
+            "Viewers now turn to {mode}.",
+            "{mode} is about to begin.",
+            "He heads into {mode} next, all under control.",
+            "Coming up after the wrap: {mode}.",
+            "The story continues with {mode}.",
+            "Next: {mode}, starting from P{position}.",
+            "He rolls into {mode} from P{position}.",
+            "Another chapter is ready for the stream.",
+            "The broadcast looks ahead to what follows.",
+            "{mode} is the next piece of the weekend, rhythm still smooth."
+          ],
+          "focused": [
+            "Up next on the stream: {mode}.",
+            "The next chapter is {mode}, all part of the plan.",
+            "Viewers now turn to {mode}.",
+            "{mode} is about to begin.",
+            "He heads into {mode} next, every detail measured.",
+            "Coming up after the wrap: {mode}.",
+            "The story continues with {mode}.",
+            "Next: {mode}, starting from P{position}.",
+            "He rolls into {mode} from P{position}.",
+            "Another chapter is ready for the stream.",
+            "The broadcast looks ahead to what follows.",
+            "{mode} is the next piece of the weekend, already thinking ahead."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Další: {mode}.",
+            "Následuje {mode}.",
+            "Diváci teď čekají: {mode}.",
+            "Před námi je {mode}.",
+            "Stream pokračuje: {mode}.",
+            "Teď přichází {mode}.",
+            "Příběh jde dál: {mode}.",
+            "Další: {mode}, start z P{position}.",
+            "Následuje {mode} z P{position}.",
+            "Další kapitola streamu je připravená.",
+            "Vysílání se dívá dopředu.",
+            "Na řadě je {mode}."
+          ],
+          "calm": [
+            "Další: {mode}.",
+            "Následuje {mode}, rytmus zůstává plynulý.",
+            "Diváci teď čekají: {mode}.",
+            "Před námi je {mode}, bez zbytečného spěchu.",
+            "Stream pokračuje: {mode}.",
+            "Teď přichází {mode}.",
+            "Příběh jde dál: {mode}.",
+            "Další: {mode}, start z P{position}.",
+            "Následuje {mode} z P{position}.",
+            "Další kapitola streamu je připravená.",
+            "Vysílání se dívá dopředu.",
+            "Na řadě je {mode}, všechno má pod kontrolou."
+          ],
+          "focused": [
+            "Další: {mode}.",
+            "Následuje {mode}, přesně podle plánu.",
+            "Diváci teď čekají: {mode}.",
+            "Před námi je {mode}, už myslí na další krok.",
+            "Stream pokračuje: {mode}.",
+            "Teď přichází {mode}.",
+            "Příběh jde dál: {mode}.",
+            "Další: {mode}, start z P{position}.",
+            "Následuje {mode} z P{position}.",
+            "Další kapitola streamu je připravená.",
+            "Vysílání se dívá dopředu.",
+            "Na řadě je {mode}, soustředění zůstává pevné."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      }
+    },
+    "session_checkered": {
+      "family": "session",
+      "event_types": [
+        "SESSION_CHECKERED"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 56,
+      "cooldown_s": 20,
+      "slots": [
+        {
+          "name": "mode",
+          "type": "label",
+          "example": "Qualifying",
+          "examples_by_locale": {
+            "en": "Qualifying",
+            "cs": "kvalifikace"
+          }
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 5
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm",
+        "focused"
+      ],
+      "notes": "Session clock expired (checkered). Driver may still finish the flying lap.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The clock is done. This lap in {mode} still counts.",
+            "Flags are out. He may finish the flyer already started.",
+            "Session time has expired on {mode}.",
+            "Checkered here is only the timer, not his personal stop.",
+            "One more run to the stripe before {mode} is over for him.",
+            "Viewers see the flags while he is still on a hot lap.",
+            "Time is up. The flying lap remains live.",
+            "He keeps this lap until the line after the clock.",
+            "No extra laps after this one. The stripe still matters.",
+            "Broadcast stays with this flyer until he takes the flag.",
+            "{mode} has no more green. This flyer still has a finish.",
+            "He is still racing to the line after the session clock."
+          ],
+          "calm": [
+            "The clock is done, and this lap in {mode} still counts.",
+            "Flags are out. He can finish the flyer without rush.",
+            "Session time has expired on {mode}, all under control.",
+            "Checkered is only the timer. His lap is still open.",
+            "One measured run to the stripe, then {mode} is done.",
+            "Viewers see the flags while he stays composed on a flyer.",
+            "Time is up. The flying lap is still allowed.",
+            "He brings this lap to the line after the clock, calmly.",
+            "No extra laps after this one. The stripe still decides.",
+            "The broadcast waits on this flyer until he takes the flag.",
+            "{mode} is out of green time. This lap still has a close.",
+            "After the clock he rolls to the line with no panic."
+          ],
+          "focused": [
+            "The clock is done. This lap in {mode} still has to be clean.",
+            "Flags are out. He finishes the flyer already started.",
+            "Session time has expired on {mode}. Every metre still counts.",
+            "Checkered is the timer. His job is the line.",
+            "One more run to the stripe, then {mode} is closed for him.",
+            "Viewers see the flags while he commits to the flying lap.",
+            "Time is up. The flying lap is still the only job.",
+            "He takes this lap to the line after the clock, fully locked in.",
+            "No extra laps after this one. The stripe is the whole point.",
+            "Broadcast stays with this flyer until he nails the flag.",
+            "{mode} has no more green. This flyer still needs a finish.",
+            "After the clock he hunts the line with a clear plan."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Šachovnice. Tohle kolo v {mode} ještě platí.",
+            "Čas session skončil. Rozjeté kolo se smí dokončit.",
+            "Vlajky jsou venku. Stále míří k cíli.",
+            "Šachovnice značí konec času, ne konec tohoto kola.",
+            "Ještě jeden průjezd cílem a {mode} pro něj končí.",
+            "Diváci vidí vlajky, auto pořád skládá kolo.",
+            "Čas vypršel. Letové kolo zůstává živé.",
+            "Tohle kolo drží až na čáru po vypršení času.",
+            "Další kolo už nebude. Cílová čára pořád rozhoduje.",
+            "Vysílání zůstává u letového kola až do cíle.",
+            "{mode} už nemá zelenou. Tohle kolo se ještě počítá.",
+            "Po vypršení času pořád míří k čáře."
+          ],
+          "calm": [
+            "Šachovnice. Tohle kolo v {mode} ještě platí, bez spěchu.",
+            "Čas session skončil. Rozjeté kolo se smí v klidu dokončit.",
+            "Vlajky jsou venku. K cíli jde plynule.",
+            "Šachovnice je jen konec času. Kolo zůstává otevřené.",
+            "Ještě jeden klidný průjezd cílem a {mode} pro něj končí.",
+            "Diváci vidí vlajky, tempo zůstává srovnané.",
+            "Čas vypršel. Letové kolo se pořád smí uzavřít.",
+            "Tohle kolo veze k čáře po vypršení času, bez nervozity.",
+            "Další kolo už nebude. Čára pořád stačí rozhodnout.",
+            "Vysílání čeká na letové kolo až do cíle.",
+            "{mode} už nemá zelenou. Tohle kolo se ještě v klidu počítá.",
+            "Po vypršení času dojíždí k čáře s jistotou."
+          ],
+          "focused": [
+            "Šachovnice. Tohle kolo v {mode} musí dovést čistě.",
+            "Čas session skončil. Rozjeté kolo se dokončí přesně.",
+            "Vlajky jsou venku. Každý metr k cíli pořád platí.",
+            "Šachovnice je timer. Úkol je cílová čára.",
+            "Ještě jeden přesný průjezd cílem a {mode} pro něj končí.",
+            "Diváci vidí vlajky, soustředění na letové kolo drží.",
+            "Čas vypršel. Letové kolo je teď jediná práce.",
+            "Tohle kolo veze k čáře po vypršení času, plně zaměřený.",
+            "Další kolo už nebude. Čára je celý zbývající úkol.",
+            "Vysílání zůstává u letového kola, dokud nevezme cíl.",
+            "{mode} už nemá zelenou. Tohle kolo ještě potřebuje závěr.",
+            "Po vypršení času jde k čáře podle plánu."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      }
+    },
+    "field_fact": {
+      "family": "session",
+      "event_types": [
+        "FIELD_FACT"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 28,
+      "cooldown_s": 15,
+      "slots": [
+        {
+          "name": "position",
+          "type": "int",
+          "example": 4
+        },
+        {
+          "name": "leader_name",
+          "type": "name",
+          "example": "Rossi"
+        },
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Hamilton"
+        },
+        {
+          "name": "gap",
+          "type": "gap",
+          "example": "1.2 s"
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm"
+      ],
+      "notes": "P2 silence fill. Emitters rotate position/leader/gap facts; include enough lines for each fact type so choose_filled_line always finds a bindable candidate.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is running in P{position}.",
+            "Viewers have him in P{position} right now.",
+            "The class order shows him in P{position}.",
+            "He holds P{position} in this field.",
+            "The race is led by {leader_name}.",
+            "Out front, {leader_name} sets the pace.",
+            "The field leader is {leader_name}.",
+            "Viewers see {leader_name} at the front.",
+            "Gap to {target_name} is {gap}.",
+            "He trails {target_name} by {gap}.",
+            "{target_name} is ahead by {gap}.",
+            "The gap to {target_name} sits at {gap}.",
+            "The field picture stays steady for now.",
+            "No big shake-up in the order yet."
+          ],
+          "calm": [
+            "He is running in P{position}, with no rush.",
+            "Viewers have him in P{position} for now.",
+            "The class order shows him in P{position}.",
+            "He holds P{position} cleanly in this field.",
+            "The race is led by {leader_name}.",
+            "Out front, {leader_name} sets a measured pace.",
+            "The field leader is {leader_name}.",
+            "Viewers see {leader_name} controlling the front.",
+            "Gap to {target_name} is {gap}.",
+            "He trails {target_name} by {gap}, patiently.",
+            "{target_name} is ahead by {gap}.",
+            "The gap to {target_name} sits at {gap}.",
+            "The field picture stays calm and steady.",
+            "No big shake-up in the order yet."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Jede na P{position}.",
+            "Diváci ho teď vidí na P{position}.",
+            "Ve třídě drží {position}. místo.",
+            "V poli je na P{position}.",
+            "Závod vede {leader_name}.",
+            "V čele pole je {leader_name}.",
+            "Lídr je {leader_name}.",
+            "Diváci vidí vepředu {leader_name}.",
+            "Na {target_name} ztrácí {gap}.",
+            "Odstup na {target_name} je {gap}.",
+            "Před ním je {target_name} o {gap}.",
+            "K {target_name} zbývá {gap}.",
+            "Situace v poli se zatím nemění.",
+            "Pořadí drží klidný rytmus."
+          ],
+          "calm": [
+            "Jede na P{position}, bez spěchu.",
+            "Diváci ho teď vidí na P{position}.",
+            "Ve třídě drží {position}. místo.",
+            "V poli je na P{position}, v klidu.",
+            "Závod vede {leader_name}.",
+            "V čele pole je {leader_name}.",
+            "Lídr je {leader_name}, tempo je klidné.",
+            "Diváci vidí vepředu {leader_name}.",
+            "Na {target_name} ztrácí {gap}.",
+            "Odstup na {target_name} je {gap}.",
+            "Před ním je {target_name} o {gap}.",
+            "K {target_name} zbývá {gap}.",
+            "Situace v poli zůstává klidná.",
+            "Pořadí drží klidný rytmus."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      }
+    },
+    "weather_change": {
+      "family": "session",
+      "event_types": [
+        "WEATHER_CHANGE"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 34,
+      "cooldown_s": 20,
+      "slots": [
+        {
+          "name": "skies",
+          "type": "label",
+          "example": "partly cloudy"
+        },
+        {
+          "name": "air_temp",
+          "type": "label",
+          "example": "23 C"
+        },
+        {
+          "name": "wind_speed",
+          "type": "label",
+          "example": "4 m/s"
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "calm"
+      ],
+      "notes": "P2 weather delta silence fill.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The sky is now {skies}.",
+            "Skies have shifted to {skies}.",
+            "Overhead conditions read {skies}.",
+            "Air temperature is {air_temp}.",
+            "The air has moved to {air_temp}.",
+            "Viewers note air at {air_temp}.",
+            "Wind is running at {wind_speed}.",
+            "The wind now sits at {wind_speed}.",
+            "Wind speed updates to {wind_speed}.",
+            "Now {skies}, with air at {air_temp}.",
+            "Air at {air_temp}, wind at {wind_speed}.",
+            "Skies {skies}, wind {wind_speed}.",
+            "Update: {skies}, {air_temp}, wind {wind_speed}."
+          ],
+          "calm": [
+            "The sky is now {skies}.",
+            "Skies have eased to {skies}.",
+            "Overhead conditions read {skies}.",
+            "Air temperature is {air_temp}.",
+            "The air sits at {air_temp}.",
+            "Viewers note air at {air_temp}.",
+            "Wind is running at {wind_speed}.",
+            "The wind now sits at {wind_speed}.",
+            "Wind speed holds near {wind_speed}.",
+            "Now {skies}, with air at {air_temp}.",
+            "Air at {air_temp}, wind at {wind_speed}.",
+            "Skies {skies}, wind {wind_speed}.",
+            "Quiet update: {skies}, {air_temp}, wind {wind_speed}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Obloha je teď {skies}.",
+            "Nad tratí se mění na {skies}.",
+            "Podmínky nahoru: {skies}.",
+            "Teplota vzduchu je {air_temp}.",
+            "Vzduch má teď {air_temp}.",
+            "Diváci sledují vzduch {air_temp}.",
+            "Vítr je na {wind_speed}.",
+            "Vítr teď dosahuje {wind_speed}.",
+            "Rychlost větru je {wind_speed}.",
+            "Teď {skies}, vzduch {air_temp}.",
+            "Vzduch {air_temp}, vítr {wind_speed}.",
+            "Obloha {skies}, vítr {wind_speed}.",
+            "Aktualizace: {skies}, {air_temp}, vítr {wind_speed}."
+          ],
+          "calm": [
+            "Obloha je teď {skies}.",
+            "Nad tratí je klidně {skies}.",
+            "Podmínky nahoru: {skies}.",
+            "Teplota vzduchu je {air_temp}.",
+            "Vzduch má teď {air_temp}.",
+            "Diváci sledují vzduch {air_temp}.",
+            "Vítr je na {wind_speed}.",
+            "Vítr teď dosahuje {wind_speed}.",
+            "Rychlost větru je {wind_speed}.",
+            "Teď {skies}, vzduch {air_temp}.",
+            "Vzduch {air_temp}, vítr {wind_speed}.",
+            "Obloha {skies}, vítr {wind_speed}.",
+            "Klidná změna: {skies}, {air_temp}, vítr {wind_speed}."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 160,
+        "max_seconds": 13.0,
         "ssml_allowed": [
           "break",
           "emphasis"
@@ -5123,6 +6378,78 @@
         "same_correlation": false,
         "min_gap_s": 0.2,
         "max_gap_s": 8
+      }
+    },
+    {
+      "from": "hunting",
+      "to": "attack_range",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 1.0,
+        "max_gap_s": 30
+      }
+    },
+    {
+      "from": "attack_range",
+      "to": "side_by_side",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.5,
+        "max_gap_s": 20
+      }
+    },
+    {
+      "from": "pit_entry",
+      "to": "pit_stopped",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 40
+      }
+    },
+    {
+      "from": "pit_stopped",
+      "to": "back_on_track",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 60
+      }
+    },
+    {
+      "from": "incident",
+      "to": "incident_aftermath",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.5,
+        "max_gap_s": 20
+      }
+    },
+    {
+      "from": "incident_aftermath",
+      "to": "back_under_way",
+      "when": {
+        "same_correlation": true,
+        "min_gap_s": 0.5,
+        "max_gap_s": 90
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "session_wrap",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.2,
+        "max_gap_s": 90
+      }
+    },
+    {
+      "from": "session_wrap",
+      "to": "session_preview",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.2,
+        "max_gap_s": 15
       }
     }
   ]

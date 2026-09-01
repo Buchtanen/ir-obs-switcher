@@ -36,12 +36,14 @@ EditPullRequestLabels → add_labels: ["semver:minor"]  # example
 1. Push branch
 2. `ManagePullRequest` `create_pr`
 3. **`EditPullRequestLabels`** — pick label from table (align with PR title prefix)
-4. If label add fails (404/race): retry once after a few seconds
-5. Optionally `update_pr` `draft: false` when CI green
+4. If label add fails (404/race): wait a few seconds, retry **label only**
+5. If CI already failed on missing label: `gh run rerun <id>` (or re-run the semver-label job). **Do not** empty-commit to retrigger.
+6. Optionally `update_pr` `draft: false` when CI green
 
 ## Common mistakes
 
 - Creating PR and forgetting label → **semver-label CI failure** (known race on first run)
+- Empty commit “to retrigger CI” after the label is already correct
 - Labeling only at end of turn after user notification
 - Using `semver:patch` for `feat:` PRs without reason (allowed but prefer alignment)
 

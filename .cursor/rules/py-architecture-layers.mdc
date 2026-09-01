@@ -6,22 +6,23 @@ alwaysApply: false
 
 ## Layer boundaries (do not mix)
 
-Repo structure (rules of authority):
+| Package | Owns | Must not |
+| --- | --- | --- |
+| **`iracing/`** | SDK extract / parse | `overlay_mode`, speech, OBS scenes |
+| **`obs/`** | thin websocket client | policy / scene choice |
+| **`logic/`** | scene state machine + stream chapters | HUD widgets, TTS |
+| **`events/`** | candidate events + arbitration input | TTS, OBS, copy catalogs |
+| **`overlay/`** | HUD envelope, tape, overlay HTTP/WS | scene switch, `CommentaryDirector` |
+| **`commentary/`** | director, sequence graph, TTS | `headlineToken` / overlay i18n |
+| **`race/`** | `RaceState` + observer (all overlay modes) | assume Race-session-only |
+| **`server/`** | HTTP/WS glue | private `._tape`, `._busy_until`, driving logic |
 
-- **`src/irswitch/iracing/`**: data extraction only (shared memory polling/parsing). **No business logic.**
-- **`src/irswitch/obs/`**: thin OBS client wrapper. **No policy / no decisions.**
-- **`src/irswitch/logic/`**: state machine + decision rules only. **Single decision path for scene switching.**
-- **`src/irswitch/server/`**: HTTP/WebSocket/API glue. **Never drives logic directly.**
-- **No TUI**: `irswitch_tui` / Textual was removed. Do not reintroduce it. Dashboards are HTTP (`/gr-status`, `/vr-status`).
+- **No TUI**: `irswitch_tui` / Textual was removed. Dashboards: `/gr-status`, `/vr-status`. Overlay HUD: `/overlay/`.
+- Scene switches: **one** pipeline in `logic/` (explainable `decision_inputs`).
+- Overlay and commentary are **peer consumers** of accepted events, not a chain through widget render.
 
 ## State machine constraints
 
 - Transitions must be **explicit** and **testable**.
 - No hidden side effects inside getters.
 - Cooldowns/debounce must be **time-based** (monotonic), not “frame-based”.
-
-## Integration principle
-
-All scene switches go through **one decision pipeline** (policy/state machine),
-so the reason is explainable and testable.
-

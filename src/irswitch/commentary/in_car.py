@@ -19,6 +19,8 @@ class InCarDetector:
         if not state.connected:
             self._announced = False
             return None
+        if state.session_finished:
+            return None
         if self._announced or state.player_car_idx is None:
             return None
         self._announced = True

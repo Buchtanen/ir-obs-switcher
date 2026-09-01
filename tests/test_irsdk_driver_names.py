@@ -6,7 +6,11 @@ from irswitch.events.adapters.battle import battle_race_event_to_envelope
 from irswitch.events.adapters.position import position_race_event_to_envelope
 from irswitch.events.battle import BattleEmitter
 from irswitch.events.rival_threat import RivalThreatEmitter
-from irswitch.iracing.drivers import driver_names_by_car_idx, speakable_driver_name
+from irswitch.iracing.drivers import (
+    driver_names_by_car_idx,
+    speakable_driver_name,
+    speakable_name_mix,
+)
 from irswitch.iracing.telemetry import extract_telemetry
 from irswitch.overlay.models import OpponentInfo, RaceState
 from irswitch.overlay.protocol import RaceEvent
@@ -21,6 +25,13 @@ def test_speakable_driver_name_prefers_last_token_of_user_name() -> None:
     assert speakable_driver_name({"UserName": "Senna"}) == "Senna"
     assert speakable_driver_name({"AbbrevName": "J. Smith"}) == "Smith"
     assert speakable_driver_name({}) is None
+
+
+def test_speakable_name_mix_first_and_last() -> None:
+    assert speakable_name_mix({"UserName": "Richard Buchtanen"}) == ("Richard", "Buchtanen")
+    assert speakable_name_mix({"UserName": "Buchtanen"}) == ("Buchtanen",)
+    assert speakable_name_mix({"UserName": "Valentino Rossi"}) == ("Valentino", "Rossi")
+    assert speakable_name_mix({}) == ()
 
 
 def test_driver_names_by_car_idx_from_driver_info() -> None:

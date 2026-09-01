@@ -60,6 +60,14 @@ function fmt(n, digits) {
   return Number(n).toFixed(digits);
 }
 
+/** Whole-number BPM for HUD (never show sensor floats). */
+function fmtBpm(bpm) {
+  if (bpm == null || bpm === "") return "";
+  const n = Number(bpm);
+  if (!Number.isFinite(n)) return "";
+  return String(Math.round(n));
+}
+
 function fmtPositionDelta(delta) {
   if (delta == null || Number.isNaN(delta)) return "—";
   const n = Number(delta);
@@ -73,17 +81,31 @@ function fmtPositionRange(oldPos, newPos) {
   return `P${oldPos} → P${newPos}`;
 }
 
+/** Last-resort labels when snapshot/i18n catalog is stale (OBS CEF cache). */
+const FALLBACK_COPY = {
+  "exception.incident": "INCIDENT",
+  "exception.invalid_lap": "INVALID LAP",
+  "exception.link_drop": "LINK DROP",
+  incident: "INCIDENT",
+  invalid_lap: "INVALID LAP",
+  "battle.battle_for_position": "BATTLE FOR POSITION",
+  "position.rival_threat": "RIVAL THREAT",
+};
+
+function labelForToken(token) {
+  if (!token) return "";
+  return copyCatalog[token] || FALLBACK_COPY[token] || "";
+}
+
 function resolveCopy(token) {
   if (!token) return "";
-  return copyCatalog[token] || token;
+  return labelForToken(token);
 }
 
 /** Prefer catalog label; never show unknown token when sample title exists. */
 function resolveHeadline(token, sampleTitle, stateKey) {
-  if (token) {
-    const labeled = copyCatalog[token];
-    if (labeled) return labeled;
-  }
+  const labeled = labelForToken(token);
+  if (labeled) return labeled;
   return sampleTitle || stateKey || token || "";
 }
 
@@ -701,8 +723,21 @@ function fillPositionCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(meta, metrics.targetCarIdx != null ? `vs #${metrics.targetCarIdx}` : sample.meta);
   } else if (stateKey === "rival_threat") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "FAST LAP");
-    text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
-    text(meta, sample.meta || "projected ahead");
+    // Live adapter sends rivalPosition/gap/targetName, not metrics.position.
+    // Sample fallback is hardcoded P8 — never use it when live identity exists.
+    const rivalPos = metrics.position ?? metrics.rivalPosition;
+    text(value, rivalPos != null ? `P${rivalPos}` : sample.value);
+    const rivalName = resolveTargetName(metrics, envelope);
+    const gapLabel = metrics.gap != null ? fmtGap(metrics.gap) : null;
+    if (rivalName && gapLabel) {
+      text(meta, `${rivalName} · ${gapLabel}`);
+    } else if (rivalName) {
+      text(meta, rivalName);
+    } else if (gapLabel) {
+      text(meta, gapLabel);
+    } else {
+      text(meta, sample.meta || "projected ahead");
+    }
   } else {
     text(subtitle, sample.subtitle || "");
     text(value, sample.value || fmtPositionDelta(delta));
@@ -784,9 +819,10 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
   const meta = node.querySelector(".meta");
   const headline = resolveHeadline(copy.headlineToken, sample.title, stateKey);
   text(title, headline);
+  const bpmLabel = fmtBpm(metrics.bpm);
   if (stateKey === "hr_pressure") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "BATTLE INTENSITY");
-    text(value, metrics.bpm != null ? `${Math.round(Number(metrics.bpm))} BPM` : sample.value);
+    text(value, bpmLabel ? `${bpmLabel} BPM` : sample.value);
     text(meta, metrics.deltaBpm != null ? fmtBpmDelta(metrics.deltaBpm, 0) : sample.meta || "");
   } else if (stateKey === "ble_reconnecting") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "SENSOR DATA PAUSED");
@@ -794,7 +830,7 @@ function fillBioCopy(node, envelope, stateKey, sample, metrics, copy) {
     text(meta, sample.meta || "reconnecting");
   } else {
     text(subtitle, sample.subtitle || "");
-    text(value, metrics.bpm != null ? `${metrics.bpm} BPM` : sample.value || "");
+    text(value, bpmLabel ? `${bpmLabel} BPM` : sample.value || "");
     text(meta, sample.meta || "");
   }
 }
@@ -1037,10 +1073,7 @@ export async function initV4(options = {}) {
   try {
     const manifestUrl = options.manifestUrl || `${ASSET_BASE}themes-v4/manifest.json`;
     const catalogUrl = options.catalogUrl || `${ASSET_BASE}themes-v4/event_catalog.json`;
-    const tasks = [fetch(manifestUrl), fetch(catalogUrl)];
-    if (!Object.keys(copyCatalog).length) {
-      tasks.push(fetch("/api/overlay/i18n"));
-    }
+    const tasks = [fetch(manifestUrl), fetch(catalogUrl), fetch("/api/overlay/i18n")];
     const results = await Promise.all(tasks);
     const [manifestRes, catalogRes, i18nRes] = results;
     if (manifestRes.ok) {
@@ -1064,7 +1097,8 @@ export async function initV4(options = {}) {
     if (i18nRes?.ok) {
       try {
         const i18n = await i18nRes.json();
-        copyCatalog = i18n.copyCatalog || copyCatalog;
+        // Merge so a stale/partial snapshot catalog cannot hide new tokens.
+        copyCatalog = { ...copyCatalog, ...(i18n.copyCatalog || {}) };
         language = i18n.language || language;
       } catch (err) {
         console.error("v4 i18n parse failed", err);

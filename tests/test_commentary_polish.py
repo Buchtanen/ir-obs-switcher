@@ -9,7 +9,11 @@ from pathlib import Path
 import pytest
 
 from irswitch.commentary.graph import load_sequence_graph
-from irswitch.commentary.polish import build_polish_request, polish_skeleton
+from irswitch.commentary.polish import (
+    build_polish_request,
+    fact_violation_codes,
+    polish_skeleton,
+)
 from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.settings import (
@@ -84,13 +88,13 @@ def test_polish_rejects_non_http_scheme() -> None:
     )
     outcome = polish_skeleton("Gap 0.42 to Smith.", node, settings)
     assert outcome.outcome == "fallback_error"
-    assert outcome.text == "Gap 0.42 to Smith."
+    assert outcome.text == ""
 
 
-def test_polish_timeout_falls_back_to_skeleton() -> None:
+def test_polish_timeout_skips_skeleton() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
-    settings = CommentarySettings(llm_polish=True)
+    settings = CommentarySettings(llm_polish=True, llm_max_attempts=3)
 
     def opener(_req, timeout):  # noqa: ARG001
         raise TimeoutError
@@ -98,7 +102,8 @@ def test_polish_timeout_falls_back_to_skeleton() -> None:
     skeleton = "Gap 0.42 to Smith."
     outcome = polish_skeleton(skeleton, node, settings, opener=opener)
     assert outcome.outcome == "fallback_timeout"
-    assert outcome.text == skeleton
+    assert outcome.text == ""
+    assert outcome.attempts == 3
 
 
 def test_tape_commentary_and_llm_rows(tmp_path: Path) -> None:
@@ -136,8 +141,109 @@ def test_build_polish_request_shape() -> None:
     settings = CommentarySettings(llm_model="qwen2.5:3b")
     req = build_polish_request("Line one.", settings)
     assert req["model"] == "qwen2.5:3b"
+    assert req["think"] is False
+    assert req["reasoning_effort"] == "none"
     assert req["messages"][0]["role"] == "system"
     assert "Line one." in req["messages"][1]["content"]
+
+
+def test_live_prompt_fits_node_tts_budget() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    req = build_polish_request("Gap to Smith.", CommentarySettings(llm_max_tokens=220), node=node)
+    system = req["messages"][0]["content"]
+    lowered = system.lower()
+    assert "same sentence count" in lowered
+    assert "you are polishing" not in lowered
+    assert "two sentences preferred" not in lowered
+    assert "do not reintroduce abbreviations" in lowered
+    assert "not pole" in lowered
+    assert "not a lead" in lowered
+    assert "compass" in lowered
+    cap = str(len("Gap to Smith.") + 40)
+    assert cap in system
+    assert f"{node.tts.max_seconds:g}" in system
+    assert req["max_tokens"] <= len("Gap to Smith.") + 40 + 16
+    assert req["max_tokens"] < 220
+
+
+def test_polish_prompt_keeps_featured_driver() -> None:
+    req = build_polish_request(
+        "He closes the gap.",
+        CommentarySettings(),
+        driver_names=("Richard", "Buchtanen"),
+    )
+    system = req["messages"][0]["content"]
+    assert "featured driver is Richard / Buchtanen" in system
+    assert "stream viewers" in system.lower() or "protagonist" in system.lower()
+    assert "you/your" in system.lower() or "never address" in system.lower()
+
+
+def test_past_prompt_also_states_tts_budget() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    req = build_polish_request("Gap to Smith.", CommentarySettings(), node=node, past=True)
+    system = req["messages"][0]["content"]
+    assert "do not invent that a pass" in system.lower()
+    assert str(len("Gap to Smith.") + 40) in system
+
+
+def test_similar_length_restyle_is_kept() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True)
+    skeleton = "Gap 0.42 to Smith."
+    restyle = "He closes on Smith, gap 0.42 seconds."
+
+    def opener(_req, timeout):  # noqa: ARG001
+        return json.dumps({"choices": [{"message": {"content": restyle}}]}).encode("utf-8")
+
+    outcome = polish_skeleton(skeleton, node, settings, opener=opener)
+    assert outcome.outcome == "ok"
+    assert outcome.text == restyle
+
+
+def test_added_sentence_retries_then_skips_skeleton() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True, llm_max_attempts=2)
+    richer = (
+        "He is closing on Smith, the gap sitting at 0.42 seconds. "
+        "Viewers still have a live chase on screen."
+    )
+    calls: list[int] = []
+
+    def opener(_req, timeout):  # noqa: ARG001
+        calls.append(1)
+        return json.dumps({"choices": [{"message": {"content": richer}}]}).encode("utf-8")
+
+    skeleton = "Gap 0.42 to Smith."
+    outcome = polish_skeleton(skeleton, node, settings, opener=opener)
+    assert outcome.outcome == "retry_exhausted"
+    assert outcome.text == ""
+    assert len(calls) == 2
+    assert "expanded" in (outcome.response or {}).get("validatorCodes", [])
+
+
+def test_three_sentence_polish_retries_then_skips_skeleton() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True, llm_max_attempts=2)
+    long_copy = (
+        "Melillo continues to lead, but the pack is closing fast. "
+        "The race is heating up, and the lead could change at any moment. "
+        "Stay tuned for the latest developments on this broadcast!"
+    )
+
+    def opener(_req, timeout):  # noqa: ARG001
+        return json.dumps({"choices": [{"message": {"content": long_copy}}]}).encode("utf-8")
+
+    skeleton = "Melillo remains ahead, but the pressure is changing."
+    outcome = polish_skeleton(skeleton, node, settings, opener=opener)
+    assert outcome.outcome == "retry_exhausted"
+    assert outcome.text == ""
+    codes = (outcome.response or {}).get("validatorCodes", [])
+    assert "banned_phrase" in codes or "expanded" in codes or "invented_lead" in codes
 
 
 def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,7 +251,9 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     node = graph.nodes["hunting"]
     captured: list[dict] = []
 
-    def fake_polish(skeleton, _node, settings, *, opener=None):  # noqa: ARG001
+    def fake_polish(
+        skeleton, _node, settings, *, opener=None, past=False, driver_names=()
+    ):  # noqa: ARG001
         return type(
             "O",
             (),
@@ -190,10 +298,144 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     assert captured[0]["outcome"] == "ok"
 
 
-def test_build_tts_sink_omits_hook_when_polish_off() -> None:
+def test_build_tts_sink_omits_hook_when_polish_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("irswitch.commentary.tts.detect_backend", lambda preferred="auto": "sapi")
     sink = build_tts_sink(CommentarySettings(llm_polish=False, tts_backend="sapi"))
     assert isinstance(sink, ProcessTtsSink)
     assert sink.on_polish_debug is None
+
+
+def test_fact_violation_codes_from_vod_inversions() -> None:
+    assert "invented_lead" in fact_violation_codes(
+        "Wind two meters per second across the circuit.",
+        "Richard maintains his lead at two meters per second.",
+    )
+    assert "invented_pole" in fact_violation_codes(
+        "He holds P two.",
+        "Richard holds pole position.",
+    )
+    assert "polarity_flip" in fact_violation_codes(
+        "Adamson is ahead by zero point eight seven seconds.",
+        "Richard maintains a narrow lead.",
+    )
+    assert "invented_pass" in fact_violation_codes(
+        "He is closing on Maestre, gap zero point six six seconds.",
+        "Richard inches past Maestre by six centimeters.",
+    )
+    assert "surname_as_direction" in fact_violation_codes(
+        "West is coming back.",
+        "Richard is looking westward.",
+    )
+    assert "hero_name_fusion" in fact_violation_codes(
+        "Richard. Ohanian is closing.",
+        "Richard Ohanian is closing.",
+    )
+    assert "live_call_prefix" in fact_violation_codes(
+        "Gap zero point four two to Smith.",
+        "Live Call: He is closing on Smith.",
+    )
+    assert (
+        fact_violation_codes(
+            "Gap 0.42 to Smith.",
+            "He is closing on Smith, gap 0.42 seconds.",
+        )
+        == []
+    )
+
+
+def test_polish_retries_when_model_addresses_the_driver() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True, llm_max_attempts=2)
+    calls: list[int] = []
+
+    def opener(_req, timeout):  # noqa: ARG001
+        calls.append(1)
+        return json.dumps(
+            {"choices": [{"message": {"content": "You keep closing on Smith, gap 0.42 seconds."}}]}
+        ).encode("utf-8")
+
+    outcome = polish_skeleton("Gap 0.42 to Smith.", node, settings, opener=opener)
+    assert outcome.outcome == "retry_exhausted"
+    assert outcome.text == ""
+    assert len(calls) == 2
+    assert "address_driver" in (outcome.response or {}).get("validatorCodes", [])
+
+
+def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True, llm_max_attempts=5)
+    calls = {"n": 0}
+
+    def opener(_req, timeout):  # noqa: ARG001
+        calls["n"] += 1
+        if calls["n"] < 3:
+            content = "Richard maintains a narrow lead over Adamson."
+        else:
+            content = "Adamson is still ahead by zero point eight seven seconds."
+        return json.dumps({"choices": [{"message": {"content": content}}]}).encode("utf-8")
+
+    skeleton = "Adamson is ahead by zero point eight seven seconds."
+    outcome = polish_skeleton(skeleton, node, settings, opener=opener)
+    assert outcome.outcome == "ok"
+    assert outcome.attempts == 3
+    assert "ahead" in outcome.text.lower()
+    assert "lead" not in outcome.text.lower()
+
+
+def test_process_sink_skips_speak_when_retry_exhausted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    spoken: list[str] = []
+
+    def fake_polish(
+        skeleton, _node, settings, *, opener=None, past=False, driver_names=()
+    ):  # noqa: ARG001
+        return type(
+            "O",
+            (),
+            {
+                "text": "",
+                "outcome": "retry_exhausted",
+                "latency_ms": 1.0,
+                "skeleton": skeleton,
+                "request": {},
+                "response": {"content": "Richard maintains a narrow lead."},
+                "debug_record": lambda self, node_id="", event_type="": {
+                    "outcome": "retry_exhausted",
+                    "spoken": "",
+                },
+            },
+        )()
+
+    monkeypatch.setattr("irswitch.commentary.tts.polish_skeleton", fake_polish)
+    monkeypatch.setattr(
+        "irswitch.commentary.tts.speak_text",
+        lambda text, **kwargs: spoken.append(text)
+        or type("R", (), {"backend": "null", "spoken": True, "error": None})(),
+    )
+
+    settings = CommentarySettings(llm_polish=True, tts_backend="null")
+    sink = ProcessTtsSink(settings=settings)
+    from irswitch.commentary.tts import CommentaryUtterance
+
+    sink._speak(
+        CommentaryUtterance(
+            node_id="hunting",
+            locale="en",
+            emotion="focused",
+            text="Adamson is ahead.",
+            event_type="HUNTING",
+            event_id="e1",
+            correlation_id="c1",
+            estimated_seconds=2.0,
+            node=node,
+        )
+    )
+    assert spoken == []
 
 
 def test_runtime_debug_gate_for_tape(monkeypatch: pytest.MonkeyPatch) -> None:

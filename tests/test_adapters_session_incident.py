@@ -97,6 +97,8 @@ def test_rival_threat_keeps_gap_and_speakable_target_label() -> None:
     assert envelope.phase == "ENTER"
     assert envelope.metrics["gap"] == 1.8
     assert envelope.metrics["targetName"] == "P8"
+    assert envelope.metrics["position"] == 8
+    assert envelope.metrics["rivalPosition"] == 8
     assert envelope.target is not None
     assert envelope.target.display_name == "P8"
     bound = slot_bindings(envelope, "unknown")

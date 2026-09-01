@@ -19,6 +19,13 @@ COMMENTARY_ONLY_EVENTS = frozenset(
         "SESSION_INTRO_RACE",
         "SOF_BRIEF",
         "WEATHER_BRIEF",
+        "WEATHER_CHANGE",
+        "FIELD_FACT",
+        "INCIDENT_AFTERMATH",
+        "BACK_UNDER_WAY",
+        "SESSION_WRAP",
+        "SESSION_PREVIEW",
+        "SESSION_CHECKERED",
     }
 )
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})
@@ -39,8 +46,8 @@ class SlotSpec:
 
 @dataclass(frozen=True)
 class TtsLimits:
-    max_chars: int = 90
-    max_seconds: float = 5.5
+    max_chars: int = 160
+    max_seconds: float = 13.0
     ssml_allowed: tuple[str, ...] = ("break", "emphasis")
     require_terminal_punct: bool = True
 

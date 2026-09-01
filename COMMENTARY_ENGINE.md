@@ -13,8 +13,8 @@ Texts are filled later by another model. This repo owns the graph, validator, as
 
 Commentary is **for the stream audience**, not pit-wall radio to the driver.
 
-- EN: third person / broadcast (“He's closing on Rossi.” / “That's P5.”)
-- CS: třetí osoba / komentář pro diváky (“Dotahuje na Rossiho.” / “Bere páté místo.”)
+- EN: third person / broadcast, mixing the driver's name or nickname with he/him/his (“Richard is closing on Rossi.” / “That's a lap for Buchtanen.”)
+- CS: třetí osoba / komentář pro diváky, jméno nebo přezdívka namíchaná s zájmeny (“Richard uzavírá kolo.” / “Buchtanen. Kolo je hotové.”)
 - Never second person to the driver (“You take P5”, “Jsi pátý” as address)
 - Light viewer asides OK; keep one breath; slots unchanged
 
@@ -30,7 +30,7 @@ iRacing / BLE HR
     → TtsSink (Windows SAPI / espeak-ng / NullTtsSink)
 ```
 
-**Experiment (not wired):** optional remote LLM *skeleton polish* (style only, facts from app) — see [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md).
+**Experiment (wired, default off):** optional remote LLM *skeleton polish* (style only, facts from app) — see [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md). Live serve stays A1000 Ollama `qwen2.5:3b`.
 
 Rules:
 
@@ -84,7 +84,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` only puts on an unbounded queue (race loop never waits for SAPI/espeak or duck fades). Concurrent enqueues cannot start two speaks at once; duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). Optional LLM polish restyles the authored skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), or a fact-lock hit (invented lead/pole, chase→lead, West→westward, seconds→cm) retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the sequence graph. If every attempt fails → `retry_exhausted` and **TTS is skipped** (skeleton is not spoken). Node TTS (~160 chars / 13 s) is the authored ceiling, not a dump budget. Before polish/TTS, digit tokens **and compact units** (`m/s`, `°C`/`23 C`, gap `s`, `%`, `bpm`) are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his (`speech_hero.mix_hero_name`; config `driver_name` / `driver_nickname`, else iRacing UserName) — EN prefix `Name.` is skipped when the line already names another person. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test
@@ -101,7 +101,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 enabled = false
 use_hr_emotion = true
 cooldown_s = 4.0
-max_utterance_s = 6.0
+max_utterance_s = 14.0
 tts_backend = auto
 tts_voice =
 tts_rate = 0
@@ -231,7 +231,7 @@ Fail-soft helpers in `irswitch.iracing.weather` extract current vs forecast weat
 
 - `extract_weather(data, prefer="live"|"session"|"forecast")` → `WeatherSnapshot` with honest `source` (`live` / `session` / `forecast` / `mixed`) and per-field `field_sources`
 - Live may fall back to `WeekendInfo.Track*` (same “current” family); forecast (`WeekendOptions`) is never mixed in silently
-- `format_*` / `spoken_weather_bindings` — speech labels (e.g. `23 C`, `4 m/s`, `partly cloudy` / CS equivalents); precip uses a small vocab and never invents rain from `Skies` alone
+- `format_*` / `spoken_weather_bindings` — compact slot labels (e.g. `23 C`, `4 m/s`, `partly cloudy` / CS equivalents); precip uses a small vocab and never invents rain from `Skies` alone. `numbers_to_words` expands those units to spoken words before polish/TTS.
 
 ## Session briefs wiring (W4 H4)
 

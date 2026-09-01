@@ -17,6 +17,15 @@ _SLOT = re.compile(r"\{([a-z0-9_]+)\}")
 _BREAK_TIME = re.compile(r'time="(\d{1,6})ms"')
 _ALLOWED_TAGS = frozenset({"speak", "break", "emphasis", "prosody"})
 _CHARS_PER_SECOND = 13.0
+# Same contract as sequence_graph viewer-voice tests. Not pit radio to the driver.
+_ADDRESS_EN = re.compile(
+    r"\b(you|your|yours|you're|you've|you'll)\b",
+    re.IGNORECASE,
+)
+_ADDRESS_CS = re.compile(
+    r"\b(ty|tvoje|tvůj|tvá|jsi|jedeš|máš|musíš|můžeš|vezmi|drž)\b",
+    re.IGNORECASE,
+)
 _MAX_BREAK_MS = 500
 _MAX_TAG_CHARS = 80
 _ALLOWED_EMPHASIS = frozenset({"reduced", "moderate", "strong"})
@@ -117,6 +126,14 @@ def validate_utterance(
             ValidationIssue(
                 "max_seconds",
                 f"estimated {estimated:.1f}s exceeds max {tts.max_seconds:.1f}s",
+            )
+        )
+
+    if _ADDRESS_EN.search(spoken) or _ADDRESS_CS.search(spoken):
+        issues.append(
+            ValidationIssue(
+                "address_driver",
+                "viewer third person only; do not address the featured driver as you/your",
             )
         )
 

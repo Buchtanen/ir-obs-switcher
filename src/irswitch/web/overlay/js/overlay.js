@@ -1,5 +1,8 @@
 import { DisplayManager, applySysinfo, applyPersistentArt } from "./display.js";
 
+/** Bump with index.html ?v= so OBS CEF does not keep stale JS/CSS. */
+const OVERLAY_ASSET_VER = "1.2.16";
+
 const BACKOFF = [1000, 2000, 5000, 10000];
 
 function fixtureHud() {
@@ -35,7 +38,7 @@ function wsUrl() {
 function applyTheme(theme) {
   const id = theme || "cyber_racing";
   const link = document.getElementById("theme-css");
-  if (link) link.href = `/overlay/static/css/themes/${id}.css`;
+  if (link) link.href = `/overlay/static/css/themes/${id}.css?v=${OVERLAY_ASSET_VER}`;
   document.documentElement.dataset.theme = id;
 }
 
@@ -212,7 +215,7 @@ async function startV4Golden(params, v4) {
 }
 
 async function startV4Demo(params) {
-  const v4 = await import("./display-v4.js");
+  const v4 = await import(`./display-v4.js?v=${OVERLAY_ASSET_VER}`);
   const {
     DisplayV4,
     initV4,
@@ -252,7 +255,7 @@ async function startV4Demo(params) {
       DisplayV4.show(getV4GoldenFixture("lap_complete"));
       return;
     }
-    const mod = await import("./demo-v4.js");
+    const mod = await import(`./demo-v4.js?v=${OVERLAY_ASSET_VER}`);
     mod.startV4DemoLoop();
     return;
   }
@@ -286,7 +289,7 @@ async function startV4Demo(params) {
     DisplayV4.show(envelope);
     return;
   }
-  const mod = await import("./demo-v4.js");
+  const mod = await import(`./demo-v4.js?v=${OVERLAY_ASSET_VER}`);
   mod.startV4DemoLoop();
 }
 
@@ -324,7 +327,9 @@ async function bootstrap() {
   if (useV4) {
     window.__renderer = "v4";
     onMessage = createMessageHandler(true);
-    const { DisplayV4, initV4, syncSysinfoGlow } = await import("./display-v4.js");
+    const { DisplayV4, initV4, syncSysinfoGlow } = await import(
+      `./display-v4.js?v=${OVERLAY_ASSET_VER}`
+    );
     window.__v4Display = DisplayV4;
     window.__v4SyncSysinfoGlow = syncSysinfoGlow;
     try {
@@ -361,7 +366,7 @@ async function bootstrap() {
   }
   if (demo) {
     const layout = params.get("layout");
-    const mod = await import("./demo.js");
+    const mod = await import(`./demo.js?v=${OVERLAY_ASSET_VER}`);
     if (layout === "golden") {
       mod.startGoldenLayout();
     } else if (layout === "preview") {

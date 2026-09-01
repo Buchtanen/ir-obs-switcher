@@ -17,10 +17,12 @@ def _enabled(**kwargs: object) -> StreamChaptersSettings:
     return StreamChaptersSettings(
         enabled=True,
         start_title=str(kwargs.get("start_title", base.start_title)),
+        end_title=str(kwargs.get("end_title", base.end_title)),
         trigger_session_types=tuple(
             kwargs.get("trigger_session_types", base.trigger_session_types)  # type: ignore[arg-type]
         ),
         session_titles=dict(kwargs.get("session_titles", {})),  # type: ignore[arg-type]
+        youtube_vod=bool(kwargs.get("youtube_vod", base.youtube_vod)),
     )
 
 
@@ -79,20 +81,46 @@ def test_no_duplicate_on_same_session_type() -> None:
     assert tracker.update(streaming=True, duration_current_seconds=10.0, session_type="Race") == []
 
 
-def test_stream_stop_clears_after_debounce() -> None:
+def test_stream_stop_keeps_chapters_and_arms_vod_flush() -> None:
     mono = {"t": 0.0}
     tracker = StreamChapterTracker(_enabled(), time_mono=lambda: mono["t"])
-    tracker.update(streaming=True, duration_current_seconds=0.0, session_type="Race")
-    assert len(tracker.chapters()) == 1
+    tracker.update(streaming=True, duration_current_seconds=0.0, session_type="Practice")
+    tracker.update(streaming=True, duration_current_seconds=42.0, session_type="Race")
+    tracker.update(streaming=True, duration_current_seconds=80.0, session_type="Race")
+    assert len(tracker.chapters()) == 2
+    assert tracker.consume_vod_flush() is False
 
     mono["t"] = 1.0
     tracker.update(streaming=False, duration_current_seconds=None, session_type="Race")
-    # Still within debounce — chapters kept
-    assert len(tracker.chapters()) == 1
+    assert len(tracker.chapters()) == 2
+    assert tracker.consume_vod_flush() is False
 
     mono["t"] = 1.0 + STREAM_FLICKER_DEBOUNCE_S
-    tracker.update(streaming=False, duration_current_seconds=None, session_type="Race")
-    assert tracker.chapters() == []
+    created = tracker.update(streaming=False, duration_current_seconds=None, session_type="Race")
+    titles = [c.title for c in tracker.chapters()]
+    assert titles[0] == "Stream start"
+    assert "Race" in titles
+    assert "Stream end" in titles
+    assert created[-1].title == "Stream end"
+    assert created[-1].offset_seconds == 80
+    assert tracker.consume_vod_flush() is True
+    assert tracker.consume_vod_flush() is False
+
+
+def test_prepare_vod_flush_while_obs_still_streaming() -> None:
+    tracker = StreamChapterTracker(_enabled())
+    tracker.update(streaming=True, duration_current_seconds=90.0, session_type="Race")
+    tracker.prepare_vod_flush()
+    assert tracker.chapters()[-1].title == "Stream end"
+    assert tracker.consume_vod_flush() is True
+
+
+def test_empty_end_title_skips_end_marker() -> None:
+    tracker = StreamChapterTracker(_enabled(end_title=""))
+    tracker.update(streaming=True, duration_current_seconds=30.0, session_type="Race")
+    tracker.prepare_vod_flush()
+    assert [c.title for c in tracker.chapters()] == ["Stream start"]
+    assert tracker.consume_vod_flush() is True
 
 
 def test_stream_flicker_keeps_chapters_no_new_start() -> None:
@@ -124,6 +152,7 @@ practice = Free Practice
     settings = load_stream_chapters_settings(parser)
     assert settings.enabled is True
     assert settings.start_title == "Live"
+    assert settings.end_title == "Stream end"
     assert settings.trigger_session_types == ("Practice", "Race")
     assert settings.session_titles["qualify"] == "Quali block"
     assert settings.session_titles["practice"] == "Free Practice"

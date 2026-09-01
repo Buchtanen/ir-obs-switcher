@@ -64,9 +64,10 @@ def test_resolve_copy_falls_back_to_english_for_unknown_language() -> None:
     assert resolve_copy("session.finish", "") == EN["session.finish"]
 
 
-def test_resolve_copy_falls_back_to_token_when_missing_everywhere() -> None:
-    assert resolve_copy("nope.not_a_token", "cs") == "nope.not_a_token"
-    assert resolve_copy("nope.not_a_token", "en") == "nope.not_a_token"
+def test_resolve_copy_unknown_token_is_empty() -> None:
+    """Missing keys must not leak dotted tokens onto the HUD."""
+    assert resolve_copy("nope.not_a_token", "cs") == ""
+    assert resolve_copy("nope.not_a_token", "en") == ""
 
 
 def test_resolve_copy_falls_back_to_english_for_partial_locale(

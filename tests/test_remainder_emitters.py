@@ -13,9 +13,15 @@ from irswitch.overlay.replay import _race_from_dict
 
 def test_invalid_lap_emits_on_incident_lap() -> None:
     emitter = InvalidLapEmitter()
-    state = replace(_race_from_dict({"connected": True, "lap_completed": 3, "incidents": 1}))
+    state = replace(
+        _race_from_dict({"connected": True, "lap_completed": 3, "incidents": 1}),
+        overlay_mode="PRACTICE",
+    )
     assert emitter.tick(state, 0.0) == []
-    state = replace(_race_from_dict({"connected": True, "lap_completed": 4, "incidents": 2}))
+    state = replace(
+        _race_from_dict({"connected": True, "lap_completed": 4, "incidents": 2}),
+        overlay_mode="PRACTICE",
+    )
     events = emitter.tick(state, 1.0)
     assert len(events) == 1
     assert events[0].name == "invalid_lap"
@@ -33,6 +39,20 @@ def test_rival_threat_emits_when_closing_fast() -> None:
     events = emitter.tick(state, 0.0)
     assert len(events) == 1
     assert events[0].name == "rival_threat"
+    assert events[0].data["rivalPosition"] == 8
+
+
+def test_rival_threat_prefers_class_position() -> None:
+    emitter = RivalThreatEmitter()
+    state = replace(
+        _race_from_dict({"connected": True}),
+        overlay_mode="RACE",
+        gap_behind=1.2,
+        closing_rate_behind=0.4,
+        opponent_behind=OpponentInfo(car_idx=23, position=18, class_position=6),
+    )
+    events = emitter.tick(state, 0.0)
+    assert events[0].data["rivalPosition"] == 6
 
 
 def test_target_locked_once_per_reference() -> None:

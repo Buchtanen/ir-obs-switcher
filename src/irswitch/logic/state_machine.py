@@ -338,6 +338,7 @@ class StateMachine:
             session_type=current_state.session_type,
             session_name=current_state.session_name,
             session_num=current_state.session_num,
+            total_sessions=current_state.total_sessions,
             stream_extended_info=current_state.stream_extended_info,
         )
 
@@ -370,6 +371,7 @@ class StateMachine:
             session_type=current_state.session_type,
             session_name=current_state.session_name,
             session_num=current_state.session_num,
+            total_sessions=current_state.total_sessions,
             stream_extended_info=current_state.stream_extended_info,
         )
 
@@ -397,5 +399,6 @@ class StateMachine:
             session_type=current_state.session_type,
             session_name=current_state.session_name,
             session_num=current_state.session_num,
+            total_sessions=current_state.total_sessions,
             stream_extended_info=current_state.stream_extended_info,
         )

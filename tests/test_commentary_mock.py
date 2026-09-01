@@ -113,7 +113,18 @@ def test_in_car_still_fires_when_already_on_pit_road() -> None:
     assert env.event_type == "ENTER_CAR"
 
 
-def test_bridge_maps_pit_exit_and_ignores_unknown() -> None:
+def test_in_car_skips_after_session() -> None:
+    detector = InCarDetector()
+    env = detector.tick(
+        RaceState(
+            connected=True,
+            player_car_idx=1,
+            overlay_mode="RACE",
+            session_finished=True,
+        ),
+        1.0,
+    )
+    assert env is None
     exit_event = RaceEvent(
         name="pit_exit",
         channel="session",

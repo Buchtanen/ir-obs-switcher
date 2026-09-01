@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Sequence
 from typing import Any
 
@@ -10,6 +11,9 @@ import aiohttp
 
 from irswitch.logic.stream_chapters import StreamChapter
 from irswitch.logic.youtube_chapters import (
+    YOUTUBE_MIN_CHAPTERS,
+    apply_weekend_track,
+    chapters_for_youtube,
     merge_chapter_block,
     render_chapter_block,
     token_allows_video_update,
@@ -19,6 +23,8 @@ from irswitch.oauth import OAuthError, OAuthReauthRequired
 logger = logging.getLogger(__name__)
 
 _VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
+_READONLY_LOG_EVERY_S = 300.0
+_last_readonly_log_mono = 0.0
 
 
 async def push_youtube_vod_chapters(
@@ -26,13 +32,24 @@ async def push_youtube_vod_chapters(
     oauth_manager: Any,
     video_id: str,
     chapters: Sequence[StreamChapter],
+    force: bool = False,
+    track: str | None = None,
 ) -> bool:
     """Replace the marked chapter block on the YouTube video description.
 
     Returns True when YouTube accepted the update. Never raises to callers.
     """
-    if not video_id or not chapters:
+    if not video_id:
         return False
+    ready = chapters_for_youtube(chapters)
+    if not ready:
+        return False
+    if len(ready) < YOUTUBE_MIN_CHAPTERS:
+        logger.info(
+            "youtube VOD chapters: %s stamps (YouTube needs ≥%s for bookmarks)",
+            len(ready),
+            YOUTUBE_MIN_CHAPTERS,
+        )
     try:
         async with aiohttp.ClientSession() as session:
             try:
@@ -45,18 +62,15 @@ async def push_youtube_vod_chapters(
             token = getattr(oauth_manager, "_token", None)
             scope = getattr(token, "scope", None) if token is not None else None
             if not token_allows_video_update(scope):
-                logger.info(
-                    "youtube VOD chapters skipped: token is youtube.readonly; "
-                    "re-authorize at /oauth/initiate"
-                )
+                _log_readonly_skip()
                 return False
             headers = {"Authorization": f"Bearer {access_token}"}
             snippet = await _fetch_snippet(session, headers, video_id)
             if snippet is None:
                 return False
-            description = str(snippet.get("description") or "")
-            updated = merge_chapter_block(description, render_chapter_block(chapters))
-            if _descriptions_equal(description, updated):
+            description = apply_weekend_track(str(snippet.get("description") or ""), track)
+            updated = merge_chapter_block(description, render_chapter_block(ready))
+            if not force and _descriptions_equal(description, updated):
                 return True
             snippet = dict(snippet)
             snippet["description"] = updated.rstrip("\n")
@@ -76,7 +90,7 @@ async def push_youtube_vod_chapters(
                     logger.info(
                         "youtube VOD chapters updated video_id=%s count=%s",
                         video_id,
-                        len(chapters),
+                        len(ready),
                     )
                     return True
                 body = await response.text()
@@ -89,6 +103,18 @@ async def push_youtube_vod_chapters(
     except Exception:
         logger.exception("youtube VOD chapters push failed")
         return False
+
+
+def _log_readonly_skip() -> None:
+    global _last_readonly_log_mono
+    now = time.monotonic()
+    if now - _last_readonly_log_mono < _READONLY_LOG_EVERY_S:
+        return
+    _last_readonly_log_mono = now
+    logger.warning(
+        "youtube VOD chapters skipped: token is youtube.readonly; "
+        "re-authorize at /oauth/initiate"
+    )
 
 
 def _descriptions_equal(left: str, right: str) -> bool:

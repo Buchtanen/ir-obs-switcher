@@ -24,8 +24,16 @@ def _node() -> GraphNode:
 
 
 def test_good_line_passes() -> None:
-    issues = validate_utterance("You take P{position} from {target_name}.", _node())
+    issues = validate_utterance("He takes P{position} from {target_name}.", _node())
     assert issues == []
+
+
+def test_rejects_address_to_driver() -> None:
+    node = _node()
+    assert "address_driver" in issues_as_codes(
+        validate_utterance("You take P{position} from {target_name}.", node)
+    )
+    assert "address_driver" in issues_as_codes(validate_utterance("Jsi pátý na trati.", node))
 
 
 def test_rejects_missing_terminal_punct_and_all_caps() -> None:
@@ -44,7 +52,7 @@ def test_rejects_stacked_punct_emoji_and_unknown_slot() -> None:
 def test_ssml_break_and_bad_tag() -> None:
     node = _node()
     ok = validate_utterance(
-        'Clear. <break time="200ms"/> You take P{position}.',
+        'Clear. <break time="200ms"/> He takes P{position}.',
         node,
     )
     assert ok == []

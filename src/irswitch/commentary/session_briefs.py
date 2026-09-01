@@ -72,6 +72,14 @@ class SessionBriefsDetector:
         self._sof_skipped = False
         self._cache.clear()
 
+    @property
+    def last_track(self) -> str | None:
+        ctx = self._cache.context
+        if ctx is None:
+            return None
+        track = ctx.track
+        return track if track else None
+
     def acknowledge(self, event_type: str) -> None:
         """Mark the matching brief as consumed for this session key."""
         if event_type in _INTRO_EVENTS:
@@ -119,6 +127,8 @@ class SessionBriefsDetector:
 
         kind = _session_kind(state.session_type)
         if kind is None:
+            return None
+        if state.session_finished:
             return None
 
         ctx = self._context(data)

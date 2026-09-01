@@ -1,0 +1,15 @@
+---
+description: Overlay HUD copy vs commentary; golden gallery is not live OBS
+globs: src/irswitch/overlay/**/*.py,src/irswitch/web/overlay/**/*.{js,html,css},src/irswitch/events/envelope.py,tests/test_overlay*.py,tests/test_golden_v4_fixtures.py,tests/test_overlay_i18n*.py
+alwaysApply: false
+---
+
+## Overlay HUD copy (hard)
+
+Full skill: `overlay-hud-copy`. Cache bump on restart: `restart-irswitch`.
+
+- HUD tokens live in `src/irswitch/overlay/i18n.py` (`EN` + `CS`). Not `sequence_graph.json` (speech) and not `irswitch.i18n` (dashboards).
+- New `headlineToken` / `statusToken` → same key in **both** catalogs in the same change.
+- Unknown tokens resolve to `""` (not the dotted key) so sample titles can apply.
+- `?layout=golden` / demo is not acceptance. Live OBS CEF needs `?v=` lockstep (including theme CSS) + Browser Source **Refresh cache**.
+- Do not spawn a second agent on `display-v4.js` / `overlay.js` / `i18n.py` / `index.html`.

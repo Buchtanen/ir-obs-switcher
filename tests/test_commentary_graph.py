@@ -21,12 +21,31 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.unfilled_cells() == []
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
-    # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs.
-    assert len(graph.nodes) == 32
+    # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs
+    # + session_checkered out-lap node.
+    assert len(graph.nodes) == 41
     assert "sector_split" in graph.nodes
     assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
     assert "session_intro_race" in graph.nodes
-    assert len(graph.edges) == 12
+    assert "session_checkered" in graph.nodes
+    assert len(graph.edges) == 20
+
+
+def test_finish_ambiguous_lines_include_position() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["finish"]
+    needles = (
+        "whole stint",
+        "earlier sequence",
+        "celým stintem",
+        "předchozí sekvence",
+    )
+    for locale, buckets in node.variants.items():
+        for emotion, lines in buckets.items():
+            for line in lines:
+                lowered = line.lower()
+                if any(needle in lowered for needle in needles):
+                    assert "{position}" in line, f"{locale}/{emotion}: {line}"
 
 
 def test_graph_event_types_are_in_catalog() -> None:

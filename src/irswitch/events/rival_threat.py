@@ -40,6 +40,7 @@ class RivalThreatEmitter:
             return []
         self._active = True
         self._cooldown_until = now + _COOLDOWN_S
+        rival_pos = opp.class_position if opp.class_position is not None else opp.position
         return [
             CandidateEvent(
                 name="rival_threat",
@@ -47,7 +48,7 @@ class RivalThreatEmitter:
                 priority=self.priorities.position_change,
                 phase="enter",
                 data={
-                    "rivalPosition": opp.position,
+                    "rivalPosition": rival_pos,
                     "gap": gap,
                     "closingRate": closing,
                     "targetCarIdx": opp.car_idx,

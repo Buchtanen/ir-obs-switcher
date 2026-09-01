@@ -88,7 +88,7 @@ Director speak phases: `ENTER` / `RESULT` / `EXIT` only (`_SPEAK_PHASES`). `UPDA
 ## Highest remaining P1 gaps (product)
 
 1. **`pit_outcome.old_position`**: `entryPosition` not aliased to `oldPosition`.
-2. **`OVERTAKEN` / `ATTACK_RANGE`**: `ATTACK_RANGE` is emitted by battle intensity but has **no graph node**; `OVERTAKEN` is never emitted.
+2. **`OVERTAKEN`**: never emitted. **`ATTACK_RANGE`**: graph node `attack_range` (P5). Mid-pit: `pit_stopped` for `PIT_STOPPED` ENTER; lane/released still silent. Observer fillers now authored in-graph: `incident_aftermath` / `back_under_way`, `session_wrap` / `session_preview` / `session_checkered` (gated by `session_briefs`), `field_fact` / `weather_change` (silence fill; suppressed once checkered or after_session). RaceObserver template formatter remains fallback when no node matches.
 3. Driver names: live path uses iRSDK `DriverInfo` (`UserName` last token / `AbbrevName`) on `OpponentInfo.display_name` → `targetName`. Missing DriverInfo still falls back to `P{n}` on rival_threat only.
 
 ---

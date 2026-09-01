@@ -55,6 +55,23 @@ def test_extract_player_track_surface_and_tow() -> None:
     assert state.player_track_surface == 3
     assert state.player_tow_time == 2.5
     assert state.session_finished is True
+    assert state.session_checkered is True
+
+
+def test_checkered_on_track_without_tow_is_not_after_session() -> None:
+    snap = extract_telemetry(
+        {
+            "PlayerCarIdx": 0,
+            "PlayerTrackSurface": 3,
+            "OnPitRoad": False,
+            "LapCompleted": 11,
+            "SessionState": 5,
+        },
+        1.0,
+    )
+    state = RaceContextAnalyzer().analyze(snap)
+    assert state.session_checkered is True
+    assert state.session_finished is False
 
 
 def test_gap_history_closing_rate_regression() -> None:

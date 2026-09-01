@@ -28,6 +28,40 @@ def speakable_driver_name(driver: Mapping[str, Any]) -> str | None:
     return initials or None
 
 
+def speakable_name_mix(driver: Mapping[str, Any] | None) -> tuple[str, ...]:
+    """First + last UserName tokens for hero name/nickname mix.
+
+    One token → that token. Opponents still use :func:`speakable_driver_name`
+    (last token only).
+    """
+    if not isinstance(driver, Mapping):
+        return ()
+    user = _clean(driver.get("UserName"))
+    if user:
+        parts = [p for p in user.replace(",", " ").split() if p]
+        if len(parts) >= 2:
+            first, last = parts[0], parts[-1]
+            if first.lower() != last.lower():
+                return (first, last)
+        return (user,)
+    name = speakable_driver_name(driver)
+    return (name,) if name else ()
+
+
+def speakable_name_mix_for_car(driver_info: object, car_idx: int | None) -> tuple[str, ...]:
+    """Hero name mix for ``car_idx`` from DriverInfo.Drivers[]."""
+    if car_idx is None or car_idx < 0:
+        return ()
+    for row in _drivers_list(driver_info):
+        if not isinstance(row, Mapping):
+            continue
+        idx = row.get("CarIdx")
+        if not isinstance(idx, (int, float)) or int(idx) != car_idx:
+            continue
+        return speakable_name_mix(row)
+    return ()
+
+
 def driver_names_by_car_idx(driver_info: object) -> tuple[str | None, ...]:
     """Build a CarIdx-indexed tuple of speakable names from DriverInfo."""
     drivers = _drivers_list(driver_info)

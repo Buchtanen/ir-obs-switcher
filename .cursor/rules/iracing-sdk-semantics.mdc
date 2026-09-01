@@ -22,5 +22,6 @@ Rules:
 - RACE/REPLAY switch after debounce only (no extra post-load delay).
 - Do not invent telemetry names; check official iRacing vars.
 - Scene switches go through `logic/` only. Log **why** (`decision_inputs`), not just the scene.
+- Live session type is YAML `SessionInfo.Sessions[SessionNum]`, never `WeekendInfo.EventType`. `DrivingMode.RACE` is on-track, not session type Race. Glossary: skill `iracing-session-glossary`.
 
 Symptom of a regression: first switch after load is garage scene (`Back`) then lobby (`VR`) ~3s later.
