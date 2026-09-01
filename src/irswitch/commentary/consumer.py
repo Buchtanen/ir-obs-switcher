@@ -1,11 +1,29 @@
-"""Commentary as an EventFanout peer consumer."""
+"""Commentary peer consumer for legacy and immutable N12 event streams."""
 
 from __future__ import annotations
 
+import asyncio
+import time
+import uuid
 from collections.abc import Callable
 from typing import Any
 
+from irswitch.commentary.director import CommentaryDirector
+from irswitch.commentary.tts import ProcessTtsSink
+from irswitch.events.async_fanout import EventSubscription
 from irswitch.events.envelope import EventEnvelope
+from irswitch.events.stream import (
+    ConfigUpdate,
+    FillerRequest,
+    FillerResult,
+    FrozenAcceptedEventBatch,
+    SessionReset,
+    StreamItem,
+    thaw_context,
+    thaw_envelope,
+)
+from irswitch.overlay.models import BioState
+from irswitch.overlay.settings import CommentarySettings
 
 ObserveFn = Callable[[list[EventEnvelope], float], Any]
 
@@ -18,3 +36,280 @@ class CommentaryEventConsumer:
 
     def on_envelopes(self, envelopes: list[EventEnvelope], *, now: float) -> None:
         self._observe(envelopes, now)
+
+
+class CommentaryConsumer:
+    """Own director/scheduler/TTS in an independently scheduled execution lane."""
+
+    def __init__(
+        self,
+        subscription: EventSubscription,
+        director: CommentaryDirector,
+        get_settings: Callable[[], tuple[CommentarySettings, str]],
+        *,
+        decision_hook: Callable[[dict[str, Any], float], None] | None = None,
+    ) -> None:
+        self.subscription = subscription
+        self.director = director
+        self._get_settings = get_settings
+        self._decision_hook = decision_hook
+        self._filler_requests: asyncio.Queue[FillerRequest] = asyncio.Queue(maxsize=1)
+        self._filler_results: asyncio.Queue[FillerResult] = asyncio.Queue(maxsize=1)
+        self._outstanding_filler: FillerRequest | None = None
+        self.running = False
+        self.processed = 0
+        self.failures = 0
+        self.duplicates = 0
+        self.expired = 0
+        self.last_error: str | None = None
+        self.last_stream_sequence = 0
+        self._processed_ids: set[str] = set()
+        self._processed_order: list[str] = []
+        self.director.filler_provider = self._request_filler
+        self.director.filler_formatter = None
+
+    async def run(self) -> None:
+        self.running = True
+        try:
+            while True:
+                try:
+                    item = await asyncio.wait_for(self.subscription.get(), timeout=0.2)
+                except TimeoutError:
+                    self._idle_tick()
+                    continue
+                try:
+                    await self.handle(item)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    self.failures += 1
+                    self.last_error = f"{type(exc).__name__}: {exc}"
+                    __import__("logging").getLogger(__name__).warning(
+                        "commentary consumer failed for one item", exc_info=True
+                    )
+        finally:
+            self.running = False
+            self.director.sink.interrupt()
+
+    async def handle(self, item: StreamItem) -> None:
+        self.last_stream_sequence = item.stream_sequence
+        if isinstance(item, SessionReset):
+            self.director.reset()
+            self._processed_ids.clear()
+            self._processed_order.clear()
+            self._outstanding_filler = None
+            self._drain_queue(self._filler_requests)
+            self._drain_queue(self._filler_results)
+            self.processed += 1
+            return
+        if isinstance(item, ConfigUpdate):
+            self._apply_settings()
+            self.processed += 1
+            return
+        self._observe_batch(item)
+        self.processed += 1
+
+    def take_filler_request(self) -> FillerRequest | None:
+        try:
+            return self._filler_requests.get_nowait()
+        except asyncio.QueueEmpty:
+            return None
+
+    def complete_filler(self, result: FillerResult) -> None:
+        outstanding = self._outstanding_filler
+        if outstanding is None or outstanding.request_id != result.request_id:
+            return
+        self._outstanding_filler = None
+        try:
+            self._filler_results.put_nowait(result)
+        except asyncio.QueueFull:
+            self._drain_queue(self._filler_results)
+            self._filler_results.put_nowait(result)
+
+    def note_stream_start_accepted(self, now: float) -> None:
+        """Preserve opener mutex at producer acceptance before async dequeue."""
+        self.director.opener.note("STREAM_START", now)
+
+    def status_snapshot(self, now: float | None = None) -> dict[str, Any]:
+        settings, _ = self._get_settings()
+        return {
+            **self.director.status_snapshot(
+                time.monotonic() if now is None else now,
+                enabled=bool(settings.enabled),
+            ),
+            "running": self.running,
+            "processed": self.processed,
+            "duplicates": self.duplicates,
+            "expired": self.expired,
+            "failures": self.failures,
+            "lastError": self.last_error,
+            "lastStreamSequence": self.last_stream_sequence,
+            "fillerOutstanding": self._outstanding_filler is not None,
+        }
+
+    def _observe_batch(self, batch: FrozenAcceptedEventBatch) -> None:
+        now = time.monotonic()
+        context = thaw_context(batch.context_payload)
+        latest_payload = self.subscription.latest_context
+        latest = thaw_context(latest_payload) if latest_payload is not None else context
+        if latest.get("session_id") != batch.session_id:
+            self._record_skip("session_context_stale", now)
+            return
+        self._apply_settings()
+        self._apply_story_context(context)
+        bio = self._bio_from_context(context)
+        envelopes: list[EventEnvelope] = []
+        for accepted in batch.events:
+            if "commentary" not in accepted.audiences:
+                continue
+            if accepted.source == "filler":
+                self._outstanding_filler = None
+            if accepted.event_id in self._processed_ids:
+                self.duplicates += 1
+                continue
+            envelope = thaw_envelope(accepted.envelope)
+            age_s = max(0.0, now - (batch.accepted_monotonic_ms / 1000.0))
+            ttl_s = self.director.event_ttl_s(envelope.event_type)
+            if age_s > ttl_s:
+                self.expired += 1
+                self._record_skip("event_expired", now, envelope.event_type)
+                self._remember(accepted.event_id)
+                continue
+            if age_s > 3.0:
+                self._remove_stale_dynamic_bindings(envelope)
+            envelopes.append(envelope)
+            self._remember(accepted.event_id)
+        if not envelopes:
+            return
+        before = len(self.director.decisions(10_000))
+        settings, language = self._get_settings()
+        self.director.observe(
+            envelopes,
+            bio,
+            now,
+            enabled=settings.enabled,
+            language=language,
+        )
+        self._emit_new_decisions(before, now)
+
+    def _idle_tick(self) -> None:
+        latest_payload = self.subscription.latest_context
+        if latest_payload is None:
+            return
+        try:
+            context = thaw_context(latest_payload)
+            self._apply_settings()
+            before = len(self.director.decisions(10_000))
+            self.director.tick(time.monotonic(), self._bio_from_context(context))
+            self._emit_new_decisions(before, time.monotonic())
+        except Exception as exc:
+            self.failures += 1
+            self.last_error = f"{type(exc).__name__}: {exc}"
+
+    def _request_filler(self, now: float) -> EventEnvelope | None:
+        context_payload = self.subscription.latest_context
+        if context_payload is None:
+            return None
+        context = thaw_context(context_payload)
+        session_id = str(context.get("session_id") or "")
+        settings, language = self._get_settings()
+        if not settings.enabled or not session_id:
+            return None
+        if self._outstanding_filler is not None:
+            return None
+        request = FillerRequest(
+            request_id=uuid.uuid4().hex,
+            session_id=session_id,
+            requested_monotonic_ms=int(now * 1000),
+            locale=language,
+            last_spoken_event_id=(self._processed_order[-1] if self._processed_order else None),
+        )
+        try:
+            self._filler_requests.put_nowait(request)
+        except asyncio.QueueFull:
+            return None
+        self._outstanding_filler = request
+        return None
+
+    def _apply_settings(self) -> None:
+        settings, language = self._get_settings()
+        self.director.settings = settings
+        self.director.language = language
+        sink = self.director.sink
+        if isinstance(sink, ProcessTtsSink):
+            sink.settings = settings
+
+    def _apply_story_context(self, context: dict[str, Any]) -> None:
+        story = context.get("story")
+        story = story if isinstance(story, dict) else {}
+        hero = story.get("hero")
+        hero = hero if isinstance(hero, dict) else {}
+        names = hero.get("speakable_names")
+        self.director.note_hero_names(names if isinstance(names, list) else ())
+        self.director.quali_bag_ready = bool(story.get("quali_bag"))
+
+    @staticmethod
+    def _bio_from_context(context: dict[str, Any]) -> BioState:
+        bio = context.get("bio")
+        data = bio if isinstance(bio, dict) else {}
+        return BioState(
+            connected=bool(data.get("connected")),
+            status=str(data.get("status") or "disconnected"),
+            device_name=(str(data["device_name"]) if data.get("device_name") else None),
+            bpm=(int(data["bpm"]) if isinstance(data.get("bpm"), int) else None),
+            baseline_bpm=(
+                float(data["baseline_bpm"])
+                if isinstance(data.get("baseline_bpm"), (int, float))
+                else None
+            ),
+            delta_bpm=(
+                float(data["delta_bpm"])
+                if isinstance(data.get("delta_bpm"), (int, float))
+                else None
+            ),
+            state=str(data.get("hr_state") or "unknown"),
+        )
+
+    @staticmethod
+    def _remove_stale_dynamic_bindings(envelope: EventEnvelope) -> None:
+        for key in (
+            "gap",
+            "gapBehind",
+            "target_name",
+            "targetName",
+            "position",
+            "classPosition",
+            "current_lap",
+            "lap_context",
+            "race_phase",
+            "remaining_context",
+        ):
+            envelope.metrics.pop(key, None)
+        envelope.target = None
+
+    def _remember(self, event_id: str) -> None:
+        if event_id in self._processed_ids:
+            return
+        self._processed_ids.add(event_id)
+        self._processed_order.append(event_id)
+        if len(self._processed_order) > 2_048:
+            expired = self._processed_order.pop(0)
+            self._processed_ids.discard(expired)
+
+    def _record_skip(self, reason: str, now: float, event_type: str = "") -> None:
+        self.director.record_external_skip(reason=reason, now=now, event_type=event_type)
+
+    def _emit_new_decisions(self, before: int, now: float) -> None:
+        if self._decision_hook is None:
+            return
+        decisions = self.director.decisions(10_000)
+        for entry in decisions[before:]:
+            self._decision_hook(entry, now)
+
+    @staticmethod
+    def _drain_queue(queue: asyncio.Queue[Any]) -> None:
+        while True:
+            try:
+                queue.get_nowait()
+            except asyncio.QueueEmpty:
+                return

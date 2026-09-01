@@ -13,6 +13,7 @@ from irswitch.events.arbitration import (
 from irswitch.events.decision_log import DecisionLog
 from irswitch.events.envelope import EventEnvelope
 from irswitch.events.manager import EventManager
+from irswitch.events.stream import SessionSequenceAllocator
 from irswitch.overlay.protocol import CandidateEvent, RaceEvent
 from irswitch.overlay.settings import EventSettings
 
@@ -27,11 +28,14 @@ class EventManagerV2:
         *,
         decision_log: DecisionLog | None = None,
         pit_guard: PitCycleGuard | None = None,
+        sequence_allocator: SessionSequenceAllocator | None = None,
     ) -> None:
         self._settings = settings or EventSettings()
         self._inner = EventManager(self._settings)
         self._session_id = session_id
-        self._sequence = 0
+        self._sequence_allocator = sequence_allocator or SessionSequenceAllocator(
+            session_id or "session:unknown"
+        )
         self._active_v4: list[EventEnvelope] = []
         self.decisions = decision_log or DecisionLog()
         self._pit_guard = pit_guard or PitCycleGuard()
@@ -42,10 +46,12 @@ class EventManagerV2:
 
     def set_session_id(self, session_id: str) -> None:
         self._session_id = session_id
+        if self._sequence_allocator.session_id != session_id:
+            self._sequence_allocator.reset(session_id)
 
     def reset(self) -> None:
         self._inner = EventManager(self._settings)
-        self._sequence = 0
+        self._sequence_allocator.reset(self._session_id or "session:unknown")
         self._active_v4.clear()
         self.decisions.clear()
         self._pit_guard = PitCycleGuard()
@@ -178,12 +184,7 @@ class EventManagerV2:
         self.decisions.record(event_type, action, reason, now=now)
 
     def _stamp(self, envelope: EventEnvelope) -> EventEnvelope:
-        self._sequence += 1
-        envelope.stamp(
-            f"{self._session_id}:{envelope.event_type}:{self._sequence}",
-            self._sequence,
-        )
-        return envelope
+        return self._sequence_allocator.stamp(envelope)
 
     def _sync_active_v4(self, envelope: EventEnvelope) -> None:
         if envelope.phase in {"RESULT", "EXIT"}:

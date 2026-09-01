@@ -230,6 +230,14 @@ class CommentaryDirector:
         items = list(self._decisions)[-n:]
         return [item.to_dict() for item in items]
 
+    def record_external_skip(self, *, reason: str, now: float, event_type: str = "") -> None:
+        """Record a transport/freshness veto without exposing private state."""
+        self._record(action="skipped", reason=reason, now=now, event_type=event_type)
+
+    def event_ttl_s(self, event_type: str) -> float:
+        """Public event-time TTL used by the async transport freshness gate."""
+        return self._scheduler.ttl_for(event_type)
+
     def _record(
         self,
         *,

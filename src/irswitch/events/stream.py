@@ -26,6 +26,26 @@ class StreamContractError(ValueError):
     """A producer tried to publish data outside the frozen stream contract."""
 
 
+@dataclass
+class SessionSequenceAllocator:
+    """The sole event-id/sequence allocator for one producer session."""
+
+    session_id: str = "session:unknown"
+    sequence: int = 0
+
+    def reset(self, session_id: str) -> None:
+        self.session_id = session_id or "session:unknown"
+        self.sequence = 0
+
+    def stamp(self, envelope: EventEnvelope) -> EventEnvelope:
+        self.sequence += 1
+        envelope.session_id = self.session_id
+        return envelope.stamp(
+            f"{self.session_id}:{envelope.event_type}:{self.sequence}",
+            self.sequence,
+        )
+
+
 def canonical_json_bytes(value: object) -> bytes:
     """Encode JSON deterministically and reject NaN/non-JSON values."""
     try:
@@ -112,6 +132,7 @@ class FrozenAcceptedEvent:
     sequence: int
     phase: str
     priority: int
+    overlay_payload: bytes | None = None
 
     def __post_init__(self) -> None:
         if not self.audiences:
@@ -137,6 +158,7 @@ def freeze_accepted_event(
     source: str,
     source_ordinal: int,
     coalesce_key: tuple[str, ...] | None = None,
+    overlay_payload: dict[str, Any] | None = None,
 ) -> FrozenAcceptedEvent:
     return FrozenAcceptedEvent(
         envelope=freeze_envelope(envelope),
@@ -148,6 +170,9 @@ def freeze_accepted_event(
         sequence=envelope.sequence,
         phase=envelope.phase,
         priority=int(envelope.priority),
+        overlay_payload=(
+            canonical_json_bytes(overlay_payload) if overlay_payload is not None else None
+        ),
     )
 
 
