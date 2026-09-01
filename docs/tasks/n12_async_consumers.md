@@ -8,6 +8,8 @@
 
 **Behavior default:** unchanged until the V2 composition root replaces the current path
 
+**Critical review:** [n12_async_consumers_spec_review.md](n12_async_consumers_spec_review.md)
+
 ## Goal
 
 Replace the logical `overlay -> commentary` chain inside `OverlayRuntime` with
