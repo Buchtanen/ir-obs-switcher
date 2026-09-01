@@ -9,7 +9,12 @@ from unittest.mock import patch
 
 import pytest
 
-from irswitch.util.loading_tracker import LoadingTimeTracker
+from irswitch.models import DrivingMode
+from irswitch.util.loading_tracker import (
+    LoadingTimeTracker,
+    decide_process_loading_clock,
+    should_start_process_loading_clock,
+)
 
 
 @pytest.fixture
@@ -143,3 +148,116 @@ def test_duplicate_start_loading(temp_history_file: Path) -> None:
         duration = tracker.end_loading()
         assert duration == 1.0
         assert not tracker.is_loading()
+
+
+def test_cancel_loading_does_not_record(temp_history_file: Path) -> None:
+    tracker = LoadingTimeTracker(history_file=temp_history_file, default_loading_time_seconds=12.0)
+    tracker.start_loading()
+    tracker.cancel_loading()
+    assert not tracker.is_loading()
+    assert tracker.history == []
+    assert tracker.get_average_loading_time() == 12.0
+
+
+def test_start_clock_on_process_not_on_quit() -> None:
+    assert should_start_process_loading_clock(
+        process_running=True,
+        sdk_connected=False,
+        already_tracking=False,
+        quitting=False,
+    )
+    assert not should_start_process_loading_clock(
+        process_running=True,
+        sdk_connected=False,
+        already_tracking=False,
+        quitting=True,
+    )
+    assert not should_start_process_loading_clock(
+        process_running=True,
+        sdk_connected=True,
+        already_tracking=False,
+        quitting=False,
+    )
+
+
+def test_keep_clock_during_connecting_after_auto_start() -> None:
+    # Auto-start fires while SM is still CONNECTING; must not record ~7s.
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=True,
+            mode=DrivingMode.CONNECTING,
+            current_scene="Practice",
+            target_scene="Practice",
+        )
+        == "keep"
+    )
+
+
+def test_record_when_obs_is_on_in_sim_scene() -> None:
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=True,
+            mode=DrivingMode.LOBBY,
+            current_scene="VR",
+            target_scene="VR",
+        )
+        == "record"
+    )
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=True,
+            mode=DrivingMode.RACE,
+            current_scene="VR",
+            target_scene="VR",
+        )
+        == "record"
+    )
+
+
+def test_keep_until_scene_matches_in_sim_target() -> None:
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=True,
+            mode=DrivingMode.LOBBY,
+            current_scene="Practice",
+            target_scene="VR",
+        )
+        == "keep"
+    )
+
+
+def test_cancel_on_quit_or_process_gone() -> None:
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=True,
+            mode=DrivingMode.QUIT,
+            current_scene="End",
+            target_scene="End",
+        )
+        == "cancel"
+    )
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=False,
+            mode=DrivingMode.CONNECTING,
+            current_scene="Practice",
+            target_scene="Practice",
+        )
+        == "cancel"
+    )
+    assert (
+        decide_process_loading_clock(
+            tracking=True,
+            process_running=True,
+            mode=DrivingMode.GARAGE,
+            current_scene="Back",
+            target_scene="Back",
+        )
+        == "keep"
+    )

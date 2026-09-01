@@ -59,7 +59,11 @@ from irswitch.util.hotkeys import (
     stop_listener,
     was_hotkey_pressed_recently,
 )
-from irswitch.util.loading_tracker import LoadingTimeTracker
+from irswitch.util.loading_tracker import (
+    LoadingTimeTracker,
+    decide_process_loading_clock,
+    should_start_process_loading_clock,
+)
 from irswitch.util.logging import (
     log_connection_lost,
     log_connection_restored,
@@ -304,9 +308,14 @@ async def main_loop(
             # Update tracking
             prev_was_loading_process = is_loading
 
-            # Start loading tracking when we detect loading screen (process running, SDK not connected)
-            if is_loading and not prev_loading_process and loading_start_ts is None:
-                # Loading screen started - start tracking
+            # Start loading clock when the sim process appears (SDK not connected yet).
+            # Duration is recorded later on the first in-sim OBS scene, not at auto-start.
+            if should_start_process_loading_clock(
+                process_running=iracing_process_running,
+                sdk_connected=sdk_connected,
+                already_tracking=loading_tracker.is_loading() or loading_start_ts is not None,
+                quitting=False,
+            ):
                 loading_start_ts = now_ms()
                 auto_start_scheduled_ts = None
                 auto_start_triggered = False
@@ -353,20 +362,20 @@ async def main_loop(
                 )
                 # DON'T clear last_valid_mode here - it will be cleared after QUIT reset
                 # This allows QUIT mode to persist until the 15-second reset
+                if loading_tracker.is_loading():
+                    loading_tracker.cancel_loading()
+                    loading_start_ts = None
+                    auto_start_scheduled_ts = None
+                    auto_start_triggered = False
 
             # Only track loading if we're transitioning from a known mode (not None) to None
             # This prevents tracking loading on first iteration when prev_iracing_mode is None
             # IMPORTANT: Don't reset loading_start_ts if it's already set and auto_start hasn't triggered yet
             # This preserves the first_connection loading_start_ts for auto-start
             if is_loading and not was_loading and prev_iracing_mode is not None:
-                # Loading started (transition from mode to None)
-                # Only set loading_start_ts if it's not already set or auto_start has already triggered
-                if loading_start_ts is None or auto_start_triggered:
-                    loading_tracker.start_loading()
-                    loading_start_ts = now_ms()
-                    auto_start_scheduled_ts = None
-                    auto_start_triggered = False
-                logger.debug("Loading screen detected, starting tracker")
+                # In-session loading UI (SDK drop while process stays up). Do not
+                # restart the process→in-sim clock used for auto-start average.
+                logger.debug("In-session loading UI; process→in-sim clock not restarted")
 
                 # Try to read session info during loading
                 session_info = await reader.read_session_info()
@@ -394,28 +403,9 @@ async def main_loop(
                 )
 
             elif not is_loading and was_loading and not is_first_connection:
-                # Loading ended (transition from None to mode)
-                # Skip this block on first connection - we want to keep loading_start_ts for auto-start
-                # Only end loading if tracker is actually tracking a loading
-                if loading_tracker.is_loading():
-                    duration = loading_tracker.end_loading()
-                else:
-                    # Loading tracker is not tracking, but we detected a transition from None to mode
-                    # This can happen if loading was never started (e.g., QUIT mode)
-                    duration = None
-                loading_start_ts = None
-                auto_start_scheduled_ts = None
-                auto_start_triggered = False
-                if duration is not None:
-                    logger.info(f"Loading screen ended, duration: {duration:.2f}s")
-                    await event_log.add_event(
-                        "loading_ended",
-                        f"iRacing loading screen ended, duration: {duration:.2f}s",
-                        {
-                            "duration_seconds": duration,
-                            "new_mode": iracing_mode.value if iracing_mode else None,
-                        },
-                    )
+                # SDK/mode flicker is not the end of a cold-start load. Record
+                # only when OBS is on an in-sim scene (see process loading clock).
+                logger.debug("Loading flag cleared; process→in-sim clock kept if still tracking")
 
             # QUIT mode handling: reset to CONNECTING after 15 seconds
             # If quit_reset_active is True, ignore QUIT mode and treat as disconnected
@@ -581,25 +571,9 @@ async def main_loop(
             )
 
             # Auto-start broadcast logic (during loading)
-            # Use state machine's LOADING mode instead of is_loading flag
             is_loading_state = new_state.mode == DrivingMode.LOADING
-            # Initialize loading_start_ts if we're in LOADING state and it's not set
-            if is_loading_state and loading_start_ts is None:
-                loading_start_ts = now_ms()
-                loading_tracker.start_loading()
-                auto_start_scheduled_ts = None
-                auto_start_triggered = False
-            elif (
-                not is_loading_state
-                and loading_start_ts is not None
-                and not is_first_connection
-                and auto_start_triggered
-            ):
-                # Loading ended, reset tracking (but not on first connection or while waiting for auto-start)
-                duration = loading_tracker.end_loading()
-                loading_start_ts = None
-                auto_start_scheduled_ts = None
-                auto_start_triggered = False
+            # Do not start/end the process→in-sim clock from SM LOADING or
+            # auto-start. Clock starts on process detect and records on in-sim scene.
 
             # Reset auto-start tracking when iRacing truly disconnects (CONNECTING state AND process not running)
             # This prevents auto-start from triggering after iRacing quits
@@ -609,6 +583,8 @@ async def main_loop(
             )
             if is_truly_disconnected and loading_start_ts is not None and not is_first_connection:
                 # iRacing truly disconnected (process not running) - cancel any pending auto-start
+                if loading_tracker.is_loading():
+                    loading_tracker.cancel_loading()
                 loading_start_ts = None
                 auto_start_scheduled_ts = None
                 auto_start_triggered = False
@@ -1011,10 +987,11 @@ async def main_loop(
                                 try:
                                     # Force refresh so we get fresh data from YouTube API
                                     # (important if OAuth was already authenticated at startup)
-                                    stream_title, stream_description = (
-                                        await obs_client.refresh_stream_info(
-                                            "stream_selected", force=True
-                                        )
+                                    (
+                                        stream_title,
+                                        stream_description,
+                                    ) = await obs_client.refresh_stream_info(
+                                        "stream_selected", force=True
                                     )
                                     last_broadcast_id = obs_client.get_cached_broadcast_id()
                                     await event_log.add_event(
@@ -1075,10 +1052,11 @@ async def main_loop(
                                     logger.info(
                                         f"OBS broadcast_id changed: {previous_broadcast_id} → {current_broadcast_id}"
                                     )
-                                    stream_title, stream_description = (
-                                        await obs_client.refresh_stream_info(
-                                            "broadcast_id_changed", force=True
-                                        )
+                                    (
+                                        stream_title,
+                                        stream_description,
+                                    ) = await obs_client.refresh_stream_info(
+                                        "broadcast_id_changed", force=True
                                     )
                                     last_broadcast_id = (
                                         obs_client.get_cached_broadcast_id() or current_broadcast_id
@@ -1121,10 +1099,11 @@ async def main_loop(
                                         "Stream selected and OAuth ready - fetching stream info from YouTube API"
                                     )
                                     try:
-                                        stream_title, stream_description = (
-                                            await obs_client.refresh_stream_info(
-                                                "oauth_ready", force=True
-                                            )
+                                        (
+                                            stream_title,
+                                            stream_description,
+                                        ) = await obs_client.refresh_stream_info(
+                                            "oauth_ready", force=True
                                         )
                                         last_broadcast_id = obs_client.get_cached_broadcast_id()
                                         if stream_title:
@@ -1214,6 +1193,35 @@ async def main_loop(
                         # Track failed scene switch
                         metrics = get_metrics()
                         metrics.record_error("scene_switch_failed")
+
+            loading_clock_action = decide_process_loading_clock(
+                tracking=loading_tracker.is_loading(),
+                process_running=iracing_process_running,
+                mode=new_state.mode,
+                current_scene=new_state.current_scene,
+                target_scene=new_state.target_scene,
+            )
+            if loading_clock_action == "record":
+                duration = loading_tracker.end_loading()
+                loading_start_ts = None
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
+                if duration is not None:
+                    logger.info(f"Loading screen ended (in-sim scene), duration: {duration:.2f}s")
+                    await event_log.add_event(
+                        "loading_ended",
+                        f"iRacing loading screen ended, duration: {duration:.2f}s",
+                        {
+                            "duration_seconds": duration,
+                            "new_mode": new_state.mode.value,
+                            "scene": new_state.current_scene,
+                        },
+                    )
+            elif loading_clock_action == "cancel":
+                loading_tracker.cancel_loading()
+                loading_start_ts = None
+                auto_start_scheduled_ts = None
+                auto_start_triggered = False
 
             current_state = new_state
 

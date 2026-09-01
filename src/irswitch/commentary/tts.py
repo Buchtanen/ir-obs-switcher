@@ -33,9 +33,8 @@ SpokenTextHook = Callable[[str], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
 
 _SAPI_VOICES_SCRIPT = """\
-Add-Type -AssemblyName System.Speech
-$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$synth.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name }
+$voice = New-Object -ComObject SAPI.SpVoice
+$voice.GetVoices() | ForEach-Object { $_.GetDescription() }
 """
 
 

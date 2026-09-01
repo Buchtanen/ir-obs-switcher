@@ -118,6 +118,8 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 3. Click **Mluvit na serveru** — Windows SAPI (or espeak). If backend is `null`, the page says so
 4. **Uložit nastavení** writes `commentary.*` via `PUT /api/config`
 
+Server voice dropdown lists the same SAPI voices as PowerShell `SAPI.SpVoice` (`GetDescription()`), matching `commentary.tts_voice` and `sapi_speak.ps1`.
+
 ## Config
 
 ```ini

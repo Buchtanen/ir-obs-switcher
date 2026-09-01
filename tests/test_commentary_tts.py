@@ -128,6 +128,14 @@ def test_sapi_script_plays_via_waveout_not_default_device() -> None:
     assert "waveOutOpen" in text
 
 
+def test_sapi_voice_list_uses_com_descriptions() -> None:
+    from irswitch.commentary.tts import _SAPI_VOICES_SCRIPT
+
+    assert "SAPI.SpVoice" in _SAPI_VOICES_SCRIPT
+    assert "GetDescription()" in _SAPI_VOICES_SCRIPT
+    assert "System.Speech" not in _SAPI_VOICES_SCRIPT
+
+
 def test_select_sapi_output_skips_16ch_when_stereo_exists() -> None:
     picked = select_sapi_output_name(
         [

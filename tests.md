@@ -448,6 +448,26 @@ Viz také [README.md](README.md#testy) pro základní instrukce.
 - **Proč**: Robustnost - tracker nesmí resetovat čas při duplicitním volání
 - **Očekávaný výsledek**: Druhé `start_loading()` se ignoruje, čas se počítá od prvního
 
+#### `test_cancel_loading_does_not_record`
+- **Co testuje**: `cancel_loading()` zahodí clock bez zápisu do historie
+- **Proč**: QUIT / zmizení procesu nesmí kazit průměr
+- **Očekávaný výsledek**: historie prázdná, průměr = default
+
+#### `test_keep_clock_during_connecting_after_auto_start`
+- **Co testuje**: CONNECTING po auto-startu se nezapisuje
+- **Proč**: dřív se ukládalo ~7 s (delay auto-startu) místo ~55 s do hry
+- **Očekávaný výsledek**: `decide_process_loading_clock` → `keep`
+
+#### `test_record_when_obs_is_on_in_sim_scene`
+- **Co testuje**: zápis až když OBS je na LOBBY/RACE scéně
+- **Proč**: to je přepnutí do hry
+- **Očekávaný výsledek**: `record`
+
+#### `test_cancel_on_quit_or_process_gone`
+- **Co testuje**: QUIT a zmizení procesu → cancel; GARAGE neuzavírá clock
+- **Proč**: stall flicker / End scéna nesmí jít do průměru
+- **Očekávaný výsledek**: `cancel` / `keep` podle módu
+
 ---
 
 ## 10. Event Log (`tests/test_event_log.py`)
