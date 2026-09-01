@@ -6426,6 +6426,242 @@
         ],
         "require_terminal_punct": true
       }
+    },
+    "incident_off_track": {
+      "family": "exception",
+      "event_types": [
+        "INCIDENT"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 88,
+      "cooldown_s": 10,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "branch": "off_track",
+      "notes": "N11 B. Spoken off-track; never names wall vs car. Generic incident stays for unclassified.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He ran off the track.",
+            "The car left the racing surface.",
+            "He is in the runoff, not on the line.",
+            "That moment put him off the road."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Sjel z trati.",
+            "Auto opustilo závodní stopu.",
+            "Je v únikové zóně, ne na čáře.",
+            "Ten moment ho sundal z asfaltu."
+          ]
+        }
+      }
+    },
+    "incident_unknown": {
+      "family": "exception",
+      "event_types": [
+        "INCIDENT"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 88,
+      "cooldown_s": 10,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "branch": "unknown",
+      "notes": "N11 B. Classified unknown; still no contact_car/object. Nearby cars stay metrics.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "An incident is on the sheet.",
+            "The count moved after that moment.",
+            "A beat is logged against him.",
+            "The tally ticks without a named cause."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Incident je na listině.",
+            "Po tomhle momentu se posunulo skóre.",
+            "Je mu zapsaný zásah.",
+            "Počítadlo se hýbe, příčina zůstává bez jména."
+          ]
+        }
+      }
+    },
+    "session_flag_yellow": {
+      "family": "session",
+      "event_types": [
+        "SESSION_FLAG"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 78,
+      "cooldown_s": 12,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "branch": "yellow",
+      "notes": "N11 C. One line per locale. Caution family coalesced upstream.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Caution is out."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Je žlutá."
+          ]
+        }
+      }
+    },
+    "session_flag_green": {
+      "family": "session",
+      "event_types": [
+        "SESSION_FLAG"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 78,
+      "cooldown_s": 12,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "branch": "green",
+      "notes": "N11 C. One line per locale. N5 owns green speak.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Green flag."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Zelená vlajka."
+          ]
+        }
+      }
+    },
+    "session_flag_checkered": {
+      "family": "session",
+      "event_types": [
+        "SESSION_FLAG"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 78,
+      "cooldown_s": 12,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "branch": "checkered",
+      "notes": "N11 C. Flag bit, not FINISH / SESSION_WRAP.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "That's the checkered flag."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Šachovnice."
+          ]
+        }
+      }
+    },
+    "quali_recap": {
+      "family": "session",
+      "event_types": [
+        "QUALI_RECAP"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 66,
+      "cooldown_s": 600,
+      "slots": [
+        {
+          "name": "position",
+          "type": "int",
+          "example": 4
+        },
+        {
+          "name": "lap_time",
+          "type": "time",
+          "example": "1:28.441"
+        }
+      ],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "N11 D. One recap; slot-light lines speak without a time. Opener vs SESSION_INTRO_RACE.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He qualified P{position}.",
+            "Qualifying put him on P{position}.",
+            "He starts the race from P{position}.",
+            "He takes P{position} with a {lap_time} qualifying lap."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Kvalifikoval se na {position}. místo.",
+            "Po kvalifikaci startuje z {position}. místa.",
+            "Do závodu jde z {position}. místa.",
+            "Bere {position}. místo časem {lap_time}."
+          ]
+        }
+      }
+    },
+    "parade_pad": {
+      "family": "session",
+      "event_types": [
+        "PARADE_PAD"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 30,
+      "cooldown_s": 25,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "N11 D. Bounded formation fill. Stop on Racing or green.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Still on the formation lap.",
+            "The field keeps rolling before green.",
+            "They remain in parade order.",
+            "The start wait continues on track."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Pořád na formovačce.",
+            "Pole se ještě točí před zelenou.",
+            "Pole zůstává v zahřívacím pořadí.",
+            "Čekání na start na trati pokračuje."
+          ]
+        }
+      }
     }
   },
   "edges": [

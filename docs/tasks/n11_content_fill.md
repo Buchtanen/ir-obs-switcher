@@ -2,7 +2,7 @@
 
 **Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md) §4  
 **Depends on:** N2 schema + N8 event type  
-**v1:** wave A only. P5 `attack_range` / `pit_stopped` already filled — do not redo.
+**v1:** wave A + sparse B/C/D. P5 `attack_range` / `pit_stopped` already filled — do not redo.
 
 ## Context
 
@@ -25,12 +25,16 @@ Stream start needs a **long** cap. Flags/incidents in v1 use `hr_states: ["unkno
 - [x] `validate_utterance` passes
 - [x] viewer-facing third person
 
-## Later (not this landing)
+## Wave B / C / D (shipped after N3/N5/N7)
 
-- B: off_track vs unknown incident copy (after N3)
-- C: flag yellow/green/checkered (after N5) — 1 line × 2 locales, not 5 emotions
-- D: grid/pace graph copy — N7 ships formatter-only `QUALI_RECAP` / `PARADE_PAD`
-- Optional: graph nodes replacing P2–P4 templates
+- [x] B: `incident_off_track` / `incident_unknown` (`hr_states: unknown` only). Generic `incident` stays when classify is off
+- [x] C: `session_flag_yellow` / `_green` / `_checkered` — **1 line × 2 locales**, not 5 emotions
+- [x] D: `quali_recap` + `parade_pad` graph copy (formatter remains fallback)
+
+## Later (not this epic)
+
+- Optional: graph nodes replacing remaining P2–P4 templates
+- Spoken `contact_car` / `contact_object` / `lost_control` — still refused
 
 ## Docs impact
 

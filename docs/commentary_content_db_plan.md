@@ -268,6 +268,7 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 - [x] W6 — CS parity all-at-once (claude-opus parallel W6a/b/c; unfilled 94 → **0**)
 - [x] VOICE — stream-viewer broadcast + denser matrix (~4 lines/cell; **426 → 752** lines)
 - [x] N11 A — `stream_start` (long node TTS cap, slot-free EN+CS) + mode `in_car_*` (generic `in_car` kept)
+- [x] N11 B/C/D — sparse `incident_*` branches, flag one-liners, `quali_recap` / `parade_pad`
 - [ ] W7 — sequence polish (optional)
 - [ ] (optional) Phase D store split / export — only if approved
 

@@ -22,8 +22,8 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
     # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs
-    # + observer fillers + session_checkered + N11 wave A (stream_start + mode in_car).
-    assert len(graph.nodes) == 45
+    # + observer fillers + session_checkered + N11 A + sparse B/C/D.
+    assert len(graph.nodes) == 52
     assert "sector_split" in graph.nodes
     assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
     assert "session_intro_race" in graph.nodes
@@ -148,6 +148,18 @@ def test_live_graph_picks_mode_in_car_then_generic() -> None:
     assert warmup[0].id == "in_car"
     stream = graph.nodes_for("STREAM_START", "ENTER")
     assert stream[0].id == "stream_start"
+    off = graph.nodes_for("INCIDENT", "RESULT", branch="off_track")
+    assert off[0].id == "incident_off_track"
+    unknown = graph.nodes_for("INCIDENT", "RESULT", branch="unknown")
+    assert unknown[0].id == "incident_unknown"
+    generic = graph.nodes_for("INCIDENT", "RESULT")
+    assert generic[0].id == "incident"
+    yellow = graph.nodes_for("SESSION_FLAG", "RESULT", branch="yellow")
+    assert yellow[0].id == "session_flag_yellow"
+    recap = graph.nodes_for("QUALI_RECAP", "RESULT")
+    assert recap[0].id == "quali_recap"
+    pad = graph.nodes_for("PARADE_PAD", "RESULT")
+    assert pad[0].id == "parade_pad"
 
 
 def test_stream_start_and_session_flag_graphs_load() -> None:
