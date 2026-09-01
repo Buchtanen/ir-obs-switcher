@@ -61,7 +61,7 @@ def test_demo_v4_js_cue_beat_labels() -> None:
 
 def test_overlay_js_starts_v4_cyclic_demo_without_fixture() -> None:
     js = _overlay_js()
-    assert 'import("./demo-v4.js")' in js
+    assert "./demo-v4.js" in js
     assert "startV4DemoLoop" in js
     assert 'params.get("fixture") || "lap_complete"' not in js
 

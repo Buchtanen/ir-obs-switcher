@@ -1,6 +1,6 @@
 {
   "name": "Scenario 13: invalid lap on incident",
-  "mode": "RACE",
+  "mode": "PRACTICE",
   "time_tolerance_ms": 0,
   "expected": [
     {"eventType": "INVALID_LAP", "phase": "RESULT"}
