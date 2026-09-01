@@ -159,6 +159,101 @@ than 3 seconds, latest-context veto without substitution, missing nationality,
 fact cooldown, 70% profile-free density, and all bilingual bound examples
 against the validator.
 
+<a id="situation-and-llm-context-needs-engineering"></a>
+
+## Situation and LLM context — `needs-engineering`
+
+Current commentary does not reliably tell the viewer which lap or part of the
+race is underway. H6 adds deterministic situation data to the N12 context,
+selected graph copy, and the optional LLM fact lock. This specification change
+does not modify the active graph or runtime.
+
+### Proposed situation slots
+
+| Slot | Type | Example | Exact source / derivation | Intended nodes | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `current_lap` | `int` | `12` | Live `Lap`, normalized and greater than zero | `field_fact`, `lap_complete`, selected battle/position bridges | Binding not implemented. Must pass the 3-second situation freshness gate. |
+| `lap_context` | `label` | EN `lap 12 of 30`; CS `12. kolo z 30` | `Lap` plus fixed active-session `SessionInfo.Sessions[SessionNum].SessionLaps`; fall back to current-lap-only label | `field_fact`, phase bridge, session wrap | Binding not implemented. Locale formatter owns word order and Czech ordinal form. |
+| `race_phase` | `label` | EN `middle phase`; CS `střední fáze` | Upstream deterministic phase policy from progress; explicit final/checkered/finished override | `field_fact`, selected battle/position bridges | Binding not implemented. LLM may only reuse an upstream-formatted allowed phrase. |
+| `remaining_context` | `label` | EN `5 laps remaining`; CS `zbývá 5 kol` | Sentinel-aware `SessionLapsRemain`; timed fallback from proposed `SessionTimeRemain` extraction | `field_fact`, closing/final bridges | Binding not implemented. Locale formatter handles pluralization; omit when unreliable. |
+
+Raw LLM situation fields additionally include `lap_completed`, `total_laps`,
+`session_time_elapsed_s`, `session_time_total_s`, `session_time_remaining_s`,
+`progress_ratio`, `progress_source`, and explicit final/checkered/finished
+booleans. They are prompt facts, not all separate spoken slots.
+
+### Text cadence and usage
+
+- Provide at least two `current_lap` / `lap_context` capable EN and CS lines in
+  every `field_fact` HR cell while keeping the existing slot-free fallback pool.
+- Mention lap/phase on deterministic phase change or after 120 seconds without
+  a spoken situation fact. Apply a 90-second lap/phase fact cooldown.
+- Do not announce every new lap. Never displace battle, incident, pit,
+  final-lap, finish, or session-control speech.
+- Situation-bearing copy must be selected within 3 seconds of its context. On
+  delay or lap/phase mismatch, reselect without situation slots or record
+  `situation_context_stale`.
+- Practice/Qualifying may speak current lap/time, but never reuse Race
+  `opening/middle/closing` language.
+
+### Proposed bilingual copy examples
+
+| Context | EN | CS |
+| --- | --- | --- |
+| lap orientation | `The field is working through {lap_context}.` | `Pole právě projíždí {lap_context}.` |
+| lap + phase | `Lap {current_lap}; race phase: {race_phase}.` | `Kolo {current_lap}; fáze závodu: {race_phase}.` |
+| hero position | `On {lap_context}, he is running P{position}.` | `Aktuálně běží {lap_context}, drží P{position}.` |
+| phase bridge | `Race phase: {race_phase}; the pressure keeps building.` | `Fáze závodu: {race_phase}; tlak dál roste.` |
+| remaining | `{remaining_context}; every clean move matters now.` | `{remaining_context}; každý čistý manévr teď rozhoduje.` |
+| battle bridge | `Lap {current_lap}, and this fight is still alive.` | `Kolo {current_lap} a tenhle souboj stále žije.` |
+| closing context | `The race has reached its {race_phase}.` | `Aktuální fáze závodu: {race_phase}.` |
+| delayed event | `Back on lap {current_lap}, he was closing the gap.` | `Ještě v {current_lap}. kole stahoval ztrátu.` |
+
+The Czech templates use a colon before the preformatted `race_phase` label to
+avoid runtime case inflection. If a future sentence needs another grammatical
+case, use a separate preformatted phase-phrase slot instead of guessing.
+
+### LLM situation fact lock
+
+The optional polish request receives the fully bound skeleton plus a bounded
+fact object from the same embedded context. It must not receive live reader
+access, raw arrays, or the complete roster. The prompt explicitly distinguishes
+event-time facts from live/current wording.
+
+Director also supplies `ALLOWED SITUATION ADDITIONS`: `NONE`, or a bounded list
+of exact localized phrases from the snapshot. Subject to the 90-second
+situation cooldown, the LLM may add zero or one phrase. It cannot freely
+compose a new lap, remaining count, or phase from raw values.
+
+Post-validation must reject `invented_situation_number`,
+`unapproved_situation_addition`, `situation_phase_conflict`, and
+`stale_situation_framing`. A rejected, timed-out, or malformed rewrite falls
+back to the validated skeleton. If context lacks a lap/phase field, the prompt
+forbids introducing one.
+
+### H6 — Situation extraction, copy, and LLM contract
+
+1. Extend telemetry/session extraction with normalized `SessionTimeRemain` and
+   fixed active-session total laps/time; preserve unlimited/missing sentinels.
+2. Add pure `SituationSnapshot` construction and deterministic phase tests for
+   lap-limited, timed, unlimited, and missing-data races.
+3. Carry the snapshot in every N12 context and enforce the same-tick acceptance
+   plus 3-second final-selection freshness contracts.
+4. Extend A5 `FIELD_FACT` rotation with lap/phase cadence and high-priority
+   suppression; track last spoken lap, phase, and monotonic time.
+5. Add the selected EN/CS graph lines and locale formatters without changing the
+   meaning of the existing `lap` slot.
+6. Build the bounded LLM fact block from the embedded context and implement
+   numeric/phase fact-lock validation with skeleton fallback.
+7. Record situation input/digest and polish decision in replay/debug tape so
+   identical captures produce identical skeleton and acceptance decisions.
+
+Tests: source sentinels, lap/time progress, 20%/70% boundaries, explicit phase
+overrides, current-lap formatting, CS plurals/phase grammar, 120-second cadence,
+90-second cooldown, busy suppression, 3-second stale veto, deferred past
+framing, invented numbers/phases, timeout fallback, replay determinism, and all
+bound EN/CS examples against the current validator.
+
 ## Trigger policy (H4 product choices)
 
 | Node | Event | Trigger | Reset |

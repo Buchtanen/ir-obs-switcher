@@ -262,6 +262,7 @@ rules as envelopes. Schema `n12-context/1` contains:
 | race | `connected`, `player_car_idx`, `lap`, `lap_completed`, `position`, `class_position`, `gap_ahead_s`, `gap_behind_s`, `on_pit_road`, `session_checkered`, `player_finished`, `mute_field`, `incident_count`, `speed_mps` |
 | bio | `status`, `bpm`, `hr_state`, `sample_monotonic_ms` |
 | story | hero display/speakable names, 2+2 near-field ids/names/gaps, leader name/position, localized weather bindings, quali bag, stream session keys, driver profiles keyed by `CarIdx`, immutable start-grid facts |
+| situation | current/completed lap, fixed total laps when known, normalized laps/time remaining, deterministic race phase, progress source/ratio, final-lap/checkered/finished flags |
 | config identity | immutable config generation plus `language`, `commentary_enabled`, scheduler flags required for the decision |
 
 Missing optional telemetry stays `null`; no consumer reaches back to live
@@ -383,6 +384,126 @@ Never substitute the current nearest opponent or read live RaceObserver state.
 This makes the distinction explicit: event-time facts come from the exact
 accepted snapshot; the newest snapshot protects against stale identity and
 relation claims without rewriting history.
+
+#### A3.3 — Situational race context for copy and LLM
+
+The viewer must be able to recover where the race is from commentary alone.
+RaceObserver therefore derives a small immutable `SituationSnapshot`; it does
+not send raw telemetry or the complete SessionInfo document to the LLM.
+
+```python
+@dataclass(frozen=True)
+class SituationSnapshot:
+    session_type: str | None
+    current_lap: int | None
+    lap_completed: int | None
+    total_laps: int | None
+    laps_remaining: float | None
+    session_time_elapsed_s: float | None
+    session_time_total_s: float | None
+    session_time_remaining_s: float | None
+    progress_ratio: float | None
+    progress_source: Literal["laps", "time"] | None
+    race_phase: Literal[
+        "pre_start", "opening", "middle", "closing",
+        "final_lap", "checkered", "finished", "unknown"
+    ]
+    captured_monotonic_ms: int
+```
+
+| Situation fact | Exact source / rule |
+| --- | --- |
+| current/completed lap | Live `Lap` and `LapCompleted`, normalized to non-negative integers. `current_lap` is spoken only when greater than zero. |
+| total laps | Active `SessionInfo.Sessions[SessionNum].SessionLaps` when it is a fixed positive count. `unlimited` and malformed values remain `null`. |
+| laps remaining | Live `SessionLapsRemain` through the existing sentinel-aware normalizer. Raw fractional values stay numeric context; a spoken integer/label is produced only by the locale formatter. |
+| elapsed/remaining time | Live `SessionTime` plus proposed extraction of `SessionTimeRemain`; total duration comes from active-session `SessionTime` only when fixed. Unlimited sentinels remain `null`. |
+| progress | Prefer `lap_completed / total_laps` for fixed-lap races. Otherwise use elapsed/total or `1 - remaining/total` for fixed-time races. Clamp to `[0, 1]`; missing denominator yields `null`, never a guessed phase. |
+
+Race phase is deterministic upstream, never an LLM inference. Override order is
+`finished` -> `checkered` -> `final_lap` -> progress phase. `final_lap` requires
+the existing normalized `RaceState.is_final_lap`; a percentage alone must not
+create it. For a running Race with valid progress, the initial policy is:
+
+- `opening`: progress below 20%;
+- `middle`: 20% through below 70%;
+- `closing`: 70% or later;
+- `unknown`: non-Race session or insufficient trustworthy progress.
+
+Thresholds are one named policy with replay tests and may be tuned later; the
+LLM and authored text do not recalculate them. Practice and qualifying may
+receive current lap/time facts but never Race `opening/middle/closing` labels.
+
+##### Commentary cadence and graph slots
+
+The graph extension proposes `current_lap`, `lap_context`, `race_phase`, and
+`remaining_context` bindings. `lap_context` and `remaining_context` are
+locale-formatted labels such as `lap 12 of 30` / `12. kolo z 30` and
+`5 laps remaining` / `zbývá 5 kol`; Czech plural forms are created before slot
+binding, not by an English template.
+
+During an active Race, RaceObserver tracks `last_situation_spoken_at`,
+`last_spoken_lap`, and `last_spoken_phase`. It may request a low-priority
+`FIELD_FACT` with `fact="lap_context"` when:
+
+- `race_phase` changes; or
+- no spoken utterance has carried current lap/phase for 120 seconds.
+
+The request uses the A5 producer path and the next accepted batch's current
+snapshot. It is suppressed behind battle, incident, final-lap, pit, finish, and
+session control speech. The lap/phase fact has its own 90-second cooldown, is
+not forced during continuous high-priority action, and is never emitted merely
+because every telemetry tick changed `Lap`.
+
+Any utterance containing `current_lap`, `lap_context`, `race_phase`, or
+`remaining_context` has a 3-second situation-age ceiling at final line
+selection. If delayed beyond it, if the lap/phase no longer matches
+`latest_context`, or if a reset arrived, reselect a situation-free line or skip
+with `situation_context_stale`. Do not rewrite an old battle using the new lap.
+A fresh situation filler may be requested on a later producer tick.
+
+##### Bounded LLM prompt contract
+
+When `llm_polish` / past framing is enabled, the request contains only:
+
+```text
+SKELETON: fully bound authored line
+EVENT FACTS: event type, phase, occurred time, hero/target facts used by skeleton
+SITUATION FACTS: session type, current/completed/total lap, remaining context,
+                 deterministic race phase, final/checkered/finished booleans
+ALLOWED SITUATION ADDITIONS: zero or one exact localized phrase, or NONE
+INSTRUCTION: preserve every fact; enrich wording only; do not infer missing data
+```
+
+The situation block is built from the same embedded context that produced the
+skeleton and passes the A3.2 freshness gate before the request. It contains no
+raw roster, `UserID`, full telemetry array, or reader handle. A deferred event
+keeps its event-time situation and receives past framing; it is not upgraded to
+the newest lap.
+
+The producer/director, not the model, builds `ALLOWED SITUATION ADDITIONS`, for
+example `lap 12`, `lap 12 of 30`, or `middle phase`. When the 90-second
+situation cooldown allows enrichment, an eligible live or past-framed rewrite
+may add **zero or one** phrase verbatim/semantically unchanged. Otherwise the
+field is `NONE` and adding lap/phase copy is a validation error. High-priority
+incident, final-lap, finish, and control skeletons do not receive optional
+additions unless that situation is already part of their authored facts.
+
+Post-validation rejects and falls back to the skeleton when the LLM:
+
+- introduces a lap/remaining number absent from the approved skeleton/context
+  (`invented_situation_number`);
+- adds more than one situation fact or adds one while the allowlist is `NONE`
+  (`unapproved_situation_addition`);
+- changes `opening/middle/closing/final/checkered/finished` semantics
+  (`situation_phase_conflict`);
+- claims a final lap without `is_final_lap`, or reports live/current framing for
+  a stale/deferred snapshot (`stale_situation_framing`).
+
+If situation data is missing, omit the block fields and prohibit the LLM from
+mentioning lap count or race phase. Timeout, invalid rewrite, or fact conflict
+uses the already validated skeleton; the LLM is never required for factual lap
+awareness. Proposed slots, bilingual lines, and engineering work are in
+[`commentary_extension_handover.md`](../commentary_extension_handover.md#situation-and-llm-context-needs-engineering).
 
 Each consumer subscription owns:
 
@@ -533,6 +654,8 @@ remain part of optional N12.5, not an implied V2a disk database.
   typed reset/config control plane, and filler request/result path.
 - Add the A3.1 session-scoped driver fact ledger and immutable start-grid
   capture; do not add an external nationality lookup in this slice.
+- Add the A3.3 situation snapshot, deterministic phase policy, current-lap
+  filler request, and bounded LLM fact block; no raw telemetry enters prompts.
 - Do not change content, priorities, cooldowns, or public wire schema.
 
 ### N12.2 — Async fan-out and peer consumers
@@ -600,6 +723,15 @@ until this slice is explicitly approved.
 - [ ] A session reset, reused `CarIdx`/driver swap, target mismatch, relation
   older than 3 seconds, or expired event cannot produce a stale named/profile
   utterance; the decision has an explicit reason code.
+- [ ] The same embedded situation snapshot drives authored slots and LLM facts;
+  current lap/phase copy is at most 3 seconds old and never mixes an old event
+  with the newest lap.
+- [ ] In an active Race, a phase transition or 120 seconds without a spoken
+  lap/phase creates an eligible low-priority current-situation fact without
+  interrupting higher-priority action.
+- [ ] LLM output cannot invent or change lap, remaining-distance, phase,
+  final-lap, checkered, or finished facts; invalid output falls back to the
+  fully bound skeleton.
 - [ ] TTS TTL/cooldown uses event time; queue wait is observable lag.
 - [ ] Cancellation leaves no pending task, TTS process, ducked OBS source, or
   open tape handle.
@@ -634,6 +766,12 @@ until this slice is explicitly approved.
   beyond 3 seconds, SessionReset overtaking queued work, changed `UserID` on the
   same `CarIdx`, latest-context target mismatch, and stale-at-accept producer
   input. Assert fallback/skip reason and zero wrong-name/profile speech.
+- Situation fixtures: lap-limited, timed, unlimited, missing totals, phase
+  boundaries at 20%/70%, explicit final/checkered/finished overrides, lap/phase
+  cadence, 3-second stale veto, and high-priority suppression.
+- LLM fact-lock fixtures: approved current/past situation, invented lap number,
+  changed race phase, false final lap, missing situation, timeout, and fallback
+  skeleton parity. Tape/replay records the exact bounded situation fact block.
 - Content contract: every affected EN/CS cell keeps at least 70% profile-free
   lines; bound profile examples pass the current validator and do not combine
   unrelated biography facts.

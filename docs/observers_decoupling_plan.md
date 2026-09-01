@@ -317,12 +317,44 @@ Hard interrupt **default false** (bezpečnější), zapne se na stream PC až po
 
 ---
 
-## 5. LLM framing (past only path)
+## 5. LLM framing + situační kontext
 
 - Primární „už to bylo“ = **LLM instruction** nad skeletonem (ne past-tense buňky ve graphu jako povinnost).  
 - Fail-soft → skeleton bez past, nebo skip pokud by přítomný čas lhal.  
 - Framing až **těsně před speak** (ne při defer park).  
 - Stále platí: žádný nový dep bez review; používá existující `llm_polish` transport.
+
+LLM nedostává jen skeleton, ale bounded `SITUATION FACTS` ze stejného frozen
+ContextSnapshotu jako event: aktuální/dokončené kolo, známý celkový počet,
+remaining laps/time, upstream fázi `opening/middle/closing/final_lap/checkered/
+finished`, pozici a pouze použité hero/target facts. Nedostává raw telemetry,
+celý roster ani live RaceObserver.
+
+```text
+ContextSnapshot N + accepted event
+  -> fully bound skeleton
+  -> 3 s freshness gate pro current lap/phase
+  -> FACT LOCK + SITUATION FACTS + max 1 povolená situační fráze
+  -> LLM polish
+  -> čísla/fáze post-validation
+  -> TTS, nebo původní skeleton
+```
+
+Fázi počítá RaceObserver deterministicky (20 % opening, 20–70 % middle, od
+70 % closing; final/checkered/finished mají explicitní override). LLM nesmí
+domyslet final lap ani nové číslo kola. Starý deferred event zůstává v minulém
+kontextu; nejnovější snapshot jej smí zneplatnit, ne přepsat.
+
+Director sestaví allowlist přesných lokalizovaných dodatků (`lap 12`,
+`12. kolo z 30`, `middle phase`). Když 90s situační cooldown dovolí obohacení,
+LLM smí použít nanejvýš jeden; jinak dostane `NONE`. Tím jsou data v promptu
+prakticky použitelná, ale model nemůže slepit do každé věty kolo, fázi i zbytek.
+
+Pro orientaci diváka se do `FIELD_FACT` navrhují sloty `current_lap`,
+`lap_context`, `race_phase`, `remaining_context`. Změna fáze nebo 120 s bez
+zmínky o kole/fázi připraví low-priority fact; battle/incident/pit/final/finish
+jej mohou odsunout. Přesný kontrakt a texty:
+[`commentary_extension_handover.md`](commentary_extension_handover.md#situation-and-llm-context-needs-engineering).
 
 ---
 
