@@ -95,7 +95,7 @@ class _LastSpoken:
 
 @dataclass
 class CommentaryDirector:
-    """Selects a beat and optionally composes a multi-node factual skeleton.
+    """Selects a beat and optionally builds a grounded anchor/fact plan.
 
     Fail-soft: unexpected errors are logged by the caller. Empty variants
     (structure waiting for authored text) produce silence.
@@ -700,6 +700,7 @@ class CommentaryDirector:
                 emotion=resolved,
                 language=self.language,
                 recent=self._recent,
+                rng=self.rng,
             )
             if composition is None:
                 self._record(

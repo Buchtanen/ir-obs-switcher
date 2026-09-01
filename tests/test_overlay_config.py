@@ -70,6 +70,7 @@ def test_feature_flags_default_off_and_language_en(tmp_path: Path) -> None:
     ) is False
     assert cfg.overlay.commentary.enabled is False
     assert cfg.overlay.commentary.use_hr_emotion is True
+    assert cfg.overlay.commentary.llm_model == "qwen3:4b-instruct-2507-q4_K_M"
     assert cfg.overlay.commentary.gap_hunt_tts_in_practice is False
     assert cfg.overlay.commentary.gap_hunt_tts_in_qualifying is False
     assert cfg.overlay.race_observer.leader_pace_cooldown_s == 300.0

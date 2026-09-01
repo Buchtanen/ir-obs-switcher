@@ -1,6 +1,6 @@
 # Commentary engine (Phase 0)
 
-**Status:** EN+CS graph, N12 independent consumers, bounded story history, deterministic skeleton composer, TTS and `/commentary`. Default **off** for the live race feed.
+**Status:** EN+CS graph, N12 independent consumers, bounded story history, grounded commentary planner, TTS and `/commentary`. Default **off** for the live race feed.
 **Integration branch:** `refactor/200-n12-async-consumers`; Windows/OBS/Ollama live validation pending.
 
 ## Why
@@ -28,13 +28,15 @@ iRacing / BLE HR
     → accepted EventEnvelope
     → CommentaryDirector (sequence graph + HR emotion)
        ├─ llm_polish=false: one authored fully-bound line
-       └─ llm_polish=true: RaceObserver history → 2–4 fact composer
+       └─ llm_polish=true: authored anchor + required/optional fact plan
     → validate_utterance
-    → independent TtsSink worker (optional style-only LLM polish)
+    → independent TtsSink worker (optional grounded LLM generation)
     → Windows SAPI / espeak-ng / NullTtsSink
 ```
 
-**Wired, default off:** optional remote LLM *skeleton polish* receives a deterministic compact fact pack and a composed skeleton, never the full graph. See [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md). Live serve stays A1000 Ollama `qwen2.5:3b`.
+**Wired, default off:** optional remote LLM generation receives one safe authored anchor plus a compact proposition-level fact plan, never the full graph or raw recent commentary. The default model is LAN Ollama `qwen3:4b-instruct-2507-q4_K_M`; [the earlier skeleton PoC](docs/commentary_llm_skeleton_poc.md) remains historical context.
+
+Local Ollama smoke (2026-09-02): grounded `HUNTING` passed in two attempts (~1.7 s) with relation + gap + remaining-laps facts; `LEADER_CHANGE` passed on the first attempt (~0.7 s) without inventing an on-track pass. Windows/SAPI/OBS live listening is still pending.
 
 Rules:
 
@@ -71,11 +73,13 @@ Rules:
 
 Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDATE`s) are **not** in the speak graph.
 
-### Deterministic composer (`llm_polish=true`)
+### Grounded planner (`llm_polish=true`)
 
-`RaceObserver` owns a session-scoped ring of the latest 24 accepted factual beats. The frozen N12 context carries that history to commentary; `CommentaryConsumer` never receives a live observer reference. `composer.py` walks backwards over valid graph edges (maximum three graph nodes) and then assembles the tree `history → beat → detail → context/session`. The result must contain two to four distinct bound facts and pass the current node's TTS limits.
+`RaceObserver` owns a session-scoped ring of the latest 24 accepted factual beats. The frozen N12 context carries that history to commentary; `CommentaryConsumer` never receives a live observer reference. `composer.py` still walks backwards over valid graph edges (maximum three nodes) for story identity, but it no longer joins history, position, remaining laps and phase into mandatory prose.
 
-The compact `commentary-facts/1` block contains only the selected beat/path, session, hero, target/front/rear roles, 2+2 field snapshot, HR band and four recent lines. Missing values are omitted. EN and CS use separate deterministic clauses and separate polish system prompts. Two-front role swaps are rejected as `two_front_polarity_conflict`.
+The director selects one fully-bound authored variant as the `anchor`, using the existing anti-repeat preference. `commentary-facts/2` then carries explicit `required_facts`, bounded `optional_facts`, `forbidden_claims`, and allowed names/numbers. Dynamic context is optional and already passed through the consumer's freshness gate. Raw recent commentary is deliberately excluded from the model prompt.
+
+The model writes one or two sentences inside the full node TTS limit. It must preserve required terms and may use only relevant optional facts. Fact guards reject unsupported passes/leads/position gains, new P/S markers, numbers, names, role swaps and the existing VOD-style inversions. A failed or exhausted generation speaks the safe authored anchor.
 
 All 54 active graph nodes and all 24 edges have compatibility tests. `leader_change` (prio 75) speaks class P1 changes; do not invent an on-track pass. Parade pads repeat until green (cap 12, 20 s). `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
 
@@ -108,7 +112,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). With `llm_polish=true`, the worker restyles the composed 2–4 fact skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), a vocative opener, a two-front role swap, or another fact-lock hit retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the graph. If every attempt fails → `retry_exhausted` and **TTS is skipped**. Before polish/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** sits behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM generation runs (#180). With `llm_polish=true`, LAN Ollama `qwen3:4b-instruct-2507-q4_K_M` receives the anchor and fact plan and may use the full node budget for one or two sentences. Invalid output retries the same plan up to `llm_max_attempts` inside `llm_timeout_s`; timeout, transport failure or exhausted validation falls back to the anchor. Before generation/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test
@@ -205,11 +209,11 @@ Algorithm in `choose_filled_line(..., history=...)`:
 3. Else prefer any non-exact recent line (even if tail is over quota).
 4. Else fall back to any bound line — never hard-fail speech forever.
 
-`CommentaryDirector` remembers each queued skeleton and clears the ring on `reset()`. After successful audio, `ProcessTtsSink` also feeds the final polished/spoken text into the same ring, so the next fact pack bans what viewers actually heard.
+`CommentaryDirector` remembers each queued authored anchor and clears the ring on `reset()`. Final generated/spoken text is recorded through the TTS tape hook for quality review; it is not copied into the next model prompt.
 
 ## English + Czech content
 
-Spoken lines live in `variants.{en|cs}.{emotion}`. With `llm_polish=false`, the director picks **one fully-bound line** from the matching bucket, with anti-repeat preference above (`rng.choice` among the preferred pool); this path stays backward-compatible. With `llm_polish=true`, authored variants are deterministic clause/fallback material and are not selected as the one-line polish input.
+Spoken lines live in `variants.{en|cs}.{emotion}`. With `llm_polish=false`, the director picks **one fully-bound line** from the matching bucket, with anti-repeat preference above (`rng.choice` among the preferred pool); this path stays backward-compatible. With `llm_polish=true`, the same authored pool supplies a fresh anchor and safe fallback while explicit event/context propositions supply the factual content.
 
 | Wave | Status |
 | --- | --- |

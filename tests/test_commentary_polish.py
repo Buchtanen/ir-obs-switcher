@@ -184,6 +184,144 @@ def test_live_prompt_fits_node_tts_budget() -> None:
     assert req["max_tokens"] < 220
 
 
+def test_grounded_prompt_uses_full_node_budget_and_explicit_fact_roles() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    facts = {
+        "version": "commentary-facts/2",
+        "anchor": "He is closing on Rossi.",
+        "required_facts": [
+            {
+                "id": "beat:relation",
+                "text": "He is closing on Rossi",
+                "required_terms": ["Rossi"],
+            }
+        ],
+        "optional_facts": [
+            {"id": "target:gap", "text": "the gap is zero point seven seconds"}
+        ],
+        "forbidden_claims": ["on_track_pass", "hero_leads"],
+        "allowed_numbers": ["0.7"],
+        "recent": ["Rossi was P4."],
+    }
+
+    req = build_polish_request(
+        facts["anchor"],
+        CommentarySettings(llm_max_tokens=360),
+        node=node,
+        fact_pack=facts,
+    )
+
+    system = req["messages"][0]["content"].lower()
+    user = req["messages"][1]["content"]
+    assert "one or two sentences" in system
+    assert "same sentence count" not in system
+    assert str(node.tts.max_chars) in system
+    assert req["max_tokens"] > len(facts["anchor"]) + 40
+    assert "ANCHOR:" in user
+    assert "REQUIRED_FACTS:" in user
+    assert "OPTIONAL_FACTS:" in user
+    assert "Rossi was P4" not in user
+
+
+def test_grounded_fact_lock_rejects_forbidden_pass_and_new_number() -> None:
+    facts = {
+        "version": "commentary-facts/2",
+        "anchor": "Meyer takes the lead from Rossi.",
+        "required_facts": [
+            {
+                "id": "beat:leader_change",
+                "text": "Meyer takes the lead from Rossi",
+                "required_terms": ["Meyer", "Rossi"],
+                "relation": "class_leader_changed",
+            }
+        ],
+        "optional_facts": [],
+        "forbidden_claims": ["on_track_pass"],
+        "allowed_numbers": [],
+    }
+    codes = fact_violation_codes(
+        facts["anchor"],
+        "Meyer passes Rossi for the lead on lap 99.",
+        fact_pack=facts,
+    )
+    assert "forbidden_pass" in codes
+    assert "invented_number" in codes
+
+    invented_name = fact_violation_codes(
+        facts["anchor"],
+        "Meyer takes the lead from Hamilton.",
+        fact_pack={**facts, "allowed_names": ["Meyer", "Rossi"]},
+    )
+    assert "invented_name" in invented_name
+
+    missing_relation = fact_violation_codes(
+        facts["anchor"],
+        "Meyer and Rossi remain in view.",
+        fact_pack=facts,
+    )
+    assert "missing_required_fact" in missing_relation
+
+    result_facts = {
+        **facts,
+        "anchor": "He finishes the session in P29.",
+        "required_facts": [
+            {
+                "id": "beat:wrap",
+                "text": "He finishes the session in P29.",
+                "required_terms": [],
+                "required_numbers": ["29"],
+                "relation": "session_result",
+            }
+        ],
+        "forbidden_claims": [],
+        "allowed_names": [],
+        "allowed_numbers": ["29"],
+    }
+    assert "missing_required_fact" in fact_violation_codes(
+        result_facts["anchor"],
+        "The session ends.",
+        fact_pack=result_facts,
+    )
+
+
+def test_grounded_generation_may_expand_anchor_with_optional_fact() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True)
+    facts = {
+        "version": "commentary-facts/2",
+        "anchor": "The chase is building.",
+        "required_facts": [
+            {
+                "id": "beat:relation",
+                "text": "He is closing on Rossi.",
+                "required_terms": ["Rossi"],
+                "relation": "hero_closing_on_target",
+            }
+        ],
+        "optional_facts": [{"id": "target:gap", "text": "The gap is 0.7 seconds."}],
+        "forbidden_claims": ["on_track_pass", "hero_leads"],
+        "allowed_names": ["Rossi"],
+        "allowed_numbers": ["0.7"],
+    }
+    generated = "The chase is building as he closes on Rossi. The gap is down to 0.7 seconds."
+
+    def opener(_req, timeout):  # noqa: ARG001
+        return json.dumps({"choices": [{"message": {"content": generated}}]}).encode("utf-8")
+
+    outcome = polish_skeleton(
+        facts["anchor"],
+        node,
+        settings,
+        fact_pack=facts,
+        opener=opener,
+    )
+    assert len(generated) > len(facts["anchor"]) + 40
+    assert outcome.outcome == "ok"
+    assert outcome.text == generated
+
+
 def test_polish_prompt_keeps_featured_driver() -> None:
     req = build_polish_request(
         "He closes the gap.",

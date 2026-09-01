@@ -31,6 +31,14 @@ def test_polish_rejects_invented_p_position() -> None:
     assert "invented_position" in codes
 
 
+def test_polish_does_not_treat_english_possessive_as_sector() -> None:
+    codes = fact_violation_codes(
+        "He is closing on Rossi, gap 0.70 seconds.",
+        "He's closing on Rossi. Gap's 0.70 seconds.",
+    )
+    assert "invented_sector" not in codes
+
+
 def test_polish_prompt_omits_recent_history() -> None:
     req = build_polish_request(
         "He is running P thirty.",
@@ -155,9 +163,10 @@ def test_composer_allows_single_fact_session_wrap() -> None:
         language="en",
     )
     assert result is not None
-    text = result.text.lower()
-    assert "p1" in text or "a" in text
-    assert "29" in result.text or "twenty" in text or "p29" in text.replace(" ", "")
+    required = " ".join(fact["text"] for fact in result.fact_pack["required_facts"])
+    optional = " ".join(fact["text"] for fact in result.fact_pack["optional_facts"])
+    assert "29" in required or "twenty" in required.lower()
+    assert "A" in optional and "B" in optional and "C" in optional
 
 
 def test_manager_v2_exit_clears_active_story() -> None:

@@ -342,7 +342,7 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         False,
         True,
         "commentary",
-        "Polish authored skeleton lines via OpenAI-compatible HTTP (e.g. Ollama). Default off.",
+        "Generate grounded commentary from an authored anchor and explicit facts via OpenAI-compatible HTTP. Default off.",
     ),
     FieldSpec(
         "commentary.llm_base_url",
@@ -355,10 +355,10 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec(
         "commentary.llm_model",
         "str",
-        "qwen2.5:3b",
+        "qwen3:4b-instruct-2507-q4_K_M",
         True,
         "commentary",
-        "Model id for commentary LLM polish.",
+        "Model id for grounded commentary generation.",
     ),
     FieldSpec(
         "commentary.llm_timeout_s",
@@ -367,7 +367,7 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         True,
         "commentary",
         "HTTP wall-clock budget for the whole polish including retries (seconds). "
-        "On failure skip TTS; do not speak the skeleton.",
+        "On failure speak the safe authored anchor.",
         0.5,
         120.0,
     ),
@@ -397,7 +397,7 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         5,
         True,
         "commentary",
-        "Max HTTP polish attempts per line (1–8). Failed polish is silent, not skeleton.",
+        "Max HTTP generation attempts per line (1–8). Failure falls back to the anchor.",
         1.0,
         8.0,
     ),

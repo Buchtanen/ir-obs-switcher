@@ -1,7 +1,7 @@
-"""Optional remote LLM style polish over authored skeleton lines. Fail-soft.
+"""Optional grounded LLM commentary generation over authored anchors. Fail-soft.
 
-Live inference stays the LAN Ollama 3B (RTX A1000). A 4090 is for optional
-later fine-tuning, not a different runtime model.
+The model receives explicit required/optional propositions and never owns race
+truth. Invalid output falls back to the authored anchor in the TTS worker.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
+from irswitch.commentary.speech_numbers import numbers_to_words
 from irswitch.commentary.validator import validate_utterance
 from irswitch.overlay.settings import CommentarySettings
 
@@ -76,12 +77,111 @@ _WORD_NUM = {
     "thirty": 30,
 }
 _P_TOKEN = re.compile(
-    r"\bp\s*-?\s*(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|"
+    r"(?<![\w'’])p\s*-?\s*(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|"
     r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
     r"nineteen|twenty|thirty)\b",
     re.IGNORECASE,
 )
-_S_TOKEN = re.compile(r"\bs\s*(\d+|one|two|three)\b", re.IGNORECASE)
+_S_TOKEN = re.compile(r"(?<![\w'’])s\s*(\d+|one|two|three)\b", re.IGNORECASE)
+_NUMBER_LITERAL = re.compile(r"-?\d+(?:(?:[.:])\d+)*")
+_POSITION_GAIN = re.compile(r"\b(gains?|gained|moves? up|takes? p\s*\d+)\b", re.IGNORECASE)
+_PROPER_TOKEN = re.compile(r"\b[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž'-]{1,}\b")
+_RELATION_PATTERNS = {
+    "hero_closing_on_target": re.compile(
+        r"\b(closes?|closing|chases?|chasing|hunts?|hunting|catches?|catching|"
+        r"stahuje|dotahuje|pronásleduje)\b",
+        re.IGNORECASE,
+    ),
+    "target_closing_on_hero": re.compile(
+        r"\b(pressure|pressuring|closes?|closing|hunted|behind|tlak|tlačí|dotahuje|zezadu)\b",
+        re.IGNORECASE,
+    ),
+    "hero_passed_target": re.compile(
+        r"\b(passes?|passed|overtakes?|overtook|předjíždí|předjel)\b",
+        re.IGNORECASE,
+    ),
+    "hero_gained_position": re.compile(
+        r"\b(gains?|gained|moves? up|takes? p\s*\w+|získává|posouvá se|bere)\b",
+        re.IGNORECASE,
+    ),
+    "hero_lost_position": re.compile(
+        r"\b(loses?|lost|drops?|dropped|falls? back|ztrácí|klesá|propadá)\b",
+        re.IGNORECASE,
+    ),
+    "class_leader_changed": re.compile(
+        r"\b(lead|leader|leading|p\s*one|vedení|lídr|čela|první)\b",
+        re.IGNORECASE,
+    ),
+    "session_result": re.compile(
+        r"\b(finishes?|finished|result|wrap|ends?|ending|končí|výsledek|závěr|konec)\b",
+        re.IGNORECASE,
+    ),
+}
+_NUMBER_WORD_TOKENS = frozenset(
+    {
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "sixty",
+        "seventy",
+        "eighty",
+        "ninety",
+        "hundred",
+        "nula",
+        "jedna",
+        "jeden",
+        "dva",
+        "dvě",
+        "tři",
+        "čtyři",
+        "pět",
+        "šest",
+        "sedm",
+        "osm",
+        "devět",
+        "deset",
+        "jedenáct",
+        "dvanáct",
+        "třináct",
+        "čtrnáct",
+        "patnáct",
+        "šestnáct",
+        "sedmnáct",
+        "osmnáct",
+        "devatenáct",
+        "dvacet",
+        "třicet",
+        "čtyřicet",
+        "padesát",
+        "šedesát",
+        "sedmdesát",
+        "osmdesát",
+        "devadesát",
+        "sto",
+        "sta",
+    }
+)
 
 _FACT_LOCK = (
     "Keep EVERY fact from SKELETON. Do not add new numbers, names, or events.\n"
@@ -138,6 +238,18 @@ def polish_char_limit(skeleton: str, tts: TtsLimits) -> int:
     return min(int(tts.max_chars), grown)
 
 
+def _is_grounded(fact_pack: dict[str, Any] | None) -> bool:
+    return isinstance(fact_pack, dict) and fact_pack.get("version") == "commentary-facts/2"
+
+
+def _request_char_limit(
+    skeleton: str,
+    tts: TtsLimits,
+    fact_pack: dict[str, Any] | None,
+) -> int:
+    return int(tts.max_chars) if _is_grounded(fact_pack) else polish_char_limit(skeleton, tts)
+
+
 def _length_rule(tts: TtsLimits, skeleton: str) -> str:
     cap = polish_char_limit(skeleton, tts)
     return (
@@ -149,16 +261,27 @@ def _length_rule(tts: TtsLimits, skeleton: str) -> str:
     )
 
 
-def _completion_tokens(settings: CommentarySettings, tts: TtsLimits, skeleton: str) -> int:
-    # Bound to this skeleton so the model cannot dump into the node TTS ceiling.
-    budget = polish_char_limit(skeleton, tts) + 16
+def _completion_tokens(
+    settings: CommentarySettings,
+    tts: TtsLimits,
+    skeleton: str,
+    fact_pack: dict[str, Any] | None,
+) -> int:
+    # Grounded generation may use the full node budget; legacy v1 polish stays
+    # skeleton-relative for backwards compatibility.
+    budget = _request_char_limit(skeleton, tts, fact_pack) + 16
     return max(32, min(int(settings.llm_max_tokens), budget))
 
 
-def _expansion_code(skeleton: str, content: str, tts: TtsLimits) -> str | None:
+def _expansion_code(
+    skeleton: str,
+    content: str,
+    tts: TtsLimits,
+    fact_pack: dict[str, Any] | None,
+) -> str | None:
     if _BANNED_PHRASE.search(content or ""):
         return "banned_phrase"
-    if len((content or "").strip()) > polish_char_limit(skeleton, tts):
+    if len((content or "").strip()) > _request_char_limit(skeleton, tts, fact_pack):
         return "expanded"
     return None
 
@@ -201,7 +324,135 @@ def fact_violation_codes(
         codes.append("invented_position")
     if _token_set(po, _S_TOKEN) - _token_set(sk, _S_TOKEN):
         codes.append("invented_sector")
+    if _is_grounded(fact_pack):
+        forbidden = {
+            str(item)
+            for item in fact_pack.get("forbidden_claims", [])
+            if isinstance(item, str)
+        }
+        if "on_track_pass" in forbidden and _PASS.search(po):
+            codes.append("forbidden_pass")
+        if "hero_leads" in forbidden and _LEAD_CLAIM.search(po):
+            codes.append("forbidden_lead")
+        if "position_gain" in forbidden and _POSITION_GAIN.search(po):
+            codes.append("forbidden_position_gain")
+        if _missing_required_terms(po, fact_pack):
+            codes.append("missing_required_fact")
+        if _invented_numbers(sk, po, fact_pack):
+            codes.append("invented_number")
+        if _invented_name(sk, po, driver_names, fact_pack):
+            codes.append("invented_name")
     return codes
+
+
+def _missing_required_terms(polished: str, fact_pack: dict[str, Any]) -> bool:
+    folded = polished.casefold()
+    raw = fact_pack.get("required_facts")
+    if not isinstance(raw, list):
+        return False
+    for fact in raw:
+        if not isinstance(fact, dict):
+            continue
+        terms = fact.get("required_terms")
+        if isinstance(terms, list) and any(
+            not _contains_term(folded, str(term)) for term in terms if str(term).strip()
+        ):
+            return True
+        numbers = fact.get("required_numbers")
+        if isinstance(numbers, list) and any(
+            not _contains_number(polished, number) for number in numbers
+        ):
+            return True
+        relation = str(fact.get("relation") or "")
+        pattern = _RELATION_PATTERNS.get(relation)
+        if pattern is not None and pattern.search(polished) is None:
+            return True
+    return False
+
+
+def _contains_term(folded: str, term: str) -> bool:
+    token = term.strip().casefold()
+    if not token:
+        return True
+    return re.search(rf"(?<!\w){re.escape(token)}(?!\w)", folded, re.IGNORECASE) is not None
+
+
+def _contains_number(polished: str, expected: object) -> bool:
+    normalized = _normalize_number(expected)
+    literals = {_normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(polished)}
+    if normalized in literals:
+        return True
+    folded = polished.casefold()
+    for locale in ("en", "cs"):
+        spoken = numbers_to_words(str(expected), locale).casefold()
+        if spoken and spoken in folded:
+            return True
+    return False
+
+
+def _invented_numbers(
+    skeleton: str,
+    polished: str,
+    fact_pack: dict[str, Any],
+) -> bool:
+    allowed = {_normalize_number(item) for item in fact_pack.get("allowed_numbers", [])}
+    allowed.update(_normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(skeleton))
+    found = {_normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(polished)}
+    if found - allowed:
+        return True
+    allowed_words = _number_words(skeleton)
+    for item in fact_pack.get("allowed_numbers", []):
+        allowed_words.update(_number_words(numbers_to_words(str(item), "en")))
+        allowed_words.update(_number_words(numbers_to_words(str(item), "cs")))
+    return bool(_number_words(polished) - allowed_words)
+
+
+def _number_words(text: str) -> set[str]:
+    tokens = re.findall(r"[\wáčďéěíňóřšťúůýž]+", (text or "").casefold())
+    return {token for token in tokens if token in _NUMBER_WORD_TOKENS}
+
+
+def _invented_name(
+    skeleton: str,
+    polished: str,
+    driver_names: Sequence[str],
+    fact_pack: dict[str, Any],
+) -> bool:
+    allowed_text = " ".join(
+        [
+            skeleton,
+            *(str(item) for item in fact_pack.get("allowed_names", [])),
+            *(str(item) for item in driver_names),
+        ]
+    ).casefold()
+    allowed_tokens = set(re.findall(r"[\wáčďéěíňóřšťúůýž'-]+", allowed_text))
+    for match in _PROPER_TOKEN.finditer(polished):
+        token = match.group(0)
+        if token.casefold() in allowed_tokens:
+            continue
+        # Sentence-opening capitalization is not enough evidence of a name.
+        prefix = polished[: match.start()].rstrip()
+        if not prefix or prefix[-1:] in ".!?":
+            continue
+        if token in {"TV", "P", "S", "Celsius", "Fahrenheit"}:
+            continue
+        return True
+    return False
+
+
+def _normalize_number(value: object) -> str:
+    raw = str(value).strip().replace(",", ".")
+    parts = re.split(r"([.:])", raw)
+    normalized: list[str] = []
+    for part in parts:
+        if part in {".", ":"}:
+            normalized.append(part)
+        elif part.lstrip("-").isdigit():
+            sign = "-" if part.startswith("-") else ""
+            normalized.append(sign + (part.lstrip("-").lstrip("0") or "0"))
+        else:
+            normalized.append(part)
+    return "".join(normalized).rstrip("0").rstrip(".") if "." in raw else "".join(normalized)
 
 
 def _token_set(text: str, pattern: re.Pattern[str]) -> set[int]:
@@ -271,7 +522,7 @@ def _reject_codes(
     fact_pack: dict[str, Any] | None = None,
 ) -> list[str]:
     codes: list[str] = []
-    expand = _expansion_code(skeleton, content, node.tts)
+    expand = _expansion_code(skeleton, content, node.tts, fact_pack)
     if expand:
         codes.append(expand)
     issues = validate_utterance(content, node)
@@ -289,7 +540,30 @@ def _system_prompt(
     skeleton: str,
     driver_names: Sequence[str] = (),
     locale: str = "en",
+    fact_pack: dict[str, Any] | None = None,
 ) -> str:
+    if _is_grounded(fact_pack):
+        cap = _request_char_limit(skeleton, tts, fact_pack)
+        if locale.lower().startswith("cs"):
+            timing = "opožděný" if past else "živý"
+            return (
+                f"Napiš přirozený {timing} televizní komentář pro diváky streamu.\n"
+                "Použij ANCHOR jako stylistický výchozí bod. Zachovej všechna REQUIRED_FACTS, "
+                "vyber jen relevantní OPTIONAL_FACTS a respektuj FORBIDDEN_CLAIMS.\n"
+                "Nevymýšlej jména, čísla, pozice, sektory ani události. Piš o hlavním jezdci "
+                "ve třetí osobě. Jedna nebo dvě věty, pouze výsledný komentář. "
+                f"Limit je {cap} znaků a {tts.max_seconds:g} sekundy mluveného projevu."
+            )
+        hero = _hero_lock(driver_names)
+        timing = "delayed" if past else "live"
+        return (
+            f"Write a natural {timing} TV race call for stream viewers.\n"
+            "Use ANCHOR as a stylistic starting point. Preserve every REQUIRED_FACT, choose only "
+            "relevant OPTIONAL_FACTS, and obey FORBIDDEN_CLAIMS.\n"
+            "Do not invent names, numbers, positions, sectors, causes, or events. "
+            f"{hero}Write one or two sentences and output commentary only. "
+            f"Hard cap {cap} characters and {tts.max_seconds:g} seconds spoken."
+        )
     if locale.lower().startswith("cs"):
         cap = polish_char_limit(skeleton, tts)
         timing = "opožděný televizní komentář" if past else "živý televizní komentář"
@@ -324,6 +598,32 @@ def _user_content(
     fact_pack: dict[str, Any] | None = None,
     composition_path: Sequence[str] = (),
 ) -> str:
+    if _is_grounded(fact_pack):
+        required = fact_pack.get("required_facts", [])
+        optional = fact_pack.get("optional_facts", [])
+        forbidden = fact_pack.get("forbidden_claims", [])
+        allowed_names = fact_pack.get("allowed_names", [])
+        allowed_numbers = fact_pack.get("allowed_numbers", [])
+        parts = [
+            f"ANCHOR:\n{skeleton}",
+            "REQUIRED_FACTS:\n"
+            + json.dumps(required, ensure_ascii=False, separators=(",", ":")),
+            "OPTIONAL_FACTS:\n"
+            + json.dumps(optional, ensure_ascii=False, separators=(",", ":")),
+            "FORBIDDEN_CLAIMS:\n"
+            + json.dumps(forbidden, ensure_ascii=False, separators=(",", ":")),
+            "ALLOWED_NAMES:\n"
+            + json.dumps(allowed_names, ensure_ascii=False, separators=(",", ":")),
+            "ALLOWED_NUMBERS:\n"
+            + json.dumps(allowed_numbers, ensure_ascii=False, separators=(",", ":")),
+        ]
+        if rejected:
+            parts.append(
+                "PREVIOUS OUTPUT REJECTED: "
+                + ", ".join(rejected)
+                + ". Correct those violations; do not copy the rejected output."
+            )
+        return "\n".join(parts)
     instruction = (
         "Rewrite this delayed call. Same facts, same length, richer wording only."
         if past
@@ -366,6 +666,7 @@ class PolishOutcome:
         last = None
         if isinstance(self.response, dict):
             last = self.response.get("content")
+        grounded = _is_grounded(self.fact_pack)
         return {
             "nodeId": node_id,
             "eventType": event_type,
@@ -379,6 +680,15 @@ class PolishOutcome:
             "response": self.response,
             "factPack": self.fact_pack,
             "compositionPath": list(self.composition_path),
+            "grounded": grounded,
+            "anchor": self.skeleton if grounded else None,
+            "requiredFacts": (
+                self.fact_pack.get("required_facts", []) if grounded and self.fact_pack else []
+            ),
+            "optionalFacts": (
+                self.fact_pack.get("optional_facts", []) if grounded and self.fact_pack else []
+            ),
+            "fallbackUsed": self.outcome != "ok",
         }
 
 
@@ -408,7 +718,7 @@ def build_polish_request(
     return {
         "model": settings.llm_model,
         "temperature": settings.llm_temperature,
-        "max_tokens": _completion_tokens(settings, tts, text),
+        "max_tokens": _completion_tokens(settings, tts, text, fact_pack),
         # Native Ollama + OpenAI-compat: keep Qwen3 from spending the token
         # budget on a thinking trace (empty content / timeout).
         "think": False,
@@ -422,6 +732,7 @@ def build_polish_request(
                     skeleton=text,
                     driver_names=driver_names,
                     locale=locale,
+                    fact_pack=fact_pack,
                 ),
             },
             {

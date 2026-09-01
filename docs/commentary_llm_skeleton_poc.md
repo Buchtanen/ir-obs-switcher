@@ -1,10 +1,10 @@
 # Commentary LLM — skeleton polish PoC
 
-**Status:** composer + fact pack implemented on `refactor/200-n12-async-consumers`; optional live polish remains default off; Windows/Ollama listen pending
+**Status:** historical PoC for `commentary-facts/1`; superseded by the grounded anchor + `commentary-facts/2` contract in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md)
 **Date:** 2026-09-01  
 **Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), sequence graph + director pipeline  
 **Hardware under test:** Ubuntu NTB, NVIDIA RTX A1000 Laptop 4GB, Ollama `qwen2.5:3b` @ LAN  
-**Decision:** live inference stays `qwen2.5:3b` on the A1000. A 4090 is optional later fine-tuning of that same 3B, not a different runtime model.
+**Historical decision:** this PoC tested `qwen2.5:3b`. Current default evaluation uses `qwen3:4b-instruct-2507-q4_K_M`; keep this document as the baseline that motivated the redesign.
 
 ## 1. Goal
 

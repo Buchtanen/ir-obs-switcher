@@ -144,9 +144,10 @@ def test_composer_walks_recent_graph_nodes_into_one_story() -> None:
     assert result is not None
     assert result.graph_path == ("hunting", "side_by_side", "overtake")
     assert 2 <= result.fact_count <= 4
-    assert "Rossi" in result.text
-    assert "P5" in result.text
-    assert "history" in result.tree_path
+    required = " ".join(fact["text"] for fact in result.fact_pack["required_facts"])
+    assert "Rossi" in required
+    assert "P5" in required
+    assert result.tree_path[0] == "anchor"
     assert result.fact_pack["beat"]["next_possible"] == []
 
 
@@ -177,7 +178,8 @@ def test_composer_omits_unbound_target_and_builds_czech_parts() -> None:
     assert result is not None
     assert 2 <= result.fact_count <= 4
     assert "Rossi" not in result.text
-    assert "8" in result.text
+    required = " ".join(fact["text"] for fact in result.fact_pack["required_facts"])
+    assert "8" in required
     assert result.fact_pack["target"] == {}
 
 
@@ -206,7 +208,7 @@ def test_director_uses_composer_only_for_polish_path() -> None:
     polished.note_composition_context(context)
     composed = polished.observe([envelope], None, 10.0)
     assert composed is not None
-    assert composed.text != "That's a lap for him."
+    assert composed.text == "That's a lap for him."
     assert composed.fact_pack is not None
     assert composed.composition_path
 
@@ -220,6 +222,45 @@ def test_director_uses_composer_only_for_polish_path() -> None:
     assert fallback is not None
     assert fallback.text == "That's a lap for him."
     assert fallback.fact_pack is None
+
+
+def test_polish_plan_uses_authored_anchor_and_proposition_fact_pack() -> None:
+    graph = _graph()
+    envelope = make_envelope(
+        event_type="HUNTING",
+        phase="ENTER",
+        mode="RACE",
+        event_id="event:hunting:1",
+        correlation_id="battle:12",
+        monotonic_ms=1_000,
+        target=EventSubject(car_id="12", display_name="Rossi"),
+        metrics={"gap": 0.7},
+    )
+
+    result = build_skeleton(
+        envelope,
+        graph.node("hunting"),
+        graph=graph,
+        story={
+            "race": {"class_position": 7},
+            "situation": {"current_lap": 8, "laps_remaining": 12, "race_phase": "middle"},
+            "story": {"recent_beats": []},
+        },
+        bindings=slot_bindings(envelope, "unknown"),
+        emotion="unknown",
+        language="en",
+    )
+
+    assert result is not None
+    assert result.text == "A chase is building."
+    assert "P7" not in result.text
+    assert "laps remaining" not in result.text
+    assert result.fact_pack["version"] == "commentary-facts/2"
+    assert result.fact_pack["anchor"] == result.text
+    assert result.fact_pack["required_facts"]
+    assert result.fact_pack["required_facts"][0]["id"] == "beat:relation"
+    assert any(fact["id"] == "target:gap" for fact in result.fact_pack["optional_facts"])
+    assert "recent" not in result.fact_pack
 
 
 def test_every_graph_node_composes_from_its_declared_slots_in_en_and_cs() -> None:
@@ -285,6 +326,8 @@ def test_every_graph_node_composes_from_its_declared_slots_in_en_and_cs() -> Non
                 for slot in node.slots
                 if slot.name in metric_key
             }
+            if node.id == "sector_split":
+                metrics["segmentTime"] = 28.5
             envelope = make_envelope(
                 event_type=node.event_types[0],
                 phase=node.phases[0],
@@ -369,4 +412,5 @@ def test_every_sequence_edge_can_feed_a_composed_history_part() -> None:
         )
         assert result is not None, (edge.source, edge.target)
         assert result.graph_path == (edge.source, edge.target)
-        assert "history" in result.tree_path, (edge.source, edge.target, result.text)
+        assert result.tree_path[0] == "anchor", (edge.source, edge.target, result.text)
+        assert result.fact_pack["beat"]["graph_path"] == [edge.source, edge.target]

@@ -3,7 +3,7 @@
 **Status:** active prep (build gradually on content branch)  
 **Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 (engine) + this content PR  
 **Audience:** stream viewers (broadcast voice).  
-**Composer:** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md) — LAN PoC plus implemented deterministic graph-path composer/fact pack; live Windows/Ollama listen pending.
+**Composer:** grounded authored-anchor + `commentary-facts/2` planner in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md); the [skeleton PoC](commentary_llm_skeleton_poc.md) is historical. Live Windows/Ollama `qwen3:4b-instruct-2507-q4_K_M` listen pending.
 **Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Active architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 plus implemented V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. Evidence: [N12 implementation report](tasks/n12_implementation_report.md).
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
@@ -111,7 +111,7 @@ Docs + status only first. **VAD remains OS routing.** No new dep unless approved
 
 ## 4. Non-goals
 
-- Free-form LLM at race time  
+- LLM ownership of race truth or telemetry calculation
 - Neo4j  
 - Replacing SAPI→VAD with a cloud TTS  
 - Blocking the race loop on TTS  

@@ -1,7 +1,8 @@
-"""Deterministic fact-pack and multi-node graph-path skeleton composer."""
+"""Grounded commentary plans: authored anchor plus explicit factual propositions."""
 
 from __future__ import annotations
 
+import random
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -11,34 +12,10 @@ from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph
 from irswitch.commentary.validator import fill_slots, leftover_slots
 from irswitch.events.envelope import EventEnvelope
 
-FACT_PACK_VERSION = "commentary-facts/1"
+FACT_PACK_VERSION = "commentary-facts/2"
 MAX_FACTS = 4
 MAX_GRAPH_NODES = 3
 _SLOT = re.compile(r"\{([a-z0-9_]+)\}", re.IGNORECASE)
-_LIGHT_COMPOSE = frozenset(
-    {
-        "STREAM_START",
-        "ENTER_CAR",
-        "SESSION_INTRO_PRACTICE",
-        "SESSION_INTRO_QUALIFY",
-        "SESSION_INTRO_RACE",
-        "SESSION_PREVIEW",
-        "SESSION_WRAP",
-        "SOF_BRIEF",
-        "WEATHER_BRIEF",
-        "WEATHER_CHANGE",
-        "FIELD_FACT",
-        "PARADE_PAD",
-        "QUALI_RECAP",
-        "INCIDENT",
-        "INCIDENT_AFTERMATH",
-        "SESSION_FLAG",
-        "SESSION_CHECKERED",
-        "LEADER_CHANGE",
-    }
-)
-
-
 @dataclass(frozen=True)
 class CompositionResult:
     text: str
@@ -76,23 +53,30 @@ def build_skeleton(
     emotion: str,
     language: str,
     recent: RecentUtteranceHistory | None = None,
+    rng: random.Random | None = None,
 ) -> CompositionResult | None:
-    """Compose two to four facts by walking history → beat → detail → context.
+    """Build a grounded plan around one safe, fully-bound authored anchor.
 
-    The sequence graph still decides valid temporal transitions. RaceObserver's
-    frozen ``recent_beats`` supplies prior facts; no live observer reference or
-    LLM inference is used here.
+    ``text`` remains the compatibility field consumed by TTS, but it now holds
+    only the authored anchor. Required and optional propositions live in the v2
+    fact pack so an LLM may write a richer call without a generic pre-composed
+    position/laps/phase suffix. Raw recent utterances never enter that pack.
     """
     if node is None:
         return None
     context = story if isinstance(story, dict) else {}
     cs = language.lower().startswith("cs")
     graph_path = _graph_path(envelope, node, graph, context)
-    clauses: list[_Clause] = []
-
-    history_clause = _history_clause(graph_path, graph, context, cs=cs)
-    if history_clause is not None:
-        clauses.append(history_clause)
+    anchor = _authored_anchor_clause(
+        node,
+        bindings,
+        language=language,
+        emotion=emotion,
+        recent=recent,
+        rng=rng,
+    )
+    if anchor is None:
+        return None
 
     primary, details = _current_clauses(
         envelope,
@@ -103,29 +87,28 @@ def build_skeleton(
         emotion=emotion,
         recent=recent,
     )
-    if primary is not None:
-        clauses.append(primary)
-    clauses.extend(details)
-    clauses.extend(_context_clauses(context, used=_fact_keys(clauses), cs=cs))
-
-    selected: list[_Clause] = []
-    selected_facts: list[str] = []
-    for clause in clauses:
-        new_facts = [key for key in clause.fact_keys if key not in selected_facts]
-        if not new_facts or len(selected_facts) + len(new_facts) > MAX_FACTS:
+    # For events without a structured relation clause, the authored anchor is
+    # itself the required proposition. It is also the universal safe fallback.
+    if primary is None or any(key.startswith("authored:") for key in primary.fact_keys):
+        primary = _Clause("beat", _strip_terminal(anchor.text), ("beat:event",))
+    required = [primary]
+    optional_candidates = [
+        *details,
+        *_context_clauses(context, used=_fact_keys(required), cs=cs),
+    ]
+    optional: list[_Clause] = []
+    selected_ids = {_fact_id(primary)}
+    for clause in optional_candidates:
+        fact_id = _fact_id(clause)
+        if fact_id in selected_ids:
             continue
-        candidate = _join_clauses([*selected, clause])
-        if len(candidate) > node.tts.max_chars:
-            continue
-        selected.append(clause)
-        selected_facts.extend(new_facts)
-        if len(selected_facts) >= MAX_FACTS:
+        optional.append(clause)
+        selected_ids.add(fact_id)
+        if len(required) + len(optional) >= MAX_FACTS:
             break
 
-    min_parts = 1 if envelope.event_type in _LIGHT_COMPOSE else 2
-    if len(selected) < min_parts or len(selected_facts) < min_parts:
-        return None
-    text = _join_clauses(selected)
+    text = _ensure_terminal(anchor.text)
+    selected_facts = [_fact_id(clause) for clause in [*required, *optional]]
     fact_pack = _fact_pack(
         envelope,
         node,
@@ -135,13 +118,15 @@ def build_skeleton(
         emotion,
         graph_path,
         selected_facts,
-        recent,
+        anchor=text,
+        required=required,
+        optional=optional,
     )
     return CompositionResult(
         text=text,
-        fact_count=len(selected_facts),
+        fact_count=len(required) + len(optional),
         graph_path=graph_path,
-        tree_path=tuple(clause.kind for clause in selected),
+        tree_path=("anchor", "required", *(clause.kind for clause in optional)),
         fact_pack=fact_pack,
     )
 
@@ -564,6 +549,40 @@ def _current_clauses(
     return authored, details
 
 
+def _authored_anchor_clause(
+    node: GraphNode,
+    bindings: dict[str, object],
+    *,
+    language: str,
+    emotion: str,
+    recent: RecentUtteranceHistory | None,
+    rng: random.Random | None = None,
+) -> _Clause | None:
+    candidates: list[tuple[str, tuple[str, ...]]] = []
+    authored = node.variant_bucket(language, emotion)
+    if not authored:
+        locale_map = node.variants.get(language) or node.variants.get("en") or {}
+        for state in node.hr_states:
+            authored = locale_map.get(state) or locale_map.get("neutral") or ()
+            if authored:
+                break
+    for raw in authored:
+        names = tuple(dict.fromkeys(_SLOT.findall(raw)))
+        bound = tuple(name for name in names if _bound(bindings, name) is not None)
+        text = fill_slots(raw, bindings).strip()
+        if not text or leftover_slots(text):
+            continue
+        candidates.append((text, bound))
+    if not candidates:
+        return None
+    ordered = [item[0] for item in candidates]
+    fresh = prefer_fresh_candidates(ordered, recent)
+    text = rng.choice(fresh) if rng is not None else fresh[0]
+    selected = next(item for item in candidates if item[0] == text)
+    keys = tuple(f"authored:{name}" for name in selected[1]) or ("beat:event",)
+    return _Clause("beat", _strip_terminal(text), keys)
+
+
 def _richest_authored_clause(
     node: GraphNode,
     bindings: dict[str, object],
@@ -572,23 +591,14 @@ def _richest_authored_clause(
     emotion: str,
     recent: RecentUtteranceHistory | None,
 ) -> _Clause | None:
-    candidates: list[tuple[int, int, str, tuple[str, ...]]] = []
-    for raw in node.variant_bucket(language, emotion):
-        names = tuple(dict.fromkeys(_SLOT.findall(raw)))
-        bound = tuple(name for name in names if _bound(bindings, name) is not None)
-        text = fill_slots(raw, bindings).strip()
-        if not text or leftover_slots(text):
-            continue
-        candidates.append((len(bound), len(text), text, bound))
-    if not candidates:
-        return None
-    candidates.sort(key=lambda item: (-item[0], -item[1], item[2]))
-    ordered = [item[2] for item in candidates]
-    fresh = prefer_fresh_candidates(ordered, recent)
-    text = fresh[0]
-    selected = next(item for item in candidates if item[2] == text)
-    keys = tuple(f"authored:{name}" for name in selected[3]) or ("beat:event",)
-    return _Clause("beat", _strip_terminal(text), keys)
+    """Compatibility fallback for unstructured events; selection is no longer richest-first."""
+    return _authored_anchor_clause(
+        node,
+        bindings,
+        language=language,
+        emotion=emotion,
+        recent=recent,
+    )
 
 
 def _context_clauses(
@@ -640,7 +650,10 @@ def _fact_pack(
     emotion: str,
     graph_path: tuple[str, ...],
     selected_facts: list[str],
-    recent: RecentUtteranceHistory | None,
+    *,
+    anchor: str,
+    required: list[_Clause],
+    optional: list[_Clause],
 ) -> dict[str, Any]:
     race = context.get("race")
     race = race if isinstance(race, dict) else {}
@@ -673,8 +686,27 @@ def _fact_pack(
     behind_raw = story.get("behind")
     ahead: list[Any] = ahead_raw if isinstance(ahead_raw, list) else []
     behind: list[Any] = behind_raw if isinstance(behind_raw, list) else []
+    allowed_names = _allowed_names(bindings, ahead, behind)
+    allowed_numbers = _allowed_numbers(bindings, race, situation)
     return {
         "version": FACT_PACK_VERSION,
+        "anchor": anchor,
+        "required_facts": [
+            _proposition(
+                clause,
+                allowed_names=allowed_names,
+                provenance="event",
+                relation=_relation(envelope.event_type),
+            )
+            for clause in required
+        ],
+        "optional_facts": [
+            _proposition(clause, allowed_names=allowed_names, provenance=clause.kind)
+            for clause in optional
+        ],
+        "forbidden_claims": _forbidden_claims(envelope.event_type),
+        "allowed_names": allowed_names,
+        "allowed_numbers": allowed_numbers,
         "beat": {
             "node": node.id,
             "event": envelope.event_type,
@@ -708,7 +740,6 @@ def _fact_pack(
         "rear_target": rear_target,
         "field": {"ahead": ahead[:2], "behind": behind[:2]},
         "bio": {"hr_band": emotion},
-        "recent": list(recent.recent(4) if recent is not None else ()),
     }
 
 
@@ -722,7 +753,93 @@ def _relation(event_type: str) -> str:
         "POSITION_GAINED": "hero_gained_position",
         "POSITION_LOST": "hero_lost_position",
         "BATTLE_FOR_POSITION": "hero_between_two_fronts",
+        "LEADER_CHANGE": "class_leader_changed",
+        "SESSION_WRAP": "session_result",
     }.get(event_type.upper(), "factual_beat")
+
+
+def _fact_id(clause: _Clause) -> str:
+    return next((key for key in clause.fact_keys if key.startswith("beat:")), clause.fact_keys[0])
+
+
+def _proposition(
+    clause: _Clause,
+    *,
+    allowed_names: list[str],
+    provenance: str,
+    relation: str | None = None,
+) -> dict[str, Any]:
+    folded = clause.text.casefold()
+    required_terms = [
+        name.split()[-1]
+        for name in allowed_names
+        if name.casefold() in folded and name.split()
+    ]
+    proposition = {
+        "id": _fact_id(clause),
+        "text": _ensure_terminal(clause.text),
+        "provenance": provenance,
+        "required_terms": required_terms,
+        "required_numbers": [match.group(0) for match in _NUMBER_LITERAL.finditer(clause.text)],
+    }
+    if relation:
+        proposition["relation"] = relation
+    return proposition
+
+
+def _forbidden_claims(event_type: str) -> list[str]:
+    event = event_type.upper()
+    claims: list[str] = []
+    if event in {"HUNTING", "APPROACH", "ATTACK_RANGE", "HUNTED", "LEADER_CHANGE"}:
+        claims.append("on_track_pass")
+    if event in {"HUNTING", "APPROACH", "ATTACK_RANGE", "HUNTED"}:
+        claims.append("hero_leads")
+    if event == "POSITION_LOST":
+        claims.append("position_gain")
+    return claims
+
+
+def _allowed_names(
+    bindings: dict[str, object],
+    ahead: list[Any],
+    behind: list[Any],
+) -> list[str]:
+    names: list[str] = []
+    entity_keys = {"track", "mode", "hero_car", "target_car", "target_nationality"}
+    for key, value in bindings.items():
+        if ("name" in key or key in entity_keys) and (text := _text(value)):
+            names.append(text)
+    for item in [*ahead, *behind]:
+        if isinstance(item, dict):
+            text = _text(item.get("name") or item.get("display_name"))
+            if text:
+                names.append(text)
+    return list(dict.fromkeys(names))
+
+
+_NUMBER_LITERAL = re.compile(r"-?\d+(?:(?:[.:])\d+)*")
+
+
+def _allowed_numbers(*sources: object) -> list[str]:
+    found: list[str] = []
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            for nested in value.values():
+                visit(nested)
+            return
+        if isinstance(value, (list, tuple)):
+            for nested in value:
+                visit(nested)
+            return
+        if isinstance(value, bool) or value is None:
+            return
+        for match in _NUMBER_LITERAL.finditer(str(value)):
+            found.append(match.group(0))
+
+    for source in sources:
+        visit(source)
+    return list(dict.fromkeys(found))
 
 
 def _join_labels(labels: list[str], *, cs: bool) -> str:
@@ -740,6 +857,13 @@ def _join_clauses(clauses: list[_Clause]) -> str:
 
 def _strip_terminal(text: str) -> str:
     return text.strip().rstrip(".!?…").strip()
+
+
+def _ensure_terminal(text: str) -> str:
+    clean = text.strip()
+    if not clean:
+        return clean
+    return clean if clean[-1] in ".!?…" else clean + "."
 
 
 def _fact_keys(clauses: list[_Clause]) -> set[str]:

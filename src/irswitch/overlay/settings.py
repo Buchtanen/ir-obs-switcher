@@ -179,7 +179,7 @@ class CommentarySettings:
     # Optional remote LLM style polish (Ollama OpenAI-compatible). Default off.
     llm_polish: bool = False
     llm_base_url: str = "http://127.0.0.1:11434/v1"
-    llm_model: str = "qwen2.5:3b"
+    llm_model: str = "qwen3:4b-instruct-2507-q4_K_M"
     llm_timeout_s: float = 12.0
     llm_temperature: float = 0.45
     llm_max_tokens: int = 360
