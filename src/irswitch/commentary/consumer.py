@@ -361,6 +361,7 @@ class CommentaryConsumer:
         return self._settings, self._language
 
     def _apply_story_context(self, context: dict[str, Any]) -> None:
+        self.director.note_composition_context(context)
         story = context.get("story")
         story = story if isinstance(story, dict) else {}
         hero = story.get("hero")

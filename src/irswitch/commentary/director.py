@@ -14,6 +14,7 @@ from irswitch.commentary.anti_repeat import (
     RecentUtteranceHistory,
     prefer_fresh_candidates,
 )
+from irswitch.commentary.composer import build_skeleton
 from irswitch.commentary.graph import (
     GraphEdge,
     GraphNode,
@@ -41,6 +42,7 @@ from irswitch.race.watcher_log import WatcherLog, watch_name_for
 logger = logging.getLogger(__name__)
 
 _SPEAK_PHASES = frozenset({"ENTER", "RESULT", "EXIT"})
+_UPDATE_SPEAK_EVENTS = frozenset({"BATTLE_FOR_POSITION"})
 _SECTOR_SPEAK_EVENTS = frozenset({"SECTOR_SPLIT", "SECTOR_BEST"})
 _GAP_HUNT_EVENTS = frozenset({"HUNTING", "HUNTED"})
 _INCIDENT_PAIR_EVENTS = frozenset({"INCIDENT", "INCIDENT_AFTERMATH"})
@@ -93,7 +95,7 @@ class _LastSpoken:
 
 @dataclass
 class CommentaryDirector:
-    """Selects one graph node after EventManager accepts an envelope.
+    """Selects a beat and optionally composes a multi-node factual skeleton.
 
     Fail-soft: unexpected errors are logged by the caller. Empty variants
     (structure waiting for authored text) produce silence.
@@ -124,6 +126,7 @@ class CommentaryDirector:
     grid_story: bool = False
     quali_bag_ready: bool = False
     watcher_log: WatcherLog | None = None
+    _composition_context: dict[str, Any] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -144,6 +147,10 @@ class CommentaryDirector:
             if token and token not in cleaned:
                 cleaned.append(token)
         self._iracing_hero_names = tuple(cleaned)
+
+    def note_composition_context(self, context: dict[str, Any] | None) -> None:
+        """Accept one thawed frozen N12 snapshot; never retain a live RaceObserver."""
+        self._composition_context = dict(context) if isinstance(context, dict) else {}
 
     def hero_names(self) -> tuple[str, ...]:
         cfg = self.settings
@@ -193,6 +200,7 @@ class CommentaryDirector:
         self._scheduler.reset()
         self._current_event_type = None
         self.opener.reset()
+        self._composition_context = {}
         self._sync_scheduler_settings()
 
     def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
@@ -443,7 +451,7 @@ class CommentaryDirector:
             return flushed
 
         ranked = sorted(
-            (env for env in envelopes if env.phase in _SPEAK_PHASES),
+            (env for env in envelopes if _is_speak_beat(env)),
             key=lambda env: env.priority,
             reverse=True,
         )
@@ -583,6 +591,9 @@ class CommentaryDirector:
                 past_framing=True,
                 hero_names=utterance.hero_names,
                 hero_name=utterance.hero_name,
+                fact_pack=utterance.fact_pack,
+                composition_path=utterance.composition_path,
+                graph_path=utterance.graph_path,
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
@@ -663,29 +674,58 @@ class CommentaryDirector:
                 )
                 return None
             resolved = "unknown"
-        texts = node.variant_bucket(self.language, resolved)
-        if not texts:
-            self._record(
-                action="skipped",
-                reason="no_variant",
-                now=now,
-                event_type=envelope.event_type,
-                node_id=node.id,
-                emotion=resolved,
-            )
-            return None
         bindings = slot_bindings(envelope, resolved, language=self.language)
-        spoken = choose_filled_line(texts, bindings, self.rng, history=self._recent)
-        if spoken is None:
-            self._record(
-                action="skipped",
-                reason="slot_unbound",
-                now=now,
-                event_type=envelope.event_type,
-                node_id=node.id,
+        fact_pack: dict[str, Any] | None = None
+        composition_path: tuple[str, ...] = ()
+        graph_path: tuple[str, ...] = ()
+        if self.settings.llm_polish:
+            composition = build_skeleton(
+                envelope,
+                node,
+                graph=self.graph,
+                story=self._composition_context,
+                bindings=bindings,
                 emotion=resolved,
+                language=self.language,
+                recent=self._recent,
             )
-            return None
+            if composition is None:
+                self._record(
+                    action="skipped",
+                    reason="composer_insufficient_facts",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    emotion=resolved,
+                )
+                return None
+            spoken = composition.text
+            fact_pack = composition.fact_pack
+            composition_path = composition.tree_path
+            graph_path = composition.graph_path
+        else:
+            texts = node.variant_bucket(self.language, resolved)
+            if not texts:
+                self._record(
+                    action="skipped",
+                    reason="no_variant",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    emotion=resolved,
+                )
+                return None
+            spoken = choose_filled_line(texts, bindings, self.rng, history=self._recent)
+            if spoken is None:
+                self._record(
+                    action="skipped",
+                    reason="slot_unbound",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    emotion=resolved,
+                )
+                return None
         spoken, hero_names, hero_name = self._apply_hero_mix(spoken)
         issues = validate_utterance(spoken, node)
         if issues:
@@ -730,6 +770,9 @@ class CommentaryDirector:
             past_framing=False,
             hero_names=hero_names,
             hero_name=hero_name,
+            fact_pack=fact_pack,
+            composition_path=composition_path,
+            graph_path=graph_path,
         )
 
     def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:
@@ -891,6 +934,12 @@ def _prefer_incident_over_aftermath(ranked: list[EventEnvelope]) -> list[EventEn
     if "INCIDENT" in types and "INCIDENT_AFTERMATH" in types:
         return [env for env in ranked if env.event_type != "INCIDENT_AFTERMATH"]
     return ranked
+
+
+def _is_speak_beat(envelope: EventEnvelope) -> bool:
+    if envelope.phase in _SPEAK_PHASES:
+        return True
+    return envelope.phase == "UPDATE" and envelope.event_type in _UPDATE_SPEAK_EVENTS
 
 
 def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: float) -> bool:

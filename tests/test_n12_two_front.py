@@ -1,5 +1,5 @@
 from irswitch.commentary.consumer import CommentaryConsumer
-from irswitch.commentary.director import CommentaryDirector
+from irswitch.commentary.director import CommentaryDirector, slot_bindings
 from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.tts import NullTtsSink
 from irswitch.events.adapters.battle import battle_race_event_to_envelope
@@ -123,3 +123,37 @@ def test_commentary_prefers_composite_and_accounts_for_parent_enters() -> None:
     assert selected == [composite]
     reasons = [decision["reason"] for decision in consumer.director.decisions()]
     assert reasons == ["covered_by_two_front", "covered_by_two_front"]
+
+
+def test_two_front_graph_update_is_reachable_and_all_slots_bind() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["two_front_battle"]
+    settings = CommentarySettings(enabled=True, cooldown_s=0)
+    director = CommentaryDirector(graph=graph, settings=settings, sink=NullTtsSink())
+
+    def event(phase: str, at_ms: int):
+        return make_envelope(
+            event_type="BATTLE_FOR_POSITION",
+            phase=phase,
+            priority=72,
+            monotonic_ms=at_ms,
+            correlation_id="battle:two-front:5:10:20:1:1",
+            metrics={
+                "newPosition": 7,
+                "frontTargetName": "Rossi",
+                "frontTargetPosition": 6,
+                "frontGap": 0.7,
+                "rearTargetName": "Berg",
+                "rearGap": 0.5,
+            },
+        )
+
+    entered = event("ENTER", 10_000)
+    bound = slot_bindings(entered, "unknown")
+    assert all(bound.get(slot.name) is not None for slot in node.slots)
+    assert director.observe([entered], None, 10.0) is not None
+
+    updated = event("UPDATE", 30_000)
+    spoken = director.observe([updated], None, 30.0)
+    assert spoken is not None
+    assert spoken.node_id == "two_front_battle"

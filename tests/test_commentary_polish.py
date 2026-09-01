@@ -147,6 +147,23 @@ def test_build_polish_request_shape() -> None:
     assert "Line one." in req["messages"][1]["content"]
 
 
+def test_czech_prompt_and_compact_fact_pack_are_forwarded() -> None:
+    req = build_polish_request(
+        "Dokončuje osmé kolo na sedmém místě.",
+        CommentarySettings(),
+        locale="cs",
+        fact_pack={"version": "commentary-facts/1", "beat": {"node": "lap_complete"}},
+        composition_path=("beat", "session"),
+    )
+
+    system = req["messages"][0]["content"]
+    user = req["messages"][1]["content"]
+    assert "diváky" in system
+    assert "FACTS:" in user
+    assert '"lap_complete"' in user
+    assert "COMPOSITION_PATH: beat -> session" in user
+
+
 def test_live_prompt_fits_node_tts_budget() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
@@ -251,10 +268,19 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
     captured: list[dict] = []
+    forwarded: dict[str, object] = {}
 
     def fake_polish(
-        skeleton, _node, settings, *, opener=None, past=False, driver_names=()
+        skeleton,
+        _node,
+        settings,
+        *,
+        opener=None,
+        past=False,
+        driver_names=(),
+        **extra,
     ):  # noqa: ARG001
+        forwarded.update(extra)
         return type(
             "O",
             (),
@@ -293,10 +319,15 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
             correlation_id="c1",
             estimated_seconds=2.0,
             node=node,
+            fact_pack={"version": "commentary-facts/1"},
+            composition_path=("beat", "detail"),
         )
     )
     assert captured
     assert captured[0]["outcome"] == "ok"
+    assert forwarded["locale"] == "en"
+    assert forwarded["fact_pack"] == {"version": "commentary-facts/1"}
+    assert forwarded["composition_path"] == ("beat", "detail")
 
 
 def test_build_tts_sink_omits_hook_when_polish_off(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -349,6 +380,19 @@ def test_fact_violation_codes_from_vod_inversions() -> None:
         )
         == []
     )
+
+
+def test_fact_lock_rejects_two_front_role_swap() -> None:
+    facts = {
+        "front_target": {"name": "Rossi", "gap": "zero point seven seconds"},
+        "rear_target": {"name": "Berg", "gap": "zero point five seconds"},
+    }
+    codes = fact_violation_codes(
+        "He attacks Rossi ahead while Berg applies pressure behind.",
+        "Berg is the target ahead while Rossi attacks from behind.",
+        fact_pack=facts,
+    )
+    assert "two_front_polarity_conflict" in codes
     assert "live_call_prefix" in fact_violation_codes(
         "Gap zero point four two to Smith.",
         "Live Call: He is closing on Smith.",

@@ -72,6 +72,15 @@ _FACT_LOCK = (
     "Never open with Name. then the rest of the call. Talk about the driver; do not address them.\n"
 )
 
+_FACT_LOCK_CS = (
+    "Zachovej KAŽDÝ fakt ze SKELETONU. Nepřidávej nová čísla, jména ani události.\n"
+    "Čísla ponech slovně a nevracej číslice ani zkratky jednotek.\n"
+    "Nikdy nevymýšlej žlutou vlajku, předjetí, poslední kolo, vedení ani BPM.\n"
+    "Nezaměň stíhání za vedení a ztrátu pozice za zisk.\n"
+    "Mluv o hlavním jezdci ve třetí osobě; nikdy ho neoslovuj jako ty nebo vy.\n"
+    "Nevkládej úvod typu Živě ani meta komentář.\n"
+)
+
 
 def _hero_lock(driver_names: Sequence[str]) -> str:
     shown = " / ".join(n.strip() for n in driver_names if n and str(n).strip())
@@ -126,6 +135,8 @@ def fact_violation_codes(
     skeleton: str,
     polished: str,
     driver_names: Sequence[str] = (),
+    *,
+    fact_pack: dict[str, Any] | None = None,
 ) -> list[str]:
     """Reject VOD-style inversions the 3B model repeats. Empty = fact-ok."""
     sk = skeleton or ""
@@ -152,7 +163,37 @@ def fact_violation_codes(
             codes.append("hero_name_fusion")
     if _hero_vocative(po, driver_names):
         codes.append("hero_vocative")
+    if _two_front_polarity_conflict(po, fact_pack):
+        codes.append("two_front_polarity_conflict")
     return codes
+
+
+def _two_front_polarity_conflict(
+    polished: str,
+    fact_pack: dict[str, Any] | None,
+) -> bool:
+    if not isinstance(fact_pack, dict):
+        return False
+    front = fact_pack.get("front_target")
+    rear = fact_pack.get("rear_target")
+    if not isinstance(front, dict) or not isinstance(rear, dict):
+        return False
+    front_name = str(front.get("name") or "").strip()
+    rear_name = str(rear.get("name") or "").strip()
+    if not front_name or not rear_name or front_name.casefold() == rear_name.casefold():
+        return bool(front_name and rear_name)
+    text = polished or ""
+    front_behind = re.search(
+        rf"\b{re.escape(front_name)}\b[^.!?]{{0,48}}\b(behind|from behind|rear|zezadu|vzadu)\b",
+        text,
+        re.IGNORECASE,
+    )
+    rear_ahead = re.search(
+        rf"\b{re.escape(rear_name)}\b[^.!?]{{0,48}}\b(ahead|in front|vpředu|před ním)\b",
+        text,
+        re.IGNORECASE,
+    )
+    return front_behind is not None or rear_ahead is not None
 
 
 def _hero_vocative(text: str, names: Sequence[str]) -> bool:
@@ -178,6 +219,7 @@ def _reject_codes(
     content: str,
     node: GraphNode,
     driver_names: Sequence[str] = (),
+    fact_pack: dict[str, Any] | None = None,
 ) -> list[str]:
     codes: list[str] = []
     expand = _expansion_code(skeleton, content, node.tts)
@@ -185,7 +227,7 @@ def _reject_codes(
         codes.append(expand)
     issues = validate_utterance(content, node)
     codes.extend(item.code for item in issues)
-    for code in fact_violation_codes(skeleton, content, driver_names):
+    for code in fact_violation_codes(skeleton, content, driver_names, fact_pack=fact_pack):
         if code not in codes:
             codes.append(code)
     return codes
@@ -197,7 +239,18 @@ def _system_prompt(
     tts: TtsLimits,
     skeleton: str,
     driver_names: Sequence[str] = (),
+    locale: str = "en",
 ) -> str:
+    if locale.lower().startswith("cs"):
+        cap = polish_char_limit(skeleton, tts)
+        timing = "opožděný televizní komentář" if past else "živý televizní komentář"
+        return (
+            f"Uprav {timing} pro diváky streamu, ne rádio do kokpitu.\n"
+            f"{_FACT_LOCK_CS}"
+            "Zachovej stejný počet vět; nepřidávej další větu. "
+            f"Limit je {cap} znaků a {tts.max_seconds:g} sekundy mluveného projevu. "
+            "Pouze výsledný komentář, bez vysvětlování."
+        )
     hero = _hero_lock(driver_names)
     if past:
         lead = (
@@ -219,6 +272,8 @@ def _user_content(
     past: bool,
     rejected: Sequence[str] = (),
     previous: str | None = None,
+    fact_pack: dict[str, Any] | None = None,
+    composition_path: Sequence[str] = (),
 ) -> str:
     instruction = (
         "Rewrite this delayed call. Same facts, same length, richer wording only."
@@ -226,6 +281,13 @@ def _user_content(
         else "Rewrite the live call. Same facts, same length, richer wording only."
     )
     parts = [f"SKELETON:\n{skeleton}\n{instruction}"]
+    if fact_pack:
+        parts.append(
+            "FACTS:\n"
+            + json.dumps(fact_pack, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+        )
+    if composition_path:
+        parts.append("COMPOSITION_PATH: " + " -> ".join(str(item) for item in composition_path))
     if rejected:
         parts.append(
             "PREVIOUS REWRITE REJECTED: "
@@ -248,6 +310,8 @@ class PolishOutcome:
     request: dict[str, Any]
     response: dict[str, Any] | None = None
     attempts: int = 0
+    fact_pack: dict[str, Any] | None = None
+    composition_path: tuple[str, ...] = ()
 
     def debug_record(self, *, node_id: str, event_type: str) -> dict[str, Any]:
         last = None
@@ -264,6 +328,8 @@ class PolishOutcome:
             "spoken": self.text,
             "request": self.request,
             "response": self.response,
+            "factPack": self.fact_pack,
+            "compositionPath": list(self.composition_path),
         }
 
 
@@ -284,6 +350,9 @@ def build_polish_request(
     driver_names: Sequence[str] = (),
     rejected: Sequence[str] = (),
     previous: str | None = None,
+    locale: str = "en",
+    fact_pack: dict[str, Any] | None = None,
+    composition_path: Sequence[str] = (),
 ) -> dict[str, Any]:
     tts = _tts_for(node)
     text = skeleton.strip()
@@ -299,12 +368,23 @@ def build_polish_request(
             {
                 "role": "system",
                 "content": _system_prompt(
-                    past=past, tts=tts, skeleton=text, driver_names=driver_names
+                    past=past,
+                    tts=tts,
+                    skeleton=text,
+                    driver_names=driver_names,
+                    locale=locale,
                 ),
             },
             {
                 "role": "user",
-                "content": _user_content(text, past=past, rejected=rejected, previous=previous),
+                "content": _user_content(
+                    text,
+                    past=past,
+                    rejected=rejected,
+                    previous=previous,
+                    fact_pack=fact_pack,
+                    composition_path=composition_path,
+                ),
             },
         ],
     }
@@ -318,6 +398,8 @@ def _failed(
     request: dict[str, Any],
     response: dict[str, Any] | None = None,
     attempts: int,
+    fact_pack: dict[str, Any] | None = None,
+    composition_path: Sequence[str] = (),
 ) -> PolishOutcome:
     return PolishOutcome(
         text="",
@@ -327,6 +409,8 @@ def _failed(
         request=request,
         response=response,
         attempts=attempts,
+        fact_pack=fact_pack,
+        composition_path=tuple(composition_path),
     )
 
 
@@ -338,6 +422,9 @@ def polish_skeleton(
     opener: Any | None = None,
     past: bool = False,
     driver_names: Sequence[str] = (),
+    locale: str = "en",
+    fact_pack: dict[str, Any] | None = None,
+    composition_path: Sequence[str] = (),
 ) -> PolishOutcome:
     """Blocking HTTP polish. Never raises. Empty text when polish is on and fails."""
     text = (skeleton or "").strip()
@@ -349,6 +436,8 @@ def polish_skeleton(
             skeleton=skeleton,
             request={},
             attempts=0,
+            fact_pack=fact_pack,
+            composition_path=tuple(composition_path),
         )
     if not settings.llm_polish:
         return PolishOutcome(
@@ -358,6 +447,8 @@ def polish_skeleton(
             skeleton=text,
             request={},
             attempts=0,
+            fact_pack=fact_pack,
+            composition_path=tuple(composition_path),
         )
 
     url = _chat_completions_url(settings.llm_base_url)
@@ -367,10 +458,19 @@ def polish_skeleton(
             latency_ms=0.0,
             skeleton=text,
             request=build_polish_request(
-                text, settings, past=past, node=node, driver_names=driver_names
+                text,
+                settings,
+                past=past,
+                node=node,
+                driver_names=driver_names,
+                locale=locale,
+                fact_pack=fact_pack,
+                composition_path=composition_path,
             ),
             response={"error": "llm_base_url must be http(s)"},
             attempts=0,
+            fact_pack=fact_pack,
+            composition_path=composition_path,
         )
 
     max_attempts = _max_attempts(settings)
@@ -400,6 +500,9 @@ def polish_skeleton(
             driver_names=driver_names,
             rejected=rejected,
             previous=previous,
+            locale=locale,
+            fact_pack=fact_pack,
+            composition_path=composition_path,
         )
         body = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
@@ -443,7 +546,7 @@ def polish_skeleton(
             last_response = compact
             continue
 
-        codes = _reject_codes(text, content, node, driver_names)
+        codes = _reject_codes(text, content, node, driver_names, fact_pack)
         last_response = {**compact, "validatorCodes": codes}
         if codes:
             continue
@@ -457,6 +560,8 @@ def polish_skeleton(
             request=payload,
             response=compact,
             attempts=attempt,
+            fact_pack=fact_pack,
+            composition_path=tuple(composition_path),
         )
 
     latency = (time.monotonic() - started) * 1000.0
@@ -474,6 +579,8 @@ def polish_skeleton(
         request=payload,
         response=last_response,
         attempts=attempts_done,
+        fact_pack=fact_pack,
+        composition_path=composition_path,
     )
 
 

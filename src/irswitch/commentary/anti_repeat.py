@@ -76,6 +76,7 @@ class RecentUtteranceHistory:
     tail_ratio: float = DEFAULT_TAIL_RATIO
     _norms: deque[str] = field(default_factory=deque, init=False, repr=False)
     _tails: deque[str] = field(default_factory=deque, init=False, repr=False)
+    _raws: deque[str] = field(default_factory=deque, init=False, repr=False)
 
     def __post_init__(self) -> None:
         maxlen = max(1, int(self.size))
@@ -85,10 +86,12 @@ class RecentUtteranceHistory:
         self.tail_ratio = float(self.tail_ratio)
         self._norms = deque(maxlen=maxlen)
         self._tails = deque(maxlen=maxlen)
+        self._raws = deque(maxlen=maxlen)
 
     def clear(self) -> None:
         self._norms.clear()
         self._tails.clear()
+        self._raws.clear()
 
     def remember(self, text: str) -> None:
         norm = normalize_utterance(text)
@@ -96,6 +99,16 @@ class RecentUtteranceHistory:
             return
         self._norms.append(norm)
         self._tails.append(utterance_tail(text, n=self.tail_tokens))
+        self._raws.append(str(text).strip())
+
+    def recent(self, limit: int | None = None) -> tuple[str, ...]:
+        """Return a bounded oldest-to-newest copy for fact-pack anti-repeat hints."""
+        if limit is None:
+            return tuple(self._raws)
+        width = max(0, int(limit))
+        if width == 0:
+            return ()
+        return tuple(self._raws)[-width:]
 
     def __len__(self) -> int:
         return len(self._norms)

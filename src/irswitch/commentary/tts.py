@@ -53,6 +53,9 @@ class CommentaryUtterance:
     past_framing: bool = False
     hero_names: tuple[str, ...] = ()
     hero_name: str | None = None
+    fact_pack: dict[str, Any] | None = None
+    composition_path: tuple[str, ...] = ()
+    graph_path: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -278,13 +281,17 @@ class ProcessTtsSink:
             self.settings.scheduler, "llm_past_framing", True
         )
         if self.settings.llm_polish:
-            outcome = polish_skeleton(
-                spoken_text,
-                utterance.node,
-                self.settings,
-                past=past,
-                driver_names=utterance.hero_names,
-            )
+            polish_kwargs: dict[str, Any] = {
+                "past": past,
+                "driver_names": utterance.hero_names,
+            }
+            if utterance.fact_pack is not None:
+                polish_kwargs.update(
+                    locale=utterance.locale,
+                    fact_pack=utterance.fact_pack,
+                    composition_path=utterance.composition_path,
+                )
+            outcome = polish_skeleton(spoken_text, utterance.node, self.settings, **polish_kwargs)
             self._emit_polish_debug(utterance, outcome)
             if not (outcome.text or "").strip():
                 return
