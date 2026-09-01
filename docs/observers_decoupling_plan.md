@@ -258,7 +258,37 @@ slotu. iRating/SR nesmí být interpretace talentu nebo čistoty; národnost nes
 vést ke stereotypu. Přesné sloty, ukázky a implementační handover jsou v
 [`commentary_extension_handover.md`](commentary_extension_handover.md#driver-fact-extension-needs-engineering).
 
-### 3.3 Derived (první vlna)
+### 3.3 Souběžný útok vpředu a obrana zezadu
+
+`hunting` a `hunted` jsou dva nezávislé vztahy, ne přepínač jednoho módu.
+RaceObserver/EventEngine drží současně:
+
+```text
+front: hero stahuje soupeře vpředu
+rear:  soupeř zezadu stahuje hero
+
+front + rear ACTIVE
+  -> oba parent eventy zůstávají aktivní
+  -> třetí composite BATTLE_FOR_POSITION / two_front_battle
+```
+
+Dedupe a coalescing musí obsahovat směr + `targetCarIdx` + relation epoch.
+Společný `battle` channel ani vyšší priorita nesmí jeden směr vytlačit. Composite
+nese `front_target_*`, `front_gap`, `rear_target_*`, `rear_gap` a vlastní
+correlation se dvěma identitami. Když jedna strana skončí, composite končí a
+druhá parent větev pokračuje bez nového ENTER.
+
+Pro hlas se při společném ENTER preferuje jedna věta z explicitní větve
+`two_front_battle`; parent rozhodnutí se pouze označí `covered_by_two_front`.
+Stav parentů, replay ani pozdější UPDATE/EXIT se nemažou. Slot-light fallback
+musí umět říct, že hero útočí dopředu a současně hlídá pozici zezadu, i když
+chybí obě jména. `BATTLE_FOR_POSITION` se nesmí dál vydávat za
+`side_by_side`, protože jde o jinou geometrii souboje.
+
+Přesný payload, navržené hrany a EN/CS texty:
+[`commentary_extension_handover.md`](commentary_extension_handover.md#two-front-battle-branch-needs-engineering).
+
+### 3.4 Derived (první vlna)
 
 | Derived | Trigger |
 | --- | --- |
@@ -269,7 +299,7 @@ vést ke stereotypu. Přesné sloty, ukázky a implementační handover jsou v
 | `RIVAL_REAPPEARS` | Stejný car znovu v near field — **parked / cut from narrative epic v1** (unused in code) |
 | `SESSION_WRAP` / `SESSION_PREVIEW` | Hranice session |
 
-### 3.4 Incident vs Finish (hlas + HUD)
+### 3.5 Incident vs Finish (hlas + HUD)
 
 | Událost | Overlay | Commentary |
 | --- | --- | --- |

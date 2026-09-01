@@ -254,6 +254,126 @@ overrides, current-lap formatting, CS plurals/phase grammar, 120-second cadence,
 framing, invented numbers/phases, timeout fallback, replay determinism, and all
 bound EN/CS examples against the current validator.
 
+<a id="two-front-battle-branch-needs-engineering"></a>
+
+## Two-front battle branch — `needs-engineering`
+
+The current emitter has independent hunting/hunted FSM tracks, but its
+`BATTLE_FOR_POSITION` meta payload describes mainly the front target and the
+active graph maps that event to `side_by_side`. H7 replaces that incomplete
+content contract. This specification does not change the active graph/runtime.
+
+### State and event contract
+
+- Front and rear relations have separate identity, epoch, hysteresis, update
+  cadence, dedupe, coalesce key, active story, cooldown, and EXIT.
+- `BATTLE_FOR_POSITION` is a third derived event while both parents are ACTIVE;
+  it never replaces either parent.
+- Same-tick accepted order is front parent, rear parent, composite.
+- Composite identity contains hero + both target car ids + both relation epochs.
+- A target change closes the old relation/composite before a new correlation;
+  the unchanged parent continues without a synthetic re-entry.
+- Pit suppression, session reset, or stale geometry closes all applicable
+  relations deterministically and cannot leave a composite stuck ACTIVE.
+
+### Proposed node and topology
+
+```json
+{
+  "proposed_node": "two_front_battle",
+  "family": "battle",
+  "event_types": ["BATTLE_FOR_POSITION"],
+  "phases": ["ENTER", "UPDATE"],
+  "speak_priority": 62,
+  "cooldown_s": 12,
+  "hr_states": ["unknown", "focused", "pushing", "high"],
+  "needs-engineering": true
+}
+```
+
+Proposed graph transitions are explicit and do not silently alter the active
+topology:
+
+```text
+hunting ACTIVE + hunted ENTER  -> two_front_battle ENTER
+hunted ACTIVE + hunting ENTER  -> two_front_battle ENTER
+two_front_battle + front EXIT  -> hunted remains ACTIVE
+two_front_battle + rear EXIT   -> hunting/current front intensity remains ACTIVE
+two_front_battle + target swap -> old composite EXIT, new composite ENTER
+```
+
+The existing `side_by_side` node remains one-front-target racing and drops
+`BATTLE_FOR_POSITION` from its event mapping when `two_front_battle` is wired.
+Parent edges (`hunting -> attack_range/side_by_side/overtake` and
+`hunted -> position_lost`) continue independently.
+
+### Proposed slots
+
+| Slot | Type | Example | Exact source | Missing behavior |
+| --- | --- | --- | --- | --- |
+| `position` | existing `int` | `7` | hero class/overall position in the accepted snapshot | Slot-light line when absent. Meaning unchanged. |
+| `front_target_name` | `name` | `Rossi` | front parent target `CarIdx` joined to the same frozen context | Never substitute rear/current nearest car. |
+| `front_gap` | `gap` | `0.7` | front parent accepted gap | Omit stale/missing value. |
+| `front_position` | `int` | `6` | front target class/overall position in the same scope as hero | Omit when scopes differ. |
+| `rear_target_name` | `name` | `Berg` | rear parent target `CarIdx` joined to the same frozen context | Never substitute front/current nearest car. |
+| `rear_gap` | `gap` | `0.5` | rear parent accepted gap | Omit stale/missing value. |
+| `rear_position` | `int` | `8` | rear target class/overall position in the same scope as hero | Omit when scopes differ. |
+
+All geometry uses the embedded accepted context and the existing 3-second
+relation freshness ceiling. If either relation is no longer current, veto the
+composite and select the surviving parent; never speak a two-front line from
+one live side plus one stale side.
+
+### Proposed bilingual copy examples
+
+| Binding level | EN | CS |
+| --- | --- | --- |
+| full names | `He is closing on {front_target_name}, but {rear_target_name} is closing too.` | `Stahuje {front_target_name}, ale zezadu se dotahuje také {rear_target_name}.` |
+| both gaps | `The fight runs both ways: {front_gap} ahead, {rear_gap} behind.` | `Souboj běží na obě strany: {front_gap} vpředu, {rear_gap} vzadu.` |
+| positions | `He attacks for P{front_position} while defending P{position}.` | `Útočí na P{front_position} a současně brání P{position}.` |
+| named front | `{front_target_name} is the target, with pressure still arriving from behind.` | `Cílem je {front_target_name}, tlak ale dál přichází zezadu.` |
+| named rear | `He keeps attacking ahead with {rear_target_name} filling the mirrors.` | `Dál útočí vpředu a v zrcátkách roste {rear_target_name}.` |
+| slot-light | `He is attacking ahead while defending the position behind.` | `Útočí dopředu a zároveň hlídá pozici zezadu.` |
+| focused | `Two battles, one line to manage, and no room for a mistake.` | `Dva souboje, jedna stopa a žádný prostor pro chybu.` |
+| high | `Pressure at both ends of the car! This fight is alive!` | `Tlak na obou koncích vozu! Tenhle souboj žije!` |
+
+At least 40% of each proposed cell stays slot-light because two complete driver
+profiles/gaps will not always be available. Named lines require their exact
+front/rear identity; one name must never be used in both roles.
+
+### Commentary and LLM selection
+
+When parent ENTERs and the fresh composite share a batch, prefer the composite
+utterance and log each parent speech outcome as `covered_by_two_front`. This is
+speech dedupe only: accepted ids, active states, cooldown ledgers, and replay
+rows remain. After the composite exits, the surviving parent is immediately
+eligible subject to its own existing cooldown; it is not punished by the
+composite cooldown.
+
+The optional LLM fact block labels roles as `FRONT TARGET` and `REAR TARGET`.
+Fact validation rejects swapped direction, collapsing both identities into one,
+inventing a pass/position loss, or claiming only attack/defence when the
+skeleton explicitly describes both (`two_front_polarity_conflict`).
+
+### H7 — Two-front battle implementation
+
+1. Characterize current simultaneous FSM events and front-only composite
+   payload before changing behavior.
+2. Add direction + target + relation epoch to parent identities, dedupe keys,
+   coalescing, active story storage, and replay rows.
+3. Emit the complete composite payload after both parent transitions; close it
+   on either exit, target change, stale context, pit suppression, or reset.
+4. Add proposed slots and the `two_front_battle` node; remove
+   `BATTLE_FOR_POSITION` from `side_by_side` only in the same reviewed change.
+5. Implement composite-first speech selection with `covered_by_two_front`
+   accounting and independent surviving-parent cooldown.
+6. Extend LLM fact lock with explicit front/rear roles and polarity validation.
+
+Tests: both enter same tick, staggered enters, independent UPDATE rates, front
+and rear target swaps, either-side exit, composite stale veto, pit/reset abort,
+queue pressure/coalescing, replay ordering, missing slots, parent fallback,
+cooldown independence, LLM role swap, and all EN/CS/HR examples.
+
 ## Trigger policy (H4 product choices)
 
 | Node | Event | Trigger | Reset |

@@ -251,6 +251,79 @@ Same-tick incident policy is explicit:
 Existing priorities, cooldowns, event types, and fixed source order are
 characterized in N12.0 before this merge changes runtime ownership.
 
+#### A2.1 — Independent front/rear battle relations and composite branch
+
+`hunting` and `hunted` are not mutually exclusive modes. They are independent
+relations owned by separate FSM tracks:
+
+```text
+front relation: hero -> car ahead   (hunting / approach / attack_range / side_by_side)
+rear relation:  car behind -> hero  (hunted)
+
+front ACTIVE + rear ACTIVE
+  -> parents remain ACTIVE
+  -> additionally derive BATTLE_FOR_POSITION / two_front_battle
+```
+
+Acceptance, dedupe, active-story storage, queue coalescing, and cooldown state
+must key the parents by `(session_id, direction, hero_car_idx, target_car_idx,
+relation_epoch)`. A generic `channel="battle"`, priority comparison, or shared
+story slot must never let the front relation evict the rear relation or the
+reverse. Both parent event ids remain visible to overlay, commentary accounting,
+replay, and diagnostics.
+
+The existing `BATTLE_FOR_POSITION` meta event becomes a third derived fact, not
+a replacement. Its payload and frozen context must carry both sides explicitly:
+
+```python
+TwoFrontBattleFacts(
+    hero_position: int | None,
+    front_target_car_idx: int,
+    front_target_name: str | None,
+    front_target_position: int | None,
+    front_gap_s: float | None,
+    front_relation_epoch: int,
+    rear_target_car_idx: int,
+    rear_target_name: str | None,
+    rear_target_position: int | None,
+    rear_gap_s: float | None,
+    rear_relation_epoch: int,
+)
+```
+
+`BATTLE_FOR_POSITION` correlation is
+`battle:two-front:<hero>:<front>:<rear>:<front_epoch>:<rear_epoch>`. It may
+enter only while both parents are ACTIVE and exits immediately when either
+parent exits, changes target, changes session, enters pit suppression, or fails
+the 3-second relation freshness gate. The surviving parent remains ACTIVE; it
+is not re-entered merely because the composite ended.
+
+Deterministic same-tick order is parent facts first, composite last:
+
+1. front `HUNTING`/intensity transition;
+2. rear `HUNTED` transition;
+3. derived `BATTLE_FOR_POSITION` ENTER/UPDATE/EXIT.
+
+If both activate on one tick, all three may be accepted with consecutive
+sequences. Parent coalesce keys remain independent; the composite UPDATE key
+contains both target identities/epochs. A target swap on either side closes the
+old parent/composite correlation before opening the new identities.
+
+For speech, only one utterance can play at a time. When a fresh composite and
+its parent ENTERs occur in the same batch, CommentaryDirector should prefer the
+explicit `two_front_battle` node and record the parent speech decisions as
+`covered_by_two_front`; it must not mark the parent events rejected or delete
+their active/cooldown state. Later parent UPDATE/EXIT beats remain eligible.
+If the composite cannot bind names/gaps, it still has slot-light copy such as
+“he is attacking ahead while defending behind.” If latest context shows only
+one surviving relation, veto the composite and reselect that parent branch.
+
+Do not map `BATTLE_FOR_POSITION` to the existing `side_by_side` copy in V2:
+side-by-side is one front-target intensity, while two-front battle is distinct
+geometry with an attacker ahead and a threat behind. The proposed node, slots,
+edges, and bilingual copy are specified in
+[`commentary_extension_handover.md`](../commentary_extension_handover.md#two-front-battle-branch-needs-engineering).
+
 ### A3 — ContextSnapshot schema and delivery
 
 `ContextSnapshot` is versioned and frozen/encoded with the same canonical JSON
@@ -580,7 +653,9 @@ Only `ACTIVE` and `UPDATE` may be coalesced. Freeze computes an optional
 
 | Family | Coalesce key | Rule |
 | --- | --- | --- |
-| battle (`HUNTING`, `HUNTED`, `SIDE_BY_SIDE`, attack-range updates) | `(session_id, event_type, correlation_id)` where correlation includes hero + target car | replace older ACTIVE/UPDATE for the same battle only |
+| front battle (`HUNTING`, `APPROACH`, `ATTACK_RANGE`, `SIDE_BY_SIDE`) | `(session_id, "front", hero_car_idx, target_car_idx, relation_epoch, intensity)` | replace older ACTIVE/UPDATE for the same front relation/intensity only; never evict rear |
+| rear battle (`HUNTED`) | `(session_id, "rear", hero_car_idx, target_car_idx, relation_epoch)` | replace older ACTIVE/UPDATE for the same rear relation only; never evict front |
+| two-front composite (`BATTLE_FOR_POSITION`) | `(session_id, "two_front", hero_car_idx, front_target_car_idx, front_epoch, rear_target_car_idx, rear_epoch)` | replace only an older composite UPDATE for the identical pair; parent events remain |
 | sector/timing progress | `(session_id, event_type, subject.car_id, lap, sector_id)` | UPDATE only; never RESULT/PB/lap completion |
 | pit active story | `(session_id, event_type, correlation_id)` where correlation is the pit-cycle id | replace active progress within one stop |
 | bio/system active warning | `(session_id, event_type, subject.car_id, correlation_id)` | replace active sample; preserve EXIT/RESULT |
@@ -644,6 +719,8 @@ remain part of optional N12.5, not an implied V2a disk database.
 - Freeze fixtures for source order, current derived priorities/cooldowns,
   incident/aftermath same-tick behavior, and context fields required by both
   consumers.
+- Characterize simultaneous hunting+hunted behavior and the current incomplete
+  front-only `BATTLE_FOR_POSITION` payload before replacing its contract.
 
 ### N12.1 — Extract producer
 
@@ -656,6 +733,8 @@ remain part of optional N12.5, not an implied V2a disk database.
   capture; do not add an external nationality lookup in this slice.
 - Add the A3.3 situation snapshot, deterministic phase policy, current-lap
   filler request, and bounded LLM fact block; no raw telemetry enters prompts.
+- Implement A2.1 independent front/rear relation keys plus the non-replacing
+  two-front composite payload and graph branch.
 - Do not change content, priorities, cooldowns, or public wire schema.
 
 ### N12.2 — Async fan-out and peer consumers
@@ -707,6 +786,13 @@ until this slice is explicitly approved.
   thawed consumer mutations are isolated.
 - [ ] Engine and derived events use the A2 source order and a single sequence
   allocator; same-tick incident/aftermath speaks at most once.
+- [ ] Simultaneous `HUNTING` and `HUNTED` remain independently ACTIVE and
+  accepted; neither direction can evict, dedupe, coalesce, or reset the other.
+- [ ] `BATTLE_FOR_POSITION` contains both target identities/gaps, is a third
+  derived event, and exits to the surviving parent branch without re-entering
+  or deleting it.
+- [ ] Commentary has fresh, slot-light `two_front_battle` copy and records
+  same-batch parent speech as `covered_by_two_front`, not rejected/dropped.
 - [ ] Silence filler uses the A5 request/result path with no callback/shared
   RaceObserver object.
 - [ ] Session reset and config reload reach both consumers once in sequence.
@@ -757,6 +843,13 @@ until this slice is explicitly approved.
   incident plus engine incident arbitration.
 - Integration fixture: 20 battle UPDATEs at 5 Hz coalesce while FINISH is never
   evicted; incident + aftermath + flag in one producer batch follows A2 order.
+- Two-front battle fixture: front enters, rear enters, both update at different
+  rates, front target changes, rear exits, pit/reset aborts. Assert independent
+  parent ids/epochs, parent-parent-composite order, composite payload identities,
+  no cross-direction coalescing, and continuity of the surviving branch.
+- Two-front speech fixture: full names/gaps, missing front data, missing rear
+  data, both names missing, stale composite, and same-batch parent ENTERs. Assert
+  composite/parent fallback and explicit `covered_by_two_front` accounting.
 - Filler fixture: request available/no-fact/stale paths with no live observer
   reference in CommentaryConsumer.
 - Driver facts: malformed/missing roster fields, localized iRating/SR labels,
