@@ -326,6 +326,8 @@ Automatické spuštění OBS broadcastu během loadingu iRacing.
 
 **Jak to funguje**: Spustí broadcast v X% průměrné doby loadingu (viz `auto_start_at_percent`).
 
+**Co se měří**: Clock startuje, když naskočí proces `iRacingSim64DX11.exe` (SDK ještě není připojené). Do historie se zapíše až první in-sim OBS scéna (`LOBBY` / `RACE` / `REPLAY`) — ne okamžik auto-startu a ne QUIT leftover. Typický cold start na tomhle stroji je ~55 s; při `auto_start_at_percent = 50` tedy stream ~27–28 s po procesu.
+
 **Příklad**: 
 ```ini
 auto_start_broadcast = true
@@ -339,7 +341,7 @@ Procento průměrné doby loadingu, kdy se spustí broadcast (0-100).
 - `30-50` - spustí se brzy během loadingu
 - `70-90` - spustí se později, téměř na konci loadingu
 
-**Jak to funguje**: Pokud průměrný loading trvá 12s a nastavíš `50`, broadcast se spustí po 6s.
+**Jak to funguje**: Pokud průměrný loading (proces → in-sim scéna) trvá 55 s a nastavíš `50`, broadcast se spustí po ~27.5 s. Průměr se bere z `data/loading_history.json` (posledních až 50 záznamů). Bez historie se použije `default_loading_time_seconds`.
 
 **Příklad**: 
 ```ini
@@ -352,7 +354,7 @@ Výchozí doba loadingu, pokud nemáš historii (použije se při prvním spušt
 
 **Kdy použít**: Nastav podle typické doby loadingu na tvém systému.
 
-**Jak to funguje**: Aplikace sleduje historii loadingu a počítá průměr, ale při prvním spuštění použije tuto hodnotu.
+**Jak to funguje**: Aplikace zapisuje dobu od naskočení procesu hry do první in-sim scény a z toho počítá průměr. Při prvním spuštění (prázdná historie) použije tuto hodnotu. QUIT / zmizení procesu bez vstupu do hry se nezapisuje.
 
 **Příklad**: 
 ```ini

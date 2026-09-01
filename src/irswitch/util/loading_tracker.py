@@ -6,6 +6,7 @@ import json
 import logging
 from pathlib import Path
 
+from irswitch.models import DrivingMode
 from irswitch.util.clock import now_ms
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,55 @@ logger = logging.getLogger(__name__)
 # Default history file location (in data/ directory)
 DEFAULT_HISTORY_FILE = Path("data/loading_history.json")
 MAX_HISTORY_SIZE = 50
+
+# First in-sim OBS scene after a cold start. GARAGE is excluded: post-load
+# stall flicker must not close the process→game clock.
+IN_SIM_MODES = frozenset(
+    {
+        DrivingMode.LOBBY,
+        DrivingMode.RACE,
+        DrivingMode.REPLAY,
+        DrivingMode.IDLE,
+    }
+)
+
+
+def should_start_process_loading_clock(
+    *,
+    process_running: bool,
+    sdk_connected: bool,
+    already_tracking: bool,
+    quitting: bool,
+) -> bool:
+    """Start the auto-start clock when the sim process appears, not on QUIT leftovers."""
+    return process_running and not sdk_connected and not already_tracking and not quitting
+
+
+def decide_process_loading_clock(
+    *,
+    tracking: bool,
+    process_running: bool,
+    mode: DrivingMode | None,
+    current_scene: str,
+    target_scene: str,
+) -> str:
+    """
+    Decide what to do with a process-detected loading clock.
+
+    Returns:
+        keep: still loading (including CONNECTING after auto-start)
+        record: OBS is on the in-sim scene (LOBBY / RACE / REPLAY)
+        cancel: QUIT or process gone before in-sim — do not append history
+    """
+    if not tracking:
+        return "keep"
+    if mode in (DrivingMode.QUIT, DrivingMode.RESTART):
+        return "cancel"
+    if not process_running:
+        return "cancel"
+    if mode in IN_SIM_MODES and current_scene == target_scene:
+        return "record"
+    return "keep"
 
 
 class LoadingTimeTracker:
@@ -121,6 +171,13 @@ class LoadingTimeTracker:
 
         logger.info(f"Loading screen ended, duration: {duration_seconds:.2f}s")
         return duration_seconds
+
+    def cancel_loading(self) -> None:
+        """Abort the current clock without appending history (QUIT / process gone)."""
+        if self._loading_start_ts is None:
+            return
+        self._loading_start_ts = None
+        logger.info("Loading clock cancelled without recording duration")
 
     def get_average_loading_time(self) -> float:
         """
