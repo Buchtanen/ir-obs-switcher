@@ -307,6 +307,7 @@ def _current_clauses(
     front_gap = _bound(bindings, "front_gap")
     rear_gap = _bound(bindings, "rear_gap")
     details: list[_Clause] = []
+    primary: _Clause | None
 
     if event in {"HUNTING", "APPROACH", "ATTACK_RANGE"}:
         if name:
@@ -584,8 +585,10 @@ def _fact_pack(
             "gap": _bound(bindings, "rear_gap"),
         }
     )
-    ahead = story.get("ahead") if isinstance(story.get("ahead"), list) else []
-    behind = story.get("behind") if isinstance(story.get("behind"), list) else []
+    ahead_raw = story.get("ahead")
+    behind_raw = story.get("behind")
+    ahead: list[Any] = ahead_raw if isinstance(ahead_raw, list) else []
+    behind: list[Any] = behind_raw if isinstance(behind_raw, list) else []
     return {
         "version": FACT_PACK_VERSION,
         "beat": {
@@ -673,6 +676,8 @@ def _text(value: object) -> str | None:
 
 def _int(value: object) -> int | None:
     if value in (None, "") or isinstance(value, bool):
+        return None
+    if not isinstance(value, (int, float, str)):
         return None
     try:
         return int(float(value))

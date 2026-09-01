@@ -715,8 +715,8 @@ class CommentaryDirector:
                     emotion=resolved,
                 )
                 return None
-            spoken = choose_filled_line(texts, bindings, self.rng, history=self._recent)
-            if spoken is None:
+            chosen = choose_filled_line(texts, bindings, self.rng, history=self._recent)
+            if chosen is None:
                 self._record(
                     action="skipped",
                     reason="slot_unbound",
@@ -726,6 +726,7 @@ class CommentaryDirector:
                     emotion=resolved,
                 )
                 return None
+            spoken = chosen
         spoken, hero_names, hero_name = self._apply_hero_mix(spoken)
         issues = validate_utterance(spoken, node)
         if issues:

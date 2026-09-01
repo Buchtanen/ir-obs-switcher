@@ -69,9 +69,7 @@ class StoryHistory:
     def note(self, envelope: EventEnvelope) -> None:
         if envelope.phase not in {"ENTER", "RESULT", "EXIT", "UPDATE"}:
             return
-        if envelope.event_id and any(
-            beat.event_id == envelope.event_id for beat in self._beats
-        ):
+        if envelope.event_id and any(beat.event_id == envelope.event_id for beat in self._beats):
             return
         metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
         target = envelope.target
@@ -202,7 +200,7 @@ class StreamMemory:
 
 def _first(metrics: dict[str, Any], *keys: str) -> object | None:
     for key in keys:
-        value = metrics.get(key)
+        value: object = metrics.get(key)
         if value not in (None, ""):
             return value
     return None
@@ -217,6 +215,8 @@ def _text(value: object) -> str | None:
 
 def _number(value: object) -> int | float | None:
     if value in (None, "") or isinstance(value, bool):
+        return None
+    if not isinstance(value, (int, float, str)):
         return None
     try:
         number = float(value)
