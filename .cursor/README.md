@@ -26,7 +26,8 @@ Proto je `.cursor/hooks.json` **gitignored** (lokální opt-in). V repu je jen t
 ### Skills
 Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappery / kopie — nové skilly tam neduplikuj.
 
-- `pr-semver-label` — povinný `semver:*` label; po failu `gh run rerun`, ne empty commit
+- `pr-semver-label` — povinný `semver:*` label; po failu `gh run rerun`, ne empty commit; verzi v pyproject v běžném PR nebumpovat
+- `release-please-manifest` — `pyproject.toml` verze == `.release-please-manifest.json` `"."` == tag `vX.Y.Z`; při stuck RP syncnout manifest, nebumpovat pyproject v feature PR
 - `restart-irswitch` — start/stop/restart služby, port 17321, SSLKEYLOGFILE, `/health`, overlay cache bump (`?v=` / OBS CEF)
 - `youtube-oauth` — volitelný YouTube title (ne scene switch)
 - `iracing-sdk-display-format` — iRSDK jednotky, sentinely (`-1`, 32767) a HUD formát časů (`m:ss.fff`)
