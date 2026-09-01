@@ -14,10 +14,12 @@ from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.envelope import make_envelope
 from irswitch.events.stream import (
     CONTEXT_SCHEMA_VERSION,
+    ConfigUpdate,
     FillerResult,
     FrozenAcceptedEventBatch,
     SessionReset,
     freeze_accepted_event,
+    freeze_config,
     freeze_context,
 )
 from irswitch.overlay.bus import OverlayBus
@@ -203,6 +205,41 @@ def test_context_bindings_require_exact_driver_identity_and_localize_situation()
 
 
 @pytest.mark.asyncio
+async def test_config_update_uses_frozen_snapshot_not_live_runtime_lookup() -> None:
+    fanout = AsyncEventFanout()
+    initial = CommentarySettings(enabled=False)
+    live = {"settings": initial, "language": "en", "reads": 0}
+
+    def get_settings():
+        live["reads"] += 1
+        return live["settings"], live["language"]
+
+    director = CommentaryDirector(graph=_graph(), settings=initial, sink=NullTtsSink())
+    consumer = CommentaryConsumer(fanout.subscribe("commentary"), director, get_settings)
+    live["settings"] = CommentarySettings(enabled=False, cooldown_s=99)
+    live["language"] = "en"
+    frozen = freeze_config(
+        {
+            "generation": 2,
+            "language": "cs",
+            "commentary": {
+                **initial.__dict__,
+                "enabled": True,
+                "cooldown_s": 1.5,
+                "scheduler": initial.scheduler.__dict__,
+            },
+        }
+    )
+
+    await consumer.handle(ConfigUpdate(2, frozen, 1))
+
+    assert live["reads"] == 1
+    assert director.settings.enabled is True
+    assert director.settings.cooldown_s == 1.5
+    assert director.language == "cs"
+
+
+@pytest.mark.asyncio
 async def test_commentary_consumer_uses_event_time_ttl_and_is_idempotent() -> None:
     fanout = AsyncEventFanout()
     subscription = fanout.subscribe("commentary")
@@ -223,7 +260,10 @@ async def test_commentary_consumer_uses_event_time_ttl_and_is_idempotent() -> No
     assert sink.spoken == []
     assert consumer.expired == 1
     assert consumer.duplicates == 1
-    assert director.decisions()[-1]["reason"] == "event_expired"
+    assert [item["reason"] for item in director.decisions()[-2:]] == [
+        "event_expired",
+        "duplicate_event",
+    ]
 
 
 @pytest.mark.asyncio

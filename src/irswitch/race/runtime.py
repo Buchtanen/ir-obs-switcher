@@ -8,6 +8,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any, Literal
 
 from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_from_race_event
@@ -29,6 +30,7 @@ from irswitch.events.stream import (
     canonical_json_bytes,
     freeze_config,
 )
+from irswitch.events.worker import WorkerSupervisor
 from irswitch.iracing.sectors import resolve_sector_points_from_pcts
 from irswitch.iracing.session_context import extract_session_context
 from irswitch.overlay.bus import OverlayBus
@@ -118,6 +120,7 @@ class RaceRuntime:
         self._last_snapshot = TelemetrySnapshot()
         self._hud_live = False
         self._running = False
+        self._replay_writer: Any = None
         self.race_observer = RaceObserver(settings=overlay.race_observer)
         self.driver_facts = DriverFactLedger()
         director = self._build_commentary(overlay)
@@ -137,6 +140,10 @@ class RaceRuntime:
             self._overlay_subscription,
             self.bus,
             record_event=self._record_overlay_event,
+        )
+        self._overlay_supervisor = WorkerSupervisor("overlay_consumer", self.overlay_consumer.run)
+        self._commentary_supervisor = WorkerSupervisor(
+            "commentary_consumer", self.commentary_consumer.run
         )
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
@@ -539,10 +546,6 @@ class RaceRuntime:
             records.append(in_car)
         return records
 
-    def _observe_commentary_sidecars(self, state: RaceState, now: float) -> None:
-        """Compatibility shim for tests; production uses shared stream records."""
-        self._pending_stream_records.extend(self._collect_commentary_sidecars(state, now))
-
     def _observe_timing(self, snap: TelemetrySnapshot, *, session_finished: bool = False) -> None:
         """Ingest player crossings (Practice/Quali). Keep the checkered out-lap.
 
@@ -631,8 +634,8 @@ class RaceRuntime:
 
         self._running = True
         # Subscriptions and workers exist before the producer can publish.
-        self._registry.spawn("overlay_consumer", self.overlay_consumer.run())
-        self._registry.spawn("commentary_consumer", self.commentary_consumer.run())
+        self._registry.spawn("overlay_consumer", self._overlay_supervisor.run())
+        self._registry.spawn("commentary_consumer", self._commentary_supervisor.run())
         self._registry.spawn(
             "race_producer", SamplingScheduler("race", self._race_hz, self._tick_race).run()
         )
@@ -650,6 +653,8 @@ class RaceRuntime:
             self._tape.close()
             self._event_fanout.close()
             await self._registry.cancel_all()
+            self._close_commentary_sink()
+            self.stop_event_capture()
             raise
 
     async def _flush_loop(self) -> None:
@@ -782,9 +787,11 @@ class RaceRuntime:
             event = self.manager.submit(candidate, now)
             if event is not None:
                 wire = event.to_envelope()
-                speech = speech_envelope_from_race_event(event, now=now, mode=state.overlay_mode)
-                if speech is None:
-                    speech = make_envelope(
+                speech_envelope = speech_envelope_from_race_event(
+                    event, now=now, mode=state.overlay_mode
+                )
+                if speech_envelope is None:
+                    speech_envelope = make_envelope(
                         event_type=event.name.upper(),
                         phase=event.phase,
                         mode=state.overlay_mode,
@@ -793,7 +800,7 @@ class RaceRuntime:
                         metrics=dict(event.data),
                         correlation_id=event.name,
                     )
-                records.append(AcceptedRecord(speech, "event_engine", wire))
+                records.append(AcceptedRecord(speech_envelope, "event_engine", wire))
         for expired in self.manager.tick(now):
             wire = expired.to_envelope()
             envelope = make_envelope(
@@ -907,9 +914,50 @@ class RaceRuntime:
         self._running = False
         self._tape.close()
         self._event_fanout.close()
-        await self._registry.cancel_all()
+        try:
+            await asyncio.wait_for(self._registry.cancel_all(), timeout=2.0)
+        except TimeoutError:
+            logger.error("N12 bounded shutdown timed out")
+        self._close_commentary_sink()
+        self.stop_event_capture()
         if self._bio is not None:
             await self._bio.stop()
+
+    def start_event_capture(
+        self,
+        path: Path,
+        *,
+        source_commit: str,
+        config_digest: str,
+    ) -> None:
+        """Start optional N12 replay capture without changing runtime defaults."""
+        from irswitch.events.replay import N12ReplayWriter
+
+        self.stop_event_capture()
+        overlay = self._overlay_settings()
+        self._replay_writer = N12ReplayWriter(
+            path,
+            source_commit=source_commit,
+            config_generation=self._config_generation,
+            config_digest=config_digest,
+            locale=overlay.language,
+        )
+        self._event_fanout.set_capture(self._replay_writer.record)
+
+    def stop_event_capture(self) -> None:
+        self._event_fanout.set_capture(None)
+        writer = self._replay_writer
+        self._replay_writer = None
+        if writer is not None:
+            writer.close()
+
+    def _close_commentary_sink(self) -> None:
+        close = getattr(self.commentary_consumer.director.sink, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                logger.warning("commentary sink close failed", exc_info=True)
 
     def status_snapshot(self, now: float | None = None) -> dict[str, Any]:
         """Public read-only overlay status for dashboards. No side effects.
@@ -941,7 +989,14 @@ class RaceRuntime:
             "status": status,
             "tasks": len(self._registry),
             "eventStream": self._event_fanout.status_snapshot(),
-            "overlayConsumer": self.overlay_consumer.status_snapshot(),
+            "eventCapture": {
+                "active": self._replay_writer is not None,
+                "schema": "n12-replay/1",
+            },
+            "overlayConsumer": {
+                **self.overlay_consumer.status_snapshot(),
+                "supervisor": self._overlay_supervisor.status_snapshot(),
+            },
             "commentary": self._commentary_status(overlay, now),
             "tape": self._tape_status(overlay),
             "bio": self._bio_status(overlay),
@@ -953,7 +1008,10 @@ class RaceRuntime:
         try:
             enabled = bool(overlay.commentary.enabled)
             if self.commentary is not None:
-                return self.commentary_consumer.status_snapshot(now)
+                return {
+                    **self.commentary_consumer.status_snapshot(now),
+                    "supervisor": self._commentary_supervisor.status_snapshot(),
+                }
         except Exception:
             logger.debug("Commentary status snapshot failed", exc_info=True)
         return {

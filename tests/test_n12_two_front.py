@@ -1,8 +1,14 @@
+from irswitch.commentary.consumer import CommentaryConsumer
+from irswitch.commentary.director import CommentaryDirector
+from irswitch.commentary.graph import load_sequence_graph
+from irswitch.commentary.tts import NullTtsSink
 from irswitch.events.adapters.battle import battle_race_event_to_envelope
+from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.battle import BattleEmitter
+from irswitch.events.envelope import make_envelope
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.overlay.models import OpponentInfo, RaceState
-from irswitch.overlay.settings import HuntingSettings
+from irswitch.overlay.settings import CommentarySettings, HuntingSettings
 
 
 def _state(*, front: int = 10, rear: int = 20) -> RaceState:
@@ -88,3 +94,32 @@ def test_adapter_uses_relation_identity_for_parent_and_composite() -> None:
     assert parent is not None and parent.correlation_id == "battle:front:5:10:1"
     assert composite is not None
     assert composite.correlation_id == "battle:two-front:5:10:20:1:1"
+
+
+def test_commentary_prefers_composite_and_accounts_for_parent_enters() -> None:
+    settings = CommentarySettings(enabled=True, cooldown_s=0)
+    consumer = CommentaryConsumer(
+        AsyncEventFanout().subscribe("commentary"),
+        CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=NullTtsSink()),
+        lambda: (settings, "en"),
+    )
+    front = make_envelope(event_type="HUNTING", phase="ENTER", priority=20)
+    rear = make_envelope(event_type="HUNTED", phase="ENTER", priority=20)
+    composite = make_envelope(
+        event_type="BATTLE_FOR_POSITION",
+        phase="ENTER",
+        priority=30,
+        metrics={"frontTargetCarIdx": 10, "rearTargetCarIdx": 20},
+    )
+    latest = {
+        "race": {
+            "opponent_ahead": {"car_idx": 10},
+            "opponent_behind": {"car_idx": 20},
+        }
+    }
+
+    selected = consumer._prefer_two_front([front, rear, composite], latest, 10.0)
+
+    assert selected == [composite]
+    reasons = [decision["reason"] for decision in consumer.director.decisions()]
+    assert reasons == ["covered_by_two_front", "covered_by_two_front"]

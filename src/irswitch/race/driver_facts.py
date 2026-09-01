@@ -107,26 +107,32 @@ class DriverFactLedger:
                 continue
             user_id = _non_negative_int(row.get("UserID"))
             old = self._profiles.get(car_idx)
-            same_identity = old is not None and old.user_id == user_id
-            epoch = old.identity_epoch if same_identity else (old.identity_epoch + 1 if old else 1)
+            if old is not None and old.user_id == user_id:
+                previous = old
+                epoch = old.identity_epoch
+            else:
+                previous = None
+                epoch = old.identity_epoch + 1 if old is not None else 1
             updated[car_idx] = DriverProfileSnapshot(
                 car_idx=car_idx,
                 user_id=user_id,
                 display_name=_clean(row.get("UserName")) or speakable_driver_name(row),
                 i_rating=_prefer_valid(
                     _valid_i_rating(row.get("IRating")),
-                    old.i_rating if same_identity else None,
+                    previous.i_rating if previous is not None else None,
                 ),
                 safety_rating=_prefer_valid(
                     _safety_rating(row.get("LicString")),
-                    old.safety_rating if same_identity else None,
+                    previous.safety_rating if previous is not None else None,
                 ),
                 car_name=_clean(row.get("CarScreenName"))
                 or _clean(row.get("CarScreenNameShort"))
-                or (old.car_name if same_identity else None),
+                or (previous.car_name if previous is not None else None),
                 nationality=None,
-                start_position=(old.start_position if same_identity else None),
-                start_position_scope=(old.start_position_scope if same_identity else None),
+                start_position=(previous.start_position if previous is not None else None),
+                start_position_scope=(
+                    previous.start_position_scope if previous is not None else None
+                ),
                 session_id=self._session_id,
                 identity_epoch=epoch,
                 roster_revision=digest,

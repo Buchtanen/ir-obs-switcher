@@ -1,4 +1,4 @@
-"""Commentary peer consumer for legacy and immutable N12 event streams."""
+"""Commentary peer consumer for the immutable N12 event stream."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import asyncio
 import time
 import uuid
 from collections.abc import Callable
+from dataclasses import fields
 from typing import Any
 
 from irswitch.commentary.director import CommentaryDirector
@@ -19,23 +20,12 @@ from irswitch.events.stream import (
     FrozenAcceptedEventBatch,
     SessionReset,
     StreamItem,
+    thaw_config,
     thaw_context,
     thaw_envelope,
 )
 from irswitch.overlay.models import BioState
-from irswitch.overlay.settings import CommentarySettings
-
-ObserveFn = Callable[[list[EventEnvelope], float], Any]
-
-
-class CommentaryEventConsumer:
-    """Adapts OverlayRuntime commentary observe into the EventConsumer protocol."""
-
-    def __init__(self, observe: ObserveFn) -> None:
-        self._observe = observe
-
-    def on_envelopes(self, envelopes: list[EventEnvelope], *, now: float) -> None:
-        self._observe(envelopes, now)
+from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
 
 
 class CommentaryConsumer:
@@ -51,7 +41,7 @@ class CommentaryConsumer:
     ) -> None:
         self.subscription = subscription
         self.director = director
-        self._get_settings = get_settings
+        self._settings, self._language = get_settings()
         self._decision_hook = decision_hook
         self._filler_requests: asyncio.Queue[FillerRequest] = asyncio.Queue(maxsize=1)
         self._filler_results: asyncio.Queue[FillerResult] = asyncio.Queue(maxsize=1)
@@ -103,7 +93,7 @@ class CommentaryConsumer:
             self.processed += 1
             return
         if isinstance(item, ConfigUpdate):
-            self._apply_settings()
+            self._apply_config_update(item)
             self.processed += 1
             return
         self._observe_batch(item)
@@ -131,7 +121,7 @@ class CommentaryConsumer:
         self.director.opener.note("STREAM_START", now)
 
     def status_snapshot(self, now: float | None = None) -> dict[str, Any]:
-        settings, _ = self._get_settings()
+        settings, _ = self._settings_snapshot()
         return {
             **self.director.status_snapshot(
                 time.monotonic() if now is None else now,
@@ -166,6 +156,7 @@ class CommentaryConsumer:
                 self._outstanding_filler = None
             if accepted.event_id in self._processed_ids:
                 self.duplicates += 1
+                self._record_skip("duplicate_event", now, accepted.event_id)
                 continue
             envelope = thaw_envelope(accepted.envelope)
             self._apply_context_bindings(envelope, context, latest)
@@ -186,7 +177,7 @@ class CommentaryConsumer:
         if not envelopes:
             return
         before = len(self.director.decisions(10_000))
-        settings, language = self._get_settings()
+        settings, language = self._settings_snapshot()
         self.director.observe(
             envelopes,
             bio,
@@ -245,7 +236,7 @@ class CommentaryConsumer:
         embedded: dict[str, Any],
         latest: dict[str, Any],
     ) -> None:
-        _, language = self._get_settings()
+        _, language = self._settings_snapshot()
         race = embedded.get("race")
         race = race if isinstance(race, dict) else {}
         story = embedded.get("story")
@@ -329,7 +320,7 @@ class CommentaryConsumer:
             return None
         context = thaw_context(context_payload)
         session_id = str(context.get("session_id") or "")
-        settings, language = self._get_settings()
+        settings, language = self._settings_snapshot()
         if not settings.enabled or not session_id:
             return None
         if self._outstanding_filler is not None:
@@ -349,12 +340,25 @@ class CommentaryConsumer:
         return None
 
     def _apply_settings(self) -> None:
-        settings, language = self._get_settings()
+        settings, language = self._settings_snapshot()
         self.director.settings = settings
         self.director.language = language
         sink = self.director.sink
         if isinstance(sink, ProcessTtsSink):
             sink.settings = settings
+
+    def _apply_config_update(self, item: ConfigUpdate) -> None:
+        payload = thaw_config(item.frozen_config)
+        raw = payload.get("commentary")
+        if isinstance(raw, dict):
+            self._settings = _commentary_settings_from_dict(raw, self._settings)
+        language = payload.get("language")
+        if isinstance(language, str) and language.strip():
+            self._language = language
+        self._apply_settings()
+
+    def _settings_snapshot(self) -> tuple[CommentarySettings, str]:
+        return self._settings, self._language
 
     def _apply_story_context(self, context: dict[str, Any]) -> None:
         story = context.get("story")
@@ -445,6 +449,27 @@ def _spoken_irating(value: object, language: str) -> str | None:
     if language.lower().startswith("cs"):
         return f"{decimal.replace('.', ',')} tisíce"
     return f"{decimal} thousand"
+
+
+def _commentary_settings_from_dict(
+    raw: dict[str, Any], fallback: CommentarySettings
+) -> CommentarySettings:
+    values = {
+        field.name: raw.get(field.name, getattr(fallback, field.name))
+        for field in fields(CommentarySettings)
+        if field.name != "scheduler"
+    }
+    scheduler_raw = raw.get("scheduler")
+    if isinstance(scheduler_raw, dict):
+        scheduler = CommentarySchedulerSettings(
+            **{
+                field.name: scheduler_raw.get(field.name, getattr(fallback.scheduler, field.name))
+                for field in fields(CommentarySchedulerSettings)
+            }
+        )
+    else:
+        scheduler = fallback.scheduler
+    return CommentarySettings(**values, scheduler=scheduler)
 
 
 def _lap_context(situation: dict[str, Any], *, language: str) -> str | None:

@@ -16,6 +16,7 @@ from irswitch.events.stream import FrozenAcceptedEventBatch, SessionReset, Strea
 logger = logging.getLogger(__name__)
 
 HandleItem = Callable[[StreamItem], Awaitable[None] | None]
+RunWorker = Callable[[], Awaitable[None]]
 
 
 @dataclass
@@ -103,7 +104,15 @@ class StreamWorker:
         if not isinstance(item, FrozenAcceptedEventBatch):
             return item
         fresh = tuple(event for event in item.events if not self.ledger.contains(event.event_id))
-        self.duplicates += len(item.events) - len(fresh)
+        duplicates = len(item.events) - len(fresh)
+        self.duplicates += duplicates
+        if duplicates:
+            logger.info(
+                "duplicate_event consumer=%s count=%s stream_sequence=%s",
+                self.name,
+                duplicates,
+                item.stream_sequence,
+            )
         if not fresh:
             return None
         if len(fresh) == len(item.events):
@@ -127,3 +136,49 @@ class StreamWorker:
                 self.ledger.reset(item.session_id)
             for event in item.events:
                 self.ledger.add(event.event_id)
+
+
+class WorkerSupervisor:
+    """Restart one worker coroutine around the same consumer instance."""
+
+    def __init__(
+        self,
+        name: str,
+        run_worker: RunWorker,
+        *,
+        initial_backoff_s: float = 0.05,
+        max_backoff_s: float = 1.0,
+    ) -> None:
+        self.name = name
+        self._run_worker = run_worker
+        self.initial_backoff_s = max(0.0, initial_backoff_s)
+        self.max_backoff_s = max(self.initial_backoff_s, max_backoff_s)
+        self.running = False
+        self.restarts = 0
+        self.last_error: str | None = None
+
+    async def run(self) -> None:
+        self.running = True
+        backoff = self.initial_backoff_s
+        try:
+            while True:
+                try:
+                    await self._run_worker()
+                    self.last_error = "worker returned unexpectedly"
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    self.last_error = f"{type(exc).__name__}: {exc}"
+                    logger.error("worker %s crashed; restarting", self.name, exc_info=True)
+                self.restarts += 1
+                await asyncio.sleep(backoff)
+                backoff = min(self.max_backoff_s, max(self.initial_backoff_s, backoff * 2))
+        finally:
+            self.running = False
+
+    def status_snapshot(self) -> dict[str, Any]:
+        return {
+            "running": self.running,
+            "restarts": self.restarts,
+            "lastError": self.last_error,
+        }

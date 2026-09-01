@@ -333,7 +333,7 @@ def test_runtime_skips_sidecars_when_recap_pending() -> None:
         return None
 
     runtime.session_briefs.tick = _tick  # type: ignore[method-assign]
-    runtime._observe_commentary_sidecars(_state(), 1.0)
+    runtime._collect_commentary_sidecars(_state(), 1.0)
     assert calls == []
     assert runtime.commentary is not None
     assert runtime.commentary.grid_story is True

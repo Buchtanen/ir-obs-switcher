@@ -72,6 +72,9 @@ class TtsSink(Protocol):
     def is_busy(self) -> bool:
         """True while a speak is in-flight or waiting (observed busy)."""
 
+    def close(self) -> None:
+        """Release owned worker resources after cancellation."""
+
 
 @dataclass
 class NullTtsSink:
@@ -106,6 +109,9 @@ class NullTtsSink:
     def is_busy(self) -> bool:
         return bool(self.force_busy)
 
+    def close(self) -> None:
+        self.interrupt()
+
 
 @dataclass
 class ProcessTtsSink:
@@ -122,7 +128,7 @@ class ProcessTtsSink:
     last_result: TtsResult | None = None
     runner: SpeakRunner | None = None
     on_polish_debug: PolishDebugHook | None = None
-    _queue: queue.SimpleQueue[CommentaryUtterance] = field(
+    _queue: queue.SimpleQueue[CommentaryUtterance | object] = field(
         default_factory=queue.SimpleQueue, repr=False
     )
     _worker_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
@@ -131,6 +137,8 @@ class ProcessTtsSink:
     _speaking: bool = field(default=False, init=False, repr=False)
     _idle: threading.Condition = field(default_factory=threading.Condition, repr=False)
     _interrupt: threading.Event = field(default_factory=threading.Event, repr=False)
+    _closed: bool = field(default=False, init=False, repr=False)
+    _sentinel: object = field(default_factory=object, init=False, repr=False)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop.
@@ -138,6 +146,8 @@ class ProcessTtsSink:
         Keeps at most one queued waiter. If a waiter already exists, replace it
         when incoming priority is higher-or-equal; otherwise drop incoming.
         """
+        if self._closed:
+            return
         self.spoken.append(utterance)
         if len(self.spoken) > 32:
             del self.spoken[:-16]
@@ -150,7 +160,7 @@ class ProcessTtsSink:
                     old = self._queue.get_nowait()
                 except queue.Empty:
                     old = None
-                if old is not None:
+                if isinstance(old, CommentaryUtterance):
                     self._pending = max(0, self._pending - 1)
                     if int(utterance.priority) < int(old.priority):
                         self._pending += 1
@@ -192,6 +202,18 @@ class ProcessTtsSink:
         with self._idle:
             return self._pending > 0 or self._speaking
 
+    def close(self) -> None:
+        """Bounded worker shutdown; current backend retains its own timeout."""
+        if self._closed:
+            return
+        self._closed = True
+        self.interrupt()
+        worker = self._worker
+        if worker is None:
+            return
+        self._queue.put(self._sentinel)
+        worker.join(timeout=0.5)
+
     def pending_count(self) -> int:
         """Queued + in-flight speaks (test / diagnostics)."""
         with self._idle:
@@ -224,6 +246,10 @@ class ProcessTtsSink:
     def _worker_loop(self) -> None:
         while True:
             utterance = self._queue.get()
+            if utterance is self._sentinel:
+                return
+            if not isinstance(utterance, CommentaryUtterance):
+                continue
             with self._idle:
                 self._speaking = True
             try:

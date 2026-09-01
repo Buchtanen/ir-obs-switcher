@@ -69,18 +69,3 @@ def test_fanout_clear_removes_consumers() -> None:
     assert fanout.consumer_count == 0
     fanout.emit([_env()], now=1.0)
     assert a.batches == []
-
-
-def test_commentary_event_consumer_forwards() -> None:
-    from irswitch.commentary.consumer import CommentaryEventConsumer
-
-    seen: list[tuple[int, float]] = []
-
-    def observe(envelopes, now: float):
-        seen.append((len(envelopes), now))
-
-    consumer = CommentaryEventConsumer(observe)
-    fanout = EventFanout()
-    fanout.register(consumer)
-    fanout.emit([_env(), _env("INCIDENT")], now=3.5)
-    assert seen == [(2, 3.5)]
