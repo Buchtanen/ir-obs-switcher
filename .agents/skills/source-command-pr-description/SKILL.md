@@ -51,4 +51,5 @@ Migration:
 
 ## Release policy
 - [ ] PR has exactly one `semver:*` label
+- [ ] `pyproject.toml` version unchanged (unless this is a Release PR / manifest is bumped in lockstep)
 ```

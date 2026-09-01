@@ -13,6 +13,7 @@ alwaysApply: false
 - **Installed wheel, no checkout**: package metadata
 
 Do **not** bump version in normal PRs (release-please / `RELEASE_POLICY.md`).
+If a version must change (Release PR or stuck-RP recovery), `.release-please-manifest.json` `"."` must match `pyproject.toml` — see skill `release-please-manifest`.
 
 Dashboard showing an old version is usually:
 

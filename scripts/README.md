@@ -4,6 +4,18 @@ Tento adresář obsahuje pomocné skripty pro správu projektu.
 
 ## Verzování
 
+### `check_release_please_lock.py`
+
+Hlídá, že `[project].version` v `pyproject.toml` == `"."` v `.release-please-manifest.json`.
+Na běžném PR navíc zakáže bump `project.version` (výjimka: label `autorelease: pending`).
+
+```bash
+python scripts/check_release_please_lock.py
+python scripts/check_release_please_lock.py --github-event "$GITHUB_EVENT_PATH"
+```
+
+**Status**: aktivní (CI job `version-lock` + Release Please tag guard).
+
 ### `bump_version.py`
 
 Python skript pro automatické zvýšení verze podle commit message prefixu.

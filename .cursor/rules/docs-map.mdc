@@ -26,6 +26,7 @@ When you change… you must review/update…
 - **Release process / versioning / tags**
   - `RELEASE_POLICY.md`
   - `VERSIONING.md` / `README_VERSIONING.md` (if relevant)
+  - `.release-please-manifest.json` must stay in lockstep with `pyproject.toml`
 
 - **VR dashboards / RaceLab setup**
   - `VR_SUPPORT.md`
