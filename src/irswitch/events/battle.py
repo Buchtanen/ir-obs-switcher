@@ -40,7 +40,7 @@ class BattleEmitter:
     _hunting_peak: str = "hunting"
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
-        if state.session_finished:
+        if state.session_finished or state.mute_field:
             return self._abort_active(state, now)
         events: list[CandidateEvent] = []
         events.extend(

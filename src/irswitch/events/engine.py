@@ -36,7 +36,7 @@ class EventEngine:
         else:
             position_emitter = PositionEmitter(overlay.battle, pri)
         self.position = position_emitter
-        self.incident = IncidentEmitter(overlay.events, pri)
+        self.incident = IncidentEmitter(overlay.events, pri, overlay.race_observer)
         self.pit: PitEmitter | None
         self.session = SessionEmitter(overlay.events, pri)
         self._emitters: list[Any] = [
@@ -76,7 +76,9 @@ class EventEngine:
                     type(emitter).__name__,
                     exc_info=True,
                 )
-        return filter_post_race(events, session_finished=state.session_finished)
+        return filter_post_race(
+            events, session_finished=bool(state.mute_field or state.session_finished)
+        )
 
     @staticmethod
     def _tick_emitter(

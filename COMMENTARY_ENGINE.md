@@ -14,8 +14,9 @@ Texts are filled later by another model. This repo owns the graph, validator, as
 Commentary is **for the stream audience**, not pit-wall radio to the driver.
 
 - EN: third person / broadcast, mixing the driver's name or nickname with he/him/his (“Richard is closing on Rossi.” / “That's a lap for Buchtanen.”)
-- CS: třetí osoba / komentář pro diváky, jméno nebo přezdívka namíchaná s zájmeny (“Richard uzavírá kolo.” / “Buchtanen. Kolo je hotové.”)
+- CS: třetí osoba / komentář pro diváky, jméno nebo přezdívka namíchaná se zájmeny (“Richard uzavírá kolo.” / “To je kolo pro Buchtanena.”)
 - Never second person to the driver (“You take P5”, “Jsi pátý” as address)
+- Never a vocative opener: not `{target_name}, ...` and not `Richard, that's a lap` / `Richard. That's a lap`. Commentary talks **about** the driver, not **to** them.
 - Light viewer asides OK; keep one breath; slots unchanged
 
 ## Pipeline
@@ -38,6 +39,14 @@ Rules:
 - Works with **legacy** EventManager (`v2_payload=false`, default) via a speech map for `lap_complete` / `pit_entry` / `pit_exit`. V2 envelopes are used when present; the map fills gaps (basic pit has no V2 adapter).
 - `in_car` is a commentary sidecar (`player_car_idx` rising, event type `ENTER_CAR`). It is **not** an overlay HUD catalog entry and is **not** pit entry.
 - Session intros / SoF / weather are commentary sidecars (`SessionBriefsDetector`, gated by `commentary.session_briefs`). They are **not** overlay HUD catalog entries.
+- `STREAM_START` is a commentary-only envelope from the OBS streaming rising edge (`commentary.stream_start`, default off). Graph node `stream_start` is a long slot-free welcome (`tts.max_seconds` ≥ 15); the process timeout uses that node cap so `commentary.max_utterance_s` (default 6) stays unchanged. An **opener mutex** (120 s) plus director `_busy_until` lets at most one of stream start / in-car / session intro / preview speak.
+- Mode-specific `in_car_practice` / `in_car_qualify` / `in_car_race` nodes outrank generic `in_car` when `envelope.mode` matches. Generic `in_car` remains for warmup until those lines migrate.
+- Gap-hunt TTS (`HUNTING` / `HUNTED`) is off in practice/qualifying unless `commentary.gap_hunt_tts_in_practice` / `gap_hunt_tts_in_qualifying` is on. HUD hunting is unchanged. Race still speaks.
+- P/Q hunt-by-time is COMMENTARY_ONLY `PACE_HUNT` (`race/timing_hunt.py`): hero projected/best vs `CarIdxBestLapTime` of class P{n}. Unset times → silence. Quali HUD `position_attack` remains hero own PB.
+- `INCIDENT` `metrics.branch` is `off_track` or `unknown` only when `race_observer.incident_classify` is on (default off). Nearby cars are metrics, not spoken kinds. Graph nodes `incident_off_track` / `incident_unknown` (N11 B); unclassified envelopes still use generic `incident`. Same tick: speak at most one of engine `INCIDENT` (delta ≥ `incident_min_delta` default 2) and derived `INCIDENT_AFTERMATH` (any rise); INCIDENT wins. Aftermath classify is surface-first (off-track stays stalled even if Speed > 0). Speed is motion for on-track stalled/rolling and `BACK_UNDER_WAY`. No `INCIDENT_RECOVERED`.
+- Race `SESSION_FLAG` (`race/flags.py`) speaks yellow (caution family coalesced) / green / checkered on rising edges when `race_observer.flags` is on (default off). Start lights ignored. Checkered bit is not `FINISH` / `SESSION_WRAP`. Graph one-liners `session_flag_*` (N11 C); formatter remains fallback. Practice/qualify do not speak.
+- Race-start `QUALI_RECAP` / `PARADE_PAD` (`race/grid_story.py`) when `race_observer.grid_story` is on (default off). Recap is an opener and replaces `SESSION_INTRO_RACE` when the stream quali bag exists. Parade pads stop on Racing or green. Not gated by `session_briefs`. Graph copy N11 D; formatter remains fallback.
+- Watcher decision ring (`race/watcher_log.py`, size 64): DEBUG + in-memory last-N for flags / incidents / aftermath / hunt / grid_story / briefs. Director records `graph_hit`, `formatter_fallback`, and `generic_suppressed` (branch incident node spoke instead of generic). No public GET; not in `/commentary` status.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
 - BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
 - Fail-soft: graph load / observe errors must not break the race loop.
@@ -49,7 +58,9 @@ Rules:
 | Field | Role |
 | --- | --- |
 | `nodes.*.event_types` / `phases` | Match catalog event + wire phase |
-| `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`) |
+| `nodes.*.modes` | Optional. `practice` / `qualify` / `race` / `warmup`. Empty = all sessions. Envelope `PRACTICE`/`QUALIFYING`/`RACE`/`GENERIC` map onto those tokens. |
+| `nodes.*.branch` | Optional. Matches `envelope.metrics.branch` (e.g. `off_track`). Missing branch = generic fallback. |
+| `speak_priority` / `cooldown_s` | Voice budget (independent of `[events.priorities]`). After mode/branch filter, highest `speak_priority` wins. `_follow_edge` runs **only on the filtered set**. |
 | `slots` | `{position}`, `{gap}`, … bound from envelope metrics. Timing slots (`lap_time`, `gap`, `delta`, `segment_time`, `target_time`, `projected_time`) are spoken via `sdk_units`-style formatters in `slot_format.py`; sentinel / invalid values leave the slot unbound so that candidate line is skipped (re-draw). |
 | `hr_states` | Which BLE bands may pick this node |
 | `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
@@ -70,6 +81,8 @@ Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDAT
 - SSML that is not well-formed, or tags outside `break` / `emphasis`
 - `<break time>` over 500 ms
 - estimated duration / char cap
+- second-person to the driver (`you` / `jsi`)
+- vocative name-slot opener (`{target_name}, ...`)
 
 ## Assignments for the text model
 
@@ -84,7 +97,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). Optional LLM polish restyles the authored skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), or a fact-lock hit (invented lead/pole, chase→lead, West→westward, seconds→cm) retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the sequence graph. If every attempt fails → `retry_exhausted` and **TTS is skipped** (skeleton is not spoken). Node TTS (~160 chars / 13 s) is the authored ceiling, not a dump budget. Before polish/TTS, digit tokens **and compact units** (`m/s`, `°C`/`23 C`, gap `s`, `%`, `bpm`) are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his (`speech_hero.mix_hero_name`; config `driver_name` / `driver_nickname`, else iRacing UserName) — EN prefix `Name.` is skipped when the line already names another person. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). Optional LLM polish restyles the authored skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), a vocative opener (`Richard, ...` / `Richard. That's a lap`), or a fact-lock hit (invented lead/pole, chase→lead, West→westward, seconds→cm) retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the sequence graph. If every attempt fails → `retry_exhausted` and **TTS is skipped** (skeleton is not spoken). Node TTS (~160 chars / 13 s) is the authored ceiling, not a dump budget. Before polish/TTS, digit tokens **and compact units** (`m/s`, `°C`/`23 C`, gap `s`, `%`, `bpm`) are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only (`speech_hero.mix_hero_name`; config `driver_name` / `driver_nickname`, else iRacing UserName). Pronoun-free lines stay unchanged — no `Name. rest` / `Name, rest` prefix (that talks *to* the driver). Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test
@@ -111,6 +124,8 @@ duck_ratio = 0.25
 duck_fade_ms = 750
 decision_log_size = 32
 ```
+
+`decision_log_size` is the commentary speak/skip ring (HTTP `/commentary` decisions). Watcher FSM decisions live in a separate in-memory ring (`race/watcher_log.py`, size 64, DEBUG only) and are not exposed on that snapshot.
 
 `audio_device` empty = you hear SAPI on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
 
@@ -146,6 +161,7 @@ session_briefs = false
 | Gate | Behavior |
 | --- | --- |
 | `session_briefs=false` (default) | Director skips intro/SoF/weather envelopes (`session_briefs_disabled`) |
+| `race_observer.grid_story=true` | One `QUALI_RECAP` (opener) + ParadeLaps pads; skips `SESSION_INTRO_RACE` when the quali bag exists |
 | Intro | Once when `session_type` resolves to Practice / Qualify / Race |
 | SoF | Once when race is active, intro already attempted, and racing roster ready (`field_size > 0`); arithmetic-mean interim (not official iRacing SoF) |
 | Weather | Once after intro, preferring live snapshot (`extract_weather(..., prefer="live")`) |

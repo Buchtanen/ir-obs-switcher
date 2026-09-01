@@ -83,7 +83,7 @@ Map only via `overlay_mode_from_session_type(session_type)`. Warmup/Test/unknown
 | Which row inside it | `session_num` (0-based) |
 | Reset overlay stores | `session_key` = `{subsession}:{session_num}:{track}` |
 | Commentary brief once | `(SubSessionID, SessionNum)` |
-| Memory across Practice→Race | `StreamMemory` / `reset_stream()` — OBS-stream scoped |
+| Memory across Practice→Race | `StreamMemory` / `reset_stream()` — OBS-stream scoped (sessions, rivals, quali bag) |
 | VOD chapter offset | OBS stream duration (`offset_seconds`), not `SessionTime` |
 | Tape replay sleep | `t_mono` |
 | Tape sync to VOD | `t_stream`, else `t_session`, else `t_mono` (`t`) |
@@ -100,7 +100,7 @@ Map only via `overlay_mode_from_session_type(session_type)`. Warmup/Test/unknown
 | Session intro speech | `session_type` ∈ Practice/Qualify/Race (once per session key) |
 | SoF brief | Race **session** only (after intro) |
 | Stream chapters | OBS `streaming` + `session_type` change ∈ triggers |
-| `session_finished` / after_session | driver done: S/F after checkered, or not on a flying lap at checkered, or CoolDown — not raw `session_state==5` |
+| `player_finished` / `mute_field` | driver done: S/F or eligible pit-rise after checkered, or CoolDown. Already in pits at checkered is not finish. `session_finished` aliases `mute_field`. Not raw `session_state==5` |
 | Invalid lap | `overlay_mode in {PRACTICE, QUALIFYING}` only |
 
 ## Checklist before coding

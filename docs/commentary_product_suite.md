@@ -5,7 +5,8 @@
 **Audience:** stream viewers (broadcast voice).  
 **Related (research):** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md) — LAN Ollama skeleton-polish PoC; not in product packages yet.  
 **Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
-**Next architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — decouple overlay/commentary, RaceObserver, TTS defer / 33s silence.
+**Next architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 decoupling plus V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers.
+**Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
 
 ## 0. How we test (your order — source of truth)
 
@@ -95,6 +96,8 @@ Codes: `disabled`, `busy`, `global_cooldown`, `node_cooldown`, `no_node`, `hr_ga
 ### P3 — Stream start (later)
 
 Typed `stream_start` node + OBS or HTTP trigger; viewer voice; fail-soft.
+
+**Plan:** [narrative_observers_epic.md](narrative_observers_epic.md) task **N8** (TTS) + optional **N9** (overlay cover). Do not implement ad-hoc in this suite doc.
 
 ### P4 — Sink productization (later, light)
 

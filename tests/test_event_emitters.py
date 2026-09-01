@@ -13,6 +13,7 @@ from irswitch.overlay.settings import (
     EventPrioritySettings,
     EventSettings,
     HuntingSettings,
+    RaceObserverSettings,
 )
 
 
@@ -79,6 +80,29 @@ def test_hunting_exits_immediately_when_session_finished() -> None:
     assert emitter.tick(_state(session_finished=True), 10.2) == []
 
 
+def test_hunting_continues_when_checkered_but_player_not_finished() -> None:
+    emitter = BattleEmitter(
+        HuntingSettings(activation_delay=0.0, exit_delay=1.5, min_intensity_hold_s=0.0),
+        HuntingSettings(),
+    )
+    ahead = OpponentInfo(car_idx=17, position=6, gap=2.0, closing_rate=0.3)
+    racing = _state(opponent_ahead=ahead, gap_ahead=2.0, closing_rate_ahead=0.3)
+    assert any(e.phase == "enter" for e in emitter.tick(racing, 10.0))
+    still = _state(
+        opponent_ahead=ahead,
+        gap_ahead=2.0,
+        closing_rate_ahead=0.3,
+        session_checkered=True,
+        session_state=5,
+        player_finished=False,
+        mute_field=False,
+        session_finished=False,
+    )
+    out = emitter.tick(still, 10.1)
+    assert not any(e.data.get("reason") == "session_finished" for e in out)
+    assert emitter.hunting.state != "NONE"
+
+
 def test_hunting_and_hunted_both_independent() -> None:
     emitter = BattleEmitter(
         HuntingSettings(activation_delay=0.0, min_intensity_hold_s=0.0),
@@ -130,6 +154,43 @@ def test_incident_respects_min_delta() -> None:
     assert emitter.tick(_state(incidents=3), 1.0) == []
     out = emitter.tick(_state(incidents=5), 2.0)
     assert out[0].data["value"] == 2
+    assert "branch" not in out[0].data
+
+
+def test_incident_classify_off_track_vs_unknown() -> None:
+    from irswitch.iracing.trk_loc import OFF_TRACK
+
+    settings = RaceObserverSettings(incident_classify=True)
+    emitter = IncidentEmitter(
+        EventSettings(incident_min_delta=2), EventPrioritySettings(), settings
+    )
+    emitter.tick(_state(incidents=2, player_track_surface=OFF_TRACK), 0.0)
+    off = emitter.tick(_state(incidents=4, player_track_surface=OFF_TRACK), 1.0)
+    assert off[0].data["branch"] == "off_track"
+    assert "kind" not in off[0].data
+
+    on_track = IncidentEmitter(
+        EventSettings(incident_min_delta=2), EventPrioritySettings(), settings
+    )
+    on_track.tick(_state(incidents=2), 0.0)
+    unknown = on_track.tick(_state(incidents=4), 1.0)
+    assert unknown[0].data["branch"] == "unknown"
+    assert unknown[0].data.get("kind") != "contact_object"
+    assert "nearbyCarIdx" not in unknown[0].data
+
+
+def test_incident_nearby_car_is_metric_only() -> None:
+    settings = RaceObserverSettings(incident_classify=True)
+    emitter = IncidentEmitter(
+        EventSettings(incident_min_delta=2), EventPrioritySettings(), settings
+    )
+    ahead = OpponentInfo(car_idx=17, position=6, gap=0.4)
+    emitter.tick(_state(incidents=2, opponent_ahead=ahead), 0.0)
+    out = emitter.tick(_state(incidents=4, opponent_ahead=ahead), 1.0)
+    assert out[0].data["branch"] == "unknown"
+    assert out[0].data["nearbyCarIdx"] == 17
+    assert out[0].data["nearbyGap"] == 0.4
+    assert out[0].data.get("kind") != "contact_car"
 
 
 def test_pit_edges() -> None:

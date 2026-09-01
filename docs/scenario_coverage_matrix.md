@@ -1,9 +1,7 @@
 # Scenario coverage matrix (overlay · commentary · OBS)
 
-**Status:** inventory (docs only)  
-**Source of truth analyzed:** `feat/ollama-vod-joint-test` @ `0997ffc` (reconciled into this docs branch)  
-**Independent review:** second Cursor model vs code, confidence **96/100**  
-**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md)
+**Status:** inventory — **re-pinned 2026-08-31** vs umbrella #179 (P0 `EventFanout` peers; P5 `attack_range` / `pit_stopped` TTS shipped). Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.  
+**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 finish split shipped on the stacked epic; N5 `SESSION_FLAG` is commentary-only, gated)
 
 ## 0. Two session concepts — do not mix
 
@@ -81,7 +79,7 @@ Missing `[event_engine]` section → code defaults (flags off).
 
 **PitCycleGuard:** on pit road + **5 s** post-exit grace, suppresses **`trigger`/`enter` only** for `position_change`, `overtake`, `battle`, `rival_threat` (`update`/`exit` still pass).
 
-**Post-race:** after `session_finished` (`after_session`: S/F after checkered, or not flying at checkered, or CoolDown). Checkered (`SessionState` 5) alone does **not** mute widgets. Filter then keeps essentially finish / final EXIT.
+**Post-race:** after `mute_field` / `player_finished` (not field checkered alone), filter keeps essentially finish / final EXIT. Already in pits at checkered is not finish; CoolDown is the DNF fallback.
 
 **Channel caps (HUD):** battle 2; timing/position/exception/pit/bio/session 1.
 
@@ -126,9 +124,10 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 
 | Situation | Session | Trigger | W | C | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Hunting | All\* | Gap ahead &lt; enter + closing, activation delay | yes persistent | yes (+ APPROACH) | No `overlay_mode` gate; abort on finish |
+| Hunting | All\* | Gap ahead &lt; enter + closing, activation delay | yes persistent | P/Q TTS off by default; race yes | No overlay_mode gate on HUD; abort on player finish. Gap TTS: `commentary.gap_hunt_tts_in_*` |
+| Pace hunt | P/Q | Hero projected/best vs class P{n} `CarIdxBestLapTime` | no | yes `PACE_HUNT` | Silence if times unset; never DriverInfo. Quali `position_attack` is own PB, not this |
 | Approach | All\* | Intensity ~1.5 s gap | yes | partial (shares `hunting`) | |
-| Attack range | All\* | Gap ≤ ~0.8 s | yes | **no** dedicated node | Known gap |
+| Attack range | All\* | Gap ≤ ~0.8 s | yes | yes node `attack_range` (P5) | |
 | Side by side | All\* | Gap ≤ ~0.35 s | yes | yes | |
 | Hunted | All\* | Mirror behind | yes | yes | PitCycleGuard |
 | Battle for position | All\* | Hunting ∧ hunted active | yes prio 30 | partial → `side_by_side` node | |
@@ -150,7 +149,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | --- | --- | --- | --- | --- |
 | Pit entry | `on_pit_road`↑ + `should_begin_pit_cycle` (prior on-track; reject lobby spawn/tow/finished) | yes | yes | story or simple |
 | Pit lane | FSM on pit, not stopped | yes | **no** | `pit_story` |
-| Pit stopped | Dist eps held 1.5 s | yes | **no** | `pit_story` |
+| Pit stopped | Dist eps held 1.5 s | yes | yes node `pit_stopped` (P5) | `pit_story` |
 | Pit released | Moving again on pit road | yes | **no** | `pit_story` |
 | Pit exit | `on_pit_road`↓ | yes | yes `back_on_track` | |
 | Pit outcome | End of cycle / net delta | yes | yes (`PIT_OUTCOME`\|`PIT_EXIT`) | `pit_story` |
@@ -163,7 +162,9 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Invalid lap | P/Q | Lap end with incident since lap start | yes | yes |
 | Link drop | All | Stale/degraded/disconnect | yes lifecycle | **no** |
 | Final lap | All\* | `is_final_lap` (no mode gate) | yes 95 | yes cd 60 |
-| Finish | All\* | `session_finished` (no mode gate) | yes 100 | yes cd 120 |
+| Finish | All\* | `player_finished` (s/f or eligible pit after `session_checkered`; cooldown fallback). `session_finished` now aliases `mute_field`. Checkered **bit** is not finish. | yes 100 | yes cd 120 |
+| Session flag Y/G/checkered | Race | `SessionFlags` rising edge. Yellow family coalesced. Start lights ignored. Gate `race_observer.flags` (default off). | no | yes COMMENTARY_ONLY `SESSION_FLAG` |
+| Quali recap + parade pad | Race | Stream quali bag + `SessionState` 3. Gate `race_observer.grid_story` (default off). | no | yes COMMENTARY_ONLY `QUALI_RECAP` / `PARADE_PAD` |
 | HR pressure | All | Bio `pushing`/`high` | yes | yes |
 | BLE lost | All | HR provider disconnect inject | yes | **no** |
 | Sysinfo bar | All | Continuous sample | persistent bar | n/a |
@@ -176,11 +177,13 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 | Situation | Session | W | C | Gate |
 | --- | --- | --- | --- | --- |
 | Enter car | All | no | yes `in_car` | `commentary.enabled`; skipped after_session |
-| Session intro P/Q/R | P/Q/R | no | opt | `session_briefs` |
+| Session intro P/Q/R | P/Q/R | no | opt | `session_briefs`; race intro skipped when `grid_story` + bag |
 | SoF brief | R | no | opt | `session_briefs` |
-| Weather brief | All | no | opt | `session_briefs`; skipped after_session |
-| Session checkered | All | no | opt `session_checkered` | clock expired, still on out-lap; `session_briefs` |
-| Session wrap | All | no | opt `session_wrap` | after_session / session change; `session_briefs` |
+| Weather brief | All | no | opt | `session_briefs`; skipped after mute_field |
+| Session flag Y/G/checkered | Race | no | opt `SESSION_FLAG` | `race_observer.flags`; not `session_checkered` / SESSION_CHECKERED |
+| Session wrap | All | no | opt `session_wrap` | `player_finished` / session change; `session_briefs` |
+| Quali recap | Race | no | opt `QUALI_RECAP` | `race_observer.grid_story`; replaces race intro when bag exists |
+| Parade pad | Race | no | opt `PARADE_PAD` | `grid_story`; stop on SessionState 4 or green |
 
 ## 5. Widget catalog notes
 
@@ -201,12 +204,12 @@ From `event_catalog.json` fallbacks:
 
 ## 6. Known gaps (product)
 
-1. `ATTACK_RANGE` — HUD yes, TTS via graph node `attack_range` (P5)  
-2. `PIT_LANE` / `PIT_RELEASED` — HUD yes, TTS no; `PIT_STOPPED` optional mid-pit TTS (P5)  
+1. `ATTACK_RANGE` — HUD + TTS node `attack_range` (P5 on #179)  
+2. `PIT_LANE` / `PIT_RELEASED` — HUD yes, TTS no; `PIT_STOPPED` TTS node shipped (P5)  
 3. `LINK_DROP`, `BLE_LOST`, CPU/GPU — no TTS (CPU/GPU not live emitters)  
 4. `TIME_LOST` / `SECTOR_SPLIT` — plate fallback / sector speak opt-in  
 5. Reserved bio plates without emitters  
-6. OverlayRuntime chains commentary observe after HUD publish (see decoupling plan)
+6. Overlay + commentary are **peers** via `EventFanout` (P0). Sidecars (`InCarDetector`, `SessionBriefsDetector`) still feed commentary only.
 
 ## 7. Evidence map
 

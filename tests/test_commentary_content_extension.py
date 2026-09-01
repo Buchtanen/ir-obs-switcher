@@ -62,6 +62,20 @@ def _active_rows() -> list[tuple[GraphNode, str, str, str]]:
     return rows
 
 
+WAVE_A_NODES = {
+    "stream_start",
+    "in_car_practice",
+    "in_car_qualify",
+    "in_car_race",
+}
+WAVE_A_DENSITY = 4
+WAVE_B_NODES = {"incident_off_track", "incident_unknown"}
+WAVE_C_NODES = {"session_flag_yellow", "session_flag_green", "session_flag_checkered"}
+WAVE_D_NODES = {"quali_recap", "parade_pad"}
+WAVE_BCD_SPARSE = 1
+WAVE_BD_DENSITY = 4
+
+
 def _expected_density(node_id: str) -> int:
     if node_id in PRIORITY_NODES:
         return 16
@@ -71,15 +85,25 @@ def _expected_density(node_id: str) -> int:
         return 14
     if node_id == "weather_change":
         return 13
+    if node_id in WAVE_A_NODES:
+        return WAVE_A_DENSITY
+    if node_id in WAVE_C_NODES:
+        return WAVE_BCD_SPARSE
+    if node_id in WAVE_B_NODES or node_id in WAVE_D_NODES:
+        return WAVE_BD_DENSITY
     return 12
 
 
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
     graph = load_sequence_graph()
-    assert len(graph.nodes) == 41
+    assert len(graph.nodes) == 52
     assert len(graph.edges) == 20
     assert graph.unfilled_cells() == []
     assert SESSION_BRIEF_NODES <= set(graph.nodes)
+    assert WAVE_A_NODES <= set(graph.nodes)
+    assert WAVE_B_NODES <= set(graph.nodes)
+    assert WAVE_C_NODES <= set(graph.nodes)
+    assert WAVE_D_NODES <= set(graph.nodes)
 
     total = 0
     for node in graph.nodes.values():
@@ -106,8 +130,8 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                         bound,
                     )
                 total += len(lines)
-    # Densified graph + W4/H4 briefs + observer fillers + session_checkered (72).
-    assert total == 4064
+    # Densified graph + W4/H4 briefs + observer fillers + session_checkered + N11A (72) + N11 B/C/D (38).
+    assert total == 4134
 
 
 def test_append_patch_exactly_matches_graph_tails() -> None:
@@ -178,6 +202,19 @@ def test_viewer_voice_has_no_direct_second_person_address() -> None:
     for node, locale, _emotion, line in _active_rows():
         pattern = forbidden_en if locale == "en" else forbidden_cs
         if pattern.search(line):
+            findings.append((node.id, locale, line))
+    assert findings == []
+
+
+def test_viewer_voice_name_slots_are_not_vocative_openers() -> None:
+    vocative = re.compile(r"^\s*\{([a-z0-9_]+)\}\s*,")
+    findings: list[tuple[str, str, str]] = []
+    for node, locale, _emotion, line in _active_rows():
+        match = vocative.match(line)
+        if not match:
+            continue
+        types = {slot.name: slot.type for slot in node.slots}
+        if types.get(match.group(1)) == "name":
             findings.append((node.id, locale, line))
     assert findings == []
 

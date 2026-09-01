@@ -17,6 +17,7 @@ def test_assignments_can_include_filled_cells() -> None:
     assert "{position}" in text
     assert "speak_priority" in text
     assert "Emotion variants to write" in text
+    assert "Never open with a name slot and a comma" in text
     graph = load_sequence_graph()
     for node_id in graph.nodes:
         assert f"`{node_id}`" in text

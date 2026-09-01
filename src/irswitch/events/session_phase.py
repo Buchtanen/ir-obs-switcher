@@ -29,7 +29,7 @@ def should_begin_pit_cycle(
     prev_dist: float | None = None,
 ) -> bool:
     """True only for a driven pit entry this stint, not lobby spawn or ESC/tow."""
-    if not state.connected or state.session_finished:
+    if not state.connected or state.session_finished or state.mute_field:
         return False
     if is_towing(state.player_tow_time):
         return False

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from irswitch.iracing.session_flags import decode_session_flags
 from irswitch.overlay.models import OpponentInfo, RaceState, TelemetrySnapshot
 from irswitch.overlay.session import overlay_mode_from_session_type
 from irswitch.overlay.settings import BattleSettings
@@ -84,12 +85,14 @@ class RaceContextAnalyzer:
         remain = snap.session_laps_remain
         session_state = snap.session_state or 0
         is_final = bool(remain is not None and 0 < remain <= 1.05 and session_state == 4)
-        session_checkered, session_finished = self._session_end.update(
-            session_state=snap.session_state,
+        flags = decode_session_flags(snap.session_flags)
+        session_checkered, player_finished, mute_field = self._session_end.update(
+            session_state=session_state,
             lap_completed=snap.lap_completed,
-            on_pit_road=bool(snap.on_pit_road),
+            on_pit_road=snap.on_pit_road,
             player_track_surface=snap.player_track_surface,
             player_tow_time=snap.player_tow_time,
+            player_lap_dist_pct=snap.player_lap_dist_pct,
         )
 
         return RaceState(
@@ -105,8 +108,10 @@ class RaceContextAnalyzer:
             incidents=snap.incidents,
             on_pit_road=bool(snap.on_pit_road),
             is_final_lap=is_final,
-            session_finished=session_finished,
+            session_finished=mute_field,
             session_checkered=session_checkered,
+            player_finished=player_finished,
+            mute_field=mute_field,
             opponent_ahead=opponent_ahead,
             opponent_behind=opponent_behind,
             gap_ahead=gap_ahead,
@@ -128,6 +133,14 @@ class RaceContextAnalyzer:
             data_quality=snap.data_quality,
             player_track_surface=snap.player_track_surface,
             player_tow_time=snap.player_tow_time,
+            speed_mps=snap.speed_mps,
+            session_flags=snap.session_flags,
+            session_flag_names=flags.names,
+            flag_checkered=flags.checkered,
+            flag_yellow=flags.yellow,
+            flag_green=flags.green,
+            car_idx_best_lap_time=snap.car_idx_best_lap_time,
+            car_idx_last_lap_time=snap.car_idx_last_lap_time,
         )
 
 

@@ -177,6 +177,7 @@ def test_polish_prompt_keeps_featured_driver() -> None:
     assert "featured driver is Richard / Buchtanen" in system
     assert "stream viewers" in system.lower() or "protagonist" in system.lower()
     assert "you/your" in system.lower() or "never address" in system.lower()
+    assert "comma" in system.lower() or "vocative" in system.lower()
 
 
 def test_past_prompt_also_states_tts_budget() -> None:
@@ -330,6 +331,24 @@ def test_fact_violation_codes_from_vod_inversions() -> None:
         "Richard. Ohanian is closing.",
         "Richard Ohanian is closing.",
     )
+    assert "hero_vocative" in fact_violation_codes(
+        "That's a best lap without fuss.",
+        "Richard, that's a best lap without fuss.",
+        driver_names=("Richard",),
+    )
+    assert "hero_vocative" in fact_violation_codes(
+        "That's a best lap without fuss.",
+        "Richard. That's a best lap without fuss.",
+        driver_names=("Richard",),
+    )
+    assert (
+        fact_violation_codes(
+            "He closes the gap.",
+            "Richard closes the gap.",
+            driver_names=("Richard",),
+        )
+        == []
+    )
     assert "live_call_prefix" in fact_violation_codes(
         "Gap zero point four two to Smith.",
         "Live Call: He is closing on Smith.",
@@ -360,6 +379,31 @@ def test_polish_retries_when_model_addresses_the_driver() -> None:
     assert outcome.text == ""
     assert len(calls) == 2
     assert "address_driver" in (outcome.response or {}).get("validatorCodes", [])
+
+
+def test_polish_retries_when_model_uses_hero_vocative() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True, llm_max_attempts=2)
+    calls: list[int] = []
+
+    def opener(_req, timeout):  # noqa: ARG001
+        calls.append(1)
+        return json.dumps(
+            {"choices": [{"message": {"content": "Richard, the gap to Smith is 0.42 seconds."}}]}
+        ).encode("utf-8")
+
+    outcome = polish_skeleton(
+        "Gap 0.42 to Smith.",
+        node,
+        settings,
+        opener=opener,
+        driver_names=("Richard",),
+    )
+    assert outcome.outcome == "retry_exhausted"
+    assert outcome.text == ""
+    assert len(calls) == 2
+    assert "hero_vocative" in (outcome.response or {}).get("validatorCodes", [])
 
 
 def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:

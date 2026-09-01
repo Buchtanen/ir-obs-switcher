@@ -34,6 +34,7 @@ from irswitch.overlay.session import (
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
+from irswitch.race.grid_story import QUALI_RECAP
 from irswitch.race.observer import RaceObserver
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
@@ -86,6 +87,7 @@ class OverlayRuntime:
         self._origin = time.monotonic()
         self._prev_bio_status: str | None = None
         self._pending_envelopes: list[dict[str, Any]] = []
+        self._pending_derived_speech: list[EventEnvelope] = []
         self._tape = OverlaySessionTape()
         self._tape_decision_cursor = 0
         self._commentary_tape_cursor = 0
@@ -94,7 +96,7 @@ class OverlayRuntime:
         self._hud_live = False
         self._running = False
         self._event_fanout = EventFanout()
-        self.race_observer = RaceObserver()
+        self.race_observer = RaceObserver(settings=overlay.race_observer)
         self.commentary = self._build_commentary(overlay)
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
@@ -126,6 +128,7 @@ class OverlayRuntime:
         self.engine = EventEngine(overlay)
         self._register_timing_emitters(overlay)
         self._register_t4_emitters(overlay)
+        self._pending_derived_speech = []
         self.bus.set_active_events([])
         self.bus.set_active_stories_v4([])
         self._tape_decision_cursor = 0
@@ -245,6 +248,7 @@ class OverlayRuntime:
 
         self.commentary.filler_provider = _provider
         self.commentary.filler_formatter = _formatter
+        self.commentary.watcher_log = observer.watches
 
     def _observe_race_story(
         self,
@@ -253,6 +257,8 @@ class OverlayRuntime:
         now: float,
     ) -> None:
         """Update RaceObserver story context; fail-soft (never break the race tick)."""
+        overlay = self._overlay_settings()
+        self.race_observer.apply_settings(overlay.race_observer)
         try:
             self.race_observer.observe(
                 snap,
@@ -266,7 +272,7 @@ class OverlayRuntime:
                 self.commentary.note_hero_names(names)
             derived = self.race_observer.take_derived_envelopes()
             if derived:
-                self._dispatch_speech_envelopes(derived, now)
+                self._pending_derived_speech.extend(derived)
         except Exception:
             logger.warning("RaceObserver observe failed", exc_info=True)
 
@@ -290,10 +296,36 @@ class OverlayRuntime:
         """Fan-out speech envelopes to peer consumers (not a HUD→commentary chain)."""
         self._event_fanout.emit(envelopes, now=now)
 
+    def _flush_pending_derived_speech(self, now: float) -> None:
+        """Speak derived envelopes after the engine tick so INCIDENT outranks aftermath."""
+        pending = self._pending_derived_speech
+        self._pending_derived_speech = []
+        if pending:
+            self._dispatch_speech_envelopes(pending, now)
+
+    def notify_obs_stream_started(self, now: float) -> None:
+        """OBS streaming rising edge → commentary-only STREAM_START. Fail-soft."""
+        overlay = self._overlay_settings()
+        if not overlay.commentary.stream_start:
+            return
+        if not overlay.commentary.enabled:
+            return
+        if self.commentary is None:
+            return
+        try:
+            from irswitch.commentary.stream_context import make_stream_start_envelope
+
+            envelope = make_stream_start_envelope(now)
+            self.commentary.opener.note("STREAM_START", now)
+            self._dispatch_speech_envelopes([envelope], now)
+        except Exception:
+            logger.warning("STREAM_START commentary failed", exc_info=True)
+
     def _reset_commentary(self) -> None:
         overlay = self._overlay_settings()
         if self.commentary is None:
             self.commentary = self._build_commentary(overlay)
+            self.race_observer.apply_settings(overlay.race_observer)
             self._wire_race_observer_fillers()
             self._rebuild_event_fanout()
             return
@@ -304,6 +336,7 @@ class OverlayRuntime:
             on_polish_debug=self._llm_polish_tape_hook,
         )
         self.commentary.reset()
+        self.race_observer.apply_settings(overlay.race_observer)
         self._wire_race_observer_fillers()
         self._commentary_tape_cursor = 0
         self.in_car.reset()
@@ -430,7 +463,16 @@ class OverlayRuntime:
         Prefer speaking an early session intro before seating. When a brief
         speaks this frame, defer ``ENTER_CAR`` to the next tick so in_car is
         not marked announced while the director is busy.
+
+        When a QUALI_RECAP is queued for the post-engine flush, skip sidecars
+        this tick so intro/in-car cannot steal the opener window.
         """
+        overlay = self._overlay_settings()
+        if self.commentary is not None:
+            self.commentary.grid_story = bool(overlay.race_observer.grid_story)
+            self.commentary.quali_bag_ready = self.race_observer.stream.quali_bag() is not None
+        if any(env.event_type == QUALI_RECAP for env in self._pending_derived_speech):
+            return
         spoken_brief = self._observe_session_briefs(state, now)
         if spoken_brief:
             return
@@ -439,8 +481,8 @@ class OverlayRuntime:
     def _observe_timing(self, snap: TelemetrySnapshot, *, session_finished: bool = False) -> None:
         """Ingest player crossings (Practice/Quali). Keep the checkered out-lap.
 
-        CoolDown always stops. The tick that becomes ``after_session`` (S/F after
-        checkered) still ingests, then later ticks skip.
+        CoolDown always stops. The tick that becomes player_finished / mute_field
+        still ingests, then later ticks skip.
         """
         if snap.session_state not in (5, 6):
             self._timing_after_session = False
@@ -586,7 +628,9 @@ class OverlayRuntime:
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
-            self._observe_timing(snap, session_finished=state.session_finished)
+            self._observe_timing(
+                snap, session_finished=bool(state.mute_field or state.session_finished)
+            )
             self._observe_race_story(snap, state, now)
         self.bus.set_race(state)
         self._last_race = state
@@ -595,12 +639,15 @@ class OverlayRuntime:
         self._tick_commentary_scheduler(now)
         self._drain_commentary_tape(now)
         if self._idle_when_disconnected(state):
+            self._pending_derived_speech.clear()
             return
         if self.session.in_warmup(now):
             # Suppress trend/semantic emitters during reconnect warm-up; still publish state.
+            self._pending_derived_speech.clear()
             self.bus.set_active_events(self.manager.active_events())
             return
         await self._emit_from_race(state, now)
+        self._flush_pending_derived_speech(now)
 
     async def _read_telemetry(self) -> TelemetrySnapshot:
         read_fn = getattr(self._reader, "read_telemetry", None)
@@ -621,6 +668,8 @@ class OverlayRuntime:
         return TelemetrySnapshot.disconnected(time.monotonic())
 
     async def _emit_from_race(self, state: RaceState, now: float) -> None:
+        overlay = self._overlay_settings()
+        self.engine.incident.apply_settings(overlay.race_observer)
         try:
             candidates = self.engine.tick(state, now, self.bus.bio)
         except Exception:

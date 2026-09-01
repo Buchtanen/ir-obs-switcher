@@ -144,6 +144,8 @@ class QualiEmitter:
             and projected < state.best_lap_time - 0.05
             and state.position is not None
         ):
+            # Own PB only: projected vs hero best_lap_time, labelled P{n-1}.
+            # Not hunt-by-rival-lap-time — that lives in race/timing_hunt.py.
             out.append(
                 CandidateEvent(
                     name="position_attack",

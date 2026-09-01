@@ -1,4 +1,4 @@
-"""Stream-level SESSION_CHECKERED / SESSION_WRAP / SESSION_PREVIEW at session boundaries."""
+"""Stream-level SESSION_WRAP / SESSION_PREVIEW at session boundaries."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.overlay.models import RaceState
+from irswitch.race.watcher_log import WatcherLog, note
 
 _WRAP_PRIORITY = 58
 _PREVIEW_PRIORITY = 52
@@ -36,8 +37,7 @@ class StreamNarrativeFsm:
     Sequencing intent (with ``session_briefs`` sidecars):
     * key change → ``SESSION_WRAP`` (previous) then ``SESSION_PREVIEW`` (new)
       when the stream already had a prior session
-    * ``session_checkered`` while still on the out-lap → ``SESSION_CHECKERED``
-    * ``session_finished`` rising edge → ``SESSION_WRAP`` if not yet wrapped
+    * ``player_finished`` / ``session_finished`` rising edge → ``SESSION_WRAP`` if not yet wrapped
     * first session of a stream gets neither wrap nor preview (intros own the opener)
     """
 
@@ -49,7 +49,6 @@ class StreamNarrativeFsm:
     _previewed_keys: set[str] = field(default_factory=set)
     _had_prior_session: bool = False
     _pending: list[EventEnvelope] = field(default_factory=list)
-    _checkered_keys: set[str] = field(default_factory=set)
 
     def reset_session(self) -> None:
         """Drop active key tracking; keep wrap/preview history for the stream."""
@@ -62,7 +61,6 @@ class StreamNarrativeFsm:
         self.reset_session()
         self._wrapped_keys.clear()
         self._previewed_keys.clear()
-        self._checkered_keys.clear()
         self._had_prior_session = False
         self._pending.clear()
 
@@ -71,7 +69,14 @@ class StreamNarrativeFsm:
         self._pending.clear()
         return out
 
-    def tick(self, state: RaceState, now: float, *, session_key: str | None) -> list[EventEnvelope]:
+    def tick(
+        self,
+        state: RaceState,
+        now: float,
+        *,
+        session_key: str | None,
+        log: WatcherLog | None = None,
+    ) -> list[EventEnvelope]:
         produced: list[EventEnvelope] = []
         if not state.connected:
             # Disconnect is not a clean wrap; keep history for reconnect same key.
@@ -79,8 +84,7 @@ class StreamNarrativeFsm:
 
         mode = state.overlay_mode or "GENERIC"
         position = state.class_position or state.position
-        finished = bool(state.session_finished)
-        checkered = bool(state.session_checkered)
+        finished = bool(state.player_finished or state.session_finished)
 
         if session_key and session_key != self._key:
             if self._key is not None and self._key not in self._wrapped_keys:
@@ -113,6 +117,7 @@ class StreamNarrativeFsm:
                 self._had_prior_session = True
             if produced:
                 self._pending.extend(produced)
+                self._note_emits(produced, log, now)
             self._bound_history()
             return produced
 
@@ -121,17 +126,6 @@ class StreamNarrativeFsm:
 
         self._mode = mode
         self._position = position
-
-        if checkered and not finished and session_key not in self._checkered_keys:
-            produced.append(
-                self._checkered_envelope(
-                    now,
-                    key=session_key,
-                    mode=mode,
-                    position=position,
-                )
-            )
-            self._checkered_keys.add(session_key)
 
         if finished and not self._finished and session_key not in self._wrapped_keys:
             produced.append(
@@ -149,11 +143,31 @@ class StreamNarrativeFsm:
 
         if produced:
             self._pending.extend(produced)
+            self._note_emits(produced, log, now)
         self._bound_history()
         return produced
 
+    def _note_emits(
+        self,
+        produced: list[EventEnvelope],
+        log: WatcherLog | None,
+        now: float,
+    ) -> None:
+        for env in produced:
+            metrics = env.metrics or {}
+            reason = str(metrics.get("reason") or metrics.get("kind") or "emit")
+            note(
+                log,
+                watch="briefs",
+                kind=env.event_type,
+                emitted=True,
+                reason=reason,
+                confidence=1.0,
+                now=now,
+            )
+
     def _bound_history(self) -> None:
-        for bag in (self._wrapped_keys, self._previewed_keys, self._checkered_keys):
+        for bag in (self._wrapped_keys, self._previewed_keys):
             while len(bag) > 16:
                 bag.pop()
 
@@ -185,33 +199,6 @@ class StreamNarrativeFsm:
             metrics=metrics,
             correlation_id=f"stream_wrap:{key}",
             dedupe_key=f"SESSION_WRAP:{key}",
-        )
-
-    def _checkered_envelope(
-        self,
-        now: float,
-        *,
-        key: str,
-        mode: str,
-        position: int | None,
-    ) -> EventEnvelope:
-        metrics: dict[str, object] = {
-            "kind": "session_checkered",
-            "mode": mode,
-            "modeLabel": _mode_label(mode),
-            "modeLabelCs": _mode_label_cs(mode),
-        }
-        if position is not None:
-            metrics["position"] = position
-        return make_envelope(
-            event_type="SESSION_CHECKERED",
-            phase="RESULT",
-            mode=mode,
-            priority=_WRAP_PRIORITY - 2,
-            monotonic_ms=int(now * 1000),
-            metrics=metrics,
-            correlation_id=f"stream_checkered:{key}",
-            dedupe_key=f"SESSION_CHECKERED:{key}",
         )
 
     def _preview_envelope(

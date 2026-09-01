@@ -1,4 +1,4 @@
-"""Checkered is clock end; after_session waits for S/F or pits."""
+"""Checkered is clock end; player_finished waits for S/F, pit-rise, or CoolDown."""
 
 from __future__ import annotations
 
@@ -19,45 +19,47 @@ def test_still_on_out_lap_track_yes_pits_tow_no() -> None:
 
 def test_checkered_on_track_waits_for_sf() -> None:
     tracker = SessionEndTracker()
-    checkered, finished = tracker.update(
+    checkered, finished, mute = tracker.update(
         session_state=5,
         lap_completed=11,
         on_pit_road=False,
         player_track_surface=ON_TRACK,
-        player_tow_time=None,
+        player_lap_dist_pct=0.4,
     )
     assert checkered is True
     assert finished is False
-    checkered, finished = tracker.update(
+    assert mute is False
+    checkered, finished, mute = tracker.update(
         session_state=5,
         lap_completed=11,
         on_pit_road=False,
         player_track_surface=ON_TRACK,
-        player_tow_time=None,
+        player_lap_dist_pct=0.5,
     )
     assert finished is False
-    checkered, finished = tracker.update(
+    checkered, finished, mute = tracker.update(
         session_state=5,
         lap_completed=12,
         on_pit_road=False,
         player_track_surface=ON_TRACK,
-        player_tow_time=None,
+        player_lap_dist_pct=0.05,
     )
     assert checkered is True
     assert finished is True
+    assert mute is True
 
 
-def test_checkered_in_pits_is_immediately_after_session() -> None:
+def test_checkered_in_pits_is_not_finish() -> None:
     tracker = SessionEndTracker()
-    checkered, finished = tracker.update(
+    checkered, finished, mute = tracker.update(
         session_state=5,
         lap_completed=4,
         on_pit_road=True,
         player_track_surface=IN_PIT_STALL,
-        player_tow_time=None,
     )
     assert checkered is True
-    assert finished is True
+    assert finished is False
+    assert mute is False
 
 
 def test_checkered_then_box_without_sf_ends_session() -> None:
@@ -67,29 +69,30 @@ def test_checkered_then_box_without_sf_ends_session() -> None:
         lap_completed=8,
         on_pit_road=False,
         player_track_surface=ON_TRACK,
-        player_tow_time=None,
+        player_lap_dist_pct=0.4,
     )
-    _, finished = tracker.update(
+    _, finished, mute = tracker.update(
         session_state=5,
         lap_completed=8,
         on_pit_road=True,
         player_track_surface=IN_PIT_STALL,
-        player_tow_time=None,
+        player_lap_dist_pct=0.41,
     )
     assert finished is True
+    assert mute is True
 
 
-def test_cooldown_is_always_after_session() -> None:
+def test_cooldown_is_player_finished_not_checkered() -> None:
     tracker = SessionEndTracker()
-    checkered, finished = tracker.update(
+    checkered, finished, mute = tracker.update(
         session_state=6,
         lap_completed=20,
         on_pit_road=False,
         player_track_surface=ON_TRACK,
-        player_tow_time=None,
     )
-    assert checkered is True
+    assert checkered is False
     assert finished is True
+    assert mute is True
 
 
 def test_racing_resets_tracker() -> None:
@@ -99,17 +102,16 @@ def test_racing_resets_tracker() -> None:
         lap_completed=1,
         on_pit_road=True,
         player_track_surface=IN_PIT_STALL,
-        player_tow_time=None,
     )
-    checkered, finished = tracker.update(
+    checkered, finished, mute = tracker.update(
         session_state=4,
         lap_completed=0,
         on_pit_road=False,
         player_track_surface=ON_TRACK,
-        player_tow_time=None,
     )
     assert checkered is False
     assert finished is False
+    assert mute is False
 
 
 def test_invalid_lap_skips_race_emits_practice() -> None:

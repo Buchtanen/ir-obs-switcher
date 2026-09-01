@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.trk_loc import OFF_TRACK, is_on_track, is_towing
 from irswitch.overlay.models import RaceState
+from irswitch.race.watcher_log import WatcherLog, note
 
 _AFTERMATH_PRIORITY = 72
 _BACK_UNDER_WAY_PRIORITY = 68
@@ -14,14 +15,19 @@ _CLASSIFY_WINDOW_S = 1.2
 _MOVING_DIST_EPS = 0.0008
 _ROLLING_HOLD_S = 0.35
 _RECOVERY_HOLD_S = 0.6
+# Speed motion (N3). Not INI — surface-first classify must not flip off-track→rolling.
+_STALLED_SPEED_MPS = 1.0
+_ROLLING_SPEED_MPS = 2.5
 
 
 @dataclass
 class IncidentAftermathFsm:
     """Watch incident count rises → classify stalled/rolling → optional recovery.
 
-    Deterministic, fail-soft. Uses track surface, tow time, and LapDistPct
-    motion (Speed is not on RaceState yet).
+    Deterministic, fail-soft. Classify is **surface-first**: OffTrack / not-on-track
+    / tow is stalled even if Speed > 0 (otherwise BACK_UNDER_WAY never fires).
+    Speed + LapDistPct are motion for on-track stalled vs rolling and for
+    stalled → BACK_UNDER_WAY. Speed missing → LapDistPct only.
     """
 
     _phase: str = "idle"  # idle | classify | stalled
@@ -52,7 +58,9 @@ class IncidentAftermathFsm:
         self._pending.clear()
         return out
 
-    def tick(self, state: RaceState, now: float) -> list[EventEnvelope]:
+    def tick(
+        self, state: RaceState, now: float, *, log: WatcherLog | None = None
+    ) -> list[EventEnvelope]:
         """Advance FSM; return newly produced derived envelopes."""
         produced: list[EventEnvelope] = []
         if not state.connected:
@@ -81,6 +89,16 @@ class IncidentAftermathFsm:
 
         if produced:
             self._pending.extend(produced)
+            for env in produced:
+                note(
+                    log,
+                    watch="aftermath",
+                    kind=env.event_type,
+                    emitted=True,
+                    reason=str((env.metrics or {}).get("kind") or "emit"),
+                    confidence=1.0,
+                    now=now,
+                )
         return produced
 
     def _begin_classify(self, state: RaceState, now: float, *, prev: int, total: int) -> None:
@@ -100,8 +118,9 @@ class IncidentAftermathFsm:
         if self._looks_rolling(state, now, moving=moving):
             return self._emit_aftermath(state, now, kind="rolling")
         if now >= self._classify_deadline:
-            kind = "stalled" if self._looks_stalled(state) else "rolling"
-            return self._emit_aftermath(state, now, kind=kind)
+            if self._looks_stalled(state) or not moving:
+                return self._emit_aftermath(state, now, kind="stalled")
+            return self._emit_aftermath(state, now, kind="rolling")
         return []
 
     def _tick_stalled(self, state: RaceState, now: float, *, moving: bool) -> list[EventEnvelope]:
@@ -179,7 +198,22 @@ class IncidentAftermathFsm:
         return (now - self._moving_since) >= _ROLLING_HOLD_S
 
     def _update_motion(self, state: RaceState, now: float) -> bool:
-        """Sample LapDistPct once per tick. Returns whether the car moved."""
+        """Sample Speed (when set) and LapDistPct. Returns whether the car moved.
+
+        Speed does **not** reclassify off-track as rolling; callers still require
+        ``is_on_track`` for rolling / BACK_UNDER_WAY.
+        """
+        dist_moving = self._dist_moved(state)
+        speed_moving = _speed_moving(state.speed_mps)
+        moving = dist_moving if speed_moving is None else speed_moving
+        if moving:
+            if self._moving_since is None:
+                self._moving_since = now
+        else:
+            self._moving_since = None
+        return moving
+
+    def _dist_moved(self, state: RaceState) -> bool:
         dist = state.player_lap_dist_pct
         prev = self._last_dist
         self._last_dist = dist
@@ -188,10 +222,15 @@ class IncidentAftermathFsm:
         delta = abs(float(dist) - float(prev))
         if delta > 0.5:
             delta = 1.0 - delta
-        moving = delta >= _MOVING_DIST_EPS
-        if moving:
-            if self._moving_since is None:
-                self._moving_since = now
-        else:
-            self._moving_since = None
-        return moving
+        return delta >= _MOVING_DIST_EPS
+
+
+def _speed_moving(speed_mps: float | None) -> bool | None:
+    """True/False from Speed; None = missing or hysteresis band (use LapDistPct)."""
+    if speed_mps is None:
+        return None
+    if speed_mps <= _STALLED_SPEED_MPS:
+        return False
+    if speed_mps >= _ROLLING_SPEED_MPS:
+        return True
+    return None

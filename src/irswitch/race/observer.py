@@ -9,10 +9,14 @@ from typing import Any
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.drivers import speakable_name_mix_for_car
+from irswitch.iracing.sdk_units import as_completed_lap_time, format_lap_time
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.session import build_session_key, overlay_mode_from_session_type
+from irswitch.overlay.settings import RaceObserverSettings
 from irswitch.race.aftermath import IncidentAftermathFsm
+from irswitch.race.flags import SessionFlagFsm
+from irswitch.race.grid_story import GridStoryFsm
 from irswitch.race.narrative import StreamNarrativeFsm
 from irswitch.race.opponents import (
     NearFieldCar,
@@ -22,6 +26,8 @@ from irswitch.race.opponents import (
     same_class,
 )
 from irswitch.race.story import HeroSnapshot, StoryContext, StreamMemory
+from irswitch.race.timing_hunt import TimingHuntFsm
+from irswitch.race.watcher_log import WatcherLog, note
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +48,14 @@ class RaceObserver:
 
     ahead_n: int = 2
     behind_n: int = 2
+    settings: RaceObserverSettings = field(default_factory=RaceObserverSettings)
     stream: StreamMemory = field(default_factory=StreamMemory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
+    timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
+    flags: SessionFlagFsm = field(default_factory=SessionFlagFsm)
+    grid_story: GridStoryFsm = field(default_factory=GridStoryFsm)
+    watches: WatcherLog = field(default_factory=WatcherLog)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -52,7 +63,10 @@ class RaceObserver:
     _last_filler_kind: str | None = None
     _filler_cooldown_until: float = 0.0
     _after_session: bool = False
-    _session_checkered: bool = False
+    _leader_fact_until: float = 0.0
+
+    def apply_settings(self, settings: RaceObserverSettings) -> None:
+        self.settings = settings
 
     def reset_session(self) -> None:
         self._session_key = None
@@ -62,19 +76,26 @@ class RaceObserver:
         self._last_filler_kind = None
         self._filler_cooldown_until = 0.0
         self._after_session = False
-        self._session_checkered = False
+        self._leader_fact_until = 0.0
         self.aftermath.reset()
         self.narrative.reset_session()
+        self.timing_hunt.reset()
+        self.flags.reset()
+        self.grid_story.reset()
 
     def reset_stream(self) -> None:
         self.reset_session()
         self.stream.reset_stream()
         self.narrative.reset_stream()
+        self.watches.clear()
 
     def take_derived_envelopes(self) -> list[EventEnvelope]:
-        """Drain derived commentary envelopes (narrative then aftermath)."""
+        """Drain derived commentary envelopes (narrative, aftermath, flags, timing hunt)."""
         out = self.narrative.take_pending()
         out.extend(self.aftermath.take_pending())
+        out.extend(self.flags.take_pending())
+        out.extend(self.timing_hunt.take_pending())
+        out.extend(self.grid_story.take_pending())
         return out
 
     @property
@@ -120,6 +141,9 @@ class RaceObserver:
             self._last_weather = None
             self._pending_weather_change = None
             self.aftermath.reset()
+            self.timing_hunt.reset()
+            self.flags.reset()
+            self.grid_story.reset()
             if key:
                 self.stream.note_session(key)
 
@@ -150,6 +174,11 @@ class RaceObserver:
             self._note_weather(weather)
 
         overlay_mode = state.overlay_mode or overlay_mode_from_session_type(snap.session_type)
+        if overlay_mode == "QUALIFYING":
+            self.stream.note_quali(
+                state.class_position or snap.class_position,
+                state.best_lap_time if state.best_lap_time is not None else snap.best_lap_time,
+            )
         ctx = StoryContext(
             session_key=key,
             overlay_mode=overlay_mode,
@@ -169,16 +198,36 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
         )
         self._context = ctx
-        self._after_session = bool(state.session_finished)
-        self._session_checkered = bool(state.session_checkered)
+        self._after_session = bool(
+            state.mute_field or state.player_finished or state.session_finished
+        )
         try:
-            self.narrative.tick(state, now, session_key=key)
+            self.narrative.tick(state, now, session_key=key, log=self.watches)
         except Exception:
             logger.warning("StreamNarrativeFsm.tick failed", exc_info=True)
         try:
-            self.aftermath.tick(state, now)
+            self.aftermath.tick(state, now, log=self.watches)
         except Exception:
             logger.warning("IncidentAftermathFsm.tick failed", exc_info=True)
+        try:
+            self.timing_hunt.tick(snap, state, now, log=self.watches)
+        except Exception:
+            logger.warning("TimingHuntFsm.tick failed", exc_info=True)
+        try:
+            self.flags.tick(state, now, enabled=bool(self.settings.flags), log=self.watches)
+        except Exception:
+            logger.warning("SessionFlagFsm.tick failed", exc_info=True)
+        try:
+            self.grid_story.tick(
+                state,
+                now,
+                enabled=bool(self.settings.grid_story),
+                bag=self.stream.quali_bag(),
+                session_key=key,
+                log=self.watches,
+            )
+        except Exception:
+            logger.warning("GridStoryFsm.tick failed", exc_info=True)
         return ctx
 
     def next_filler_envelope(self, now: float, *, locale: str = "en") -> EventEnvelope | None:
@@ -188,7 +237,7 @@ class RaceObserver:
         ctx = self._context
         if ctx is None:
             return None
-        if self._after_session or self._session_checkered:
+        if self._after_session:
             return None
 
         if self._pending_weather_change is not None:
@@ -199,7 +248,7 @@ class RaceObserver:
             metrics["kind"] = "weather_change"
             self._filler_cooldown_until = now + 20.0
             self._last_filler_kind = "weather_change"
-            return make_envelope(
+            env = make_envelope(
                 event_type="WEATHER_CHANGE",
                 phase="RESULT",
                 mode=ctx.overlay_mode,
@@ -208,6 +257,16 @@ class RaceObserver:
                 metrics=metrics,
                 correlation_id=f"weather:{ctx.session_key or 'na'}",
             )
+            note(
+                self.watches,
+                watch="briefs",
+                kind="WEATHER_CHANGE",
+                emitted=True,
+                reason="weather_change",
+                confidence=1.0,
+                now=now,
+            )
+            return env
 
         # Rotate field facts so silence fill is not identical every time.
         slots = ctx.slot_bindings()
@@ -219,18 +278,22 @@ class RaceObserver:
         start = 0
         if self._last_filler_kind in kind_cycle:
             start = (kind_cycle.index(self._last_filler_kind) + 1) % len(kind_cycle)
+        leader_cooldown = max(0.0, float(self.settings.leader_pace_cooldown_s))
+        text_key: str | None = None
         for offset in range(len(kind_cycle)):
             kind = kind_cycle[(start + offset) % len(kind_cycle)]
             if kind == "position" and pos is not None:
                 text_key = "position"
                 break
             if kind == "leader" and leader:
+                if leader_cooldown > 0.0 and now < self._leader_fact_until:
+                    continue
                 text_key = "leader"
                 break
             if kind == "gap" and target and gap is not None:
                 text_key = "gap"
                 break
-        else:
+        if text_key is None:
             return None
 
         metrics = {k: v for k, v in slots.items() if v is not None}
@@ -238,7 +301,9 @@ class RaceObserver:
         metrics["fact"] = text_key
         self._filler_cooldown_until = now + 15.0
         self._last_filler_kind = text_key
-        return make_envelope(
+        if text_key == "leader" and leader_cooldown > 0.0:
+            self._leader_fact_until = now + leader_cooldown
+        env = make_envelope(
             event_type="FIELD_FACT",
             phase="RESULT",
             mode=ctx.overlay_mode,
@@ -247,6 +312,16 @@ class RaceObserver:
             metrics=metrics,
             correlation_id=f"field:{ctx.session_key or 'na'}:{text_key}",
         )
+        note(
+            self.watches,
+            watch="briefs",
+            kind="FIELD_FACT",
+            emitted=True,
+            reason=text_key,
+            confidence=1.0,
+            now=now,
+        )
+        return env
 
     def format_filler_text(self, envelope: EventEnvelope, *, locale: str = "en") -> str | None:
         """Template lines when graph has no FIELD_FACT / WEATHER_CHANGE / aftermath node."""
@@ -298,6 +373,43 @@ class RaceObserver:
             if cs:
                 return f"Další: {label}."
             return f"Up next: {label}."
+
+        if envelope.event_type == "PACE_HUNT" or kind == "pace_hunt":
+            pos = metrics.get("position")
+            if pos is None:
+                return None
+            if cs:
+                return f"Honí čas, který drží {int(pos)}. místo."
+            return f"He's hunting the P{int(pos)} time."
+
+        if envelope.event_type == "SESSION_FLAG" or kind in {"yellow", "green", "checkered"}:
+            flag_kind = kind or str(metrics.get("branch") or "")
+            if flag_kind == "yellow":
+                return "Je žlutá." if cs else "Caution is out."
+            if flag_kind == "green":
+                return "Zelená vlajka." if cs else "Green flag."
+            if flag_kind == "checkered":
+                return "Šachovnice." if cs else "That's the checkered flag."
+            return None
+
+        if envelope.event_type == "QUALI_RECAP" or kind == "quali_recap":
+            pos = metrics.get("position")
+            if pos is None:
+                return None
+            spoken_time = None
+            seconds = as_completed_lap_time(metrics.get("lapTime"))
+            if seconds is not None:
+                spoken_time = format_lap_time(seconds)
+            if cs:
+                if spoken_time:
+                    return f"Kvalifikoval se na {int(pos)}. místě časem {spoken_time}."
+                return f"Kvalifikoval se na {int(pos)}. místo."
+            if spoken_time:
+                return f"He qualified P{int(pos)} in {spoken_time}."
+            return f"He qualified P{int(pos)}."
+
+        if envelope.event_type == "PARADE_PAD" or kind == "parade_pad":
+            return "Pořád na formovačce." if cs else "Still on the formation lap."
 
         fact = str(metrics.get("fact") or "")
         pos = metrics.get("position")

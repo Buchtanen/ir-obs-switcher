@@ -171,6 +171,10 @@ class CommentarySettings:
     sector_speak_max_per_lap: int = 1
     # Session intro / SoF / weather commentary sidecars (default off).
     session_briefs: bool = False
+    stream_start: bool = False
+    # Gap-hunt TTS in practice/qualifying. HUD hunting stays independent.
+    gap_hunt_tts_in_practice: bool = False
+    gap_hunt_tts_in_qualifying: bool = False
     # Optional remote LLM style polish (Ollama OpenAI-compatible). Default off.
     llm_polish: bool = False
     llm_base_url: str = "http://127.0.0.1:11434/v1"
@@ -186,6 +190,19 @@ class CommentarySettings:
 
 
 @dataclass(frozen=True)
+class RaceObserverSettings:
+    """RaceObserver policy. N3/N5 add keys here — do not invent a second type."""
+
+    leader_pace_cooldown_s: float = 300.0
+    # When true, INCIDENT metrics.branch is off_track | unknown. Default off until trusted.
+    incident_classify: bool = False
+    # Race yellow/green/checkered SESSION_FLAG commentary. Default off.
+    flags: bool = False
+    # Quali recap + ParadeLaps padding. Default off. Independent of session_briefs.
+    grid_story: bool = False
+
+
+@dataclass(frozen=True)
 class OverlaySettings:
     """Feature flags and overlay presentation."""
 
@@ -197,6 +214,7 @@ class OverlaySettings:
     tape: OverlayTapeSettings = field(default_factory=OverlayTapeSettings)
     event_engine: EventEngineFeatureSettings = field(default_factory=EventEngineFeatureSettings)
     commentary: CommentarySettings = field(default_factory=CommentarySettings)
+    race_observer: RaceObserverSettings = field(default_factory=RaceObserverSettings)
     sampling: SamplingSettings = field(default_factory=SamplingSettings)
     battle: BattleSettings = field(default_factory=BattleSettings)
     heart_rate: HeartRateSettings = field(default_factory=HeartRateSettings)

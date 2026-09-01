@@ -950,6 +950,14 @@ async def main_loop(
                         )
                         if title:
                             last_stream_title = title
+                        try:
+                            from irswitch.commentary.stream_context import (
+                                notify_overlay_stream_started,
+                            )
+
+                            notify_overlay_stream_started()
+                        except Exception:
+                            logger.debug("stream-start commentary hook failed", exc_info=True)
                         state_now = get_current_state()
                         if state_now is not None:
                             set_current_state(state_now)

@@ -26,6 +26,8 @@ _ADDRESS_CS = re.compile(
     r"\b(ty|tvoje|tvůj|tvá|jsi|jedeš|máš|musíš|můžeš|vezmi|drž)\b",
     re.IGNORECASE,
 )
+# "{target_name}, that's a lap." talks TO the named driver. Subject "{target_name} is" is OK.
+_VOCATIVE_SLOT = re.compile(r"^\s*\{([a-z0-9_]+)\}\s*,")
 _MAX_BREAK_MS = 500
 _MAX_TAG_CHARS = 80
 _ALLOWED_EMPHASIS = frozenset({"reduced", "moderate", "strong"})
@@ -136,6 +138,17 @@ def validate_utterance(
                 "viewer third person only; do not address the featured driver as you/your",
             )
         )
+
+    vocative = _VOCATIVE_SLOT.match(stripped)
+    if vocative:
+        slot_types = {slot.name: slot.type for slot in node.slots}
+        if slot_types.get(vocative.group(1)) == "name":
+            issues.append(
+                ValidationIssue(
+                    "vocative_opener",
+                    "do not start with a name slot and a comma; talk about the driver, not to them",
+                )
+            )
 
     return issues
 

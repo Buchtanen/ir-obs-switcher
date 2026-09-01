@@ -10,6 +10,8 @@ Deterministic acceptance views for the V4 renderer. All URLs require `demo=1` (i
 
 **Themes:** `cyber_racing` (default), `stealth_graphite`, `night_attack`, `pit_wall_dark`, `pit_wall_light`
 
+Each theme id must ship `src/irswitch/web/overlay/css/themes/<theme>.css`. `overlay.js` `applyTheme()` loads that file; a 404 drops `--primary` / `--panel-fill` and Pit Wall plates look unfinished. Pytest: `tests/test_overlay_theme_css.py`.
+
 **Gallery (all fixtures):** omit `fixture` or use `fixture=all`
 
 ```

@@ -11,7 +11,13 @@ from aiohttp import web
 from irswitch.commentary.assignments import render_assignments
 from irswitch.commentary.duck import ducker_from_settings
 from irswitch.commentary.graph import GraphNode, load_sequence_graph
-from irswitch.commentary.tts import TtsResult, detect_backend, list_voices, speak_text
+from irswitch.commentary.tts import (
+    TtsResult,
+    detect_backend,
+    list_voices,
+    speak_text,
+    speak_timeout_s,
+)
 from irswitch.commentary.validator import validate_utterance
 from irswitch.overlay.http import _file_response, _require_csrf
 from irswitch.overlay.i18n import normalize_language
@@ -164,7 +170,11 @@ async def handle_commentary_speak(request: web.Request) -> web.Response:
     except (TypeError, ValueError):
         rate = settings.tts_rate
     backend = str(body.get("backend") or settings.tts_backend)
-    timeout = max(settings.max_utterance_s + 10.0, 20.0)
+    timeout = speak_timeout_s(
+        settings,
+        event_type=node.event_types[0] if node.event_types else "",
+        node=node,
+    )
 
     def _speak_job() -> TtsResult:
         with ducker_from_settings(settings):

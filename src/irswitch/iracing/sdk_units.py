@@ -94,6 +94,14 @@ def as_est_time(value: object) -> float | None:
     return number
 
 
+def as_speed_mps(value: object) -> float | None:
+    """Speed in m/s. 0 is a parked car (valid). Negative / non-finite → None."""
+    number = _finite(value)
+    if number is None or number < 0:
+        return None
+    return number
+
+
 def as_non_negative_int(value: object) -> int | None:
     """Lap / LapCompleted / CarIdxLapCompleted. -1 = not in world."""
     number = as_int(value)

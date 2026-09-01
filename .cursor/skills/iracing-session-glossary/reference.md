@@ -36,8 +36,8 @@ Numeric legacy map (only if a number appears): `0 Test, 1 Practice, 2 Qualify, 3
 | 2 | Warmup | **not** session type Warmup |
 | 3 | ParadeLaps | — |
 | 4 | Racing | green / running; `t_green`; also true in Practice |
-| 5 | Checkered | `session_checkered`; clock expired, out-lap still allowed |
-| 6 | CoolDown | `session_checkered` + `session_finished` (`after_session`) |
+| 5 | Checkered | `session_checkered` (`SessionState == 5` only); clock expired, out-lap still allowed |
+| 6 | CoolDown | `player_finished` / `mute_field` fallback; `session_checkered` is **false** |
 
 `SessionState=4` during Practice is normal. Do not infer `session_type=="Race"`.
 
@@ -53,11 +53,13 @@ Garage UI is `IsGarageVisible`, not stall physics. See rule `iracing-sdk-semanti
 | `SwitchState.session_num` | dashboard | 0-based; display is `n+1 of total` |
 | `TelemetrySnapshot.session_type` | overlay ingest | same extract |
 | `RaceState.overlay_mode` | overlay/events | `overlay_mode_from_session_type` |
-| `RaceState.session_checkered` | overlay | `session_state in {5,6}` (clock expired) |
-| `RaceState.session_finished` | overlay | after_session: S/F after checkered, or not flying at checkered, or CoolDown |
+| `RaceState.session_checkered` | overlay | `SessionState == 5` only (not CoolDown, not client flag bit) |
+| `RaceState.player_finished` | overlay | S/F or eligible pit-rise after checkered, or CoolDown. Already in pits at checkered is **not** finish |
+| `RaceState.mute_field` | overlay | follows `player_finished`; post-race HUD/hunt mute |
+| `RaceState.session_finished` | overlay | alias of `mute_field` |
 | `build_session_key` | overlay reset | `subsession:session_num:track` |
 | `StreamChapter.session_type` | VOD markers | same Title Case strings |
-| `StreamMemory` | RaceObserver | survives session changes until OBS stream reset |
+| `StreamMemory` | RaceObserver | survives session changes until OBS stream reset; quali bag = class position + best lap |
 
 `RaceState` / `RaceObserver` / `RaceContextAnalyzer` are **historical names**.
 They interpret telemetry for every overlay mode.

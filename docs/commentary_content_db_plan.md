@@ -267,6 +267,8 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 - [x] W5 — EN bio + invalid_lap (gpt-5; unfilled 99 → 94; **EN complete**)
 - [x] W6 — CS parity all-at-once (claude-opus parallel W6a/b/c; unfilled 94 → **0**)
 - [x] VOICE — stream-viewer broadcast + denser matrix (~4 lines/cell; **426 → 752** lines)
+- [x] N11 A — `stream_start` (long node TTS cap, slot-free EN+CS) + mode `in_car_*` (generic `in_car` kept)
+- [x] N11 B/C/D — sparse `incident_*` branches, flag one-liners, `quali_recap` / `parade_pad`
 - [ ] W7 — sequence polish (optional)
 - [ ] (optional) Phase D store split / export — only if approved
 
@@ -275,7 +277,7 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 1. Whether CS is primary live locale (dashboard language) before EN is “done” — default: finish EN W2 before large CS batches.
 2. Whether mock EN lines stay forever as `neutral` fallbacks or get rewritten in W1.
 3. Whether to add `scripts/apply_commentary_patches.py` (stdlib only) once W1 proves the JSON handoff — **not** required to start W1 manually.
-4. **`stream_start` node** (OBS stream started + typed samples with irsdk `{vars}` via `fill_slots`) — discussed in PR #120 agent chat, **not in the graph yet**. Treat as a new structure PR before any text-model batch for that node; do not invent free-form LLM lines at stream start.
+4. **`stream_start` node** — landed in N11 wave A as a slot-free long welcome (no irsdk `{vars}`). Optional typed samples remain parked.
 
 ---
 

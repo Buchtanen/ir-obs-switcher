@@ -24,6 +24,7 @@ from irswitch.overlay.settings import (
     OverlayTapeSettings,
     OverlayV4Settings,
     OvertakeClassifierSettings,
+    RaceObserverSettings,
     SamplingSettings,
     SystemInfoSettings,
 )
@@ -515,6 +516,21 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         session_briefs=_get_bool(
             parser, "commentary", "session_briefs", commentary_defaults.session_briefs
         ),
+        stream_start=_get_bool(
+            parser, "commentary", "stream_start", commentary_defaults.stream_start
+        ),
+        gap_hunt_tts_in_practice=_get_bool(
+            parser,
+            "commentary",
+            "gap_hunt_tts_in_practice",
+            commentary_defaults.gap_hunt_tts_in_practice,
+        ),
+        gap_hunt_tts_in_qualifying=_get_bool(
+            parser,
+            "commentary",
+            "gap_hunt_tts_in_qualifying",
+            commentary_defaults.gap_hunt_tts_in_qualifying,
+        ),
         llm_polish=_get_bool(parser, "commentary", "llm_polish", commentary_defaults.llm_polish),
         llm_base_url=_get_str(
             parser, "commentary", "llm_base_url", commentary_defaults.llm_base_url
@@ -559,6 +575,40 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
         ),
         scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
+    )
+
+    ro_defaults = defaults.race_observer
+    race_observer = RaceObserverSettings(
+        leader_pace_cooldown_s=max(
+            0.0,
+            min(
+                3600.0,
+                _get_float(
+                    parser,
+                    "race_observer",
+                    "leader_pace_cooldown_s",
+                    ro_defaults.leader_pace_cooldown_s,
+                ),
+            ),
+        ),
+        incident_classify=_get_bool(
+            parser,
+            "race_observer",
+            "incident_classify",
+            ro_defaults.incident_classify,
+        ),
+        flags=_get_bool(
+            parser,
+            "race_observer",
+            "flags",
+            ro_defaults.flags,
+        ),
+        grid_story=_get_bool(
+            parser,
+            "race_observer",
+            "grid_story",
+            ro_defaults.grid_story,
+        ),
     )
 
     lhm_raw = ""
@@ -612,6 +662,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         tape=tape,
         event_engine=event_engine,
         commentary=commentary,
+        race_observer=race_observer,
         sampling=sampling,
         battle=BattleSettings(
             hunting=_load_hunting(parser, "battle.hunting"),

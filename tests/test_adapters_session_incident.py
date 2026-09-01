@@ -36,6 +36,26 @@ def test_incident_adapter_maps_value_slot() -> None:
     assert bound["value"] == 4
 
 
+def test_incident_adapter_copies_branch_metric() -> None:
+    envelope = incident_race_event_to_envelope(
+        RaceEvent(
+            name="incident",
+            channel="alert",
+            priority=90,
+            phase="trigger",
+            timestamp=1.0,
+            data={"value": 2, "total": 8, "branch": "off_track", "nearbyCarIdx": 9},
+        ),
+        session_id="sub:1",
+        mode="PRACTICE",
+        now=10.0,
+    )
+    assert envelope is not None
+    assert envelope.metrics["branch"] == "off_track"
+    assert envelope.metrics["nearbyCarIdx"] == 9
+    assert envelope.metrics.get("kind") != "contact_object"
+
+
 def test_final_lap_and_finish_adapters_bind_position() -> None:
     final = session_race_event_to_envelope(
         RaceEvent(
