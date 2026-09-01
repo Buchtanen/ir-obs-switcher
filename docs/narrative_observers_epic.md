@@ -1,10 +1,10 @@
 # Narrative observers epic (stream → practice → quali → race → finish)
 
-**Status:** product + engineering plan (docs only) — **reshaped 2026-08-31** after dual critical review vs umbrella code  
+**Status:** landing on `master` after umbrella [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) merged (2026-09-01). Rebased + adapted finish/checkered vs `SessionEndTracker`.  
 **Depends on:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md), [observers_decoupling_plan.md](observers_decoupling_plan.md)  
-**Umbrella:** P0–P5 [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (`feat/observers-decoupling-joint-test`) — this epic stacks **on that branch**, does not fork it  
-**Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `story.py`). There is **no** `race/observer/` package.  
-**Task slices:** [docs/tasks/](tasks/) — sequential commits on this stacked branch, not extra PRs to `master`
+**Umbrella:** P0–P5 [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) — merged. This epic targets **`master`**.  
+**Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `session_end.py`, `story.py`). There is **no** `race/observer/` package.  
+**Task slices:** [docs/tasks/](tasks/) — sequential commits on this branch. **Stop for live listen** after N5.
 
 This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen.
 
@@ -93,9 +93,9 @@ Voice: viewer-facing third person. HUD priorities stay visual.
 
 ---
 
-## 1.1 First landing (ordered commits on this stacked branch)
+## 1.1 First landing (ordered commits on this branch)
 
-Do **not** start until #179 is the parent (already true).
+Parent is **`master`** (#179 merged 2026-09-01). Finish/checkered adapted onto `SessionEndTracker` (three booleans; no `SESSION_CHECKERED` emit; fillers mute on `mute_field` only). #179 graph fillers and TTS 14 s / 13 s node ceiling stay.
 
 N2 **must** land before any new `event_types` string in `sequence_graph.json`. Unknown types fail `parse_sequence_graph` and `OverlayRuntime._build_commentary` returns `None` (all commentary dies).
 
@@ -317,7 +317,7 @@ All on `cursor/narrative-observers-epic-4749` (base #179). See §1.1. No paralle
 
 No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `event_engine.gap_hunt_tts_*`.
 
-`STREAM_START` node `tts.max_seconds` ≥ 15 **holds** `director._busy_until` for that duration (opener mutex). That exceeds `commentary.max_utterance_s` (default 6). N11 validator may exempt `STREAM_START` only — do not silently raise the global cap.
+`STREAM_START` node `tts.max_seconds` ≥ 15 **holds** `director._busy_until` for that duration (opener mutex). Master already ships `commentary.max_utterance_s` default **14** and graph `default_tts.max_seconds` **13** (#179 polish). `speak_timeout_s()` still exempts `STREAM_START` only so the 16 s welcome node is not clipped. Do not raise the global cap further for other nodes.
 
 ---
 

@@ -14,7 +14,8 @@ One boolean today (`SessionState` 5 or 6) fires FINISH, mutes the field, aborts 
 
 Mandatory grep/re-point (complete vs current readers of `state.session_finished`):
 
-- `race/context.py` (stateful: checkered start, lap/dist wrap, pit rise)
+- `race/session_end.py` (`SessionEndTracker` — three booleans; N4 owns this API)
+- `race/context.py` (wires tracker; does not OR flag bit with state 5)
 - `events/session.py`
 - `events/session_phase.py` / `engine.py` `filter_post_race`
 - `events/battle.py` abort

@@ -19,7 +19,7 @@ Stream start needs a **long** cap. Flags/incidents in v1 use `hr_states: ["unkno
 ## Wave A (landing)
 
 - [x] `stream_start` EN+CS, slot-free line present, `tts.max_seconds` ≥ 15
-- [x] Validator **exempts `STREAM_START` only** from `commentary.max_utterance_s` (default 6). Do not raise the global cap
+- [x] TTS timeout **exempts `STREAM_START` only** from `commentary.max_utterance_s` (master default **14**; node 16 s). Do not raise the global cap further
 - [x] Spoken stream_start holds `director._busy_until` for that duration (this **is** the opener mutex vs in-car)
 - [x] `in_car` mode nodes **or** mode filter on existing node — do not delete generic until migrated
 - [x] `validate_utterance` passes

@@ -1,6 +1,6 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** P0–P5 on joint umbrella [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (`feat/observers-decoupling-joint-test`)  
+**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (2026-09-01). Narrative landing continues on `master` (#181).  
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — reshaped after two reviews vs this umbrella. N-tasks **extend** P0–P5. N9 cover cut. Incident v1 = off_track vs unknown; Speed is motion not classify-primary. Finish = three booleans (`session_checkered` ≠ checkered bit). Opener mutex. Landing order **N1 → N2 → N4 → N8 → N11 A**. Gap-hunt TTS keys live under `[commentary]`.  
 **Audience:** architecture / next epic planning

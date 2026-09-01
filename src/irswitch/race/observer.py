@@ -184,7 +184,9 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
         )
         self._context = ctx
-        self._after_session = bool(state.mute_field or state.player_finished or state.session_finished)
+        self._after_session = bool(
+            state.mute_field or state.player_finished or state.session_finished
+        )
         try:
             self.narrative.tick(state, now, session_key=key)
         except Exception:
