@@ -94,9 +94,7 @@ class IncidentAftermathFsm:
         self._classify_deadline = now + _CLASSIFY_WINDOW_S
         self._moving_since = now if self._moving_since is not None else None
 
-    def _tick_classify(
-        self, state: RaceState, now: float, *, moving: bool
-    ) -> list[EventEnvelope]:
+    def _tick_classify(self, state: RaceState, now: float, *, moving: bool) -> list[EventEnvelope]:
         if self._looks_stalled(state):
             return self._emit_aftermath(state, now, kind="stalled")
         if self._looks_rolling(state, now, moving=moving):
@@ -106,9 +104,7 @@ class IncidentAftermathFsm:
             return self._emit_aftermath(state, now, kind=kind)
         return []
 
-    def _tick_stalled(
-        self, state: RaceState, now: float, *, moving: bool
-    ) -> list[EventEnvelope]:
+    def _tick_stalled(self, state: RaceState, now: float, *, moving: bool) -> list[EventEnvelope]:
         if is_towing(state.player_tow_time) or not is_on_track(state.player_track_surface):
             self._moving_since = None
             return []
