@@ -6,7 +6,7 @@
 **Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `session_end.py`, `story.py`, `grid_story.py`). There is **no** `race/observer/` package.  
 **Task slices:** [docs/tasks/](tasks/) — sequential commits on this branch. N7 landed as opt-in (`race_observer.grid_story`); live listen still decides density.
 
-This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen.
+This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen. Commentary Director V2 async isolation is captured as follow-up **N12**; it does not widen the current landing.
 
 ---
 
@@ -89,6 +89,7 @@ Voice: viewer-facing third person. HUD priorities stay visual.
 | P3 aftermath | **Keep event names.** N1 `Speed` is motion (not classify-primary). N3 classify is **pre-step** on incident rise, not a parallel FSM. |
 | P4 wrap/preview | Keep. Wrap must **not** fire on field checkered after N4. Gated by `commentary.session_briefs` today — do not assume they are audible. |
 | P5 ATTACK_RANGE / PIT_STOPPED | **Done.** Not N11. |
+| V2 async consumer isolation | **Follow-up N12.** One producer / RaceObserver, one accepted stream, independent overlay and commentary queues/tasks. Not part of #181 landing. |
 | `RIVAL_REAPPEARS` | Unused in code. **Cut** from this epic (delete or park in decoupling plan). |
 
 ---
@@ -123,6 +124,17 @@ N2 **must** land before any new `event_types` string in `sequence_graph.json`. U
 - Yaw/Velocity/Accel extract until a research slice exists
 - `DriverInfo` as lap times
 - `race/observer/` package
+
+## 1.3 Follow-up after live listen — N12
+
+[N12](tasks/n12_async_consumers.md) replaces the remaining synchronous
+`OverlayRuntime` orchestration with one producer and two independent async
+consumers. It explicitly includes direct commentary sidecars and derived
+RaceObserver events, so the result is not another partial fan-out.
+
+N12 is sequential because it touches `main.py`, `events/`, `race/`, `overlay/`,
+and `commentary/` ownership boundaries. It must start from the then-current
+`master` after #181; do not stack the runtime refactor into this landing.
 
 ---
 
@@ -297,7 +309,7 @@ Leader time: P2 field fact, **1× / 300 s**, skip if a better beat just spoke.
 
 ## 7. Sequencing
 
-All on `cursor/narrative-observers-epic-4749` (base #179). See §1.1. No parallel PRs to `master`. Shared files (`context.py`, `observer.py`, `graph.py`, `runtime.py`) = sequential commits.
+N1–N11 are on `cursor/narrative-observers-epic-4749` (base #179). See §1.1. No parallel PRs to `master`. Shared files (`context.py`, `observer.py`, `graph.py`, `runtime.py`) = sequential commits. N12 is a later, dedicated refactor branch from updated `master` after the live listen.
 
 ---
 
@@ -326,6 +338,9 @@ No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `eve
 - Behavior change → tests with fake clock + synthetic snapshots.
 - N4: hunting still emits after `SessionState=5` until `player_finished`.
 - N3: delta=1 aftermath-only vs delta≥2 incident+aftermath policy test.
+- N12: identical event-id sequences for both consumers, slow/failing consumer
+  isolation, ordered reset, queue overflow observability, and no direct
+  overlay-to-director import/callback.
 - Matrix §1 / §4.3 `attack_range` / §4.5 `pit_stopped` / §6 chain item re-pinned in this commit. Later slices still tick their rows when they ship.
 - TDD-exception only for this docs reshape.
 
@@ -346,3 +361,4 @@ No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `eve
 | N9 | [n9_overlay_cover.md](tasks/n9_overlay_cover.md) | **CUT** |
 | N10 | [n10_watcher_log.md](tasks/n10_watcher_log.md) | **debug ring shipped**; public API deferred |
 | N11 | [n11_content_fill.md](tasks/n11_content_fill.md) | A + sparse B/C/D |
+| N12 | [n12_async_consumers.md](tasks/n12_async_consumers.md) | follow-up — Commentary Director V2 async isolation |
