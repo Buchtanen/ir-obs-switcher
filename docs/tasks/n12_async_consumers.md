@@ -1,14 +1,17 @@
 # N12 — Commentary Director V2 async consumer isolation
 
-**Status:** proposed / `needs-engineering`
+**Status:** reviewed contract / `needs-engineering`
 
 **Parent:** [observers_decoupling_plan.md](../observers_decoupling_plan.md) V2/N12
 
-**Depends on:** PR #181 live-listen fixes; existing P0 fan-out and P1 scheduler
+**Depends on:** PR #181 live-listen fixes; existing P0 fan-out and P1 scheduler. Do not implement in parallel with #195 because both touch director/composition ownership.
 
 **Behavior default:** unchanged until the V2 composition root replaces the current path
 
 **Critical review:** [n12_async_consumers_spec_review.md](n12_async_consumers_spec_review.md)
+
+**Review disposition:** implementation gaps from the critical review are bound
+in the appendix below. The target architecture is unchanged.
 
 ## Goal
 
@@ -65,18 +68,20 @@ class ContextSnapshot:
 
 @dataclass(frozen=True)
 class AcceptedEventBatch:
+    stream_sequence: int
     session_id: str
     batch_sequence: int
     accepted_monotonic_ms: int
     context_version: int
-    envelopes: tuple[FrozenEventEnvelope, ...]
+    context_payload: FrozenContextSnapshot
+    events: tuple[FrozenAcceptedEvent, ...]
 ```
 
 - `EventEnvelope.event_id` and `sequence` are assigned once before fan-out.
 - Queue payloads are immutable or serialized copies. `metrics` and nested
   objects cannot be mutated after publication.
-- A batch may contain no events only when it carries a required state/control
-  boundary; otherwise do not enqueue empty ticks.
+- Empty event batches are forbidden. State snapshots and reset/config boundaries
+  use the A3/A4 channels instead of pretending to be an empty event batch.
 - Audience/catalog metadata controls what a consumer acts on. It does not create
   a second event identity or a private commentary side path.
 - Producer arbitration owns factual acceptance, dedupe, correlation, and event
@@ -113,8 +118,8 @@ each event would reach only one consumer.
 - Per consumer: strictly increasing sequence within a session.
 - Across consumers: no completion-order guarantee.
 - Duplicates after worker restart are safe through event-id idempotency.
-- A session/reset boundary is ordered with event batches and resets each
-  consumer exactly once.
+- The typed `SessionReset` control item is ordered with event batches and resets
+  each consumer exactly once.
 
 ### Backpressure
 
@@ -149,6 +154,248 @@ and expiry rules after dequeue without altering the shared envelope.
 - Health/status is aggregated through public snapshots, never private attribute
   reads across owners.
 
+## Implementation appendix — binding decisions
+
+The contracts in this appendix are required before N12.1. They replace the
+earlier implementation choices left open by the architecture section.
+
+### A1 — Canonical envelope freeze API
+
+Mutable `EventEnvelope` exists only in the producer before identity stamping.
+The queue and replay boundary uses canonical UTF-8 JSON bytes:
+
+```python
+FrozenEnvelope = bytes
+
+def freeze_envelope(envelope: EventEnvelope) -> FrozenEnvelope:
+    """Validate and encode one already-stamped envelope as canonical JSON."""
+
+def thaw_envelope(payload: FrozenEnvelope) -> EventEnvelope:
+    """Return a new consumer-owned envelope from canonical JSON."""
+```
+
+`freeze_envelope` requires a non-empty `event_id`, positive `sequence`, and a
+valid envelope. It encodes `envelope.to_dict()` with deterministic key ordering,
+compact separators, and UTF-8 (`ensure_ascii=False`). Unsupported/non-JSON
+metric values fail the candidate before publication and produce an actionable
+producer decision; they do not crash the race loop.
+
+The producer stamps once, freezes once, and never mutates that envelope again.
+Both queues may safely reference the same immutable `bytes`; each consumer
+thaws its own private object only when required. Tests must prove that mutating
+one thawed `metrics` dict cannot affect the frozen payload or the other
+consumer. `copy.deepcopy` and `MappingProxyType` are not the transport contract:
+the first does not prove future IPC safety and the second is not the replay
+format.
+
+`FrozenAcceptedEventBatch` is a frozen dataclass containing only primitives,
+tuples, and immutable byte values. Each item is explicit internal metadata plus
+the public envelope:
+
+```python
+@dataclass(frozen=True)
+class FrozenAcceptedEvent:
+    envelope: FrozenEnvelope
+    audiences: tuple[Literal["overlay", "commentary"], ...]
+    source: str
+    source_ordinal: int
+    coalesce_key: tuple[str, ...] | None
+```
+
+`audiences`, source metadata, and `coalesce_key` are internal transport fields;
+they do not change the public V4 wire schema. The batch includes the frozen
+context payload defined in A3.
+
+### A2 — Engine and RaceObserver derived merge policy
+
+All sources normalize to candidates before the one producer acceptance path:
+
+```text
+EventEngine candidates ───────┐
+                              ├─ collect in fixed source order
+RaceObserver watch candidates ┘
+       → validate/dedupe within audience+channel
+       → assign correlation/event id + global session sequence once
+       → freeze → one AcceptedEventBatch → both subscriptions
+```
+
+Behavior-preserving source order for V2a is:
+
+1. existing `EventEngine.tick()` registration order;
+2. RaceObserver `narrative`;
+3. `aftermath`;
+4. `flags`;
+5. `timing_hunt`;
+6. `grid_story`;
+7. filler response candidates requested under A5.
+
+RaceObserver watch modules must return candidates, not pre-published envelopes.
+During migration, an adapter may normalize an existing derived envelope into a
+candidate, but only the producer may assign its final event id and sequence.
+
+Acceptance/dedupe is scoped by `(audience, channel)`. Commentary-only facts
+therefore cannot evict a HUD story, while both subscribers still receive and
+account for the accepted event. Producer acceptance does not apply TTS busy,
+cooldown, or voice priority.
+
+Same-tick incident policy is explicit:
+
+- factual `INCIDENT` and `INCIDENT_AFTERMATH` may both be accepted and receive
+  consecutive sequence numbers;
+- `INCIDENT_AFTERMATH` is commentary-only and cannot evict the HUD incident;
+- `CommentaryDirector._prefer_incident_over_aftermath` remains the consumer
+  rule that speaks at most one from the same batch, preferring `INCIDENT`;
+- producer arbitration must not silently drop the aftermath fact because it may
+  still be useful for replay/debug and a later recovery transition.
+
+Existing priorities, cooldowns, event types, and fixed source order are
+characterized in N12.0 before this merge changes runtime ownership.
+
+### A3 — ContextSnapshot schema and delivery
+
+`ContextSnapshot` is versioned and frozen/encoded with the same canonical JSON
+rules as envelopes. Schema `n12-context/1` contains:
+
+| Section | Required fields |
+| --- | --- |
+| identity | `schema_version`, `version`, `session_id`, `captured_monotonic_ms`, `overlay_mode`, `session_type`, `session_num`, `subsession_id`, `track_id` |
+| race | `connected`, `player_car_idx`, `lap`, `lap_completed`, `position`, `class_position`, `gap_ahead_s`, `gap_behind_s`, `on_pit_road`, `session_checkered`, `player_finished`, `mute_field`, `incident_count`, `speed_mps` |
+| bio | `status`, `bpm`, `hr_state`, `sample_monotonic_ms` |
+| story | hero display/speakable names, 2+2 near-field ids/names/gaps, leader name/position, localized weather bindings, quali bag, stream session keys |
+| config identity | immutable config generation plus `language`, `commentary_enabled`, scheduler flags required for the decision |
+
+Missing optional telemetry stays `null`; no consumer reaches back to live
+objects to fill it. Slot values already carried by an accepted envelope remain
+authoritative for that event.
+
+Each consumer subscription owns:
+
+- a bounded FIFO for event/control stream items; and
+- a replace-only `latest_context` slot which does not consume FIFO capacity.
+
+Context-only updates are capped by configured race sampling frequency (5 Hz by
+default), replace the previous `latest_context`, and do not count as event queue
+lag. Every non-empty `AcceptedEventBatch` also embeds the exact frozen context
+used during acceptance, so commentary never performs a version lookup and
+replay cannot pair an event with a later HR/session state. Empty event batches
+are forbidden.
+
+### A4 — One typed control plane
+
+Reset and config reload use typed control messages outside `EventEnvelope`.
+Do not invent `CONTROL_*` speech/HUD events and do not keep a second hidden
+callback path.
+
+```python
+StreamItem = FrozenAcceptedEventBatch | SessionReset | ConfigUpdate
+```
+
+Every `StreamItem` has a producer-global `stream_sequence`. Both subscription
+FIFOs receive the same item order.
+
+- `SessionReset(old_session_id, new_session_id, reason, stream_sequence)` is the
+  only consumer reset boundary. It is enqueued before any event from the new
+  session. Each consumer acknowledges/applies it once.
+- `ConfigUpdate(generation, frozen_config, stream_sequence)` is the only reload
+  path. Each owner applies only its documented subset.
+- Shutdown is supervisor lifecycle, not an event or config message.
+
+Producer-local analyzers and the one RaceObserver reset at the same detected
+boundary before new-session candidate collection. Consumer reset hooks through
+`OverlayRuntime` are removed in N12.3.
+
+### A5 — Silence filler request/response
+
+Commentary never calls a live RaceObserver. The replacement is a bounded typed
+request queue from CommentaryConsumer to the producer:
+
+```python
+FillerRequest(
+    request_id: str,
+    session_id: str,
+    requested_monotonic_ms: int,
+    locale: str,
+    last_spoken_event_id: str | None,
+)
+```
+
+- Queue capacity is one outstanding request per commentary consumer. While a
+  request for the same session awaits a result/event, repeated silence ticks do
+  not allocate a new `request_id`; the existing request remains outstanding.
+- The producer drains requests before candidate collection on the next race
+  tick, rejects a stale/wrong-session request, and asks its RaceObserver for the
+  next weather/field candidate using producer-owned cooldown/rotation state.
+- A fact becomes a normal `FIELD_FACT` or `WEATHER_CHANGE` candidate, then passes
+  A2 arbitration, stamping, freeze, and broadcast. Commentary hears it only
+  when it later dequeues the accepted event; overlay sees and ignores its
+  commentary-only audience.
+- When no fact is available, the producer returns a typed
+  `FillerResult(request_id, status="no_fact" | "stale" | "disabled")` to the
+  commentary response inbox for decision logging. This reverse-channel result
+  is not a shared `StreamItem` and is not an `EventEnvelope`.
+- There is no synchronous response, reverse callback, or shared RaceObserver
+  reference. Request age is measured from `requested_monotonic_ms`.
+
+### A6 — Queue coalescing contract
+
+Only `ACTIVE` and `UPDATE` may be coalesced. Freeze computes an optional
+`coalesce_key`; absence means the item is never coalescible.
+
+| Family | Coalesce key | Rule |
+| --- | --- | --- |
+| battle (`HUNTING`, `HUNTED`, `SIDE_BY_SIDE`, attack-range updates) | `(session_id, event_type, correlation_id)` where correlation includes hero + target car | replace older ACTIVE/UPDATE for the same battle only |
+| sector/timing progress | `(session_id, event_type, subject.car_id, lap, sector_id)` | UPDATE only; never RESULT/PB/lap completion |
+| pit active story | `(session_id, event_type, correlation_id)` where correlation is the pit-cycle id | replace active progress within one stop |
+| bio/system active warning | `(session_id, event_type, subject.car_id, correlation_id)` | replace active sample; preserve EXIT/RESULT |
+| incident, finish, flags, opener, session brief, all RESULT/EXIT | none | never coalesce or evict as a superseded update |
+
+Adapters must provide the correlation components before freeze. The generic
+fallback dedupe key is not sufficient evidence for coalescing. If a family lacks
+a proven key, treat it as non-coalescible and surface queue pressure in N12.4.
+
+On overflow, first replace an existing equal `coalesce_key`, then evict the
+oldest lower-priority coalescible item. A protected/non-coalescible item is never
+silently dropped; failure to admit it marks that consumer degraded and records
+the event id, queue depth, and policy. Because a finite non-blocking queue cannot
+guarantee delivery through an unbounded consumer stall, this condition restarts
+that consumer and accounts for every item discarded during recovery. The
+producer still does not wait for consumer work.
+
+### A7 — Deterministic replay bundle
+
+N12 capture uses JSONL schema `n12-replay/1` with canonical payloads:
+
+| Row | Contents |
+| --- | --- |
+| `header` | schema version, source commit, config generation/digest, locale, capture start monotonic origin |
+| `context` | context version, captured monotonic offset, full A3 payload including bio/HR |
+| `control` | stream sequence and serialized SessionReset/ConfigUpdate |
+| `events` | stream sequence, batch sequence, accepted monotonic offset, context version, frozen accepted-event records |
+| `expected` (test fixture only) | overlay wire ids and commentary decision/speech ids used as assertions |
+
+Contexts are written before the first event/control row that references their
+version. Replay restores the relative monotonic timeline, feeds the same
+subscription interfaces, and never reads live iRSDK, OBS, bio, or config.
+Production capture may omit `expected`; deterministic tests keep it beside the
+input rather than teaching the producer about consumer output.
+
+### A8 — Producer timing and restart idempotence
+
+At default 5 Hz under full queues and fake consumers that never dequeue:
+
+- fan-out publication uses no await on consumer work and completes within a
+  50 ms test deadline per batch;
+- over a 500-batch stress fixture, producer tick p95 stays below the configured
+  poll interval; report the measured p95 rather than hiding a slow run;
+- queue depth never exceeds capacity and every coalesce/eviction is accounted.
+
+V2a supervision restarts the failed worker task around the **same consumer
+instance**, preserving scheduler/cooldown state and a bounded per-session ledger
+of processed event ids. A duplicate event id records `duplicate_event` and
+causes no second HUD publish or speech. `SessionReset` clears the prior-session
+ledger only after the ordered boundary is applied. V2b durable acknowledgements
+remain part of optional N12.5, not an implied V2a disk database.
+
 ## Implementation slices
 
 ### N12.0 — Characterization
@@ -157,12 +404,17 @@ and expiry rules after dequeue without altering the shared envelope.
   reset order, and direct sidecars for deterministic fixtures.
 - Add a test proving the current synchronous delay; it becomes the V2 regression
   test when the implementation changes.
+- Freeze fixtures for source order, current derived priorities/cooldowns,
+  incident/aftermath same-tick behavior, and context fields required by both
+  consumers.
 
 ### N12.1 — Extract producer
 
 - Move telemetry/race tick, EventEngine, EventManagerV2, one RaceObserver, and
   accepted-batch creation out of `OverlayRuntime` into a peer runtime.
 - Merge RaceObserver-derived candidates into shared arbitration.
+- Implement A1–A5 contracts: freeze API, fixed derived merge, embedded context,
+  typed reset/config control plane, and filler request/result path.
 - Do not change content, priorities, cooldowns, or public wire schema.
 
 ### N12.2 — Async fan-out and peer consumers
@@ -172,6 +424,7 @@ and expiry rules after dequeue without altering the shared envelope.
 - Add `OverlayConsumer` and refactor `CommentaryEventConsumer` into its own run
   loop.
 - Enqueue the identical frozen batch to both before yielding to consumer work.
+- Implement A6 coalescing and processed-event idempotence ledger.
 
 ### N12.3 — Remove private chain
 
@@ -187,6 +440,7 @@ and expiry rules after dequeue without altering the shared envelope.
   bounded shutdown, config reload, and failure injection.
 - Live joint test with deliberately slow TTS and deliberately slow WebSocket
   clients.
+- Implement A7 replay bundle and publish A8 queue/lag/timing evidence.
 
 ### N12.5 — Optional literal OS-process split
 
@@ -208,26 +462,44 @@ until this slice is explicitly approved.
   overlay-to-director call remains.
 - [ ] Queue overflow/coalescing is deterministic, priority-aware, and visible in
   status/logs.
+- [ ] `freeze_envelope` canonical bytes are identical for identical payloads;
+  thawed consumer mutations are isolated.
+- [ ] Engine and derived events use the A2 source order and a single sequence
+  allocator; same-tick incident/aftermath speaks at most once.
+- [ ] Silence filler uses the A5 request/result path with no callback/shared
+  RaceObserver object.
 - [ ] Session reset and config reload reach both consumers once in sequence.
+- [ ] No empty event batch enters a FIFO; context-only updates use the bounded
+  replace-only latest slot at no more than race sampling frequency.
 - [ ] TTS TTL/cooldown uses event time; queue wait is observable lag.
 - [ ] Cancellation leaves no pending task, TTS process, ducked OBS source, or
   open tape handle.
 - [ ] Replay of one captured accepted stream deterministically drives both
   consumers.
+- [ ] With full queues and non-draining consumers, fan-out meets the 50 ms
+  deadline, producer tick p95 stays below the configured poll interval, and
+  queue accounting is complete.
+- [ ] Restarting a worker around the same consumer instance does not duplicate
+  HUD publication or speech for an already processed event id.
 - [ ] Existing overlay wire, commentary copy, priority, graph, and INI defaults
   remain unchanged unless a later slice explicitly changes them.
 
 ## Required tests
 
 - Async unit: broadcast parity, per-consumer order, no cross-consumer order
-  assumption, immutable payload, overflow/coalescing, idempotent duplicate.
+  assumption, canonical freeze/thaw isolation, A6 overflow/coalescing,
+  idempotent duplicate.
 - Failure: consumer exception, restart/backoff, full queue, cancelled producer,
   cancelled consumer, bounded shutdown.
 - Integration: slow commentary vs overlay latency; slow overlay vs commentary;
   session reset mid-queue; config reload; stream-start/in-car mutex; derived
   incident plus engine incident arbitration.
-- Replay/tape: one accepted capture produces expected HUD wire and commentary
-  decisions independently.
+- Integration fixture: 20 battle UPDATEs at 5 Hz coalesce while FINISH is never
+  evicted; incident + aftermath + flag in one producer batch follows A2 order.
+- Filler fixture: request available/no-fact/stale paths with no live observer
+  reference in CommentaryConsumer.
+- Replay/tape: one A7 capture including context/HR timeline produces expected HUD
+  wire and commentary decisions independently.
 - Architecture grep/import test: `overlay/` has no `CommentaryDirector` import or
   direct observe callback; commentary has no `OverlayBus` dependency.
 

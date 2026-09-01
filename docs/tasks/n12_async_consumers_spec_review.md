@@ -11,6 +11,12 @@ runtime na `master` / #181 je stále synchronní `EventFanout` + `OverlayRuntime
 
 **Reviewer:** cloud agent (kritický pohled po handoveru od desktop agenta).
 
+**Disposition (desktop follow-up):** připomínky §2, §4 a §7 byly zapracovány
+do závazného „Implementation appendix“ ve specifikaci. Architektura V2a/V2b se
+nemění; appendix volí canonical JSON freeze, typed control plane, filler request
+queue, derived merge order, context schema, coalescing keys, replay bundle a
+měřitelné timing/restart AC.
+
 ---
 
 ## 0. Verdikt

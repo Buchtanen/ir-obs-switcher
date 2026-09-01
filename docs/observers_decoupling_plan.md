@@ -164,12 +164,12 @@ priority and CommentaryScheduler defer/TTL remain consumer-local decisions after
 dequeue. A candidate valid for any declared audience becomes one accepted event
 that both consumers can account for.
 
-`AcceptedEventBatch` must carry at least `session_id`, producer batch sequence,
-accepted monotonic time, an immutable tuple/copy of envelopes, and the version
-of the read-only context snapshot used for slot/HR decisions. `EventEnvelope`
-is currently mutable (`stamp()` and mutable `metrics`); the fan-out boundary
-must freeze, clone, or serialize it before enqueueing so one consumer cannot
-change what the other sees.
+`AcceptedEventBatch` must carry at least stream/batch sequence, `session_id`,
+accepted monotonic time, frozen accepted-event records, and the exact frozen
+read-only context snapshot used for slot/HR decisions. `EventEnvelope` is
+currently mutable (`stamp()` and mutable `metrics`); the fan-out boundary uses
+the canonical freeze contract in N12 so one consumer cannot change what the
+other sees.
 
 Continuous `RaceState`/bio data is not an overlay-owned backchannel. Publish a
 read-only, versioned context snapshot (or an explicit state message) from the
@@ -197,8 +197,9 @@ needed for HR, slots, and story context.
 - Startup creates both queues and workers before the producer starts publishing.
   Shutdown stops publishing, drains only within a bounded deadline, cancels
   both workers, awaits them, then restores TTS ducking / closes tape.
-- Session reset is an ordered control message or accepted event boundary. Hidden
-  cross-object reset callbacks are not allowed across consumer ownership.
+- Session reset and config reload are typed, ordered control messages outside
+  `EventEnvelope`. Hidden cross-object reset callbacks are not allowed across
+  consumer ownership.
 
 All producer and consumer timing uses monotonic time. Queue delay is measured;
 it is not added to cooldowns as if the event occurred later.
@@ -318,6 +319,9 @@ commentary independently supervised async consumers with separate bounded
 queues and identical accepted event identity. Unify direct sidecars and
 RaceObserver-derived events behind the same arbitration/fan-out boundary.
 Detailed handover and acceptance criteria: [N12](tasks/n12_async_consumers.md).
+The linked critical review is incorporated in N12's binding implementation
+appendix (freeze, derived merge, context/control/filler, coalescing, replay, and
+timing/idempotence contracts).
 
 V2/N12 is a follow-up after the #181 live listen. It does not change P0–P5 behavior,
 current INI defaults, or the #181 landing order.
