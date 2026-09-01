@@ -81,8 +81,7 @@
           </select>
         </label>
         <label>Hlas (server)
-          <input id="voice" list="voices" placeholder="prázdné = default">
-          <datalist id="voices"></datalist>
+          <select id="voice"><option value="">default</option></select>
         </label>
         <label>Prohlížeč — hlas
           <select id="browserVoice"><option value="">default</option></select>
@@ -128,6 +127,26 @@
       el.textContent = msg;
     }
 
+    function fillServerVoices(keep) {
+      const sel = $("voice");
+      const current = keep !== undefined ? keep : sel.value;
+      sel.innerHTML = '<option value="">default</option>';
+      (status && status.voices ? status.voices : []).forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        if (name === current) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if (current && ![...sel.options].some((o) => o.value === current)) {
+        const custom = document.createElement("option");
+        custom.value = current;
+        custom.textContent = current + " (config)";
+        custom.selected = true;
+        sel.appendChild(custom);
+      }
+    }
+
     function fillVoices() {
       const sel = $("browserVoice");
       const keep = sel.value;
@@ -150,20 +169,13 @@
       $("enabled").checked = status.settings.enabled;
       $("useHr").checked = status.settings.useHrEmotion;
       $("backend").value = status.settings.ttsBackend;
-      $("voice").value = status.settings.ttsVoice;
+      fillServerVoices(status.settings.ttsVoice || "");
       $("rate").value = status.settings.ttsRate;
       $("audioDevice").value = status.settings.audioDevice || "";
       $("duckInput").value = status.settings.duckInput || "";
       $("duckRatio").value = status.settings.duckRatio;
       $("duckFadeMs").value = status.settings.duckFadeMs;
       $("cooldown").value = status.settings.cooldownS;
-      const dl = $("voices");
-      dl.innerHTML = "";
-      (status.voices || []).forEach((name) => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        dl.appendChild(opt);
-      });
       const nodeSel = $("node");
       nodeSel.innerHTML = "";
       const box = $("nodes");
