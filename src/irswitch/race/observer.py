@@ -27,6 +27,7 @@ from irswitch.race.opponents import (
 )
 from irswitch.race.story import HeroSnapshot, StoryContext, StreamMemory
 from irswitch.race.timing_hunt import TimingHuntFsm
+from irswitch.race.watcher_log import WatcherLog, note
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ class RaceObserver:
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
     flags: SessionFlagFsm = field(default_factory=SessionFlagFsm)
     grid_story: GridStoryFsm = field(default_factory=GridStoryFsm)
+    watches: WatcherLog = field(default_factory=WatcherLog)
     _session_key: str | None = None
     _context: StoryContext | None = None
     _last_weather: WeatherSnapshot | None = None
@@ -85,6 +87,7 @@ class RaceObserver:
         self.reset_session()
         self.stream.reset_stream()
         self.narrative.reset_stream()
+        self.watches.clear()
 
     def take_derived_envelopes(self) -> list[EventEnvelope]:
         """Drain derived commentary envelopes (narrative, aftermath, flags, timing hunt)."""
@@ -199,19 +202,19 @@ class RaceObserver:
             state.mute_field or state.player_finished or state.session_finished
         )
         try:
-            self.narrative.tick(state, now, session_key=key)
+            self.narrative.tick(state, now, session_key=key, log=self.watches)
         except Exception:
             logger.warning("StreamNarrativeFsm.tick failed", exc_info=True)
         try:
-            self.aftermath.tick(state, now)
+            self.aftermath.tick(state, now, log=self.watches)
         except Exception:
             logger.warning("IncidentAftermathFsm.tick failed", exc_info=True)
         try:
-            self.timing_hunt.tick(snap, state, now)
+            self.timing_hunt.tick(snap, state, now, log=self.watches)
         except Exception:
             logger.warning("TimingHuntFsm.tick failed", exc_info=True)
         try:
-            self.flags.tick(state, now, enabled=bool(self.settings.flags))
+            self.flags.tick(state, now, enabled=bool(self.settings.flags), log=self.watches)
         except Exception:
             logger.warning("SessionFlagFsm.tick failed", exc_info=True)
         try:
@@ -221,6 +224,7 @@ class RaceObserver:
                 enabled=bool(self.settings.grid_story),
                 bag=self.stream.quali_bag(),
                 session_key=key,
+                log=self.watches,
             )
         except Exception:
             logger.warning("GridStoryFsm.tick failed", exc_info=True)
@@ -244,7 +248,7 @@ class RaceObserver:
             metrics["kind"] = "weather_change"
             self._filler_cooldown_until = now + 20.0
             self._last_filler_kind = "weather_change"
-            return make_envelope(
+            env = make_envelope(
                 event_type="WEATHER_CHANGE",
                 phase="RESULT",
                 mode=ctx.overlay_mode,
@@ -253,6 +257,16 @@ class RaceObserver:
                 metrics=metrics,
                 correlation_id=f"weather:{ctx.session_key or 'na'}",
             )
+            note(
+                self.watches,
+                watch="briefs",
+                kind="WEATHER_CHANGE",
+                emitted=True,
+                reason="weather_change",
+                confidence=1.0,
+                now=now,
+            )
+            return env
 
         # Rotate field facts so silence fill is not identical every time.
         slots = ctx.slot_bindings()
@@ -289,7 +303,7 @@ class RaceObserver:
         self._last_filler_kind = text_key
         if text_key == "leader" and leader_cooldown > 0.0:
             self._leader_fact_until = now + leader_cooldown
-        return make_envelope(
+        env = make_envelope(
             event_type="FIELD_FACT",
             phase="RESULT",
             mode=ctx.overlay_mode,
@@ -298,6 +312,16 @@ class RaceObserver:
             metrics=metrics,
             correlation_id=f"field:{ctx.session_key or 'na'}:{text_key}",
         )
+        note(
+            self.watches,
+            watch="briefs",
+            kind="FIELD_FACT",
+            emitted=True,
+            reason=text_key,
+            confidence=1.0,
+            now=now,
+        )
+        return env
 
     def format_filler_text(self, envelope: EventEnvelope, *, locale: str = "en") -> str | None:
         """Template lines when graph has no FIELD_FACT / WEATHER_CHANGE / aftermath node."""

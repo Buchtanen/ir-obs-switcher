@@ -248,6 +248,7 @@ class OverlayRuntime:
 
         self.commentary.filler_provider = _provider
         self.commentary.filler_formatter = _formatter
+        self.commentary.watcher_log = observer.watches
 
     def _observe_race_story(
         self,

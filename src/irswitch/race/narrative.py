@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.overlay.models import RaceState
+from irswitch.race.watcher_log import WatcherLog, note
 
 _WRAP_PRIORITY = 58
 _PREVIEW_PRIORITY = 52
@@ -68,7 +69,14 @@ class StreamNarrativeFsm:
         self._pending.clear()
         return out
 
-    def tick(self, state: RaceState, now: float, *, session_key: str | None) -> list[EventEnvelope]:
+    def tick(
+        self,
+        state: RaceState,
+        now: float,
+        *,
+        session_key: str | None,
+        log: WatcherLog | None = None,
+    ) -> list[EventEnvelope]:
         produced: list[EventEnvelope] = []
         if not state.connected:
             # Disconnect is not a clean wrap; keep history for reconnect same key.
@@ -109,6 +117,7 @@ class StreamNarrativeFsm:
                 self._had_prior_session = True
             if produced:
                 self._pending.extend(produced)
+                self._note_emits(produced, log, now)
             self._bound_history()
             return produced
 
@@ -134,8 +143,28 @@ class StreamNarrativeFsm:
 
         if produced:
             self._pending.extend(produced)
+            self._note_emits(produced, log, now)
         self._bound_history()
         return produced
+
+    def _note_emits(
+        self,
+        produced: list[EventEnvelope],
+        log: WatcherLog | None,
+        now: float,
+    ) -> None:
+        for env in produced:
+            metrics = env.metrics or {}
+            reason = str(metrics.get("reason") or metrics.get("kind") or "emit")
+            note(
+                log,
+                watch="briefs",
+                kind=env.event_type,
+                emitted=True,
+                reason=reason,
+                confidence=1.0,
+                now=now,
+            )
 
     def _bound_history(self) -> None:
         for bag in (self._wrapped_keys, self._previewed_keys):

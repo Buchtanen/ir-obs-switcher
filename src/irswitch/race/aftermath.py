@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.trk_loc import OFF_TRACK, is_on_track, is_towing
 from irswitch.overlay.models import RaceState
+from irswitch.race.watcher_log import WatcherLog, note
 
 _AFTERMATH_PRIORITY = 72
 _BACK_UNDER_WAY_PRIORITY = 68
@@ -57,7 +58,9 @@ class IncidentAftermathFsm:
         self._pending.clear()
         return out
 
-    def tick(self, state: RaceState, now: float) -> list[EventEnvelope]:
+    def tick(
+        self, state: RaceState, now: float, *, log: WatcherLog | None = None
+    ) -> list[EventEnvelope]:
         """Advance FSM; return newly produced derived envelopes."""
         produced: list[EventEnvelope] = []
         if not state.connected:
@@ -86,6 +89,16 @@ class IncidentAftermathFsm:
 
         if produced:
             self._pending.extend(produced)
+            for env in produced:
+                note(
+                    log,
+                    watch="aftermath",
+                    kind=env.event_type,
+                    emitted=True,
+                    reason=str((env.metrics or {}).get("kind") or "emit"),
+                    confidence=1.0,
+                    now=now,
+                )
         return produced
 
     def _begin_classify(self, state: RaceState, now: float, *, prev: int, total: int) -> None:

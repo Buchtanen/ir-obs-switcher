@@ -36,6 +36,7 @@ from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
+from irswitch.race.watcher_log import WatcherLog, watch_name_for
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ _SESSION_BRIEF_EVENTS = frozenset(
     }
 )
 DEFAULT_DECISION_LOG_SIZE = 32
+_INCIDENT_BRANCHES = frozenset({"off_track", "unknown"})
 
 
 @dataclass(frozen=True)
@@ -121,6 +123,7 @@ class CommentaryDirector:
     # N7: race_observer.grid_story — skip SESSION_INTRO_RACE when the quali bag exists.
     grid_story: bool = False
     quali_bag_ready: bool = False
+    watcher_log: WatcherLog | None = None
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -249,6 +252,54 @@ class CommentaryDirector:
                 at=now,
             )
         )
+        self._mirror_watcher(
+            action=action,
+            reason=reason,
+            now=now,
+            event_type=event_type,
+            node_id=node_id,
+        )
+
+    def _mirror_watcher(
+        self,
+        *,
+        action: str,
+        reason: str,
+        now: float,
+        event_type: str,
+        node_id: str,
+    ) -> None:
+        log = self.watcher_log
+        if log is None or not event_type:
+            return
+        watch = watch_name_for(event_type)
+        if watch is None:
+            return
+        if action == "spoken":
+            emitted = True
+            watch_reason, confidence = self._watcher_speak_reason(event_type, node_id)
+        elif action == "skipped":
+            emitted = False
+            watch_reason = reason
+            confidence = None
+        else:
+            return
+        log.record(
+            watch=watch,
+            kind=event_type,
+            emitted=emitted,
+            reason=watch_reason,
+            confidence=confidence,
+            now=now,
+        )
+
+    def _watcher_speak_reason(self, event_type: str, node_id: str) -> tuple[str, float]:
+        if node_id.startswith("fmt:"):
+            return "formatter_fallback", 0.6
+        node = self.graph.node(node_id) if node_id else None
+        if event_type == "INCIDENT" and node is not None and node.branch in _INCIDENT_BRANCHES:
+            return "generic_suppressed", 1.0
+        return "graph_hit", 1.0
 
     def _sync_scheduler_settings(self) -> None:
         sched = getattr(self.settings, "scheduler", None)

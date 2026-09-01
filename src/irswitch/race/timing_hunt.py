@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.overlay.models import RaceState, TelemetrySnapshot
+from irswitch.race.watcher_log import WatcherLog, note
 
 PACE_HUNT = "PACE_HUNT"
 _PACE_HUNT_PRIORITY = 32
@@ -79,7 +80,14 @@ class TimingHuntFsm:
         self._pending.clear()
         return out
 
-    def tick(self, snap: TelemetrySnapshot, state: RaceState, now: float) -> list[EventEnvelope]:
+    def tick(
+        self,
+        snap: TelemetrySnapshot,
+        state: RaceState,
+        now: float,
+        *,
+        log: WatcherLog | None = None,
+    ) -> list[EventEnvelope]:
         produced: list[EventEnvelope] = []
         if not state.connected or state.overlay_mode not in _PQ_MODES:
             return produced
@@ -118,4 +126,13 @@ class TimingHuntFsm:
         self._until = now + _COOLDOWN_S
         produced.append(env)
         self._pending.extend(produced)
+        note(
+            log,
+            watch="hunt",
+            kind=PACE_HUNT,
+            emitted=True,
+            reason="pace_match",
+            confidence=1.0,
+            now=now,
+        )
         return produced

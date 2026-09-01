@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.overlay.models import RaceState
+from irswitch.race.watcher_log import WatcherLog, note
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,14 @@ class SessionFlagFsm:
         self._pending.clear()
         return out
 
-    def tick(self, state: RaceState, now: float, *, enabled: bool) -> list[EventEnvelope]:
+    def tick(
+        self,
+        state: RaceState,
+        now: float,
+        *,
+        enabled: bool,
+        log: WatcherLog | None = None,
+    ) -> list[EventEnvelope]:
         """Advance FSM. Emit at most one SESSION_FLAG per tick when enabled in RACE."""
         produced: list[EventEnvelope] = []
         if not state.connected:
@@ -74,12 +82,36 @@ class SessionFlagFsm:
 
         mode = state.overlay_mode or "GENERIC"
         if mode != "RACE":
-            logger.info("SESSION_FLAG %s ignored outside race (mode=%s)", kind, mode)
+            logger.debug("SESSION_FLAG %s ignored outside race (mode=%s)", kind, mode)
+            note(
+                log,
+                watch="flags",
+                kind=SESSION_FLAG,
+                emitted=False,
+                reason="not_race",
+                now=now,
+            )
             return produced
         if not enabled:
+            note(
+                log,
+                watch="flags",
+                kind=SESSION_FLAG,
+                emitted=False,
+                reason="disabled",
+                now=now,
+            )
             return produced
         ready_at = self._cooldown_until.get(kind, 0.0)
         if now < ready_at:
+            note(
+                log,
+                watch="flags",
+                kind=SESSION_FLAG,
+                emitted=False,
+                reason="cooldown",
+                now=now,
+            )
             return produced
 
         metrics = {
@@ -99,4 +131,13 @@ class SessionFlagFsm:
         self._cooldown_until[kind] = now + FLAG_COOLDOWN_S
         produced.append(env)
         self._pending.extend(produced)
+        note(
+            log,
+            watch="flags",
+            kind=SESSION_FLAG,
+            emitted=True,
+            reason="rising",
+            confidence=1.0,
+            now=now,
+        )
         return produced

@@ -1,18 +1,20 @@
 # N10 — Watcher decision log
 
 **Epic:** [narrative_observers_epic.md](../narrative_observers_epic.md)  
-**Status:** **defer public API**. Optional debug ring inside N3/N5 commit if useful.
+**Status:** **debug ring shipped**. Public `GET` + admin page still deferred.
 
-## Why deferred as a slice
+## Why the API stays deferred
 
 A user-facing `GET` + admin page is a separate contract (`API.md`, schemaVersion). v1 needs log lines in tests/DEBUG, not a new endpoint.
 
-If added inside N3/N5:
+## Debug ring (shipped)
 
-- bounded ring (64)
-- fields: watch, kind, emitted, reason, confidence, mono_ms
-- log **suppressed** generic incident when branch speaks
-- log formatter fallback vs graph hit
-- no INFO per-tick spam
+- `src/irswitch/race/watcher_log.py` — bounded ring (64)
+- fields: `watch`, `kind`, `emitted`, `reason`, `confidence`, `mono_ms`
+- RaceObserver `watches` survives session reset; `reset_stream` clears
+- Director mirrors speak/skip of watcher event types (`graph_hit` / `formatter_fallback` / `generic_suppressed`)
+- Flags/grid skip reasons on rising edges / one-shot stop (no 5 Hz INFO)
+- No INFO per-tick spam (DEBUG only)
+- Not in `status_snapshot`, no `GET`, no `API.md`
 
 Do not open `feat/observer-decision-log` until after live listen.

@@ -45,6 +45,7 @@ Rules:
 - `INCIDENT` `metrics.branch` is `off_track` or `unknown` only when `race_observer.incident_classify` is on (default off). Nearby cars are metrics, not spoken kinds. Graph nodes `incident_off_track` / `incident_unknown` (N11 B); unclassified envelopes still use generic `incident`. Same tick: speak at most one of engine `INCIDENT` (delta ≥ `incident_min_delta` default 2) and derived `INCIDENT_AFTERMATH` (any rise); INCIDENT wins. Aftermath classify is surface-first (off-track stays stalled even if Speed > 0). Speed is motion for on-track stalled/rolling and `BACK_UNDER_WAY`. No `INCIDENT_RECOVERED`.
 - Race `SESSION_FLAG` (`race/flags.py`) speaks yellow (caution family coalesced) / green / checkered on rising edges when `race_observer.flags` is on (default off). Start lights ignored. Checkered bit is not `FINISH` / `SESSION_WRAP`. Graph one-liners `session_flag_*` (N11 C); formatter remains fallback. Practice/qualify do not speak.
 - Race-start `QUALI_RECAP` / `PARADE_PAD` (`race/grid_story.py`) when `race_observer.grid_story` is on (default off). Recap is an opener and replaces `SESSION_INTRO_RACE` when the stream quali bag exists. Parade pads stop on Racing or green. Not gated by `session_briefs`. Graph copy N11 D; formatter remains fallback.
+- Watcher decision ring (`race/watcher_log.py`, size 64): DEBUG + in-memory last-N for flags / incidents / aftermath / hunt / grid_story / briefs. Director records `graph_hit`, `formatter_fallback`, and `generic_suppressed` (branch incident node spoke instead of generic). No public GET; not in `/commentary` status.
 - Overlay priorities stay visual. Voice has its own `speak_priority` + `commentary.cooldown_s`.
 - BLE HR is optional emotion. Missing sensor → `unknown` / `neutral`. Empty emotion cells fall back to `neutral` (mock stays audible with HR connected).
 - Fail-soft: graph load / observe errors must not break the race loop.
@@ -120,6 +121,8 @@ duck_ratio = 0.25
 duck_fade_ms = 750
 decision_log_size = 32
 ```
+
+`decision_log_size` is the commentary speak/skip ring (HTTP `/commentary` decisions). Watcher FSM decisions live in a separate in-memory ring (`race/watcher_log.py`, size 64, DEBUG only) and are not exposed on that snapshot.
 
 `audio_device` empty = you hear SAPI on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
 

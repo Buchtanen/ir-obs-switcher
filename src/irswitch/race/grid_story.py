@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.overlay.models import RaceState
 from irswitch.race.story import QualiBag
+from irswitch.race.watcher_log import WatcherLog, note
 
 QUALI_RECAP = "QUALI_RECAP"
 PARADE_PAD = "PARADE_PAD"
@@ -41,6 +42,7 @@ class GridStoryFsm:
     _recap_done: bool = False
     _parade_count: int = 0
     _parade_until: float = 0.0
+    _logged_stop: bool = False
     _pending: list[EventEnvelope] = field(default_factory=list)
 
     def reset(self) -> None:
@@ -48,6 +50,7 @@ class GridStoryFsm:
         self._recap_done = False
         self._parade_count = 0
         self._parade_until = 0.0
+        self._logged_stop = False
         self._pending.clear()
 
     def take_pending(self) -> list[EventEnvelope]:
@@ -63,6 +66,7 @@ class GridStoryFsm:
         enabled: bool,
         bag: QualiBag | None,
         session_key: str | None,
+        log: WatcherLog | None = None,
     ) -> list[EventEnvelope]:
         produced: list[EventEnvelope] = []
         if session_key != self._session_key:
@@ -70,6 +74,7 @@ class GridStoryFsm:
             self._recap_done = False
             self._parade_count = 0
             self._parade_until = 0.0
+            self._logged_stop = False
             self._pending.clear()
 
         if not state.connected or not enabled:
@@ -80,12 +85,30 @@ class GridStoryFsm:
             return produced
         if green_or_racing(state):
             self._recap_done = True
+            if not self._logged_stop:
+                self._logged_stop = True
+                note(
+                    log,
+                    watch="grid_story",
+                    kind=QUALI_RECAP,
+                    emitted=False,
+                    reason="green_or_racing",
+                    now=now,
+                )
             return produced
 
         mode = state.overlay_mode or "RACE"
         if not self._recap_done:
             self._recap_done = True
             if bag is None:
+                note(
+                    log,
+                    watch="grid_story",
+                    kind=QUALI_RECAP,
+                    emitted=False,
+                    reason="missing_bag",
+                    now=now,
+                )
                 return produced
             env = make_envelope(
                 event_type=QUALI_RECAP,
@@ -103,6 +126,15 @@ class GridStoryFsm:
             )
             produced.append(env)
             self._pending.extend(produced)
+            note(
+                log,
+                watch="grid_story",
+                kind=QUALI_RECAP,
+                emitted=True,
+                reason="recap",
+                confidence=1.0,
+                now=now,
+            )
             return produced
 
         if state.session_state != IRSDK_PARADE_LAPS:
@@ -125,4 +157,13 @@ class GridStoryFsm:
         self._parade_until = now + PARADE_COOLDOWN_S
         produced.append(env)
         self._pending.extend(produced)
+        note(
+            log,
+            watch="grid_story",
+            kind=PARADE_PAD,
+            emitted=True,
+            reason="parade",
+            confidence=1.0,
+            now=now,
+        )
         return produced

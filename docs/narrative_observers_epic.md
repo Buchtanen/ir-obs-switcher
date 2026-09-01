@@ -119,7 +119,7 @@ N2 **must** land before any new `event_types` string in `sequence_graph.json`. U
 - Overlay cover (N9) — HUD/theme follow-up
 - Leader-pace as its own graph node (P2 `FIELD_FACT` + 300 s cooldown)
 - Rolling-start “scenarios”
-- N10 as public API (optional debug ring inside FSM commit)
+- N10 as public API (debug ring is in the FSM/director; no GET / admin page)
 - Yaw/Velocity/Accel extract until a research slice exists
 - `DriverInfo` as lap times
 - `race/observer/` package
@@ -344,5 +344,5 @@ No `overlay.stream_cover` in this epic. No `gap_hunt_in_practice` alias. No `eve
 | N7 | [n7_race_start.md](tasks/n7_race_start.md) | **yes** — opt-in `grid_story`; no rolling novel |
 | N8 | [n8_stream_start_incar.md](tasks/n8_stream_start_incar.md) | yes — mutex + bridge; copy in N11 |
 | N9 | [n9_overlay_cover.md](tasks/n9_overlay_cover.md) | **CUT** |
-| N10 | [n10_watcher_log.md](tasks/n10_watcher_log.md) | debug-only / defer API |
+| N10 | [n10_watcher_log.md](tasks/n10_watcher_log.md) | **debug ring shipped**; public API deferred |
 | N11 | [n11_content_fill.md](tasks/n11_content_fill.md) | A + sparse B/C/D |
