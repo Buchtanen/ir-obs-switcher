@@ -2,7 +2,7 @@
 
 **Issue:** [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200)  
 **Integration branch:** `refactor/200-n12-async-consumers`  
-**Scope:** N12.0–N12.4 (V2a); optional N12.5 subprocess transport is excluded by specification.
+**Scope:** N12.0–N12.4 (V2a) plus owner-approved #195 deterministic composer; optional N12.5 subprocess transport remains excluded.
 
 ## Delivered architecture
 
@@ -80,13 +80,21 @@ sequence lag, degraded state, restart requests, consumer failure/duplicate
 counters, supervisor restarts, and capture state. Overflow logs include
 consumer, policy, event id, sequence, depth, and discarded count.
 
+## Composer and story history
+
+`RaceObserver` now owns a session-scoped 24-beat factual ring. It records accepted event identity, phase, correlation, target roles and a curated set of numeric facts. The next frozen `n12-context/1` snapshot carries that history to `CommentaryConsumer`; no live observer reference crosses the queue boundary.
+
+When `commentary.llm_polish=true`, `commentary/composer.py` walks backwards over the existing sequence-graph edges (maximum three graph nodes) and assembles `history → beat → detail → context/session`. A valid result contains two to four distinct bound facts, fits the selected node's TTS limits and produces compact `commentary-facts/1`. The TTS worker sends that skeleton and fact block to the style-only model. EN and CS have dedicated prompts; two-front FRONT/REAR swaps are rejected. `llm_polish=false` still uses the original authored `choose_filled_line` path.
+
+Graph/runtime compatibility is executable: all 53 active nodes compose and validate in EN+CS, all 37 declared slot names exist in runtime bindings, and all 22 edges can supply a history clause. The audit found one real mismatch: `two_front_battle` declared `UPDATE`, while the director rejected every UPDATE. `BATTLE_FOR_POSITION` UPDATE is now the sole allowed update-speak event and remains limited by the node's 12-second cooldown.
+
 ## Automated evidence
 
 Evidence captured on 2026-09-01 from the integration branch:
 
-- `pytest -q`: **1152 passed**.
+- `pytest -q`: **1162 passed**.
 - `ruff check src tests`: passed.
-- `black --check src tests`: 296 files unchanged.
+- `black --check src tests`: passed.
 - `mypy` over all N12-touched production modules: passed.
 - Full-queue benchmark, 500 batches and two non-draining subscriptions:
   **p95 0.1197 ms**, **max 0.3167 ms**. Contract limits are p95 below the

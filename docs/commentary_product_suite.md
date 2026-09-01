@@ -3,7 +3,7 @@
 **Status:** active prep (build gradually on content branch)  
 **Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 (engine) + this content PR  
 **Audience:** stream viewers (broadcast voice).  
-**Related (research):** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md) — LAN Ollama skeleton-polish PoC; not in product packages yet.  
+**Composer:** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md) — LAN PoC plus implemented deterministic graph-path composer/fact pack; live Windows/Ollama listen pending.
 **Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Active architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 plus implemented V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. Evidence: [N12 implementation report](tasks/n12_implementation_report.md).
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
@@ -129,6 +129,7 @@ Docs + status only first. **VAD remains OS routing.** No new dep unless approved
 | P3–P5 | Queued |
 | P6 | Deferred |
 | N12 V2a async isolation | Implemented on integration branch; Windows/OBS live validation pending |
+| #195 graph-path composer | Implemented on the N12 integration branch; 53 nodes / 22 edges covered, live Ollama listen pending |
 
 ---
 

@@ -438,6 +438,12 @@ V2/N12 was implemented after #181. It does not change P0–P5 behavior or curren
 INI defaults. N12.5 remains an optional future Windows-spawn subprocess split;
 the default is the delivered independently supervised asyncio V2a model.
 
+The same integration branch now also carries the sequenced #195 extension:
+`RaceObserver` owns bounded accepted-beat history, frozen context transports it,
+and the commentary consumer deterministically composes two to four facts by
+walking up to three existing graph nodes before optional style-only polish.
+Authored single-line selection remains unchanged when `llm_polish=false`.
+
 ---
 
 ## 7. Nedělat v prvním PR

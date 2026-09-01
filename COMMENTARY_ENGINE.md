@@ -1,7 +1,7 @@
 # Commentary engine (Phase 0)
 
-**Status:** structure + TTS + `/commentary` test page + **English mock lines** on four events. Default **off** for the live race feed.  
-**Branch base:** `master`. Mock texts are placeholders until another model fills the graph.
+**Status:** EN+CS graph, N12 independent consumers, bounded story history, deterministic skeleton composer, TTS and `/commentary`. Default **off** for the live race feed.
+**Integration branch:** `refactor/200-n12-async-consumers`; Windows/OBS/Ollama live validation pending.
 
 ## Why
 
@@ -27,11 +27,14 @@ iRacing / BLE HR
     → EventManager / V2 (priority, cooldown, pit guard)
     → accepted EventEnvelope
     → CommentaryDirector (sequence graph + HR emotion)
+       ├─ llm_polish=false: one authored fully-bound line
+       └─ llm_polish=true: RaceObserver history → 2–4 fact composer
     → validate_utterance
-    → TtsSink (Windows SAPI / espeak-ng / NullTtsSink)
+    → independent TtsSink worker (optional style-only LLM polish)
+    → Windows SAPI / espeak-ng / NullTtsSink
 ```
 
-**Experiment (wired, default off):** optional remote LLM *skeleton polish* (style only, facts from app) — see [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md). Live serve stays A1000 Ollama `qwen2.5:3b`.
+**Wired, default off:** optional remote LLM *skeleton polish* receives a deterministic compact fact pack and a composed skeleton, never the full graph. See [docs/commentary_llm_skeleton_poc.md](docs/commentary_llm_skeleton_poc.md). Live serve stays A1000 Ollama `qwen2.5:3b`.
 
 Rules:
 
@@ -64,9 +67,17 @@ Rules:
 | `slots` | `{position}`, `{gap}`, … bound from envelope metrics. Timing slots (`lap_time`, `gap`, `delta`, `segment_time`, `target_time`, `projected_time`) are spoken via `sdk_units`-style formatters in `slot_format.py`; sentinel / invalid values leave the slot unbound so that candidate line is skipped (re-draw). |
 | `hr_states` | Which BLE bands may pick this node |
 | `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
-| `edges` | Preferred next line (e.g. hunting → side_by_side → overtake) |
+| `edges` | Temporal story transitions. They prefer the next beat and let the composer recover a bounded prior-node path (e.g. hunting → side_by_side → overtake). |
 
 Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDATE`s) are **not** in the speak graph.
+
+### Deterministic composer (`llm_polish=true`)
+
+`RaceObserver` owns a session-scoped ring of the latest 24 accepted factual beats. The frozen N12 context carries that history to commentary; `CommentaryConsumer` never receives a live observer reference. `composer.py` walks backwards over valid graph edges (maximum three graph nodes) and then assembles the tree `history → beat → detail → context/session`. The result must contain two to four distinct bound facts and pass the current node's TTS limits.
+
+The compact `commentary-facts/1` block contains only the selected beat/path, session, hero, target/front/rear roles, 2+2 field snapshot, HR band and four recent lines. Missing values are omitted. EN and CS use separate deterministic clauses and separate polish system prompts. Two-front role swaps are rejected as `two_front_polarity_conflict`.
+
+All 53 active graph nodes and all 22 edges have compatibility tests. `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
 
 ## TTS validator
 
@@ -97,7 +108,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). Optional LLM polish restyles the authored skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), a vocative opener (`Richard, ...` / `Richard. That's a lap`), or a fact-lock hit (invented lead/pole, chase→lead, West→westward, seconds→cm) retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the sequence graph. If every attempt fails → `retry_exhausted` and **TTS is skipped** (skeleton is not spoken). Node TTS (~160 chars / 13 s) is the authored ceiling, not a dump budget. Before polish/TTS, digit tokens **and compact units** (`m/s`, `°C`/`23 C`, gap `s`, `%`, `bpm`) are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only (`speech_hero.mix_hero_name`; config `driver_name` / `driver_nickname`, else iRacing UserName). Pronoun-free lines stay unchanged — no `Name. rest` / `Name, rest` prefix (that talks *to* the driver). Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM polish runs (#180). With `llm_polish=true`, the worker restyles the composed 2–4 fact skeleton at **similar length** (same sentence count, skeleton-relative char cap) on LAN Ollama `qwen2.5:3b` (RTX A1000). A 4090 is optional later fine-tune only, not a second live model. A second invented sentence, `Welcome back` / `Stay tuned`, second-person to the driver (`you`/`jsi`), a vocative opener, a two-front role swap, or another fact-lock hit retries the **same skeleton** up to `llm_max_attempts` inside `llm_timeout_s` — it does not re-walk the graph. If every attempt fails → `retry_exhausted` and **TTS is skipped**. Before polish/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test
@@ -192,11 +203,11 @@ Algorithm in `choose_filled_line(..., history=...)`:
 3. Else prefer any non-exact recent line (even if tail is over quota).
 4. Else fall back to any bound line — never hard-fail speech forever.
 
-`CommentaryDirector` remembers each spoken line and clears the ring on `reset()`.
+`CommentaryDirector` remembers each queued skeleton and clears the ring on `reset()`. After successful audio, `ProcessTtsSink` also feeds the final polished/spoken text into the same ring, so the next fact pack bans what viewers actually heard.
 
 ## English + Czech content
 
-Spoken lines live in `variants.{en|cs}.{emotion}`. The director picks **one fully-bound line** from the matching bucket, with anti-repeat preference above (`rng.choice` among the preferred pool). Empty cells fall back `emotion→neutral` then `locale→en`.
+Spoken lines live in `variants.{en|cs}.{emotion}`. With `llm_polish=false`, the director picks **one fully-bound line** from the matching bucket, with anti-repeat preference above (`rng.choice` among the preferred pool); this path stays backward-compatible. With `llm_polish=true`, authored variants are deterministic clause/fallback material and are not selected as the one-line polish input.
 
 | Wave | Status |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Commentary LLM — skeleton polish PoC
 
-**Status:** LAN-tested; optional live polish behind `commentary.llm_polish` (default off)  
+**Status:** composer + fact pack implemented on `refactor/200-n12-async-consumers`; optional live polish remains default off; Windows/Ollama listen pending
 **Date:** 2026-09-01  
 **Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), sequence graph + director pipeline  
 **Hardware under test:** Ubuntu NTB, NVIDIA RTX A1000 Laptop 4GB, Ollama `qwen2.5:3b` @ LAN  
@@ -76,7 +76,7 @@ SKELETON (timing beat — personal best streak):
 …
 ```
 
-### Compact JSON facts (for a future app builder)
+### Compact JSON facts (implemented as `commentary-facts/1`)
 
 Useful fields we can already track / compute (iRSDK + derived + graph):
 
@@ -107,11 +107,12 @@ Judge: same-size LLM-as-judge was **unreliable**. Scoring used a deterministic r
 
 ## 6. Implementation brainstorm (architecture)
 
-Exploration of the current pipeline points to optional polish **after** authored fill + validate, **before** (or inside) the TTS worker — never on the race tick HTTP-blocking.
+The integration branch composes synchronously from frozen facts, then performs optional polish inside the serial TTS worker — never on the producer/race tick.
 
 ```text
-CommentaryDirector.observe (sync, tick)
-  → choose_filled_line + validate  (= skeleton truth)
+CommentaryDirector.observe (commentary consumer task)
+  → graph path + RaceObserver recent beats
+  → deterministic 2–4 fact composer + validate
   → sink.enqueue(utterance)        (non-blocking)
        worker: optional polish → re-validate → SAPI
 ```
@@ -125,22 +126,22 @@ CommentaryDirector.observe (sync, tick)
 | C. Parallel dry-run only | Log polish, speak authored | Safe A/B tooling, not product voice |
 | D. `tts_backend=ollama` | Confuses TTS with text rewrite | Reject as primary design |
 
-### Add (when implementing)
+### Implemented components
 
-- `commentary/polish.py` — OpenAI-compatible client (`aiohttp`), timeout, null polisher  
-- Optional `skeleton.py` — build skeleton string from bindings + beat metadata  
+- `commentary/polish.py` — OpenAI-compatible client, timeout and fact locks
+- `commentary/composer.py` — shipped graph-path walker, compact fact pack and EN/CS clause tree
 - Config (default **off**): `llm_polish`, `llm_base_url`, `llm_model`, `llm_timeout_s`, `llm_max_attempts`  
-- Re-validate polished text; fact guards (binding values must appear); decision log `polish: ok|fallback`  
-- Tests: timeout, reject bad polish, `llm_polish=false` bit-identical path  
-- Docs: `CONFIG.md`, `config.example.ini`, this doc + `COMMENTARY_ENGINE.md` pipeline note  
+- Re-validation, fact guards, DEBUG tape and final-spoken anti-repeat hook
+- Timeout/retry, bad-polish rejection, graph compatibility and `llm_polish=false` parity tests
+- `CONFIG.md`, `config.example.ini`, this doc and `COMMENTARY_ENGINE.md`
 
 **No new pip dependency** if using existing `aiohttp`.
 
-### Refactor (minimal)
+### Refactor boundaries
 
-- `build_tts_sink` factory can wrap polish  
-- `anti_repeat.remember` must store **final** spoken text  
-- Busy / `estimate_seconds` may need recompute after polish  
+- `build_tts_sink` owns the polish-capable serial worker
+- `anti_repeat.remember` stores both the queued skeleton and the final successful spoken text
+- Busy remains conservative from the validated skeleton; the sink's observed busy state covers polish/audio overrun
 - Leave alone: emitters, EventManager, graph topology, `slot_bindings`, offline `assignments.py`, scene `logic/`
 
 ### Risks
@@ -148,7 +149,7 @@ CommentaryDirector.observe (sync, tick)
 - Latency 1–5 s → retries inside `llm_timeout_s`; exhausted → skip TTS (no skeleton)  
 - Graph node TTS ~160 / 13 s vs long welcome → polish is skeleton-relative; authored two-fact lines may use the node budget  
 - Fact drift → reject polish  
-- CS locale → dedicated system prompt + fixtures  
+- CS locale → dedicated system prompt + fixtures (**shipped**)
 - Ollama down → never raise into race loop  
 
 ## 7. Explicit non-goals (now)
@@ -157,14 +158,13 @@ CommentaryDirector.observe (sync, tick)
 - Replacing Event Engine or sequence graph topology with an LLM  
 - On-box training on the A1000 (serve only; train elsewhere if ever)
 
-## 8. Suggested build order (when approved)
+## 8. Delivered order and remaining manual gate
 
-1. Config flags + `NullPolisher` / dry-run log (no speak change)  
-2. Skeleton builder from current `slot_bindings` + `relation` helper for battle  
-3. `PolishingTtsSink` + timeout + re-validate + fallback  
-4. Manual LAN test (welcome / PB / hunting) against NTB Ollama  
-5. Decision-log + `/commentary` visibility  
-6. Only then consider longer intros vs `max_chars` policy  
+1. Config flags + polish worker — shipped.
+2. Frozen fact pack + graph-path composer — shipped.
+3. EN/CS prompts, retries, fact locks and DEBUG tape — shipped.
+4. Automated 53-node / 22-edge compatibility — passed.
+5. Manual LAN listen (welcome / PB / hunting / two-front) against NTB Ollama — pending on the integration branch.
 
 ## 9. Example skeletons used in tests
 

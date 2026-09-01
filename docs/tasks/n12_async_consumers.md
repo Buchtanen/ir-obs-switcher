@@ -1,6 +1,6 @@
 # N12 — Commentary Director V2 async consumer isolation
 
-**Status:** implemented on integration branch `refactor/200-n12-async-consumers`; live Windows/OBS validation pending
+**Status:** N12.0–N12.4 plus integrated #195 composer implemented on `refactor/200-n12-async-consumers`; live Windows/OBS/Ollama validation pending
 
 **Tracking:** [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200)
 
@@ -8,9 +8,11 @@
 
 **Parent:** [observers_decoupling_plan.md](../observers_decoupling_plan.md) V2/N12
 
-**Depends on:** PR #181 live-listen fixes; existing P0 fan-out and P1 scheduler. Do not implement in parallel with #195 because both touch director/composition ownership.
+**Depends on:** PR #181 live-listen fixes; existing P0 fan-out and P1 scheduler. #195 is now sequenced after the N12 isolation commits on this same integration branch.
 
 **Behavior default:** unchanged; V2a is now the composition path and adds no INI key
+
+**Approved scope extension:** the original review separated #195 from async isolation. The integration owner later required the complete commentary refactor on this branch, so the deterministic composer is included after N12.4. `llm_polish=false` remains the bit-compatible authored-line path.
 
 **Critical review:** [n12_async_consumers_spec_review.md](n12_async_consumers_spec_review.md)
 
@@ -834,6 +836,14 @@ until this slice is explicitly approved.
   HUD publication or speech for an already processed event id.
 - [ ] Existing overlay wire, commentary copy, priority, graph, and INI defaults
   remain unchanged unless a later slice explicitly changes them.
+- [ ] With `llm_polish=true`, commentary walks up to three valid graph nodes from
+  bounded `RaceObserver` history and composes two to four facts; it never uses a
+  random slot-light one-liner as the polish skeleton.
+- [ ] All active graph nodes bind their declared slots in EN/CS, all edges can
+  feed a history clause, and two-front UPDATE reaches only `two_front_battle`
+  under its node cooldown.
+- [ ] The compact fact pack preserves FRONT/REAR roles, recent anti-repeat facts,
+  and same-tick session/hero/field data; CS uses a dedicated system prompt.
 
 ## Required tests
 
@@ -869,6 +879,9 @@ until this slice is explicitly approved.
 - LLM fact-lock fixtures: approved current/past situation, invented lap number,
   changed race phase, false final lap, missing situation, timeout, and fallback
   skeleton parity. Tape/replay records the exact bounded situation fact block.
+- Composer fixtures: 53 nodes × EN/CS, every graph edge, unbound omission,
+  authored-path parity, multi-node battle arc, bounded history reset, Czech
+  prompt, and two-front polarity swap rejection.
 - Content contract: every affected EN/CS cell keeps at least 70% profile-free
   lines; bound profile examples pass the current validator and do not combine
   unrelated biography facts.
