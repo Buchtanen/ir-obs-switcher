@@ -40,6 +40,7 @@ def test_golden_v4_md_documents_three_themes() -> None:
     for theme in GOLDEN_THEMES:
         assert theme in doc, f"GOLDEN_V4.md missing theme {theme!r}"
     assert "Theme variants" in doc
+    assert "overlay/css/themes/" in doc
 
 
 def test_golden_v4_md_documents_theme_variant_urls() -> None:

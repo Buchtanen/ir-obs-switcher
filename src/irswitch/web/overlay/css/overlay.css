@@ -32,6 +32,12 @@ html.is-demo[data-theme="pit_wall_light"] body {
   background: #d7dee4;
 }
 
+/* Dark plates vanish on #04070a; mid charcoal so rails/copy stay readable in demo. */
+html.is-demo[data-theme="pit_wall_dark"],
+html.is-demo[data-theme="pit_wall_dark"] body {
+  background: #1a242c;
+}
+
 html.golden-layout #sysinfo-widget,
 html.golden-layout #session-layer,
 html.golden-layout #event-layer,

@@ -214,11 +214,16 @@ def _ingest_plates(theme_id: str, meta: dict) -> None:
         # paintPlateMask requires base_plate
         if "base_plate.png" not in written:
             raise RuntimeError(f"{theme_id}/{tmpl}: missing plate-base layer")
-        # transparent stubs for optional cyber-compat / light-parity names
-        for stub in ("corner_right.png", "icon_well.png", "family_detail.png"):
+        if theme_id == "pit_wall_light" and "icon_well.png" not in written:
+            raise RuntimeError(f"{theme_id}/{tmpl}: missing icon-well layer")
+        # transparent stubs for optional cyber-compat names (dark has no icon-well in zip)
+        for stub in ("corner_right.png", "family_detail.png"):
             if stub not in written:
                 _write(dest_dir / stub, _png_rgba(420, 140))
                 written.add(stub)
+        if "icon_well.png" not in written:
+            _write(dest_dir / "icon_well.png", _png_rgba(420, 140))
+            written.add("icon_well.png")
 
 
 def _ingest_icons(theme_id: str, meta: dict) -> None:
@@ -370,6 +375,10 @@ def check_theme(theme_id: str) -> list[str]:
         base = root / "plates" / tmpl / "layers" / "base_plate.png"
         if not base.is_file():
             errors.append(f"missing plate {tmpl}/base_plate.png")
+        if theme_id == "pit_wall_light":
+            well = root / "plates" / tmpl / "layers" / "icon_well.png"
+            if not well.is_file() or well.stat().st_size < 400:
+                errors.append(f"missing or stub icon_well {tmpl}/icon_well.png")
     return errors
 
 
