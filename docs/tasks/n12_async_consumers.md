@@ -261,12 +261,128 @@ rules as envelopes. Schema `n12-context/1` contains:
 | identity | `schema_version`, `version`, `session_id`, `captured_monotonic_ms`, `overlay_mode`, `session_type`, `session_num`, `subsession_id`, `track_id` |
 | race | `connected`, `player_car_idx`, `lap`, `lap_completed`, `position`, `class_position`, `gap_ahead_s`, `gap_behind_s`, `on_pit_road`, `session_checkered`, `player_finished`, `mute_field`, `incident_count`, `speed_mps` |
 | bio | `status`, `bpm`, `hr_state`, `sample_monotonic_ms` |
-| story | hero display/speakable names, 2+2 near-field ids/names/gaps, leader name/position, localized weather bindings, quali bag, stream session keys |
+| story | hero display/speakable names, 2+2 near-field ids/names/gaps, leader name/position, localized weather bindings, quali bag, stream session keys, driver profiles keyed by `CarIdx`, immutable start-grid facts |
 | config identity | immutable config generation plus `language`, `commentary_enabled`, scheduler flags required for the decision |
 
 Missing optional telemetry stays `null`; no consumer reaches back to live
 objects to fill it. Slot values already carried by an accepted envelope remain
 authoritative for that event.
+
+#### A3.1 — Driver facts for commentary context
+
+RaceObserver owns one session-scoped driver fact ledger. It joins the current
+`DriverInfo.Drivers[]` roster to the hero and near-field cars by `CarIdx`; the
+commentary consumer never reparses SessionInfo and never calls the reader. The
+ledger is part of the frozen A3 context, not extra mutable fields patched into
+an accepted envelope after fan-out.
+
+```python
+@dataclass(frozen=True)
+class DriverProfileSnapshot:
+    car_idx: int
+    user_id: int | None
+    display_name: str | None
+    i_rating: int | None
+    safety_rating: str | None
+    car_name: str | None
+    nationality: str | None
+    start_position: int | None
+    start_position_scope: Literal["class", "overall"] | None
+```
+
+| Fact | Exact source and update rule |
+| --- | --- |
+| iRating | `DriverInfo.Drivers[].IRating`; accept a finite non-negative integer, retain the last valid value for the current roster identity, format as a localized label before TTS so no four-digit run reaches the validator. |
+| Safety Rating | `DriverInfo.Drivers[].LicString`; keep the normalized licence class plus rating (for example `A 3.42`). `LicLevel` / `LicSubLevel` may validate a fixture but must not be used to invent a different displayed value. |
+| car | `DriverInfo.Drivers[].CarScreenName`, falling back to `CarScreenNameShort`; never speak `CarPath` or numeric `CarID`. |
+| nationality | No reliable nationality/country field is evidenced in the current in-session iRSDK schema. Keep `null` until an approved, tested source exists. Do not infer nationality from `ClubName`, a name, language, or flag graphics; an external iRacing API/cache would be a separately approved dependency and privacy decision. |
+| start position | Capture `CarIdxClassPosition[]` for multiclass narration, otherwise `CarIdxPosition[]`, at the first valid pre-green/formation sample. If unavailable, capture the first valid green sample and mark that fallback in diagnostics. Freeze once per car; a late join remains `null`. `QualifyResultsInfo` is qualifying result context, not an authoritative race start position. |
+
+The roster is reparsed only when the SessionInfo revision/content digest changes.
+Valid values replace the same `CarIdx` profile; a changed `UserID` on the same
+car index is a driver swap and replaces the profile rather than inheriting the
+previous driver's facts. Disconnect or `SessionReset` clears the session ledger
+and start-grid capture. StreamMemory may retain only already-spoken narrative
+facts required by anti-repeat; it must not become an unbounded driver database.
+
+At dequeue, CommentaryConsumer resolves `hero_*` from the player `CarIdx` and
+`target_*` from the accepted envelope target/correlation plus the exact embedded
+context. A missing or mismatched target identity leaves target facts unbound;
+it never falls back to some other nearby car.
+
+Authored use is deliberately sparse:
+
+- normally no more than one profile fact in one utterance;
+- target facts are allowed only for a stable, named/correlated opponent;
+- iRating/Safety Rating provide factual context, never a claim about talent,
+  clean driving, expected result, or blame;
+- nationality, when a trustworthy source exists, is descriptive only and never
+  drives stereotypes or competitive claims;
+- car facts fit intros, strategy/pit context, and selected battle beats;
+- start position fits progress, finish, and session-wrap beats;
+- at least 70% of each affected cell stays profile-slot-free, and a per-driver,
+  per-fact cooldown prevents the same biography from being repeated.
+
+Initial proposed slots and bilingual examples live in
+[`commentary_extension_handover.md`](../commentary_extension_handover.md#driver-fact-extension-needs-engineering).
+
+#### A3.2 — Observer-to-commentary data flow and freshness gate
+
+The producer tick has one mandatory order. There is no eventual side lookup
+from CommentaryConsumer:
+
+```text
+one iRacing read (telemetry + current SessionInfo revision/content)
+  -> RaceObserver refreshes DriverFactLedger and near field
+  -> producer freezes ContextSnapshot version N
+  -> EventEngine + RaceObserver produce candidates against version N
+  -> one arbitration/stamp/freeze step
+  -> AcceptedEventBatch(context_version=N, context_payload=N, events=...)
+  -> commentary FIFO
+  -> thaw event + its embedded context N
+  -> freshness/identity gate against replace-only latest_context
+  -> resolve hero/target slots -> choose one fully bound line -> validate -> TTS
+```
+
+Every driver profile carries `session_id`, `user_id`, `car_idx`,
+`identity_epoch`, `roster_revision`, and `observed_monotonic_ms`. The context
+also records `captured_monotonic_ms`. A producer may reuse static profile values
+between unchanged SessionInfo revisions, but every batch embeds a newly captured
+context whose dynamic race facts came from the same producer tick. At acceptance:
+
+```text
+0 <= accepted_monotonic_ms - context.captured_monotonic_ms <= poll_interval_ms
+```
+
+If that invariant cannot be met, the producer records `context_stale_at_accept`
+and omits dynamic/profile bindings from that batch rather than publishing a
+plausible-looking stale value.
+
+Commentary uses the embedded context as the factual event-time source. The
+replace-only `latest_context` has one narrower purpose before final line
+selection: it may **veto** an old binding, never replace it. The gate requires:
+
+1. batch, embedded context, and latest context have the same `session_id`;
+2. hero/target `(CarIdx, UserID, identity_epoch)` still match when a profile
+   slot is requested;
+3. the accepted target identity matches the profile selected from context;
+4. current-relation copy (gap, live position, hunting/hunted state) is no more
+   than 3 seconds old at speech time and remains inside the event TTL;
+5. static iRating/SR/car facts remain usable for the session only while the
+   identity match holds; captured start position is immutable for that identity.
+
+An ordered `SessionReset` flushes old-session deferred speech before the first
+new-session event is eligible. A driver swap increments `identity_epoch`, so a
+queued line about the previous user is vetoed even if `CarIdx` was reused. A
+late target mismatch, stale relation, missing fact, or unavailable nationality
+removes those bindings and reruns selection from the same node with the reduced
+binding set. If no fully bound profile-free variant remains, skip and record
+`driver_context_stale`, `driver_identity_changed`, or `driver_fact_unavailable`.
+Never substitute the current nearest opponent or read live RaceObserver state.
+
+This makes the distinction explicit: event-time facts come from the exact
+accepted snapshot; the newest snapshot protects against stale identity and
+relation claims without rewriting history.
 
 Each consumer subscription owns:
 
@@ -415,6 +531,8 @@ remain part of optional N12.5, not an implied V2a disk database.
 - Merge RaceObserver-derived candidates into shared arbitration.
 - Implement A1–A5 contracts: freeze API, fixed derived merge, embedded context,
   typed reset/config control plane, and filler request/result path.
+- Add the A3.1 session-scoped driver fact ledger and immutable start-grid
+  capture; do not add an external nationality lookup in this slice.
 - Do not change content, priorities, cooldowns, or public wire schema.
 
 ### N12.2 — Async fan-out and peer consumers
@@ -471,6 +589,17 @@ until this slice is explicitly approved.
 - [ ] Session reset and config reload reach both consumers once in sequence.
 - [ ] No empty event batch enters a FIFO; context-only updates use the bounded
   replace-only latest slot at no more than race sampling frequency.
+- [ ] Hero and target profile facts resolve by `CarIdx` from the embedded
+  context, update on a roster revision/driver swap, and never leak stale facts
+  across a session reset.
+- [ ] Missing nationality remains unbound, start position is captured once with
+  an explicit class/overall scope, and profile-slot-free copy remains usable.
+- [ ] Each accepted batch carries the same-tick context used for candidate
+  creation; commentary never reads RaceObserver and latest context can only veto,
+  not replace, an embedded event-time fact.
+- [ ] A session reset, reused `CarIdx`/driver swap, target mismatch, relation
+  older than 3 seconds, or expired event cannot produce a stale named/profile
+  utterance; the decision has an explicit reason code.
 - [ ] TTS TTL/cooldown uses event time; queue wait is observable lag.
 - [ ] Cancellation leaves no pending task, TTS process, ducked OBS source, or
   open tape handle.
@@ -498,6 +627,16 @@ until this slice is explicitly approved.
   evicted; incident + aftermath + flag in one producer batch follows A2 order.
 - Filler fixture: request available/no-fact/stale paths with no live observer
   reference in CommentaryConsumer.
+- Driver facts: malformed/missing roster fields, localized iRating/SR labels,
+  car-name fallback, driver swap on reused `CarIdx`, multiclass start-grid
+  capture, late join, reset, target mismatch, and unavailable nationality.
+- Freshness fixture: delayed batch with unchanged static profile, delayed battle
+  beyond 3 seconds, SessionReset overtaking queued work, changed `UserID` on the
+  same `CarIdx`, latest-context target mismatch, and stale-at-accept producer
+  input. Assert fallback/skip reason and zero wrong-name/profile speech.
+- Content contract: every affected EN/CS cell keeps at least 70% profile-free
+  lines; bound profile examples pass the current validator and do not combine
+  unrelated biography facts.
 - Replay/tape: one A7 capture including context/HR timeline produces expected HUD
   wire and commentary decisions independently.
 - Architecture grep/import test: `overlay/` has no `CommentaryDirector` import or

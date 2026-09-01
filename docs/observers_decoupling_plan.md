@@ -213,19 +213,63 @@ it is not added to cooldowns as if the event occurred later.
 - **Session:** pozice, near field (**2+2**), battle/pit/incident arcs.  
 - **Stream:** agregáty Practice→Quali→Race (bounded).  
 - **Weather watch:** iRSDK weather fields over time → event při **významné změně** (temp / wind / skies / precip thresholds), ne každý tick.
+- **Driver facts:** session-scoped profil hero + 2+2 soupeřů podle `CarIdx`:
+  iRating, Safety Rating/licence, vůz a jednou zachycená startovní pozice.
+  Národnost zůstává prázdná, dokud nebude doložený zdroj; z klubu ani jména se
+  neodhaduje.
 
-### 3.2 Derived (první vlna)
+### 3.2 Driver fact ledger a textový kontext
+
+`DriverInfo.Drivers[]` se při změně SessionInfo normalizuje do bounded mapy
+`CarIdx -> DriverProfileSnapshot`. Změna `UserID` na stejném `CarIdx` je výměna
+jezdce a zahodí starý profil. RaceObserver pak v každém frozen ContextSnapshotu
+publikuje profil hero a pouze relevantních 2+2 soupeřů; commentary je váže podle
+subject/target identity konkrétního accepted eventu.
+
+```text
+iRacing read
+  -> RaceObserver ledger + near field
+  -> frozen ContextSnapshot N
+  -> candidates / arbitration
+  -> AcceptedEventBatch s vloženým snapshotem N
+  -> commentary queue
+  -> identity + freshness gate
+  -> plně vázaná věta, nebo slot-free fallback/skip
+```
+
+Commentary nesmí číst živý RaceObserver ani doplňovat starý event z nového
+soupeře. Embedded snapshot je pravda v čase eventu; `latest_context` smí pouze
+zrušit binding při změně session/identity nebo u relation starší než 3 s.
+Změna jezdce zvýší `identity_epoch`; `SessionReset` zahodí deferred řeč staré
+session. Selhání končí slot-free variantou nebo důvodem `driver_context_stale`,
+nikdy domyšleným jménem či profilem.
+
+| Fakt | Zdroj |
+| --- | --- |
+| iRating | `DriverInfo.Drivers[].IRating` |
+| Safety Rating | `DriverInfo.Drivers[].LicString` |
+| Vůz | `DriverInfo.Drivers[].CarScreenName`, fallback `CarScreenNameShort` |
+| Startovní pozice | jednorázový snapshot `CarIdxClassPosition[]` / `CarIdxPosition[]` před green; první green sample jen diagnostikovaný fallback |
+| Národnost | **není doložená v aktuálním iRSDK SessionInfo kontraktu**; `null`, žádná inference z `ClubName` |
+
+Textový graph zůstává broadcast/3. osoba. Profilový detail se používá střídmě:
+typicky jeden fact na větu, minimálně 70 % řádků v dotčené buňce bez profile
+slotu. iRating/SR nesmí být interpretace talentu nebo čistoty; národnost nesmí
+vést ke stereotypu. Přesné sloty, ukázky a implementační handover jsou v
+[`commentary_extension_handover.md`](commentary_extension_handover.md#driver-fact-extension-needs-engineering).
+
+### 3.3 Derived (první vlna)
 
 | Derived | Trigger |
 | --- | --- |
 | `INCIDENT_AFTERMATH` | Po incidentu: stalled vs rolling |
 | `BACK_UNDER_WAY` | Auto znovu jede |
 | `WEATHER_CHANGE` | Prahová změna počasí |
-| `FIELD_FACT` / silence fill | Leader / hero P / gap (pro 33 s watchdog) |
+| `FIELD_FACT` / silence fill | Leader / hero P / gap; vzácně jeden nevyužitý driver fact (pro 33 s watchdog) |
 | `RIVAL_REAPPEARS` | Stejný car znovu v near field — **parked / cut from narrative epic v1** (unused in code) |
 | `SESSION_WRAP` / `SESSION_PREVIEW` | Hranice session |
 
-### 3.3 Incident vs Finish (hlas + HUD)
+### 3.4 Incident vs Finish (hlas + HUD)
 
 | Událost | Overlay | Commentary |
 | --- | --- | --- |
@@ -267,7 +311,8 @@ Hard interrupt **default false** (bezpečnější), zapne se na stream PC až po
 
 1. Je pending deferred s TTL? → to nejdřív.  
 2. Jinak: došlo k `WEATHER_CHANGE` od last speak? → weather line.  
-3. Jinak: `FIELD_FACT` (leader, hero position, gap ahead/behind).  
+3. Jinak: `FIELD_FACT` (leader, hero position, gap ahead/behind; volitelně jeden
+   driver fact, pokud jej per-driver cooldown ještě nepoužil).
 4. Nic → zůstat tiše (watchdog neforcuje prázdný kec).
 
 ---
