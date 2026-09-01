@@ -1,12 +1,16 @@
 # N12 — Commentary Director V2 async consumer isolation
 
-**Status:** reviewed contract / `needs-engineering`
+**Status:** implemented on integration branch `refactor/200-n12-async-consumers`; live Windows/OBS validation pending
+
+**Tracking:** [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200)
+
+**Implementation evidence:** [n12_implementation_report.md](n12_implementation_report.md)
 
 **Parent:** [observers_decoupling_plan.md](../observers_decoupling_plan.md) V2/N12
 
 **Depends on:** PR #181 live-listen fixes; existing P0 fan-out and P1 scheduler. Do not implement in parallel with #195 because both touch director/composition ownership.
 
-**Behavior default:** unchanged until the V2 composition root replaces the current path
+**Behavior default:** unchanged; V2a is now the composition path and adds no INI key
 
 **Critical review:** [n12_async_consumers_spec_review.md](n12_async_consumers_spec_review.md)
 
@@ -26,7 +30,7 @@ serialization-safe so V2b can run either lane as a Windows spawned subprocess
 if operational isolation is later required. V2a must not rely on shared mutable
 objects that would make V2b a redesign.
 
-## Current-state evidence
+## Historical pre-N12 evidence
 
 | Current path | Consequence |
 | --- | --- |
