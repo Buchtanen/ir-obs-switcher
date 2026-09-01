@@ -1,0 +1,257 @@
+"""Non-blocking bounded broadcast fan-out for the N12 stream."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from collections import deque
+from dataclasses import dataclass
+from typing import Any
+
+from irswitch.events.stream import (
+    ConfigUpdate,
+    FrozenAcceptedEvent,
+    FrozenAcceptedEventBatch,
+    FrozenContextSnapshot,
+    SessionReset,
+    StreamItem,
+)
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class QueueStats:
+    name: str
+    capacity: int
+    depth: int
+    enqueued: int
+    dequeued: int
+    coalesced: int
+    evicted: int
+    recovery_discards: int
+    overflows: int
+    degraded: bool
+    lag_ms: int
+
+
+class EventSubscription:
+    """One consumer-owned FIFO plus replace-only latest-context slot."""
+
+    def __init__(self, name: str, *, capacity: int = 64) -> None:
+        if capacity <= 0:
+            raise ValueError("subscription capacity must be positive")
+        self.name = name
+        self.capacity = capacity
+        self._items: deque[StreamItem] = deque()
+        self._ready = asyncio.Event()
+        self._closed = False
+        self._latest_context: FrozenContextSnapshot | None = None
+        self._enqueued = 0
+        self._dequeued = 0
+        self._coalesced = 0
+        self._evicted = 0
+        self._recovery_discards = 0
+        self._overflows = 0
+        self._degraded = False
+        self._last_dequeued_stream_sequence = 0
+
+    @property
+    def latest_context(self) -> FrozenContextSnapshot | None:
+        return self._latest_context
+
+    def replace_latest_context(self, payload: FrozenContextSnapshot) -> None:
+        self._latest_context = payload
+
+    def put_nowait(self, item: StreamItem) -> bool:
+        """Admit without awaiting consumer work; return False only on recovery."""
+        if self._closed:
+            return False
+        if len(self._items) < self.capacity:
+            self._append(item)
+            return True
+        if isinstance(item, FrozenAcceptedEventBatch) and self._coalesce_into_queue(item):
+            return True
+        if self._evict_for(item):
+            self._append(item)
+            return True
+        self._recover_for_protected(item)
+        return False
+
+    async def get(self) -> StreamItem:
+        while True:
+            if self._items:
+                item = self._items.popleft()
+                self._dequeued += 1
+                self._last_dequeued_stream_sequence = item.stream_sequence
+                if not self._items:
+                    self._ready.clear()
+                return item
+            if self._closed:
+                raise asyncio.CancelledError
+            await self._ready.wait()
+
+    def close(self) -> None:
+        self._closed = True
+        self._ready.set()
+
+    def clear(self) -> int:
+        count = len(self._items)
+        self._items.clear()
+        self._ready.clear()
+        return count
+
+    def snapshot(self, *, producer_stream_sequence: int) -> QueueStats:
+        return QueueStats(
+            name=self.name,
+            capacity=self.capacity,
+            depth=len(self._items),
+            enqueued=self._enqueued,
+            dequeued=self._dequeued,
+            coalesced=self._coalesced,
+            evicted=self._evicted,
+            recovery_discards=self._recovery_discards,
+            overflows=self._overflows,
+            degraded=self._degraded,
+            lag_ms=max(0, producer_stream_sequence - self._last_dequeued_stream_sequence),
+        )
+
+    def _append(self, item: StreamItem) -> None:
+        self._items.append(item)
+        self._enqueued += 1
+        self._ready.set()
+
+    def _coalesce_into_queue(self, incoming: FrozenAcceptedEventBatch) -> bool:
+        pending = list(incoming.events)
+        changed = False
+        for item_index, queued in enumerate(self._items):
+            if not isinstance(queued, FrozenAcceptedEventBatch):
+                continue
+            replacement = list(queued.events)
+            for old_index, old in enumerate(replacement):
+                match_index = _matching_coalesce_index(pending, old)
+                if match_index is None:
+                    continue
+                replacement[old_index] = pending.pop(match_index)
+                changed = True
+                self._coalesced += 1
+            if changed:
+                self._items[item_index] = FrozenAcceptedEventBatch(
+                    stream_sequence=incoming.stream_sequence,
+                    session_id=incoming.session_id,
+                    batch_sequence=incoming.batch_sequence,
+                    accepted_monotonic_ms=incoming.accepted_monotonic_ms,
+                    context_version=incoming.context_version,
+                    context_payload=incoming.context_payload,
+                    events=tuple(replacement),
+                )
+            if not pending:
+                return True
+        if not pending:
+            return True
+        # A partially coalesced batch still needs a queue slot for protected/new keys.
+        return False
+
+    def _evict_for(self, incoming: StreamItem) -> bool:
+        incoming_priority = _item_priority(incoming)
+        for index, queued in enumerate(self._items):
+            if not _item_coalescible(queued):
+                continue
+            if _item_priority(queued) >= incoming_priority:
+                continue
+            del self._items[index]
+            self._evicted += 1
+            self._overflows += 1
+            logger.warning(
+                "consumer_queue_overflow consumer=%s policy=evict_lower_priority depth=%s",
+                self.name,
+                len(self._items),
+            )
+            return True
+        return False
+
+    def _recover_for_protected(self, incoming: StreamItem) -> None:
+        discarded = self.clear()
+        self._recovery_discards += discarded
+        self._overflows += 1
+        self._degraded = True
+        self._append(incoming)
+        logger.error(
+            "consumer_queue_overflow consumer=%s policy=restart_recovery discarded=%s",
+            self.name,
+            discarded,
+        )
+
+
+class AsyncEventFanout:
+    """Broadcast one immutable stream item to every registered subscription."""
+
+    def __init__(self) -> None:
+        self._subscriptions: dict[str, EventSubscription] = {}
+        self._stream_sequence = 0
+
+    @property
+    def stream_sequence(self) -> int:
+        return self._stream_sequence
+
+    def subscribe(self, name: str, *, capacity: int = 64) -> EventSubscription:
+        if name in self._subscriptions:
+            raise ValueError(f"duplicate subscription: {name}")
+        subscription = EventSubscription(name, capacity=capacity)
+        self._subscriptions[name] = subscription
+        return subscription
+
+    def next_stream_sequence(self) -> int:
+        return self._stream_sequence + 1
+
+    def publish(self, item: StreamItem) -> dict[str, bool]:
+        if item.stream_sequence <= self._stream_sequence:
+            raise ValueError("stream sequence must be strictly increasing")
+        self._stream_sequence = item.stream_sequence
+        results: dict[str, bool] = {}
+        for name, subscription in self._subscriptions.items():
+            results[name] = subscription.put_nowait(item)
+        return results
+
+    def publish_context(self, payload: FrozenContextSnapshot) -> None:
+        for subscription in self._subscriptions.values():
+            subscription.replace_latest_context(payload)
+
+    def close(self) -> None:
+        for subscription in self._subscriptions.values():
+            subscription.close()
+
+    def status_snapshot(self) -> dict[str, Any]:
+        return {
+            "streamSequence": self._stream_sequence,
+            "consumers": {
+                name: stats.__dict__
+                for name, subscription in self._subscriptions.items()
+                for stats in [subscription.snapshot(producer_stream_sequence=self._stream_sequence)]
+            },
+        }
+
+
+def _matching_coalesce_index(
+    incoming: list[FrozenAcceptedEvent], old: FrozenAcceptedEvent
+) -> int | None:
+    if not old.coalescible:
+        return None
+    for index, event in enumerate(incoming):
+        if event.coalescible and event.coalesce_key == old.coalesce_key:
+            return index
+    return None
+
+
+def _item_coalescible(item: StreamItem) -> bool:
+    return (
+        isinstance(item, FrozenAcceptedEventBatch)
+        and bool(item.events)
+        and all(event.coalescible for event in item.events)
+    )
+
+
+def _item_priority(item: StreamItem) -> int:
+    if isinstance(item, (SessionReset, ConfigUpdate)):
+        return 10_000
+    return max(event.priority for event in item.events)
