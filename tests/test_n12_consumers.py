@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from irswitch.commentary.consumer import CommentaryConsumer
+from irswitch.commentary.consumer import CommentaryConsumer, _spoken_irating
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.graph import parse_sequence_graph
 from irswitch.commentary.tts import NullTtsSink
@@ -146,6 +146,60 @@ async def test_commentary_consumer_thaws_and_speaks_without_overlay_bus() -> Non
 
     assert [item.text for item in sink.spoken] == ["A lap is complete."]
     assert director.hero_names() == ("Alex",)
+
+
+def test_context_bindings_require_exact_driver_identity_and_localize_situation() -> None:
+    fanout = AsyncEventFanout()
+    subscription = fanout.subscribe("commentary")
+    settings = CommentarySettings(enabled=True)
+    consumer = CommentaryConsumer(
+        subscription,
+        CommentaryDirector(graph=_graph(), settings=settings, sink=NullTtsSink()),
+        lambda: (settings, "en"),
+    )
+    envelope = make_envelope(
+        event_type="HUNTING",
+        target={"carId": "8"},
+        metrics={"targetCarIdx": 8},
+    )
+    profile = {
+        "session_id": "session",
+        "car_idx": 8,
+        "user_id": 80,
+        "identity_epoch": 2,
+        "i_rating": 2345,
+        "safety_rating": "A 3.42",
+        "car_name": "GT3",
+        "nationality": None,
+        "start_position": 4,
+    }
+    context = {
+        "race": {"player_car_idx": 7},
+        "story": {"driver_profiles": {"8": profile}},
+        "situation": {
+            "current_lap": 12,
+            "total_laps": 30,
+            "laps_remaining": 18,
+            "race_phase": "middle",
+        },
+    }
+
+    consumer._apply_context_bindings(envelope, context, context)
+
+    assert envelope.metrics["target_irating"] == "2.3 thousand"
+    assert envelope.metrics["target_car"] == "GT3"
+    assert envelope.metrics["target_nationality"] is None
+    assert envelope.metrics["lap_context"] == "lap 12 of 30"
+    assert envelope.metrics["race_phase"] == "middle phase"
+
+    changed = {
+        **context,
+        "story": {"driver_profiles": {"8": {**profile, "user_id": 81, "identity_epoch": 3}}},
+    }
+    rejected = make_envelope(event_type="HUNTING", target={"carId": "8"})
+    consumer._apply_context_bindings(rejected, context, changed)
+    assert "target_car" not in rejected.metrics
+    assert _spoken_irating(2345, "cs") == "2,3 tisíce"
 
 
 @pytest.mark.asyncio

@@ -21,9 +21,10 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.unfilled_cells() == []
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
+    assert graph.nodes_for("BATTLE_FOR_POSITION", "ENTER")[0].id == "two_front_battle"
     # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs
     # + observer fillers + session_checkered + N11 A + sparse B/C/D.
-    assert len(graph.nodes) == 52
+    assert len(graph.nodes) == 53
     assert "sector_split" in graph.nodes
     assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
     assert "session_intro_race" in graph.nodes
@@ -32,7 +33,7 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes["stream_start"].event_types == ("STREAM_START",)
     assert graph.nodes["stream_start"].tts.max_seconds >= 15.0
     assert graph.nodes["in_car_race"].modes == ("race",)
-    assert len(graph.edges) == 20
+    assert len(graph.edges) == 22
 
 
 def test_finish_ambiguous_lines_include_position() -> None:

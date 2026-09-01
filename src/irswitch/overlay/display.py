@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 CHANNEL_CAPACITY: dict[str, int] = {
-    "battle": 2,
+    # Independent front/rear relations plus the derived two-front fact.
+    "battle": 3,
     "lap": 1,
     "alert": 1,
     "session": 1,

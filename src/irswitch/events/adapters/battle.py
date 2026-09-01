@@ -56,10 +56,24 @@ def battle_race_event_to_envelope(
         for key in (
             "gap",
             "closingRate",
+            "direction",
+            "heroCarIdx",
             "targetCarIdx",
             "targetPosition",
             "position",
             "targetName",
+            "relationEpoch",
+            "heroPosition",
+            "frontTargetCarIdx",
+            "frontTargetName",
+            "frontTargetPosition",
+            "frontGap",
+            "frontRelationEpoch",
+            "rearTargetCarIdx",
+            "rearTargetName",
+            "rearTargetPosition",
+            "rearGap",
+            "rearRelationEpoch",
         )
         if key in event.data
     }
@@ -74,6 +88,19 @@ def battle_race_event_to_envelope(
     # Meta duel plate: cap client hold so it cannot stick after EXIT is missed.
     max_hold_ms = 8000 if battle_state == "battle_for_position" else 0
     target_name = event.data.get("targetName")
+    hero_idx = event.data.get("heroCarIdx", "player")
+    relation_epoch = event.data.get("relationEpoch", 0)
+    if battle_state == "battle_for_position":
+        front = event.data.get("frontTargetCarIdx", "unknown")
+        rear = event.data.get("rearTargetCarIdx", "unknown")
+        correlation_id = (
+            f"battle:two-front:{hero_idx}:{front}:{rear}:"
+            f"{event.data.get('frontRelationEpoch', 0)}:"
+            f"{event.data.get('rearRelationEpoch', 0)}"
+        )
+    else:
+        direction = event.data.get("direction") or ("rear" if battle_state == "hunted" else "front")
+        correlation_id = f"battle:{direction}:{hero_idx}:{target_idx or 'unknown'}:{relation_epoch}"
     return make_envelope(
         event_type=event_type,
         phase=phase,
@@ -82,10 +109,10 @@ def battle_race_event_to_envelope(
         occurred_at=datetime.fromtimestamp(time.time(), tz=UTC).isoformat(),
         monotonic_ms=int(now * 1000),
         priority=event.priority,
-        dedupe_key=f"{normalize_mode(mode)}:battle:{battle_state}",
-        correlation_id=f"battle:{battle_state}",
-        story_key=f"battle:{battle_state}",
-        subject=EventSubject(car_id="player"),
+        dedupe_key=f"{normalize_mode(mode)}:{correlation_id}:{battle_state}",
+        correlation_id=correlation_id,
+        story_key=correlation_id,
+        subject=EventSubject(car_id=str(hero_idx)),
         target=EventSubject(
             car_id=str(target_idx or "unknown"),
             class_position=target_pos if isinstance(target_pos, int) else None,

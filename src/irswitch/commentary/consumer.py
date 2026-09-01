@@ -168,6 +168,7 @@ class CommentaryConsumer:
                 self.duplicates += 1
                 continue
             envelope = thaw_envelope(accepted.envelope)
+            self._apply_context_bindings(envelope, context, latest)
             age_s = max(0.0, now - (batch.accepted_monotonic_ms / 1000.0))
             ttl_s = self.director.event_ttl_s(envelope.event_type)
             if age_s > ttl_s:
@@ -181,6 +182,9 @@ class CommentaryConsumer:
             self._remember(accepted.event_id)
         if not envelopes:
             return
+        envelopes = self._prefer_two_front(envelopes, latest, now)
+        if not envelopes:
+            return
         before = len(self.director.decisions(10_000))
         settings, language = self._get_settings()
         self.director.observe(
@@ -191,6 +195,119 @@ class CommentaryConsumer:
             language=language,
         )
         self._emit_new_decisions(before, now)
+
+    def _prefer_two_front(
+        self,
+        envelopes: list[EventEnvelope],
+        latest_context: dict[str, Any],
+        now: float,
+    ) -> list[EventEnvelope]:
+        composite = next(
+            (
+                envelope
+                for envelope in envelopes
+                if envelope.event_type == "BATTLE_FOR_POSITION"
+                and envelope.phase in {"ENTER", "ACTIVE", "UPDATE"}
+            ),
+            None,
+        )
+        if composite is None:
+            return envelopes
+        race = latest_context.get("race")
+        race = race if isinstance(race, dict) else {}
+        ahead = race.get("opponent_ahead")
+        behind = race.get("opponent_behind")
+        ahead = ahead if isinstance(ahead, dict) else {}
+        behind = behind if isinstance(behind, dict) else {}
+        front = composite.metrics.get("frontTargetCarIdx")
+        rear = composite.metrics.get("rearTargetCarIdx")
+        if ahead.get("car_idx") != front or behind.get("car_idx") != rear:
+            self._record_skip("stale_two_front_relation", now, composite.event_type)
+            return [envelope for envelope in envelopes if envelope is not composite]
+        parents = {
+            "HUNTING",
+            "APPROACH",
+            "ATTACK_RANGE",
+            "SIDE_BY_SIDE",
+            "HUNTED",
+        }
+        filtered: list[EventEnvelope] = []
+        for envelope in envelopes:
+            if envelope.event_type in parents and envelope.phase in {"ENTER", "ACTIVE"}:
+                self._record_skip("covered_by_two_front", now, envelope.event_type)
+                continue
+            filtered.append(envelope)
+        return filtered
+
+    def _apply_context_bindings(
+        self,
+        envelope: EventEnvelope,
+        embedded: dict[str, Any],
+        latest: dict[str, Any],
+    ) -> None:
+        _, language = self._get_settings()
+        race = embedded.get("race")
+        race = race if isinstance(race, dict) else {}
+        story = embedded.get("story")
+        story = story if isinstance(story, dict) else {}
+        profiles = story.get("driver_profiles")
+        profiles = profiles if isinstance(profiles, dict) else {}
+        latest_story = latest.get("story")
+        latest_story = latest_story if isinstance(latest_story, dict) else {}
+        latest_profiles = latest_story.get("driver_profiles")
+        latest_profiles = latest_profiles if isinstance(latest_profiles, dict) else {}
+        hero_idx = race.get("player_car_idx")
+        self._bind_profile(
+            envelope,
+            prefix="hero",
+            profile=profiles.get(str(hero_idx)),
+            latest_profile=latest_profiles.get(str(hero_idx)),
+            language=language,
+        )
+        target_idx: object | None = None
+        if envelope.target is not None and envelope.target.car_id not in {"", "unknown"}:
+            target_idx = envelope.target.car_id
+        if target_idx is None:
+            target_idx = envelope.metrics.get("targetCarIdx")
+        self._bind_profile(
+            envelope,
+            prefix="target",
+            profile=profiles.get(str(target_idx)),
+            latest_profile=latest_profiles.get(str(target_idx)),
+            language=language,
+        )
+        situation = embedded.get("situation")
+        situation = situation if isinstance(situation, dict) else {}
+        envelope.metrics.setdefault("current_lap", situation.get("current_lap"))
+        envelope.metrics.setdefault("lap_context", _lap_context(situation, language=language))
+        envelope.metrics.setdefault(
+            "race_phase", _race_phase_label(situation.get("race_phase"), language=language)
+        )
+        envelope.metrics.setdefault(
+            "remaining_context", _remaining_context(situation, language=language)
+        )
+
+    @staticmethod
+    def _bind_profile(
+        envelope: EventEnvelope,
+        *,
+        prefix: str,
+        profile: object,
+        latest_profile: object,
+        language: str,
+    ) -> None:
+        if not isinstance(profile, dict) or not isinstance(latest_profile, dict):
+            return
+        identity = ("session_id", "car_idx", "user_id", "identity_epoch")
+        if any(profile.get(key) != latest_profile.get(key) for key in identity):
+            return
+        envelope.metrics.setdefault(
+            f"{prefix}_irating", _spoken_irating(profile.get("i_rating"), language)
+        )
+        envelope.metrics.setdefault(f"{prefix}_safety_rating", profile.get("safety_rating"))
+        envelope.metrics.setdefault(f"{prefix}_car", profile.get("car_name"))
+        envelope.metrics.setdefault(f"{prefix}_nationality", profile.get("nationality"))
+        envelope.metrics.setdefault(f"{prefix}_start_position", profile.get("start_position"))
 
     def _idle_tick(self) -> None:
         latest_payload = self.subscription.latest_context
@@ -275,6 +392,10 @@ class CommentaryConsumer:
         for key in (
             "gap",
             "gapBehind",
+            "frontGap",
+            "rearGap",
+            "frontTargetName",
+            "rearTargetName",
             "target_name",
             "targetName",
             "position",
@@ -313,3 +434,63 @@ class CommentaryConsumer:
                 queue.get_nowait()
             except asyncio.QueueEmpty:
                 return
+
+
+def _spoken_irating(value: object, language: str) -> str | None:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        return None
+    if value < 1_000:
+        return str(value)
+    decimal = f"{value / 1000:.1f}".replace(".0", "")
+    if language.lower().startswith("cs"):
+        return f"{decimal.replace('.', ',')} tisíce"
+    return f"{decimal} thousand"
+
+
+def _lap_context(situation: dict[str, Any], *, language: str) -> str | None:
+    current = situation.get("current_lap")
+    total = situation.get("total_laps")
+    if not isinstance(current, int) or current <= 0:
+        return None
+    if language.lower().startswith("cs"):
+        return f"{current}. kolo z {total}" if isinstance(total, int) else f"{current}. kolo"
+    return f"lap {current} of {total}" if isinstance(total, int) else f"lap {current}"
+
+
+def _race_phase_label(value: object, *, language: str) -> str | None:
+    key = str(value or "")
+    if language.lower().startswith("cs"):
+        return {
+            "opening": "úvodní fáze",
+            "middle": "střední fáze",
+            "closing": "závěrečná fáze",
+            "final_lap": "poslední kolo",
+            "checkered": "šachovnicová vlajka",
+            "finished": "cíl",
+        }.get(key)
+    return {
+        "opening": "opening phase",
+        "middle": "middle phase",
+        "closing": "closing phase",
+        "final_lap": "final lap",
+        "checkered": "checkered phase",
+        "finished": "finish",
+    }.get(key)
+
+
+def _remaining_context(situation: dict[str, Any], *, language: str) -> str | None:
+    laps = situation.get("laps_remaining")
+    if isinstance(laps, (int, float)) and not isinstance(laps, bool) and laps >= 0:
+        count = int(laps)
+        return (
+            f"zbývá {count} kol" if language.lower().startswith("cs") else f"{count} laps remaining"
+        )
+    seconds = situation.get("session_time_remaining_s")
+    if isinstance(seconds, (int, float)) and not isinstance(seconds, bool) and seconds >= 0:
+        minutes = max(1, round(float(seconds) / 60))
+        return (
+            f"zbývá {minutes} minut"
+            if language.lower().startswith("cs")
+            else f"{minutes} minutes remaining"
+        )
+    return None

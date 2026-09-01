@@ -20,6 +20,7 @@ class _Track:
     intensity_since: float = 0.0
     last_update_at: float = 0.0
     last_update_gap: float | None = None
+    relation_epoch: int = 0
 
 
 def _payload_gap(payload: dict) -> float | None:
@@ -37,11 +38,18 @@ class BattleEmitter:
     hunting: _Track = field(default_factory=_Track)
     hunted: _Track = field(default_factory=_Track)
     _battle_for_position_active: bool = False
+    _battle_for_position_key: tuple[int, int, int, int] | None = None
     _hunting_peak: str = "hunting"
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
         if state.session_finished or state.mute_field:
-            return self._abort_active(state, now)
+            return self._abort_active(state, now, reason="session_finished")
+        if state.on_pit_road:
+            return self._abort_active(state, now, reason="pit_cycle")
+        if state.data_quality == "stale" or (
+            state.stale_for_ms is not None and state.stale_for_ms > 3_000
+        ):
+            return self._abort_active(state, now, reason="stale_relation")
         events: list[CandidateEvent] = []
         events.extend(
             self._tick_direction(
@@ -75,37 +83,83 @@ class BattleEmitter:
                 intensity_ladder=False,
             )
         )
-        events.extend(self._meta_battle_events(state, now))
+        events.extend(self._meta_battle_events(state, now, parents_changed=bool(events)))
         return events
 
-    def _meta_battle_events(self, state: RaceState, now: float) -> list[CandidateEvent]:
+    def _meta_battle_events(
+        self, state: RaceState, now: float, *, parents_changed: bool = False
+    ) -> list[CandidateEvent]:
         events: list[CandidateEvent] = []
         both = self.hunting.state == "ACTIVE" and self.hunted.state == "ACTIVE"
+        front_idx = self.hunting.target_car_idx
+        rear_idx = self.hunted.target_car_idx
+        key = (
+            front_idx or -1,
+            self.hunting.relation_epoch,
+            rear_idx or -1,
+            self.hunted.relation_epoch,
+        )
+        payload = {
+            "state": "battle_for_position",
+            "heroCarIdx": state.player_car_idx,
+            "heroPosition": state.position,
+            "position": state.position,
+            "frontTargetCarIdx": front_idx,
+            "frontTargetName": getattr(state.opponent_ahead, "display_name", None),
+            "frontTargetPosition": getattr(state.opponent_ahead, "position", None),
+            "frontGap": state.gap_ahead,
+            "frontRelationEpoch": self.hunting.relation_epoch,
+            "rearTargetCarIdx": rear_idx,
+            "rearTargetName": getattr(state.opponent_behind, "display_name", None),
+            "rearTargetPosition": getattr(state.opponent_behind, "position", None),
+            "rearGap": state.gap_behind,
+            "rearRelationEpoch": self.hunted.relation_epoch,
+        }
         if both and not self._battle_for_position_active:
             self._battle_for_position_active = True
+            self._battle_for_position_key = key
             events.append(
                 CandidateEvent(
                     name="battle",
                     channel="battle",
                     priority=self.priorities.battle_start,
                     phase="enter",
-                    data={
-                        "state": "battle_for_position",
-                        "position": state.position,
-                        "gap": state.gap_ahead,
-                        "targetCarIdx": getattr(state.opponent_ahead, "car_idx", None),
-                        "targetPosition": getattr(state.opponent_ahead, "position", None),
-                        **(
-                            {"targetName": state.opponent_ahead.display_name}
-                            if state.opponent_ahead is not None
-                            and state.opponent_ahead.display_name
-                            else {}
-                        ),
-                    },
+                    data=payload,
+                )
+            )
+        elif both and self._battle_for_position_key != key:
+            events.append(
+                CandidateEvent(
+                    name="battle",
+                    channel="battle",
+                    priority=self.priorities.battle_start,
+                    phase="exit",
+                    data={"state": "battle_for_position", "reason": "target_change"},
+                )
+            )
+            self._battle_for_position_key = key
+            events.append(
+                CandidateEvent(
+                    name="battle",
+                    channel="battle",
+                    priority=self.priorities.battle_start,
+                    phase="enter",
+                    data=payload,
+                )
+            )
+        elif both and parents_changed:
+            events.append(
+                CandidateEvent(
+                    name="battle",
+                    channel="battle",
+                    priority=self.priorities.battle_start,
+                    phase="update",
+                    data=payload,
                 )
             )
         elif not both and self._battle_for_position_active:
             self._battle_for_position_active = False
+            self._battle_for_position_key = None
             events.append(
                 CandidateEvent(
                     name="battle",
@@ -144,9 +198,10 @@ class BattleEmitter:
         self.hunting = _Track()
         self.hunted = _Track()
         self._battle_for_position_active = False
+        self._battle_for_position_key = None
         self._hunting_peak = "hunting"
 
-    def _abort_active(self, state: RaceState, now: float) -> list[CandidateEvent]:
+    def _abort_active(self, state: RaceState, now: float, *, reason: str) -> list[CandidateEvent]:
         events: list[CandidateEvent] = []
         for track, name, priority, intensity_ladder, battle_state in (
             (self.hunting, "battle", self.priorities.hunting, True, "hunting"),
@@ -164,14 +219,14 @@ class BattleEmitter:
                     channel="battle",
                     priority=priority,
                     phase="exit",
-                    data={"state": exit_state, "reason": "session_finished"},
+                    data={"state": exit_state, "reason": reason},
                 )
             )
             track.state = "NONE"
             track.intensity = battle_state
             track.fail_since = None
             track.target_car_idx = None
-        events.extend(self._meta_battle_events(state, now))
+        events.extend(self._meta_battle_events(state, now, parents_changed=bool(events)))
         return events
 
     def _tick_direction(
@@ -219,6 +274,9 @@ class BattleEmitter:
 
         payload = {
             "state": active_state,
+            "direction": "front" if battle_state == "hunting" else "rear",
+            "heroCarIdx": state.player_car_idx,
+            "relationEpoch": track.relation_epoch,
             "targetCarIdx": car_idx,
             "targetPosition": position,
             "gap": gap,
@@ -246,11 +304,16 @@ class BattleEmitter:
             track.state = "NONE"
             track.intensity = battle_state
             track.target_car_idx = car_idx
+            track.relation_epoch += 1
+            payload["relationEpoch"] = track.relation_epoch
             track.since = now
             track.fail_since = None
 
         if track.state == "NONE":
             if enter_ok:
+                if track.target_car_idx != car_idx:
+                    track.relation_epoch += 1
+                    payload["relationEpoch"] = track.relation_epoch
                 track.state = "CANDIDATE"
                 track.since = now
                 track.target_car_idx = car_idx

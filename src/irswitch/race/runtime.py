@@ -43,9 +43,10 @@ from irswitch.overlay.session import (
 from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
+from irswitch.race.driver_facts import DriverFactLedger
 from irswitch.race.grid_story import QUALI_RECAP
 from irswitch.race.observer import RaceObserver
-from irswitch.race.pipeline import AcceptedRecord, RacePipeline
+from irswitch.race.pipeline import AcceptedRecord, RacePipeline, build_situation_payload
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
 from irswitch.sampling.scheduler import SamplingScheduler, resolve_component_hz
@@ -108,13 +109,17 @@ class RaceRuntime:
         self._prev_bio_status: str | None = None
         self._pending_derived_speech: list[EventEnvelope] = []
         self._pending_stream_records: list[AcceptedRecord] = []
+        self._last_situation_phase: str | None = None
+        self._last_situation_fact_at = 0.0
         self._tape = OverlaySessionTape()
         self._tape_decision_cursor = 0
         self._stories_sig: tuple[tuple[object, ...], ...] | None = None
         self._last_race = RaceState()
+        self._last_snapshot = TelemetrySnapshot()
         self._hud_live = False
         self._running = False
         self.race_observer = RaceObserver(settings=overlay.race_observer)
+        self.driver_facts = DriverFactLedger()
         director = self._build_commentary(overlay)
         if director is None:
             director = CommentaryDirector.from_defaults(
@@ -139,6 +144,8 @@ class RaceRuntime:
         self.session.add_reset_hook(self.race_observer.reset_session)
         self.session.add_reset_hook(self.in_car.reset)
         self.session.add_reset_hook(self.session_briefs.reset)
+        self.session.add_reset_hook(self.driver_facts.reset)
+        self.session.add_reset_hook(self._reset_situation_facts)
 
     def _init_managers(self, overlay: OverlaySettings) -> None:
         if overlay.event_engine.v2_payload:
@@ -436,17 +443,57 @@ class RaceRuntime:
 
     def _capture_context(self, state: RaceState, now: float) -> None:
         overlay = self._overlay_settings()
+        telemetry_data = self._session_brief_data()
+        self.driver_facts.refresh(
+            telemetry_data,
+            self._last_snapshot,
+            session_id=self._session_id(state),
+            observed_monotonic_ms=int(now * 1000),
+        )
         self.pipeline.capture_context(
             race=state,
             bio=self.bus.bio,
             story=self.race_observer.context,
-            telemetry_data=self._session_brief_data(),
+            telemetry_data=telemetry_data,
             captured_monotonic_ms=int(now * 1000),
             language=overlay.language,
             commentary_enabled=bool(overlay.commentary.enabled),
             config_generation=self._config_generation,
-            driver_profiles=None,
+            driver_profiles=self.driver_facts.profiles_snapshot(),
         )
+
+    def _reset_situation_facts(self) -> None:
+        self._last_situation_phase = None
+        self._last_situation_fact_at = 0.0
+
+    def _collect_situation_fact(
+        self, state: RaceState, now: float, existing: list[AcceptedRecord]
+    ) -> AcceptedRecord | None:
+        if state.overlay_mode != "RACE" or not state.connected or state.mute_field:
+            return None
+        if any(record.envelope.priority > 28 for record in existing):
+            return None
+        situation = build_situation_payload(state, self._session_brief_data(), int(now * 1000))
+        phase = str(situation.get("race_phase") or "unknown")
+        current_lap = situation.get("current_lap")
+        due = phase != self._last_situation_phase or now - self._last_situation_fact_at >= 120
+        if not due or (phase == "unknown" and current_lap is None):
+            return None
+        self._last_situation_phase = phase
+        self._last_situation_fact_at = now
+        envelope = make_envelope(
+            event_type="FIELD_FACT",
+            phase="RESULT",
+            mode="RACE",
+            priority=28,
+            monotonic_ms=int(now * 1000),
+            correlation_id=f"situation:{phase}",
+            metrics={
+                "current_lap": current_lap,
+                "situationPhase": phase,
+            },
+        )
+        return AcceptedRecord(envelope, "filler")
 
     def _ensure_context(self, now: float) -> None:
         if self.pipeline.context_payload is not None:
@@ -649,6 +696,7 @@ class RaceRuntime:
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
+            self._last_snapshot = snap
             self._observe_timing(
                 snap, session_finished=bool(state.mute_field or state.session_finished)
             )
@@ -676,6 +724,9 @@ class RaceRuntime:
         if self._pending_stream_records:
             records.extend(self._pending_stream_records)
             self._pending_stream_records = []
+        situation_fact = self._collect_situation_fact(state, now, records)
+        if situation_fact is not None:
+            records.append(situation_fact)
         self.pipeline.publish_records(records, accepted_monotonic_ms=int(now * 1000))
 
     async def _read_telemetry(self) -> TelemetrySnapshot:
