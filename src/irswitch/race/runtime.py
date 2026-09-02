@@ -840,6 +840,8 @@ class RaceRuntime:
             self._observe_race_story(snap, state, now)
         self.pipeline.reset_session(self._session_id(state), reason="session_changed")
         self.pipeline.reset_run(state.run_epoch)
+        if self.manager_v2 is not None:
+            self.manager_v2.set_run_epoch(state.run_epoch)
         self._last_race = state
         self._sync_tape(state, now)
         if self._idle_when_disconnected(state, now):

@@ -27,7 +27,7 @@ from typing import Any, cast
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.session_context import SessionContext, SessionContextCache, session_key
 from irswitch.iracing.sof import RosterRow, compute_sof_bundle, format_sof_label
-from irswitch.iracing.weather import extract_weather, spoken_weather_bindings
+from irswitch.iracing.weather import LocaleCode, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.session import (
     MODE_PRACTICE,
@@ -268,7 +268,7 @@ class SessionBriefsDetector:
             metrics["track"] = track
         if data is not None:
             snap = extract_weather(data, prefer="live")
-            loc = "cs" if str(locale).lower().startswith("cs") else "en"
+            loc: LocaleCode = "cs" if str(locale).lower().startswith("cs") else "en"
             for key, value in spoken_weather_bindings(snap, loc).items():
                 if value:
                     metrics[key] = value

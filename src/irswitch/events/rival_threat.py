@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from math import isfinite
 
-from irswitch.overlay.models import RaceState
+from irswitch.overlay.models import OpponentInfo, RaceState
 from irswitch.overlay.protocol import CandidateEvent
 from irswitch.overlay.settings import EventPrioritySettings, EventSettings
 
@@ -29,6 +29,7 @@ class RivalThreatEmitter:
         opp = state.opponent_behind
         if not _valid_relation(state, gap, closing, opp):
             return self._clear(now)
+        assert opp is not None
         if self._active:
             return []
         if now < self._cooldown_until:
@@ -77,7 +78,7 @@ def _valid_relation(
     state: RaceState,
     gap: float | None,
     closing: float | None,
-    opponent: object | None,
+    opponent: OpponentInfo | None,
 ) -> bool:
     if opponent is None or isinstance(gap, bool) or isinstance(closing, bool):
         return False

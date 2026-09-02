@@ -7,7 +7,7 @@ import json
 import logging
 from collections.abc import Iterable
 from copy import deepcopy
-from typing import Any, cast
+from typing import Any
 
 from aiohttp.web_ws import WebSocketResponse
 
@@ -56,10 +56,7 @@ class OverlayBus:
         self._lock = asyncio.Lock()
 
     def snapshot(self) -> dict[str, Any]:
-        return cast(
-            "dict[str, Any]",
-            snapshot_envelope(self.race, self.bio, self.system, self.active_events),
-        )
+        return snapshot_envelope(self.race, self.bio, self.system, self.active_events)
 
     async def add_client(self, ws: WebSocketResponse, extra: dict[str, Any] | None = None) -> None:
         self._clients.add(ws)

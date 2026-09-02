@@ -12,7 +12,7 @@ from irswitch.events.manager_v2 import event_v4_wire
 from irswitch.events.stream import thaw_context, thaw_envelope
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.models import BioState, RaceState, TelemetrySnapshot
-from irswitch.overlay.settings import OverlaySettings
+from irswitch.overlay.settings import EventEngineFeatureSettings, OverlaySettings
 from irswitch.race.narrative import StreamNarrativeFsm
 from irswitch.race.pipeline import RacePipeline, build_situation_payload
 from irswitch.race.run import RunClock
@@ -178,7 +178,8 @@ def test_session_switch_does_not_invent_final_classification_and_epoch_can_wrap_
 
 @pytest.mark.asyncio
 async def test_runtime_rewind_resets_registered_stores_once_before_observing(monkeypatch):
-    runtime = RaceRuntime(lambda: SimpleNamespace(overlay=OverlaySettings()), None, OverlayBus())
+    settings = OverlaySettings(event_engine=EventEngineFeatureSettings(v2_payload=True))
+    runtime = RaceRuntime(lambda: SimpleNamespace(overlay=settings), None, OverlayBus())
     clock = [10.0]
     monkeypatch.setattr("irswitch.race.runtime.time.monotonic", lambda: clock[0])
     snapshot = [
@@ -210,5 +211,7 @@ async def test_runtime_rewind_resets_registered_stores_once_before_observing(mon
     assert resets == [10.0, 10.4]
     assert runtime.manager is not initial_manager
     assert runtime._last_race.run_epoch == 1
+    assert runtime.manager_v2 is not None
+    assert runtime.manager_v2._run_epoch == 1
     assert thaw_context(runtime.pipeline.context_payload)["story"]["run_epoch"] == 1
     assert runtime.race_observer.context.run_epoch == 1

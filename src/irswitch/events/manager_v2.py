@@ -294,4 +294,4 @@ def event_v4_wire(envelope: EventEnvelope) -> dict[str, Any]:
     payload = envelope.to_dict()
     payload["type"] = "event"
     payload["format"] = "v4"
-    return cast("dict[str, Any]", payload)
+    return payload
