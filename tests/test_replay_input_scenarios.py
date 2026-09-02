@@ -46,6 +46,22 @@ def test_empty_fixture_produces_no_events(tmp_path: Path) -> None:
     assert result.event_sequence() == []
 
 
+def test_battle_won_requires_confirmed_order_change() -> None:
+    fixture = load_fixture(FIXTURES_DIR / "scenario_16_battle_won.json")
+    for tick in fixture["ticks"][-2:]:
+        tick["race"]["position"] = 6
+        tick["race"]["opponent_ahead"] = {
+            "car_idx": 17,
+            "position": 5,
+            "gap": 5.0,
+            "closing_rate": -0.1,
+        }
+        tick["race"].pop("opponent_behind", None)
+    result = ReplayInputRunner().run_fixture(fixture)
+    assert ("BATTLE_WON", "RESULT") not in result.event_sequence()
+    assert ("SIDE_BY_SIDE", "EXIT") in result.event_sequence()
+
+
 def test_session_reset_clears_emitter_state() -> None:
     runner = ReplayInputRunner()
     hunting_tick = {
@@ -53,6 +69,7 @@ def test_session_reset_clears_emitter_state() -> None:
         "race": {
             "connected": True,
             "player_car_idx": 4,
+            "position": 7,
             "opponent_ahead": {
                 "car_idx": 17,
                 "position": 6,

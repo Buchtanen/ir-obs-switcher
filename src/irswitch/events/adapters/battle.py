@@ -100,7 +100,8 @@ def battle_race_event_to_envelope(
         )
     else:
         direction = event.data.get("direction") or ("rear" if battle_state == "hunted" else "front")
-        correlation_id = f"battle:{direction}:{hero_idx}:{target_idx or 'unknown'}:{relation_epoch}"
+        target_id = target_idx if target_idx is not None else "unknown"
+        correlation_id = f"battle:{direction}:{hero_idx}:{target_id}:{relation_epoch}"
     return make_envelope(
         event_type=event_type,
         phase=phase,
@@ -114,7 +115,7 @@ def battle_race_event_to_envelope(
         story_key=correlation_id,
         subject=EventSubject(car_id=str(hero_idx)),
         target=EventSubject(
-            car_id=str(target_idx or "unknown"),
+            car_id=str(target_idx if target_idx is not None else "unknown"),
             class_position=target_pos if isinstance(target_pos, int) else None,
             display_name=str(target_name) if target_name else None,
         ),

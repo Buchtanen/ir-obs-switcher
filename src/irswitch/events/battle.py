@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import isfinite
+from typing import TypeGuard
 
 from irswitch.events.battle_intensity import resolve_hunting_intensity
 from irswitch.overlay.models import RaceState
@@ -21,13 +23,38 @@ class _Track:
     last_update_at: float = 0.0
     last_update_gap: float | None = None
     relation_epoch: int = 0
+    last_payload: dict = field(default_factory=dict)
+    entry_position: int | None = None
+    entry_class_position: int | None = None
 
 
 def _payload_gap(payload: dict) -> float | None:
     gap = payload.get("gap")
     if isinstance(gap, bool) or not isinstance(gap, (int, float)):
         return None
-    return float(gap)
+    return float(gap) if isfinite(gap) and gap >= 0 else None
+
+
+def _finite_number(value: object) -> TypeGuard[int | float]:
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and isfinite(value)
+
+
+def _direction_valid(state: RaceState, target: object, direction: str) -> bool:
+    """Compare like-for-like standings; never mix class and overall positions."""
+    hero_pos = state.class_position
+    target_pos = getattr(target, "class_position", None)
+    if hero_pos is None or target_pos is None:
+        hero_pos, target_pos = state.position, getattr(target, "position", None)
+    if not isinstance(hero_pos, int) or not isinstance(target_pos, int):
+        return False
+    if (
+        isinstance(hero_pos, bool)
+        or isinstance(target_pos, bool)
+        or hero_pos <= 0
+        or target_pos <= 0
+    ):
+        return False
+    return bool(target_pos < hero_pos if direction == "hunting" else target_pos > hero_pos)
 
 
 @dataclass
@@ -39,6 +66,7 @@ class BattleEmitter:
     hunted: _Track = field(default_factory=_Track)
     _battle_for_position_active: bool = False
     _battle_for_position_key: tuple[int, int, int, int] | None = None
+    _battle_for_position_payload: dict = field(default_factory=dict)
     _hunting_peak: str = "hunting"
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
@@ -94,9 +122,9 @@ class BattleEmitter:
         front_idx = self.hunting.target_car_idx
         rear_idx = self.hunted.target_car_idx
         key = (
-            front_idx or -1,
+            front_idx if front_idx is not None else -1,
             self.hunting.relation_epoch,
-            rear_idx or -1,
+            rear_idx if rear_idx is not None else -1,
             self.hunted.relation_epoch,
         )
         payload = {
@@ -118,6 +146,7 @@ class BattleEmitter:
         if both and not self._battle_for_position_active:
             self._battle_for_position_active = True
             self._battle_for_position_key = key
+            self._battle_for_position_payload = dict(payload)
             events.append(
                 CandidateEvent(
                     name="battle",
@@ -134,10 +163,11 @@ class BattleEmitter:
                     channel="battle",
                     priority=self.priorities.battle_start,
                     phase="exit",
-                    data={"state": "battle_for_position", "reason": "target_change"},
+                    data={**self._battle_for_position_payload, "reason": "target_change"},
                 )
             )
             self._battle_for_position_key = key
+            self._battle_for_position_payload = dict(payload)
             events.append(
                 CandidateEvent(
                     name="battle",
@@ -148,6 +178,7 @@ class BattleEmitter:
                 )
             )
         elif both and parents_changed:
+            self._battle_for_position_payload = dict(payload)
             events.append(
                 CandidateEvent(
                     name="battle",
@@ -166,9 +197,10 @@ class BattleEmitter:
                     channel="battle",
                     priority=self.priorities.battle_start,
                     phase="exit",
-                    data={"state": "battle_for_position"},
+                    data=dict(self._battle_for_position_payload),
                 )
             )
+            self._battle_for_position_payload = {}
         if self.hunting.state == "ACTIVE" and self.hunting.intensity in {
             "attack_range",
             "side_by_side",
@@ -176,10 +208,39 @@ class BattleEmitter:
             self._hunting_peak = self.hunting.intensity
         return events
 
-    def _maybe_battle_won(self, exit_intensity: str, state: RaceState) -> CandidateEvent | None:
+    def _maybe_battle_won(
+        self, exit_intensity: str, state: RaceState, track: _Track
+    ) -> CandidateEvent | None:
         if exit_intensity not in {"attack_range", "side_by_side"}:
             return None
+        current = state.class_position if track.entry_class_position is not None else state.position
+        entered = (
+            track.entry_class_position
+            if track.entry_class_position is not None
+            else track.entry_position
+        )
+        former_target = state.opponent_behind
+        target_id = track.target_car_idx
+        target_position = (
+            getattr(former_target, "class_position", None)
+            if track.entry_class_position is not None
+            else getattr(former_target, "position", None)
+        )
+        if (
+            not isinstance(current, int)
+            or isinstance(current, bool)
+            or not isinstance(entered, int)
+            or isinstance(entered, bool)
+            or current >= entered
+            or former_target is None
+            or getattr(former_target, "car_idx", None) != target_id
+            or not isinstance(target_position, int)
+            or isinstance(target_position, bool)
+            or target_position <= current
+        ):
+            return None
         self._hunting_peak = "hunting"
+        target_name = getattr(former_target, "display_name", None)
         return CandidateEvent(
             name="battle",
             channel="battle",
@@ -187,9 +248,11 @@ class BattleEmitter:
             phase="trigger",
             data={
                 "state": "battle_won",
-                "position": state.position,
-                "oldPosition": (state.position + 1) if state.position else None,
-                "newPosition": state.position,
+                "position": current,
+                "oldPosition": entered,
+                "newPosition": current,
+                "targetCarIdx": target_id,
+                **({"targetName": target_name} if target_name else {}),
             },
             duration=4.0,
         )
@@ -199,6 +262,7 @@ class BattleEmitter:
         self.hunted = _Track()
         self._battle_for_position_active = False
         self._battle_for_position_key = None
+        self._battle_for_position_payload = {}
         self._hunting_peak = "hunting"
 
     def _abort_active(self, state: RaceState, now: float, *, reason: str) -> list[CandidateEvent]:
@@ -219,7 +283,7 @@ class BattleEmitter:
                     channel="battle",
                     priority=priority,
                     phase="exit",
-                    data={"state": exit_state, "reason": reason},
+                    data={**track.last_payload, "state": exit_state, "reason": reason},
                 )
             )
             track.state = "NONE"
@@ -248,9 +312,16 @@ class BattleEmitter:
         events: list[CandidateEvent] = []
         car_idx = getattr(target, "car_idx", None) if target is not None else None
         position = getattr(target, "position", None) if target is not None else None
+        source_valid = (
+            _finite_number(gap)
+            and gap >= 0
+            and _finite_number(closing)
+            and _direction_valid(state, target, battle_state)
+        )
         enter_ok = (
             connected
             and car_idx is not None
+            and source_valid
             and gap is not None
             and gap < cfg.enter_gap
             and closing is not None
@@ -260,6 +331,7 @@ class BattleEmitter:
             connected
             and car_idx is not None
             and track.target_car_idx == car_idx
+            and source_valid
             and gap is not None
             and gap <= cfg.exit_gap
             and closing is not None
@@ -284,7 +356,7 @@ class BattleEmitter:
 
         active_state = (
             resolve_hunting_intensity(gap, closing, track.intensity, cfg)
-            if intensity_ladder and track.state == "ACTIVE"
+            if intensity_ladder and track.state == "ACTIVE" and source_valid
             else battle_state
         )
 
@@ -304,6 +376,10 @@ class BattleEmitter:
 
         if track.target_car_idx is not None and car_idx != track.target_car_idx:
             if track.state == "ACTIVE":
+                if intensity_ladder and battle_state == "hunting":
+                    won = self._maybe_battle_won(track.intensity, state, track)
+                    if won is not None:
+                        events.append(won)
                 events.append(
                     CandidateEvent(
                         name=event_name,
@@ -311,7 +387,7 @@ class BattleEmitter:
                         priority=priority,
                         phase="exit",
                         data={
-                            **payload,
+                            **track.last_payload,
                             "state": track.intensity if intensity_ladder else battle_state,
                             "reason": "target_change",
                             "targetCarIdx": track.target_car_idx,
@@ -342,6 +418,8 @@ class BattleEmitter:
                     track.intensity_since = now
                     track.last_update_at = now
                     track.last_update_gap = _payload_gap(payload)
+                    track.entry_position = state.position
+                    track.entry_class_position = state.class_position
                     events.append(
                         CandidateEvent(
                             name=event_name,
@@ -363,6 +441,8 @@ class BattleEmitter:
                 track.intensity_since = now
                 track.last_update_at = now
                 track.last_update_gap = _payload_gap(payload)
+                track.entry_position = state.position
+                track.entry_class_position = state.class_position
                 events.append(
                     CandidateEvent(
                         name=event_name,
@@ -401,10 +481,10 @@ class BattleEmitter:
             else:
                 if track.fail_since is None:
                     track.fail_since = now
-                elif now - track.fail_since >= cfg.exit_delay:
+                if not source_valid or now - track.fail_since >= cfg.exit_delay:
                     exit_state = track.intensity if intensity_ladder else battle_state
                     if intensity_ladder and battle_state == "hunting":
-                        won = self._maybe_battle_won(exit_state, state)
+                        won = self._maybe_battle_won(exit_state, state, track)
                         if won is not None:
                             events.append(won)
                     events.append(
@@ -413,13 +493,20 @@ class BattleEmitter:
                             channel="battle",
                             priority=priority,
                             phase="exit",
-                            data={**payload, "state": exit_state},
+                            data={
+                                **(payload if source_valid else track.last_payload),
+                                "state": exit_state,
+                                **({"reason": "invalid_relation"} if not source_valid else {}),
+                            },
                         )
                     )
                     track.state = "NONE"
                     track.intensity = battle_state
                     track.fail_since = None
                     track.target_car_idx = None
+        for event in events:
+            if event.phase in {"enter", "update"}:
+                track.last_payload = dict(event.data)
         return events
 
     @staticmethod

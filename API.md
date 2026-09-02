@@ -856,7 +856,7 @@ Když je v `config.ini` zapnuto `[event_engine] v2_payload = true`, transientní
 | `type` | Kdy | Účel |
 |--------|-----|------|
 | `snapshot` | hned po connectu | race / bio / system + `activeEvents` (legacy aktivní eventy) |
-| `STATE_SNAPSHOT` | po connectu, pokud běží V4 stories | autoritativní seznam aktivních V4 příběhů (`activeStories`) |
+| `STATE_SNAPSHOT` | vždy po connectu a coalesced po změně V4 stories | autoritativní seznam aktivních V4 příběhů (`activeStories`), i prázdný |
 | `state` | coalesced | doménový patch (`race`, `bio`, `system`) |
 | `event` | okamžitě | transientní událost — legacy nebo V4 podle flagu |
 
@@ -906,7 +906,7 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 
 Časy v `metrics` jsou **sekundy** (iRSDK float). HUD je formátuje jako `m:ss.fff` a delty jako `+0.318` / `-0.418`. Do WS neposílej předformátované stringy.
 
-**`STATE_SNAPSHOT`** — druhá zpráva po reconnectu, pokud manager drží aktivní V4 stories:
+**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Poslední `EXIT` a session reset posílají `activeStories: []`, které ruší předchozí persistentní stav. Nezměněný seznam se znovu neposílá:
 
 ```json
 {
