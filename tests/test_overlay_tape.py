@@ -82,6 +82,13 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
             "storyRevision": 1,
             "runEpoch": 0,
             "heroOrderRevision": 0,
+            "graphMode": "shadow",
+            "decision": "selected",
+            "eventId": "event:1",
+            "semanticKey": "lap:1",
+            "score": 51.0,
+            "threshold": 45.0,
+            "components": {"base": 50.0, "transition": 1.0},
         },
         111.3,
         _race(),
@@ -93,6 +100,9 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     assert rows[0]["t_stream"] == pytest.approx(10.0)
     assert rows[0]["t_session"] == pytest.approx(12.5)
     assert rows[0]["t_green"] == pytest.approx(0.0)
+    commentary = next(row for row in rows if row["type"] == "commentary")
+    assert commentary["graphMode"] == "shadow"
+    assert commentary["components"]["base"] == 50.0
     assert "event" in types
     assert "decision" in types
     assert "stories" in types

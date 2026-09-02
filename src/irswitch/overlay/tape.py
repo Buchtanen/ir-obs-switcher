@@ -237,6 +237,14 @@ class OverlaySessionTape:
                 "heroOrderRevision": entry.get(
                     "heroOrderRevision", entry.get("hero_order_revision")
                 ),
+                "graphMode": entry.get("graphMode"),
+                "decision": entry.get("decision"),
+                "eventId": entry.get("eventId"),
+                "semanticKey": entry.get("semanticKey"),
+                "score": entry.get("score"),
+                "threshold": entry.get("threshold"),
+                "components": entry.get("components"),
+                "error": entry.get("error"),
             },
         )
 

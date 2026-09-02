@@ -18,6 +18,7 @@ from typing import Any, Protocol
 
 from irswitch.commentary.duck import ducker_from_settings
 from irswitch.commentary.graph import GraphNode
+from irswitch.commentary.graph_runtime import GraphCandidate
 from irswitch.commentary.polish import PolishOutcome, polish_skeleton
 from irswitch.commentary.speech_hero import mix_hero_name
 from irswitch.commentary.speech_numbers import numbers_to_words
@@ -33,6 +34,7 @@ CancelProbe = Callable[[], bool]
 PolishDebugHook = Callable[[dict[str, Any]], None]
 SpokenTextHook = Callable[[str], None]
 StoryDebugHook = Callable[[dict[str, Any]], None]
+GraphLifecycleHook = Callable[[str, GraphCandidate, float], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
 
 
@@ -65,6 +67,7 @@ class CommentaryUtterance:
     composition_path: tuple[str, ...] = ()
     graph_path: tuple[str, ...] = ()
     story_token: MiniStoryToken | None = None
+    graph_candidate: GraphCandidate | None = None
 
 
 @dataclass(frozen=True)
@@ -101,6 +104,7 @@ class NullTtsSink:
     force_busy: bool = False
     dropped: list[CommentaryUtterance] = field(default_factory=list)
     story_registry: MiniStoryRegistry | None = None
+    on_graph_lifecycle: GraphLifecycleHook | None = None
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         token = utterance.story_token
@@ -129,8 +133,11 @@ class NullTtsSink:
             self.spoken[-1] = utterance
             return
         self.spoken.append(utterance)
+        self._emit_graph_lifecycle("speaking", utterance)
         if self.story_registry is not None and token is not None and not self.force_busy:
             self.story_registry.complete(token)
+        if not self.force_busy:
+            self._emit_graph_lifecycle("completed", utterance)
 
     def interrupt(self) -> None:
         self.interrupted += 1
@@ -142,6 +149,16 @@ class NullTtsSink:
 
     def close(self) -> None:
         self.interrupt()
+
+    def _emit_graph_lifecycle(self, action: str, utterance: CommentaryUtterance) -> None:
+        hook = self.on_graph_lifecycle
+        candidate = utterance.graph_candidate
+        if hook is None or candidate is None:
+            return
+        try:
+            hook(action, candidate, time.monotonic())
+        except Exception:
+            logger.debug("commentary graph lifecycle hook failed", exc_info=True)
 
 
 @dataclass
@@ -161,6 +178,7 @@ class ProcessTtsSink:
     on_polish_debug: PolishDebugHook | None = None
     on_spoken_text: SpokenTextHook | None = None
     on_story_debug: StoryDebugHook | None = None
+    on_graph_lifecycle: GraphLifecycleHook | None = None
     story_registry: MiniStoryRegistry | None = None
     _queue: queue.SimpleQueue[CommentaryUtterance | object] = field(
         default_factory=queue.SimpleQueue, repr=False
@@ -402,6 +420,7 @@ class ProcessTtsSink:
                 return
             lifecycle_token = registry.current_token(token) or lifecycle_token
             self._emit_story_debug(lifecycle_token, "speaking", "tts_started")
+        self._emit_graph_lifecycle("speaking", utterance)
         try:
             with ducker_from_settings(self.settings):
                 if cancelled():
@@ -435,6 +454,10 @@ class ProcessTtsSink:
                     action,
                     "tts_finished",
                 )
+            self._emit_graph_lifecycle(
+                "interrupted" if cancelled() else "completed",
+                utterance,
+            )
         self.last_result = result
         self.last_error = result.error
         if result.error:
@@ -478,6 +501,16 @@ class ProcessTtsSink:
             )
         except Exception:
             logger.debug("commentary mini-story debug hook failed", exc_info=True)
+
+    def _emit_graph_lifecycle(self, action: str, utterance: CommentaryUtterance) -> None:
+        hook = self.on_graph_lifecycle
+        candidate = utterance.graph_candidate
+        if hook is None or candidate is None:
+            return
+        try:
+            hook(action, candidate, time.monotonic())
+        except Exception:
+            logger.debug("commentary graph lifecycle hook failed", exc_info=True)
 
     def _close_queued_story(self, utterance: CommentaryUtterance, reason: str) -> None:
         token = utterance.story_token

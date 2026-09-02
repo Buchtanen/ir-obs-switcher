@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import queue
 import time
 import uuid
 from collections.abc import Callable
-from dataclasses import fields
+from dataclasses import fields, replace
 from typing import Any
 
 from irswitch.commentary.director import CommentaryDirector
+from irswitch.commentary.graph_runtime import (
+    GraphCandidate,
+    GraphScoringSettings,
+    SequenceGraphRuntime,
+)
 from irswitch.commentary.tts import ProcessTtsSink
 from irswitch.events.async_fanout import EventSubscription
 from irswitch.events.envelope import EventEnvelope
@@ -59,12 +65,26 @@ class CommentaryConsumer:
         self._processed_ids: set[str] = set()
         self._processed_order: list[str] = []
         self.story_registry = story_registry or MiniStoryRegistry()
+        now = time.monotonic()
+        self.graph_runtime = SequenceGraphRuntime(
+            director.graph,
+            settings=GraphScoringSettings(max_silence_s=self._settings.scheduler.max_silence_s),
+            started_at=now,
+        )
+        self.graph_runtime.reset(run_epoch=0, now=now)
+        self._graph_lifecycle: queue.SimpleQueue[tuple[str, GraphCandidate, float]] = (
+            queue.SimpleQueue()
+        )
         self._seen_hero_order_revision = self.story_registry.hero_order_revision
         self.director.story_registry = self.story_registry
+        self.director.graph_runtime = self.graph_runtime
         if hasattr(self.director.sink, "story_registry"):
             self.director.sink.story_registry = self.story_registry
         self.director.filler_provider = self._request_filler
         self.director.on_decision = self._forward_decision
+        self.director.on_graph_decision = self._forward_decision
+        if hasattr(self.director.sink, "on_graph_lifecycle"):
+            self.director.sink.on_graph_lifecycle = self._enqueue_graph_lifecycle
 
     async def run(self) -> None:
         self.running = True
@@ -90,11 +110,13 @@ class CommentaryConsumer:
             self.director.sink.interrupt()
 
     async def handle(self, item: StreamItem) -> None:
+        self._drain_graph_lifecycle()
         self.last_stream_sequence = item.stream_sequence
         if isinstance(item, SessionReset):
             self.story_registry.reset(session_id=item.new_session_id)
             self._seen_hero_order_revision = 0
             self.director.reset()
+            self.graph_runtime.reset(run_epoch=0, now=time.monotonic())
             self._processed_ids.clear()
             self._processed_order.clear()
             self._outstanding_filler = None
@@ -107,6 +129,7 @@ class CommentaryConsumer:
             self.processed += 1
             return
         self._observe_batch(item)
+        self._drain_graph_lifecycle()
         self.processed += 1
 
     def take_filler_request(self) -> FillerRequest | None:
@@ -157,6 +180,7 @@ class CommentaryConsumer:
             return
         self._apply_settings()
         self.story_registry.observe_context(latest)
+        self._sync_graph_run(latest, now=now)
         if self.story_registry.hero_order_revision > self._seen_hero_order_revision:
             self._seen_hero_order_revision = self.story_registry.hero_order_revision
             self.director.hero_order_changed(now)
@@ -336,6 +360,7 @@ class CommentaryConsumer:
         if latest_payload is None:
             return
         try:
+            self._drain_graph_lifecycle()
             context = thaw_context(latest_payload)
             self._apply_settings()
             self.story_registry.observe_context(context)
@@ -343,6 +368,7 @@ class CommentaryConsumer:
                 self._seen_hero_order_revision = self.story_registry.hero_order_revision
                 self.director.hero_order_changed(time.monotonic())
             self.director.tick(time.monotonic(), self._bio_from_context(context))
+            self._drain_graph_lifecycle()
         except Exception as exc:
             self.failures += 1
             self.last_error = f"{type(exc).__name__}: {exc}"
@@ -379,6 +405,11 @@ class CommentaryConsumer:
         sink = self.director.sink
         if isinstance(sink, ProcessTtsSink):
             sink.settings = settings
+        if self.graph_runtime.settings.max_silence_s != settings.scheduler.max_silence_s:
+            self.graph_runtime.settings = replace(
+                self.graph_runtime.settings,
+                max_silence_s=settings.scheduler.max_silence_s,
+            )
 
     def _apply_config_update(self, item: ConfigUpdate) -> None:
         payload = thaw_config(item.frozen_config)
@@ -480,6 +511,42 @@ class CommentaryConsumer:
         if self._decision_hook is None:
             return
         self._decision_hook(entry, now)
+
+    def _enqueue_graph_lifecycle(
+        self,
+        action: str,
+        candidate: GraphCandidate,
+        now: float,
+    ) -> None:
+        self._graph_lifecycle.put((action, candidate, now))
+
+    def _drain_graph_lifecycle(self) -> None:
+        while True:
+            try:
+                action, candidate, now = self._graph_lifecycle.get_nowait()
+            except queue.Empty:
+                return
+            if action == "speaking":
+                self.graph_runtime.record_speaking(candidate, now=now)
+            elif action == "completed":
+                self.graph_runtime.note_completed(now=now, run_epoch=candidate.run_epoch)
+            elif action == "interrupted":
+                self.graph_runtime.note_interrupted(now=now, run_epoch=candidate.run_epoch)
+
+    def _sync_graph_run(self, context: dict[str, Any], *, now: float) -> None:
+        identity = context.get("identity")
+        identity = identity if isinstance(identity, dict) else {}
+        race = context.get("race")
+        race = race if isinstance(race, dict) else {}
+        raw = identity.get("run_epoch", race.get("run_epoch", 0))
+        if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
+            raw = 0
+        try:
+            run_epoch = max(0, int(raw))
+        except (TypeError, ValueError):
+            run_epoch = 0
+        if run_epoch != self.graph_runtime.run_epoch:
+            self.graph_runtime.reset(run_epoch=run_epoch, now=now)
 
     @staticmethod
     def _drain_queue(queue: asyncio.Queue[Any]) -> None:

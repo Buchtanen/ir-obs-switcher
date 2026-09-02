@@ -22,6 +22,13 @@ from irswitch.commentary.graph import (
     load_sequence_graph,
     normalize_graph_mode,
 )
+from irswitch.commentary.graph_runtime import (
+    GraphCandidate,
+    GraphSelection,
+    ScoreBreakdown,
+    SequenceGraphRuntime,
+    candidate_from_envelope,
+)
 from irswitch.commentary.opener import OPENER_EVENTS, STREAM_START, OpenerMutex
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
@@ -37,7 +44,7 @@ from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
-from irswitch.race.ministory import MiniStoryRegistry
+from irswitch.race.ministory import MiniStoryRegistry, MiniStoryToken
 from irswitch.race.watcher_log import WatcherLog, watch_name_for
 
 logger = logging.getLogger(__name__)
@@ -128,8 +135,12 @@ class CommentaryDirector:
     quali_bag_ready: bool = False
     watcher_log: WatcherLog | None = None
     on_decision: Callable[[dict[str, Any], float], None] | None = None
+    on_graph_decision: Callable[[dict[str, Any], float], None] | None = None
     _composition_context: dict[str, Any] = field(default_factory=dict, repr=False)
     story_registry: MiniStoryRegistry | None = field(default=None, repr=False)
+    graph_runtime: SequenceGraphRuntime | None = field(default=None, repr=False)
+    _last_graph_winner: GraphSelection | None = field(default=None, init=False, repr=False)
+    _last_graph_error: str | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -210,6 +221,8 @@ class CommentaryDirector:
         self._current_event_type = None
         self.opener.reset()
         self._composition_context = {}
+        self._last_graph_winner = None
+        self._last_graph_error = None
         self._sync_scheduler_settings()
 
     def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
@@ -238,6 +251,31 @@ class CommentaryDirector:
             "busyUntil": busy_until,
             "status": status,
             "lastSpokeAt": self._last.at if self._last is not None else None,
+            "graph": self.graph_status(now),
+        }
+
+    def graph_status(self, now: float) -> dict[str, Any]:
+        runtime = self.graph_runtime
+        mode = _graph_mode(self.settings)
+        winner = self._last_graph_winner
+        if runtime is None:
+            return {
+                "mode": mode,
+                "currentNode": None,
+                "silenceSeconds": 0.0,
+                "lastWinnerNode": None,
+                "lastWinnerScore": None,
+                "fatigueEntries": {"node": 0, "edge": 0, "semantic": 0, "path": 0},
+                "lastError": self._last_graph_error,
+            }
+        return {
+            "mode": mode,
+            "currentNode": runtime.current_node_id,
+            "silenceSeconds": runtime.silence_seconds(now),
+            "lastWinnerNode": winner.candidate.node_id if winner is not None else None,
+            "lastWinnerScore": winner.score.final if winner is not None else None,
+            "fatigueEntries": runtime.fatigue_counts(),
+            "lastError": self._last_graph_error,
         }
 
     def decisions(self, n: int = 20) -> list[dict[str, Any]]:
@@ -482,6 +520,9 @@ class CommentaryDirector:
             )
             return None
 
+        if _graph_mode(self.settings) in {"shadow", "active"}:
+            self._evaluate_graph(ranked, now=now)
+
         busy = self._is_busy(now)
         if busy and ranked:
             top = ranked[0]
@@ -618,6 +659,7 @@ class CommentaryDirector:
                 composition_path=utterance.composition_path,
                 graph_path=utterance.graph_path,
                 story_token=utterance.story_token,
+                graph_candidate=utterance.graph_candidate,
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
@@ -782,6 +824,10 @@ class CommentaryDirector:
             self._recent.remember(spoken)
             self._note_sector_spoken(envelope)
             self._current_event_type = envelope.event_type
+        story_token = (
+            self.story_registry.token_for(envelope) if self.story_registry is not None else None
+        )
+        graph_candidate = self._graph_candidate(node, envelope, story_token=story_token)
         return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
@@ -799,10 +845,127 @@ class CommentaryDirector:
             fact_pack=fact_pack,
             composition_path=composition_path,
             graph_path=graph_path,
-            story_token=(
-                self.story_registry.token_for(envelope) if self.story_registry is not None else None
-            ),
+            story_token=story_token,
+            graph_candidate=graph_candidate,
         )
+
+    def _evaluate_graph(self, envelopes: list[EventEnvelope], *, now: float) -> None:
+        runtime = self.graph_runtime
+        if runtime is None:
+            return
+        candidates: list[GraphCandidate] = []
+        try:
+            for envelope in envelopes:
+                metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
+                branch = metrics.get("branch")
+                nodes = self.graph.nodes_for(
+                    envelope.event_type,
+                    envelope.phase,
+                    mode=envelope.mode,
+                    branch=str(branch) if branch is not None else None,
+                )
+                token = (
+                    self.story_registry.token_for(envelope)
+                    if self.story_registry is not None
+                    else None
+                )
+                for node in nodes:
+                    candidate = self._graph_candidate(node, envelope, story_token=token)
+                    if candidate is not None:
+                        candidates.append(candidate)
+            winner = runtime.select(candidates, now=now)
+            self._last_graph_winner = winner
+            self._last_graph_error = None
+            for candidate in candidates:
+                score = runtime.score(candidate, now=now)
+                selected = winner is not None and winner.candidate == candidate
+                self._emit_graph_decision(
+                    candidate,
+                    score,
+                    now=now,
+                    decision="selected" if selected else "rejected",
+                    reason=_graph_reason(score, selected=selected, runtime=runtime),
+                )
+        except Exception as exc:
+            self._last_graph_error = f"{type(exc).__name__}: {exc}"
+            logger.warning("commentary graph ranking failed; legacy path remains available", exc_info=True)
+            self._emit_graph_error(now=now)
+
+    def _graph_candidate(
+        self,
+        node: GraphNode,
+        envelope: EventEnvelope,
+        *,
+        story_token: MiniStoryToken | None,
+    ) -> GraphCandidate | None:
+        runtime = self.graph_runtime
+        if runtime is None or _graph_mode(self.settings) == "legacy" or node.id not in self.graph.nodes:
+            return None
+        run_epoch = story_token.run_epoch if story_token is not None else _run_epoch(envelope)
+        story_id = story_token.story_id if story_token is not None else None
+        revision = story_token.revision if story_token is not None else envelope.sequence
+        return candidate_from_envelope(
+            node,
+            envelope,
+            run_epoch=run_epoch,
+            story_id=story_id,
+            source_revision=revision,
+        )
+
+    def _emit_graph_decision(
+        self,
+        candidate: GraphCandidate,
+        score: ScoreBreakdown,
+        *,
+        now: float,
+        decision: str,
+        reason: str,
+    ) -> None:
+        hook = self.on_graph_decision
+        if hook is None:
+            return
+        runtime = self.graph_runtime
+        if runtime is None:
+            return
+        try:
+            hook(
+                {
+                    "action": "graph_score",
+                    "reason": reason,
+                    "graphMode": _graph_mode(self.settings),
+                    "decision": decision,
+                    "eventId": candidate.event_id,
+                    "eventType": candidate.event_type,
+                    "storyId": candidate.story_id,
+                    "runEpoch": candidate.run_epoch,
+                    "nodeId": candidate.node_id,
+                    "semanticKey": candidate.semantic_key,
+                    "score": score.final,
+                    "threshold": runtime.settings.selection_threshold,
+                    "components": _score_components(score),
+                },
+                now,
+            )
+        except Exception:
+            logger.debug("commentary graph decision hook failed", exc_info=True)
+
+    def _emit_graph_error(self, *, now: float) -> None:
+        hook = self.on_graph_decision
+        if hook is None:
+            return
+        try:
+            hook(
+                {
+                    "action": "graph_score",
+                    "reason": "legacy_fallback",
+                    "graphMode": _graph_mode(self.settings),
+                    "decision": "error",
+                    "error": self._last_graph_error,
+                },
+                now,
+            )
+        except Exception:
+            logger.debug("commentary graph decision hook failed", exc_info=True)
 
     def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         """Return a skip reason when sector speak must stay silent; else None."""
@@ -977,6 +1140,66 @@ def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: floa
     if edge.same_correlation and last_corr and incoming_corr and last_corr != incoming_corr:
         return False
     return True
+
+
+def _graph_mode(settings: CommentarySettings) -> str:
+    mode = str(getattr(settings, "graph_runtime_mode", "legacy")).strip().lower()
+    return mode if mode in {"legacy", "shadow", "active"} else "legacy"
+
+
+def _run_epoch(envelope: EventEnvelope) -> int:
+    value = envelope.metrics.get("runEpoch")
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return 0
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _score_components(score: ScoreBreakdown) -> dict[str, float]:
+    return {
+        "base": score.base,
+        "transition": score.transition,
+        "closure": score.closure,
+        "materialChange": score.material_change,
+        "silence": score.silence,
+        "nodeFatigue": score.node_fatigue,
+        "semanticFatigue": score.semantic_fatigue,
+        "edgeFatigue": score.edge_fatigue,
+        "pathFatigue": score.path_fatigue,
+    }
+
+
+def _graph_reason(
+    score: ScoreBreakdown,
+    *,
+    selected: bool,
+    runtime: SequenceGraphRuntime,
+) -> str:
+    if selected:
+        if score.critical_floor:
+            return "critical_floor"
+        if score.closure > 0:
+            return "story_closure"
+        if score.material_change > 0:
+            return "material_change"
+        if score.transition > 0:
+            return "story_continuation"
+        if score.silence > 0:
+            return "silence_promoted"
+        return "highest_score"
+    if score.final < runtime.settings.selection_threshold:
+        if score.path_fatigue < 0:
+            return "path_repeat"
+        if score.semantic_fatigue < 0:
+            return "semantic_repeat"
+        return "below_threshold"
+    if score.path_fatigue < score.semantic_fatigue:
+        return "path_repeat"
+    if score.semantic_fatigue < 0:
+        return "semantic_repeat"
+    return "highest_score"
 
 
 def choose_filled_line(

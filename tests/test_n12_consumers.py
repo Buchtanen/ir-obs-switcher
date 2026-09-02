@@ -279,6 +279,62 @@ async def test_commentary_consumer_thaws_and_speaks_without_overlay_bus() -> Non
 
 
 @pytest.mark.asyncio
+async def test_shadow_graph_scores_without_changing_legacy_speech_and_records_exposure() -> None:
+    fanout = AsyncEventFanout()
+    subscription = fanout.subscribe("commentary")
+    subscription.replace_latest_context(_context())
+    sink = NullTtsSink()
+    settings = CommentarySettings(
+        enabled=True,
+        cooldown_s=0,
+        graph_runtime_mode="shadow",
+    )
+    director = CommentaryDirector(graph=_graph(), settings=settings, sink=sink)
+    graph_rows: list[dict] = []
+    consumer = CommentaryConsumer(
+        subscription,
+        director,
+        lambda: (settings, "en"),
+        decision_hook=lambda entry, _now: graph_rows.append(entry),
+    )
+
+    await consumer.handle(_batch())
+
+    assert [item.text for item in sink.spoken] == ["A lap is complete."]
+    assert sink.spoken[0].graph_candidate is not None
+    assert consumer.graph_runtime.fatigue_counts()["semantic"] == 1
+    assert consumer.graph_runtime.current_node_id == "__silence__"
+    graph_score = next(row for row in graph_rows if row["action"] == "graph_score")
+    assert graph_score["graphMode"] == "shadow"
+    assert graph_score["decision"] == "selected"
+    assert graph_score["components"]["base"] == 50.0
+    status = consumer.status_snapshot()
+    assert status["graph"]["mode"] == "shadow"
+    assert status["graph"]["fatigueEntries"]["semantic"] == 1
+
+
+@pytest.mark.asyncio
+async def test_legacy_mode_does_not_activate_graph_runtime() -> None:
+    fanout = AsyncEventFanout()
+    subscription = fanout.subscribe("commentary")
+    subscription.replace_latest_context(_context())
+    sink = NullTtsSink()
+    settings = CommentarySettings(enabled=True, cooldown_s=0, graph_runtime_mode="legacy")
+    director = CommentaryDirector(graph=_graph(), settings=settings, sink=sink)
+    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
+
+    await consumer.handle(_batch())
+
+    assert sink.spoken[0].graph_candidate is None
+    assert consumer.graph_runtime.fatigue_counts() == {
+        "node": 0,
+        "edge": 0,
+        "semantic": 0,
+        "path": 0,
+    }
+
+
+@pytest.mark.asyncio
 async def test_commentary_consumer_adopts_producer_assigned_story_token() -> None:
     fanout = AsyncEventFanout()
     subscription = fanout.subscribe("commentary")
