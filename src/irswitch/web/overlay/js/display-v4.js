@@ -665,7 +665,17 @@ function fillBattleCopy(node, envelope, stateKey, sample, metrics, copy) {
   } else if (stateKey === "battle_for_position") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "AHEAD + BEHIND");
     text(value, metrics.position != null ? `P${metrics.position}` : sample.value);
-    text(meta, sample.meta || "stack centre");
+    const frontLabel = metrics.frontTargetName
+      ? `ahead ${metrics.frontTargetName}`
+      : metrics.frontTargetPosition != null
+        ? `ahead P${metrics.frontTargetPosition}`
+        : "";
+    const rearLabel = metrics.rearTargetName
+      ? `behind ${metrics.rearTargetName}`
+      : metrics.rearTargetPosition != null
+        ? `behind P${metrics.rearTargetPosition}`
+        : "";
+    text(meta, [frontLabel, rearLabel].filter(Boolean).join(" · "));
   } else if (stateKey === "battle_won") {
     text(subtitle, resolveCopy(copy.statusToken) || sample.subtitle || "GAP STABILISED");
     text(
