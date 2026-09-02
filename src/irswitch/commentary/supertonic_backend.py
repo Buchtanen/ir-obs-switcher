@@ -31,8 +31,8 @@ class _Stream(Protocol):
 
 def available() -> bool:
     try:
-        import sounddevice  # noqa: F401
-        import supertonic  # noqa: F401
+        import sounddevice  # type: ignore[import-not-found,unused-ignore]  # noqa: F401
+        import supertonic  # type: ignore[import-not-found,unused-ignore]  # noqa: F401
     except ImportError:
         return False
     return True
@@ -122,7 +122,7 @@ def _hostapi_name(hostapis: list[Any], hostapi_index: int) -> str:
 
 
 def _query_output_devices() -> list[dict[str, Any]]:
-    import sounddevice as sd
+    import sounddevice as sd  # type: ignore[import-not-found,unused-ignore]
 
     hostapis = list(sd.query_hostapis())
     devices: list[dict[str, Any]] = []
@@ -171,7 +171,7 @@ def _get_engine() -> Any:
     global _engine
     with _engine_lock:
         if _engine is None:
-            from supertonic import TTS
+            from supertonic import TTS  # type: ignore[import-not-found,unused-ignore]
 
             logger.info(
                 "tts supertonic loading CPU engine intra=%s inter=%s",
@@ -234,8 +234,8 @@ def speak(
         before_play()
     if cancelled is not None and cancelled():
         raise PlaybackInterrupted
-    import numpy as np
-    import sounddevice as sd
+    import numpy as np  # type: ignore[import-not-found,unused-ignore]
+    import sounddevice as sd  # type: ignore[import-not-found,unused-ignore]
 
     audio = np.asarray(wav).squeeze().astype(np.float32)
     if audio.ndim > 1:
