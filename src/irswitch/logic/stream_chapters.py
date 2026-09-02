@@ -12,10 +12,15 @@ import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
-logger = logging.getLogger(__name__)
+from irswitch.logic.broadcast_clock import (
+    STREAM_FLICKER_DEBOUNCE_S as STREAM_FLICKER_DEBOUNCE_S,
+)
+from irswitch.logic.broadcast_clock import (
+    BroadcastClock,
+    BroadcastClockSnapshot,
+)
 
-# Ignore brief OBS stream flicker; clear / re-start only after this gap (seconds).
-STREAM_FLICKER_DEBOUNCE_S = 2.0
+logger = logging.getLogger(__name__)
 
 DEFAULT_TRIGGER_SESSION_TYPES: tuple[str, ...] = ("Practice", "Qualify", "Race")
 DEFAULT_START_TITLE = "Stream start"
@@ -96,6 +101,9 @@ class StreamChapterTracker:
         self._last_offset = 0
         self._end_appended = False
         self._vod_flush_pending = False
+        self._clock = BroadcastClock()
+        self._clock_epoch = 0
+        self._snapshot_pending = False
 
     @property
     def settings(self) -> StreamChaptersSettings:
@@ -118,6 +126,13 @@ class StreamChapterTracker:
         self._end_appended = False
         self._last_offset = 0
         self._vod_flush_pending = False
+        self._snapshot_pending = True
+
+    def consume_snapshot_pending(self) -> bool:
+        """Whether consumers must replace history (reset or resumed end)."""
+        pending = self._snapshot_pending
+        self._snapshot_pending = False
+        return pending
 
     def consume_vod_flush(self) -> bool:
         """True once after stream end / QUIT freeze, until the next arm."""
@@ -213,6 +228,7 @@ class StreamChapterTracker:
         streaming: bool,
         duration_current_seconds: float | None,
         session_type: str | None,
+        clock_snapshot: BroadcastClockSnapshot | None = None,
     ) -> list[StreamChapter]:
         """
         Advance tracker from latest streaming / session snapshot.
@@ -228,27 +244,34 @@ class StreamChapterTracker:
                 self._last_session_type = None
             return []
 
-        now = float(self._time_mono())
+        clock = clock_snapshot or self._clock.update(
+            now=float(self._time_mono()),
+            streaming=streaming,
+            output_duration_seconds=duration_current_seconds,
+        )
         normalized = _normalize_session_type(session_type)
         before = len(self._pending_new)
 
         try:
-            if streaming:
-                if self._pending_stop_mono is not None:
-                    # Flicker resume within debounce — keep history, no new start.
-                    self._pending_stop_mono = None
-                    self._streaming = True
-                elif not self._streaming:
-                    self._start_stream(duration_current_seconds, normalized)
+            if clock.active:
+                if clock.epoch != self._clock_epoch or not self._chapters:
+                    self._start_stream(clock.offset_seconds, normalized)
+                    self._clock_epoch = clock.epoch
+                    before = 0
                 else:
-                    self._maybe_session_chapter(normalized, duration_current_seconds)
-                self._last_offset = _offset_seconds(duration_current_seconds)
-            else:
-                if self._streaming and self._pending_stop_mono is None:
-                    self._pending_stop_mono = now
-                elif self._pending_stop_mono is not None:
-                    if now - self._pending_stop_mono >= STREAM_FLICKER_DEBOUNCE_S:
-                        self._confirm_stop()
+                    # Resuming the same broadcast makes an old end non-terminal.
+                    if not self._streaming and self._end_appended:
+                        end = self._chapters.pop()
+                        self._pending_new = [c for c in self._pending_new if c is not end]
+                        self._end_appended = False
+                        self._vod_flush_pending = False
+                        self._snapshot_pending = True
+                    self._streaming = True
+                    if streaming:
+                        self._maybe_session_chapter(normalized, clock.offset_seconds)
+                self._last_offset = max(self._last_offset, _offset_seconds(clock.offset_seconds))
+            elif self._streaming:
+                self._confirm_stop()
         except Exception:
             logger.exception("stream_chapters update failed; continuing")
             return []
@@ -270,10 +293,15 @@ class StreamChapterTracker:
             return
         if session_type == self._last_session_type:
             return
+        offset = _offset_seconds(duration_current_seconds)
+        if self._chapters and offset <= self._chapters[-1].offset_seconds:
+            # Defer until the next representable video timestamp; never invent
+            # elapsed time or publish duplicate integer chapter offsets.
+            return
         self._last_session_type = session_type
         self._append(
             title=self._title_for_session(session_type),
-            offset_seconds=_offset_seconds(duration_current_seconds),
+            offset_seconds=offset,
             session_type=session_type,
         )
 

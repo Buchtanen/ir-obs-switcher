@@ -643,8 +643,8 @@ Real-time updates stavu služby.
   {"type":"stream_chapter","chapter":{"title":"Race","offset_seconds":842,"session_type":"Race","created_at_ms":1704111242000}}
   ```
 - Legacy klienti, kteří každou zprávu parsují jako `/status`, musí **ignorovat** objekty s polem `type` (`stream_chapter` / `stream_chapters_snapshot`) — status snapshoty `type` nemají.
-- `offset_seconds` je floor z `stream_duration_current_session_seconds` (monotonic session clock); při nedostupnosti duration = `0`.
-- Seznam se maže na začátku **nové** stream session. Po potvrzeném stopu (debounce ≥ 2 s proti flickeru) zůstane, včetně volitelného `end_title` markeru, kvůli zápisu na YouTube VOD.
+- `offset_seconds` je floor ze společných broadcast hodin. Autoritativní zdroj je OBS WebSocket v5 `outputDuration` v milisekundách; při jeho výpadku hodiny pokračují monotónně a v rámci jednoho broadcastu se nikdy nevrátí zpět.
+- Krátký stop (< 2 s) zachová čas i historii. Známý stejný broadcast ID zachová stejnou osu i přes delší reconnect. Historie a čas se resetují společně až při potvrzeném novém broadcastu. Pokud se po reconnectu odstraní dříve přidaný koncový marker, server pošle nový `stream_chapters_snapshot`, aby klient nahradil celou historii.
 - Při `[stream_chapters] youtube_vod = true` se timestampy zapisují do YouTube VOD description **až po skončení streamu** (blok `--- irswitch chapters ---`), s retry 0 s / 30 s / 3 min / 10 min. Formát `00:00` první, mezery ≥ 10 s. Vyžaduje OAuth write scope `youtube` (ne jen `readonly`). OBS `CreateRecordChapter` se nepoužívá. Pokud description obsahuje řádek `Track:`, flush ho přepíše display name z `WeekendInfo` (ne šablona Imola).
 
 **Příklad použití** (JavaScript):

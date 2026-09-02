@@ -6,6 +6,8 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from irswitch.logic.broadcast_clock import BroadcastClock, BroadcastClockSnapshot
+
 logger = None  # Lazy import to avoid circular dependency
 
 
@@ -29,6 +31,7 @@ class MetricsCollector:
     obs_total_connected_time: float = 0.0  # Cumulative connected time in seconds
     stream_started_ts: float | None = None
     stream_total_time: float = 0.0  # Cumulative stream time in seconds
+    _broadcast_clock: BroadcastClock = field(default_factory=BroadcastClock, repr=False)
 
     def record_scene_switch(self, latency_ms: float) -> None:
         """Record a scene switch with latency."""
@@ -116,17 +119,29 @@ class MetricsCollector:
         else:
             return (None, None)
 
-    def set_streaming(self, is_streaming: bool) -> None:
-        """Update streaming state."""
+    def set_streaming(
+        self,
+        is_streaming: bool | None,
+        *,
+        output_duration_seconds: float | None = None,
+        broadcast_id: str | None = None,
+    ) -> None:
+        """Update the shared broadcast clock; ``None`` means unknown status."""
         now = time.monotonic()
-        if is_streaming and self.stream_started_ts is None:
-            # Stream started - begin tracking
-            self.stream_started_ts = now
-        elif not is_streaming and self.stream_started_ts is not None:
-            # Stream stopped - add elapsed time to total
-            elapsed = now - self.stream_started_ts
-            self.stream_total_time += elapsed
-            self.stream_started_ts = None
+        snapshot = self._broadcast_clock.update(
+            now=now,
+            streaming=is_streaming,
+            output_duration_seconds=output_duration_seconds,
+            broadcast_id=broadcast_id,
+        )
+        self.stream_started_ts = now - snapshot.offset_seconds if snapshot.active else None
+        self.stream_total_time = snapshot.total_seconds - (
+            snapshot.offset_seconds if snapshot.active else 0.0
+        )
+
+    def get_broadcast_clock(self) -> BroadcastClockSnapshot:
+        """Read the same timeline/epoch that chapter tracking consumes."""
+        return self._broadcast_clock.snapshot(time.monotonic())
 
     def get_stream_duration_seconds(self) -> tuple[float | None, float | None]:
         """
@@ -135,19 +150,10 @@ class MetricsCollector:
         Returns:
             Tuple of (cumulative_seconds, current_session_seconds)
         """
-        now = time.monotonic()
-        current_session = None
-        if self.stream_started_ts is not None:
-            current_session = now - self.stream_started_ts
-
-        cumulative = self.stream_total_time
-        if current_session is not None:
-            cumulative += current_session
-
-        if cumulative > 0:
-            return (cumulative, current_session)
-        else:
+        snapshot = self.get_broadcast_clock()
+        if not snapshot.epoch:
             return (None, None)
+        return (snapshot.total_seconds, snapshot.offset_seconds if snapshot.active else None)
 
     def get_scene_switch_latency_avg_ms(self) -> float | None:
         """Get average scene switch latency in milliseconds."""

@@ -601,7 +601,7 @@ Master switch. Při `false` se markery neukládají, neposílají se chapter WS 
 
 Titulek start markeru při přechodu na `streaming: true` (`offset_seconds: 0`).
 
-Krátký OBS flicker (< 2 s stop) **nevyvolá** nový start marker. Po potvrzeném stopu seznam **zůstane** (kvůli YouTube VOD zápisu) až do začátku dalšího streamu.
+Čas kapitol používá OBS WebSocket v5 `outputDuration` (milisekundy) jako autoritativní čítač a při jeho nedostupnosti pokračuje monotónním časem. Krátký OBS flicker (< 2 s stop) **nevyvolá** nový start marker ani nevynuluje čas. Pokud je znám stejný YouTube broadcast ID, zachová se stejná časová osa i přes delší reconnect. Teprve potvrzený nový broadcast vynuluje současně čas i historii; po ukončení původního streamu seznam do té doby zůstává kvůli YouTube VOD zápisu.
 
 ### `end_title` (výchozí: `Stream end`)
 

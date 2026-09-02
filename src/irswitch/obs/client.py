@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import asyncio
 import logging
+import math
 import re
 import threading
 from typing import Any
@@ -13,6 +14,16 @@ import aiohttp
 from obsws_python import ReqClient
 
 logger = logging.getLogger(__name__)
+
+
+def _stream_duration_ms(value: Any, *, scale: int = 1) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        duration = float(value) * scale
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return int(duration) if math.isfinite(duration) and duration >= 0 else None
 
 
 class ObsClient:
@@ -31,6 +42,7 @@ class ObsClient:
         # obsws_python is untyped; keep client as Any for mypy sanity.
         self._client: Any = None
         self._connected = False
+        self._stream_status_known = False
         # Cache for current scene (updated only when needed)
         self._current_scene_cache: str | None = None
         self._current_scene_cache_ts: float | None = None
@@ -546,6 +558,11 @@ class ObsClient:
             self._current_profile_cache = None
             return None
 
+    @property
+    def stream_status_known(self) -> bool:
+        """Whether the last stream-status poll returned an OBS response."""
+        return self._stream_status_known
+
     async def get_stream_status(self) -> tuple[bool, int | None]:
         """
         Get streaming status from OBS.
@@ -554,6 +571,7 @@ class ObsClient:
             Tuple of (is_streaming: bool, stream_duration_ms: Optional[int])
             Returns (False, None) if not connected or error occurs
         """
+        self._stream_status_known = False
         if not self.is_connected() or self._client is None:
             return (False, None)
 
@@ -581,6 +599,8 @@ class ObsClient:
                 if response is None:
                     return (False, None)
 
+                self._stream_status_known = True
+
                 # Extract streaming state and duration
                 is_streaming = False
                 duration_ms: int | None = None
@@ -595,19 +615,17 @@ class ObsClient:
 
                 # Try to get duration
                 if is_streaming:
-                    # Try different attribute names for duration
+                    # OBS WebSocket v5 outputDuration is already milliseconds.
+                    raw_duration = None
+                    scale = 1
                     if hasattr(response, "output_duration"):
-                        duration_sec = response.output_duration
-                        if duration_sec:
-                            duration_ms = int(duration_sec * 1000)
+                        raw_duration = response.output_duration
                     elif hasattr(response, "outputDuration"):
-                        duration_sec = response.outputDuration
-                        if duration_sec:
-                            duration_ms = int(duration_sec * 1000)
+                        raw_duration = response.outputDuration
                     elif hasattr(response, "duration"):
-                        duration_sec = response.duration
-                        if duration_sec:
-                            duration_ms = int(duration_sec * 1000)
+                        raw_duration = response.duration
+                        scale = 1000  # Legacy seconds-only duration field.
+                    duration_ms = _stream_duration_ms(raw_duration, scale=scale)
 
                 # Fallback to datain dict format
                 if hasattr(response, "datain") and isinstance(response.datain, dict):
@@ -616,9 +634,10 @@ class ObsClient:
                         data.get("outputActive", False) or data.get("streaming", False)
                     )
                     if is_streaming:
-                        duration_sec = data.get("outputDuration") or data.get("duration")
-                        if duration_sec:
-                            duration_ms = int(float(duration_sec) * 1000)
+                        if "outputDuration" in data:
+                            duration_ms = _stream_duration_ms(data["outputDuration"])
+                        else:
+                            duration_ms = _stream_duration_ms(data.get("duration"), scale=1000)
 
                 return (is_streaming, duration_ms)
 

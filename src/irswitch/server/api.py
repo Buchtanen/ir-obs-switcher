@@ -274,6 +274,7 @@ async def _broadcast_state_update(state: SwitchState) -> None:
     # Always build status so stream chapter tracker advances even with 0 clients.
     status = await _get_status_dict(state)
     new_chapters = _stream_chapter_tracker.take_pending()
+    replace_chapters = _stream_chapter_tracker.consume_snapshot_pending()
     flush = _stream_chapter_tracker.consume_vod_flush()
     if flush and _stream_chapter_tracker.settings.youtube_vod:
         video_id = _obs_client.get_cached_broadcast_id() if _obs_client is not None else None
@@ -288,7 +289,16 @@ async def _broadcast_state_update(state: SwitchState) -> None:
 
     if _websocket_clients:
         await _send_ws_message(json.dumps(status))
-        if new_chapters:
+        if replace_chapters and _stream_chapter_tracker.settings.enabled:
+            await _send_ws_message(
+                json.dumps(
+                    {
+                        "type": "stream_chapters_snapshot",
+                        "chapters": _stream_chapter_tracker.chapters_as_dicts(),
+                    }
+                )
+            )
+        elif new_chapters:
             await _broadcast_chapter_events(new_chapters)
 
 
@@ -417,7 +427,15 @@ async def _get_status_dict(state: SwitchState) -> dict:
             from irswitch.server.metrics import get_metrics
 
             metrics = get_metrics()
-            metrics.set_streaming(is_streaming)
+            metrics.set_streaming(
+                is_streaming if _obs_client.stream_status_known is not False else None,
+                output_duration_seconds=(
+                    stream_duration_ms / 1000.0 if stream_duration_ms is not None else None
+                ),
+                broadcast_id=_obs_client.get_cached_broadcast_id(),
+            )
+            if is_streaming:
+                _task_registry.cancel("youtube_vod_chapters")
 
             # Add cumulative and current session stream duration from metrics
             stream_cumulative, stream_current = metrics.get_stream_duration_seconds()
@@ -442,7 +460,7 @@ async def _get_status_dict(state: SwitchState) -> dict:
             from irswitch.server.metrics import get_metrics
 
             metrics = get_metrics()
-            metrics.set_streaming(False)
+            metrics.set_streaming(None)
     else:
         status["streaming"] = False
         status["stream_duration_ms"] = None
@@ -460,7 +478,7 @@ async def _get_status_dict(state: SwitchState) -> dict:
         from irswitch.server.metrics import get_metrics
 
         metrics = get_metrics()
-        metrics.set_streaming(False)
+        metrics.set_streaming(None)
 
     # Stream chapter markers (additive WS events; optional /status field)
     try:
@@ -468,16 +486,12 @@ async def _get_status_dict(state: SwitchState) -> dict:
         if cfg is not None:
             _stream_chapter_tracker.apply_settings(cfg.stream_chapters)
 
-        duration_current: float | None
-        _, duration_current = get_metrics().get_stream_duration_seconds()
-        raw_duration = status.get("stream_duration_current_session_seconds")
-        if isinstance(raw_duration, (int, float)):
-            duration_current = float(raw_duration)
-
+        clock_snapshot = get_metrics().get_broadcast_clock()
         _stream_chapter_tracker.update(
             streaming=bool(status.get("streaming")),
-            duration_current_seconds=duration_current,
+            duration_current_seconds=clock_snapshot.offset_seconds,
             session_type=state.session_type,
+            clock_snapshot=clock_snapshot,
         )
         if _stream_chapter_tracker.settings.enabled:
             status["stream_chapters"] = _stream_chapter_tracker.chapters_as_dicts()

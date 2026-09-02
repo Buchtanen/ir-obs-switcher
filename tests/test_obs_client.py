@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -222,7 +223,7 @@ async def test_get_stream_status_streaming(obs_client: ObsClient) -> None:
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.output_active = True
-    mock_response.output_duration = 123.45
+    mock_response.output_duration = 123450
     mock_client.get_stream_status.return_value = mock_response
 
     with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
@@ -255,6 +256,40 @@ async def test_get_stream_status_not_connected(obs_client: ObsClient) -> None:
     is_streaming, duration_ms = await obs_client.get_stream_status()
     assert is_streaming is False
     assert duration_ms is None
+    assert obs_client.stream_status_known is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload, expected",
+    [
+        ({"output_active": True, "output_duration": 0}, 0),
+        ({"outputActive": True, "outputDuration": 123450}, 123450),
+        ({"datain": {"outputActive": True, "outputDuration": 0, "duration": 99}}, 0),
+        ({"datain": {"outputActive": True, "outputDuration": 123450}}, 123450),
+        ({"streaming": True, "duration": 123.45}, 123450),
+        ({"output_active": True, "output_duration": float("nan")}, None),
+        ({"output_active": True, "output_duration": -1}, None),
+    ],
+)
+async def test_stream_duration_wire_formats(obs_client: ObsClient, payload, expected) -> None:
+    mock_client = MagicMock()
+    mock_client.get_stream_status.return_value = SimpleNamespace(**payload)
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        await obs_client.connect(max_retries=1)
+        assert await obs_client.get_stream_status() == (True, expected)
+        assert obs_client.stream_status_known is True
+
+
+@pytest.mark.asyncio
+async def test_stream_status_failure_is_not_a_confirmed_stop(obs_client: ObsClient) -> None:
+    mock_client = MagicMock()
+    mock_client.get_stream_status.side_effect = RuntimeError("connection lost")
+    mock_client.get_output_status.side_effect = RuntimeError("connection lost")
+    with patch("irswitch.obs.client.ReqClient", return_value=mock_client):
+        await obs_client.connect(max_retries=1)
+        assert await obs_client.get_stream_status() == (False, None)
+        assert obs_client.stream_status_known is False
 
 
 @pytest.mark.asyncio
