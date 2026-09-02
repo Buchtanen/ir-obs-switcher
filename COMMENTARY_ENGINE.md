@@ -38,6 +38,27 @@ iRacing / BLE HR
 
 Local Ollama smoke (2026-09-02): grounded `HUNTING` passed in two attempts (~1.7 s) with relation + gap + remaining-laps facts; `LEADER_CHANGE` passed on the first attempt (~0.7 s) without inventing an on-track pass. Windows/SAPI/OBS live listening is still pending.
 
+### Recorded polish evaluation
+
+The proposition-based regression corpus in
+`tests/fixtures/commentary/commentary_eval_cases.json` references concrete
+`llm_polish` operations from the three `recordings/overlay-20260901T*.jsonl`
+tapes. It declares required fact IDs, relation direction, forbidden claims,
+source eligibility and known invalid facts; it does not require one exact
+output sentence.
+
+Run the deterministic recorded baseline from a configured development shell:
+
+```bash
+python -m irswitch.commentary.replay_eval
+```
+
+The JSON report includes operation/call/fallback counts, attempts, latency,
+prompt/completion tokens and per-case hard semantic findings. To deliberately
+repeat stored requests against an OpenAI-compatible local Qwen endpoint, add
+`--live-url http://localhost:11434/v1` and optionally `--live-limit N`. CI and
+the normal test suite never require the local model.
+
 Rules:
 
 - Hook **accepted envelopes only**. Raw candidates are too noisy.
