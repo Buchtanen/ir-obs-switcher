@@ -68,6 +68,19 @@ _SESSION_BRIEF_EVENTS = frozenset(
 )
 DEFAULT_DECISION_LOG_SIZE = 32
 _INCIDENT_BRANCHES = frozenset({"off_track", "unknown"})
+_ACTIVE_GRAPH_EVENTS = frozenset(
+    {
+        "HUNTING",
+        "APPROACH",
+        "HUNTED",
+        "RIVAL_THREAT",
+        "ATTACK_RANGE",
+        "SIDE_BY_SIDE",
+        "BATTLE_FOR_POSITION",
+        "FIELD_FACT",
+        "WEATHER_CHANGE",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -520,19 +533,23 @@ class CommentaryDirector:
             )
             return None
 
+        emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
+        graph_winner: GraphSelection | None = None
         if _graph_mode(self.settings) in {"shadow", "active"}:
-            self._evaluate_graph(ranked, now=now)
+            graph_winner = self._evaluate_graph(ranked, emotion=emotion, now=now)
+        active_winner = graph_winner if _graph_mode(self.settings) == "active" else None
+        selected_ranked = self._active_selection_order(ranked, active_winner)
 
         busy = self._is_busy(now)
-        if busy and ranked:
-            top = ranked[0]
+        if busy and selected_ranked:
+            top = selected_ranked[0]
             if self._scheduler.should_hard_interrupt(
                 top.event_type, current_event_type=self._current_event_type
             ):
                 self._hard_interrupt(now)
                 busy = False
             elif self._scheduler.settings.defer_enabled:
-                return self._park_ranked(ranked, bio, now)
+                return self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             else:
                 self._record(
                     action="skipped",
@@ -548,19 +565,29 @@ class CommentaryDirector:
                     action="skipped",
                     reason="global_cooldown",
                     now=now,
-                    event_type=ranked[0].event_type if ranked else "",
+                    event_type=selected_ranked[0].event_type if selected_ranked else "",
                 )
             return flushed
 
         if flushed is not None:
             # Already spoke a deferred line this tick; park new arrivals if any.
-            if ranked and self._scheduler.settings.defer_enabled:
-                self._park_ranked(ranked, bio, now)
+            if selected_ranked and self._scheduler.settings.defer_enabled:
+                self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             return flushed
 
-        emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
-        for envelope in ranked:
-            utterance = self._consider(envelope, emotion, now, commit=True)
+        for envelope in selected_ranked:
+            selected = _selection_for_envelope(active_winner, envelope)
+            utterance = self._consider(
+                envelope,
+                emotion,
+                now,
+                commit=True,
+                node_override=(
+                    self.graph.nodes[selected.candidate.node_id] if selected is not None else None
+                ),
+                gates_checked=selected is not None,
+                graph_score=selected.score.final if selected is not None else None,
+            )
             if utterance is not None:
                 return self._speak_prepared(utterance, now=now, reason="spoken", past=False)
         return None
@@ -607,10 +634,23 @@ class CommentaryDirector:
         ranked: list[EventEnvelope],
         bio: BioState | None,
         now: float,
+        *,
+        graph_winner: GraphSelection | None = None,
     ) -> CommentaryUtterance | None:
         emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
         for envelope in ranked:
-            draft = self._consider(envelope, emotion, now, commit=False)
+            selected = _selection_for_envelope(graph_winner, envelope)
+            draft = self._consider(
+                envelope,
+                emotion,
+                now,
+                commit=False,
+                node_override=(
+                    self.graph.nodes[selected.candidate.node_id] if selected is not None else None
+                ),
+                gates_checked=selected is not None,
+                graph_score=selected.score.final if selected is not None else None,
+            )
             if draft is None:
                 continue
             ok = self._scheduler.park(draft, priority=envelope.priority, now=now)
@@ -660,6 +700,7 @@ class CommentaryDirector:
                 graph_path=utterance.graph_path,
                 story_token=utterance.story_token,
                 graph_candidate=utterance.graph_candidate,
+                editorial_score=utterance.editorial_score,
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
@@ -690,23 +731,13 @@ class CommentaryDirector:
         now: float,
         *,
         commit: bool = True,
+        node_override: GraphNode | None = None,
+        gates_checked: bool = False,
+        graph_score: float | None = None,
     ) -> CommentaryUtterance | None:
-        sector_gate = self._sector_speak_gate(envelope, now)
-        if sector_gate is not None:
+        if not gates_checked and self._editorial_gate(envelope, now) is not None:
             return None
-        hunt_gate = self._gap_hunt_tts_gate(envelope, now)
-        if hunt_gate is not None:
-            return None
-        briefs_gate = self._session_briefs_gate(envelope, now)
-        if briefs_gate is not None:
-            return None
-        opener_gate = self._opener_gate(envelope, now)
-        if opener_gate is not None:
-            return None
-        pair_gate = self._incident_pair_gate(envelope, now)
-        if pair_gate is not None:
-            return None
-        node = self._pick_node(envelope, now)
+        node = node_override or self._pick_node(envelope, now)
         if node is None:
             synthetic = self._utterance_from_formatter(envelope)
             if synthetic is None:
@@ -718,7 +749,12 @@ class CommentaryDirector:
                 )
                 return None
             return synthetic
-        if commit and now < self._cooldowns.get(node.id, 0.0):
+        graph_active = (
+            _graph_mode(self.settings) == "active"
+            and envelope.event_type in _ACTIVE_GRAPH_EVENTS
+            and node_override is not None
+        )
+        if commit and not graph_active and now < self._cooldowns.get(node.id, 0.0):
             self._record(
                 action="skipped",
                 reason="node_cooldown",
@@ -847,15 +883,32 @@ class CommentaryDirector:
             graph_path=graph_path,
             story_token=story_token,
             graph_candidate=graph_candidate,
+            editorial_score=graph_score,
         )
 
-    def _evaluate_graph(self, envelopes: list[EventEnvelope], *, now: float) -> None:
+    def _evaluate_graph(
+        self,
+        envelopes: list[EventEnvelope],
+        *,
+        emotion: str,
+        now: float,
+    ) -> GraphSelection | None:
         runtime = self.graph_runtime
         if runtime is None:
-            return
+            return None
         candidates: list[GraphCandidate] = []
         try:
             for envelope in envelopes:
+                if (
+                    _graph_mode(self.settings) == "active"
+                    and envelope.event_type not in _ACTIVE_GRAPH_EVENTS
+                ):
+                    continue
+                if (
+                    _graph_mode(self.settings) == "active"
+                    and self._editorial_gate(envelope, now) is not None
+                ):
+                    continue
                 metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
                 branch = metrics.get("branch")
                 nodes = self.graph.nodes_for(
@@ -870,6 +923,10 @@ class CommentaryDirector:
                     else None
                 )
                 for node in nodes:
+                    if _graph_mode(self.settings) == "active" and not self._node_available(
+                        node, envelope, emotion
+                    ):
+                        continue
                     candidate = self._graph_candidate(node, envelope, story_token=token)
                     if candidate is not None:
                         candidates.append(candidate)
@@ -886,10 +943,63 @@ class CommentaryDirector:
                     decision="selected" if selected else "rejected",
                     reason=_graph_reason(score, selected=selected, runtime=runtime),
                 )
+            return winner
         except Exception as exc:
             self._last_graph_error = f"{type(exc).__name__}: {exc}"
-            logger.warning("commentary graph ranking failed; legacy path remains available", exc_info=True)
+            logger.warning(
+                "commentary graph ranking failed; legacy path remains available", exc_info=True
+            )
             self._emit_graph_error(now=now)
+            return None
+
+    def _active_selection_order(
+        self,
+        ranked: list[EventEnvelope],
+        winner: GraphSelection | None,
+    ) -> list[EventEnvelope]:
+        if _graph_mode(self.settings) != "active" or self._last_graph_error is not None:
+            return ranked
+        selected = winner.candidate.envelope if winner is not None else None
+        available = [env for env in ranked if env.event_type not in _ACTIVE_GRAPH_EVENTS]
+        if selected is not None:
+            available.append(selected)
+        order = {id(envelope): index for index, envelope in enumerate(ranked)}
+        available.sort(key=lambda env: (-env.priority, order.get(id(env), len(order))))
+        return available
+
+    def _node_available(
+        self,
+        node: GraphNode,
+        envelope: EventEnvelope,
+        emotion: str,
+    ) -> bool:
+        resolved = emotion
+        if resolved not in node.hr_states and resolved != "unknown":
+            if "unknown" not in node.hr_states:
+                return False
+            resolved = "unknown"
+        if self.settings.llm_polish:
+            return True
+        bindings = slot_bindings(envelope, resolved, language=self.language)
+        return any(
+            bool(line.strip()) and not leftover_slots(line)
+            for line in (
+                fill_slots(text, bindings) for text in node.variant_bucket(self.language, resolved)
+            )
+        )
+
+    def _editorial_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        for gate in (
+            self._sector_speak_gate,
+            self._gap_hunt_tts_gate,
+            self._session_briefs_gate,
+            self._opener_gate,
+            self._incident_pair_gate,
+        ):
+            reason = gate(envelope, now)
+            if reason is not None:
+                return reason
+        return None
 
     def _graph_candidate(
         self,
@@ -899,7 +1009,11 @@ class CommentaryDirector:
         story_token: MiniStoryToken | None,
     ) -> GraphCandidate | None:
         runtime = self.graph_runtime
-        if runtime is None or _graph_mode(self.settings) == "legacy" or node.id not in self.graph.nodes:
+        if (
+            runtime is None
+            or _graph_mode(self.settings) == "legacy"
+            or node.id not in self.graph.nodes
+        ):
             return None
         run_epoch = story_token.run_epoch if story_token is not None else _run_epoch(envelope)
         story_id = story_token.story_id if story_token is not None else None
@@ -1145,6 +1259,15 @@ def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: floa
 def _graph_mode(settings: CommentarySettings) -> str:
     mode = str(getattr(settings, "graph_runtime_mode", "legacy")).strip().lower()
     return mode if mode in {"legacy", "shadow", "active"} else "legacy"
+
+
+def _selection_for_envelope(
+    selection: GraphSelection | None,
+    envelope: EventEnvelope,
+) -> GraphSelection | None:
+    if selection is None:
+        return None
+    return selection if selection.candidate.event_id == envelope.event_id else None
 
 
 def _run_epoch(envelope: EventEnvelope) -> int:

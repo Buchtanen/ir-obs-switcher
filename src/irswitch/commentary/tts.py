@@ -68,6 +68,7 @@ class CommentaryUtterance:
     graph_path: tuple[str, ...] = ()
     story_token: MiniStoryToken | None = None
     graph_candidate: GraphCandidate | None = None
+    editorial_score: float | None = None
 
 
 @dataclass(frozen=True)
