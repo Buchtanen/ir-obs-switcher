@@ -108,6 +108,7 @@ def position_race_event_to_envelope(
     if catalog_state is None:
         return None
 
+    metrics: dict[str, Any]
     if event_type == "LEADER_CHANGE":
         phase = legacy_trigger_to_phase(event.phase, default="RESULT")
         metrics = {
