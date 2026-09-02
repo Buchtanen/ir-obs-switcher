@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeGuard
 from urllib.parse import urlparse
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
@@ -238,7 +238,7 @@ def polish_char_limit(skeleton: str, tts: TtsLimits) -> int:
     return min(int(tts.max_chars), grown)
 
 
-def _is_grounded(fact_pack: dict[str, Any] | None) -> bool:
+def _is_grounded(fact_pack: dict[str, Any] | None) -> TypeGuard[dict[str, Any]]:
     return isinstance(fact_pack, dict) and fact_pack.get("version") == "commentary-facts/2"
 
 
@@ -326,9 +326,7 @@ def fact_violation_codes(
         codes.append("invented_sector")
     if _is_grounded(fact_pack):
         forbidden = {
-            str(item)
-            for item in fact_pack.get("forbidden_claims", [])
-            if isinstance(item, str)
+            str(item) for item in fact_pack.get("forbidden_claims", []) if isinstance(item, str)
         }
         if "on_track_pass" in forbidden and _PASS.search(po):
             codes.append("forbidden_pass")
@@ -396,7 +394,9 @@ def _invented_numbers(
     fact_pack: dict[str, Any],
 ) -> bool:
     allowed = {_normalize_number(item) for item in fact_pack.get("allowed_numbers", [])}
-    allowed.update(_normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(skeleton))
+    allowed.update(
+        _normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(skeleton)
+    )
     found = {_normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(polished)}
     if found - allowed:
         return True
@@ -606,10 +606,8 @@ def _user_content(
         allowed_numbers = fact_pack.get("allowed_numbers", [])
         parts = [
             f"ANCHOR:\n{skeleton}",
-            "REQUIRED_FACTS:\n"
-            + json.dumps(required, ensure_ascii=False, separators=(",", ":")),
-            "OPTIONAL_FACTS:\n"
-            + json.dumps(optional, ensure_ascii=False, separators=(",", ":")),
+            "REQUIRED_FACTS:\n" + json.dumps(required, ensure_ascii=False, separators=(",", ":")),
+            "OPTIONAL_FACTS:\n" + json.dumps(optional, ensure_ascii=False, separators=(",", ":")),
             "FORBIDDEN_CLAIMS:\n"
             + json.dumps(forbidden, ensure_ascii=False, separators=(",", ":")),
             "ALLOWED_NAMES:\n"
