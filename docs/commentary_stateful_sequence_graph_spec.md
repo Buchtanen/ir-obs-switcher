@@ -1,6 +1,6 @@
 # Stateful commentary sequence graph — specification and implementation plan
 
-**Status:** proposed; documentation only, no runtime behavior implemented
+**Status:** implementation in progress; Phase 1 graph v2 schema delivered, runtime behavior pending
 
 **Base branch:** `refactor/200-n12-async-consumers`
 
@@ -201,7 +201,7 @@ Candidate construction is deterministic and must not mutate the envelope.
 
 ## 8. Graph schema v2
 
-Adding active editorial semantics requires a schema version bump from graph version 1 to version 2. The loader remains strict: code support, the data migration, validator changes, and compatibility tests land together.
+Adding active editorial semantics requires a schema version bump from graph version 1 to version 2. Code support, the data migration, validator changes, and compatibility tests land together. The delivered Phase 1 loader accepts version 1 for one compatibility release and applies inert legacy metadata; the repository graph itself is strictly validated as version 2.
 
 ### 8.1 Node metadata
 

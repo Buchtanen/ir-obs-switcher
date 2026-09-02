@@ -34,6 +34,7 @@ Stable contracts (do **not** change when filling texts):
 - node `id`, `family`, `event_types`, `phases`
 - `speak_priority`, `cooldown_s`, `slots`, `hr_states`, `tts.*`
 - `edges` (sequence preferences)
+- graph v2 `editorial` policy metadata on nodes and edges
 - validator rules in `validator.py`
 - config keys under `[commentary]` (defaults remain off)
 
@@ -56,7 +57,7 @@ Playback fallbacks that make gradual fill safe:
 | Item | Path / owner |
 | --- | --- |
 | Document | `src/irswitch/commentary/data/sequence_graph.json` |
-| Schema version | top-level `"version": 1` (`GRAPH_VERSION` in `graph.py`) |
+| Schema version | top-level `"version": 2` (`GRAPH_VERSION` in `graph.py`); v1 remains loader-compatible for one transition release |
 | Loader | `load_sequence_graph()` / `parse_sequence_graph()` |
 | Integrity | `validate_graph_document()` + catalog event ids |
 | Inventory | `SequenceGraph.unfilled_cells()` → `(node_id, locale, emotion)` |

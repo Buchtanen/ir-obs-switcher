@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,9 @@ from irswitch.commentary.style_cards import load_style_cards
 from irswitch.events.audience import COMMENTARY_ONLY_EVENTS
 from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
-GRAPH_VERSION = 1
+GRAPH_VERSION = 2
+LEGACY_GRAPH_VERSION = 1
+SUPPORTED_GRAPH_VERSIONS = frozenset({LEGACY_GRAPH_VERSION, GRAPH_VERSION})
 ALLOWED_HR_STATES = frozenset({"unknown", "calm", "focused", "pushing", "high"})
 ALLOWED_GRAPH_MODES = frozenset({"practice", "qualify", "race", "warmup"})
 _MODE_ALIASES = {
@@ -28,6 +31,66 @@ VARIANT_KEYS = ("neutral", "calm", "focused", "pushing", "high")
 SUPPORTED_LOCALES = ("en", "cs")
 
 _DEFAULT_GRAPH = Path(__file__).resolve().parent / "data" / "sequence_graph.json"
+
+
+class EditorialPolicy(StrEnum):
+    CRITICAL_RESULT = "critical_result"
+    LIVE_RELATION = "live_relation"
+    STORY_RESULT = "story_result"
+    PERIODIC_CONTEXT = "periodic_context"
+    ONCE_PER_SCOPE = "once_per_scope"
+
+
+class SemanticPolicy(StrEnum):
+    UNIQUE_RESULT = "unique_result"
+    POSITION_RESULT = "position_result"
+    BATTLE_RELATION = "battle_relation"
+    PIT_STORY = "pit_story"
+    LAP_RESULT = "lap_result"
+    CONTEXT_FACT = "context_fact"
+    WEATHER_FACT = "weather_fact"
+    ONCE_SCOPE = "once_scope"
+
+
+class Criticality(StrEnum):
+    CRITICAL = "critical"
+    STORY = "story"
+    CONTEXT = "context"
+
+
+class MaterialChangePolicy(StrEnum):
+    OCCURRENCE = "occurrence"
+    POSITION_CHANGE = "position_change"
+    GAP_INTENSITY = "gap_intensity"
+    STORY_PHASE = "story_phase"
+    LAP_RESULT = "lap_result"
+    CONTEXT_VALUE = "context_value"
+    WEATHER_THRESHOLD = "weather_threshold"
+    ONCE = "once"
+
+
+@dataclass(frozen=True)
+class NodeEditorial:
+    policy: EditorialPolicy
+    semantic_policy: SemanticPolicy
+    criticality: Criticality
+    repeat_weight: float = 1.0
+    silence_affinity: float = 0.0
+    material_change_policy: MaterialChangePolicy = MaterialChangePolicy.CONTEXT_VALUE
+
+
+@dataclass(frozen=True)
+class EdgeEditorial:
+    transition_bonus: int = 0
+    closure: bool = False
+    repeat_weight: float = 1.0
+
+
+_LEGACY_NODE_EDITORIAL = NodeEditorial(
+    policy=EditorialPolicy.PERIODIC_CONTEXT,
+    semantic_policy=SemanticPolicy.CONTEXT_FACT,
+    criticality=Criticality.CONTEXT,
+)
 
 
 @dataclass(frozen=True)
@@ -52,6 +115,7 @@ class GraphEdge:
     same_correlation: bool = True
     min_gap_s: float = 0.0
     max_gap_s: float = 60.0
+    editorial: EdgeEditorial = field(default_factory=EdgeEditorial)
 
 
 @dataclass
@@ -70,6 +134,7 @@ class GraphNode:
     modes: tuple[str, ...] = ()
     branch: str = ""
     style_cards: tuple[str, ...] = ()
+    editorial: NodeEditorial = _LEGACY_NODE_EDITORIAL
 
     def variant_bucket(self, locale: str, emotion: str) -> tuple[str, ...]:
         locale_map = self.variants.get(locale) or {}
@@ -166,6 +231,7 @@ def parse_sequence_graph(raw: dict[str, Any]) -> SequenceGraph:
             same_correlation=bool((item.get("when") or {}).get("same_correlation", True)),
             min_gap_s=float((item.get("when") or {}).get("min_gap_s", 0.0)),
             max_gap_s=float((item.get("when") or {}).get("max_gap_s", 60.0)),
+            editorial=_parse_edge_editorial(item.get("editorial")),
         )
         for item in raw.get("edges") or []
     )
@@ -183,7 +249,7 @@ def validate_graph_document(raw: dict[str, Any]) -> list[str]:
     if not isinstance(raw, dict):
         return ["graph must be an object"]
     version = raw.get("version")
-    if version != GRAPH_VERSION:
+    if version not in SUPPORTED_GRAPH_VERSIONS:
         errors.append(f"unsupported version: {version!r}")
     locales = raw.get("locales") or []
     if not isinstance(locales, list) or not locales:
@@ -198,7 +264,7 @@ def validate_graph_document(raw: dict[str, Any]) -> list[str]:
         errors.append("nodes must be a non-empty object")
         return errors
     for node_id, payload in nodes.items():
-        errors.extend(_validate_node(str(node_id), payload, known_events))
+        errors.extend(_validate_node(str(node_id), payload, known_events, version=version))
     for index, edge in enumerate(raw.get("edges") or []):
         if not isinstance(edge, dict):
             errors.append(f"edges[{index}] must be an object")
@@ -209,10 +275,17 @@ def validate_graph_document(raw: dict[str, Any]) -> list[str]:
             errors.append(f"edges[{index}] unknown from: {src!r}")
         if dst not in nodes:
             errors.append(f"edges[{index}] unknown to: {dst!r}")
+        errors.extend(_validate_edge_editorial(index, edge.get("editorial")))
     return errors
 
 
-def _validate_node(node_id: str, payload: Any, known_events: set[str]) -> list[str]:
+def _validate_node(
+    node_id: str,
+    payload: Any,
+    known_events: set[str],
+    *,
+    version: object,
+) -> list[str]:
     errors: list[str] = []
     prefix = f"nodes.{node_id}"
     if not isinstance(payload, dict):
@@ -265,6 +338,13 @@ def _validate_node(node_id: str, payload: Any, known_events: set[str]) -> list[s
     priority = payload.get("speak_priority")
     if not isinstance(priority, int) or priority < 0:
         errors.append(f"{prefix}.speak_priority must be a non-negative int")
+    errors.extend(
+        _validate_node_editorial(
+            prefix,
+            payload.get("editorial"),
+            required=version == GRAPH_VERSION,
+        )
+    )
     return errors
 
 
@@ -300,7 +380,102 @@ def _parse_node(
         variants=variants,
         modes=_parse_modes(payload.get("modes")),
         branch=str(payload.get("branch") or "").strip(),
+        editorial=_parse_node_editorial(payload.get("editorial")),
     )
+
+
+def _parse_node_editorial(raw: object) -> NodeEditorial:
+    if not isinstance(raw, dict):
+        return _LEGACY_NODE_EDITORIAL
+    return NodeEditorial(
+        policy=EditorialPolicy(str(raw["policy"])),
+        semantic_policy=SemanticPolicy(str(raw["semantic_policy"])),
+        criticality=Criticality(str(raw["criticality"])),
+        repeat_weight=float(raw.get("repeat_weight", 1.0)),
+        silence_affinity=float(raw.get("silence_affinity", 0.0)),
+        material_change_policy=MaterialChangePolicy(str(raw["material_change_policy"])),
+    )
+
+
+def _parse_edge_editorial(raw: object) -> EdgeEditorial:
+    if not isinstance(raw, dict):
+        return EdgeEditorial()
+    return EdgeEditorial(
+        transition_bonus=int(raw.get("transition_bonus", 0)),
+        closure=bool(raw.get("closure", False)),
+        repeat_weight=float(raw.get("repeat_weight", 1.0)),
+    )
+
+
+def _validate_node_editorial(prefix: str, raw: object, *, required: bool) -> list[str]:
+    path = f"{prefix}.editorial"
+    if raw is None:
+        return [f"{path} is required for graph v{GRAPH_VERSION}"] if required else []
+    if not isinstance(raw, dict):
+        return [f"{path} must be an object"]
+    errors: list[str] = []
+    _validate_enum_field(errors, raw, path, "policy", EditorialPolicy)
+    _validate_enum_field(errors, raw, path, "semantic_policy", SemanticPolicy)
+    _validate_enum_field(errors, raw, path, "criticality", Criticality)
+    _validate_enum_field(
+        errors,
+        raw,
+        path,
+        "material_change_policy",
+        MaterialChangePolicy,
+    )
+    _validate_float_range(errors, raw, path, "repeat_weight", 0.0, 2.0, default=1.0)
+    _validate_float_range(errors, raw, path, "silence_affinity", 0.0, 1.0, default=0.0)
+    return errors
+
+
+def _validate_edge_editorial(index: int, raw: object) -> list[str]:
+    path = f"edges[{index}].editorial"
+    if raw is None:
+        return []
+    if not isinstance(raw, dict):
+        return [f"{path} must be an object"]
+    errors: list[str] = []
+    bonus = raw.get("transition_bonus", 0)
+    if isinstance(bonus, bool) or not isinstance(bonus, int) or not 0 <= bonus <= 20:
+        errors.append(f"{path}.transition_bonus must be an int in range 0..20")
+    closure = raw.get("closure", False)
+    if not isinstance(closure, bool):
+        errors.append(f"{path}.closure must be a bool")
+    _validate_float_range(errors, raw, path, "repeat_weight", 0.0, 2.0, default=1.0)
+    return errors
+
+
+def _validate_enum_field(
+    errors: list[str],
+    raw: dict[str, Any],
+    path: str,
+    name: str,
+    enum_type: type[StrEnum],
+) -> None:
+    value = raw.get(name)
+    allowed = {item.value for item in enum_type}
+    if value not in allowed:
+        errors.append(f"{path}.{name} must be one of {sorted(allowed)}")
+
+
+def _validate_float_range(
+    errors: list[str],
+    raw: dict[str, Any],
+    path: str,
+    name: str,
+    minimum: float,
+    maximum: float,
+    *,
+    default: float,
+) -> None:
+    value = raw.get(name, default)
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not minimum <= float(value) <= maximum
+    ):
+        errors.append(f"{path}.{name} must be a number in range {minimum:g}..{maximum:g}")
 
 
 def _parse_variants(

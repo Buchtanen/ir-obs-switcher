@@ -80,7 +80,7 @@ Rules:
 
 ## Sequence graph (not Neo4j)
 
-`src/irswitch/commentary/data/sequence_graph.json` is a **graph-shaped JSON** (nodes + edges). Stdlib only — no new database dependency.
+`src/irswitch/commentary/data/sequence_graph.json` is a **graph-shaped JSON** (nodes + edges). Stdlib only — no new database dependency. Schema v2 adds validated, typed `editorial` metadata to every node and edge for the stateful graph rollout. The metadata is parsed but does not change audible selection while graph-runtime mode remains legacy; schema v1 remains readable for one compatibility release.
 
 | Field | Role |
 | --- | --- |
@@ -92,6 +92,8 @@ Rules:
 | `hr_states` | Which BLE bands may pick this node |
 | `variants.{locale}.{emotion}` | Spoken lines. EN mock filled on `in_car`, `lap_complete`, `pit_entry`, `back_on_track`. CS empty (falls back to EN). |
 | `edges` | Temporal story transitions. They prefer the next beat and let the composer recover a bounded prior-node path (e.g. hunting → side_by_side → overtake). |
+| `nodes.*.editorial` | Graph v2 policy, semantic/material-change policy, criticality, repeat weight and silence affinity. Runtime counters are never stored in JSON. |
+| `edges.*.editorial` | Graph v2 transition bonus, closure marker and repeat weight. |
 
 Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDATE`s) are **not** in the speak graph.
 
