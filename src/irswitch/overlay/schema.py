@@ -394,12 +394,12 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec(
         "commentary.llm_max_attempts",
         "int",
-        5,
+        2,
         True,
         "commentary",
-        "Max HTTP generation attempts per line (1–8). Failure falls back to the anchor.",
+        "Max generation calls per line (1–2); only a validation failure retries. Final fallback is canonical facts.",
         1.0,
-        8.0,
+        2.0,
     ),
     FieldSpec(
         "commentary.driver_name",

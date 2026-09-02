@@ -561,7 +561,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         llm_max_attempts=max(
             1,
             min(
-                8,
+                2,
                 _get_int(
                     parser,
                     "commentary",

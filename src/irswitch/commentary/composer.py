@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
+import math
 import random
 import re
+import zlib
 from dataclasses import dataclass
 from typing import Any
 
 from irswitch.commentary.anti_repeat import RecentUtteranceHistory, prefer_fresh_candidates
 from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph
+from irswitch.commentary.microplan import CommentaryMicroplan
+from irswitch.commentary.style_cards import select_style_card
 from irswitch.commentary.validator import fill_slots, leftover_slots
 from irswitch.events.envelope import EventEnvelope
 
-FACT_PACK_VERSION = "commentary-facts/2"
-MAX_FACTS = 4
+FACT_PACK_VERSION = "commentary-facts/3"
+MAX_FACTS = 2
 MAX_GRAPH_NODES = 3
 _SLOT = re.compile(r"\{([a-z0-9_]+)\}", re.IGNORECASE)
+
+
 @dataclass(frozen=True)
 class CompositionResult:
     text: str
@@ -57,10 +63,8 @@ def build_skeleton(
 ) -> CompositionResult | None:
     """Build a grounded plan around one safe, fully-bound authored anchor.
 
-    ``text`` remains the compatibility field consumed by TTS, but it now holds
-    only the authored anchor. Required and optional propositions live in the v2
-    fact pack so an LLM may write a richer call without a generic pre-composed
-    position/laps/phase suffix. Raw recent utterances never enter that pack.
+    ``text`` is a complete canonical fallback. Only selected propositions, not
+    unrelated position/laps/phase telemetry, are available for realization.
     """
     if node is None:
         return None
@@ -92,10 +96,7 @@ def build_skeleton(
     if primary is None or any(key.startswith("authored:") for key in primary.fact_keys):
         primary = _Clause("beat", _strip_terminal(anchor.text), ("beat:event",))
     required = [primary]
-    optional_candidates = [
-        *details,
-        *_context_clauses(context, used=_fact_keys(required), cs=cs),
-    ]
+    optional_candidates = details
     optional: list[_Clause] = []
     selected_ids = {_fact_id(primary)}
     for clause in optional_candidates:
@@ -107,7 +108,7 @@ def build_skeleton(
         if len(required) + len(optional) >= MAX_FACTS:
             break
 
-    text = _ensure_terminal(anchor.text)
+    text = _join_clauses(required)
     selected_facts = [_fact_id(clause) for clause in [*required, *optional]]
     fact_pack = _fact_pack(
         envelope,
@@ -118,10 +119,62 @@ def build_skeleton(
         emotion,
         graph_path,
         selected_facts,
-        anchor=text,
+        anchor=_ensure_terminal(anchor.text),
         required=required,
         optional=optional,
     )
+    relation = _relation(envelope.event_type)
+    # Wire RESULT is also used for ongoing observations; it is not itself an outcome.
+    resolved = envelope.event_type.upper() in {
+        "OVERTAKE",
+        "BATTLE_WON",
+        "POSITION_GAINED",
+        "POSITION_LOST",
+        "FINISH",
+        "SESSION_WRAP",
+    }
+    state = "resolved" if resolved else "live"
+    card = select_style_card(
+        node.style_cards,
+        relation,
+        state,
+        len(required),
+        index=zlib.crc32(envelope.event_id.encode()),
+    )
+    roles = tuple(
+        (role, value)
+        for role, key in (
+            ("hero", "hero_name"),
+            ("target", "target_name"),
+            ("front", "front_target_name"),
+            ("rear", "rear_target_name"),
+        )
+        if (value := _bound(bindings, key))
+    )
+    microplan = CommentaryMicroplan(
+        family=node.family,
+        relation=relation,
+        story_state=state,
+        density="multi_role" if relation == "hero_between_two_fronts" else "single",
+        actor_roles=roles,
+        required_ids=tuple(_fact_id(c) for c in required),
+        optional_ids=tuple(_fact_id(c) for c in optional),
+        style_card_id=card.id,
+        canonical=text,
+        source_correlation=envelope.correlation_id,
+        run_epoch=_int(envelope.metrics.get("runEpoch")) or 0,
+        source_revision=int(envelope.monotonic_ms or 0),
+    )
+    fact_pack["microplan"] = microplan.to_dict()
+    example_values = {**dict(roles), "position": _bound(bindings, "position")}
+    example = card.example(language)
+    placeholders = _SLOT.findall(example)
+    if any(not example_values.get(key) for key in placeholders):
+        example = ""
+    else:
+        example = example.format_map(example_values)
+    fact_pack["style_card"] = {"id": card.id, "guidance": card.guidance, "example": example}
+    fact_pack["canonical"] = text
     return CompositionResult(
         text=text,
         fact_count=len(required) + len(optional),
@@ -307,16 +360,16 @@ def _current_clauses(
 ) -> tuple[_Clause | None, list[_Clause]]:
     event = envelope.event_type.upper()
     name = _bound(bindings, "target_name")
-    position = _bound(bindings, "position")
-    gap = _bound(bindings, "gap")
-    lap = _bound(bindings, "lap") or _bound(bindings, "current_lap")
-    lap_time = _bound(bindings, "lap_time")
-    delta = _bound(bindings, "delta")
+    position = _positive_position(_bound(bindings, "position"))
+    gap = _positive_metric(_bound(bindings, "gap"))
+    lap = _positive_position(_bound(bindings, "lap") or _bound(bindings, "current_lap"))
+    lap_time = _positive_metric(_bound(bindings, "lap_time"))
+    delta = _nonzero_metric(_bound(bindings, "delta"))
     streak = _bound(bindings, "streak")
     front = _bound(bindings, "front_target_name")
     rear = _bound(bindings, "rear_target_name")
-    front_gap = _bound(bindings, "front_gap")
-    rear_gap = _bound(bindings, "rear_gap")
+    front_gap = _positive_metric(_bound(bindings, "front_gap"))
+    rear_gap = _positive_metric(_bound(bindings, "rear_gap"))
     details: list[_Clause] = []
     primary: _Clause | None
 
@@ -401,7 +454,7 @@ def _current_clauses(
         return primary, details
 
     if event in {"OVERTAKE", "POSITION_GAINED", "BATTLE_WON"}:
-        if position and name:
+        if position and name and event != "POSITION_GAINED":
             return (
                 _Clause(
                     "beat",
@@ -421,6 +474,11 @@ def _current_clauses(
                     f"Posouvá se na {position}. místo" if cs else f"He moves up to P{position}",
                     ("hero:position", "beat:gain"),
                 ),
+                details,
+            )
+        if event == "POSITION_GAINED":
+            return (
+                _Clause("beat", "Získává pozici" if cs else "He gains a position", ("beat:gain",)),
                 details,
             )
 
@@ -496,6 +554,28 @@ def _current_clauses(
                 ),
                 details,
             )
+        return (
+            _Clause("beat", "Ztrácí pozici" if cs else "He loses a position", ("beat:loss",)),
+            details,
+        )
+        if position:
+            return (
+                _Clause(
+                    "beat",
+                    f"Klesá na {position}. místo" if cs else f"He drops to P{position}",
+                    ("hero:position", "beat:loss"),
+                ),
+                details,
+            )
+
+    if event == "FINISH":
+        # A FINISH event does not guarantee a confirmed final classification.
+        return (
+            _Clause(
+                "beat", "Jeho závod skončil" if cs else "His race is complete", ("beat:finish",)
+            ),
+            details,
+        )
 
     if event in {"LAP_COMPLETE", "PERSONAL_BEST", "HOT_LAP"}:
         if lap and lap_time:
@@ -665,21 +745,21 @@ def _fact_pack(
         key: value
         for key, value in {
             "name": _bound(bindings, "target_name"),
-            "gap": _bound(bindings, "gap"),
+            "gap": _positive_metric(_bound(bindings, "gap")),
         }.items()
         if value is not None
     }
     front_target = _compact(
         {
             "name": _bound(bindings, "front_target_name"),
-            "gap": _bound(bindings, "front_gap"),
-            "position": _bound(bindings, "front_position"),
+            "gap": _positive_metric(_bound(bindings, "front_gap")),
+            "position": _positive_position(_bound(bindings, "front_position")),
         }
     )
     rear_target = _compact(
         {
             "name": _bound(bindings, "rear_target_name"),
-            "gap": _bound(bindings, "rear_gap"),
+            "gap": _positive_metric(_bound(bindings, "rear_gap")),
         }
     )
     ahead_raw = story.get("ahead")
@@ -687,7 +767,9 @@ def _fact_pack(
     ahead: list[Any] = ahead_raw if isinstance(ahead_raw, list) else []
     behind: list[Any] = behind_raw if isinstance(behind_raw, list) else []
     allowed_names = _allowed_names(bindings, ahead, behind)
-    allowed_numbers = _allowed_numbers(bindings, race, situation)
+    selected_text = " ".join(clause.text for clause in [*required, *optional])
+    allowed_numbers = _allowed_numbers(selected_text)
+    allowed_names = [name for name in allowed_names if name.casefold() in selected_text.casefold()]
     return {
         "version": FACT_PACK_VERSION,
         "anchor": anchor,
@@ -755,6 +837,7 @@ def _relation(event_type: str) -> str:
         "BATTLE_FOR_POSITION": "hero_between_two_fronts",
         "LEADER_CHANGE": "class_leader_changed",
         "SESSION_WRAP": "session_result",
+        "FINISH": "session_result",
     }.get(event_type.upper(), "factual_beat")
 
 
@@ -771,9 +854,7 @@ def _proposition(
 ) -> dict[str, Any]:
     folded = clause.text.casefold()
     required_terms = [
-        name.split()[-1]
-        for name in allowed_names
-        if name.casefold() in folded and name.split()
+        name.split()[-1] for name in allowed_names if name.casefold() in folded and name.split()
     ]
     proposition = {
         "id": _fact_id(clause),
@@ -790,7 +871,14 @@ def _proposition(
 def _forbidden_claims(event_type: str) -> list[str]:
     event = event_type.upper()
     claims: list[str] = []
-    if event in {"HUNTING", "APPROACH", "ATTACK_RANGE", "HUNTED", "LEADER_CHANGE"}:
+    if event in {
+        "HUNTING",
+        "APPROACH",
+        "ATTACK_RANGE",
+        "HUNTED",
+        "LEADER_CHANGE",
+        "POSITION_GAINED",
+    }:
         claims.append("on_track_pass")
     if event in {"HUNTING", "APPROACH", "ATTACK_RANGE", "HUNTED"}:
         claims.append("hero_leads")
@@ -891,6 +979,41 @@ def _int(value: object) -> int | None:
         return int(float(value))
     except (TypeError, ValueError):
         return None
+
+
+def _numeric(value: str | None) -> float | None:
+    if not value:
+        return None
+    match = _NUMBER_LITERAL.search(value.replace(",", "."))
+    if match is None:
+        return None
+    raw = match.group(0)
+    try:
+        if ":" in raw:
+            parts = [float(part) for part in raw.split(":")]
+            parsed = sum(
+                part * (60 ** (len(parts) - index - 1)) for index, part in enumerate(parts)
+            )
+        else:
+            parsed = float(raw)
+    except ValueError:
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _positive_metric(value: str | None) -> str | None:
+    parsed = _numeric(value)
+    return value if parsed is not None and parsed > 0 else None
+
+
+def _nonzero_metric(value: str | None) -> str | None:
+    parsed = _numeric(value)
+    return value if parsed is not None and parsed != 0 else None
+
+
+def _positive_position(value: str | None) -> str | None:
+    parsed = _numeric(value)
+    return str(int(parsed)) if parsed is not None and parsed > 0 and parsed.is_integer() else None
 
 
 def _compact(values: dict[str, object]) -> dict[str, object]:

@@ -28,13 +28,13 @@ iRacing / BLE HR
     → accepted EventEnvelope
     → CommentaryDirector (sequence graph + HR emotion)
        ├─ llm_polish=false: one authored fully-bound line
-       └─ llm_polish=true: authored anchor + required/optional fact plan
+       └─ llm_polish=true: microplan + selected facts + style card
     → validate_utterance
     → independent TtsSink worker (optional grounded LLM generation)
     → Windows SAPI / espeak-ng / NullTtsSink
 ```
 
-**Wired, default off:** optional remote LLM generation receives one safe authored anchor plus a compact proposition-level fact plan, never the full graph or raw recent commentary. The default model is LAN Ollama `qwen3:4b-instruct-2507-q4_K_M`; [the earlier skeleton PoC](docs/commentary_llm_skeleton_poc.md) remains historical context.
+**Wired, default off:** optional local/LAN LLM realization receives a compact immutable microplan with selected propositions and one compatible style card, never the full graph, unrelated telemetry, authored anchor, or raw recent commentary. The default model is Ollama `qwen3:4b-instruct-2507-q4_K_M`; [the earlier skeleton PoC](docs/commentary_llm_skeleton_poc.md) remains historical context.
 
 Local Ollama smoke (2026-09-02): grounded `HUNTING` passed in two attempts (~1.7 s) with relation + gap + remaining-laps facts; `LEADER_CHANGE` passed on the first attempt (~0.7 s) without inventing an on-track pass. Windows/SAPI/OBS live listening is still pending.
 
@@ -98,9 +98,9 @@ Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDAT
 
 `RaceObserver` owns a session-scoped ring of the latest 24 accepted factual beats. The frozen N12 context carries that history to commentary; `CommentaryConsumer` never receives a live observer reference. `composer.py` still walks backwards over valid graph edges (maximum three nodes) for story identity, but it no longer joins history, position, remaining laps and phase into mandatory prose.
 
-The director selects one fully-bound authored variant as the `anchor`, using the existing anti-repeat preference. `commentary-facts/2` then carries explicit `required_facts`, bounded `optional_facts`, `forbidden_claims`, and allowed names/numbers. Dynamic context is optional and already passed through the consumer's freshness gate. Raw recent commentary is deliberately excluded from the model prompt.
+The composer builds a complete deterministic canonical sentence and `commentary-microplan/1`. `commentary-facts/3` carries only selected required/optional propositions, actor roles, relation, time frame and the graph-selected style card. Single-role stories select one required proposition plus at most one metric; two-front stories retain both actor directions. The authored variant remains useful for the non-LLM path but is not sent as wording for the model to copy.
 
-The model writes one or two sentences inside the full node TTS limit. It must preserve required terms and may use only relevant optional facts. Fact guards reject unsupported passes/leads/position gains, new P/S markers, numbers, names, role swaps and the existing VOD-style inversions. A failed or exhausted generation speaks the safe authored anchor.
+The model writes one or two freshly phrased sentences inside the node TTS limit. Hard fact guards reject unsupported events, passes/leads/position gains, new P/S markers, numbers, names, role swaps and direction inversions. P/S tokens are parsed before name detection and numeric comparison preserves decimal precision. Punctuation/style warnings are normalized or accepted without retry. One hard rejection changes to a shorter fact-first request; a second rejection speaks the complete canonical fact realization. Timeout/transport outage immediately uses that canonical text, so identical calls are not repeated.
 
 All 54 active graph nodes and all 24 edges have compatibility tests. `leader_change` (prio 75) speaks class P1 changes; do not invent an on-track pass. Parade pads repeat until green (cap 12, 20 s). `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
 

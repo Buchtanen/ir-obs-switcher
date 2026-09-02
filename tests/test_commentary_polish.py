@@ -103,7 +103,7 @@ def test_polish_timeout_skips_skeleton() -> None:
     outcome = polish_skeleton(skeleton, node, settings, opener=opener)
     assert outcome.outcome == "fallback_timeout"
     assert outcome.text == ""
-    assert outcome.attempts == 3
+    assert outcome.attempts == 1
 
 
 def test_tape_commentary_and_llm_rows(tmp_path: Path) -> None:
@@ -197,9 +197,7 @@ def test_grounded_prompt_uses_full_node_budget_and_explicit_fact_roles() -> None
                 "required_terms": ["Rossi"],
             }
         ],
-        "optional_facts": [
-            {"id": "target:gap", "text": "the gap is zero point seven seconds"}
-        ],
+        "optional_facts": [{"id": "target:gap", "text": "the gap is zero point seven seconds"}],
         "forbidden_claims": ["on_track_pass", "hero_leads"],
         "allowed_numbers": ["0.7"],
         "recent": ["Rossi was P4."],
@@ -602,7 +600,7 @@ def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
 
     def opener(_req, timeout):  # noqa: ARG001
         calls["n"] += 1
-        if calls["n"] < 3:
+        if calls["n"] < 2:
             content = "Richard maintains a narrow lead over Adamson."
         else:
             content = "Adamson is still ahead by zero point eight seven seconds."
@@ -611,7 +609,7 @@ def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
     skeleton = "Adamson is ahead by zero point eight seven seconds."
     outcome = polish_skeleton(skeleton, node, settings, opener=opener)
     assert outcome.outcome == "ok"
-    assert outcome.attempts == 3
+    assert outcome.attempts == 2
     assert "ahead" in outcome.text.lower()
     assert "lead" not in outcome.text.lower()
 

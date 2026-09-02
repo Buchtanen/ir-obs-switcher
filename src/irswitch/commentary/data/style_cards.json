@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "cards": [
+    {
+      "id": "fact_first", "relations": ["*"], "states": ["live", "resolved"], "capacity": 3,
+      "guidance": "Lead with the key fact; vary phrasing, not meaning. No extra events or predictions.",
+      "example_en": "",
+      "example_cs": ""
+    },
+    {
+      "id": "tension_first", "relations": ["hero_closing_on_target"], "states": ["live"], "capacity": 2,
+      "guidance": "Build tension from the supplied chase only; never invent a shrinking gap or completed pass.",
+      "example_en": "Example: {target} is the target as he closes in.",
+      "example_cs": "Příklad: Cílem je {target}, postupně se k němu dotahuje."
+    },
+    {
+      "id": "rear_pressure", "relations": ["target_closing_on_hero"], "states": ["live"], "capacity": 2,
+      "guidance": "Describe the supplied rear pressure without guessing a pass or trend.",
+      "example_en": "Example: Pressure in the mirrors, with {target} right behind him.",
+      "example_cs": "Příklad: Tlak v zrcátkách, {target} se drží za ním."
+    },
+    {
+      "id": "road_and_mirrors", "relations": ["hero_between_two_fronts"], "states": ["live"], "capacity": 3,
+      "guidance": "Contrast the attack ahead with pressure behind; both named roles must remain explicit.",
+      "example_en": "Example: His attack targets {front} ahead, with {rear} applying pressure behind.",
+      "example_cs": "Příklad: Jeho útok míří na jezdce {front} vpředu, zatímco {rear} tlačí zezadu."
+    },
+    {
+      "id": "two_front_action", "relations": ["hero_between_two_fronts"], "states": ["live"], "capacity": 3,
+      "guidance": "Start with the hero's attack, then turn to the rear threat.",
+      "example_en": "Example: He attacks {front} up front, but {rear} keeps the pressure on from behind.",
+      "example_cs": "Příklad: Vpředu útočí na jezdce {front}, ale {rear} mu zezadu nedává klid."
+    },
+    {
+      "id": "two_front_pressure", "relations": ["hero_between_two_fronts"], "states": ["live"], "capacity": 3,
+      "guidance": "Start with pressure from the rear driver, then name the attack ahead.",
+      "example_en": "Example: {rear} pressures him from behind while his attack targets {front} ahead.",
+      "example_cs": "Příklad: {rear} tlačí zezadu, zatímco on vpředu útočí na jezdce {front}."
+    },
+    {
+      "id": "position_result", "relations": ["hero_lost_position"], "states": ["resolved"], "capacity": 3,
+      "guidance": "State the confirmed position change. Do not guess its cause or an on-track pass.",
+      "example_en": "Example: A place lost leaves him in P{position}.",
+      "example_cs": "Příklad: Ztráta pozice ho posouvá na {position}. místo."
+    },
+    {
+      "id": "position_gain", "relations": ["hero_gained_position"], "states": ["resolved"], "capacity": 3,
+      "guidance": "Describe the position gain without guessing a cause or on-track pass.",
+      "example_en": "Example: He gains a place to move into P{position}.",
+      "example_cs": "Příklad: Získává pozici a posouvá se na {position}. místo."
+    },
+    {
+      "id": "session_result", "relations": ["session_result"], "states": ["resolved"], "capacity": 3,
+      "guidance": "Close with the supplied result only. No invented podium, celebration or final classification.",
+      "example_en": "Fact: His race is complete. Call: That brings his race to a close.",
+      "example_cs": "Fakt: Jeho závod skončil. Komentář: Tím se jeho závod uzavírá."
+    }
+  ]
+}

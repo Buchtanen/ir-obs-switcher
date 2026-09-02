@@ -143,7 +143,7 @@ def test_composer_walks_recent_graph_nodes_into_one_story() -> None:
 
     assert result is not None
     assert result.graph_path == ("hunting", "side_by_side", "overtake")
-    assert 2 <= result.fact_count <= 4
+    assert 1 <= result.fact_count <= 2
     required = " ".join(fact["text"] for fact in result.fact_pack["required_facts"])
     assert "Rossi" in required
     assert "P5" in required
@@ -176,7 +176,7 @@ def test_composer_omits_unbound_target_and_builds_czech_parts() -> None:
     )
 
     assert result is not None
-    assert 2 <= result.fact_count <= 4
+    assert 1 <= result.fact_count <= 2
     assert "Rossi" not in result.text
     required = " ".join(fact["text"] for fact in result.fact_pack["required_facts"])
     assert "8" in required
@@ -208,7 +208,7 @@ def test_director_uses_composer_only_for_polish_path() -> None:
     polished.note_composition_context(context)
     composed = polished.observe([envelope], None, 10.0)
     assert composed is not None
-    assert composed.text == "That's a lap for him."
+    assert composed.text == "He completes lap 8 in 1:37.200."
     assert composed.fact_pack is not None
     assert composed.composition_path
 
@@ -252,11 +252,12 @@ def test_polish_plan_uses_authored_anchor_and_proposition_fact_pack() -> None:
     )
 
     assert result is not None
-    assert result.text == "A chase is building."
+    assert result.text == "He is closing on Rossi."
     assert "P7" not in result.text
     assert "laps remaining" not in result.text
-    assert result.fact_pack["version"] == "commentary-facts/2"
-    assert result.fact_pack["anchor"] == result.text
+    assert result.fact_pack["version"] == "commentary-facts/3"
+    assert result.fact_pack["anchor"] == "A chase is building."
+    assert result.fact_pack["canonical"] == result.text
     assert result.fact_pack["required_facts"]
     assert result.fact_pack["required_facts"][0]["id"] == "beat:relation"
     assert any(fact["id"] == "target:gap" for fact in result.fact_pack["optional_facts"])
@@ -356,7 +357,7 @@ def test_every_graph_node_composes_from_its_declared_slots_in_en_and_cs() -> Non
                 language=language,
             )
             assert result is not None, (language, node.id)
-            assert 2 <= result.fact_count <= 4, (language, node.id, result.text)
+            assert 1 <= result.fact_count <= 2, (language, node.id, result.text)
             assert validate_utterance(result.text, node) == [], (
                 language,
                 node.id,

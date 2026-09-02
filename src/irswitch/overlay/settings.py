@@ -183,7 +183,7 @@ class CommentarySettings:
     llm_timeout_s: float = 12.0
     llm_temperature: float = 0.45
     llm_max_tokens: int = 360
-    llm_max_attempts: int = 5
+    llm_max_attempts: int = 2
     # Spoken hero identity. Empty = iRacing UserName first/last tokens.
     driver_name: str = ""
     driver_nickname: str = ""

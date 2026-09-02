@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Sequence
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Any, TypeGuard
 from urllib.parse import urlparse
 
@@ -113,7 +114,7 @@ _RELATION_PATTERNS = {
         re.IGNORECASE,
     ),
     "session_result": re.compile(
-        r"\b(finishes?|finished|result|wrap|ends?|ending|končí|výsledek|závěr|konec)\b",
+        r"\b(finishes?|finished|result|wrap|ends?|ending|complete|close|končí|skončil|uzavírá|výsledek|závěr|konec)\b",
         re.IGNORECASE,
     ),
 }
@@ -239,7 +240,23 @@ def polish_char_limit(skeleton: str, tts: TtsLimits) -> int:
 
 
 def _is_grounded(fact_pack: dict[str, Any] | None) -> TypeGuard[dict[str, Any]]:
-    return isinstance(fact_pack, dict) and fact_pack.get("version") == "commentary-facts/2"
+    return isinstance(fact_pack, dict) and fact_pack.get("version") in {
+        "commentary-facts/2",
+        "commentary-facts/3",
+    }
+
+
+def _is_microplan(fact_pack: dict[str, Any] | None) -> TypeGuard[dict[str, Any]]:
+    return isinstance(fact_pack, dict) and fact_pack.get("version") == "commentary-facts/3"
+
+
+def _selected_text(fact_pack: dict[str, Any]) -> str:
+    return " ".join(
+        str(fact.get("text") or "")
+        for key in ("required_facts", "optional_facts")
+        for fact in fact_pack.get(key, [])
+        if isinstance(fact, dict)
+    )
 
 
 def _request_char_limit(
@@ -294,7 +311,7 @@ def fact_violation_codes(
     fact_pack: dict[str, Any] | None = None,
 ) -> list[str]:
     """Reject VOD-style inversions the 3B model repeats. Empty = fact-ok."""
-    sk = skeleton or ""
+    sk = _selected_text(fact_pack) if _is_microplan(fact_pack) else skeleton or ""
     po = polished or ""
     codes: list[str] = []
     if _LIVE_CALL.search(po):
@@ -320,6 +337,14 @@ def fact_violation_codes(
         codes.append("hero_vocative")
     if _two_front_polarity_conflict(po, fact_pack):
         codes.append("two_front_polarity_conflict")
+    if _is_microplan(fact_pack):
+        codes.extend(_role_violations(po, fact_pack))
+        if re.search(
+            r"\b(?:Fix|REQUIRED|OPTIONAL|STRICT|Example|STYLE|Facts?|Call)\s*:|\b(?:invented_name|missing_required_fact|validator|commentary-facts)\b",
+            po,
+            re.I,
+        ):
+            codes.append("meta_output")
     if _token_set(po, _P_TOKEN) - _token_set(sk, _P_TOKEN):
         codes.append("invented_position")
     if _token_set(po, _S_TOKEN) - _token_set(sk, _S_TOKEN):
@@ -393,7 +418,13 @@ def _invented_numbers(
     polished: str,
     fact_pack: dict[str, Any],
 ) -> bool:
-    allowed = {_normalize_number(item) for item in fact_pack.get("allowed_numbers", [])}
+    # v3 never trusts a telemetry-wide allowlist, including imported/tampered packs.
+    values = (
+        list(_NUMBER_LITERAL.findall(_selected_text(fact_pack)))
+        if _is_microplan(fact_pack)
+        else fact_pack.get("allowed_numbers", [])
+    )
+    allowed = {_normalize_number(item) for item in values}
     allowed.update(
         _normalize_number(match.group(0)) for match in _NUMBER_LITERAL.finditer(skeleton)
     )
@@ -401,7 +432,7 @@ def _invented_numbers(
     if found - allowed:
         return True
     allowed_words = _number_words(skeleton)
-    for item in fact_pack.get("allowed_numbers", []):
+    for item in values:
         allowed_words.update(_number_words(numbers_to_words(str(item), "en")))
         allowed_words.update(_number_words(numbers_to_words(str(item), "cs")))
     return bool(_number_words(polished) - allowed_words)
@@ -428,7 +459,10 @@ def _invented_name(
     allowed_tokens = set(re.findall(r"[\wáčďéěíňóřšťúůýž'-]+", allowed_text))
     for match in _PROPER_TOKEN.finditer(polished):
         token = match.group(0)
-        if token.casefold() in allowed_tokens:
+        if re.fullmatch(r"[PS]\d+", token, re.IGNORECASE):
+            continue
+        possessive = re.sub(r"(?:['’]s)$", "", token, flags=re.IGNORECASE)
+        if token.casefold() in allowed_tokens or possessive.casefold() in allowed_tokens:
             continue
         # Sentence-opening capitalization is not enough evidence of a name.
         prefix = polished[: match.start()].rstrip()
@@ -442,17 +476,12 @@ def _invented_name(
 
 def _normalize_number(value: object) -> str:
     raw = str(value).strip().replace(",", ".")
-    parts = re.split(r"([.:])", raw)
-    normalized: list[str] = []
-    for part in parts:
-        if part in {".", ":"}:
-            normalized.append(part)
-        elif part.lstrip("-").isdigit():
-            sign = "-" if part.startswith("-") else ""
-            normalized.append(sign + (part.lstrip("-").lstrip("0") or "0"))
-        else:
-            normalized.append(part)
-    return "".join(normalized).rstrip("0").rstrip(".") if "." in raw else "".join(normalized)
+    if ":" in raw:
+        return ":".join(_normalize_number(part) for part in raw.split(":"))
+    try:
+        return format(Decimal(raw).normalize(), "f")
+    except InvalidOperation:
+        return raw
 
 
 def _token_set(text: str, pattern: re.Pattern[str]) -> set[int]:
@@ -483,17 +512,73 @@ def _two_front_polarity_conflict(
     if not front_name or not rear_name or front_name.casefold() == rear_name.casefold():
         return bool(front_name and rear_name)
     text = polished or ""
+    # Stop at another actor or a clause boundary, not an arbitrary 48-char span.
+    boundary = rf"(?:(?!\b(?:{re.escape(front_name)}|{re.escape(rear_name)}|while|but|whereas|zatímco|ale)\b)[^.!?;,])"
     front_behind = re.search(
-        rf"\b{re.escape(front_name)}\b[^.!?]{{0,48}}\b(behind|from behind|rear|zezadu|vzadu)\b",
+        rf"\b{re.escape(front_name)}\b{boundary}{{0,48}}\b(behind|from behind|rear|zezadu|vzadu)\b",
         text,
         re.IGNORECASE,
     )
     rear_ahead = re.search(
-        rf"\b{re.escape(rear_name)}\b[^.!?]{{0,48}}\b(ahead|in front|vpředu|před ním)\b",
+        rf"\b{re.escape(rear_name)}\b{boundary}{{0,48}}\b(ahead|in front|up front|vpředu|před ním)\b",
         text,
         re.IGNORECASE,
     )
     return front_behind is not None or rear_ahead is not None
+
+
+def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
+    """Small family-specific guards; not an unrestricted natural-language judge."""
+    relation = str(pack.get("beat", {}).get("relation") or "")
+    target = str(pack.get("target", {}).get("name") or "")
+    codes: list[str] = []
+    if relation == "hero_between_two_fronts":
+        attack = re.search(r"\b(attack\w*|fight|útočí|útok)\b", text, re.I)
+        pressure = re.search(
+            r"\b(pressure\w*|defend\w*|mirrors|tlačí|tlak|bránit|zrcátkách)\b", text, re.I
+        )
+        if not attack or not pressure:
+            codes.append("missing_required_relation")
+        front = str(pack.get("front_target", {}).get("name") or "")
+        rear = str(pack.get("rear_target", {}).get("name") or "")
+        if front and re.search(
+            rf"\b{re.escape(front)}\b[^.!?;]{{0,45}}\b(?:attack\w*|fight\w*|strikes?)\b",
+            text,
+            re.I,
+        ):
+            codes.append("reversed_front_relation")
+        if rear and re.search(
+            rf"\b(?:he|hero)\b[^.!?;]{{0,35}}\b(?:pressure\w*|presses?|bears? down)\b[^.!?;]{{0,25}}\b{re.escape(rear)}\b",
+            text,
+            re.I,
+        ):
+            codes.append("reversed_rear_relation")
+    if target and relation in {"hero_closing_on_target", "target_closing_on_hero"}:
+        target_chases = re.search(
+            rf"\b{re.escape(target)}\s+(?:is\s+)?(?:clos\w*|chas\w*|hunts?|stahuje|dotahuje)",
+            text,
+            re.I,
+        )
+        hero_chases = re.search(
+            rf"\b(?:he|his|hero)\b[^.!?;]{{0,30}}(?:closing on|chases?|hunts?)\s+{re.escape(target)}\b",
+            text,
+            re.I,
+        )
+        if (relation == "hero_closing_on_target" and target_chases) or (
+            relation == "target_closing_on_hero" and hero_chases
+        ):
+            codes.append("reversed_relation")
+    # Never infer causal or future race events merely from a gap/position fact.
+    source = _selected_text(pack)
+    for concept in (
+        r"\b(?:wins?|won|victory|vítězí)\b",
+        r"\b(?:yellow|safety car|crash\w*|collision|žlutá|nehoda)\b",
+        r"\b(?:final lap|last lap|poslední kolo)\b",
+        r"\b(?:fastest|nejrychlejší)\b",
+    ):
+        if re.search(concept, text, re.I) and not re.search(concept, source, re.I):
+            codes.append("unsupported_event")
+    return codes
 
 
 def _hero_vocative(text: str, names: Sequence[str]) -> bool:
@@ -542,6 +627,14 @@ def _system_prompt(
     locale: str = "en",
     fact_pack: dict[str, Any] | None = None,
 ) -> str:
+    if _is_microplan(fact_pack):
+        language = "Czech" if locale.lower().startswith("cs") else "English"
+        return (
+            f"Write vivid, natural {language} TV race commentary, third person, 1-2 sentences, at most {tts.max_chars} characters. "
+            "Give the source facts fresh broadcast phrasing; preserve every required fact and actor direction. Optional facts may be omitted. "
+            "No new names, numbers, causes, predictions or events. Example is style only, not evidence. "
+            "Output only the call."
+        )
     if _is_grounded(fact_pack):
         cap = _request_char_limit(skeleton, tts, fact_pack)
         if locale.lower().startswith("cs"):
@@ -598,6 +691,35 @@ def _user_content(
     fact_pack: dict[str, Any] | None = None,
     composition_path: Sequence[str] = (),
 ) -> str:
+    if _is_microplan(fact_pack):
+        micro = fact_pack.get("microplan") or {}
+        card = fact_pack.get("style_card") or {}
+        parts = [f"TIME FRAME: {micro.get('story_state', 'live')}"]
+        if past:
+            parts.append(
+                "Delayed call; describe the supplied facts retrospectively without inventing an outcome."
+            )
+        if rejected:
+            parts.append(
+                "SAFETY RETRY: State only the source facts directly. Output a clean commentary line, no labels or instructions."
+            )
+        else:
+            optional = " ".join(str(f.get("text", "")) for f in fact_pack.get("optional_facts", []))
+            if optional:
+                parts.append("OPTIONAL SOURCE: " + optional)
+            parts.append(
+                "STYLE DIRECTION: " + str(card.get("guidance") or "Fact first, natural cadence.")
+            )
+            if card.get("example"):
+                parts.append(str(card["example"]))
+        forbidden = fact_pack.get("forbidden_claims", [])
+        if forbidden:
+            parts.append("DO NOT CLAIM: " + ", ".join(forbidden))
+        parts.append(
+            "SOURCE FACTS (preserve meaning, do not copy wording): "
+            + " ".join(str(f.get("text", "")) for f in fact_pack.get("required_facts", []))
+        )
+        return "\n".join(parts)
     if _is_grounded(fact_pack):
         required = fact_pack.get("required_facts", [])
         optional = fact_pack.get("optional_facts", [])
@@ -659,6 +781,7 @@ class PolishOutcome:
     attempts: int = 0
     fact_pack: dict[str, Any] | None = None
     composition_path: tuple[str, ...] = ()
+    attempt_log: tuple[dict[str, Any], ...] = ()
 
     def debug_record(self, *, node_id: str, event_type: str) -> dict[str, Any]:
         last = None
@@ -687,15 +810,17 @@ class PolishOutcome:
                 self.fact_pack.get("optional_facts", []) if grounded and self.fact_pack else []
             ),
             "fallbackUsed": self.outcome != "ok",
+            "attemptLog": list(self.attempt_log),
+            "microplan": self.fact_pack.get("microplan") if self.fact_pack else None,
         }
 
 
 def _max_attempts(settings: CommentarySettings) -> int:
     try:
-        raw = int(getattr(settings, "llm_max_attempts", 5) or 5)
+        raw = int(getattr(settings, "llm_max_attempts", 2) or 2)
     except (TypeError, ValueError):
-        raw = 5
-    return max(1, min(8, raw))
+        raw = 2
+    return max(1, min(2, raw))
 
 
 def build_polish_request(
@@ -758,9 +883,10 @@ def _failed(
     attempts: int,
     fact_pack: dict[str, Any] | None = None,
     composition_path: Sequence[str] = (),
+    attempt_log: Sequence[dict[str, Any]] = (),
 ) -> PolishOutcome:
     return PolishOutcome(
-        text="",
+        text=str(fact_pack.get("canonical") or skeleton) if _is_microplan(fact_pack) else "",
         outcome=outcome,
         latency_ms=latency_ms,
         skeleton=skeleton,
@@ -769,6 +895,7 @@ def _failed(
         attempts=attempts,
         fact_pack=fact_pack,
         composition_path=tuple(composition_path),
+        attempt_log=tuple(attempt_log),
     )
 
 
@@ -838,6 +965,7 @@ def polish_skeleton(
     last_response: dict[str, Any] | None = None
     timed_out = 0
     http_ok = 0
+    attempt_log: list[dict[str, Any]] = []
 
     for attempt in range(1, max_attempts + 1):
         remaining = deadline - time.monotonic()
@@ -869,6 +997,15 @@ def polish_skeleton(
             headers={"Content-Type": "application/json"},
             method="POST",
         )
+        attempt_started = time.monotonic()
+        entry: dict[str, Any] = {
+            "attempt": attempt,
+            "request": payload,
+            "cardId": (
+                "strict_facts" if rejected else (fact_pack or {}).get("style_card", {}).get("id")
+            ),
+        }
+        attempt_log.append(entry)
         try:
             if opener is not None:
                 raw = opener(req, timeout=remaining)
@@ -878,34 +1015,62 @@ def polish_skeleton(
         except TimeoutError:
             timed_out += 1
             last_response = {"error": "timeout"}
-            continue
+            entry.update(error="timeout", latencyMs=(time.monotonic() - attempt_started) * 1000)
+            break
         except urllib.error.URLError as exc:
             last_response = {"error": str(exc.reason)}
             logger.warning("commentary llm polish unreachable: %s", exc.reason)
-            continue
+            entry.update(
+                error=str(exc.reason), latencyMs=(time.monotonic() - attempt_started) * 1000
+            )
+            break
         except Exception as exc:
             last_response = {"error": str(exc)}
             logger.warning("commentary llm polish failed", exc_info=True)
-            continue
+            entry.update(error=str(exc), latencyMs=(time.monotonic() - attempt_started) * 1000)
+            break
 
         http_ok += 1
+        entry["latencyMs"] = (time.monotonic() - attempt_started) * 1000
         try:
             parsed = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             last_response = {"error": f"bad json: {exc}"}
-            continue
+            entry.update(last_response)
+            break
 
         if not isinstance(parsed, dict):
             last_response = {"error": "not an object"}
-            continue
+            entry.update(last_response)
+            break
         content = _extract_content(parsed)
         compact = _compact_response(parsed)
         if not content:
-            last_response = compact
+            last_response = {**compact, "validatorCodes": ["empty"]}
+            entry.update(response=last_response, severity="HARD")
             continue
 
+        warnings: list[str] = []
+        if _is_microplan(fact_pack):
+            # These repairs change punctuation only, never the factual words.
+            cleaned = re.sub(r"[!?]{2,}|\.{3,}|…{2,}", ".", content)
+            if cleaned != content:
+                warnings.append("multi_punct")
+            if cleaned[-1:] not in ".!?…":
+                warnings.append("terminal_punct")
+                cleaned += "."
+            content = cleaned
         codes = _reject_codes(text, content, node, driver_names, fact_pack)
+        if _is_microplan(fact_pack):
+            warnings.extend(code for code in codes if code in {"all_caps", "long_number"})
+            codes = [code for code in codes if code not in {"all_caps", "long_number"}]
         last_response = {**compact, "validatorCodes": codes}
+        entry.update(
+            response=compact,
+            validatorCodes=codes,
+            styleWarnings=warnings,
+            severity="HARD" if codes else "SOFT" if warnings else "PASS",
+        )
         if codes:
             continue
 
@@ -920,10 +1085,11 @@ def polish_skeleton(
             attempts=attempt,
             fact_pack=fact_pack,
             composition_path=tuple(composition_path),
+            attempt_log=tuple(attempt_log),
         )
 
     latency = (time.monotonic() - started) * 1000.0
-    attempts_done = max(timed_out + http_ok, 1)
+    attempts_done = len(attempt_log)
     if http_ok == 0 and timed_out > 0:
         kind = "fallback_timeout"
     elif http_ok == 0:
@@ -939,6 +1105,7 @@ def polish_skeleton(
         attempts=attempts_done,
         fact_pack=fact_pack,
         composition_path=composition_path,
+        attempt_log=attempt_log,
     )
 
 

@@ -160,6 +160,20 @@ def test_race_sof_once_when_roster_ready_then_weather() -> None:
     assert det.tick(_state(), data, 4.0) is None
 
 
+def test_zero_irating_is_not_exposed_as_a_commentary_fact() -> None:
+    det = SessionBriefsDetector()
+    data = _session_data()
+    for driver in data["DriverInfo"]["Drivers"]:
+        driver["IRating"] = 0
+    intro = det.tick(_state(), data, 1.0)
+    assert intro is not None
+    det.acknowledge(intro.event_type)
+    sof = det.tick(_state(), data, 2.0)
+    assert sof is not None and sof.event_type == "SOF_BRIEF"
+    assert "sof" not in sof.metrics
+    assert "sof_class" not in sof.metrics
+
+
 def test_flag_off_director_skips_with_reason() -> None:
     director = _director(session_briefs=False)
     env = make_envelope(

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from irswitch.commentary.style_cards import load_style_cards
 from irswitch.events.audience import COMMENTARY_ONLY_EVENTS
 from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
@@ -68,6 +69,7 @@ class GraphNode:
     variants: dict[str, dict[str, tuple[str, ...]]] = field(default_factory=dict)
     modes: tuple[str, ...] = ()
     branch: str = ""
+    style_cards: tuple[str, ...] = ()
 
     def variant_bucket(self, locale: str, emotion: str) -> tuple[str, ...]:
         locale_map = self.variants.get(locale) or {}
@@ -215,6 +217,12 @@ def _validate_node(node_id: str, payload: Any, known_events: set[str]) -> list[s
     prefix = f"nodes.{node_id}"
     if not isinstance(payload, dict):
         return [f"{prefix} must be an object"]
+    cards = payload.get("style_cards", [])
+    known_cards = {card.id for card in load_style_cards()}
+    if not isinstance(cards, list) or any(
+        not isinstance(card, str) or card not in known_cards for card in cards
+    ):
+        errors.append(f"{prefix}.style_cards must reference known card IDs")
     event_types = payload.get("event_types") or []
     if not event_types:
         errors.append(f"{prefix}.event_types is required")
@@ -279,6 +287,7 @@ def _parse_node(
     variants = _parse_variants(payload.get("variants") or {}, locales)
     return GraphNode(
         id=node_id,
+        style_cards=tuple(payload.get("style_cards") or ()),
         family=str(payload.get("family") or ""),
         event_types=tuple(str(item).upper() for item in payload.get("event_types") or []),
         phases=tuple(str(item).upper() for item in payload.get("phases") or []),

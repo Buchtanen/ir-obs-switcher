@@ -212,3 +212,22 @@ def test_unknown_event_type_is_rejected() -> None:
     assert any("NOT_A_REAL_EVENT" in item for item in errors)
     with pytest.raises(ValueError, match="invalid sequence graph"):
         parse_sequence_graph(raw)
+
+
+def test_unknown_style_card_is_rejected() -> None:
+    raw = {
+        "version": 1,
+        "locales": ["en"],
+        "nodes": {
+            "lap": {
+                "family": "lap",
+                "event_types": ["LAP_COMPLETE"],
+                "phases": ["RESULT"],
+                "speak_priority": 1,
+                "hr_states": ["unknown"],
+                "style_cards": ["not-a-card"],
+            }
+        },
+        "edges": [],
+    }
+    assert any("style_cards" in item for item in validate_graph_document(raw))

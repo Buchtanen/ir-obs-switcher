@@ -1420,6 +1420,7 @@
       }
     },
     "hunting": {
+      "style_cards": ["tension_first"],
       "family": "battle",
       "event_types": [
         "HUNTING",
@@ -1606,6 +1607,7 @@
       }
     },
     "hunted": {
+      "style_cards": ["rear_pressure"],
       "family": "battle",
       "event_types": [
         "HUNTED"
@@ -1791,6 +1793,7 @@
       }
     },
     "two_front_battle": {
+      "style_cards": ["road_and_mirrors", "two_front_action", "two_front_pressure"],
       "family": "battle",
       "event_types": [
         "BATTLE_FOR_POSITION"
@@ -2284,6 +2287,7 @@
       }
     },
     "position_gained": {
+      "style_cards": ["position_gain"],
       "family": "position",
       "event_types": [
         "POSITION_GAINED"
@@ -2464,6 +2468,7 @@
       }
     },
     "position_lost": {
+      "style_cards": ["position_result"],
       "family": "position",
       "event_types": [
         "POSITION_LOST",
@@ -3397,6 +3402,7 @@
       }
     },
     "finish": {
+      "style_cards": ["session_result"],
       "family": "session",
       "event_types": [
         "FINISH"
@@ -6045,6 +6051,7 @@
       }
     },
     "session_wrap": {
+      "style_cards": ["session_result"],
       "family": "session",
       "event_types": [
         "SESSION_WRAP"
