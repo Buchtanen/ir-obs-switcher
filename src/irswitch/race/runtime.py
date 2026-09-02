@@ -50,6 +50,7 @@ from irswitch.race.driver_facts import DriverFactLedger
 from irswitch.race.grid_story import QUALI_RECAP
 from irswitch.race.observer import RaceObserver
 from irswitch.race.pipeline import AcceptedRecord, RacePipeline, build_situation_payload
+from irswitch.race.run import RunClock
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
 from irswitch.race.watcher_log import WatcherLog
@@ -130,6 +131,7 @@ class RaceRuntime:
         self._register_t4_emitters(overlay)
         self.analyzer = RaceContextAnalyzer(overlay.battle)
         self.session = SessionCoordinator()
+        self.run_clock = RunClock()
         self.session.add_reset_hook(self.analyzer.reset)
         self.session.add_reset_hook(self._reset_event_pipeline)
         self.session.add_reset_hook(self._reset_timing)
@@ -798,6 +800,10 @@ class RaceRuntime:
                 connected=True,
                 now=now,
             )
+            self.run_clock.observe(
+                self.session.session_key, state.session_time, now=now, connected=state.connected
+            )
+            state = self.run_clock.apply(state)
         else:
             snap = await self._read_telemetry()
             self._remember_weekend_track()
@@ -810,18 +816,30 @@ class RaceRuntime:
                 connected=snap.connected,
                 now=now,
             )
+            observation = self.run_clock.observe(
+                self.session.session_key, snap.session_time, now=now, connected=snap.connected
+            )
+            if observation == "pending":
+                return
+            if observation == "restarted":
+                self.session.force_reset()
+                self.race_observer.narrative.reset_run()
+                filler_record = None
+                logger.info("Race run restarted epoch=%s", self.run_clock.run_epoch)
             self._apply_sector_points(snap)
             try:
                 state = self.analyzer.analyze(snap)
             except Exception:
                 logger.warning("RaceContextAnalyzer failed", exc_info=True)
                 state = RaceState(connected=False)
+            state = self.run_clock.apply(state)
             self._last_snapshot = snap
             self._observe_timing(
                 snap, session_finished=bool(state.mute_field or state.session_finished)
             )
             self._observe_race_story(snap, state, now)
         self.pipeline.reset_session(self._session_id(state), reason="session_changed")
+        self.pipeline.reset_run(state.run_epoch)
         self._last_race = state
         self._sync_tape(state, now)
         if self._idle_when_disconnected(state, now):

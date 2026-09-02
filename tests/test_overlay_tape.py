@@ -107,6 +107,29 @@ def test_disabled_tape_writes_nothing(tmp_path: Path) -> None:
     assert list(tmp_path.glob("*.jsonl")) == []
 
 
+def test_same_session_run_epoch_resets_green_but_preserves_tape_clock(tmp_path: Path) -> None:
+    tape = OverlaySessionTape(get_stream_origin_mono=lambda: 100.0, get_version=lambda: "test")
+    settings = _settings(tmp_path)
+    tape.observe(_race(session_state=3, session_time=105.0), 110.0, settings)
+    tape.observe(_race(session_time=106.0), 111.0, settings)
+    path = tape.path
+    tape.observe(_race(run_epoch=1, session_state=3, session_time=0.2), 120.0, settings)
+    tape.observe(_race(run_epoch=1, session_state=4, session_time=4.0), 124.0, settings)
+    tape.observe(_race(run_epoch=1, session_state=4, session_time=5.0), 125.0, settings)
+    assert tape.path == path
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    restarts = [row for row in rows if row["type"] == "run_reset"]
+    assert len(restarts) == 1
+    assert restarts[0]["run_epoch"] == 1
+    assert restarts[0]["t_green"] is None
+    greens = [row for row in rows if row["type"] == "green"]
+    assert len(greens) == 2
+    assert greens[-1]["run_epoch"] == 1
+    assert greens[-1]["t_green"] == 0.0
+    assert greens[-1]["t_mono"] == 14.0
+    assert greens[-1]["t_stream"] == 24.0
+
+
 def test_playback_offset_prefers_t_mono() -> None:
     assert playback_offset({"t": 1400.0, "t_mono": 0.25}) == 0.25
     assert playback_offset({"t": 3.0}) == 3.0

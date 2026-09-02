@@ -145,6 +145,10 @@ class RaceState:
     car_idx_best_lap_time: tuple[float | None, ...] = ()
     car_idx_last_lap_time: tuple[float | None, ...] = ()
 
+    run_epoch: int = 0
+    green_session_time: float | None = None
+    green_lap_completed: int | None = None
+
     def to_dict(self) -> dict[str, Any]:
         data = _asdict(self)
         if self.opponent_ahead is not None:

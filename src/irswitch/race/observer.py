@@ -107,7 +107,9 @@ class RaceObserver:
     def note_accepted(self, envelopes: list[EventEnvelope]) -> None:
         """Remember accepted facts for later graph-path composition; never derive truth here."""
         for envelope in envelopes:
-            self.history.note(envelope)
+            self.history.note(
+                envelope, run_epoch=self._context.run_epoch if self._context is not None else 0
+            )
 
     @property
     def context(self) -> StoryContext | None:
@@ -209,6 +211,7 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
             recent_beats=self.history.snapshot(),
             quali_bag=self.stream.quali_bag(),
+            run_epoch=state.run_epoch,
         )
         self._context = ctx
         self._last_race = state

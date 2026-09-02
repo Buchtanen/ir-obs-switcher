@@ -888,10 +888,10 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
   "monotonicMs": 120000,
   "priority": 10,
   "dedupeKey": "lap:12",
-  "correlationId": "lap:12",
-  "storyKey": "lap:12",
+  "correlationId": "run:1:lap:12",
+  "storyKey": "run:1:lap:12",
   "subject": { "carId": "player" },
-  "metrics": { "lap": 12, "lapTime": 92.4 },
+  "metrics": { "lap": 12, "lapTime": 92.4, "runEpoch": 1 },
   "copy": { "headlineToken": "lap.headline", "statusToken": "lap.status" },
   "presentation": {
     "widget": "lap_complete",
@@ -906,6 +906,8 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 
 Časy v `metrics` jsou **sekundy** (iRSDK float). HUD je formátuje jako `m:ss.fff` a delty jako `+0.318` / `-0.418`. Do WS neposílej předformátované stringy.
 
+`runEpoch` rozlišuje opakované starty pod stejným iRacing session klíčem. Po potvrzeném přetočení `SessionTime` se zvýší a `correlationId` dostane prefix `run:<epoch>:`. ENTER/UPDATE/EXIT z předchozího runu se proto nemohou spárovat s novým závodem.
+
 **`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Poslední `EXIT` a session reset posílají `activeStories: []`, které ruší předchozí persistentní stav. Nezměněný seznam se znovu neposílá:
 
 ```json
@@ -916,7 +918,7 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
       "eventType": "HUNTING",
       "phase": "ACTIVE",
       "sequence": 7,
-      "correlationId": "battle:hunting:17"
+      "correlationId": "run:1:battle:hunting:17"
     }
   ]
 }
@@ -936,9 +938,11 @@ Každý řádek má hodiny v sekundách:
 | `t_mono` | od otevření tape — **tohle používá `--replay`** (nespí na VOD offsetu) |
 | `t_stream` | od startu OBS streamu (`null` když nestreamuješ) |
 | `t_session` | iRacing `SessionTime` |
-| `t_green` | od prvního `SessionState=4` (Racing) na tomto tape |
+| `t_green` | od prvního `SessionState=4` (Racing) v aktuálním `run_epoch` |
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`.
+Každý řádek navíc nese `run_epoch`. Potvrzený restart závodu ve stejné session zachová soubor, `t_mono` i `t_stream`, zapíše řádek `run_reset` a vynuluje pouze původ `t_green` pro nový run.
+
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`/`run_reset`.
 
 Řádky `commentary` a `llm_polish` se zapisují **jen při runtime DEBUG** (`GET/POST /logging/level` → `DEBUG`) — pro offline vyhodnocení speak/skip a LLM request/response bez spamu na disk. Ostatní tape typy (`event`, `decision`, …) zůstávají pod `[overlay] session_tape`.
 

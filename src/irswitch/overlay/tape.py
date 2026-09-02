@@ -4,8 +4,11 @@ Clocks (seconds):
 - ``t_mono`` — from tape open (replay delay)
 - ``t_stream`` — from OBS stream start (VOD sync); null if not streaming
 - ``t_session`` — iRacing SessionTime
-- ``t_green`` — from first irsdk Racing (SessionState=4) this tape
+- ``t_green`` — from first irsdk Racing (SessionState=4) in current run epoch
 - ``t`` — best sync clock: stream, else session, else mono
+
+Every row also carries ``run_epoch``. A confirmed SessionTime rewind preserves
+the tape/VOD clocks, emits ``run_reset``, and restarts only ``t_green``.
 """
 
 from __future__ import annotations
@@ -94,7 +97,7 @@ def _default_version() -> str:
     try:
         from irswitch import resolve_version
 
-        return resolve_version()
+        return str(resolve_version())
     except Exception:
         return "unknown"
 
@@ -121,6 +124,7 @@ class OverlaySessionTape:
         self._green_mono: float | None = None
         self._scene_sig: tuple[str | None, str | None] | None = None
         self._noted_stream = False
+        self._run_epoch = 0
 
     @property
     def path(self) -> Path | None:
@@ -148,6 +152,7 @@ class OverlaySessionTape:
         self._green_mono = None
         self._scene_sig = None
         self._noted_stream = False
+        self._run_epoch = 0
 
     def observe(self, state: RaceState, now: float, settings: OverlaySettings) -> None:
         tape = settings.tape
@@ -161,7 +166,12 @@ class OverlaySessionTape:
         key = f"{state.subsession_id or 'unknown'}:{state.session_num if state.session_num is not None else 0}"
         if self._key != key or self._path is None:
             self.close()
+            self._run_epoch = state.run_epoch
             self._open(state, now, settings, key)
+        elif state.run_epoch != self._run_epoch:
+            self._run_epoch = state.run_epoch
+            self._green_mono = None
+            self._write(now, state, {"type": "run_reset", "reason": "session_time_rewind"})
         self._refresh_stream_origin(now, state)
         if state.session_state == IRSDK_STATE_RACING and self._green_mono is None:
             self._green_mono = now
@@ -307,7 +317,11 @@ class OverlaySessionTape:
     def _write(self, now: float, state: RaceState | None, payload: dict[str, Any]) -> None:
         if self._path is None:
             return
-        record = {**self._clocks(now, state), **_strip_secrets(payload)}
+        record = {
+            **self._clocks(now, state),
+            **_strip_secrets(payload),
+            "run_epoch": state.run_epoch if state is not None else self._run_epoch,
+        }
         try:
             with self._path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(record, ensure_ascii=True) + "\n")

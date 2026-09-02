@@ -45,7 +45,8 @@ class RacePipeline:
         self._batch_sequence = 0
         self._context_payload: FrozenContextSnapshot | None = None
         self._captured_monotonic_ms = 0
-        self._session_id = self.sequence_allocator.session_id
+        self._session_id = str(self.sequence_allocator.session_id)
+        self._run_epoch = 0
 
     @property
     def session_id(self) -> str:
@@ -61,12 +62,29 @@ class RacePipeline:
             return None
         old = self._session_id
         self._session_id = normalized
+        self._run_epoch = 0
         self.sequence_allocator.reset(normalized)
         self._context_version = 0
         self._batch_sequence = 0
         self._context_payload = None
         self._captured_monotonic_ms = 0
         reset = SessionReset(old, normalized, reason, self.fanout.next_stream_sequence())
+        self.fanout.publish(reset)
+        return reset
+
+    def reset_run(self, run_epoch: int) -> SessionReset | None:
+        """Invalidate both consumers without reusing IDs in the same SDK session."""
+        if run_epoch == self._run_epoch:
+            return None
+        self._run_epoch = run_epoch
+        self._context_payload = None
+        self._captured_monotonic_ms = 0
+        reset = SessionReset(
+            self._session_id,
+            self._session_id,
+            "run_epoch_changed",
+            self.fanout.next_stream_sequence(),
+        )
         self.fanout.publish(reset)
         return reset
 
@@ -144,6 +162,22 @@ class RacePipeline:
         source_ordinals: dict[str, int] = {}
         for record in records:
             envelope = record.envelope
+            envelope.metrics["runEpoch"] = self._run_epoch
+            if self._run_epoch and envelope.correlation_id:
+                prefix = f"run:{self._run_epoch}:"
+                if not envelope.correlation_id.startswith(prefix):
+                    envelope.correlation_id = prefix + envelope.correlation_id
+            overlay_wire = record.overlay_wire
+            if overlay_wire is not None:
+                overlay_wire = dict(overlay_wire)
+                if overlay_wire.get("format") == "v4":
+                    wire_metrics = dict(overlay_wire.get("metrics") or {})
+                    wire_metrics["runEpoch"] = self._run_epoch
+                    overlay_wire["metrics"] = wire_metrics
+                else:
+                    overlay_wire["runEpoch"] = self._run_epoch
+                if "correlationId" in overlay_wire:
+                    overlay_wire["correlationId"] = envelope.correlation_id
             source_ordinal = source_ordinals.get(record.source, 0)
             source_ordinals[record.source] = source_ordinal + 1
             if envelope.sequence <= 0 or envelope.session_id != self._session_id:
@@ -154,8 +188,10 @@ class RacePipeline:
                     audiences=audiences_for_event(envelope.event_type),
                     source=record.source,
                     source_ordinal=source_ordinal,
-                    coalesce_key=coalesce_key_for(envelope, self._session_id),
-                    overlay_payload=record.overlay_wire,
+                    coalesce_key=coalesce_key_for(
+                        envelope, f"{self._session_id}:run:{self._run_epoch}"
+                    ),
+                    overlay_payload=overlay_wire,
                 )
             )
         self._batch_sequence += 1
@@ -210,6 +246,7 @@ def build_context_payload(
     story_payload = _jsonable(asdict(story)) if story is not None else {}
     story_payload["driver_profiles"] = driver_profiles or {}
     story_payload["grid_story"] = grid_story
+    story_payload["run_epoch"] = race.run_epoch
     situation = build_situation_payload(race, telemetry_data, captured_monotonic_ms)
     system_payload = _jsonable(system.to_dict()) if system is not None else {}
     hud_payload = {
@@ -227,8 +264,9 @@ def build_context_payload(
             "session_num": race.session_num,
             "subsession_id": race.subsession_id,
             "track_id": race.track_id,
+            "run_epoch": race.run_epoch,
         },
-        "race": race.to_dict(),
+        "race": _jsonable(race.to_dict()),
         "bio": {
             "status": bio.status,
             "connected": bio.connected,
@@ -275,15 +313,26 @@ def build_situation_payload(
     total_laps = _active_session_total_laps(data, race.session_num)
     laps_remaining = as_session_laps_remain(data.get("SessionLapsRemain"))
     elapsed = as_elapsed_seconds(race.session_time)
+    green_origin = as_elapsed_seconds(race.green_session_time)
+    race_elapsed = (
+        max(0.0, elapsed - green_origin)
+        if elapsed is not None and green_origin is not None
+        else None
+    )
+    racing_laps = (
+        max(0, completed_lap - race.green_lap_completed)
+        if completed_lap is not None and race.green_lap_completed is not None
+        else completed_lap
+    )
     remaining = as_session_time_remain(data.get("SessionTimeRemain"))
     total_time = _active_session_total_time(data, race.session_num)
     progress: float | None = None
     source: str | None = None
-    if total_laps and completed_lap is not None:
-        progress = _clamp(completed_lap / total_laps)
+    if total_laps and racing_laps is not None:
+        progress = _clamp(racing_laps / total_laps)
         source = "laps"
-    elif total_time and elapsed is not None:
-        progress = _clamp(elapsed / total_time)
+    elif total_time and race_elapsed is not None:
+        progress = _clamp(race_elapsed / total_time)
         source = "time"
     elif total_time and remaining is not None:
         progress = _clamp(1.0 - (remaining / total_time))
@@ -308,6 +357,10 @@ def build_situation_payload(
         phase = "closing"
     return {
         "session_type": race.session_type,
+        "run_epoch": race.run_epoch,
+        "green_session_time_s": green_origin,
+        "race_elapsed_s": race_elapsed,
+        "racing_laps_completed": racing_laps,
         "current_lap": current_lap,
         "lap_completed": completed_lap,
         "total_laps": total_laps,
@@ -365,6 +418,8 @@ def coalesce_key_for(envelope: EventEnvelope, session_id: str) -> tuple[str, ...
 
 
 def _jsonable(value: Any) -> Any:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
     if is_dataclass(value) and not isinstance(value, type):
         return _jsonable(asdict(value))
     if isinstance(value, dict):

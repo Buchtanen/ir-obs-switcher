@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
@@ -53,6 +54,7 @@ class StoryBeat:
     front_gap: int | float | str | None = None
     rear_target_name: str | None = None
     rear_gap: int | float | str | None = None
+    run_epoch: int = 0
 
 
 @dataclass
@@ -66,7 +68,7 @@ class StoryHistory:
         self.max_beats = max(1, int(self.max_beats))
         self._beats = deque(maxlen=self.max_beats)
 
-    def note(self, envelope: EventEnvelope) -> None:
+    def note(self, envelope: EventEnvelope, *, run_epoch: int = 0) -> None:
         if envelope.phase not in {"ENTER", "RESULT", "EXIT", "UPDATE"}:
             return
         if envelope.event_id and any(beat.event_id == envelope.event_id for beat in self._beats):
@@ -81,6 +83,7 @@ class StoryHistory:
                 mode=str(envelope.mode or "").upper(),
                 correlation_id=str(envelope.correlation_id or ""),
                 monotonic_ms=max(0, int(envelope.monotonic_ms or 0)),
+                run_epoch=run_epoch,
                 target_name=(
                     str(target.display_name).strip()
                     if target is not None and target.display_name
@@ -89,20 +92,20 @@ class StoryHistory:
                 target_car_id=(
                     str(target.car_id) if target is not None and target.car_id else None
                 ),
-                gap=_scalar(_first(metrics, "gap")),
+                gap=_gap(_first(metrics, "gap")),
                 position=_integer(
                     _first(metrics, "newPosition", "position", "classPosition")
                     or envelope.subject.class_position
                 ),
                 lap=_integer(_first(metrics, "lap", "current_lap", "currentLap")),
-                lap_time=_number(_first(metrics, "lapTime")),
-                delta=_number(_first(metrics, "delta", "deltaToBest")),
+                lap_time=_positive_number(_first(metrics, "lapTime")),
+                delta=_number(_first(metrics, "delta", "deltaToBest")) or None,
                 streak=_integer(_first(metrics, "streak")),
                 branch=_text(_first(metrics, "branch")),
                 front_target_name=_text(_first(metrics, "frontTargetName", "front_target_name")),
-                front_gap=_scalar(_first(metrics, "frontGap", "front_gap")),
+                front_gap=_gap(_first(metrics, "frontGap", "front_gap")),
                 rear_target_name=_text(_first(metrics, "rearTargetName", "rear_target_name")),
-                rear_gap=_scalar(_first(metrics, "rearGap", "rear_gap")),
+                rear_gap=_gap(_first(metrics, "rearGap", "rear_gap")),
             )
         )
 
@@ -128,6 +131,7 @@ class StoryContext:
     stream_sessions: tuple[str, ...] = ()
     recent_beats: tuple[StoryBeat, ...] = ()
     quali_bag: QualiBag | None = None
+    run_epoch: int = 0
 
     def slot_bindings(self) -> dict[str, Any]:
         """Flat metrics useful for FIELD_FACT / WEATHER_CHANGE speech."""
@@ -223,16 +227,21 @@ def _number(value: object) -> int | float | None:
         number = float(value)
     except (TypeError, ValueError):
         return None
+    if not math.isfinite(number):
+        return None
     return int(number) if number.is_integer() else number
 
 
 def _integer(value: object) -> int | None:
     number = _number(value)
-    return int(number) if number is not None else None
+    return int(number) if number is not None and number > 0 and int(number) == number else None
 
 
-def _scalar(value: object) -> int | float | str | None:
+def _gap(value: object) -> int | float | None:
     number = _number(value)
-    if number is not None:
-        return number
-    return _text(value)
+    return number if number is not None and number >= 0 else None
+
+
+def _positive_number(value: object) -> int | float | None:
+    number = _number(value)
+    return number if number is not None and number > 0 else None

@@ -52,6 +52,7 @@ class StreamNarrativeFsm:
     _previewed_keys: set[str] = field(default_factory=set)
     _had_prior_session: bool = False
     _pending: list[EventEnvelope] = field(default_factory=list)
+    _run_start: bool = False
 
     def reset_session(self) -> None:
         """Drop active key tracking; keep wrap/preview history for the stream."""
@@ -69,6 +70,12 @@ class StreamNarrativeFsm:
         self._previewed_keys.clear()
         self._had_prior_session = False
         self._pending.clear()
+
+    def reset_run(self) -> None:
+        """A restarted run is not a completed session or a new-stream preview."""
+        self.reset_session()
+        self._pending.clear()
+        self._run_start = True
 
     def take_pending(self) -> list[EventEnvelope]:
         out = list(self._pending)
@@ -90,7 +97,17 @@ class StreamNarrativeFsm:
 
         mode = state.overlay_mode or "GENERIC"
         position = state.class_position or state.position
+        if position is not None and position <= 0:
+            position = None
         finished = bool(state.player_finished or state.session_finished)
+        classified = state.player_finished or (mode != "RACE" and finished)
+        final_position = position if classified else None
+        podium_confirmed = finished and (mode != "RACE" or state.session_state == 6)
+        p1 = state.p1_name if podium_confirmed else None
+        p2 = state.p2_name if podium_confirmed else None
+        p3 = state.p3_name if podium_confirmed else None
+        if session_key and state.run_epoch:
+            session_key = f"{session_key}:run:{state.run_epoch}"
 
         if session_key and session_key != self._key:
             if self._key is not None and self._key not in self._wrapped_keys:
@@ -108,13 +125,14 @@ class StreamNarrativeFsm:
                 )
                 self._wrapped_keys.add(self._key)
                 self._had_prior_session = True
-            prev_had = self._had_prior_session or bool(self._wrapped_keys)
+            prev_had = not self._run_start and (self._had_prior_session or bool(self._wrapped_keys))
+            self._run_start = False
             self._key = session_key
             self._mode = mode
-            self._position = position
-            self._p1 = state.p1_name
-            self._p2 = state.p2_name
-            self._p3 = state.p3_name
+            self._position = final_position
+            self._p1 = p1
+            self._p2 = p2
+            self._p3 = p3
             self._finished = finished
             if prev_had and session_key not in self._previewed_keys:
                 produced.append(
@@ -137,10 +155,10 @@ class StreamNarrativeFsm:
             return produced
 
         self._mode = mode
-        self._position = position
-        self._p1 = state.p1_name
-        self._p2 = state.p2_name
-        self._p3 = state.p3_name
+        self._position = final_position
+        self._p1 = p1
+        self._p2 = p2
+        self._p3 = p3
 
         if finished and not self._finished and session_key not in self._wrapped_keys:
             produced.append(
@@ -148,11 +166,11 @@ class StreamNarrativeFsm:
                     now,
                     key=session_key,
                     mode=mode,
-                    position=position,
+                    position=final_position,
                     reason="session_finished",
-                    p1=state.p1_name,
-                    p2=state.p2_name,
-                    p3=state.p3_name,
+                    p1=p1,
+                    p2=p2,
+                    p3=p3,
                 )
             )
             self._wrapped_keys.add(session_key)
@@ -211,6 +229,7 @@ class StreamNarrativeFsm:
         }
         if position is not None:
             metrics["position"] = position
+            metrics["classificationConfirmed"] = True
         if p1:
             metrics["p1Name"] = p1
         if p2:

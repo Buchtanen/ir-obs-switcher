@@ -200,6 +200,7 @@ def test_situation_phase_boundaries_and_progress_sources() -> None:
             overlay_mode="RACE",
             session_num=0,
             session_time=600.0,
+            green_session_time=0.0,
         ),
         _telemetry(laps="unlimited", time_s="1200.0 sec"),
         1_000,

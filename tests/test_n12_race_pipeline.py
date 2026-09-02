@@ -118,6 +118,10 @@ def test_context_contains_same_tick_identity_bio_and_situation() -> None:
         "session_time_total_s": None,
         "session_type": "Race",
         "total_laps": 10,
+        "run_epoch": 0,
+        "green_session_time_s": None,
+        "race_elapsed_s": None,
+        "racing_laps_completed": 2,
     }
 
 
