@@ -8,6 +8,10 @@
 
 This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen. Commentary Director V2 async isolation is captured as follow-up **N12**; it does not widen the current landing.
 
+After N12, [live data channels and adaptive sampling](live_data_channels_sampling_spec.md)
+defines how independent consumers receive current state without duplicate source
+polling, and which slow/static values may be sampled below the race cadence.
+
 ---
 
 ## Review incorporated (2026-08-31)
