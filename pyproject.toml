@@ -127,6 +127,12 @@ module = [
   "psutil",
   "pynvml",
   "clr",
+  "numpy",
+  "numpy.*",
+  "sounddevice",
+  "sounddevice.*",
+  "supertonic",
+  "supertonic.*",
 ]
 ignore_missing_imports = true
 
