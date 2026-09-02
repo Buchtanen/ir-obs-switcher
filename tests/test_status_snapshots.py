@@ -28,7 +28,15 @@ from irswitch.overlay.settings import (
 )
 from irswitch.overlay.tape import OverlaySessionTape
 
-COMMENTARY_KEYS = {"enabled", "available", "busy", "busyUntil", "status", "lastSpokeAt"}
+COMMENTARY_KEYS = {
+    "enabled",
+    "available",
+    "busy",
+    "busyUntil",
+    "status",
+    "lastSpokeAt",
+    "graph",
+}
 
 
 def _graph() -> SequenceGraph:
@@ -97,6 +105,15 @@ def test_director_snapshot_disabled() -> None:
     assert snapshot["status"] == "disabled"
     assert snapshot["busy"] is False
     assert snapshot["lastSpokeAt"] is None
+    assert snapshot["graph"] == {
+        "mode": "legacy",
+        "currentNode": None,
+        "silenceSeconds": 0.0,
+        "lastWinnerNode": None,
+        "lastWinnerScore": None,
+        "fatigueEntries": {"node": 0, "edge": 0, "semantic": 0, "path": 0},
+        "lastError": None,
+    }
 
 
 def test_director_snapshot_ready_then_speaking() -> None:
