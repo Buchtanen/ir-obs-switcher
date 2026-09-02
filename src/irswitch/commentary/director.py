@@ -389,25 +389,35 @@ class CommentaryDirector:
         else:
             self._scheduler.settings = CommentarySchedulerSettings()
 
-    def tick(self, now: float, bio: BioState | None = None) -> CommentaryUtterance | None:
+    def tick(
+        self,
+        now: float,
+        bio: BioState | None = None,
+        *,
+        allow_filler: bool = True,
+    ) -> CommentaryUtterance | None:
         """Idle flush / silence watchdog. Call once per race frame when enabled."""
         if not self.settings.enabled:
             return None
-        if not self._scheduler.settings.defer_enabled:
-            return None
         self._sync_scheduler_settings()
-        for expired in self._scheduler.expire(now):
-            self._record(
-                action="skipped",
-                reason="deferred_expired",
-                now=now,
-                event_type=expired.utterance.event_type,
-                node_id=expired.utterance.node_id,
-                text=expired.utterance.text,
-            )
+        graph_active = _graph_mode(self.settings) == "active" and self.graph_runtime is not None
+        if not self._scheduler.settings.defer_enabled and not graph_active:
+            return None
+        if self._scheduler.settings.defer_enabled:
+            for expired in self._scheduler.expire(now):
+                self._record(
+                    action="skipped",
+                    reason="deferred_expired",
+                    now=now,
+                    event_type=expired.utterance.event_type,
+                    node_id=expired.utterance.node_id,
+                    text=expired.utterance.text,
+                )
         if now < self._busy_until or now < self._global_ready_at or self._sink_busy():
             return None
-        deferred = self._scheduler.pop_ready(now)
+        deferred = (
+            self._scheduler.pop_ready(now) if self._scheduler.settings.defer_enabled else None
+        )
         if deferred is not None:
             # Speak only the best deferred line; drop the rest (never drain queue).
             for dropped in self._scheduler.clear():
@@ -425,8 +435,17 @@ class CommentaryDirector:
                 reason="spoken_deferred",
                 past=True,
             )
-        last_at = self._last.at if self._last is not None else None
-        if self._scheduler.silence_due(last_spoke_at=last_at, now=now):
+        runtime = self.graph_runtime
+        if graph_active and runtime is not None:
+            silence_due = allow_filler and runtime.filler_due(now)
+        else:
+            last_at = self._last.at if self._last is not None else None
+            silence_due = allow_filler and self._scheduler.silence_due(
+                last_spoke_at=last_at, now=now
+            )
+        if silence_due:
+            if graph_active and runtime is not None:
+                runtime.note_filler_requested(now=now)
             spoken = self._speak_silence_filler(now)
             if spoken is not None:
                 return spoken
@@ -446,7 +465,24 @@ class CommentaryDirector:
             return None
         # Prefer graph node when authored; else template formatter from RaceObserver.
         emotion = "unknown"
-        drafted = self._consider(envelope, emotion, now, commit=False)
+        graph_winner: GraphSelection | None = None
+        if _graph_mode(self.settings) == "active":
+            graph_winner = self._evaluate_graph([envelope], emotion=emotion, now=now)
+            if graph_winner is None:
+                return None
+        drafted = self._consider(
+            envelope,
+            emotion,
+            now,
+            commit=False,
+            node_override=(
+                self.graph.nodes[graph_winner.candidate.node_id]
+                if graph_winner is not None
+                else None
+            ),
+            gates_checked=graph_winner is not None,
+            graph_score=graph_winner.score.final if graph_winner is not None else None,
+        )
         if drafted is not None:
             return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
         return None
@@ -514,7 +550,7 @@ class CommentaryDirector:
         if language is not None:
             self.language = normalize_language(language)
 
-        flushed = self.tick(now, bio)
+        flushed = self.tick(now, bio, allow_filler=not envelopes)
         if flushed is not None and not envelopes:
             return flushed
 

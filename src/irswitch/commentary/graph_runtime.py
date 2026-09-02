@@ -33,6 +33,8 @@ class GraphScoringSettings:
     selection_threshold: float = 45.0
     max_silence_s: float = 33.0
     max_silence_bonus: float = 30.0
+    filler_retry_s: float = 5.0
+    no_fact_retry_s: float = 10.0
     closure_bonus: float = 15.0
     material_change_bonus: float = 10.0
     node_weight: float = 6.0
@@ -52,6 +54,8 @@ class GraphScoringSettings:
     def __post_init__(self) -> None:
         positive = (
             self.max_silence_s,
+            self.filler_retry_s,
+            self.no_fact_retry_s,
             self.node_half_life_s,
             self.semantic_half_life_s,
             self.edge_half_life_s,
@@ -150,6 +154,7 @@ class SequenceGraphRuntime:
         self._path_fatigue: OrderedDict[tuple[str, ...], _FatigueStat] = OrderedDict()
         self._semantic_revision: OrderedDict[str, str] = OrderedDict()
         self._occurrences: OrderedDict[str, None] = OrderedDict()
+        self._filler_retry_at = started_at
 
     @property
     def occurrence_count(self) -> int:
@@ -177,11 +182,30 @@ class SequenceGraphRuntime:
         self._path_fatigue.clear()
         self._semantic_revision.clear()
         self._occurrences.clear()
+        self._filler_retry_at = now
 
     def silence_seconds(self, now: float) -> float:
         if self._speaking or self.current_node_id != SILENCE_NODE_ID:
             return 0.0
         return max(0.0, now - self._silence_entered_at)
+
+    def filler_due(self, now: float) -> bool:
+        """Whether hard silence has elapsed and request backoff permits work."""
+        return (
+            self.silence_seconds(now) >= self.settings.max_silence_s
+            and now >= self._filler_retry_at
+        )
+
+    def note_filler_requested(self, *, now: float) -> None:
+        self._filler_retry_at = now + self.settings.filler_retry_s
+
+    def note_filler_result(self, *, status: str, now: float) -> None:
+        delay = (
+            self.settings.no_fact_retry_s
+            if status in {"no_fact", "disabled"}
+            else self.settings.filler_retry_s
+        )
+        self._filler_retry_at = max(self._filler_retry_at, now + delay)
 
     def note_completed(self, *, now: float, run_epoch: int) -> bool:
         """Apply an audio completion callback if it belongs to this run."""
@@ -204,7 +228,9 @@ class SequenceGraphRuntime:
 
         edge = self._matching_edge(candidate, now=now)
         transition = float(edge.editorial.transition_bonus) if edge is not None else 0.0
-        closure = self.settings.closure_bonus if edge is not None and edge.editorial.closure else 0.0
+        closure = (
+            self.settings.closure_bonus if edge is not None and edge.editorial.closure else 0.0
+        )
         material = self._material_change(candidate)
         silence = self._silence_bonus(node, now=now)
 
@@ -255,7 +281,9 @@ class SequenceGraphRuntime:
             60.0,
             node_penalty + semantic_penalty + edge_penalty + path_penalty,
         )
-        raw = float(node.speak_priority) + transition + closure + material + silence - repeat_penalty
+        raw = (
+            float(node.speak_priority) + transition + closure + material + silence - repeat_penalty
+        )
         final = max(raw, self.settings.selection_threshold) if fresh_critical else raw
         return ScoreBreakdown(
             base=float(node.speak_priority),

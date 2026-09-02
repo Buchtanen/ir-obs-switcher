@@ -140,3 +140,30 @@ def test_active_ranking_error_falls_back_to_legacy_selection() -> None:
     assert spoken is not None
     assert spoken.node_id == "hunting"
     assert graph_rows[-1]["reason"] == "legacy_fallback"
+
+
+def test_active_initial_silence_requests_filler_without_defer_and_uses_backoff() -> None:
+    director, _runtime = _director()
+    calls: list[float] = []
+
+    def provider(now: float) -> None:
+        calls.append(now)
+        return None
+
+    director.filler_provider = provider
+
+    assert director.tick(33.0) is None
+    assert director.tick(33.2) is None
+    assert calls == [33.0]
+
+
+def test_active_incoming_filler_batch_does_not_request_another_filler() -> None:
+    director, _runtime = _director()
+    calls: list[float] = []
+    director.filler_provider = lambda now: calls.append(now)  # type: ignore[assignment]
+
+    spoken = director.observe([_field_fact("event:1")], None, 33.0)
+
+    assert spoken is not None
+    assert spoken.event_type == "FIELD_FACT"
+    assert calls == []

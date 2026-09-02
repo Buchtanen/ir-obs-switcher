@@ -316,3 +316,17 @@ def test_empty_or_below_threshold_candidate_set_stays_silent() -> None:
     assert runtime.select([], now=100.0) is None
     low = _candidate("field_fact", event_id="e1", metrics={"fact": "position", "position": 5})
     assert runtime.select([low], now=1.0) is None
+
+
+def test_filler_due_uses_initial_silence_and_bounded_no_fact_backoff() -> None:
+    runtime = _runtime(max_silence_s=30.0, filler_retry_s=5.0, no_fact_retry_s=10.0)
+    runtime.reset(run_epoch=1, now=0.0)
+
+    assert not runtime.filler_due(29.9)
+    assert runtime.filler_due(30.0)
+    runtime.note_filler_requested(now=30.0)
+    assert not runtime.filler_due(34.9)
+    assert runtime.filler_due(35.0)
+    runtime.note_filler_result(status="no_fact", now=35.0)
+    assert not runtime.filler_due(44.9)
+    assert runtime.filler_due(45.0)

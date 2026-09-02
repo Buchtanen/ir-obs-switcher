@@ -111,6 +111,7 @@ class CommentaryConsumer:
 
     async def handle(self, item: StreamItem) -> None:
         self._drain_graph_lifecycle()
+        self._drain_filler_results(time.monotonic())
         self.last_stream_sequence = item.stream_sequence
         if isinstance(item, SessionReset):
             self.story_registry.reset(session_id=item.new_session_id)
@@ -361,6 +362,7 @@ class CommentaryConsumer:
             return
         try:
             self._drain_graph_lifecycle()
+            self._drain_filler_results(time.monotonic())
             context = thaw_context(latest_payload)
             self._apply_settings()
             self.story_registry.observe_context(context)
@@ -532,6 +534,14 @@ class CommentaryConsumer:
                 self.graph_runtime.note_completed(now=now, run_epoch=candidate.run_epoch)
             elif action == "interrupted":
                 self.graph_runtime.note_interrupted(now=now, run_epoch=candidate.run_epoch)
+
+    def _drain_filler_results(self, now: float) -> None:
+        while True:
+            try:
+                result = self._filler_results.get_nowait()
+            except asyncio.QueueEmpty:
+                return
+            self.graph_runtime.note_filler_result(status=result.status, now=now)
 
     def _sync_graph_run(self, context: dict[str, Any], *, now: float) -> None:
         identity = context.get("identity")
