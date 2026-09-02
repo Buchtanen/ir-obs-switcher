@@ -143,6 +143,39 @@ def test_active_preserves_higher_priority_critical_legacy_event() -> None:
 
     assert spoken is not None
     assert spoken.event_type == "FINISH"
+    assert spoken.graph_candidate is not None
+    assert spoken.editorial_score == 100.0
+
+
+def test_active_full_cutover_uses_graph_for_result_family() -> None:
+    director, _runtime = _director()
+    overtake = make_envelope(
+        event_type="OVERTAKE",
+        event_id="overtake:1",
+        sequence=1,
+        phase="RESULT",
+        mode="RACE",
+        priority=1,
+        correlation_id="battle:7",
+        target={"car_id": "7", "display_name": "Rossi"},
+        metrics={"position": 4, "oldPosition": 5, "newPosition": 4},
+    )
+
+    spoken = director.observe([overtake], None, 1.0)
+
+    assert spoken is not None
+    assert spoken.node_id == "overtake"
+    assert spoken.graph_candidate is not None
+    assert spoken.editorial_score == 85.0
+    assert "overtake" not in director._cooldowns
+
+
+def test_active_global_ready_time_is_only_post_audio_technical_gap() -> None:
+    director, _runtime = _director()
+    spoken = director.observe([_hunting("event:1")], None, 1.0)
+
+    assert spoken is not None
+    assert director._global_ready_at == 1.0 + spoken.estimated_seconds + 0.25
 
 
 def test_active_ranking_error_falls_back_to_legacy_selection() -> None:

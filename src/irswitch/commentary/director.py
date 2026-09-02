@@ -68,19 +68,7 @@ _SESSION_BRIEF_EVENTS = frozenset(
 )
 DEFAULT_DECISION_LOG_SIZE = 32
 _INCIDENT_BRANCHES = frozenset({"off_track", "unknown"})
-_ACTIVE_GRAPH_EVENTS = frozenset(
-    {
-        "HUNTING",
-        "APPROACH",
-        "HUNTED",
-        "RIVAL_THREAT",
-        "ATTACK_RANGE",
-        "SIDE_BY_SIDE",
-        "BATTLE_FOR_POSITION",
-        "FIELD_FACT",
-        "WEATHER_CHANGE",
-    }
-)
+_ACTIVE_TECHNICAL_GAP_S = 0.25
 
 
 @dataclass(frozen=True)
@@ -745,9 +733,11 @@ class CommentaryDirector:
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
-        self._cooldowns[spoken.node_id] = now + spoken.node.cooldown_s
+        graph_active = _graph_mode(self.settings) == "active" and spoken.graph_candidate is not None
+        if not graph_active:
+            self._cooldowns[spoken.node_id] = now + spoken.node.cooldown_s
         self._busy_until = now + duration
-        self._global_ready_at = now + self.settings.cooldown_s
+        self._global_ready_at = self._next_ready_at(now, duration=duration)
         self._last = _LastSpoken(spoken.node_id, spoken.correlation_id, now)
         self._current_event_type = spoken.event_type
         if spoken.event_type in OPENER_EVENTS:
@@ -790,11 +780,7 @@ class CommentaryDirector:
                 )
                 return None
             return synthetic
-        graph_active = (
-            _graph_mode(self.settings) == "active"
-            and envelope.event_type in _ACTIVE_GRAPH_EVENTS
-            and node_override is not None
-        )
+        graph_active = _graph_mode(self.settings) == "active" and node_override is not None
         if commit and not graph_active and now < self._cooldowns.get(node.id, 0.0):
             self._record(
                 action="skipped",
@@ -894,9 +880,10 @@ class CommentaryDirector:
             max(estimate_seconds(spoken, ssml=spoken if "<" in spoken else None), 0.6),
         )
         if commit:
-            self._cooldowns[node.id] = now + node.cooldown_s
+            if not graph_active:
+                self._cooldowns[node.id] = now + node.cooldown_s
             self._busy_until = now + duration
-            self._global_ready_at = now + self.settings.cooldown_s
+            self._global_ready_at = self._next_ready_at(now, duration=duration)
             self._last = _LastSpoken(node.id, envelope.correlation_id, now)
             self._recent.remember(spoken)
             self._note_sector_spoken(envelope)
@@ -940,11 +927,6 @@ class CommentaryDirector:
         candidates: list[GraphCandidate] = []
         try:
             for envelope in envelopes:
-                if (
-                    _graph_mode(self.settings) == "active"
-                    and envelope.event_type not in _ACTIVE_GRAPH_EVENTS
-                ):
-                    continue
                 if (
                     _graph_mode(self.settings) == "active"
                     and self._editorial_gate(envelope, now) is not None
@@ -1001,12 +983,29 @@ class CommentaryDirector:
         if _graph_mode(self.settings) != "active" or self._last_graph_error is not None:
             return ranked
         selected = winner.candidate.envelope if winner is not None else None
-        available = [env for env in ranked if env.event_type not in _ACTIVE_GRAPH_EVENTS]
+        available = [env for env in ranked if not self._has_graph_nodes(env)]
         if selected is not None:
             available.append(selected)
         order = {id(envelope): index for index, envelope in enumerate(ranked)}
         available.sort(key=lambda env: (-env.priority, order.get(id(env), len(order))))
         return available
+
+    def _has_graph_nodes(self, envelope: EventEnvelope) -> bool:
+        metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
+        branch = metrics.get("branch")
+        return bool(
+            self.graph.nodes_for(
+                envelope.event_type,
+                envelope.phase,
+                mode=envelope.mode,
+                branch=str(branch) if branch is not None else None,
+            )
+        )
+
+    def _next_ready_at(self, now: float, *, duration: float) -> float:
+        if _graph_mode(self.settings) == "active":
+            return now + duration + _ACTIVE_TECHNICAL_GAP_S
+        return now + self.settings.cooldown_s
 
     def _node_available(
         self,
@@ -1198,6 +1197,8 @@ class CommentaryDirector:
 
     def _incident_pair_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         """At most one of INCIDENT / INCIDENT_AFTERMATH per tick. Prefer INCIDENT."""
+        if _graph_mode(self.settings) == "active":
+            return None
         if envelope.event_type not in _INCIDENT_PAIR_EVENTS:
             return None
         last = self._last
