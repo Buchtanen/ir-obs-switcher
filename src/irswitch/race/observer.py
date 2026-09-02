@@ -370,6 +370,102 @@ class RaceObserver:
         )
         return env
 
+    def filler_candidates(
+        self,
+        now: float,
+        *,
+        locale: str = "en",
+        limit: int = 4,
+    ) -> tuple[EventEnvelope, ...]:
+        """Return a bounded factual set for active graph ranking.
+
+        Unlike :meth:`next_filler_envelope`, this path does not rotate an
+        editorial winner.  It derives currently true options and lets the
+        commentary graph choose one after the producer assigns normal stream
+        identities.
+        """
+        capacity = max(1, min(4, int(limit)))
+        ctx = self._context
+        if ctx is None:
+            return ()
+        race = self._last_race
+        traffic = _traffic_filler_kind(race, self._was_on_pit_road)
+        if race is not None:
+            self._was_on_pit_road = race.on_pit_road
+        if self._after_session and traffic not in {"pit", "in_lap", "out_lap"}:
+            return ()
+
+        candidates: list[EventEnvelope] = []
+        if self._pending_weather_change is not None:
+            snap = self._pending_weather_change
+            self._pending_weather_change = None
+            bindings = spoken_weather_bindings(snap, "cs" if locale.startswith("cs") else "en")
+            metrics = {key: value for key, value in bindings.items() if value}
+            metrics["kind"] = "weather_change"
+            candidates.append(
+                make_envelope(
+                    event_type="WEATHER_CHANGE",
+                    phase="RESULT",
+                    mode=ctx.overlay_mode,
+                    priority=_WEATHER_CHANGE_PRIORITY,
+                    monotonic_ms=int(now * 1000),
+                    metrics=metrics,
+                    correlation_id=f"weather:{ctx.session_key or 'na'}",
+                )
+            )
+            note(
+                self.watches,
+                watch="briefs",
+                kind="WEATHER_CHANGE",
+                emitted=True,
+                reason="weather_change_candidate",
+                confidence=1.0,
+                now=now,
+            )
+
+        slots = ctx.slot_bindings()
+        facts: list[str] = []
+        if traffic:
+            facts.append(traffic)
+        if slots.get("position") is not None:
+            facts.append("position")
+        leader = slots.get("leaderName")
+        leader_cooldown = max(0.0, float(self.settings.leader_pace_cooldown_s))
+        if leader and (leader_cooldown <= 0.0 or now >= self._leader_fact_until):
+            facts.append("leader")
+        if slots.get("target_name") and slots.get("gap") is not None:
+            facts.append("gap")
+
+        for fact in dict.fromkeys(facts):
+            if len(candidates) >= capacity:
+                break
+            metrics = {key: value for key, value in slots.items() if value is not None}
+            metrics["kind"] = "field_fact"
+            metrics["fact"] = fact
+            candidates.append(
+                make_envelope(
+                    event_type="FIELD_FACT",
+                    phase="RESULT",
+                    mode=ctx.overlay_mode,
+                    priority=_FIELD_FACT_PRIORITY,
+                    monotonic_ms=int(now * 1000),
+                    metrics=metrics,
+                    correlation_id=f"field:{ctx.session_key or 'na'}:{fact}",
+                )
+            )
+            if fact == "leader" and leader_cooldown > 0.0:
+                self._leader_fact_until = now + leader_cooldown
+            note(
+                self.watches,
+                watch="briefs",
+                kind="FIELD_FACT",
+                emitted=True,
+                reason=f"{fact}_candidate",
+                confidence=1.0,
+                now=now,
+            )
+        return tuple(candidates[:capacity])
+
     def format_filler_text(self, envelope: EventEnvelope, *, locale: str = "en") -> str | None:
         """Template lines when graph has no FIELD_FACT / WEATHER_CHANGE / aftermath node."""
         metrics = envelope.metrics or {}

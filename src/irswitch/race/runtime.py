@@ -642,24 +642,29 @@ class RaceRuntime:
         self.pipeline.reset_session(session_id, reason="context_bootstrap")
         self._capture_context(self._last_race, now, hud=self._current_hud())
 
-    def _collect_filler_response(self, now: float) -> AcceptedRecord | None:
+    def _collect_filler_response(self, now: float) -> list[AcceptedRecord]:
         request = self.commentary_consumer.take_filler_request()
         if request is None:
-            return None
+            return []
         if request.session_id != self.pipeline.session_id:
             self.commentary_consumer.complete_filler(FillerResult(request.request_id, "stale"))
-            return None
+            return []
         if int(now * 1000) - request.requested_monotonic_ms > 3_000:
             self.commentary_consumer.complete_filler(FillerResult(request.request_id, "stale"))
-            return None
-        if not self._overlay_settings().commentary.enabled:
+            return []
+        commentary = self._overlay_settings().commentary
+        if not commentary.enabled:
             self.commentary_consumer.complete_filler(FillerResult(request.request_id, "disabled"))
-            return None
-        envelope = self.race_observer.next_filler_envelope(now, locale=request.locale)
-        if envelope is None:
+            return []
+        if commentary.graph_runtime_mode == "active":
+            envelopes = self.race_observer.filler_candidates(now, locale=request.locale, limit=4)
+        else:
+            envelope = self.race_observer.next_filler_envelope(now, locale=request.locale)
+            envelopes = (envelope,) if envelope is not None else ()
+        if not envelopes:
             self.commentary_consumer.complete_filler(FillerResult(request.request_id, "no_fact"))
-            return None
-        return AcceptedRecord(envelope, "filler")
+            return []
+        return [AcceptedRecord(envelope, "filler") for envelope in envelopes]
 
     def _collect_commentary_sidecars(self, state: RaceState, now: float) -> list[AcceptedRecord]:
         """Normalize direct sidecars into producer records in deterministic order."""
@@ -817,7 +822,7 @@ class RaceRuntime:
     async def _tick_race(self) -> None:
         now = time.monotonic()
         self._publish_config_update_if_changed()
-        filler_record = self._collect_filler_response(now)
+        filler_records = self._collect_filler_response(now)
         if self.mode == "mock":
             state = mock_race_state(now - self._origin)
             self._last_bio = mock_bio_state(now - self._origin)
@@ -854,7 +859,7 @@ class RaceRuntime:
             if observation == "restarted":
                 self.session.force_reset()
                 self.race_observer.narrative.reset_run()
-                filler_record = None
+                filler_records = []
                 logger.info("Race run restarted epoch=%s", self.run_clock.run_epoch)
             self._apply_sector_points(snap)
             try:
@@ -886,8 +891,7 @@ class RaceRuntime:
         for envelope in self._pending_derived_speech:
             records.append(AcceptedRecord(envelope, _derived_source(envelope.event_type)))
         self._pending_derived_speech = []
-        if filler_record is not None:
-            records.append(filler_record)
+        records.extend(filler_records)
         records.extend(self._collect_commentary_sidecars(state, now))
         if self._pending_stream_records:
             records.extend(self._pending_stream_records)

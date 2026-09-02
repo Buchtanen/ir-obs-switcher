@@ -552,9 +552,10 @@ def _material_parts(node: GraphNode, envelope: EventEnvelope) -> tuple[str, ...]
         )
     if policy is MaterialChangePolicy.WEATHER_THRESHOLD:
         return (
-            _weather_band(_metric(metrics, "trackTemp", "track_temp")),
-            _weather_band(_metric(metrics, "airTemp", "air_temp")),
-            _weather_band(_metric(metrics, "rain", "rainLevel", "rain_level")),
+            _weather_band(_metric(metrics, "trackTemp", "track_temp", "track_temperature")),
+            _weather_band(_metric(metrics, "airTemp", "air_temp", "air_temperature")),
+            _weather_band(_metric(metrics, "rain", "rainLevel", "rain_level", "precipitation")),
+            _stable(_metric(metrics, "skies", default="unknown")),
         )
     if policy is MaterialChangePolicy.ONCE:
         return ("once",)
