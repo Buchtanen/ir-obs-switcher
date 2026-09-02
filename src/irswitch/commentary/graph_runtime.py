@@ -213,7 +213,6 @@ class SequenceGraphRuntime:
             return False
         self.current_node_id = SILENCE_NODE_ID
         self._silence_entered_at = now
-        self._previous = None
         self._speaking = False
         return True
 

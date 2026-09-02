@@ -159,9 +159,38 @@ def test_transition_and_closure_bonus_come_from_graph_edge() -> None:
         metrics={"position": 4, "oldPosition": 5, "newPosition": 4},
     )
     runtime.record_speaking(side, now=1.0)
+    runtime.note_completed(now=1.5, run_epoch=1)
     scored = runtime.score(overtake, now=2.0)
     assert scored.transition > 0.0
     assert scored.closure > 0.0
+
+
+def test_silence_keeps_previous_spoken_node_for_narrative_continuation() -> None:
+    runtime = _runtime()
+    runtime.reset(run_epoch=1, now=0.0)
+    hunting = _candidate(
+        "hunting",
+        event_id="e1",
+        phase="ENTER",
+        correlation_id="battle:7",
+        metrics={"gap": 1.2, "targetCarIdx": 7},
+    )
+    side = _candidate(
+        "side_by_side",
+        event_id="e2",
+        sequence=2,
+        phase="ENTER",
+        correlation_id="battle:7",
+        metrics={"gap": 0.2, "targetCarIdx": 7},
+    )
+
+    assert runtime.record_speaking(hunting, now=1.0)
+    assert runtime.note_completed(now=2.0, run_epoch=1)
+
+    scored = runtime.score(side, now=3.0)
+    assert runtime.current_node_id == SILENCE_NODE_ID
+    assert runtime.silence_seconds(3.0) == 1.0
+    assert scored.transition > 0.0
 
 
 def test_repeated_short_path_adds_path_fatigue() -> None:
