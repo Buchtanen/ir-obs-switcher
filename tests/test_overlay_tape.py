@@ -206,6 +206,34 @@ def test_overlay_runtime_constructs_with_practice_emitters() -> None:
 
 
 @pytest.mark.asyncio
+async def test_runtime_marshals_tts_story_transition_onto_overlay_loop() -> None:
+    overlay = OverlaySettings(event_engine=EventEngineFeatureSettings(v2_payload=True))
+    runtime = OverlayRuntime(lambda: SimpleNamespace(overlay=overlay), None, OverlayBus())
+    received: list[dict] = []
+    runtime.overlay_consumer.enqueue_story_transition = received.append  # type: ignore[method-assign]
+    runtime._runtime_loop = asyncio.get_running_loop()
+    entry = {
+        "storyId": "story:0:1",
+        "storyRevision": 1,
+        "runEpoch": 0,
+        "heroOrderRevision": 0,
+        "correlationId": "battle:1",
+        "eventType": "HUNTING",
+        "action": "speaking",
+    }
+
+    worker = __import__("threading").Thread(
+        target=runtime._ministory_lifecycle_hook,
+        args=(entry,),
+    )
+    worker.start()
+    worker.join(timeout=1.0)
+    await asyncio.sleep(0)
+
+    assert received == [entry]
+
+
+@pytest.mark.asyncio
 async def test_overlay_runtime_disconnect_clears_stories() -> None:
     """Link drop / iRacing quit must blank the HUD, not leave hunting + SYSINFO."""
     overlay = OverlaySettings(event_engine=EventEngineFeatureSettings(v2_payload=True))

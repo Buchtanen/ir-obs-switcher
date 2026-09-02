@@ -62,7 +62,8 @@ def test_exit_after_speech_commit_does_not_cancel_lease() -> None:
     assert token is not None
     assert registry.commit(token, None, locale="en").status == CommitStatus.UNCHANGED
     assert registry.mark_speaking(token)
-    registry.observe(_relation("EXIT"))
+    exit_observation = registry.observe(_relation("EXIT"))
+    assert exit_observation.state == MiniStoryState.RESOLVED
     assert registry.state_of(token) == MiniStoryState.SPEAKING
     registry.complete(token)
     assert registry.state_of(token) == MiniStoryState.COMPLETED
@@ -96,6 +97,36 @@ def test_epoch_change_invalidates_uncommitted_token() -> None:
     assert token is not None
     registry.observe_context(_context(epoch=1))
     assert registry.commit(token, None, locale="en").status == CommitStatus.INVALIDATED
+
+
+def test_replay_adopt_applies_later_resolved_revision() -> None:
+    registry = MiniStoryRegistry()
+    registry.observe_context(_context())
+    envelope = _relation()
+    token = registry.adopt(
+        envelope,
+        {
+            "storyId": "story:0:9",
+            "storyRevision": 1,
+            "runEpoch": 0,
+            "heroOrderRevision": 0,
+            "correlationId": envelope.correlation_id,
+            "eventType": envelope.event_type,
+            "state": "ready",
+        },
+    )
+    assert token is not None
+    registry.adopt(
+        _relation("EXIT"),
+        {
+            **token.to_dict(state=MiniStoryState.RESOLVED),
+            "storyRevision": 2,
+            "state": "resolved",
+        },
+    )
+
+    assert registry.commit(token, None, locale="en").status == CommitStatus.RESOLVED
+    assert registry.current_token(token).revision == 2
 
 
 def test_position_event_advances_order_without_waiting_for_context() -> None:
@@ -213,8 +244,91 @@ def test_resolution_during_qwen_gets_one_result_call_within_two_call_budget(
     assert calls == [False, True]
     assert spoken == ["The attacking window on Gjoel has faded."]
     assert registry.state_of(token) == MiniStoryState.COMPLETED
-    assert [row["action"] for row in lifecycle] == ["committed", "speaking", "completed"]
-    assert lifecycle[0]["reason"] == "ministory_resolved"
+    assert [row["action"] for row in lifecycle] == [
+        "building",
+        "committed",
+        "speaking",
+        "completed",
+    ]
+    assert lifecycle[1]["reason"] == "ministory_resolved"
+
+
+def test_tts_lifecycle_opens_building_lease_before_worker_starts(monkeypatch: Any) -> None:
+    registry = MiniStoryRegistry()
+    registry.observe_context(_context())
+    token = registry.observe(_relation()).token
+    assert token is not None
+    release = threading.Event()
+    lifecycle: list[dict] = []
+
+    def fake_speak(text: str, **_kwargs) -> TtsResult:
+        release.wait(timeout=2.0)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", fake_speak)
+    sink = ProcessTtsSink(
+        CommentarySettings(tts_backend="null"),
+        story_registry=registry,
+        on_story_debug=lifecycle.append,
+    )
+    sink.enqueue(_utterance(token))
+    assert lifecycle[0]["action"] == "building"
+    release.set()
+    assert sink.wait_idle(timeout_s=2.0)
+    assert [row["action"] for row in lifecycle] == [
+        "building",
+        "committed",
+        "speaking",
+        "completed",
+    ]
+
+
+def test_replaced_tts_waiter_closes_its_presentation_lease(monkeypatch: Any) -> None:
+    registry = MiniStoryRegistry()
+    registry.observe_context(_context())
+
+    def token_for(target: int):
+        envelope = make_envelope(
+            event_type="HUNTING",
+            phase="ENTER",
+            correlation_id=f"front:7:{target}:1",
+            subject=EventSubject(car_id="7"),
+            target=EventSubject(car_id=str(target), display_name=f"Driver {target}"),
+            metrics={"targetCarIdx": target, "direction": "ahead", "gap": 0.6},
+        )
+        token = registry.observe(envelope).token
+        assert token is not None
+        return token
+
+    first, waiting, replacement = token_for(8), token_for(9), token_for(10)
+    started = threading.Event()
+    release = threading.Event()
+    lifecycle: list[dict] = []
+
+    def blocked_speak(_text: str, **_kwargs) -> TtsResult:
+        started.set()
+        release.wait(timeout=2.0)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", blocked_speak)
+    sink = ProcessTtsSink(
+        CommentarySettings(tts_backend="null"),
+        story_registry=registry,
+        on_story_debug=lifecycle.append,
+    )
+    sink.enqueue(_utterance(first))
+    assert started.wait(timeout=1.0)
+    sink.enqueue(_utterance(waiting))
+    sink.enqueue(_utterance(replacement))
+    assert registry.state_of(waiting) == MiniStoryState.INVALIDATED
+    assert any(
+        row["storyId"] == waiting.story_id
+        and row["action"] == "invalidated"
+        and row["reason"] == "tts_queue_replaced"
+        for row in lifecycle
+    )
+    release.set()
+    assert sink.wait_idle(timeout_s=2.0)
 
 
 def test_epoch_invalidation_during_qwen_blocks_tts(monkeypatch: Any) -> None:

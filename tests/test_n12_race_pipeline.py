@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
+
 from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.envelope import make_envelope
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.events.stream import SessionSequenceAllocator, thaw_context
 from irswitch.overlay.models import BioState, RaceState
 from irswitch.overlay.protocol import CandidateEvent
+from irswitch.race.ministory import MiniStoryRegistry
 from irswitch.race.pipeline import RacePipeline, build_situation_payload, coalesce_key_for
 
 
@@ -66,6 +69,42 @@ def test_pipeline_stamps_sidecars_and_routes_commentary_only() -> None:
     assert accepted.event_id == "99:0:ENTER_CAR:1"
     assert accepted.audiences == ("commentary",)
     assert overlay.latest_context == commentary.latest_context == batch.context_payload
+
+
+def test_pipeline_assigns_one_frozen_ministory_identity_before_fanout() -> None:
+    fanout = AsyncEventFanout()
+    registry = MiniStoryRegistry()
+    pipeline = RacePipeline(fanout, story_registry=registry)
+    pipeline.reset_session("99:0", reason="session_changed")
+    _capture(pipeline)
+    envelope = make_envelope(
+        event_type="HUNTING",
+        phase="ENTER",
+        mode="RACE",
+        priority=60,
+        monotonic_ms=1_000,
+        correlation_id="battle:front:12",
+        target={"carId": "12", "displayName": "Rossi"},
+        metrics={"gap": 0.8},
+    )
+
+    batch = pipeline.publish_envelopes(
+        [envelope], source="event_engine", accepted_monotonic_ms=1_000
+    )
+
+    assert batch is not None
+    accepted = batch.events[0]
+    story = json.loads(accepted.story_payload or b"{}")
+    assert story == {
+        "correlationId": "battle:front:12",
+        "eventType": "HUNTING",
+        "heroOrderRevision": 0,
+        "runEpoch": 0,
+        "state": "ready",
+        "storyId": "story:0:1",
+        "storyRevision": 1,
+    }
+    assert registry.token_for(envelope) is not None
 
 
 def test_manager_and_sidecars_share_one_sequence_allocator() -> None:

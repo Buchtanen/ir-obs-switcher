@@ -283,6 +283,8 @@ Likely files: new `race/ministory.py`, `race/observer.py`, `race/pipeline.py`, `
 
 ## 10. F — Overlay lifecycle and production copy
 
+Status: implemented on the integration branch; automated acceptance complete, live OBS visual acceptance remains in G. See [MiniStory overlay bridge implementation](implementation_ministory_overlay_bridge.md).
+
 ### Implementation
 
 - Map the shared story to presentation states: building/live, committed/speaking, resolved/result, completed/removed and interrupted/replaced.

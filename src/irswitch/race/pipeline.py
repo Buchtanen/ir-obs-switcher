@@ -25,6 +25,7 @@ from irswitch.iracing.sdk_units import (
     as_session_time_remain,
 )
 from irswitch.overlay.models import BioState, RaceState
+from irswitch.race.ministory import MiniStoryRegistry
 from irswitch.race.story import StoryContext
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class RacePipeline:
         fanout: AsyncEventFanout,
         *,
         sequence_allocator: SessionSequenceAllocator | None = None,
+        story_registry: MiniStoryRegistry | None = None,
     ) -> None:
         self.fanout = fanout
         self.sequence_allocator = sequence_allocator or SessionSequenceAllocator()
@@ -47,6 +49,7 @@ class RacePipeline:
         self._captured_monotonic_ms = 0
         self._session_id = str(self.sequence_allocator.session_id)
         self._run_epoch = 0
+        self.story_registry = story_registry
 
     @property
     def session_id(self) -> str:
@@ -68,6 +71,8 @@ class RacePipeline:
         self._batch_sequence = 0
         self._context_payload = None
         self._captured_monotonic_ms = 0
+        if self.story_registry is not None:
+            self.story_registry.reset(session_id=normalized, run_epoch=0)
         reset = SessionReset(old, normalized, reason, self.fanout.next_stream_sequence())
         self.fanout.publish(reset)
         return reset
@@ -79,6 +84,8 @@ class RacePipeline:
         self._run_epoch = run_epoch
         self._context_payload = None
         self._captured_monotonic_ms = 0
+        if self.story_registry is not None:
+            self.story_registry.reset(session_id=self._session_id, run_epoch=run_epoch)
         reset = SessionReset(
             self._session_id,
             self._session_id,
@@ -121,6 +128,8 @@ class RacePipeline:
             hud=hud,
             grid_story=grid_story,
         )
+        if self.story_registry is not None:
+            self.story_registry.observe_context(payload)
         self._context_payload = freeze_context(payload)
         self._captured_monotonic_ms = captured_monotonic_ms
         self.fanout.publish_context(self._context_payload)
@@ -182,16 +191,21 @@ class RacePipeline:
             source_ordinals[record.source] = source_ordinal + 1
             if envelope.sequence <= 0 or envelope.session_id != self._session_id:
                 self.sequence_allocator.stamp(envelope)
+            audiences = audiences_for_event(envelope.event_type)
+            story_payload = None
+            if self.story_registry is not None and "commentary" in audiences:
+                story_payload = self.story_registry.observe(envelope).to_dict()
             accepted.append(
                 freeze_accepted_event(
                     envelope,
-                    audiences=audiences_for_event(envelope.event_type),
+                    audiences=audiences,
                     source=record.source,
                     source_ordinal=source_ordinal,
                     coalesce_key=coalesce_key_for(
                         envelope, f"{self._session_id}:run:{self._run_epoch}"
                     ),
                     overlay_payload=overlay_wire,
+                    story_payload=story_payload,
                 )
             )
         self._batch_sequence += 1

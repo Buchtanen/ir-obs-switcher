@@ -23,6 +23,7 @@ from irswitch.events.stream import (
     thaw_config,
     thaw_context,
     thaw_envelope,
+    thaw_story_payload,
 )
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
@@ -39,6 +40,7 @@ class CommentaryConsumer:
         get_settings: Callable[[], tuple[CommentarySettings, str]],
         *,
         decision_hook: Callable[[dict[str, Any], float], None] | None = None,
+        story_registry: MiniStoryRegistry | None = None,
     ) -> None:
         self.subscription = subscription
         self.director = director
@@ -56,7 +58,8 @@ class CommentaryConsumer:
         self.last_stream_sequence = 0
         self._processed_ids: set[str] = set()
         self._processed_order: list[str] = []
-        self.story_registry = MiniStoryRegistry()
+        self.story_registry = story_registry or MiniStoryRegistry()
+        self._seen_hero_order_revision = self.story_registry.hero_order_revision
         self.director.story_registry = self.story_registry
         if hasattr(self.director.sink, "story_registry"):
             self.director.sink.story_registry = self.story_registry
@@ -90,6 +93,7 @@ class CommentaryConsumer:
         self.last_stream_sequence = item.stream_sequence
         if isinstance(item, SessionReset):
             self.story_registry.reset(session_id=item.new_session_id)
+            self._seen_hero_order_revision = 0
             self.director.reset()
             self._processed_ids.clear()
             self._processed_order.clear()
@@ -152,7 +156,9 @@ class CommentaryConsumer:
             self._record_skip("session_context_stale", now)
             return
         self._apply_settings()
-        if self.story_registry.observe_context(latest):
+        self.story_registry.observe_context(latest)
+        if self.story_registry.hero_order_revision > self._seen_hero_order_revision:
+            self._seen_hero_order_revision = self.story_registry.hero_order_revision
             self.director.hero_order_changed(now)
         self._apply_story_context(context)
         bio = self._bio_from_context(context)
@@ -186,8 +192,14 @@ class CommentaryConsumer:
                 self._remove_stale_dynamic_bindings(envelope)
                 if had_situation:
                     self._record_skip("situation_context_stale", now, envelope.event_type)
-            observation = self.story_registry.observe(envelope)
-            if not observation.narrate:
+            if accepted.story_payload is not None:
+                story_payload = thaw_story_payload(accepted.story_payload)
+                self.story_registry.adopt(envelope, story_payload)
+                narrate = accepted.phase != "EXIT"
+            else:
+                observation = self.story_registry.observe(envelope)
+                narrate = observation.narrate
+            if not narrate:
                 self._remember(accepted.event_id)
                 continue
             envelopes.append(envelope)
@@ -326,7 +338,9 @@ class CommentaryConsumer:
         try:
             context = thaw_context(latest_payload)
             self._apply_settings()
-            if self.story_registry.observe_context(context):
+            self.story_registry.observe_context(context)
+            if self.story_registry.hero_order_revision > self._seen_hero_order_revision:
+                self._seen_hero_order_revision = self.story_registry.hero_order_revision
                 self.director.hero_order_changed(time.monotonic())
             self.director.tick(time.monotonic(), self._bio_from_context(context))
         except Exception as exc:

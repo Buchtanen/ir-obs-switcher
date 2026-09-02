@@ -51,6 +51,12 @@ def _batch(
         source="event_engine",
         source_ordinal=0,
         coalesce_key=("session", "front", "5", "8", "1", "HUNTING") if coalescible else None,
+        story_payload={
+            "correlationId": "relation",
+            "revision": 1,
+            "state": "resolved",
+            "storyId": "session:relation",
+        },
     )
     context = freeze_context(
         {
@@ -123,6 +129,15 @@ async def test_replay_bundle_is_canonical_and_drives_both_subscriptions(
         event_ids(item) for item in commentary_items
     ]
     assert event_ids(overlay_items[1]) == ("session:event:1",)
+    assert isinstance(overlay_items[1], FrozenAcceptedEventBatch)
+    assert overlay_items[1].events[0].story_payload == canonical_json_bytes(
+        {
+            "correlationId": "relation",
+            "revision": 1,
+            "state": "resolved",
+            "storyId": "session:relation",
+        }
+    )
     assert bundle.expected[0]["commentary_speech_ids"] == ["session:event:1"]
 
 

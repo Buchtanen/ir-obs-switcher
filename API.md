@@ -908,7 +908,23 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 
 `runEpoch` rozlišuje opakované starty pod stejným iRacing session klíčem. Po potvrzeném přetočení `SessionTime` se zvýší a `correlationId` dostane prefix `run:<epoch>:`. ENTER/UPDATE/EXIT z předchozího runu se proto nemohou spárovat s novým závodem.
 
-**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Poslední `EXIT` a session reset posílají `activeStories: []`, které ruší předchozí persistentní stav. Nezměněný seznam se znovu neposílá:
+Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniStory`:
+
+```json
+{
+  "storyId": "story:1:42",
+  "storyRevision": 2,
+  "runEpoch": 1,
+  "heroOrderRevision": 3,
+  "correlationId": "run:1:battle:hunting:17",
+  "eventType": "HUNTING",
+  "state": "speaking"
+}
+```
+
+`state` je `ready`, `building`, `committed`, `speaking`, `resolved`, `completed`, `interrupted` nebo `invalidated`. Vyšší `storyRevision` je autoritativní; opožděný nižší stav se ignoruje.
+
+**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`, ale odstraní ji až TTS `completed`/`interrupted`/`invalidated` nebo reset. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
 
 ```json
 {
@@ -924,7 +940,7 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 }
 ```
 
-Frontend (`overlay.js`) aplikuje `activeStories` před live streamem, aby reconnect obnovil persistentní battle / pit widgety. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
+Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
 
 ### Overlay session tape (JSONL)
 

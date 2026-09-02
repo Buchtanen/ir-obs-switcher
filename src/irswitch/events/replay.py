@@ -239,6 +239,9 @@ def _event_to_row(event: FrozenAcceptedEvent) -> dict[str, Any]:
         "overlay_payload": (
             json.loads(event.overlay_payload) if event.overlay_payload is not None else None
         ),
+        "story_payload": (
+            json.loads(event.story_payload) if event.story_payload is not None else None
+        ),
     }
 
 
@@ -257,6 +260,11 @@ def _event_from_row(row: dict[str, Any]) -> FrozenAcceptedEvent:
         overlay_payload=(
             canonical_json_bytes(row["overlay_payload"])
             if row.get("overlay_payload") is not None
+            else None
+        ),
+        story_payload=(
+            canonical_json_bytes(row["story_payload"])
+            if row.get("story_payload") is not None
             else None
         ),
     )

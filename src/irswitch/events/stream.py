@@ -133,6 +133,7 @@ class FrozenAcceptedEvent:
     phase: str
     priority: int
     overlay_payload: bytes | None = None
+    story_payload: bytes | None = None
 
     def __post_init__(self) -> None:
         if not self.audiences:
@@ -159,6 +160,7 @@ def freeze_accepted_event(
     source_ordinal: int,
     coalesce_key: tuple[str, ...] | None = None,
     overlay_payload: dict[str, Any] | None = None,
+    story_payload: dict[str, Any] | None = None,
 ) -> FrozenAcceptedEvent:
     return FrozenAcceptedEvent(
         envelope=freeze_envelope(envelope),
@@ -173,7 +175,12 @@ def freeze_accepted_event(
         overlay_payload=(
             canonical_json_bytes(overlay_payload) if overlay_payload is not None else None
         ),
+        story_payload=(canonical_json_bytes(story_payload) if story_payload is not None else None),
     )
+
+
+def thaw_story_payload(payload: bytes) -> dict[str, Any]:
+    return decode_canonical_json(payload, label="mini-story")
 
 
 @dataclass(frozen=True)

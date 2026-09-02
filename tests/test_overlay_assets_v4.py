@@ -77,6 +77,13 @@ def test_v4_manifest_version_and_canvas() -> None:
         assert "zone" not in families["sysinfo"]
 
 
+def test_v4_story_snapshots_reconcile_without_clearing_leased_cards() -> None:
+    script = (web_root() / "overlay" / "js" / "display-v4.js").read_text(encoding="utf-8")
+    body = script.split("applyStateSnapshot(stories) {", 1)[1].split("\n  },", 1)[0]
+    assert "this.clear()" not in body
+    assert "miniStory" in script
+
+
 def test_v4_themes_have_expected_family_dirs() -> None:
     themes = sorted(p.name for p in V4_ROOT.iterdir() if p.is_dir())
     assert themes == sorted(THEMES)

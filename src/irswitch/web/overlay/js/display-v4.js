@@ -4,7 +4,7 @@ import { fmtBpmDelta, fmtDelta, fmtGap, fmtLapTime, fmtRate } from "./timing-for
 
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.17";
+const ASSET_CACHE = "1.2.18";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -1019,9 +1019,12 @@ function widgetKey(envelope, stateKey, { golden = false } = {}) {
   const familyName = familyForState(stateKey);
   const persistent = !golden && (familyName === "pit" || familyName === "bio");
   const cid =
+    envelope.correlationId ||
+    envelope.miniStory?.correlationId ||
     (persistent ? envelope.storyKey || envelope.correlationId : envelope.correlationId) ||
     envelope.storyKey ||
     envelope.eventId ||
+    envelope.miniStory?.storyId ||
     stateKey;
   return golden ? `golden:${cid}` : `v4:${cid}`;
 }
@@ -1056,6 +1059,7 @@ function preemptStickyFamilyPeers(familyName, keepKey, phase) {
 function scheduleHoldTimer(node, key, envelope, phase, golden) {
   clearTimeout(node._exitTimer);
   if (golden || isGoldenLayout()) return;
+  if (node.dataset.storyLease === "true") return;
   if (phase === "RESULT") {
     const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
     node._exitTimer = setTimeout(() => DisplayV4.hide(key), hold);
@@ -1185,6 +1189,13 @@ export const DisplayV4 = {
     }
     node.dataset.state = stateKey;
     node.dataset.phase = phase;
+    if (options.snapshot) node.dataset.snapshotManaged = "true";
+    const storyState = String(envelope.miniStory?.state || "").toLowerCase();
+    if (["building", "committed", "speaking", "resolved"].includes(storyState)) {
+      node.dataset.storyLease = "true";
+      node.dataset.storyId = envelope.miniStory.storyId || "";
+      node.dataset.storyRevision = String(envelope.miniStory.storyRevision || 0);
+    }
     node.classList.toggle("phase-compact", phase === "COMPACT");
     const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";
     node.classList.remove("tone-primary", "tone-warning", "tone-alert");
@@ -1223,8 +1234,16 @@ export const DisplayV4 = {
   },
 
   applyStateSnapshot(stories) {
-    this.clear();
-    (stories || []).forEach((story) => this.show({ ...story, format: "v4" }));
+    const desired = new Set();
+    (stories || []).forEach((story) => {
+      const envelope = { ...story, format: "v4" };
+      const key = widgetKey(envelope, resolveStateKey(envelope));
+      desired.add(key);
+      this.show(envelope, { snapshot: true });
+    });
+    for (const [key, node] of [...this.active.entries()]) {
+      if (node.dataset.snapshotManaged === "true" && !desired.has(key)) this.hide(key);
+    }
   },
 
   _create(stateKey, familyName, parent) {

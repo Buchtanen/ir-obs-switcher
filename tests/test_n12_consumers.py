@@ -25,6 +25,7 @@ from irswitch.events.stream import (
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.consumer import OverlayConsumer
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
+from irswitch.race.ministory import MiniStoryRegistry
 
 
 def _graph():
@@ -73,10 +74,12 @@ def _batch(
     audience: tuple[str, ...] = ("overlay", "commentary"),
     accepted_ms: int | None = None,
     overlay_wire: dict | None = None,
+    story_payload: dict | None = None,
+    phase: str = "RESULT",
 ) -> FrozenAcceptedEventBatch:
     envelope = make_envelope(
         event_type="LAP_COMPLETE",
-        phase="RESULT",
+        phase=phase,
         mode="RACE",
         event_id=f"session:LAP_COMPLETE:{event_sequence}",
         sequence=event_sequence,
@@ -92,6 +95,7 @@ def _batch(
         source="event_engine",
         source_ordinal=0,
         overlay_payload=overlay_wire,
+        story_payload=story_payload,
     )
     return FrozenAcceptedEventBatch(
         stream_sequence,
@@ -135,6 +139,130 @@ async def test_overlay_consumer_uses_frozen_public_wire_and_discards_commentary_
 
 
 @pytest.mark.asyncio
+async def test_overlay_consumer_reduces_story_lease_until_tts_completion() -> None:
+    class _RecordingBus(OverlayBus):
+        def __init__(self) -> None:
+            super().__init__()
+            self.wires: list[dict] = []
+
+        async def publish_event(self, envelope: dict) -> None:
+            self.wires.append(envelope)
+            await super().publish_event(envelope)
+
+    story = {
+        "storyId": "story:0:1",
+        "storyRevision": 1,
+        "runEpoch": 0,
+        "heroOrderRevision": 0,
+        "correlationId": "lap:1",
+        "eventType": "LAP_COMPLETE",
+        "state": "ready",
+    }
+    wire = {
+        "type": "event",
+        "format": "v4",
+        "eventType": "LAP_COMPLETE",
+        "phase": "RESULT",
+        "correlationId": "lap:1",
+        "metrics": {"lap": 4, "lapTime": 61.2},
+        "presentation": {"variant": "lap_complete"},
+    }
+    bus = _RecordingBus()
+    consumer = OverlayConsumer(AsyncEventFanout().subscribe("overlay"), bus)
+    await consumer.handle(_batch(overlay_wire=wire, story_payload=story))
+    assert bus.wires[-1]["miniStory"]["storyId"] == "story:0:1"
+
+    consumer.enqueue_story_transition({**story, "action": "building", "reason": "tts_queued"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4[0]["miniStory"]["state"] == "building"
+
+    consumer.enqueue_story_transition({**story, "action": "speaking", "reason": "tts_started"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4[0]["miniStory"]["state"] == "speaking"
+
+    # The latest producer context can still contain the raw source relation.
+    # Completion must tombstone that correlation until a genuinely new story arrives.
+    consumer._source_stories = [wire]
+    consumer.enqueue_story_transition({**story, "action": "completed", "reason": "tts_finished"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4 == []
+
+
+@pytest.mark.asyncio
+async def test_source_exit_resolves_but_does_not_remove_building_story_lease() -> None:
+    story = {
+        "storyId": "story:0:1",
+        "storyRevision": 1,
+        "runEpoch": 0,
+        "heroOrderRevision": 0,
+        "correlationId": "lap:1",
+        "eventType": "LAP_COMPLETE",
+        "state": "ready",
+    }
+    enter = {
+        "type": "event",
+        "format": "v4",
+        "eventType": "LAP_COMPLETE",
+        "phase": "ENTER",
+        "correlationId": "lap:1",
+        "metrics": {"lap": 4},
+        "presentation": {"variant": "lap_complete"},
+    }
+    bus = OverlayBus()
+    consumer = OverlayConsumer(AsyncEventFanout().subscribe("overlay"), bus)
+    await consumer.handle(_batch(overlay_wire=enter, story_payload=story, phase="ENTER"))
+    consumer.enqueue_story_transition({**story, "action": "building"})
+    await consumer.apply_story_transitions()
+
+    resolved = {**story, "storyRevision": 2, "state": "resolved"}
+    exit_wire = {**enter, "phase": "EXIT", "metrics": {"lap": 4, "lapTime": 61.2}}
+    await consumer.handle(
+        _batch(
+            stream_sequence=2,
+            event_sequence=2,
+            overlay_wire=exit_wire,
+            story_payload=resolved,
+            phase="EXIT",
+        )
+    )
+
+    assert bus.active_stories_v4[0]["phase"] == "RESULT"
+    assert bus.active_stories_v4[0]["miniStory"] == {**resolved, "state": "resolved"}
+
+
+@pytest.mark.asyncio
+async def test_overlay_consumer_ignores_stale_story_revision_and_reset_clears_lease() -> None:
+    story = {
+        "storyId": "story:2:7",
+        "storyRevision": 3,
+        "runEpoch": 2,
+        "heroOrderRevision": 1,
+        "correlationId": "lap:1",
+        "eventType": "LAP_COMPLETE",
+        "state": "ready",
+    }
+    wire = {
+        "type": "event",
+        "format": "v4",
+        "eventType": "LAP_COMPLETE",
+        "phase": "RESULT",
+        "correlationId": "lap:1",
+        "metrics": {},
+        "presentation": {"variant": "lap_complete"},
+    }
+    bus = OverlayBus()
+    consumer = OverlayConsumer(AsyncEventFanout().subscribe("overlay"), bus)
+    await consumer.handle(_batch(overlay_wire=wire, story_payload=story))
+    consumer.enqueue_story_transition({**story, "action": "speaking"})
+    consumer.enqueue_story_transition({**story, "storyRevision": 2, "action": "completed"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4[0]["miniStory"]["state"] == "speaking"
+
+    await consumer.handle(SessionReset("session", "next", "session_changed", 9))
+    assert bus.active_stories_v4 == []
+
+
+@pytest.mark.asyncio
 async def test_commentary_consumer_thaws_and_speaks_without_overlay_bus() -> None:
     fanout = AsyncEventFanout()
     subscription = fanout.subscribe("commentary")
@@ -148,6 +276,53 @@ async def test_commentary_consumer_thaws_and_speaks_without_overlay_bus() -> Non
 
     assert [item.text for item in sink.spoken] == ["A lap is complete."]
     assert director.hero_names() == ("Alex",)
+
+
+@pytest.mark.asyncio
+async def test_commentary_consumer_adopts_producer_assigned_story_token() -> None:
+    fanout = AsyncEventFanout()
+    subscription = fanout.subscribe("commentary")
+    subscription.replace_latest_context(_context())
+    sink = NullTtsSink()
+    settings = CommentarySettings(enabled=True, cooldown_s=0)
+    director = CommentaryDirector(graph=_graph(), settings=settings, sink=sink)
+    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
+    story = {
+        "storyId": "story:0:41",
+        "storyRevision": 1,
+        "runEpoch": 0,
+        "heroOrderRevision": 0,
+        "correlationId": "lap:1",
+        "eventType": "LAP_COMPLETE",
+        "state": "ready",
+    }
+
+    await consumer.handle(_batch(audience=("commentary",), story_payload=story))
+
+    assert sink.spoken[0].story_token is not None
+    assert sink.spoken[0].story_token.story_id == "story:0:41"
+
+
+def test_shared_producer_order_revision_still_interrupts_commentary_consumer() -> None:
+    fanout = AsyncEventFanout()
+    subscription = fanout.subscribe("commentary")
+    subscription.replace_latest_context(_context())
+    sink = NullTtsSink(force_busy=True)
+    settings = CommentarySettings(enabled=True, cooldown_s=0)
+    director = CommentaryDirector(graph=_graph(), settings=settings, sink=sink)
+    registry = MiniStoryRegistry()
+    consumer = CommentaryConsumer(
+        subscription,
+        director,
+        lambda: (settings, "en"),
+        story_registry=registry,
+    )
+    registry.observe_context({"session_id": "session", "race": {"class_position": 5}})
+    registry.observe_context({"session_id": "session", "race": {"class_position": 4}})
+
+    consumer._idle_tick()
+
+    assert sink.interrupted == 1
 
 
 def test_context_bindings_require_exact_driver_identity_and_localize_situation() -> None:

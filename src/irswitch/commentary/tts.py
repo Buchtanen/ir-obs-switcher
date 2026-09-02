@@ -187,6 +187,7 @@ class ProcessTtsSink:
             del self.spoken[:-16]
 
         accepted = True
+        replaced: CommentaryUtterance | None = None
         with self._idle:
             waiters = self._pending - (1 if self._speaking else 0)
             if waiters >= 1:
@@ -200,6 +201,8 @@ class ProcessTtsSink:
                         self._pending += 1
                         self._queue.put(old)
                         accepted = False
+                    else:
+                        replaced = old
             if accepted:
                 self._pending += 1
 
@@ -211,24 +214,34 @@ class ProcessTtsSink:
             )
             return
 
+        if replaced is not None:
+            self._close_queued_story(replaced, "tts_queue_replaced")
+        if utterance.story_token is not None:
+            self._emit_story_debug(utterance.story_token, "building", "tts_queued")
+
         self._ensure_worker()
         self._queue.put(utterance)
 
     def interrupt(self) -> None:
         """Drop queued speaks; signal worker to skip remaining work best-effort."""
         dropped = 0
+        dropped_utterances: list[CommentaryUtterance] = []
         with self._idle:
             self._interrupt_generation += 1
             while True:
                 try:
-                    self._queue.get_nowait()
+                    queued = self._queue.get_nowait()
                     dropped += 1
+                    if isinstance(queued, CommentaryUtterance):
+                        dropped_utterances.append(queued)
                 except queue.Empty:
                     break
             if dropped:
                 self._pending = max(0, self._pending - dropped)
                 if self._pending == 0 and not self._speaking:
                     self._idle.notify_all()
+        for utterance in dropped_utterances:
+            self._close_queued_story(utterance, "tts_queue_interrupted")
 
     def is_busy(self) -> bool:
         """True while speaking or a waiter is queued (#180 observed busy)."""
@@ -343,13 +356,17 @@ class ProcessTtsSink:
             if not spoken_text.strip():
                 return
         token = utterance.story_token
+        lifecycle_token = token
         registry = self.story_registry
         if registry is not None and token is not None:
             decision = registry.commit(token, utterance.fact_pack, locale=utterance.locale)
             if decision.status == CommitStatus.INVALIDATED or cancelled():
                 self._emit_story_debug(token, "skipped", "ministory_invalidated")
                 return
-            self._emit_story_debug(token, "committed", f"ministory_{decision.status.value}")
+            lifecycle_token = registry.current_token(token) or token
+            self._emit_story_debug(
+                lifecycle_token, "committed", f"ministory_{decision.status.value}"
+            )
             if decision.status == CommitStatus.RESOLVED:
                 spoken_text = decision.canonical
                 if (
@@ -383,7 +400,8 @@ class ProcessTtsSink:
             if not registry.mark_speaking(token):
                 self._emit_story_debug(token, "skipped", "ministory_invalidated")
                 return
-            self._emit_story_debug(token, "speaking", "tts_started")
+            lifecycle_token = registry.current_token(token) or lifecycle_token
+            self._emit_story_debug(lifecycle_token, "speaking", "tts_started")
         try:
             with ducker_from_settings(self.settings):
                 if cancelled():
@@ -405,11 +423,16 @@ class ProcessTtsSink:
                 )
         finally:
             if registry is not None and token is not None:
+                state_before = registry.state_of(token)
                 registry.complete(token)
                 state = registry.state_of(token)
+                if state is None and state_before is None:
+                    action = "invalidated"
+                else:
+                    action = state.value if state is not None else "completed"
                 self._emit_story_debug(
-                    token,
-                    state.value if state is not None else "completed",
+                    registry.current_token(token) or lifecycle_token or token,
+                    action,
                     "tts_finished",
                 )
         self.last_result = result
@@ -450,10 +473,20 @@ class ProcessTtsSink:
                     "storyRevision": token.revision,
                     "runEpoch": token.run_epoch,
                     "heroOrderRevision": token.hero_order_revision,
+                    "correlationId": token.correlation_id,
                 }
             )
         except Exception:
             logger.debug("commentary mini-story debug hook failed", exc_info=True)
+
+    def _close_queued_story(self, utterance: CommentaryUtterance, reason: str) -> None:
+        token = utterance.story_token
+        if token is None:
+            return
+        registry = self.story_registry
+        if registry is not None:
+            registry.invalidate(token)
+        self._emit_story_debug(token, "invalidated", reason)
 
 
 def detect_backend(preferred: str = "auto") -> str:

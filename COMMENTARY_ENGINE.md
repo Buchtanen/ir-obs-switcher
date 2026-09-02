@@ -107,7 +107,7 @@ All 54 active graph nodes and all 24 edges have compatibility tests. `leader_cha
 
 ### Editorial mini-story lifecycle
 
-`MiniStoryRegistry` separates the lifetime of source telemetry from the lifetime of narration. The commentary consumer keeps a thread-safe fact ledger while Qwen runs on the serial TTS worker. Immediately after generation and before audio starts, the worker atomically checks the story token:
+`MiniStoryRegistry` separates the lifetime of source telemetry from the lifetime of narration. The race producer assigns one frozen `storyId`/revision before the accepted stream fans out, so commentary and overlay consume the same identity. The shared thread-safe fact ledger remains live while Qwen runs on the serial TTS worker. Immediately after generation and before audio starts, the worker atomically checks the story token:
 
 - unchanged live identity is committed and receives a narrative lease;
 - a normal relation `EXIT` before commit becomes a short result-oriented realization (one remaining Qwen call at most, never more than two calls total), with a deterministic result sentence as fallback;
@@ -115,7 +115,11 @@ All 54 active graph nodes and all 24 edges have compatibility tests. `leader_cha
 - an ordinary `EXIT` after speech starts records resolution but lets the committed narration finish;
 - an authoritative hero class-position change is the only routine hard preemption. It invalidates waiting stories, interrupts the active backend process, restores ducking in `finally`, and allows the new position story to lead.
 
-Deferred candidates remain depth-one and replace lower-or-equal priority drafts, so an old FIFO backlog is never narrated. DEBUG tape commentary rows include `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision` and commit/speaking/completed/interrupted actions.
+Deferred candidates remain depth-one and replace lower-or-equal priority drafts, so an old FIFO backlog is never narrated. Replaced/dropped waiters explicitly invalidate their story lease.
+
+The TTS worker emits `building`, `committed`, `speaking`, `completed`, `interrupted` or `invalidated` transitions. Runtime marshals them with `loop.call_soon_threadsafe()` into a bounded overlay-consumer reducer; the worker never mutates `OverlayBus` or an asyncio primitive. A leased V4 card ignores ordinary source expiry, changes to a result presentation on `EXIT`, and is removed by completion/interruption/reset. Reconnect receives the reducer's authoritative `STATE_SNAPSHOT`. Unleased HUD events retain their original lifecycle and timers.
+
+DEBUG tape commentary rows include `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision`, `correlationId` and the actual lifecycle action.
 
 ## TTS validator
 

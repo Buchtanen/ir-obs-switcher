@@ -38,11 +38,39 @@ class MiniStoryToken:
     correlation_id: str
     event_type: str
 
+    def to_dict(self, *, state: MiniStoryState | str) -> dict[str, Any]:
+        return {
+            "storyId": self.story_id,
+            "storyRevision": self.revision,
+            "runEpoch": self.run_epoch,
+            "heroOrderRevision": self.hero_order_revision,
+            "correlationId": self.correlation_id,
+            "eventType": self.event_type,
+            "state": str(state),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> MiniStoryToken:
+        return cls(
+            story_id=str(payload.get("storyId") or ""),
+            revision=max(1, _integer(payload.get("storyRevision")) or 1),
+            run_epoch=max(0, _integer(payload.get("runEpoch")) or 0),
+            hero_order_revision=max(0, _integer(payload.get("heroOrderRevision")) or 0),
+            correlation_id=str(payload.get("correlationId") or ""),
+            event_type=str(payload.get("eventType") or ""),
+        )
+
 
 @dataclass(frozen=True)
 class MiniStoryObservation:
     token: MiniStoryToken | None
     narrate: bool = True
+    state: MiniStoryState | None = None
+
+    def to_dict(self) -> dict[str, Any] | None:
+        if self.token is None or self.state is None:
+            return None
+        return self.token.to_dict(state=self.state)
 
 
 @dataclass(frozen=True)
@@ -79,6 +107,11 @@ class MiniStoryRegistry:
     _next_story: int = 0
     _active_story_id: str | None = None
 
+    @property
+    def hero_order_revision(self) -> int:
+        with self._lock:
+            return self._hero_order_revision
+
     def reset(self, *, session_id: str = "", run_epoch: int = 0) -> None:
         with self._lock:
             for story in self._stories.values():
@@ -90,6 +123,54 @@ class MiniStoryRegistry:
             self._hero_position = None
             self._hero_order_revision = 0
             self._active_story_id = None
+
+    def adopt(self, envelope: EventEnvelope, payload: dict[str, Any]) -> MiniStoryToken | None:
+        """Restore producer-assigned identity when consuming a frozen/replayed event."""
+        token = MiniStoryToken.from_dict(payload)
+        if not token.story_id or not token.correlation_id:
+            return None
+        try:
+            state = MiniStoryState(str(payload.get("state") or MiniStoryState.READY))
+        except ValueError:
+            state = MiniStoryState.READY
+        with self._lock:
+            existing = self._story_for_token(token)
+            if existing is not None:
+                existing.metrics.update(deepcopy(envelope.metrics))
+                if state == MiniStoryState.RESOLVED:
+                    if existing.state in {MiniStoryState.COMMITTED, MiniStoryState.SPEAKING}:
+                        existing.resolved_after_commit = True
+                    elif (
+                        existing.state
+                        not in {
+                            MiniStoryState.COMPLETED,
+                            MiniStoryState.INVALIDATED,
+                            MiniStoryState.INTERRUPTED,
+                        }
+                        and token.revision >= existing.revision
+                    ):
+                        existing.state = MiniStoryState.RESOLVED
+                        existing.revision = token.revision
+                return _token(existing)
+            story = _MiniStory(
+                story_id=token.story_id,
+                correlation_id=token.correlation_id,
+                event_type=token.event_type or envelope.event_type,
+                run_epoch=token.run_epoch,
+                hero_order_revision=token.hero_order_revision,
+                revision=token.revision,
+                identity=_identity(envelope),
+                metrics=deepcopy(envelope.metrics),
+                state=state,
+            )
+            self._stories[_story_key(envelope)] = story
+            self._run_epoch = max(self._run_epoch, token.run_epoch)
+            self._hero_order_revision = max(self._hero_order_revision, token.hero_order_revision)
+            try:
+                self._next_story = max(self._next_story, int(token.story_id.rsplit(":", 1)[-1]))
+            except (TypeError, ValueError):
+                pass
+            return _token(story)
 
     def observe_context(self, context: dict[str, Any]) -> bool:
         """Return True only for an authoritative hero class-position change."""
@@ -147,7 +228,11 @@ class MiniStoryRegistry:
                 }:
                     story.state = MiniStoryState.RESOLVED
                     story.revision += 1
-                return MiniStoryObservation(None, narrate=False)
+                # The editorial lease may remain SPEAKING internally, while the
+                # presentation must still move to its resolved/result state.
+                return MiniStoryObservation(
+                    _token(story), narrate=False, state=MiniStoryState.RESOLVED
+                )
 
             if story is not None and (
                 story.run_epoch != run_epoch or _identity_conflicts(story.identity, identity)
@@ -183,7 +268,7 @@ class MiniStoryRegistry:
                 story.event_type = envelope.event_type
 
             token = _token(story)
-            return MiniStoryObservation(token, narrate=True)
+            return MiniStoryObservation(token, narrate=True, state=story.state)
 
     def token_for(self, envelope: EventEnvelope) -> MiniStoryToken | None:
         with self._lock:
@@ -249,10 +334,30 @@ class MiniStoryRegistry:
             if self._active_story_id == story.story_id:
                 self._active_story_id = None
 
+    def invalidate(self, token: MiniStoryToken, *, interrupted: bool = False) -> bool:
+        """Close an unspoken/queued story so presentation cannot be orphaned."""
+        with self._lock:
+            story = self._story_for_token(token)
+            if story is None or story.state in {
+                MiniStoryState.COMPLETED,
+                MiniStoryState.INTERRUPTED,
+                MiniStoryState.INVALIDATED,
+            }:
+                return False
+            story.state = MiniStoryState.INTERRUPTED if interrupted else MiniStoryState.INVALIDATED
+            if self._active_story_id == story.story_id:
+                self._active_story_id = None
+            return True
+
     def state_of(self, token: MiniStoryToken) -> MiniStoryState | None:
         with self._lock:
             story = self._story_for_token(token)
             return story.state if story is not None else None
+
+    def current_token(self, token: MiniStoryToken) -> MiniStoryToken | None:
+        with self._lock:
+            story = self._story_for_token(token)
+            return _token(story) if story is not None else None
 
     def _story_for_token(self, token: MiniStoryToken) -> _MiniStory | None:
         return next((s for s in self._stories.values() if s.story_id == token.story_id), None)

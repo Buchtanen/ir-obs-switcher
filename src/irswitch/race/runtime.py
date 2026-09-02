@@ -48,6 +48,7 @@ from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
 from irswitch.race.driver_facts import DriverFactLedger
 from irswitch.race.grid_story import QUALI_RECAP
+from irswitch.race.ministory import MiniStoryRegistry
 from irswitch.race.observer import RaceObserver
 from irswitch.race.pipeline import AcceptedRecord, RacePipeline, build_situation_payload
 from irswitch.race.run import RunClock
@@ -111,9 +112,11 @@ class RaceRuntime:
         self._event_fanout = AsyncEventFanout()
         self._overlay_subscription = self._event_fanout.subscribe("overlay", capacity=64)
         self._commentary_subscription = self._event_fanout.subscribe("commentary", capacity=64)
+        self.story_registry = MiniStoryRegistry()
         self.pipeline = RacePipeline(
             self._event_fanout,
             sequence_allocator=self._sequence_allocator,
+            story_registry=self.story_registry,
         )
         self.manager: EventManager = EventManager()
         self.manager_v2: EventManagerV2 | None = None
@@ -153,6 +156,7 @@ class RaceRuntime:
         self._last_snapshot = TelemetrySnapshot()
         self._hud_live = False
         self._running = False
+        self._runtime_loop: asyncio.AbstractEventLoop | None = None
         self._replay_writer: Any = None
         self.race_observer = RaceObserver(settings=overlay.race_observer)
         self.driver_facts = DriverFactLedger()
@@ -167,13 +171,14 @@ class RaceRuntime:
             director,
             self._commentary_settings,
             decision_hook=self._record_commentary_decision,
+            story_registry=self.story_registry,
         )
         director.filler_formatter = lambda envelope: self.race_observer.format_filler_text(
             envelope, locale=self._overlay_settings().language
         )
         sink = director.sink
         if hasattr(sink, "on_story_debug"):
-            sink.on_story_debug = self._ministory_tape_hook
+            sink.on_story_debug = self._ministory_lifecycle_hook
         previous_spoken = getattr(sink, "on_spoken_text", None)
 
         def _spoken(text: str) -> None:
@@ -381,6 +386,20 @@ class RaceRuntime:
         if not self._tape_debug_enabled() or self.mode == "replay":
             return
         self._tape.record_commentary(entry, time.monotonic(), self._last_race)
+
+    def _ministory_lifecycle_hook(self, entry: dict[str, Any]) -> None:
+        """Cross the TTS worker boundary without touching asyncio state there."""
+        self._ministory_tape_hook(entry)
+        loop = self._runtime_loop
+        if loop is None or loop.is_closed():
+            return
+        try:
+            loop.call_soon_threadsafe(
+                self.overlay_consumer.enqueue_story_transition,
+                dict(entry),
+            )
+        except RuntimeError:
+            logger.debug("mini-story overlay bridge unavailable", exc_info=True)
 
     def _build_commentary(self, overlay: OverlaySettings) -> CommentaryDirector | None:
         """Load the sequence graph once. Fail-soft if the JSON is broken."""
@@ -723,6 +742,7 @@ class RaceRuntime:
         return resolve_component_hz(s.default_hz, s.system_hz)
 
     async def run(self) -> None:
+        self._runtime_loop = asyncio.get_running_loop()
         overlay = self._overlay_settings()
         if not overlay.enabled:
             logger.info("Overlay pipeline disabled")
@@ -737,6 +757,7 @@ class RaceRuntime:
                 await self._run_replay(Path(self._replay_path))
             finally:
                 self._running = False
+                self._runtime_loop = None
             return
 
         self._running = True
@@ -762,6 +783,8 @@ class RaceRuntime:
             self._close_commentary_sink()
             self.stop_event_capture()
             raise
+        finally:
+            self._runtime_loop = None
 
     async def _run_replay(self, path: Path) -> None:
         if is_n12_replay(path):
