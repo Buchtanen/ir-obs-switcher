@@ -45,6 +45,9 @@ sysinfo = [
 sysinfo-lhm = [
   "pythonnet>=3.0",
 ]
+supertonic = [
+  "supertonic[playback]>=1.3.1",
+]
 
 [project.scripts]
 irswitchd = "irswitch.main:main"

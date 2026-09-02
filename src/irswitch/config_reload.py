@@ -48,6 +48,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "commentary.tts_backend",
         "commentary.tts_voice",
         "commentary.tts_rate",
+        "commentary.tts_steps",
         "commentary.audio_device",
         "commentary.duck_input",
         "commentary.duck_ratio",

@@ -162,6 +162,7 @@ class CommentarySettings:
     tts_backend: str = "auto"
     tts_voice: str = ""
     tts_rate: int = 0
+    tts_steps: int = 6
     audio_device: str = ""
     duck_input: str = ""
     duck_ratio: float = 0.25

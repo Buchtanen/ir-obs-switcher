@@ -134,6 +134,7 @@ grid_story = true
     assert cfg.overlay.commentary.cooldown_s == 2.5
     assert cfg.overlay.commentary.max_utterance_s == 5.0
     assert cfg.overlay.commentary.tts_backend == "espeak"
+    assert cfg.overlay.commentary.tts_steps == 6
     assert cfg.overlay.commentary.llm_max_attempts == 2
     assert cfg.overlay.commentary.tts_rate == -3
     assert cfg.overlay.commentary.audio_device == "CABLE Input"

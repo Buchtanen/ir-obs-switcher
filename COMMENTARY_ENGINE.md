@@ -34,7 +34,7 @@ iRacing / BLE HR
     → validate_utterance
     → independent TtsSink worker (optional grounded LLM generation)
     → MiniStory commit gate against latest run/order/relation state
-    → Windows SAPI / espeak-ng / NullTtsSink
+    → TtsSink (Windows SAPI / SuperTonic CPU / espeak-ng / NullTtsSink)
 ```
 
 **Wired, default off:** optional local/LAN LLM realization receives a compact immutable microplan with selected propositions and one compatible style card, never the full graph, unrelated telemetry, authored anchor, or raw recent commentary. The default model is Ollama `qwen3:4b-instruct-2507-q4_K_M`; [the earlier skeleton PoC](docs/commentary_llm_skeleton_poc.md) remains historical context.
@@ -155,7 +155,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 ## TTS
 
-- **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
+- **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). SuperTonic (`tts_backend=supertonic`) synthesizes on CPU (model kept in RAM, 4/2 ONNX threads) and plays the same device at native 44.1 kHz via WASAPI shared (COM initialized on the worker thread; WDM-KS endpoints are skipped). Set CABLE Input/Output to 16-bit 44100 Hz. Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists. Hard interrupt stops SuperTonic playback; SAPI process kill already exists on this branch.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
 - Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** sits behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM generation runs (#180). With `llm_polish=true`, LAN Ollama `qwen3:4b-instruct-2507-q4_K_M` receives the compact microplan and selected facts and may use the full node budget for one or two sentences. One hard semantic rejection may retry; timeout/transport failure and exhausted validation immediately use the complete canonical fact realization. The mini-story commit gate then checks current run, hero order and source resolution before starting audio. Before generation/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
@@ -164,10 +164,10 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 1. Open `http://127.0.0.1:17321/commentary`
 2. Click **Mluvit v prohlížeči** — you should hear the sample line
-3. Click **Mluvit na serveru** — Windows SAPI (or espeak). If backend is `null`, the page says so
+3. Click **Mluvit na serveru** — SAPI, SuperTonic, or espeak. If backend is `null`, the page says so
 4. **Uložit nastavení** writes `commentary.*` via `PUT /api/config`
 
-Server voice dropdown lists the same SAPI voices as PowerShell `SAPI.SpVoice` (`GetDescription()`), matching `commentary.tts_voice` and `sapi_speak.ps1`.
+Server voice dropdown lists SAPI voices (`SAPI.SpVoice` `GetDescription()`) or SuperTonic presets `M1`–`M5` / `F1`–`F5` when that backend is selected.
 
 ## Config
 
@@ -180,6 +180,7 @@ max_utterance_s = 14.0
 tts_backend = auto
 tts_voice =
 tts_rate = 0
+tts_steps = 6
 audio_device =
 duck_input =
 duck_ratio = 0.25
@@ -189,9 +190,9 @@ decision_log_size = 32
 
 `decision_log_size` is the commentary speak/skip ring (HTTP `/commentary` decisions). Watcher FSM decisions live in a separate in-memory ring (`race/watcher_log.py`, size 64, DEBUG only) and are not exposed on that snapshot.
 
-`audio_device` empty = you hear SAPI on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
+`audio_device` empty = you hear TTS on the default headset. Set `CABLE Input` and capture `CABLE Output` in OBS (Monitor Off) for stream-only audio.
 
-`duck_input` is the OBS source to lower while speaking (e.g. `Zvuk plochy`). Empty `duck_input` skips ducking. `duck_ratio` is the fraction of the original volume (0.25 = 25%). `duck_fade_ms` (default 750) ramps volume down before the line and back after; `0` is an instant jump. Overlapping lines share one ducker: the pre-duck volume is saved once and kept until fade-in **finishes**. A new line during fade-in must not re-read OBS (that stacked `duck_ratio` into silence). Shutdown/`atexit` force-restores if a fade was still in flight.
+`duck_input` is the OBS source to lower while speaking (e.g. `Zvuk plochy`). Empty `duck_input` skips ducking. `duck_ratio` is the fraction of the original volume (0.25 = 25%). `duck_fade_ms` (default 750) ramps volume down before playback and back after; `0` is an instant jump. Fade-out starts as soon as the line is ready so SuperTonic can synthesize during the 750 ms ramp; playback waits until the ramp is down (`max(fade, synth)`). Overlapping lines share one ducker: the pre-duck volume is saved once and kept until fade-in **finishes**. A new line during fade-in must not re-read OBS (that stacked `duck_ratio` into silence). Shutdown/`atexit` force-restores if a fade was still in flight.
 
 ### Sector speak (M4)
 
@@ -234,7 +235,7 @@ Slots bound from envelope metrics: `track`, `field_size`, `sof`, `sof_class`, `s
 
 Migration: optional key default `false`. Requires `commentary.enabled=true` for audible output.
 
-**Audio path (stream PC):** SAPI → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing; code sink stays `sapi`/`espeak`/`null`. See product suite T0/T1 and P4 note.
+**Audio path (stream PC):** SAPI or SuperTonic → VB-CABLE (`audio_device = CABLE Input`) + OBS capture of `CABLE Output` (Monitor Off). That is OS/OBS routing. SuperTonic is opt-in (`tts_backend=supertonic` + extra `.[supertonic]`); `auto` stays SAPI. See product suite T0/T1 and P4 note.
 
 ## Anti-repeat + filler-tail quota (M2)
 

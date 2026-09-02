@@ -16,7 +16,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from irswitch.commentary.duck import ducker_from_settings
+from irswitch.commentary.duck import duck_for_speech
 from irswitch.commentary.graph import GraphNode
 from irswitch.commentary.graph_runtime import GraphCandidate
 from irswitch.commentary.polish import PolishOutcome, polish_skeleton
@@ -27,7 +27,7 @@ from irswitch.race.ministory import CommitStatus, MiniStoryRegistry, MiniStoryTo
 
 logger = logging.getLogger(__name__)
 
-BACKENDS = ("auto", "sapi", "espeak", "null")
+BACKENDS = ("auto", "sapi", "espeak", "supertonic", "null")
 STREAM_START_EVENT = "STREAM_START"
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
 CancelProbe = Callable[[], bool]
@@ -168,7 +168,8 @@ class ProcessTtsSink:
 
     ``enqueue`` never waits for SAPI/espeak or duck fades. At most **one**
     waiter behind the in-flight speak (replace-by-priority); no sequential
-    drain of a deep TTS backlog. Duck enter/exit stays on that one worker.
+    drain of a deep TTS backlog. Duck enter/exit stays on that one worker;
+    fade-out can run in the background so SuperTonic synthesizes during it.
     """
 
     settings: CommentarySettings
@@ -423,7 +424,7 @@ class ProcessTtsSink:
             self._emit_story_debug(lifecycle_token, "speaking", "tts_started")
         self._emit_graph_lifecycle("speaking", utterance)
         try:
-            with ducker_from_settings(self.settings):
+            with duck_for_speech(self.settings) as ducker:
                 if cancelled():
                     return
                 result = speak_text(
@@ -440,6 +441,8 @@ class ProcessTtsSink:
                     ),
                     runner=self.runner,
                     cancelled=cancelled,
+                    steps=self.settings.tts_steps,
+                    wait_before_play=lambda: ducker.wait_faded(cancelled),
                 )
         finally:
             if registry is not None and token is not None:
@@ -527,11 +530,13 @@ def detect_backend(preferred: str = "auto") -> str:
     choice = (preferred or "auto").strip().lower()
     if choice == "null":
         return "null"
+    if choice == "supertonic":
+        return "supertonic" if _supertonic_available() else "null"
     if choice == "sapi" and _sapi_available():
         return "sapi"
     if choice == "espeak" and _espeak_bin():
         return "espeak"
-    if choice in {"sapi", "espeak"}:
+    if choice in {"sapi", "espeak", "supertonic"}:
         return "null"
     if _sapi_available():
         return "sapi"
@@ -583,6 +588,8 @@ def speak_text(
     timeout_s: float = 25.0,
     runner: SpeakRunner | None = None,
     cancelled: CancelProbe | None = None,
+    steps: int = 6,
+    wait_before_play: Callable[[], None] | None = None,
 ) -> TtsResult:
     """Blocking speak for a worker thread. Fail-soft; never raises to callers."""
     spoken = (text or "").strip()
@@ -604,6 +611,18 @@ def speak_text(
                 runner=runner,
                 cancelled=cancelled,
             )
+        elif resolved == "supertonic":
+            _speak_supertonic(
+                spoken,
+                voice=voice,
+                rate=rate,
+                device=device,
+                timeout_s=timeout_s,
+                steps=steps,
+                locale=locale,
+                cancelled=cancelled,
+                before_play=wait_before_play,
+            )
         else:
             _speak_espeak(
                 spoken,
@@ -616,7 +635,7 @@ def speak_text(
             )
     except _TtsInterrupted:
         return TtsResult(backend=resolved, spoken=False, error="interrupted")
-    except subprocess.TimeoutExpired:
+    except (subprocess.TimeoutExpired, TimeoutError):
         return TtsResult(backend=resolved, spoken=False, error="tts timeout")
     except Exception as exc:
         logger.warning("tts backend %s failed", resolved, exc_info=True)
@@ -631,6 +650,10 @@ def list_voices(backend: str = "auto") -> list[str]:
             return _list_sapi_voices()
         if resolved == "espeak":
             return _list_espeak_voices()
+        if resolved == "supertonic":
+            from irswitch.commentary.supertonic_backend import list_voices as _list_st
+
+            return _list_st()
     except Exception:
         logger.debug("tts voice listing failed", exc_info=True)
     return []
@@ -638,6 +661,43 @@ def list_voices(backend: str = "auto") -> list[str]:
 
 def _sapi_available() -> bool:
     return sys.platform == "win32" and bool(shutil.which("powershell") or shutil.which("pwsh"))
+
+
+def _supertonic_available() -> bool:
+    from irswitch.commentary.supertonic_backend import available
+
+    return available()
+
+
+def _speak_supertonic(
+    text: str,
+    *,
+    voice: str,
+    rate: int,
+    device: str,
+    timeout_s: float,
+    steps: int,
+    locale: str,
+    cancelled: CancelProbe | None,
+    before_play: Callable[[], None] | None = None,
+) -> None:
+    from irswitch.commentary.supertonic_backend import PlaybackInterrupted
+    from irswitch.commentary.supertonic_backend import speak as speak_supertonic
+
+    try:
+        speak_supertonic(
+            text,
+            voice=voice,
+            rate=rate,
+            device=device,
+            timeout_s=timeout_s,
+            steps=steps,
+            locale=locale,
+            cancelled=cancelled,
+            before_play=before_play,
+        )
+    except PlaybackInterrupted as exc:
+        raise _TtsInterrupted from exc
 
 
 def _espeak_bin() -> str | None:

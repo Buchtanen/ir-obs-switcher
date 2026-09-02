@@ -330,7 +330,11 @@ def _get_str(parser: configparser.ConfigParser, section: str, key: str, fallback
 
 def _normalize_tts_backend(value: str) -> str:
     key = (value or "auto").strip().lower()
-    return key if key in {"auto", "sapi", "espeak", "null"} else "auto"
+    return key if key in {"auto", "sapi", "espeak", "supertonic", "null"} else "auto"
+
+
+def _clamp_tts_steps(value: int) -> int:
+    return max(5, min(12, int(value)))
 
 
 def _load_commentary_scheduler(
@@ -483,6 +487,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         tts_voice=_get_str(parser, "commentary", "tts_voice", commentary_defaults.tts_voice),
         tts_rate=_clamp_tts_rate(
             _get_int(parser, "commentary", "tts_rate", commentary_defaults.tts_rate)
+        ),
+        tts_steps=_clamp_tts_steps(
+            _get_int(parser, "commentary", "tts_steps", commentary_defaults.tts_steps)
         ),
         audio_device=_get_str(
             parser, "commentary", "audio_device", commentary_defaults.audio_device

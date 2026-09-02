@@ -807,7 +807,7 @@ Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`).
 
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
-- **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`)
+- **Mluvit na serveru** — `POST /api/commentary/speak` → SAPI / SuperTonic / espeak (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`; SuperTonic syntéza běží během fade-out, play až je duck dole)
 - **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
 - Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`)
 

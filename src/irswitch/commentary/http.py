@@ -9,7 +9,7 @@ from typing import Any
 from aiohttp import web
 
 from irswitch.commentary.assignments import render_assignments
-from irswitch.commentary.duck import ducker_from_settings
+from irswitch.commentary.duck import duck_for_speech
 from irswitch.commentary.graph import GraphNode, load_sequence_graph
 from irswitch.commentary.tts import (
     TtsResult,
@@ -89,6 +89,7 @@ async def handle_commentary_status(_request: web.Request) -> web.Response:
                 "ttsBackend": settings.tts_backend,
                 "ttsVoice": settings.tts_voice,
                 "ttsRate": settings.tts_rate,
+                "ttsSteps": settings.tts_steps,
                 "audioDevice": settings.audio_device,
                 "duckInput": settings.duck_input,
                 "duckRatio": settings.duck_ratio,
@@ -97,7 +98,7 @@ async def handle_commentary_status(_request: web.Request) -> web.Response:
                 "graphRuntimeMode": settings.graph_runtime_mode,
             },
             "audioHint": (
-                "On the stream PC, route SAPI playback to a Virtual Audio Driver "
+                "On the stream PC, route TTS playback to a Virtual Audio Driver "
                 "(not headphones) so OBS can capture commentary separately."
             ),
             "nodes": nodes,
@@ -178,7 +179,7 @@ async def handle_commentary_speak(request: web.Request) -> web.Response:
     )
 
     def _speak_job() -> TtsResult:
-        with ducker_from_settings(settings):
+        with duck_for_speech(settings) as ducker:
             return speak_text(
                 text,
                 locale=locale,
@@ -187,6 +188,8 @@ async def handle_commentary_speak(request: web.Request) -> web.Response:
                 backend=backend,
                 device=settings.audio_device,
                 timeout_s=timeout,
+                steps=settings.tts_steps,
+                wait_before_play=ducker.wait_faded,
             )
 
     loop = asyncio.get_running_loop()
