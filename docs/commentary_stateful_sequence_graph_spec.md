@@ -734,6 +734,8 @@ Likely files:
 
 ### Phase 3 — Shadow-mode director integration
 
+**Implemented on feature branch:** graph diagnostics, consumer-owned lifecycle mutation, compact status, and fail-soft legacy fallback are covered by automated tests.
+
 **Purpose:** observe the new graph without changing audible behavior.
 
 Implementation:
@@ -769,6 +771,8 @@ Likely files:
 
 ### Phase 4 — Active selection for repeated live/context families
 
+**Implemented on feature branch:** batch ranking, active-family cooldown replacement, graph-owned silence/backoff, and graph-score deferred replacement are covered by automated tests.
+
 **Purpose:** limit first behavior change to the noisy families with the clearest benefit.
 
 Initial active families:
@@ -797,6 +801,8 @@ Acceptance gate:
 - critical legacy events retain 100% valid-occurrence recall.
 
 ### Phase 5 — Graph-ranked filler candidates
+
+**Implemented on feature branch:** RaceObserver publishes a bounded factual candidate set in active mode; legacy rotation remains available only for rollback compatibility.
 
 **Purpose:** remove fixed filler rotation as an editorial decision.
 

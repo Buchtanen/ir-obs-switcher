@@ -193,6 +193,22 @@ def test_feature_flag_put_roundtrip(tmp_path: Path) -> None:
     assert values["event_engine.overtake_classifier"] is True
 
 
+def test_commentary_graph_runtime_mode_put_roundtrip(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+
+    applied = apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
+
+    assert applied == ["commentary.graph_runtime.mode"]
+    cfg = AppConfig.from_file(path)
+    assert cfg.overlay.commentary.graph_runtime_mode == "shadow"
+    assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "shadow"
+    spec = field_by_key("commentary.graph_runtime.mode")
+    assert spec is not None
+    assert spec.choices == ("legacy", "shadow", "active")
+    with pytest.raises(ValueError):
+        coerce_value(spec, "experimental")
+
+
 def test_live_overlay_fields_are_hot_reloadable() -> None:
     live_keys = {spec.key for spec in OVERLAY_FIELDS if spec.live}
     assert live_keys <= LIVE_CONFIG_KEYS

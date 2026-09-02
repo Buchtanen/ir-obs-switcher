@@ -72,6 +72,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "commentary.llm_max_attempts",
         "commentary.driver_name",
         "commentary.driver_nickname",
+        "commentary.graph_runtime.mode",
         "commentary.scheduler.defer_enabled",
         "commentary.scheduler.hard_interrupt",
         "commentary.scheduler.max_deferred",

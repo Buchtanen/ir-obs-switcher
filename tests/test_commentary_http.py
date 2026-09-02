@@ -34,6 +34,7 @@ async def test_commentary_page_and_status(app: web.Application) -> None:
             body = await status.json()
             assert "backend" in body
             assert body["sample"]
+            assert body["settings"]["graphRuntimeMode"] == "legacy"
             assert any(node["id"] == "overtake" for node in body["nodes"])
 
 

@@ -420,6 +420,15 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         optional=True,
     ),
     FieldSpec(
+        "commentary.graph_runtime.mode",
+        "str",
+        "legacy",
+        True,
+        "commentary.graph_runtime",
+        "Stateful sequence graph rollout: legacy, shadow diagnostics, or active ranking.",
+        choices=("legacy", "shadow", "active"),
+    ),
+    FieldSpec(
         "sampling.default_hz",
         "float",
         5.0,
@@ -1036,6 +1045,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "commentary.llm_max_attempts": s.commentary.llm_max_attempts,
         "commentary.driver_name": s.commentary.driver_name,
         "commentary.driver_nickname": s.commentary.driver_nickname,
+        "commentary.graph_runtime.mode": s.commentary.graph_runtime_mode,
         "sampling.default_hz": s.sampling.default_hz,
         "sampling.race.hz": s.sampling.race_hz,
         "sampling.system.hz": s.sampling.system_hz,

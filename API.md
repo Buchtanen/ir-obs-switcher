@@ -809,13 +809,13 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
 - **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`)
 - **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
-- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `overlay.language`)
+- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`)
 
 **API**
 
 | Method | URL | Poznámka |
 | --- | --- | --- |
-| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, sample řádek, `audioHint` (VAD) |
+| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
 | `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |

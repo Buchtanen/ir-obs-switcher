@@ -1,7 +1,7 @@
 # Commentary engine (Phase 0)
 
-**Status:** EN+CS graph, N12 independent consumers, bounded story history, grounded commentary planner, TTS and `/commentary`. Default **off** for the live race feed.
-**Integration branch:** `refactor/200-n12-async-consumers`; Windows/OBS/Ollama live validation pending.
+**Status:** EN+CS graph v2, N12 independent consumers, stateful graph runtime (`legacy | shadow | active`), bounded story history, grounded commentary planner, TTS and `/commentary`. Commentary and active graph mode both remain explicit opt-ins.
+**Implementation branch:** `feat/stateful-commentary-sequence-graph`; Windows/OBS/Ollama live validation pending.
 
 ## Why
 
@@ -26,7 +26,9 @@ iRacing / BLE HR
     → EventEngine emitters → CandidateEvent
     → EventManager / V2 (priority, cooldown, pit guard)
     → accepted EventEnvelope
-    → CommentaryDirector (sequence graph + HR emotion)
+    → CommentaryConsumer-owned SequenceGraphRuntime
+       (transition + semantic/node/edge/path fatigue + SILENCE pressure)
+    → CommentaryDirector (graph winner + HR emotion)
        ├─ llm_polish=false: one authored fully-bound line
        └─ llm_polish=true: microplan + selected facts + style card
     → validate_utterance
@@ -63,6 +65,9 @@ the normal test suite never require the local model.
 Rules:
 
 - Hook **accepted envelopes only**. Raw candidates are too noisy.
+- `[commentary.graph_runtime] mode=legacy` preserves the compatibility path; `shadow` records score breakdowns while legacy remains audible; `active` is authoritative for repeated live/context families and bounded filler batches.
+- Graph fatigue mutates only on TTS `speaking`; scoring, rejection, parking, and pre-audio invalidation do not count as audience exposure. Completion/interruption starts `SILENCE` dwell on the consumer lane.
+- In active mode RaceObserver derives at most four factual filler candidates. Producer identity and immutable batch ordering remain normal; the graph selects one rather than using observer rotation.
 - Works with **legacy** EventManager (`v2_payload=false`, default) via a speech map for `lap_complete` / `pit_entry` / `pit_exit`. V2 envelopes are used when present; the map fills gaps (basic pit has no V2 adapter).
 - `in_car` is a commentary sidecar (`player_car_idx` rising, event type `ENTER_CAR`). It is **not** an overlay HUD catalog entry and is **not** pit entry.
 - Session intros / SoF / weather are commentary sidecars (`SessionBriefsDetector`, gated by `commentary.session_briefs`). They are **not** overlay HUD catalog entries.

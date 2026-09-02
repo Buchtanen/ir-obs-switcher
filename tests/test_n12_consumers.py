@@ -8,7 +8,7 @@ import pytest
 
 from irswitch.commentary.consumer import CommentaryConsumer, _spoken_irating
 from irswitch.commentary.director import CommentaryDirector
-from irswitch.commentary.graph import parse_sequence_graph
+from irswitch.commentary.graph import load_sequence_graph, parse_sequence_graph
 from irswitch.commentary.tts import NullTtsSink
 from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.envelope import make_envelope
@@ -18,6 +18,7 @@ from irswitch.events.stream import (
     FillerResult,
     FrozenAcceptedEventBatch,
     SessionReset,
+    SessionSequenceAllocator,
     freeze_accepted_event,
     freeze_config,
     freeze_context,
@@ -332,6 +333,78 @@ async def test_legacy_mode_does_not_activate_graph_runtime() -> None:
         "semantic": 0,
         "path": 0,
     }
+
+
+@pytest.mark.asyncio
+async def test_active_filler_batch_gets_unique_ids_and_speaks_one_graph_winner() -> None:
+    fanout = AsyncEventFanout()
+    subscription = fanout.subscribe("commentary")
+    subscription.replace_latest_context(_context())
+    sink = NullTtsSink()
+    settings = CommentarySettings(
+        enabled=True,
+        cooldown_s=0,
+        use_hr_emotion=False,
+        graph_runtime_mode="active",
+    )
+    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
+    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
+    now = time.monotonic()
+    consumer.graph_runtime.reset(run_epoch=0, now=now - settings.scheduler.max_silence_s)
+    consumer._request_filler(now - 0.1)
+
+    allocator = SessionSequenceAllocator(session_id="session")
+    envelopes = [
+        make_envelope(
+            event_type="FIELD_FACT",
+            phase="RESULT",
+            mode="RACE",
+            priority=28,
+            correlation_id="field:position",
+            metrics={"kind": "field_fact", "fact": "position", "position": 5},
+        ),
+        make_envelope(
+            event_type="FIELD_FACT",
+            phase="RESULT",
+            mode="RACE",
+            priority=28,
+            correlation_id="field:leader",
+            metrics={"kind": "field_fact", "fact": "leader", "leaderName": "Rossi"},
+        ),
+        make_envelope(
+            event_type="WEATHER_CHANGE",
+            phase="RESULT",
+            mode="RACE",
+            priority=34,
+            correlation_id="weather:session",
+            metrics={"kind": "weather_change", "skies": "overcast", "air_temp": "22 C"},
+        ),
+    ]
+    accepted = tuple(
+        freeze_accepted_event(
+            allocator.stamp(envelope),
+            audiences=("commentary",),
+            source="filler",
+            source_ordinal=index,
+        )
+        for index, envelope in enumerate(envelopes)
+    )
+    batch = FrozenAcceptedEventBatch(
+        1,
+        "session",
+        1,
+        int(now * 1000),
+        1,
+        _context(),
+        accepted,
+    )
+
+    await consumer.handle(batch)
+
+    assert len({event.event_id for event in accepted}) == 3
+    assert len(sink.spoken) == 1
+    assert sink.spoken[0].event_type == "WEATHER_CHANGE"
+    assert consumer.status_snapshot()["fillerOutstanding"] is False
 
 
 @pytest.mark.asyncio

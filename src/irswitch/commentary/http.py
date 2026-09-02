@@ -94,6 +94,7 @@ async def handle_commentary_status(_request: web.Request) -> web.Response:
                 "duckRatio": settings.duck_ratio,
                 "duckFadeMs": settings.duck_fade_ms,
                 "decisionLogSize": settings.decision_log_size,
+                "graphRuntimeMode": settings.graph_runtime_mode,
             },
             "audioHint": (
                 "On the stream PC, route SAPI playback to a Virtual Audio Driver "
