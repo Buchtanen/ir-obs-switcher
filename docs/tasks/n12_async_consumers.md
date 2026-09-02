@@ -13,6 +13,12 @@
 **Review disposition:** implementation gaps from the critical review are bound
 in the appendix below. The target architecture is unchanged.
 
+**Post-N12 refinement:** [live data channels and adaptive sampling](../live_data_channels_sampling_spec.md)
+adds a single sampler owner, latest-only live-state domains, and slower cadences
+for proven slow/static inputs. It is not part of the initial N12 landing. Its
+implementation must start from `master` after N12 merges, while preserving this
+document's accepted-event and exact event-time context contracts.
+
 ## Goal
 
 Replace the logical `overlay -> commentary` chain inside `OverlayRuntime` with

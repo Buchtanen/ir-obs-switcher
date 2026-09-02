@@ -5,7 +5,7 @@
 **Audience:** stream viewers (broadcast voice).  
 **Related (research):** [commentary_llm_skeleton_poc.md](commentary_llm_skeleton_poc.md) — LAN Ollama skeleton-polish PoC; not in product packages yet.  
 **Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
-**Next architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 decoupling plus V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers.
+**Next architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 decoupling plus V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. The post-N12 [live data channels and adaptive sampling specification](live_data_channels_sampling_spec.md) adds shared latest-state channels and domain-specific sampling.
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
 
 ## 0. How we test (your order — source of truth)
