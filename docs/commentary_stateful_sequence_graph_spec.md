@@ -1,16 +1,16 @@
 # Stateful commentary sequence graph — specification and implementation plan
 
-**Status:** implementation in progress; Phase 1 graph v2 schema delivered, runtime behavior pending
+**Status:** implementation complete through Phase 6 on `feat/stateful-commentary-sequence-graph`; Phase 7 live acceptance pending
 
 **Base branch:** `refactor/200-n12-async-consumers`
 
 **Baseline commit:** `8788f95`
 
-**Tracking context:** [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200) and the implemented N12 consumer split
+**Tracking:** [#210](https://github.com/Buchtanen/ir-obs-switcher/issues/210), based on the [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200) N12 consumer split
 
 **Related:** [Commentary engine](../COMMENTARY_ENGINE.md), [Test 6 analysis](overlay_commentary_test_6_analysis.md), [Test 6 fix plan](overlay_commentary_test_6_fix_implementation_plan.md), [Editorial MiniStory lifecycle](implementation_editorial_ministory.md)
 
-This document specifies a future commentary-policy change. It is not a description of current behavior. Implementation must receive its own issue, acceptance checklist, and PR before any active-mode rollout.
+This document began as the design contract for a future commentary-policy change. It now also records the implemented feature-branch behavior and remaining rollout gates. The shipped configuration default is still `legacy`; `shadow` and `active` must be selected explicitly until live acceptance and release review are complete.
 
 ---
 
@@ -647,11 +647,28 @@ Full semantic keys and score breakdowns remain DEBUG/tape data, not a high-frequ
 - [ ] Busy defer replacement compares final graph score/criticality rather than raw envelope priority.
 - [ ] Target filler selection is graph-ranked rather than fixed round-robin before legacy mode is removed.
 
+### Automated implementation status — 2026-09-02
+
+Phases 1–6 are implemented on the feature branch and covered by focused plus full regression tests. The checkboxes above remain release gates rather than being converted into claims before the manual Phase 7 review and PR classification are recorded.
+
+Current automated evidence:
+
+- `pytest -q`: 1,352 passed;
+- `ruff check src tests`: passed;
+- `black --check src tests`: 320 files unchanged;
+- `mypy src/irswitch`: 173 source files passed;
+- focused graph, active-ranking, lifecycle, filler, status, determinism, critical-inventory, and rollback tests are part of the full suite;
+- no runtime dependency or external graph service was added.
+
+The remaining non-automated evidence is the Windows/OBS/Ollama listening session in Phase 7. Active mode is therefore implemented but remains opt-in, with `legacy` retained as immediate rollback.
+
 ## 20. Implementation plan
 
 Implementation is sequential because the graph runtime, director, scheduler, and consumer ownership overlap. Parallel work is appropriate only for later independent tape-analysis or documentation tasks.
 
 ### Phase 0 — Issue, replay baseline, and score contract
+
+**Implemented:** issue #210 tracks the feature, the specification locks the score/lifecycle contract, and deterministic fixtures cover the graph policy without requiring Ollama.
 
 **Purpose:** lock evidence before behavior changes.
 
@@ -677,6 +694,8 @@ Likely files:
 - optional replay/report script already used by the repository
 
 ### Phase 1 — Graph v2 schema and compatibility
+
+**Implemented on feature branch:** immutable graph v2 editorial metadata, strict validation, complete node/edge migration, and inventory tests are delivered.
 
 **Purpose:** add static editorial policy without changing selection.
 
@@ -706,6 +725,8 @@ Likely files:
 - `tests/test_commentary_content_extension.py`
 
 ### Phase 2 — `SequenceGraphRuntime` core
+
+**Implemented on feature branch:** bounded decaying fatigue, semantic/material identity, path scoring, critical floor, deterministic ranking, silence state, reset, and lifecycle behavior are covered by unit tests.
 
 **Purpose:** implement bounded state, semantic identity, fatigue, silence, and scoring in isolation.
 
@@ -833,6 +854,8 @@ Likely files:
 
 ### Phase 6 — Full active cutover and policy deletion
 
+**Implemented on feature branch:** every graph-covered family uses one active ranking path, critical and closure inventories are asserted, active cooldown ownership is removed, the global timer is only a technical audio gap, and legacy remains isolated as the compatibility rollback path.
+
 **Purpose:** achieve architectural simplification after evidence, not before it.
 
 Implementation:
@@ -853,6 +876,8 @@ Acceptance gate:
 - legacy-versus-active differences are reviewed and classified as intended, neutral, or defect.
 
 ### Phase 7 — Windows/OBS/Ollama live acceptance
+
+**Pending:** this requires the target Windows service, OBS Browser Sources, iRacing telemetry, and the configured Ollama/Qwen stack. It is intentionally not inferred from Linux fixture results.
 
 **Purpose:** verify cadence and listener quality that fixtures cannot prove.
 
@@ -946,7 +971,7 @@ The target is not maximum speech count or minimum silence. It is fewer redundant
 
 ## 23. Configuration impact
 
-Proposed migration control:
+Implemented migration control:
 
 ```ini
 [commentary.graph_runtime]
@@ -969,18 +994,16 @@ Rules:
 - changing the default to `active` is a later explicit behavior change with migration notes and release labeling;
 - removing `legacy` mode requires a later deprecation/cleanup issue.
 
-When implemented, update both `CONFIG.md` and `config/config.example.ini`, including the interaction with existing scheduler settings.
+`CONFIG.md` and `config/config.example.ini` document the mode and its interaction with existing scheduler settings.
 
 ## 24. Documentation and API impact
 
-This specification is the only document changed by the current docs-only work item.
-
-When implementation begins, review and update:
+Implementation updated the following contracts:
 
 - `COMMENTARY_ENGINE.md`: target pipeline, graph v2, active score, silence semantics, and lexical-versus-semantic anti-repeat;
 - `CONFIG.md` and `config/config.example.ini`: graph runtime mode and scheduler migration behavior;
 - `API.md`: compact `/commentary` graph-runtime status fields if exposed;
-- `docs/scenario_coverage_matrix.md`: commentary-selection and silence behavior;
+- `docs/scenario_coverage_matrix.md`: commentary-selection modes and silence ownership;
 - this document: phase status and evidence links;
 - PR description: full Docs impact checklist.
 
@@ -1031,12 +1054,14 @@ The feature is complete only when:
 - rollback to legacy remains tested for the compatibility release;
 - the PR carries exactly one required semver label and passes CI.
 
-## 28. TDD exception for this document
+## 28. Current verification record and live-test exception
 
-**TDD-exception:** docs-only design and implementation-plan capture; no executable behavior changed.
+Automated feature work followed test-first slices for schema, runtime scoring, integration, active selection, filler choice, lifecycle, and critical inventory. The current full-suite and static-analysis results are recorded in section 19.
 
-**Verification:** cross-check terminology, paths, settings, graph inventory, and lifecycle contracts against the baseline branch; render/read the Markdown and inspect the final diff.
+**External-system TDD exception:** Phase 7 cannot be completed in the Linux development environment because it requires the target Windows service, OBS Browser Sources, live or replayed iRacing telemetry, and the configured Ollama/Qwen endpoint.
 
-**Risk:** the proposal could drift from implementation before work begins.
+**Verification plan:** run the Phase 7 scenarios with `shadow` first, then `active`; retain the tape and `/commentary` diagnostics; classify every meaningful active-versus-legacy difference; confirm cadence, closure, factuality, CPU/latency, reset, and immediate `legacy` rollback before changing the default.
 
-**Mitigation:** Phase 0 creates the implementation issue and baseline; later PRs update this specification with actual status and evidence rather than treating proposed values as shipped behavior.
+**Risk:** deterministic fixtures prove policy behavior but cannot prove listener-perceived cadence, TTS timing, OBS interaction, or live-model latency.
+
+**Mitigation:** keep `legacy` as the shipped default and do not delete the rollback path or declare release completion until the recorded live acceptance passes.

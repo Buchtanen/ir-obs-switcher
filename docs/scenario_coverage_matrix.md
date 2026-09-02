@@ -1,6 +1,7 @@
 # Scenario coverage matrix (overlay · commentary · OBS)
 
-**Status:** inventory — **re-pinned 2026-08-31** vs umbrella #179 (P0 `EventFanout` peers; P5 `attack_range` / `pit_stopped` TTS shipped). Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.  
+**Status:** inventory — **re-pinned 2026-09-02** with stateful commentary graph modes on #210 (active implementation is opt-in; default remains `legacy`). Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.
+
 **Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 finish split shipped on the stacked epic; N5 `SESSION_FLAG` is commentary-only, gated)
 
 ## 0. Two session concepts — do not mix
@@ -22,7 +23,10 @@ TelemetrySnapshot
   → EventEnvelope / wire
        → OverlayBus (HUD widgets)          ← peer path
        → EventFanout → CommentaryConsumer  ← peer path (P0; was chained in OverlayRuntime)
-            → anti-repeat → optional LLM polish → TTS sink
+            → legacy: existing director selection
+            → shadow: legacy audio + stateful graph diagnostics
+            → active: graph ranking (semantic/path fatigue + silence pressure)
+            → lexical anti-repeat → optional LLM polish → TTS sink
 ```
 
 **Sidecars (commentary):** `InCarDetector` (`ENTER_CAR`), `SessionBriefsDetector` (intros / SoF / weather) — not classic emitters.
@@ -56,6 +60,14 @@ Missing `[event_engine]` section → code defaults (flags off).
 | `use_hr_emotion` | `true` | BLE HR → emotion bands |
 
 `ENTER_CAR` is **not** gated by `session_briefs` — only by `commentary.enabled`.
+
+### `[commentary.graph_runtime]`
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `mode` | `legacy` | `legacy` preserves the compatibility policy, `shadow` computes graph decisions without changing audio, and `active` makes the stateful graph authoritative. |
+
+In `active`, one graph score owns editorial priority, transitions, semantic/path repetition fatigue, critical floors, and silence promotion. The scheduler keeps only transport timing and busy defer; it does not independently decide filler silence. `RaceObserver` supplies a bounded factual candidate set but does not rank it for speech.
 
 ## 3. Arbitration (shared)
 
