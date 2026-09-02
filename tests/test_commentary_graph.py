@@ -50,6 +50,25 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     ).editorial.closure
 
 
+def test_default_graph_critical_inventory_is_explicit() -> None:
+    graph = load_sequence_graph()
+    critical = {
+        node.id: node.event_types
+        for node in graph.nodes.values()
+        if node.editorial.criticality is Criticality.CRITICAL
+    }
+
+    assert critical == {
+        "position_gained": ("POSITION_GAINED",),
+        "position_lost": ("POSITION_LOST", "OVERTAKEN"),
+        "final_lap": ("FINAL_LAP",),
+        "finish": ("FINISH",),
+        "leader_change": ("LEADER_CHANGE",),
+        "session_checkered": ("SESSION_CHECKERED",),
+        "session_flag_checkered": ("SESSION_FLAG",),
+    }
+
+
 def test_finish_ambiguous_lines_include_position() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["finish"]

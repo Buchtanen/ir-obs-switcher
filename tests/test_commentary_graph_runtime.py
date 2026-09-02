@@ -330,3 +330,61 @@ def test_filler_due_uses_initial_silence_and_bounded_no_fact_backoff() -> None:
     runtime.note_filler_result(status="no_fact", now=35.0)
     assert not runtime.filler_due(44.9)
     assert runtime.filler_due(45.0)
+
+
+def test_identical_timeline_is_deterministic_when_candidate_order_changes() -> None:
+    def replay(reverse: bool) -> list[tuple[str, float, float, float]]:
+        runtime = _runtime(selection_threshold=0.0)
+        runtime.reset(run_epoch=1, now=0.0)
+        batches = [
+            [
+                _candidate(
+                    "field_fact",
+                    event_id="field:1",
+                    sequence=2,
+                    metrics={"fact": "position", "position": 5},
+                ),
+                _candidate(
+                    "hunting",
+                    event_id="hunt:1",
+                    sequence=1,
+                    phase="ENTER",
+                    correlation_id="battle:7",
+                    metrics={"gap": 1.2, "targetCarIdx": 7},
+                ),
+            ],
+            [
+                _candidate(
+                    "side_by_side",
+                    event_id="side:1",
+                    sequence=4,
+                    phase="ENTER",
+                    correlation_id="battle:7",
+                    metrics={"gap": 0.2, "targetCarIdx": 7},
+                ),
+                _candidate(
+                    "time_lost",
+                    event_id="lap:1",
+                    sequence=3,
+                    metrics={"lap": 4, "delta": 0.3},
+                ),
+            ],
+        ]
+        output: list[tuple[str, float, float, float]] = []
+        for index, original in enumerate(batches, start=1):
+            candidates = list(reversed(original)) if reverse else original
+            selection = runtime.select(candidates, now=float(index))
+            assert selection is not None
+            output.append(
+                (
+                    selection.candidate.event_id,
+                    selection.score.final,
+                    selection.score.transition,
+                    selection.score.repeat_penalty,
+                )
+            )
+            assert runtime.record_speaking(selection.candidate, now=float(index))
+            assert runtime.note_completed(now=float(index) + 0.25, run_epoch=1)
+        return output
+
+    assert replay(reverse=False) == replay(reverse=True)
