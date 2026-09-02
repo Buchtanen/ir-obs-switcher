@@ -519,6 +519,8 @@ def _commentary_settings_from_dict(
         )
     else:
         scheduler = fallback.scheduler
+    mode = str(values.get("graph_runtime_mode", fallback.graph_runtime_mode)).strip().lower()
+    values["graph_runtime_mode"] = mode if mode in {"legacy", "shadow", "active"} else "legacy"
     return CommentarySettings(**values, scheduler=scheduler)
 
 

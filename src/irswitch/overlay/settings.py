@@ -188,6 +188,7 @@ class CommentarySettings:
     driver_name: str = ""
     driver_nickname: str = ""
     scheduler: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
+    graph_runtime_mode: str = "legacy"
 
 
 @dataclass(frozen=True)

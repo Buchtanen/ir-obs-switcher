@@ -358,6 +358,14 @@ def _load_commentary_scheduler(
     )
 
 
+def _load_commentary_graph_runtime(
+    parser: configparser.ConfigParser,
+    default: str,
+) -> str:
+    raw = _get_str(parser, "commentary.graph_runtime", "mode", default).lower()
+    return raw if raw in {"legacy", "shadow", "active"} else "legacy"
+
+
 def _clamp_tts_rate(value: int) -> int:
     return max(-10, min(10, int(value)))
 
@@ -575,6 +583,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
         ),
         scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
+        graph_runtime_mode=_load_commentary_graph_runtime(
+            parser, commentary_defaults.graph_runtime_mode
+        ),
     )
 
     ro_defaults = defaults.race_observer
