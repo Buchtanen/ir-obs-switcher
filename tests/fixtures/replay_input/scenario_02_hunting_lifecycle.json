@@ -24,6 +24,7 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
+        "position": 7,
         "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 2.0, "closing_rate": 0.3},
         "gap_ahead": 2.0,
         "closing_rate_ahead": 0.3
@@ -34,6 +35,7 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
+        "position": 7,
         "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 1.8, "closing_rate": 0.25},
         "gap_ahead": 1.8,
         "closing_rate_ahead": 0.25
@@ -44,6 +46,7 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
+        "position": 7,
         "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 5.0, "closing_rate": -0.1},
         "gap_ahead": 5.0,
         "closing_rate_ahead": -0.1
@@ -54,6 +57,7 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
+        "position": 7,
         "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 5.0, "closing_rate": -0.1},
         "gap_ahead": 5.0,
         "closing_rate_ahead": -0.1

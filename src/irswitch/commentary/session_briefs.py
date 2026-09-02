@@ -27,7 +27,7 @@ from typing import Any, cast
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.iracing.session_context import SessionContext, SessionContextCache, session_key
 from irswitch.iracing.sof import RosterRow, compute_sof_bundle, format_sof_label
-from irswitch.iracing.weather import extract_weather, spoken_weather_bindings
+from irswitch.iracing.weather import LocaleCode, extract_weather, spoken_weather_bindings
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.session import (
     MODE_PRACTICE,
@@ -163,7 +163,7 @@ class SessionBriefsDetector:
         if data is not None:
             key = session_key(data)
             if key is not None:
-                return key
+                return (int(key[0]), int(key[1]))
         try:
             sub = int(state.subsession_id) if state.subsession_id is not None else None
         except (TypeError, ValueError):
@@ -231,10 +231,14 @@ class SessionBriefsDetector:
             "sofClassSamples": bundle.class_samples,
             "sofOfficial": False,
         }
-        sof = format_sof_label(bundle.overall, locale)
+        # iRacing may expose 0 while ratings are not ready. Zero is absence,
+        # never a field-strength fact suitable for commentary.
+        sof = format_sof_label(bundle.overall if (bundle.overall or 0) > 0 else None, locale)
         if sof is not None:
             metrics["sof"] = sof
-        sof_class = format_sof_label(bundle.class_sof, locale)
+        sof_class = format_sof_label(
+            bundle.class_sof if (bundle.class_sof or 0) > 0 else None, locale
+        )
         if sof_class is not None:
             metrics["sof_class"] = sof_class
         return make_envelope(
@@ -264,8 +268,8 @@ class SessionBriefsDetector:
             metrics["track"] = track
         if data is not None:
             snap = extract_weather(data, prefer="live")
-            loc = "cs" if str(locale).lower().startswith("cs") else "en"
-            for key, value in spoken_weather_bindings(snap, loc).items():  # type: ignore[arg-type]
+            loc: LocaleCode = "cs" if str(locale).lower().startswith("cs") else "en"
+            for key, value in spoken_weather_bindings(snap, loc).items():
                 if value:
                     metrics[key] = value
             metrics["weatherSource"] = snap.source

@@ -10,8 +10,10 @@ from irswitch.race.history import GapHistory
 from irswitch.race.opponents import (
     class_position_of,
     estimated_gap_seconds,
+    is_active_racer,
     overall_position_of,
     relevant_ahead_behind,
+    same_class,
 )
 from irswitch.race.session_end import SessionEndTracker
 
@@ -95,11 +97,19 @@ class RaceContextAnalyzer:
             player_lap_dist_pct=snap.player_lap_dist_pct,
         )
 
+        standings = _class_standings(snap, player_idx)
+        leader = standings[0] if standings else None
         return RaceState(
             connected=True,
             player_car_idx=snap.player_car_idx,
             position=snap.position,
             class_position=snap.class_position,
+            class_field_size=len(standings) or None,
+            leader_car_idx=leader[1] if leader else None,
+            leader_name=leader[2] if leader else None,
+            p1_name=standings[0][2] if len(standings) > 0 else None,
+            p2_name=standings[1][2] if len(standings) > 1 else None,
+            p3_name=standings[2][2] if len(standings) > 2 else None,
             lap=snap.lap,
             lap_completed=snap.lap_completed,
             current_lap_time=snap.current_lap_time,
@@ -142,6 +152,22 @@ class RaceContextAnalyzer:
             car_idx_best_lap_time=snap.car_idx_best_lap_time,
             car_idx_last_lap_time=snap.car_idx_last_lap_time,
         )
+
+
+def _class_standings(snap: TelemetrySnapshot, player_idx: int) -> list[tuple[int, int, str | None]]:
+    n = max(len(snap.car_idx_class_position), len(snap.car_idx_driver_name), 0)
+    rows: list[tuple[int, int, str | None]] = []
+    for car_idx in range(n):
+        if car_idx != player_idx and not same_class(snap, car_idx, player_idx):
+            continue
+        if car_idx != player_idx and not is_active_racer(snap, car_idx, player_idx):
+            continue
+        cp = class_position_of(snap, car_idx)
+        if cp is None or cp <= 0:
+            continue
+        rows.append((cp, car_idx, _driver_name(snap, car_idx)))
+    rows.sort(key=lambda item: item[0])
+    return rows
 
 
 def _driver_name(snap: TelemetrySnapshot, car_idx: int) -> str | None:

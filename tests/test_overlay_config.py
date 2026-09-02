@@ -70,6 +70,8 @@ def test_feature_flags_default_off_and_language_en(tmp_path: Path) -> None:
     ) is False
     assert cfg.overlay.commentary.enabled is False
     assert cfg.overlay.commentary.use_hr_emotion is True
+    assert cfg.overlay.commentary.llm_model == "qwen3:4b-instruct-2507-q4_K_M"
+    assert cfg.overlay.commentary.llm_max_attempts == 2
     assert cfg.overlay.commentary.gap_hunt_tts_in_practice is False
     assert cfg.overlay.commentary.gap_hunt_tts_in_qualifying is False
     assert cfg.overlay.race_observer.leader_pace_cooldown_s == 300.0
@@ -119,6 +121,7 @@ duck_input = Zvuk plochy
 duck_ratio = 0.25
 duck_fade_ms = 400
 gap_hunt_tts_in_practice = true
+llm_max_attempts = 8
 [race_observer]
 leader_pace_cooldown_s = 120
 incident_classify = true
@@ -131,6 +134,8 @@ grid_story = true
     assert cfg.overlay.commentary.cooldown_s == 2.5
     assert cfg.overlay.commentary.max_utterance_s == 5.0
     assert cfg.overlay.commentary.tts_backend == "espeak"
+    assert cfg.overlay.commentary.tts_steps == 6
+    assert cfg.overlay.commentary.llm_max_attempts == 2
     assert cfg.overlay.commentary.tts_rate == -3
     assert cfg.overlay.commentary.audio_device == "CABLE Input"
     assert cfg.overlay.commentary.duck_input == "Zvuk plochy"
@@ -187,6 +192,22 @@ def test_feature_flag_put_roundtrip(tmp_path: Path) -> None:
     values = overlay_values(cfg.overlay)
     assert values["overlay.language"] == "cs"
     assert values["event_engine.overtake_classifier"] is True
+
+
+def test_commentary_graph_runtime_mode_put_roundtrip(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+
+    applied = apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
+
+    assert applied == ["commentary.graph_runtime.mode"]
+    cfg = AppConfig.from_file(path)
+    assert cfg.overlay.commentary.graph_runtime_mode == "shadow"
+    assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "shadow"
+    spec = field_by_key("commentary.graph_runtime.mode")
+    assert spec is not None
+    assert spec.choices == ("legacy", "shadow", "active")
+    with pytest.raises(ValueError):
+        coerce_value(spec, "experimental")
 
 
 def test_live_overlay_fields_are_hot_reloadable() -> None:

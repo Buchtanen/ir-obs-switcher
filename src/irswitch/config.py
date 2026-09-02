@@ -330,7 +330,11 @@ def _get_str(parser: configparser.ConfigParser, section: str, key: str, fallback
 
 def _normalize_tts_backend(value: str) -> str:
     key = (value or "auto").strip().lower()
-    return key if key in {"auto", "sapi", "espeak", "null"} else "auto"
+    return key if key in {"auto", "sapi", "espeak", "supertonic", "null"} else "auto"
+
+
+def _clamp_tts_steps(value: int) -> int:
+    return max(5, min(12, int(value)))
 
 
 def _load_commentary_scheduler(
@@ -356,6 +360,14 @@ def _load_commentary_scheduler(
         ),
         llm_past_framing=_get_bool(parser, section, "llm_past_framing", defaults.llm_past_framing),
     )
+
+
+def _load_commentary_graph_runtime(
+    parser: configparser.ConfigParser,
+    default: str,
+) -> str:
+    raw = _get_str(parser, "commentary.graph_runtime", "mode", default).lower()
+    return raw if raw in {"legacy", "shadow", "active"} else "legacy"
 
 
 def _clamp_tts_rate(value: int) -> int:
@@ -476,6 +488,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         tts_rate=_clamp_tts_rate(
             _get_int(parser, "commentary", "tts_rate", commentary_defaults.tts_rate)
         ),
+        tts_steps=_clamp_tts_steps(
+            _get_int(parser, "commentary", "tts_steps", commentary_defaults.tts_steps)
+        ),
         audio_device=_get_str(
             parser, "commentary", "audio_device", commentary_defaults.audio_device
         ),
@@ -561,7 +576,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         llm_max_attempts=max(
             1,
             min(
-                8,
+                2,
                 _get_int(
                     parser,
                     "commentary",
@@ -575,6 +590,9 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
         ),
         scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
+        graph_runtime_mode=_load_commentary_graph_runtime(
+            parser, commentary_defaults.graph_runtime_mode
+        ),
     )
 
     ro_defaults = defaults.race_observer
@@ -637,6 +655,12 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             "events.priorities",
             "position_change",
             defaults.events.priorities.position_change,
+        ),
+        leader_change=_get_int(
+            parser,
+            "events.priorities",
+            "leader_change",
+            defaults.events.priorities.leader_change,
         ),
         overtake=_get_int(
             parser, "events.priorities", "overtake", defaults.events.priorities.overtake

@@ -34,6 +34,7 @@ Stable contracts (do **not** change when filling texts):
 - node `id`, `family`, `event_types`, `phases`
 - `speak_priority`, `cooldown_s`, `slots`, `hr_states`, `tts.*`
 - `edges` (sequence preferences)
+- graph v2 `editorial` policy metadata on nodes and edges
 - validator rules in `validator.py`
 - config keys under `[commentary]` (defaults remain off)
 
@@ -56,7 +57,7 @@ Playback fallbacks that make gradual fill safe:
 | Item | Path / owner |
 | --- | --- |
 | Document | `src/irswitch/commentary/data/sequence_graph.json` |
-| Schema version | top-level `"version": 1` (`GRAPH_VERSION` in `graph.py`) |
+| Schema version | top-level `"version": 2` (`GRAPH_VERSION` in `graph.py`); v1 remains loader-compatible for one transition release |
 | Loader | `load_sequence_graph()` / `parse_sequence_graph()` |
 | Integrity | `validate_graph_document()` + catalog event ids |
 | Inventory | `SequenceGraph.unfilled_cells()` → `(node_id, locale, emotion)` |
@@ -99,7 +100,7 @@ Each wave is a PR (or PR slice) that only patches `variants` (+ tests). Mock lin
 | **W4** | EN timing / quali / practice | Non-race chatter | `personal_best`, `gain_found`, `time_lost`, `target_locked`, `projected_lap`, `hot_lap`, `position_attack`, `clean_streak`, `rival_threat` |
 | **W5** | EN bio | Rare HR line | `hr_pressure` (only pushing/high) |
 | **W6** | CS parity | Czech speech | Same cell keys as EN waves; director locale `cs` |
-| **W7** | Sequence polish | Edge-aware wording | Re-brief nodes that sit on edges so previous/next lines do not clash |
+| **W7** | Sequence polish | Edge-aware wording | Composer now consumes actual edge history; optional copy re-brief follows live listening |
 
 **Recommended order inside a wave:** highest `speak_priority` first (finish → … → hr_pressure), so silence gaps hurt less.
 
@@ -225,7 +226,7 @@ Suggested one-liner check (after a small helper exists; until then use pytest + 
 | Medium | One full wave × one locale |
 | Avoid | Entire 184 cells in one shot (voice drift + hard review) |
 
-Pass previous/next node sample lines when the node sits on an `edges` path (W7 / edge-aware batches).
+Pass previous/next node sample lines and the `commentary-facts/1` clause trace when the node sits on an `edges` path (W7 / edge-aware batches). The runtime composer is already shipped; W7 changes wording only.
 
 ## 6. Gradual mock → data connection map
 
@@ -269,7 +270,7 @@ Pass previous/next node sample lines when the node sits on an `edges` path (W7 /
 - [x] VOICE — stream-viewer broadcast + denser matrix (~4 lines/cell; **426 → 752** lines)
 - [x] N11 A — `stream_start` (long node TTS cap, slot-free EN+CS) + mode `in_car_*` (generic `in_car` kept)
 - [x] N11 B/C/D — sparse `incident_*` branches, flag one-liners, `quali_recap` / `parade_pad`
-- [ ] W7 — sequence polish (optional)
+- [ ] W7 — optional wording polish after live composer listening (composer runtime shipped)
 - [ ] (optional) Phase D store split / export — only if approved
 
 ## 10. Open decisions (parked)

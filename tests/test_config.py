@@ -61,6 +61,24 @@ def test_valid_config_loads(tmp_path: Path) -> None:
     assert config.stream_chapters.start_title == "Stream start"
     assert config.stream_chapters.end_title == "Stream end"
     assert config.stream_chapters.youtube_vod is False
+    assert config.overlay.commentary.graph_runtime_mode == "legacy"
+
+
+@pytest.mark.parametrize("mode", ["legacy", "shadow", "active"])
+def test_commentary_graph_runtime_mode_loads(tmp_path: Path, mode: str) -> None:
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(f"\n[commentary.graph_runtime]\nmode = {mode}\n")
+    config = AppConfig.from_file(path)
+    assert config.overlay.commentary.graph_runtime_mode == mode
+
+
+def test_invalid_commentary_graph_runtime_mode_falls_back_to_legacy(tmp_path: Path) -> None:
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write("\n[commentary.graph_runtime]\nmode = surprising\n")
+    config = AppConfig.from_file(path)
+    assert config.overlay.commentary.graph_runtime_mode == "legacy"
 
 
 def test_stream_chapters_section_loads(tmp_path: Path) -> None:

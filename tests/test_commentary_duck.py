@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import pytest
@@ -229,3 +230,25 @@ def test_force_restore_puts_volume_back() -> None:
     assert store["A"] == pytest.approx(1.0)
     assert ducker._depth == 0
     assert ducker._saved is None
+
+
+def test_enter_wait_false_overlaps_work() -> None:
+    store = {"A": 1.0}
+    ducker = VolumeDucker(
+        "A",
+        0.25,
+        lambda _n: 1.0,
+        lambda _n, m: store.__setitem__("A", m) or True,
+        fade_ms=250,
+        sleep=time.sleep,
+    )
+    started = time.perf_counter()
+    ducker.enter(wait=False)
+    time.sleep(0.08)
+    ducker.wait_faded()
+    elapsed = time.perf_counter() - started
+    assert store["A"] == pytest.approx(0.25)
+    assert elapsed < 0.26
+    assert elapsed >= 0.15
+    ducker.exit()
+    assert store["A"] == pytest.approx(1.0)

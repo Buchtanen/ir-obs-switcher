@@ -11,6 +11,7 @@ from irswitch.events.clean_streak import CleanStreakEmitter
 from irswitch.events.incident import IncidentEmitter
 from irswitch.events.invalid_lap import InvalidLapEmitter
 from irswitch.events.lap import LapEmitter
+from irswitch.events.leader_change import LeaderChangeEmitter
 from irswitch.events.link_drop import LinkDropEmitter
 from irswitch.events.overtake import OvertakeClassifierEmitter
 from irswitch.events.pit import PitEmitter
@@ -49,6 +50,7 @@ class EventEngine:
             InvalidLapEmitter(overlay.events, pri),
             CleanStreakEmitter(overlay.events, pri),
             RivalThreatEmitter(overlay.events, pri),
+            LeaderChangeEmitter(pri),
         ]
         if not overlay.event_engine.pit_story:
             self.pit = PitEmitter(pri)

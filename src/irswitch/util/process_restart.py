@@ -124,14 +124,26 @@ def _spawn_windows(
 ) -> None:
     """Detached Windows spawn of the real command (handoff via port retry)."""
     del backoff_seconds  # handoff uses IRSWITCH_RESTARTING retry, not sleep launcher
-    creationflags = (
-        subprocess.CREATE_NEW_PROCESS_GROUP
-        | subprocess.DETACHED_PROCESS
-        | subprocess.CREATE_NO_WINDOW
-    )
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
+    create_group = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", None)
+    detached = getattr(subprocess, "DETACHED_PROCESS", None)
+    no_window = getattr(subprocess, "CREATE_NO_WINDOW", None)
+    startupinfo_factory = getattr(subprocess, "STARTUPINFO", None)
+    use_show_window = getattr(subprocess, "STARTF_USESHOWWINDOW", None)
+    hide_window = getattr(subprocess, "SW_HIDE", None)
+    if (
+        create_group is None
+        or detached is None
+        or no_window is None
+        or startupinfo_factory is None
+        or use_show_window is None
+        or hide_window is None
+    ):
+        raise OSError("Windows detached-process APIs are unavailable")
+
+    creationflags = int(create_group) | int(detached) | int(no_window)
+    startupinfo = startupinfo_factory()
+    startupinfo.dwFlags |= int(use_show_window)
+    startupinfo.wShowWindow = int(hide_window)
 
     subprocess.Popen(  # noqa: S603 — intentional re-exec of our own process
         command,

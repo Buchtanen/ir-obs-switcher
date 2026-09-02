@@ -103,7 +103,7 @@ def test_polish_timeout_skips_skeleton() -> None:
     outcome = polish_skeleton(skeleton, node, settings, opener=opener)
     assert outcome.outcome == "fallback_timeout"
     assert outcome.text == ""
-    assert outcome.attempts == 3
+    assert outcome.attempts == 1
 
 
 def test_tape_commentary_and_llm_rows(tmp_path: Path) -> None:
@@ -147,6 +147,23 @@ def test_build_polish_request_shape() -> None:
     assert "Line one." in req["messages"][1]["content"]
 
 
+def test_czech_prompt_and_compact_fact_pack_are_forwarded() -> None:
+    req = build_polish_request(
+        "Dokončuje osmé kolo na sedmém místě.",
+        CommentarySettings(),
+        locale="cs",
+        fact_pack={"version": "commentary-facts/1", "beat": {"node": "lap_complete"}},
+        composition_path=("beat", "session"),
+    )
+
+    system = req["messages"][0]["content"]
+    user = req["messages"][1]["content"]
+    assert "diváky" in system
+    assert "FACTS:" in user
+    assert '"lap_complete"' in user
+    assert "COMPOSITION_PATH: beat -> session" in user
+
+
 def test_live_prompt_fits_node_tts_budget() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
@@ -165,6 +182,142 @@ def test_live_prompt_fits_node_tts_budget() -> None:
     assert f"{node.tts.max_seconds:g}" in system
     assert req["max_tokens"] <= len("Gap to Smith.") + 40 + 16
     assert req["max_tokens"] < 220
+
+
+def test_grounded_prompt_uses_full_node_budget_and_explicit_fact_roles() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    facts = {
+        "version": "commentary-facts/2",
+        "anchor": "He is closing on Rossi.",
+        "required_facts": [
+            {
+                "id": "beat:relation",
+                "text": "He is closing on Rossi",
+                "required_terms": ["Rossi"],
+            }
+        ],
+        "optional_facts": [{"id": "target:gap", "text": "the gap is zero point seven seconds"}],
+        "forbidden_claims": ["on_track_pass", "hero_leads"],
+        "allowed_numbers": ["0.7"],
+        "recent": ["Rossi was P4."],
+    }
+
+    req = build_polish_request(
+        facts["anchor"],
+        CommentarySettings(llm_max_tokens=360),
+        node=node,
+        fact_pack=facts,
+    )
+
+    system = req["messages"][0]["content"].lower()
+    user = req["messages"][1]["content"]
+    assert "one or two sentences" in system
+    assert "same sentence count" not in system
+    assert str(node.tts.max_chars) in system
+    assert req["max_tokens"] > len(facts["anchor"]) + 40
+    assert "ANCHOR:" in user
+    assert "REQUIRED_FACTS:" in user
+    assert "OPTIONAL_FACTS:" in user
+    assert "Rossi was P4" not in user
+
+
+def test_grounded_fact_lock_rejects_forbidden_pass_and_new_number() -> None:
+    facts = {
+        "version": "commentary-facts/2",
+        "anchor": "Meyer takes the lead from Rossi.",
+        "required_facts": [
+            {
+                "id": "beat:leader_change",
+                "text": "Meyer takes the lead from Rossi",
+                "required_terms": ["Meyer", "Rossi"],
+                "relation": "class_leader_changed",
+            }
+        ],
+        "optional_facts": [],
+        "forbidden_claims": ["on_track_pass"],
+        "allowed_numbers": [],
+    }
+    codes = fact_violation_codes(
+        facts["anchor"],
+        "Meyer passes Rossi for the lead on lap 99.",
+        fact_pack=facts,
+    )
+    assert "forbidden_pass" in codes
+    assert "invented_number" in codes
+
+    invented_name = fact_violation_codes(
+        facts["anchor"],
+        "Meyer takes the lead from Hamilton.",
+        fact_pack={**facts, "allowed_names": ["Meyer", "Rossi"]},
+    )
+    assert "invented_name" in invented_name
+
+    missing_relation = fact_violation_codes(
+        facts["anchor"],
+        "Meyer and Rossi remain in view.",
+        fact_pack=facts,
+    )
+    assert "missing_required_fact" in missing_relation
+
+    result_facts = {
+        **facts,
+        "anchor": "He finishes the session in P29.",
+        "required_facts": [
+            {
+                "id": "beat:wrap",
+                "text": "He finishes the session in P29.",
+                "required_terms": [],
+                "required_numbers": ["29"],
+                "relation": "session_result",
+            }
+        ],
+        "forbidden_claims": [],
+        "allowed_names": [],
+        "allowed_numbers": ["29"],
+    }
+    assert "missing_required_fact" in fact_violation_codes(
+        result_facts["anchor"],
+        "The session ends.",
+        fact_pack=result_facts,
+    )
+
+
+def test_grounded_generation_may_expand_anchor_with_optional_fact() -> None:
+    graph = load_sequence_graph()
+    node = graph.nodes["hunting"]
+    settings = CommentarySettings(llm_polish=True)
+    facts = {
+        "version": "commentary-facts/2",
+        "anchor": "The chase is building.",
+        "required_facts": [
+            {
+                "id": "beat:relation",
+                "text": "He is closing on Rossi.",
+                "required_terms": ["Rossi"],
+                "relation": "hero_closing_on_target",
+            }
+        ],
+        "optional_facts": [{"id": "target:gap", "text": "The gap is 0.7 seconds."}],
+        "forbidden_claims": ["on_track_pass", "hero_leads"],
+        "allowed_names": ["Rossi"],
+        "allowed_numbers": ["0.7"],
+    }
+    generated = "The chase is building as he closes on Rossi. The gap is down to 0.7 seconds."
+
+    def opener(_req, timeout):  # noqa: ARG001
+        return json.dumps({"choices": [{"message": {"content": generated}}]}).encode("utf-8")
+
+    outcome = polish_skeleton(
+        facts["anchor"],
+        node,
+        settings,
+        fact_pack=facts,
+        opener=opener,
+    )
+    assert len(generated) > len(facts["anchor"]) + 40
+    assert outcome.outcome == "ok"
+    assert outcome.text == generated
 
 
 def test_polish_prompt_keeps_featured_driver() -> None:
@@ -251,10 +404,20 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
     captured: list[dict] = []
+    forwarded: dict[str, object] = {}
+    final_spoken: list[str] = []
 
     def fake_polish(
-        skeleton, _node, settings, *, opener=None, past=False, driver_names=()
+        skeleton,
+        _node,
+        settings,
+        *,
+        opener=None,
+        past=False,
+        driver_names=(),
+        **extra,
     ):  # noqa: ARG001
+        forwarded.update(extra)
         return type(
             "O",
             (),
@@ -279,7 +442,11 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
     )
 
     settings = CommentarySettings(llm_polish=True, tts_backend="null")
-    sink = ProcessTtsSink(settings=settings, on_polish_debug=captured.append)
+    sink = ProcessTtsSink(
+        settings=settings,
+        on_polish_debug=captured.append,
+        on_spoken_text=final_spoken.append,
+    )
     from irswitch.commentary.tts import CommentaryUtterance
 
     sink._speak(
@@ -293,10 +460,16 @@ def test_process_sink_polish_hook_called(monkeypatch: pytest.MonkeyPatch) -> Non
             correlation_id="c1",
             estimated_seconds=2.0,
             node=node,
+            fact_pack={"version": "commentary-facts/1"},
+            composition_path=("beat", "detail"),
         )
     )
     assert captured
     assert captured[0]["outcome"] == "ok"
+    assert forwarded["locale"] == "en"
+    assert forwarded["fact_pack"] == {"version": "commentary-facts/1"}
+    assert forwarded["composition_path"] == ("beat", "detail")
+    assert final_spoken == ["Polished line."]
 
 
 def test_build_tts_sink_omits_hook_when_polish_off(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -349,6 +522,19 @@ def test_fact_violation_codes_from_vod_inversions() -> None:
         )
         == []
     )
+
+
+def test_fact_lock_rejects_two_front_role_swap() -> None:
+    facts = {
+        "front_target": {"name": "Rossi", "gap": "zero point seven seconds"},
+        "rear_target": {"name": "Berg", "gap": "zero point five seconds"},
+    }
+    codes = fact_violation_codes(
+        "He attacks Rossi ahead while Berg applies pressure behind.",
+        "Berg is the target ahead while Rossi attacks from behind.",
+        fact_pack=facts,
+    )
+    assert "two_front_polarity_conflict" in codes
     assert "live_call_prefix" in fact_violation_codes(
         "Gap zero point four two to Smith.",
         "Live Call: He is closing on Smith.",
@@ -414,7 +600,7 @@ def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
 
     def opener(_req, timeout):  # noqa: ARG001
         calls["n"] += 1
-        if calls["n"] < 3:
+        if calls["n"] < 2:
             content = "Richard maintains a narrow lead over Adamson."
         else:
             content = "Adamson is still ahead by zero point eight seven seconds."
@@ -423,12 +609,12 @@ def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
     skeleton = "Adamson is ahead by zero point eight seven seconds."
     outcome = polish_skeleton(skeleton, node, settings, opener=opener)
     assert outcome.outcome == "ok"
-    assert outcome.attempts == 3
+    assert outcome.attempts == 2
     assert "ahead" in outcome.text.lower()
     assert "lead" not in outcome.text.lower()
 
 
-def test_process_sink_skips_speak_when_retry_exhausted(
+def test_process_sink_speaks_skeleton_when_retry_exhausted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     graph = load_sequence_graph()
@@ -479,7 +665,7 @@ def test_process_sink_skips_speak_when_retry_exhausted(
             node=node,
         )
     )
-    assert spoken == []
+    assert spoken == ["Adamson is ahead."]
 
 
 def test_runtime_debug_gate_for_tape(monkeypatch: pytest.MonkeyPatch) -> None:

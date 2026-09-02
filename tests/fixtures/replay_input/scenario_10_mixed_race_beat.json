@@ -23,6 +23,7 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
+        "position": 7,
         "lap_completed": 10,
         "last_lap_time": 94.0,
         "best_lap_time": 94.0,
@@ -36,6 +37,7 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
+        "position": 7,
         "lap_completed": 11,
         "last_lap_time": 95.0,
         "best_lap_time": 94.0,

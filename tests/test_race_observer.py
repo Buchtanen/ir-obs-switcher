@@ -135,6 +135,49 @@ def test_field_fact_filler_rotates() -> None:
     assert second.metrics.get("fact") != first.metrics.get("fact")
 
 
+def test_active_filler_candidates_are_bounded_factual_set_without_rotation() -> None:
+    observer = RaceObserver()
+    snap = _snap_field(names=["Leader", "B", "Hero", "D", "E"])
+    state = RaceState(connected=True, overlay_mode="RACE", class_position=3, position=3)
+    observer.observe(snap, state, now=1.0)
+
+    candidates = observer.filler_candidates(5.0, locale="en")
+
+    assert 1 <= len(candidates) <= 4
+    assert {candidate.event_type for candidate in candidates} == {"FIELD_FACT"}
+    assert {candidate.metrics.get("fact") for candidate in candidates} == {
+        "position",
+        "leader",
+        "gap",
+    }
+    assert observer._last_filler_kind is None
+
+
+def test_active_filler_candidates_include_material_weather_and_respect_limit() -> None:
+    observer = RaceObserver()
+    snap = _snap_field(names=["Leader", "B", "Hero", "D", "E"])
+    state = RaceState(connected=True, overlay_mode="RACE", class_position=3, position=3)
+    observer.observe(
+        snap,
+        state,
+        now=1.0,
+        telemetry_data={"AirTemp": 20.0, "Skies": 0, "WindVel": 2.0},
+    )
+    observer.observe(
+        snap,
+        state,
+        now=2.0,
+        telemetry_data={"AirTemp": 22.0, "Skies": 3, "WindVel": 2.0},
+    )
+
+    candidates = observer.filler_candidates(5.0, locale="en", limit=2)
+
+    assert len(candidates) == 2
+    assert candidates[0].event_type == "WEATHER_CHANGE"
+    assert candidates[1].event_type == "FIELD_FACT"
+    assert observer._pending_weather_change is None
+
+
 def test_filler_still_runs_at_checkered_until_player_finished() -> None:
     observer = RaceObserver()
     snap = _snap_field(names=["Leader", "B", "Hero", "D", "E"])

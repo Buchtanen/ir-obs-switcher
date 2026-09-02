@@ -119,6 +119,14 @@ def test_rival_threat_copy_uses_live_rival_position_not_sample_p8() -> None:
     assert "resolveTargetName(metrics, envelope)" in js
 
 
+def test_two_front_live_copy_never_uses_fixture_meta() -> None:
+    js = display_v4_js()
+    assert "stack centre" not in js
+    assert "metrics.frontTargetName" in js
+    assert "metrics.rearTargetName" in js
+    assert '[frontLabel, rearLabel].filter(Boolean).join(" · ")' in js
+
+
 def test_golden_gallery_clips_glow_overflow() -> None:
     from v4_css_geometry import rule_decls
 

@@ -88,6 +88,7 @@ class EventPrioritySettings:
     projected_lap: int = 42
     position_attack: int = 55
     position_change: int = 70
+    leader_change: int = 75
     overtake: int = 80
     incident: int = 90
     pit: int = 50
@@ -161,6 +162,7 @@ class CommentarySettings:
     tts_backend: str = "auto"
     tts_voice: str = ""
     tts_rate: int = 0
+    tts_steps: int = 6
     audio_device: str = ""
     duck_input: str = ""
     duck_ratio: float = 0.25
@@ -178,15 +180,16 @@ class CommentarySettings:
     # Optional remote LLM style polish (Ollama OpenAI-compatible). Default off.
     llm_polish: bool = False
     llm_base_url: str = "http://127.0.0.1:11434/v1"
-    llm_model: str = "qwen2.5:3b"
+    llm_model: str = "qwen3:4b-instruct-2507-q4_K_M"
     llm_timeout_s: float = 12.0
     llm_temperature: float = 0.45
     llm_max_tokens: int = 360
-    llm_max_attempts: int = 5
+    llm_max_attempts: int = 2
     # Spoken hero identity. Empty = iRacing UserName first/last tokens.
     driver_name: str = ""
     driver_nickname: str = ""
     scheduler: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
+    graph_runtime_mode: str = "legacy"
 
 
 @dataclass(frozen=True)

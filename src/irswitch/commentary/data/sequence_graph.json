@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "locales": [
     "en",
     "cs"
@@ -229,6 +229,14 @@
             "Dokončuje okruh a znovu se usazuje do rytmu, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "personal_best": {
@@ -451,6 +459,14 @@
             "Z předchozího maxima ukrajuje {delta}, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "gain_found": {
@@ -570,6 +586,14 @@
             "Stopky odměňují jeho práci v {segment}, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "time_lost": {
@@ -689,6 +713,14 @@
             "Menší ztráta v {segment} určuje další postup, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "sector_split": {
@@ -809,6 +841,14 @@
             "Precizní průjezd kolem {sector} přináší {segment_time}."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "target_locked": {
@@ -924,6 +964,14 @@
             "Pevná reference nahrazuje odhad, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "projected_lap": {
@@ -1044,6 +1092,14 @@
             "Jistota {confidence} podporuje aktuální odhad, bez náznaku polevení."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "hot_lap": {
@@ -1188,6 +1244,14 @@
             "Kolo {lap} se stává středem celé jízdy, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "position_attack": {
@@ -1303,6 +1367,14 @@
             "{position}. místo se stává cílem celého kola, bez náznaku polevení."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "clean_streak": {
@@ -1417,9 +1489,20 @@
             "Stint teď stojí na {streak} kontrolovaných kolech, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "lap_result"
       }
     },
     "hunting": {
+      "style_cards": [
+        "tension_first"
+      ],
       "family": "battle",
       "event_types": [
         "HUNTING",
@@ -1603,9 +1686,20 @@
             "Další sekvence může začít u {target_name} s odstupem {gap}!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "live_relation",
+        "semantic_policy": "battle_relation",
+        "criticality": "story",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.65,
+        "material_change_policy": "gap_intensity"
       }
     },
     "hunted": {
+      "style_cards": [
+        "rear_pressure"
+      ],
       "family": "battle",
       "event_types": [
         "HUNTED"
@@ -1788,13 +1882,202 @@
             "Diváci vidí, jak si {target_name} připravuje další fázi!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "live_relation",
+        "semantic_policy": "battle_relation",
+        "criticality": "story",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.65,
+        "material_change_policy": "gap_intensity"
+      }
+    },
+    "two_front_battle": {
+      "style_cards": [
+        "road_and_mirrors",
+        "two_front_action",
+        "two_front_pressure"
+      ],
+      "family": "battle",
+      "event_types": [
+        "BATTLE_FOR_POSITION"
+      ],
+      "phases": [
+        "ENTER",
+        "UPDATE"
+      ],
+      "speak_priority": 72,
+      "cooldown_s": 12,
+      "slots": [
+        {
+          "name": "position",
+          "type": "int",
+          "example": 7
+        },
+        {
+          "name": "front_target_name",
+          "type": "name",
+          "example": "Rossi"
+        },
+        {
+          "name": "front_gap",
+          "type": "gap",
+          "example": "0.7 seconds"
+        },
+        {
+          "name": "front_position",
+          "type": "int",
+          "example": 6
+        },
+        {
+          "name": "rear_target_name",
+          "type": "name",
+          "example": "Berg"
+        },
+        {
+          "name": "rear_gap",
+          "type": "gap",
+          "example": "0.5 seconds"
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing",
+        "high"
+      ],
+      "notes": "Independent front and rear relations; never substitute one target for the other.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is attacking ahead while defending the position behind.",
+            "He is closing on {front_target_name}, but {rear_target_name} is closing too.",
+            "The fight now stretches from the nose of the car to the mirrors.",
+            "He has an attack to build and a defence to manage at once.",
+            "There is pressure on both sides of his place in the order.",
+            "The race has boxed him into a battle ahead and behind.",
+            "He cannot focus on only one end of this fight.",
+            "Every corner now carries an attacking and defensive decision.",
+            "The gap ahead is {front_gap}, with {rear_gap} behind.",
+            "He attacks for P{front_position} while holding P{position}.",
+            "{front_target_name} is the target, while the rear pressure stays alive.",
+            "He keeps moving forward with {rear_target_name} close behind."
+          ],
+          "focused": [
+            "Two battles, one line to manage, and no room for a mistake.",
+            "The fight runs both ways: {front_gap} ahead, {rear_gap} behind.",
+            "He balances the attack and defence with every input.",
+            "The car placement has to answer pressure from both directions.",
+            "He is measuring two rivals through one sequence of corners.",
+            "The line ahead matters, but so does the threat in the mirrors.",
+            "He keeps the attack alive without opening the door behind.",
+            "This is a precise two-way fight for track position.",
+            "He tracks {front_target_name} ahead and {rear_target_name} behind.",
+            "He attacks for P{front_position} while protecting P{position}.",
+            "The front gap is {front_gap}; the rear gap is {rear_gap}.",
+            "One clean line has to solve both sides of the battle."
+          ],
+          "pushing": [
+            "He attacks for P{front_position} while defending P{position}.",
+            "He keeps attacking ahead with {rear_target_name} filling the mirrors.",
+            "The pressure is rising at both ends of the car.",
+            "He presses the attack and refuses to surrender the place behind.",
+            "This fight is pulling him forward and pushing from the rear.",
+            "He commits to the move ahead with no safety margin behind.",
+            "The next opening has consequences in both directions.",
+            "He is driving the middle of a three-car contest.",
+            "{front_target_name} is ahead, and {rear_target_name} will not let go.",
+            "Only {front_gap} separates the attack, with {rear_gap} behind.",
+            "He chases P{front_position} while fighting to keep P{position}.",
+            "The battle is alive ahead, behind, and all around him."
+          ],
+          "high": [
+            "Pressure at both ends of the car! This fight is alive!",
+            "He is closing on {front_target_name}, but {rear_target_name} is closing too!",
+            "Attack ahead, defence behind! He is caught in the middle!",
+            "This is a full two-way battle and neither side is easing off!",
+            "He has to fight forward while covering the mirrors!",
+            "Three cars are tied together in one furious contest!",
+            "There is no quiet end of this car right now!",
+            "Every move forward leaves another threat behind!",
+            "{front_gap} ahead and {rear_gap} behind! The margins are tiny!",
+            "{front_target_name} is the target and {rear_target_name} is attacking!",
+            "He attacks P{front_position} while defending P{position}!",
+            "The pressure is coming from everywhere in this battle!"
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Útočí dopředu a zároveň hlídá pozici zezadu.",
+            "Stahuje {front_target_name}, ale zezadu se dotahuje také {rear_target_name}.",
+            "Souboj se teď táhne od přídě vozu až po zrcátka.",
+            "Současně musí stavět útok a řídit obranu.",
+            "Na jeho místo v pořadí přichází tlak z obou stran.",
+            "Závod ho sevřel mezi soupeře vpředu a vzadu.",
+            "Nemůže se soustředit jen na jeden konec souboje.",
+            "Každá zatáčka teď přináší útočné i obranné rozhodnutí.",
+            "Vpředu je odstup {front_gap}, vzadu {rear_gap}.",
+            "Útočí na P{front_position} a současně drží P{position}.",
+            "Cílem je {front_target_name}, tlak zezadu ale zůstává živý.",
+            "Postupuje vpřed a {rear_target_name} zůstává těsně za ním."
+          ],
+          "focused": [
+            "Dva souboje, jedna stopa a žádný prostor pro chybu.",
+            "Souboj běží na obě strany: {front_gap} vpředu, {rear_gap} vzadu.",
+            "Každým pohybem vyvažuje útok a obranu.",
+            "Umístění vozu musí odpovídat tlaku z obou směrů.",
+            "V jedné sekvenci zatáček měří dva soupeře.",
+            "Důležitá je stopa vpředu i hrozba v zrcátkách.",
+            "Drží útok při životě a přitom neotvírá dveře vzadu.",
+            "Tohle je přesný oboustranný boj o pozici.",
+            "Vpředu sleduje {front_target_name}, vzadu {rear_target_name}.",
+            "Útočí na P{front_position} a chrání P{position}.",
+            "Vpředu je {front_gap}, zezadu {rear_gap}.",
+            "Jedna čistá stopa musí vyřešit obě strany souboje."
+          ],
+          "pushing": [
+            "Útočí na P{front_position} a současně brání P{position}.",
+            "Dál útočí vpředu a v zrcátkách roste {rear_target_name}.",
+            "Tlak roste na obou koncích vozu.",
+            "Tlačí útok dopředu a odmítá pustit pozici za sebou.",
+            "Tenhle souboj ho táhne vpřed a současně tlačí zezadu.",
+            "Do útoku jde bez bezpečné rezervy za sebou.",
+            "Další příležitost bude mít důsledky v obou směrech.",
+            "Jede uprostřed tříčlenného souboje.",
+            "Vpředu je {front_target_name} a {rear_target_name} nepovoluje.",
+            "K útoku zbývá {front_gap}, zezadu jen {rear_gap}.",
+            "Útočí na P{front_position} a bojuje o udržení P{position}.",
+            "Souboj žije vpředu, vzadu i všude kolem něj."
+          ],
+          "high": [
+            "Tlak na obou koncích vozu! Tenhle souboj žije!",
+            "Stahuje {front_target_name}, ale zezadu se dotahuje také {rear_target_name}!",
+            "Útok vpředu, obrana vzadu! Je přímo uprostřed!",
+            "Tohle je plný oboustranný souboj a nikdo nepovoluje!",
+            "Musí bojovat dopředu a současně hlídat zrcátka!",
+            "Tři vozy spojuje jeden divoký souboj!",
+            "Teď není klidný ani jeden konec jeho vozu!",
+            "Každý pohyb vpřed otevírá další hrozbu vzadu!",
+            "Vpředu {front_gap} a vzadu {rear_gap}! Rozestupy jsou minimální!",
+            "Cílem je {front_target_name} a {rear_target_name} útočí!",
+            "Útočí na P{front_position} a brání P{position}!",
+            "V tomhle souboji přichází tlak ze všech stran!"
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "live_relation",
+        "semantic_policy": "battle_relation",
+        "criticality": "story",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.65,
+        "material_change_policy": "gap_intensity"
       }
     },
     "side_by_side": {
       "family": "battle",
       "event_types": [
-        "SIDE_BY_SIDE",
-        "BATTLE_FOR_POSITION"
+        "SIDE_BY_SIDE"
       ],
       "phases": [
         "ENTER"
@@ -1932,6 +2215,14 @@
             "Sekvence se láme na tom, kdo první zdolá {target_name}!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "live_relation",
+        "semantic_policy": "battle_relation",
+        "criticality": "story",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.65,
+        "material_change_policy": "gap_intensity"
       }
     },
     "overtake": {
@@ -2113,9 +2404,20 @@
             "Potvrzené předjetí {target_name} skutečně využívá!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "position_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "position_change"
       }
     },
     "position_gained": {
+      "style_cards": [
+        "position_gain"
+      ],
       "family": "position",
       "event_types": [
         "POSITION_GAINED"
@@ -2293,9 +2595,20 @@
             "Změna ho posouvá o krok výš v pořadí, bez náznaku polevení."
           ]
         }
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "position_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "position_change"
       }
     },
     "position_lost": {
+      "style_cards": [
+        "position_result"
+      ],
       "family": "position",
       "event_types": [
         "POSITION_LOST",
@@ -2474,6 +2787,14 @@
             "Příběh se mění bez hledání viníka, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "position_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "position_change"
       }
     },
     "rival_threat": {
@@ -2617,6 +2938,14 @@
             "Odstup na {target_name} dává včasné varování, tempo pořád zvedá."
           ]
         }
+      },
+      "editorial": {
+        "policy": "live_relation",
+        "semantic_policy": "battle_relation",
+        "criticality": "story",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.65,
+        "material_change_policy": "gap_intensity"
       }
     },
     "battle_won": {
@@ -2793,6 +3122,14 @@
             "Duel nechává za sebou a nastavuje nový cíl, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "position_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "position_change"
       }
     },
     "incident": {
@@ -2936,6 +3273,14 @@
             "Dalším úkolem je prostě vrátit rytmus, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "invalid_lap": {
@@ -3050,6 +3395,14 @@
             "Trénink teď čeká na čistou odpověď, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "final_lap": {
@@ -3226,9 +3579,20 @@
             "Do cílové čáry zbývá jediný okruh, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "unique_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "occurrence"
       }
     },
     "finish": {
+      "style_cards": [
+        "session_result"
+      ],
       "family": "session",
       "event_types": [
         "FINISH"
@@ -3438,6 +3802,14 @@
             "Komentář se uzavírá jeho průjezdem cílem, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "unique_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "occurrence"
       }
     },
     "pit_entry": {
@@ -3577,6 +3949,14 @@
             "Další komentář má přijít až po servisu, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "pit_story",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "story_phase"
       }
     },
     "back_on_track": {
@@ -3717,6 +4097,14 @@
             "Ulička zůstává za ním a stint pokračuje, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "pit_story",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "story_phase"
       }
     },
     "in_car": {
@@ -3924,6 +4312,14 @@
             "Tenhle stint začíná se vším na svém místě, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "stream_start": {
@@ -3967,6 +4363,14 @@
             "Kamery jsou na jeho voze, jakmile se jízda rozjíždí. Diváci zůstávají u provozu, boxových voleb i pozdního tlaku, který rozhodne, čím tenhle příběh skončí."
           ]
         }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "in_car_practice": {
@@ -4005,6 +4409,14 @@
             "Usazuje se, jakmile začíná čas na trénink."
           ]
         }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "in_car_qualify": {
@@ -4043,6 +4455,14 @@
             "Usazuje se, jakmile začíná čas na kolo."
           ]
         }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "in_car_race": {
@@ -4081,6 +4501,14 @@
             "Usazuje se, jakmile se závod dává do pohybu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "pit_outcome": {
@@ -4227,6 +4655,14 @@
             "Boxový cyklus končí a stíhání může začít znovu, přesně podle plánu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "pit_story",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "story_phase"
       }
     },
     "hr_pressure": {
@@ -4312,6 +4748,14 @@
             "Hodnota {bpm} ukazuje náročnost téhle fáze, tohle začíná být ostré!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 0.6,
+        "material_change_policy": "context_value"
       }
     },
     "session_intro_practice": {
@@ -4473,6 +4917,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "session_intro_qualify": {
@@ -4639,6 +5091,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "session_intro_race": {
@@ -4805,6 +5265,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "sof_brief": {
@@ -4984,6 +5452,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "weather_brief": {
@@ -5170,6 +5646,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "attack_range": {
@@ -5352,6 +5836,14 @@
             "Drží útočnou vzdálenost na {target_name} bez tlačení."
           ]
         }
+      },
+      "editorial": {
+        "policy": "live_relation",
+        "semantic_policy": "battle_relation",
+        "criticality": "story",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.65,
+        "material_change_policy": "gap_intensity"
       }
     },
     "pit_stopped": {
@@ -5524,6 +6016,14 @@
             "Servis jede naplno, zatímco zůstává zaklesnutý na místě!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "pit_story",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "story_phase"
       }
     },
     "incident_aftermath": {
@@ -5681,6 +6181,14 @@
             "Závod letí dál, zatímco se zotavuje!"
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "back_under_way": {
@@ -5804,9 +6312,98 @@
             "Znovu v chodu, každý zásah měřený."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
+      }
+    },
+    "leader_change": {
+      "family": "position",
+      "event_types": [
+        "LEADER_CHANGE"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 75,
+      "cooldown_s": 8,
+      "slots": [
+        {
+          "name": "target_name",
+          "type": "name",
+          "example": "Nash"
+        },
+        {
+          "name": "leader_name",
+          "type": "name",
+          "example": "Knaus"
+        },
+        {
+          "name": "position",
+          "type": "int",
+          "example": 4
+        }
+      ],
+      "hr_states": [
+        "unknown",
+        "focused",
+        "pushing"
+      ],
+      "notes": "Class P1 car changed. Do not invent an on-track pass.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "{target_name} takes the lead from {leader_name}.",
+            "New leader: {target_name}.",
+            "The lead changes. {target_name} is now P1."
+          ],
+          "focused": [
+            "{target_name} takes the lead from {leader_name}.",
+            "New leader: {target_name}.",
+            "{target_name} is the new leader."
+          ],
+          "pushing": [
+            "{target_name} grabs the lead from {leader_name}.",
+            "Lead change. {target_name} is out front.",
+            "{target_name} seizes P1 from {leader_name}."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "{target_name} přebírá vedení po {leader_name}.",
+            "Nový lídr: {target_name}.",
+            "Vedení se mění. {target_name} je P1."
+          ],
+          "focused": [
+            "{target_name} přebírá vedení po {leader_name}.",
+            "Nový lídr: {target_name}.",
+            "{target_name} je nový lídr."
+          ],
+          "pushing": [
+            "{target_name} bere vedení po {leader_name}.",
+            "Změna v čele. {target_name} je první.",
+            "{target_name} bere P1 po {leader_name}."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "position_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "position_change"
       }
     },
     "session_wrap": {
+      "style_cards": [
+        "session_result"
+      ],
       "family": "session",
       "event_types": [
         "SESSION_WRAP"
@@ -5936,6 +6533,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "session_preview": {
@@ -6068,6 +6673,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "session_checkered": {
@@ -6200,6 +6813,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "unique_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "occurrence"
       }
     },
     "field_fact": {
@@ -6232,6 +6853,26 @@
           "name": "gap",
           "type": "gap",
           "example": "1.2 s"
+        },
+        {
+          "name": "current_lap",
+          "type": "int",
+          "example": 12
+        },
+        {
+          "name": "lap_context",
+          "type": "label",
+          "example": "lap 12 of 30"
+        },
+        {
+          "name": "race_phase",
+          "type": "label",
+          "example": "middle phase"
+        },
+        {
+          "name": "remaining_context",
+          "type": "label",
+          "example": "5 laps remaining"
         }
       ],
       "hr_states": [
@@ -6254,6 +6895,8 @@
             "He trails {target_name} by {gap}.",
             "{target_name} is ahead by {gap}.",
             "The gap to {target_name} sits at {gap}.",
+            "The field is working through {lap_context}.",
+            "Race phase: {race_phase}; the pressure keeps building.",
             "The field picture stays steady for now.",
             "No big shake-up in the order yet."
           ],
@@ -6270,6 +6913,8 @@
             "He trails {target_name} by {gap}, patiently.",
             "{target_name} is ahead by {gap}.",
             "The gap to {target_name} sits at {gap}.",
+            "The field is working through {lap_context}.",
+            "{remaining_context}; every clean move matters now.",
             "The field picture stays calm and steady.",
             "No big shake-up in the order yet."
           ]
@@ -6288,6 +6933,8 @@
             "Odstup na {target_name} je {gap}.",
             "Před ním je {target_name} o {gap}.",
             "K {target_name} zbývá {gap}.",
+            "Pole právě projíždí {lap_context}.",
+            "Fáze závodu: {race_phase}; tlak dál roste.",
             "Situace v poli se zatím nemění.",
             "Pořadí drží klidný rytmus."
           ],
@@ -6304,6 +6951,8 @@
             "Odstup na {target_name} je {gap}.",
             "Před ním je {target_name} o {gap}.",
             "K {target_name} zbývá {gap}.",
+            "Pole právě projíždí {lap_context}.",
+            "{remaining_context}; každý čistý manévr teď rozhoduje.",
             "Situace v poli zůstává klidná.",
             "Pořadí drží klidný rytmus."
           ]
@@ -6317,6 +6966,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 1.0,
+        "material_change_policy": "context_value"
       }
     },
     "weather_change": {
@@ -6425,6 +7082,14 @@
           "emphasis"
         ],
         "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "weather_fact",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 1.0,
+        "material_change_policy": "weather_threshold"
       }
     },
     "incident_off_track": {
@@ -6460,6 +7125,14 @@
             "Ten moment ho sundal z asfaltu."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "incident_unknown": {
@@ -6495,6 +7168,14 @@
             "Počítadlo se hýbe, příčina zůstává bez jména."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "session_flag_yellow": {
@@ -6524,6 +7205,14 @@
             "Je žlutá."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "session_flag_green": {
@@ -6553,6 +7242,14 @@
             "Zelená vlajka."
           ]
         }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 0.75,
+        "silence_affinity": 0.25,
+        "material_change_policy": "occurrence"
       }
     },
     "session_flag_checkered": {
@@ -6582,6 +7279,14 @@
             "Šachovnice."
           ]
         }
+      },
+      "editorial": {
+        "policy": "critical_result",
+        "semantic_policy": "unique_result",
+        "criticality": "critical",
+        "repeat_weight": 0.25,
+        "silence_affinity": 0.0,
+        "material_change_policy": "occurrence"
       }
     },
     "quali_recap": {
@@ -6627,6 +7332,14 @@
             "Bere {position}. místo časem {lap_time}."
           ]
         }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "story",
+        "repeat_weight": 2.0,
+        "silence_affinity": 0.1,
+        "material_change_policy": "once"
       }
     },
     "parade_pad": {
@@ -6661,6 +7374,14 @@
             "Čekání na start na trati pokračuje."
           ]
         }
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 1.0,
+        "material_change_policy": "context_value"
       }
     }
   },
@@ -6672,6 +7393,11 @@
         "same_correlation": true,
         "min_gap_s": 1.5,
         "max_gap_s": 25
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6681,6 +7407,11 @@
         "same_correlation": true,
         "min_gap_s": 1.0,
         "max_gap_s": 30
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6690,6 +7421,39 @@
         "same_correlation": true,
         "min_gap_s": 0.4,
         "max_gap_s": 12
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
+      }
+    },
+    {
+      "from": "overtake",
+      "to": "leader_change",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0.4,
+        "max_gap_s": 20
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
+      }
+    },
+    {
+      "from": "leader_change",
+      "to": "hunting",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 1.0,
+        "max_gap_s": 40
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6699,6 +7463,11 @@
         "same_correlation": true,
         "min_gap_s": 0.5,
         "max_gap_s": 10
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6708,6 +7477,11 @@
         "same_correlation": true,
         "min_gap_s": 0.5,
         "max_gap_s": 20
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6717,6 +7491,11 @@
         "same_correlation": false,
         "min_gap_s": 2.0,
         "max_gap_s": 40
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6726,6 +7505,11 @@
         "same_correlation": false,
         "min_gap_s": 2.0,
         "max_gap_s": 60
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6735,6 +7519,11 @@
         "same_correlation": false,
         "min_gap_s": 1.0,
         "max_gap_s": 20
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6744,6 +7533,11 @@
         "same_correlation": false,
         "min_gap_s": 2.0,
         "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6753,6 +7547,11 @@
         "same_correlation": true,
         "min_gap_s": 4.0,
         "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6762,6 +7561,11 @@
         "same_correlation": false,
         "min_gap_s": 5.0,
         "max_gap_s": 240
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6771,6 +7575,11 @@
         "same_correlation": false,
         "min_gap_s": 0.2,
         "max_gap_s": 8
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6780,6 +7589,11 @@
         "same_correlation": false,
         "min_gap_s": 1.0,
         "max_gap_s": 30
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6789,6 +7603,11 @@
         "same_correlation": false,
         "min_gap_s": 0.5,
         "max_gap_s": 20
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6798,6 +7617,11 @@
         "same_correlation": true,
         "min_gap_s": 0.5,
         "max_gap_s": 40
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6807,6 +7631,11 @@
         "same_correlation": true,
         "min_gap_s": 0.5,
         "max_gap_s": 60
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6816,6 +7645,11 @@
         "same_correlation": false,
         "min_gap_s": 0.5,
         "max_gap_s": 20
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6825,6 +7659,11 @@
         "same_correlation": true,
         "min_gap_s": 0.5,
         "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6834,6 +7673,11 @@
         "same_correlation": false,
         "min_gap_s": 0.2,
         "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
       }
     },
     {
@@ -6843,6 +7687,39 @@
         "same_correlation": false,
         "min_gap_s": 0.2,
         "max_gap_s": 15
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 1.0
+      }
+    },
+    {
+      "from": "hunting",
+      "to": "two_front_battle",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0,
+        "max_gap_s": 3
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
+      }
+    },
+    {
+      "from": "hunted",
+      "to": "two_front_battle",
+      "when": {
+        "same_correlation": false,
+        "min_gap_s": 0,
+        "max_gap_s": 3
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 1.0
       }
     }
   ]

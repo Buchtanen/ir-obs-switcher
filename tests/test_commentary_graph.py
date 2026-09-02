@@ -6,6 +6,9 @@ import pytest
 
 from irswitch.commentary.graph import (
     COMMENTARY_ONLY_EVENTS,
+    Criticality,
+    EditorialPolicy,
+    SemanticPolicy,
     load_sequence_graph,
     parse_sequence_graph,
     validate_graph_document,
@@ -15,15 +18,19 @@ from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 def test_default_graph_loads_and_is_fully_filled() -> None:
     graph = load_sequence_graph()
-    assert graph.version == 1
+    assert graph.version == 2
     assert "overtake" in graph.nodes
     assert graph.nodes["overtake"].event_types == ("OVERTAKE",)
     assert graph.unfilled_cells() == []
     assert graph.nodes["overtake"].variant_bucket("en", "neutral")
     assert graph.nodes["overtake"].variant_bucket("cs", "neutral")
+    assert graph.nodes_for("BATTLE_FOR_POSITION", "ENTER")[0].id == "two_front_battle"
     # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs
     # + observer fillers + session_checkered + N11 A + sparse B/C/D.
-    assert len(graph.nodes) == 52
+    assert len(graph.nodes) == 54
+    assert "leader_change" in graph.nodes
+    assert graph.nodes["leader_change"].event_types == ("LEADER_CHANGE",)
+    assert graph.nodes["leader_change"].speak_priority == 75
     assert "sector_split" in graph.nodes
     assert graph.nodes["sector_split"].event_types == ("SECTOR_SPLIT", "SECTOR_BEST")
     assert "session_intro_race" in graph.nodes
@@ -32,7 +39,34 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes["stream_start"].event_types == ("STREAM_START",)
     assert graph.nodes["stream_start"].tts.max_seconds >= 15.0
     assert graph.nodes["in_car_race"].modes == ("race",)
-    assert len(graph.edges) == 20
+    assert len(graph.edges) == 24
+    assert all(node.editorial.policy for node in graph.nodes.values())
+    assert all(edge.editorial.transition_bonus >= 0 for edge in graph.edges)
+    assert graph.nodes["hunting"].editorial.policy is EditorialPolicy.LIVE_RELATION
+    assert graph.nodes["hunting"].editorial.semantic_policy is SemanticPolicy.BATTLE_RELATION
+    assert graph.nodes["finish"].editorial.criticality is Criticality.CRITICAL
+    assert next(
+        edge for edge in graph.edges if edge.source == "side_by_side" and edge.target == "overtake"
+    ).editorial.closure
+
+
+def test_default_graph_critical_inventory_is_explicit() -> None:
+    graph = load_sequence_graph()
+    critical = {
+        node.id: node.event_types
+        for node in graph.nodes.values()
+        if node.editorial.criticality is Criticality.CRITICAL
+    }
+
+    assert critical == {
+        "position_gained": ("POSITION_GAINED",),
+        "position_lost": ("POSITION_LOST", "OVERTAKEN"),
+        "final_lap": ("FINAL_LAP",),
+        "finish": ("FINISH",),
+        "leader_change": ("LEADER_CHANGE",),
+        "session_checkered": ("SESSION_CHECKERED",),
+        "session_flag_checkered": ("SESSION_FLAG",),
+    }
 
 
 def test_finish_ambiguous_lines_include_position() -> None:
@@ -208,3 +242,118 @@ def test_unknown_event_type_is_rejected() -> None:
     assert any("NOT_A_REAL_EVENT" in item for item in errors)
     with pytest.raises(ValueError, match="invalid sequence graph"):
         parse_sequence_graph(raw)
+
+
+def test_unknown_style_card_is_rejected() -> None:
+    raw = {
+        "version": 1,
+        "locales": ["en"],
+        "nodes": {
+            "lap": {
+                "family": "lap",
+                "event_types": ["LAP_COMPLETE"],
+                "phases": ["RESULT"],
+                "speak_priority": 1,
+                "hr_states": ["unknown"],
+                "style_cards": ["not-a-card"],
+            }
+        },
+        "edges": [],
+    }
+    assert any("style_cards" in item for item in validate_graph_document(raw))
+
+
+def test_v2_requires_typed_editorial_node_metadata() -> None:
+    raw = {
+        "version": 2,
+        "locales": ["en"],
+        "nodes": {
+            "lap": {
+                "family": "timing",
+                "event_types": ["LAP_COMPLETE"],
+                "phases": ["RESULT"],
+                "speak_priority": 1,
+                "hr_states": ["unknown"],
+            }
+        },
+        "edges": [],
+    }
+    errors = validate_graph_document(raw)
+    assert any("nodes.lap.editorial is required" in item for item in errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("policy", "invented"),
+        ("semantic_policy", "invented"),
+        ("criticality", "urgent-ish"),
+        ("repeat_weight", 2.1),
+        ("silence_affinity", -0.1),
+        ("material_change_policy", "invented"),
+    ],
+)
+def test_v2_rejects_invalid_editorial_node_metadata(field: str, value: object) -> None:
+    editorial = {
+        "policy": "periodic_context",
+        "semantic_policy": "lap_result",
+        "criticality": "context",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.5,
+        "material_change_policy": "lap_result",
+    }
+    editorial[field] = value
+    raw = {
+        "version": 2,
+        "locales": ["en"],
+        "nodes": {
+            "lap": {
+                "family": "timing",
+                "event_types": ["LAP_COMPLETE"],
+                "phases": ["RESULT"],
+                "speak_priority": 1,
+                "hr_states": ["unknown"],
+                "editorial": editorial,
+            }
+        },
+        "edges": [],
+    }
+    assert any(f"editorial.{field}" in item for item in validate_graph_document(raw))
+
+
+def test_v2_rejects_invalid_editorial_edge_metadata() -> None:
+    node = {
+        "family": "timing",
+        "event_types": ["LAP_COMPLETE"],
+        "phases": ["RESULT"],
+        "speak_priority": 1,
+        "hr_states": ["unknown"],
+        "editorial": {
+            "policy": "periodic_context",
+            "semantic_policy": "lap_result",
+            "criticality": "context",
+            "repeat_weight": 1.0,
+            "silence_affinity": 0.5,
+            "material_change_policy": "lap_result",
+        },
+    }
+    raw = {
+        "version": 2,
+        "locales": ["en"],
+        "nodes": {"a": node, "b": node},
+        "edges": [
+            {
+                "from": "a",
+                "to": "b",
+                "editorial": {
+                    "transition_bonus": 21,
+                    "closure": "yes",
+                    "repeat_weight": -1,
+                },
+            }
+        ],
+    }
+    errors = validate_graph_document(raw)
+    assert any("transition_bonus" in item for item in errors)
+    assert any("closure" in item for item in errors)
+    assert any("repeat_weight" in item for item in errors)

@@ -7,7 +7,8 @@ import logging
 import math
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from types import TracebackType
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 GetMul = Callable[[str], float | None]
 SetMul = Callable[[str, float], bool]
 Sleep = Callable[[float], None]
+CancelProbe = Callable[[], bool]
 
 _FADE_STEP_MS = 50
 _MUL_FLOOR = 1e-6
@@ -56,6 +58,7 @@ class VolumeDucker:
     _saved: float | None = None
     _current: float | None = None
     _fade_gen: int = 0
+    _fade_thread: threading.Thread | None = field(default=None, repr=False, compare=False)
 
     def __enter__(self) -> VolumeDucker:
         self.enter()
@@ -69,7 +72,7 @@ class VolumeDucker:
     ) -> None:
         self.exit()
 
-    def enter(self) -> None:
+    def enter(self, *, wait: bool = True) -> None:
         name = (self.input_name or "").strip()
         if not name:
             return
@@ -96,11 +99,45 @@ class VolumeDucker:
             gen = self._fade_gen
         if start is None or target is None:
             return
-        if not self._fade(name, start, target, gen):
-            with self._lock:
-                failed = self._depth == 1 and self._fade_gen == gen
-            if failed:
-                self.force_restore()
+        blocking = wait or max(0, int(self.fade_ms)) <= 0
+        if blocking:
+            self._begin_fade(name, start, target, gen)
+            return
+        thread = threading.Thread(
+            target=self._begin_fade,
+            args=(name, start, target, gen),
+            name="commentary-duck-out",
+            daemon=True,
+        )
+        self._fade_thread = thread
+        thread.start()
+
+    def wait_faded(self, cancelled: CancelProbe | None = None) -> None:
+        """Block until a background fade-out finishes. No-op if enter waited."""
+        thread = self._fade_thread
+        if thread is None or thread is threading.current_thread():
+            return
+        while thread.is_alive():
+            if cancelled is not None and cancelled():
+                return
+            thread.join(timeout=0.02)
+
+    def _join_fade_thread(self) -> None:
+        thread = self._fade_thread
+        self._fade_thread = None
+        if thread is None or thread is threading.current_thread():
+            return
+        thread.join(timeout=2.0)
+
+    def _begin_fade(self, name: str, start: float, target: float, gen: int) -> None:
+        try:
+            if not self._fade(name, start, target, gen):
+                with self._lock:
+                    failed = self._depth == 1 and self._fade_gen == gen
+                if failed:
+                    self.force_restore()
+        except Exception:
+            logger.warning("commentary duck fade failed input=%s", name, exc_info=True)
 
     def exit(self) -> None:
         name = (self.input_name or "").strip()
@@ -119,6 +156,9 @@ class VolumeDucker:
             start = self._current if self._current is not None else target
             self._fade_gen += 1
             gen = self._fade_gen
+        self._join_fade_thread()
+        with self._lock:
+            start = self._current if self._current is not None else start
         if target is None:
             return
         if start is None:
@@ -139,6 +179,7 @@ class VolumeDucker:
             self._depth = 0
             self._current = None
             self._saved = None
+        self._join_fade_thread()
         if not name or target is None:
             return
         if not self.set_mul(name, target):
@@ -229,3 +270,14 @@ def ducker_from_settings(settings: CommentarySettings) -> VolumeDucker:
             _shared_ducker.ratio = settings.duck_ratio
             _shared_ducker.fade_ms = settings.duck_fade_ms
         return _shared_ducker
+
+
+@contextmanager
+def duck_for_speech(settings: CommentarySettings) -> Iterator[VolumeDucker]:
+    """Fade-out runs in the background so TTS can synthesize during the ramp."""
+    ducker = ducker_from_settings(settings)
+    ducker.enter(wait=False)
+    try:
+        yield ducker
+    finally:
+        ducker.exit()

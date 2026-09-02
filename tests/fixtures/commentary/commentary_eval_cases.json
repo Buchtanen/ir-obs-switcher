@@ -1,0 +1,350 @@
+{
+  "version": "commentary-eval/1",
+  "description": "Proposition-based corpus selected from the 2026-09-01 P/Q/Race tapes. It intentionally does not prescribe exact output sentences.",
+  "cases": [
+    {
+      "id": "practice_intro_unearned_colour",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 1,
+      "category": "session_intro",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "forbiddenTerms": ["technical challenge", "tight turns", "precision"],
+      "note": "Track difficulty and driving precision were not source facts."
+    },
+    {
+      "id": "practice_lap_invented_pace_gap",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 2,
+      "category": "lap_complete",
+      "storyState": "resolved",
+      "requiredFactIds": ["session:lap"],
+      "expectedRelation": "factual_beat",
+      "note": "The model added 0.01 although it was not a selected proposition."
+    },
+    {
+      "id": "practice_target_locked",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 4,
+      "category": "target_locked",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "practice_leader_change",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 5,
+      "category": "leader_change",
+      "storyState": "resolved",
+      "requiredFactIds": ["target:name"],
+      "expectedRelation": "class_leader_changed",
+      "forbiddenClaims": ["on_track_pass"]
+    },
+    {
+      "id": "practice_hunting",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 6,
+      "category": "hunting",
+      "storyState": "live",
+      "requiredFactIds": ["beat:relation"],
+      "expectedRelation": "hero_closing_on_target",
+      "forbiddenClaims": ["on_track_pass", "hero_leads"]
+    },
+    {
+      "id": "practice_position_lost",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 8,
+      "category": "position_lost",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "hero_lost_position",
+      "forbiddenClaims": ["position_gain"]
+    },
+    {
+      "id": "practice_incident_aftermath",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 12,
+      "category": "incident_aftermath",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "practice_finish",
+      "tape": "overlay-20260901T223356Z-0-0.jsonl",
+      "polishOrdinal": 13,
+      "category": "finish",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "quali_preview_vehicle_colour",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 1,
+      "category": "session_preview",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "note": "A selected-fact contract should not pull 570 from the global context."
+    },
+    {
+      "id": "quali_hunting_gap",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 3,
+      "category": "hunting",
+      "storyState": "live",
+      "requiredFactIds": ["beat:relation"],
+      "expectedRelation": "hero_closing_on_target",
+      "forbiddenClaims": ["on_track_pass", "hero_leads"]
+    },
+    {
+      "id": "quali_large_gap_not_tight",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 7,
+      "category": "field_gap",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "forbiddenTerms": ["tight"],
+      "note": "20.22 seconds may not be characterized as tight."
+    },
+    {
+      "id": "quali_leader_fact",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 9,
+      "category": "field_leader",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "quali_zero_delta",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 10,
+      "category": "personal_best",
+      "storyState": "resolved",
+      "requiredFactIds": ["session:lap"],
+      "expectedRelation": "factual_beat",
+      "invalidSourceFactIds": ["hero:delta"],
+      "note": "A meaningless +0.000 optional delta should be suppressed at source."
+    },
+    {
+      "id": "quali_sector_position",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 11,
+      "category": "sector",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "note": "P2 and S1 are domain tokens, not invented names."
+    },
+    {
+      "id": "quali_position_lost",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 12,
+      "category": "position_lost",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "hero_lost_position",
+      "forbiddenClaims": ["position_gain"]
+    },
+    {
+      "id": "quali_leader_change",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 14,
+      "category": "leader_change",
+      "storyState": "resolved",
+      "requiredFactIds": ["target:name"],
+      "expectedRelation": "class_leader_changed",
+      "forbiddenClaims": ["on_track_pass"]
+    },
+    {
+      "id": "quali_overtake",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 18,
+      "category": "overtake",
+      "storyState": "resolved",
+      "requiredFactIds": ["target:name"],
+      "expectedRelation": "hero_passed_target"
+    },
+    {
+      "id": "quali_attack_range",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 19,
+      "category": "attack_range",
+      "storyState": "live",
+      "requiredFactIds": ["beat:relation"],
+      "expectedRelation": "hero_closing_on_target",
+      "forbiddenClaims": ["on_track_pass", "hero_leads"]
+    },
+    {
+      "id": "quali_timeout_position_loss",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 24,
+      "category": "position_lost",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "hero_lost_position",
+      "forbiddenClaims": ["position_gain"]
+    },
+    {
+      "id": "quali_finish",
+      "tape": "overlay-20260901T224151Z-0-1.jsonl",
+      "polishOrdinal": 25,
+      "category": "finish",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "race_quali_recap",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 1,
+      "category": "quali_recap",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "race_invalid_zero_sof",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 2,
+      "category": "sof_brief",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "invalidSourceFactIds": ["beat:event"],
+      "expectedEligibility": "reject",
+      "note": "Zero class strength is unknown data, not a viewer fact."
+    },
+    {
+      "id": "race_green_wrong_phase_first_run",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 7,
+      "category": "green",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "forbiddenTerms": ["middle phase"],
+      "note": "Formation time incorrectly made green a middle-race call."
+    },
+    {
+      "id": "race_hunting_front",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 8,
+      "category": "hunting",
+      "storyState": "live",
+      "requiredFactIds": ["beat:relation"],
+      "expectedRelation": "hero_closing_on_target",
+      "forbiddenClaims": ["on_track_pass", "hero_leads"]
+    },
+    {
+      "id": "race_hunted_rear",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 11,
+      "category": "hunted",
+      "storyState": "live",
+      "requiredFactIds": ["beat:relation"],
+      "expectedRelation": "target_closing_on_hero",
+      "forbiddenClaims": ["on_track_pass", "hero_leads"]
+    },
+    {
+      "id": "race_incident_aftermath",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 14,
+      "category": "incident_aftermath",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "race_green_wrong_phase_second_run",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 23,
+      "category": "green",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "forbiddenTerms": ["middle phase"],
+      "note": "The second start under the same session also needs a new run epoch."
+    },
+    {
+      "id": "race_two_front_first",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 35,
+      "category": "two_front",
+      "storyState": "live",
+      "requiredFactIds": ["front:name"],
+      "expectedRelation": "hero_between_two_fronts"
+    },
+    {
+      "id": "race_position_gained",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 37,
+      "category": "position_gained",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:gain"],
+      "expectedRelation": "hero_gained_position"
+    },
+    {
+      "id": "race_two_front_second",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 40,
+      "category": "two_front",
+      "storyState": "live",
+      "requiredFactIds": ["front:name"],
+      "expectedRelation": "hero_between_two_fronts"
+    },
+    {
+      "id": "race_rival_threat",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 44,
+      "category": "rival_threat",
+      "storyState": "live",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "race_position_lost",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 49,
+      "category": "position_lost",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "hero_lost_position",
+      "forbiddenClaims": ["position_gain"]
+    },
+    {
+      "id": "race_finish",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 57,
+      "category": "finish",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat"
+    },
+    {
+      "id": "race_post_finish_aftermath",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 58,
+      "category": "post_finish_incident",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "expectedEligibility": "reject"
+    },
+    {
+      "id": "race_post_finish_field_fact",
+      "tape": "overlay-20260901T225129Z-0-2.jsonl",
+      "polishOrdinal": 59,
+      "category": "post_finish_field",
+      "storyState": "resolved",
+      "requiredFactIds": ["beat:event"],
+      "expectedRelation": "factual_beat",
+      "expectedEligibility": "reject"
+    }
+  ]
+}

@@ -933,6 +933,9 @@
     "RIVAL_THREAT": {
       "state": "rival_threat"
     },
+    "LEADER_CHANGE": {
+      "state": "position_gained"
+    },
     "INCIDENT": {
       "state": "incident"
     },

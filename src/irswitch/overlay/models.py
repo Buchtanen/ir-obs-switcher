@@ -97,6 +97,12 @@ class RaceState:
     player_car_idx: int | None = None
     position: int | None = None
     class_position: int | None = None
+    class_field_size: int | None = None
+    leader_car_idx: int | None = None
+    leader_name: str | None = None
+    p1_name: str | None = None
+    p2_name: str | None = None
+    p3_name: str | None = None
     lap: int | None = None
     lap_completed: int | None = None
     current_lap_time: float | None = None
@@ -138,6 +144,10 @@ class RaceState:
     flag_green: bool = False
     car_idx_best_lap_time: tuple[float | None, ...] = ()
     car_idx_last_lap_time: tuple[float | None, ...] = ()
+
+    run_epoch: int = 0
+    green_session_time: float | None = None
+    green_lap_completed: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = _asdict(self)

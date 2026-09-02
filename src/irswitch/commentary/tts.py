@@ -12,24 +12,35 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
-from irswitch.commentary.duck import ducker_from_settings
+from irswitch.commentary.duck import duck_for_speech
 from irswitch.commentary.graph import GraphNode
+from irswitch.commentary.graph_runtime import GraphCandidate
 from irswitch.commentary.polish import PolishOutcome, polish_skeleton
 from irswitch.commentary.speech_hero import mix_hero_name
 from irswitch.commentary.speech_numbers import numbers_to_words
 from irswitch.overlay.settings import CommentarySettings
+from irswitch.race.ministory import CommitStatus, MiniStoryRegistry, MiniStoryToken
 
 logger = logging.getLogger(__name__)
 
-BACKENDS = ("auto", "sapi", "espeak", "null")
+BACKENDS = ("auto", "sapi", "espeak", "supertonic", "null")
 STREAM_START_EVENT = "STREAM_START"
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
+CancelProbe = Callable[[], bool]
 PolishDebugHook = Callable[[dict[str, Any]], None]
+SpokenTextHook = Callable[[str], None]
+StoryDebugHook = Callable[[dict[str, Any]], None]
+GraphLifecycleHook = Callable[[str, GraphCandidate, float], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
+
+
+class _TtsInterrupted(Exception):
+    """Internal control flow for a cancelled backend process."""
+
 
 _SAPI_VOICES_SCRIPT = """\
 $voice = New-Object -ComObject SAPI.SpVoice
@@ -52,6 +63,12 @@ class CommentaryUtterance:
     past_framing: bool = False
     hero_names: tuple[str, ...] = ()
     hero_name: str | None = None
+    fact_pack: dict[str, Any] | None = None
+    composition_path: tuple[str, ...] = ()
+    graph_path: tuple[str, ...] = ()
+    story_token: MiniStoryToken | None = None
+    graph_candidate: GraphCandidate | None = None
+    editorial_score: float | None = None
 
 
 @dataclass(frozen=True)
@@ -71,6 +88,9 @@ class TtsSink(Protocol):
     def is_busy(self) -> bool:
         """True while a speak is in-flight or waiting (observed busy)."""
 
+    def close(self) -> None:
+        """Release owned worker resources after cancellation."""
+
 
 @dataclass
 class NullTtsSink:
@@ -84,8 +104,26 @@ class NullTtsSink:
     interrupted: int = 0
     force_busy: bool = False
     dropped: list[CommentaryUtterance] = field(default_factory=list)
+    story_registry: MiniStoryRegistry | None = None
+    on_graph_lifecycle: GraphLifecycleHook | None = None
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
+        token = utterance.story_token
+        if self.story_registry is not None and token is not None:
+            decision = self.story_registry.commit(
+                token, utterance.fact_pack, locale=utterance.locale
+            )
+            if decision.status == CommitStatus.INVALIDATED:
+                self.dropped.append(utterance)
+                return
+            if decision.status == CommitStatus.RESOLVED:
+                utterance = replace(
+                    utterance,
+                    text=decision.canonical,
+                    fact_pack=decision.fact_pack,
+                    past_framing=True,
+                )
+            self.story_registry.mark_speaking(token)
         if self.force_busy and self.spoken:
             # Depth ≤1: keep higher-or-equal priority, drop the other.
             prev = self.spoken[-1]
@@ -96,6 +134,11 @@ class NullTtsSink:
             self.spoken[-1] = utterance
             return
         self.spoken.append(utterance)
+        self._emit_graph_lifecycle("speaking", utterance)
+        if self.story_registry is not None and token is not None and not self.force_busy:
+            self.story_registry.complete(token)
+        if not self.force_busy:
+            self._emit_graph_lifecycle("completed", utterance)
 
     def interrupt(self) -> None:
         self.interrupted += 1
@@ -105,6 +148,19 @@ class NullTtsSink:
     def is_busy(self) -> bool:
         return bool(self.force_busy)
 
+    def close(self) -> None:
+        self.interrupt()
+
+    def _emit_graph_lifecycle(self, action: str, utterance: CommentaryUtterance) -> None:
+        hook = self.on_graph_lifecycle
+        candidate = utterance.graph_candidate
+        if hook is None or candidate is None:
+            return
+        try:
+            hook(action, candidate, time.monotonic())
+        except Exception:
+            logger.debug("commentary graph lifecycle hook failed", exc_info=True)
+
 
 @dataclass
 class ProcessTtsSink:
@@ -112,7 +168,8 @@ class ProcessTtsSink:
 
     ``enqueue`` never waits for SAPI/espeak or duck fades. At most **one**
     waiter behind the in-flight speak (replace-by-priority); no sequential
-    drain of a deep TTS backlog. Duck enter/exit stays on that one worker.
+    drain of a deep TTS backlog. Duck enter/exit stays on that one worker;
+    fade-out can run in the background so SuperTonic synthesizes during it.
     """
 
     settings: CommentarySettings
@@ -121,7 +178,11 @@ class ProcessTtsSink:
     last_result: TtsResult | None = None
     runner: SpeakRunner | None = None
     on_polish_debug: PolishDebugHook | None = None
-    _queue: queue.SimpleQueue[CommentaryUtterance] = field(
+    on_spoken_text: SpokenTextHook | None = None
+    on_story_debug: StoryDebugHook | None = None
+    on_graph_lifecycle: GraphLifecycleHook | None = None
+    story_registry: MiniStoryRegistry | None = None
+    _queue: queue.SimpleQueue[CommentaryUtterance | object] = field(
         default_factory=queue.SimpleQueue, repr=False
     )
     _worker_lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
@@ -129,7 +190,9 @@ class ProcessTtsSink:
     _pending: int = field(default=0, init=False, repr=False)
     _speaking: bool = field(default=False, init=False, repr=False)
     _idle: threading.Condition = field(default_factory=threading.Condition, repr=False)
-    _interrupt: threading.Event = field(default_factory=threading.Event, repr=False)
+    _interrupt_generation: int = field(default=0, init=False, repr=False)
+    _closed: bool = field(default=False, init=False, repr=False)
+    _sentinel: object = field(default_factory=object, init=False, repr=False)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop.
@@ -137,11 +200,14 @@ class ProcessTtsSink:
         Keeps at most one queued waiter. If a waiter already exists, replace it
         when incoming priority is higher-or-equal; otherwise drop incoming.
         """
+        if self._closed:
+            return
         self.spoken.append(utterance)
         if len(self.spoken) > 32:
             del self.spoken[:-16]
 
         accepted = True
+        replaced: CommentaryUtterance | None = None
         with self._idle:
             waiters = self._pending - (1 if self._speaking else 0)
             if waiters >= 1:
@@ -149,12 +215,14 @@ class ProcessTtsSink:
                     old = self._queue.get_nowait()
                 except queue.Empty:
                     old = None
-                if old is not None:
+                if isinstance(old, CommentaryUtterance):
                     self._pending = max(0, self._pending - 1)
                     if int(utterance.priority) < int(old.priority):
                         self._pending += 1
                         self._queue.put(old)
                         accepted = False
+                    else:
+                        replaced = old
             if accepted:
                 self._pending += 1
 
@@ -166,30 +234,51 @@ class ProcessTtsSink:
             )
             return
 
+        if replaced is not None:
+            self._close_queued_story(replaced, "tts_queue_replaced")
+        if utterance.story_token is not None:
+            self._emit_story_debug(utterance.story_token, "building", "tts_queued")
+
         self._ensure_worker()
         self._queue.put(utterance)
 
     def interrupt(self) -> None:
         """Drop queued speaks; signal worker to skip remaining work best-effort."""
-        self._interrupt.set()
         dropped = 0
-        while True:
-            try:
-                self._queue.get_nowait()
-                dropped += 1
-            except queue.Empty:
-                break
-        if dropped:
-            with self._idle:
+        dropped_utterances: list[CommentaryUtterance] = []
+        with self._idle:
+            self._interrupt_generation += 1
+            while True:
+                try:
+                    queued = self._queue.get_nowait()
+                    dropped += 1
+                    if isinstance(queued, CommentaryUtterance):
+                        dropped_utterances.append(queued)
+                except queue.Empty:
+                    break
+            if dropped:
                 self._pending = max(0, self._pending - dropped)
                 if self._pending == 0 and not self._speaking:
                     self._idle.notify_all()
-        self._interrupt.clear()
+        for utterance in dropped_utterances:
+            self._close_queued_story(utterance, "tts_queue_interrupted")
 
     def is_busy(self) -> bool:
         """True while speaking or a waiter is queued (#180 observed busy)."""
         with self._idle:
             return self._pending > 0 or self._speaking
+
+    def close(self) -> None:
+        """Bounded worker shutdown; current backend retains its own timeout."""
+        if self._closed:
+            return
+        self._closed = True
+        self.interrupt()
+        worker = self._worker
+        if worker is None:
+            return
+        self._queue.put(self._sentinel)
+        worker.join(timeout=0.5)
 
     def pending_count(self) -> int:
         """Queued + in-flight speaks (test / diagnostics)."""
@@ -223,10 +312,15 @@ class ProcessTtsSink:
     def _worker_loop(self) -> None:
         while True:
             utterance = self._queue.get()
+            if utterance is self._sentinel:
+                return
+            if not isinstance(utterance, CommentaryUtterance):
+                continue
             with self._idle:
                 self._speaking = True
+                generation = self._interrupt_generation
             try:
-                self._speak(utterance)
+                self._speak(utterance, generation)
             except Exception:
                 logger.exception("tts serial worker failed")
             finally:
@@ -236,8 +330,14 @@ class ProcessTtsSink:
                     if self._pending == 0:
                         self._idle.notify_all()
 
-    def _speak(self, utterance: CommentaryUtterance) -> None:
-        if self._interrupt.is_set():
+    def _speak(self, utterance: CommentaryUtterance, generation: int | None = None) -> None:
+        if generation is None:
+            generation = self._interrupt_generation
+
+        def cancelled() -> bool:
+            return generation != self._interrupt_generation
+
+        if cancelled():
             return
         # Digits + compact units → words; mix hero name via he/him/his only.
         spoken_text = numbers_to_words(utterance.text, utterance.locale)
@@ -250,47 +350,127 @@ class ProcessTtsSink:
         past = bool(utterance.past_framing) and getattr(
             self.settings.scheduler, "llm_past_framing", True
         )
+        outcome: PolishOutcome | None = None
         if self.settings.llm_polish:
-            outcome = polish_skeleton(
-                spoken_text,
-                utterance.node,
-                self.settings,
-                past=past,
-                driver_names=utterance.hero_names,
-            )
+            polish_kwargs: dict[str, Any] = {
+                "past": past,
+                "driver_names": utterance.hero_names,
+            }
+            if utterance.fact_pack is not None:
+                polish_kwargs.update(
+                    locale=utterance.locale,
+                    fact_pack=utterance.fact_pack,
+                    composition_path=utterance.composition_path,
+                )
+            outcome = polish_skeleton(spoken_text, utterance.node, self.settings, **polish_kwargs)
             self._emit_polish_debug(utterance, outcome)
-            if not (outcome.text or "").strip():
-                return
-            spoken_text = numbers_to_words(outcome.text, utterance.locale)
-            spoken_text = mix_hero_name(
-                spoken_text,
-                utterance.hero_names,
-                utterance.locale,
-                name=utterance.hero_name,
-            )
+            polished = (outcome.text or "").strip()
+            if polished:
+                spoken_text = numbers_to_words(polished, utterance.locale)
+                spoken_text = mix_hero_name(
+                    spoken_text,
+                    utterance.hero_names,
+                    utterance.locale,
+                    name=utterance.hero_name,
+                )
             if not spoken_text.strip():
                 return
-        with ducker_from_settings(self.settings):
-            if self._interrupt.is_set():
+        token = utterance.story_token
+        lifecycle_token = token
+        registry = self.story_registry
+        if registry is not None and token is not None:
+            decision = registry.commit(token, utterance.fact_pack, locale=utterance.locale)
+            if decision.status == CommitStatus.INVALIDATED or cancelled():
+                self._emit_story_debug(token, "skipped", "ministory_invalidated")
                 return
-            result = speak_text(
-                spoken_text,
-                locale=utterance.locale,
-                voice=self.settings.tts_voice,
-                rate=self.settings.tts_rate,
-                backend=self.settings.tts_backend,
-                device=self.settings.audio_device,
-                timeout_s=speak_timeout_s(
-                    self.settings,
-                    event_type=utterance.event_type,
-                    node=utterance.node,
-                ),
-                runner=self.runner,
+            lifecycle_token = registry.current_token(token) or token
+            self._emit_story_debug(
+                lifecycle_token, "committed", f"ministory_{decision.status.value}"
+            )
+            if decision.status == CommitStatus.RESOLVED:
+                spoken_text = decision.canonical
+                if (
+                    self.settings.llm_polish
+                    and outcome is not None
+                    and outcome.outcome == "ok"
+                    and outcome.attempts < 2
+                    and decision.fact_pack is not None
+                ):
+                    remaining = 2 - outcome.attempts
+                    resolved_settings = replace(self.settings, llm_max_attempts=remaining)
+                    resolved_outcome = polish_skeleton(
+                        decision.canonical,
+                        utterance.node,
+                        resolved_settings,
+                        past=True,
+                        driver_names=utterance.hero_names,
+                        locale=utterance.locale,
+                        fact_pack=decision.fact_pack,
+                        composition_path=utterance.composition_path,
+                    )
+                    self._emit_polish_debug(utterance, resolved_outcome)
+                    spoken_text = resolved_outcome.text or decision.canonical
+                spoken_text = numbers_to_words(spoken_text, utterance.locale)
+                spoken_text = mix_hero_name(
+                    spoken_text,
+                    utterance.hero_names,
+                    utterance.locale,
+                    name=utterance.hero_name,
+                )
+            if not registry.mark_speaking(token):
+                self._emit_story_debug(token, "skipped", "ministory_invalidated")
+                return
+            lifecycle_token = registry.current_token(token) or lifecycle_token
+            self._emit_story_debug(lifecycle_token, "speaking", "tts_started")
+        self._emit_graph_lifecycle("speaking", utterance)
+        try:
+            with duck_for_speech(self.settings) as ducker:
+                if cancelled():
+                    return
+                result = speak_text(
+                    spoken_text,
+                    locale=utterance.locale,
+                    voice=self.settings.tts_voice,
+                    rate=self.settings.tts_rate,
+                    backend=self.settings.tts_backend,
+                    device=self.settings.audio_device,
+                    timeout_s=speak_timeout_s(
+                        self.settings,
+                        event_type=utterance.event_type,
+                        node=utterance.node,
+                    ),
+                    runner=self.runner,
+                    cancelled=cancelled,
+                    steps=self.settings.tts_steps,
+                    wait_before_play=lambda: ducker.wait_faded(cancelled),
+                )
+        finally:
+            if registry is not None and token is not None:
+                state_before = registry.state_of(token)
+                registry.complete(token)
+                state = registry.state_of(token)
+                if state is None and state_before is None:
+                    action = "invalidated"
+                else:
+                    action = state.value if state is not None else "completed"
+                self._emit_story_debug(
+                    registry.current_token(token) or lifecycle_token or token,
+                    action,
+                    "tts_finished",
+                )
+            self._emit_graph_lifecycle(
+                "interrupted" if cancelled() else "completed",
+                utterance,
             )
         self.last_result = result
         self.last_error = result.error
         if result.error:
             logger.warning("tts speak failed backend=%s error=%s", result.backend, result.error)
+        elif result.spoken and self.on_spoken_text is not None:
+            try:
+                self.on_spoken_text(spoken_text)
+            except Exception:
+                logger.debug("commentary final-spoken hook failed", exc_info=True)
 
     def _emit_polish_debug(self, utterance: CommentaryUtterance, outcome: PolishOutcome) -> None:
         hook = self.on_polish_debug
@@ -306,16 +486,57 @@ class ProcessTtsSink:
         except Exception:
             logger.debug("commentary polish debug hook failed", exc_info=True)
 
+    def _emit_story_debug(self, token: MiniStoryToken, action: str, reason: str) -> None:
+        hook = self.on_story_debug
+        if hook is None:
+            return
+        try:
+            hook(
+                {
+                    "action": action,
+                    "reason": reason,
+                    "eventType": token.event_type,
+                    "storyId": token.story_id,
+                    "storyRevision": token.revision,
+                    "runEpoch": token.run_epoch,
+                    "heroOrderRevision": token.hero_order_revision,
+                    "correlationId": token.correlation_id,
+                }
+            )
+        except Exception:
+            logger.debug("commentary mini-story debug hook failed", exc_info=True)
+
+    def _emit_graph_lifecycle(self, action: str, utterance: CommentaryUtterance) -> None:
+        hook = self.on_graph_lifecycle
+        candidate = utterance.graph_candidate
+        if hook is None or candidate is None:
+            return
+        try:
+            hook(action, candidate, time.monotonic())
+        except Exception:
+            logger.debug("commentary graph lifecycle hook failed", exc_info=True)
+
+    def _close_queued_story(self, utterance: CommentaryUtterance, reason: str) -> None:
+        token = utterance.story_token
+        if token is None:
+            return
+        registry = self.story_registry
+        if registry is not None:
+            registry.invalidate(token)
+        self._emit_story_debug(token, "invalidated", reason)
+
 
 def detect_backend(preferred: str = "auto") -> str:
     choice = (preferred or "auto").strip().lower()
     if choice == "null":
         return "null"
+    if choice == "supertonic":
+        return "supertonic" if _supertonic_available() else "null"
     if choice == "sapi" and _sapi_available():
         return "sapi"
     if choice == "espeak" and _espeak_bin():
         return "espeak"
-    if choice in {"sapi", "espeak"}:
+    if choice in {"sapi", "espeak", "supertonic"}:
         return "null"
     if _sapi_available():
         return "sapi"
@@ -366,6 +587,9 @@ def speak_text(
     device: str = "",
     timeout_s: float = 25.0,
     runner: SpeakRunner | None = None,
+    cancelled: CancelProbe | None = None,
+    steps: int = 6,
+    wait_before_play: Callable[[], None] | None = None,
 ) -> TtsResult:
     """Blocking speak for a worker thread. Fail-soft; never raises to callers."""
     spoken = (text or "").strip()
@@ -375,6 +599,8 @@ def speak_text(
     if resolved == "null":
         return TtsResult(backend="null", spoken=False, error="no TTS backend on this host")
     try:
+        if cancelled is not None and cancelled():
+            raise _TtsInterrupted
         if resolved == "sapi":
             _speak_sapi(
                 spoken,
@@ -383,6 +609,19 @@ def speak_text(
                 device=device,
                 timeout_s=timeout_s,
                 runner=runner,
+                cancelled=cancelled,
+            )
+        elif resolved == "supertonic":
+            _speak_supertonic(
+                spoken,
+                voice=voice,
+                rate=rate,
+                device=device,
+                timeout_s=timeout_s,
+                steps=steps,
+                locale=locale,
+                cancelled=cancelled,
+                before_play=wait_before_play,
             )
         else:
             _speak_espeak(
@@ -392,8 +631,11 @@ def speak_text(
                 rate=rate,
                 timeout_s=timeout_s,
                 runner=runner,
+                cancelled=cancelled,
             )
-    except subprocess.TimeoutExpired:
+    except _TtsInterrupted:
+        return TtsResult(backend=resolved, spoken=False, error="interrupted")
+    except (subprocess.TimeoutExpired, TimeoutError):
         return TtsResult(backend=resolved, spoken=False, error="tts timeout")
     except Exception as exc:
         logger.warning("tts backend %s failed", resolved, exc_info=True)
@@ -408,6 +650,10 @@ def list_voices(backend: str = "auto") -> list[str]:
             return _list_sapi_voices()
         if resolved == "espeak":
             return _list_espeak_voices()
+        if resolved == "supertonic":
+            from irswitch.commentary.supertonic_backend import list_voices as _list_st
+
+            return _list_st()
     except Exception:
         logger.debug("tts voice listing failed", exc_info=True)
     return []
@@ -415,6 +661,43 @@ def list_voices(backend: str = "auto") -> list[str]:
 
 def _sapi_available() -> bool:
     return sys.platform == "win32" and bool(shutil.which("powershell") or shutil.which("pwsh"))
+
+
+def _supertonic_available() -> bool:
+    from irswitch.commentary.supertonic_backend import available
+
+    return available()
+
+
+def _speak_supertonic(
+    text: str,
+    *,
+    voice: str,
+    rate: int,
+    device: str,
+    timeout_s: float,
+    steps: int,
+    locale: str,
+    cancelled: CancelProbe | None,
+    before_play: Callable[[], None] | None = None,
+) -> None:
+    from irswitch.commentary.supertonic_backend import PlaybackInterrupted
+    from irswitch.commentary.supertonic_backend import speak as speak_supertonic
+
+    try:
+        speak_supertonic(
+            text,
+            voice=voice,
+            rate=rate,
+            device=device,
+            timeout_s=timeout_s,
+            steps=steps,
+            locale=locale,
+            cancelled=cancelled,
+            before_play=before_play,
+        )
+    except PlaybackInterrupted as exc:
+        raise _TtsInterrupted from exc
 
 
 def _espeak_bin() -> str | None:
@@ -427,17 +710,46 @@ def _run(
     env: dict[str, str] | None = None,
     timeout_s: float,
     runner: SpeakRunner | None,
+    cancelled: CancelProbe | None = None,
 ) -> subprocess.CompletedProcess[str]:
     if runner is not None:
-        return runner(argv, env or {}, timeout_s)
-    return subprocess.run(
+        completed = runner(argv, env or {}, timeout_s)
+        if cancelled is not None and cancelled():
+            raise _TtsInterrupted
+        return completed
+    if cancelled is None:
+        return subprocess.run(
+            argv,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            env=env,
+        )
+    process = subprocess.Popen(
         argv,
-        check=False,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
-        timeout=timeout_s,
         env=env,
     )
+    deadline = time.monotonic() + timeout_s
+    while process.poll() is None:
+        if cancelled():
+            process.terminate()
+            try:
+                process.communicate(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.communicate()
+            raise _TtsInterrupted
+        if time.monotonic() >= deadline:
+            process.kill()
+            stdout, stderr = process.communicate()
+            raise subprocess.TimeoutExpired(argv, timeout_s, output=stdout, stderr=stderr)
+        time.sleep(0.02)
+    stdout, stderr = process.communicate()
+    return subprocess.CompletedProcess(argv, process.returncode, stdout=stdout, stderr=stderr)
 
 
 def select_sapi_output_name(descriptions: list[str], want: str) -> str | None:
@@ -459,6 +771,7 @@ def _speak_sapi(
     device: str,
     timeout_s: float,
     runner: SpeakRunner | None,
+    cancelled: CancelProbe | None = None,
 ) -> None:
     env = os.environ.copy()
     env["IRSWITCH_TTS_B64"] = base64.b64encode(text.encode("utf-8")).decode("ascii")
@@ -480,6 +793,7 @@ def _speak_sapi(
         env=env,
         timeout_s=timeout_s,
         runner=runner,
+        cancelled=cancelled,
     )
     if completed.returncode != 0:
         err = (completed.stderr or completed.stdout or "sapi failed").strip()
@@ -497,6 +811,7 @@ def _speak_espeak(
     rate: int,
     timeout_s: float,
     runner: SpeakRunner | None,
+    cancelled: CancelProbe | None = None,
 ) -> None:
     binary = _espeak_bin()
     if not binary:
@@ -508,6 +823,7 @@ def _speak_espeak(
         [binary, "-v", voice_arg, "-s", str(wpm), "--", text],
         timeout_s=timeout_s,
         runner=runner,
+        cancelled=cancelled,
     )
     if completed.returncode != 0:
         err = (completed.stderr or completed.stdout or "espeak failed").strip()

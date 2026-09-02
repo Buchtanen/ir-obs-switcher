@@ -29,7 +29,7 @@
         "connected": true,
         "player_car_idx": 4,
         "position": 6,
-        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 2.0, "closing_rate": 0.3},
+        "opponent_ahead": {"car_idx": 17, "position": 5, "gap": 2.0, "closing_rate": 0.3},
         "gap_ahead": 2.0,
         "closing_rate_ahead": 0.3
       }
@@ -40,7 +40,7 @@
         "connected": true,
         "player_car_idx": 4,
         "position": 6,
-        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 1.2, "closing_rate": 0.25},
+        "opponent_ahead": {"car_idx": 17, "position": 5, "gap": 1.2, "closing_rate": 0.25},
         "gap_ahead": 1.2,
         "closing_rate_ahead": 0.25
       }
@@ -51,7 +51,7 @@
         "connected": true,
         "player_car_idx": 4,
         "position": 6,
-        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 0.6, "closing_rate": 0.22},
+        "opponent_ahead": {"car_idx": 17, "position": 5, "gap": 0.6, "closing_rate": 0.22},
         "gap_ahead": 0.6,
         "closing_rate_ahead": 0.22
       }
@@ -62,7 +62,7 @@
         "connected": true,
         "player_car_idx": 4,
         "position": 6,
-        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 0.32, "closing_rate": 0.25},
+        "opponent_ahead": {"car_idx": 17, "position": 5, "gap": 0.32, "closing_rate": 0.25},
         "gap_ahead": 0.32,
         "closing_rate_ahead": 0.25
       }
@@ -72,8 +72,9 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
-        "position": 6,
-        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 5.0, "closing_rate": -0.1},
+        "position": 5,
+        "opponent_ahead": {"car_idx": 22, "position": 4, "gap": 5.0, "closing_rate": -0.1},
+        "opponent_behind": {"car_idx": 17, "position": 6, "gap": 0.4, "closing_rate": -0.1},
         "gap_ahead": 5.0,
         "closing_rate_ahead": -0.1
       }
@@ -83,8 +84,9 @@
       "race": {
         "connected": true,
         "player_car_idx": 4,
-        "position": 6,
-        "opponent_ahead": {"car_idx": 17, "position": 6, "gap": 5.0, "closing_rate": -0.1},
+        "position": 5,
+        "opponent_ahead": {"car_idx": 22, "position": 4, "gap": 5.0, "closing_rate": -0.1},
+        "opponent_behind": {"car_idx": 17, "position": 6, "gap": 0.4, "closing_rate": -0.1},
         "gap_ahead": 5.0,
         "closing_rate_ahead": -0.1
       }

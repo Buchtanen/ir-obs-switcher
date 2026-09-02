@@ -1545,7 +1545,7 @@ async def run_service(
     overlay_task: asyncio.Task[None] | None = None
     try:
         from irswitch.overlay.http import get_overlay_bus, set_overlay_bus, set_overlay_runtime
-        from irswitch.overlay.runtime import OverlayMode, OverlayRuntime
+        from irswitch.race.runtime import OverlayMode, RaceRuntime
 
         bus = get_overlay_bus()
         set_overlay_bus(bus)
@@ -1554,7 +1554,7 @@ async def run_service(
             resolved_mode = "mock"
         elif overlay_input == "replay":
             resolved_mode = "replay"
-        overlay_runtime = OverlayRuntime(
+        overlay_runtime = RaceRuntime(
             get_app_config,
             reader,
             bus,

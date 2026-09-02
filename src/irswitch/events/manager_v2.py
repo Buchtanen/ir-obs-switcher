@@ -3,18 +3,32 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import Any, cast
 
 from irswitch.events.adapters import race_event_to_envelope
 from irswitch.events.arbitration import (
     PitCycleGuard,
-    evicted_race_events,
     suppression_reason_for_none,
 )
 from irswitch.events.decision_log import DecisionLog
 from irswitch.events.envelope import EventEnvelope
 from irswitch.events.manager import EventManager
+from irswitch.events.stream import SessionSequenceAllocator
 from irswitch.overlay.protocol import CandidateEvent, RaceEvent
 from irswitch.overlay.settings import EventSettings
+
+# Lifecycle identity is fixed at acceptance, not reconstructed from mutable telemetry.
+_RELATION_IDENTITY_FIELDS = (
+    "heroCarIdx",
+    "direction",
+    "targetCarIdx",
+    "relationEpoch",
+    "runEpoch",
+    "frontTargetCarIdx",
+    "frontRelationEpoch",
+    "rearTargetCarIdx",
+    "rearRelationEpoch",
+)
 
 
 class EventManagerV2:
@@ -27,12 +41,18 @@ class EventManagerV2:
         *,
         decision_log: DecisionLog | None = None,
         pit_guard: PitCycleGuard | None = None,
+        sequence_allocator: SessionSequenceAllocator | None = None,
     ) -> None:
         self._settings = settings or EventSettings()
         self._inner = EventManager(self._settings)
         self._session_id = session_id
-        self._sequence = 0
+        self._run_epoch = 0
+        self._sequence_allocator = sequence_allocator or SessionSequenceAllocator(
+            session_id or "session:unknown"
+        )
         self._active_v4: list[EventEnvelope] = []
+        self._accepted: dict[int, EventEnvelope] = {}
+        self.unmatched_exits = 0
         self.decisions = decision_log or DecisionLog()
         self._pit_guard = pit_guard or PitCycleGuard()
 
@@ -42,11 +62,19 @@ class EventManagerV2:
 
     def set_session_id(self, session_id: str) -> None:
         self._session_id = session_id
+        if self._sequence_allocator.session_id != session_id:
+            self._sequence_allocator.reset(session_id)
+
+    def set_run_epoch(self, run_epoch: int) -> None:
+        """Set the producer run namespace after its coordinated lifecycle reset."""
+        self._run_epoch = max(0, int(run_epoch))
 
     def reset(self) -> None:
         self._inner = EventManager(self._settings)
-        self._sequence = 0
+        self._sequence_allocator.reset(self._session_id or "session:unknown")
         self._active_v4.clear()
+        self._accepted.clear()
+        self.unmatched_exits = 0
         self.decisions.clear()
         self._pit_guard = PitCycleGuard()
 
@@ -54,8 +82,8 @@ class EventManagerV2:
     def legacy(self) -> EventManager:
         return self._inner
 
-    def active_events(self) -> list[dict]:
-        return self._inner.active_events()
+    def active_events(self) -> list[dict[str, Any]]:
+        return cast("list[dict[str, Any]]", self._inner.active_events())
 
     def active_stories_v4(self) -> list[dict]:
         return [env.to_dict() for env in self._active_v4]
@@ -75,8 +103,18 @@ class EventManagerV2:
             return None, []
 
         before = list(self._inner._active)
+        if candidate.phase in {"update", "exit"}:
+            resolved = self._resolve_lifecycle_candidate(candidate, before, now=now)
+            if resolved is None:
+                return None, []
+            candidate = resolved
         race_event = self._inner.submit(candidate, now)
-        exit_envelopes = self._exit_envelopes_for_evictions(before, now=now, mode=mode)
+        exit_envelopes = self._exit_envelopes_for_evictions(
+            before,
+            now=now,
+            mode=mode,
+            explicit_exit=race_event if candidate.phase == "exit" else None,
+        )
 
         if race_event is None:
             reason = suppression_reason_for_none(
@@ -98,16 +136,13 @@ class EventManagerV2:
         expired = self._inner.tick(now)
         out: list[tuple[RaceEvent, list[EventEnvelope]]] = []
         for race_event in expired:
-            base = race_event_to_envelope(
-                race_event,
-                session_id=self._session_id,
-                mode=mode,
-                now=now,
+            base = self._accepted.pop(id(race_event), None) or race_event_to_envelope(
+                race_event, session_id=self._session_id, mode=mode, now=now
             )
             if base is None:
                 out.append((race_event, []))
                 continue
-            exit_env = self._stamp(replace(base, phase="EXIT"))
+            exit_env = self._stamp(replace(base, phase="EXIT", monotonic_ms=int(now * 1000)))
             self._remove_active_v4(exit_env.correlation_id)
             out.append((race_event, [exit_env]))
         return out
@@ -135,18 +170,19 @@ class EventManagerV2:
         *,
         now: float,
         mode: str,
+        explicit_exit: RaceEvent | None = None,
     ) -> list[EventEnvelope]:
         envelopes: list[EventEnvelope] = []
-        for evicted in evicted_race_events(before, self._inner._active):
-            base = race_event_to_envelope(
-                evicted,
-                session_id=self._session_id,
-                mode=mode,
-                now=now,
+        remaining_ids = {id(event) for event in self._inner._active}
+        for evicted in before:
+            if id(evicted) in remaining_ids or evicted is explicit_exit:
+                continue
+            base = self._accepted.pop(id(evicted), None) or race_event_to_envelope(
+                evicted, session_id=self._session_id, mode=mode, now=now
             )
             if base is None:
                 continue
-            exit_env = self._stamp(replace(base, phase="EXIT"))
+            exit_env = self._stamp(replace(base, phase="EXIT", monotonic_ms=int(now * 1000)))
             self._remove_active_v4(exit_env.correlation_id)
             self._record(base.event_type, "preempted", "lower_priority", now=now)
             envelopes.append(exit_env)
@@ -163,27 +199,85 @@ class EventManagerV2:
         )
         if base is None:
             return []
+        accepted = self._accepted.get(id(event))
+        if accepted is not None:
+            # Retain accepted subject/target and the exact key even if an adapter's
+            # current context differs. Metrics remain live for legitimate updates.
+            base = replace(
+                base,
+                correlation_id=accepted.correlation_id,
+                story_key=accepted.story_key,
+                dedupe_key=accepted.dedupe_key,
+                subject=accepted.subject,
+                target=(
+                    replace(accepted.target, class_position=base.target.class_position)
+                    if accepted.target is not None and base.target is not None
+                    else accepted.target
+                ),
+                metrics={**accepted.metrics, **base.metrics},
+            )
         stamped = self._stamp(base)
         envelopes = [stamped]
-        if stamped.phase == "ENTER" and stamped.presentation.preferred_state == "ACTIVE":
+        if stamped.phase == "EXIT":
+            self._accepted.pop(id(event), None)
+            self._remove_active_v4(stamped.correlation_id)
+        elif stamped.phase == "ENTER" and stamped.presentation.preferred_state == "ACTIVE":
             active = self._stamp(replace(stamped, phase="ACTIVE"))
             envelopes.append(active)
             self._sync_active_v4(active)
         elif stamped.phase not in {"RESULT", "EXIT"}:
             self._sync_active_v4(stamped)
+        if stamped.phase != "EXIT":
+            self._accepted[id(event)] = stamped
         self._record(stamped.event_type, "emitted", "accepted", now=now)
         return envelopes
+
+    def _resolve_lifecycle_candidate(
+        self, candidate: CandidateEvent, active: list[RaceEvent], *, now: float
+    ) -> CandidateEvent | None:
+        matching = next(
+            (
+                event
+                for event in active
+                if event.name == candidate.name
+                and event.channel == candidate.channel
+                and event.data.get("state") == candidate.data.get("state")
+            ),
+            None,
+        )
+        if matching is not None:
+            # An old explicit EXIT must not remove a replacement in the same slot.
+            mismatch = any(
+                key in candidate.data and candidate.data[key] != matching.data.get(key)
+                for key in _RELATION_IDENTITY_FIELDS
+                if key in matching.data
+            )
+            if not mismatch:
+                return replace(candidate, data={**matching.data, **candidate.data})
+        if candidate.phase == "exit":
+            self.unmatched_exits += 1
+            self._record(candidate.name, "ignored", "unmatched_exit", now=now)
+        else:
+            self._record(candidate.name, "ignored", "unmatched_update", now=now)
+        return None
 
     def _record(self, event_type: str, action: str, reason: str, *, now: float) -> None:
         self.decisions.record(event_type, action, reason, now=now)
 
     def _stamp(self, envelope: EventEnvelope) -> EventEnvelope:
-        self._sequence += 1
-        envelope.stamp(
-            f"{self._session_id}:{envelope.event_type}:{self._sequence}",
-            self._sequence,
+        prefix = f"run:{self._run_epoch}:" if self._run_epoch else ""
+
+        def namespaced(key: str) -> str:
+            return prefix + key if prefix and key and not key.startswith(prefix) else key
+
+        envelope = replace(
+            envelope,
+            correlation_id=namespaced(envelope.correlation_id),
+            story_key=namespaced(envelope.story_key),
+            dedupe_key=namespaced(envelope.dedupe_key),
+            metrics={**envelope.metrics, "runEpoch": self._run_epoch},
         )
-        return envelope
+        return self._sequence_allocator.stamp(envelope)
 
     def _sync_active_v4(self, envelope: EventEnvelope) -> None:
         if envelope.phase in {"RESULT", "EXIT"}:
@@ -196,7 +290,7 @@ class EventManagerV2:
         self._active_v4 = [e for e in self._active_v4 if e.correlation_id != correlation_id]
 
 
-def event_v4_wire(envelope: EventEnvelope) -> dict:
+def event_v4_wire(envelope: EventEnvelope) -> dict[str, Any]:
     payload = envelope.to_dict()
     payload["type"] = "event"
     payload["format"] = "v4"

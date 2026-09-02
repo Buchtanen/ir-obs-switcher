@@ -21,6 +21,7 @@ from irswitch.overlay.protocol import RaceEvent
 _POSITION_EVENT = "position_change"
 _OVERTAKE_EVENT = "overtake"
 _RIVAL_THREAT_EVENT = "rival_threat"
+_LEADER_CHANGE_EVENT = "leader_change"
 
 _POSITION_METRIC_KEYS = ("direction", "oldPosition", "newPosition", "delta")
 _RIVAL_METRIC_KEYS = ("gap", "closingRate", "targetCarIdx", "rivalPosition", "targetName")
@@ -57,6 +58,8 @@ def _copy_token(event_type: str) -> str:
         return "position.overtake"
     if event_type == "RIVAL_THREAT":
         return "position.rival_threat"
+    if event_type == "LEADER_CHANGE":
+        return "position.leader_change"
     return ""
 
 
@@ -96,12 +99,58 @@ def position_race_event_to_envelope(
         event_type = "OVERTAKE"
     elif event.name == _RIVAL_THREAT_EVENT:
         event_type = "RIVAL_THREAT"
+    elif event.name == _LEADER_CHANGE_EVENT:
+        event_type = "LEADER_CHANGE"
     else:
         return None
 
     catalog_state = state_for_event_type(event_type)
     if catalog_state is None:
         return None
+
+    metrics: dict[str, Any]
+    if event_type == "LEADER_CHANGE":
+        phase = legacy_trigger_to_phase(event.phase, default="RESULT")
+        metrics = {
+            key: event.data[key]
+            for key in (
+                "oldLeaderCarIdx",
+                "oldLeaderName",
+                "targetCarIdx",
+                "targetName",
+                "heroIsLeader",
+                "position",
+                "p1Name",
+            )
+            if key in event.data
+        }
+        target_idx = event.data.get("targetCarIdx")
+        return make_envelope(
+            event_type=event_type,
+            phase=phase,
+            mode=normalize_mode(mode),
+            session_id=session_id or "session:unknown",
+            occurred_at=datetime.fromtimestamp(time.time(), tz=UTC).isoformat(),
+            monotonic_ms=int(now * 1000),
+            priority=event.priority,
+            dedupe_key=f"{normalize_mode(mode)}:LEADER_CHANGE:{target_idx}",
+            correlation_id=f"leader:{target_idx}",
+            subject=EventSubject(car_id="player"),
+            target=EventSubject(
+                car_id=str(target_idx if target_idx is not None else "unknown"),
+                class_position=1,
+                display_name=str(event.data.get("targetName") or "") or None,
+            ),
+            metrics=metrics,
+            copy=EventCopy(headline_token=_copy_token(event_type), status_token=""),
+            presentation=EventPresentation(
+                widget=_catalog_family(event_type),
+                zone="EVENT",
+                variant=catalog_state,
+                accent="primary",
+                preferred_state="RESULT",
+            ),
+        )
 
     if event_type == "RIVAL_THREAT":
         default_phase = "ENTER"

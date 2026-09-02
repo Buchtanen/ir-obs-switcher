@@ -14,12 +14,20 @@ from irswitch.commentary.anti_repeat import (
     RecentUtteranceHistory,
     prefer_fresh_candidates,
 )
+from irswitch.commentary.composer import build_skeleton
 from irswitch.commentary.graph import (
     GraphEdge,
     GraphNode,
     SequenceGraph,
     load_sequence_graph,
     normalize_graph_mode,
+)
+from irswitch.commentary.graph_runtime import (
+    GraphCandidate,
+    GraphSelection,
+    ScoreBreakdown,
+    SequenceGraphRuntime,
+    candidate_from_envelope,
 )
 from irswitch.commentary.opener import OPENER_EVENTS, STREAM_START, OpenerMutex
 from irswitch.commentary.scheduler import SpeechScheduler
@@ -36,11 +44,13 @@ from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
+from irswitch.race.ministory import MiniStoryRegistry, MiniStoryToken
 from irswitch.race.watcher_log import WatcherLog, watch_name_for
 
 logger = logging.getLogger(__name__)
 
 _SPEAK_PHASES = frozenset({"ENTER", "RESULT", "EXIT"})
+_UPDATE_SPEAK_EVENTS = frozenset({"BATTLE_FOR_POSITION"})
 _SECTOR_SPEAK_EVENTS = frozenset({"SECTOR_SPLIT", "SECTOR_BEST"})
 _GAP_HUNT_EVENTS = frozenset({"HUNTING", "HUNTED"})
 _INCIDENT_PAIR_EVENTS = frozenset({"INCIDENT", "INCIDENT_AFTERMATH"})
@@ -58,6 +68,7 @@ _SESSION_BRIEF_EVENTS = frozenset(
 )
 DEFAULT_DECISION_LOG_SIZE = 32
 _INCIDENT_BRANCHES = frozenset({"off_track", "unknown"})
+_ACTIVE_TECHNICAL_GAP_S = 0.25
 
 
 @dataclass(frozen=True)
@@ -93,7 +104,7 @@ class _LastSpoken:
 
 @dataclass
 class CommentaryDirector:
-    """Selects one graph node after EventManager accepts an envelope.
+    """Selects a beat and optionally builds a grounded anchor/fact plan.
 
     Fail-soft: unexpected errors are logged by the caller. Empty variants
     (structure waiting for authored text) produce silence.
@@ -124,6 +135,13 @@ class CommentaryDirector:
     grid_story: bool = False
     quali_bag_ready: bool = False
     watcher_log: WatcherLog | None = None
+    on_decision: Callable[[dict[str, Any], float], None] | None = None
+    on_graph_decision: Callable[[dict[str, Any], float], None] | None = None
+    _composition_context: dict[str, Any] = field(default_factory=dict, repr=False)
+    story_registry: MiniStoryRegistry | None = field(default=None, repr=False)
+    graph_runtime: SequenceGraphRuntime | None = field(default=None, repr=False)
+    _last_graph_winner: GraphSelection | None = field(default=None, init=False, repr=False)
+    _last_graph_error: str | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -134,6 +152,12 @@ class CommentaryDirector:
             self._sector_speaks_by_lap = {}
         if not isinstance(self._iracing_hero_names, tuple):
             self._iracing_hero_names = tuple(self._iracing_hero_names or ())
+        if (
+            hasattr(self.sink, "on_spoken_text")
+            and getattr(self.sink, "on_spoken_text", None) is None
+        ):
+            sink_with_hook: Any = self.sink
+            sink_with_hook.on_spoken_text = self._recent.remember
         self._sync_scheduler_settings()
 
     def note_hero_names(self, names: Sequence[str] | None) -> None:
@@ -144,6 +168,10 @@ class CommentaryDirector:
             if token and token not in cleaned:
                 cleaned.append(token)
         self._iracing_hero_names = tuple(cleaned)
+
+    def note_composition_context(self, context: dict[str, Any] | None) -> None:
+        """Accept one thawed frozen N12 snapshot; never retain a live RaceObserver."""
+        self._composition_context = dict(context) if isinstance(context, dict) else {}
 
     def hero_names(self) -> tuple[str, ...]:
         cfg = self.settings
@@ -193,6 +221,9 @@ class CommentaryDirector:
         self._scheduler.reset()
         self._current_event_type = None
         self.opener.reset()
+        self._composition_context = {}
+        self._last_graph_winner = None
+        self._last_graph_error = None
         self._sync_scheduler_settings()
 
     def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
@@ -221,6 +252,31 @@ class CommentaryDirector:
             "busyUntil": busy_until,
             "status": status,
             "lastSpokeAt": self._last.at if self._last is not None else None,
+            "graph": self.graph_status(now),
+        }
+
+    def graph_status(self, now: float) -> dict[str, Any]:
+        runtime = self.graph_runtime
+        mode = _graph_mode(self.settings)
+        winner = self._last_graph_winner
+        if runtime is None:
+            return {
+                "mode": mode,
+                "currentNode": None,
+                "silenceSeconds": 0.0,
+                "lastWinnerNode": None,
+                "lastWinnerScore": None,
+                "fatigueEntries": {"node": 0, "edge": 0, "semantic": 0, "path": 0},
+                "lastError": self._last_graph_error,
+            }
+        return {
+            "mode": mode,
+            "currentNode": runtime.current_node_id,
+            "silenceSeconds": runtime.silence_seconds(now),
+            "lastWinnerNode": winner.candidate.node_id if winner is not None else None,
+            "lastWinnerScore": winner.score.final if winner is not None else None,
+            "fatigueEntries": runtime.fatigue_counts(),
+            "lastError": self._last_graph_error,
         }
 
     def decisions(self, n: int = 20) -> list[dict[str, Any]]:
@@ -229,6 +285,14 @@ class CommentaryDirector:
             return []
         items = list(self._decisions)[-n:]
         return [item.to_dict() for item in items]
+
+    def record_external_skip(self, *, reason: str, now: float, event_type: str = "") -> None:
+        """Record a transport/freshness veto without exposing private state."""
+        self._record(action="skipped", reason=reason, now=now, event_type=event_type)
+
+    def event_ttl_s(self, event_type: str) -> float:
+        """Public event-time TTL used by the async transport freshness gate."""
+        return self._scheduler.ttl_for(event_type)
 
     def _record(
         self,
@@ -241,17 +305,22 @@ class CommentaryDirector:
         emotion: str = "",
         text: str = "",
     ) -> None:
-        self._decisions.append(
-            SpeakDecision(
-                action=action,
-                reason=reason,
-                event_type=event_type,
-                node_id=node_id,
-                emotion=emotion,
-                text=text,
-                at=now,
-            )
+        decision = SpeakDecision(
+            action=action,
+            reason=reason,
+            event_type=event_type,
+            node_id=node_id,
+            emotion=emotion,
+            text=text,
+            at=now,
         )
+        self._decisions.append(decision)
+        hook = self.on_decision
+        if hook is not None:
+            try:
+                hook(decision.to_dict(), now)
+            except Exception:
+                logger.debug("commentary decision hook failed", exc_info=True)
         self._mirror_watcher(
             action=action,
             reason=reason,
@@ -308,25 +377,35 @@ class CommentaryDirector:
         else:
             self._scheduler.settings = CommentarySchedulerSettings()
 
-    def tick(self, now: float, bio: BioState | None = None) -> CommentaryUtterance | None:
+    def tick(
+        self,
+        now: float,
+        bio: BioState | None = None,
+        *,
+        allow_filler: bool = True,
+    ) -> CommentaryUtterance | None:
         """Idle flush / silence watchdog. Call once per race frame when enabled."""
         if not self.settings.enabled:
             return None
-        if not self._scheduler.settings.defer_enabled:
-            return None
         self._sync_scheduler_settings()
-        for expired in self._scheduler.expire(now):
-            self._record(
-                action="skipped",
-                reason="deferred_expired",
-                now=now,
-                event_type=expired.utterance.event_type,
-                node_id=expired.utterance.node_id,
-                text=expired.utterance.text,
-            )
+        graph_active = _graph_mode(self.settings) == "active" and self.graph_runtime is not None
+        if not self._scheduler.settings.defer_enabled and not graph_active:
+            return None
+        if self._scheduler.settings.defer_enabled:
+            for expired in self._scheduler.expire(now):
+                self._record(
+                    action="skipped",
+                    reason="deferred_expired",
+                    now=now,
+                    event_type=expired.utterance.event_type,
+                    node_id=expired.utterance.node_id,
+                    text=expired.utterance.text,
+                )
         if now < self._busy_until or now < self._global_ready_at or self._sink_busy():
             return None
-        deferred = self._scheduler.pop_ready(now)
+        deferred = (
+            self._scheduler.pop_ready(now) if self._scheduler.settings.defer_enabled else None
+        )
         if deferred is not None:
             # Speak only the best deferred line; drop the rest (never drain queue).
             for dropped in self._scheduler.clear():
@@ -344,8 +423,17 @@ class CommentaryDirector:
                 reason="spoken_deferred",
                 past=True,
             )
-        last_at = self._last.at if self._last is not None else None
-        if self._scheduler.silence_due(last_spoke_at=last_at, now=now):
+        runtime = self.graph_runtime
+        if graph_active and runtime is not None:
+            silence_due = allow_filler and runtime.filler_due(now)
+        else:
+            last_at = self._last.at if self._last is not None else None
+            silence_due = allow_filler and self._scheduler.silence_due(
+                last_spoke_at=last_at, now=now
+            )
+        if silence_due:
+            if graph_active and runtime is not None:
+                runtime.note_filler_requested(now=now)
             spoken = self._speak_silence_filler(now)
             if spoken is not None:
                 return spoken
@@ -365,7 +453,24 @@ class CommentaryDirector:
             return None
         # Prefer graph node when authored; else template formatter from RaceObserver.
         emotion = "unknown"
-        drafted = self._consider(envelope, emotion, now, commit=False)
+        graph_winner: GraphSelection | None = None
+        if _graph_mode(self.settings) == "active":
+            graph_winner = self._evaluate_graph([envelope], emotion=emotion, now=now)
+            if graph_winner is None:
+                return None
+        drafted = self._consider(
+            envelope,
+            emotion,
+            now,
+            commit=False,
+            node_override=(
+                self.graph.nodes[graph_winner.candidate.node_id]
+                if graph_winner is not None
+                else None
+            ),
+            gates_checked=graph_winner is not None,
+            graph_score=graph_winner.score.final if graph_winner is not None else None,
+        )
         if drafted is not None:
             return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
         return None
@@ -411,6 +516,9 @@ class CommentaryDirector:
             past_framing=False,
             hero_names=hero_names,
             hero_name=hero_name,
+            story_token=(
+                self.story_registry.token_for(envelope) if self.story_registry is not None else None
+            ),
         )
 
     def observe(
@@ -430,12 +538,12 @@ class CommentaryDirector:
         if language is not None:
             self.language = normalize_language(language)
 
-        flushed = self.tick(now, bio)
+        flushed = self.tick(now, bio, allow_filler=not envelopes)
         if flushed is not None and not envelopes:
             return flushed
 
         ranked = sorted(
-            (env for env in envelopes if env.phase in _SPEAK_PHASES),
+            (env for env in envelopes if _is_speak_beat(env)),
             key=lambda env: env.priority,
             reverse=True,
         )
@@ -449,16 +557,23 @@ class CommentaryDirector:
             )
             return None
 
+        emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
+        graph_winner: GraphSelection | None = None
+        if _graph_mode(self.settings) in {"shadow", "active"}:
+            graph_winner = self._evaluate_graph(ranked, emotion=emotion, now=now)
+        active_winner = graph_winner if _graph_mode(self.settings) == "active" else None
+        selected_ranked = self._active_selection_order(ranked, active_winner)
+
         busy = self._is_busy(now)
-        if busy and ranked:
-            top = ranked[0]
+        if busy and selected_ranked:
+            top = selected_ranked[0]
             if self._scheduler.should_hard_interrupt(
                 top.event_type, current_event_type=self._current_event_type
             ):
                 self._hard_interrupt(now)
                 busy = False
             elif self._scheduler.settings.defer_enabled:
-                return self._park_ranked(ranked, bio, now)
+                return self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             else:
                 self._record(
                     action="skipped",
@@ -474,19 +589,29 @@ class CommentaryDirector:
                     action="skipped",
                     reason="global_cooldown",
                     now=now,
-                    event_type=ranked[0].event_type if ranked else "",
+                    event_type=selected_ranked[0].event_type if selected_ranked else "",
                 )
             return flushed
 
         if flushed is not None:
             # Already spoke a deferred line this tick; park new arrivals if any.
-            if ranked and self._scheduler.settings.defer_enabled:
-                self._park_ranked(ranked, bio, now)
+            if selected_ranked and self._scheduler.settings.defer_enabled:
+                self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             return flushed
 
-        emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
-        for envelope in ranked:
-            utterance = self._consider(envelope, emotion, now, commit=True)
+        for envelope in selected_ranked:
+            selected = _selection_for_envelope(active_winner, envelope)
+            utterance = self._consider(
+                envelope,
+                emotion,
+                now,
+                commit=True,
+                node_override=(
+                    self.graph.nodes[selected.candidate.node_id] if selected is not None else None
+                ),
+                gates_checked=selected is not None,
+                graph_score=selected.score.final if selected is not None else None,
+            )
             if utterance is not None:
                 return self._speak_prepared(utterance, now=now, reason="spoken", past=False)
         return None
@@ -520,20 +645,44 @@ class CommentaryDirector:
                 logger.warning("tts interrupt failed", exc_info=True)
         self._busy_until = now
         self._global_ready_at = now
+        self._scheduler.clear()
         self._record(action="skipped", reason="interrupted", now=now)
+
+    def hero_order_changed(self, now: float) -> None:
+        """The only routine race change allowed to preempt active narration."""
+        if self._is_busy(now):
+            self._hard_interrupt(now)
 
     def _park_ranked(
         self,
         ranked: list[EventEnvelope],
         bio: BioState | None,
         now: float,
+        *,
+        graph_winner: GraphSelection | None = None,
     ) -> CommentaryUtterance | None:
         emotion = resolve_emotion(bio, self.settings.use_hr_emotion)
         for envelope in ranked:
-            draft = self._consider(envelope, emotion, now, commit=False)
+            selected = _selection_for_envelope(graph_winner, envelope)
+            draft = self._consider(
+                envelope,
+                emotion,
+                now,
+                commit=False,
+                node_override=(
+                    self.graph.nodes[selected.candidate.node_id] if selected is not None else None
+                ),
+                gates_checked=selected is not None,
+                graph_score=selected.score.final if selected is not None else None,
+            )
             if draft is None:
                 continue
-            ok = self._scheduler.park(draft, priority=envelope.priority, now=now)
+            defer_priority = (
+                draft.editorial_score
+                if draft.editorial_score is not None
+                else float(envelope.priority)
+            )
+            ok = self._scheduler.park(draft, priority=defer_priority, now=now)
             self._record(
                 action="skipped",
                 reason="deferred" if ok else "deferred_dropped",
@@ -575,12 +724,20 @@ class CommentaryDirector:
                 past_framing=True,
                 hero_names=utterance.hero_names,
                 hero_name=utterance.hero_name,
+                fact_pack=utterance.fact_pack,
+                composition_path=utterance.composition_path,
+                graph_path=utterance.graph_path,
+                story_token=utterance.story_token,
+                graph_candidate=utterance.graph_candidate,
+                editorial_score=utterance.editorial_score,
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
-        self._cooldowns[spoken.node_id] = now + spoken.node.cooldown_s
+        graph_active = _graph_mode(self.settings) == "active" and spoken.graph_candidate is not None
+        if not graph_active:
+            self._cooldowns[spoken.node_id] = now + spoken.node.cooldown_s
         self._busy_until = now + duration
-        self._global_ready_at = now + self.settings.cooldown_s
+        self._global_ready_at = self._next_ready_at(now, duration=duration)
         self._last = _LastSpoken(spoken.node_id, spoken.correlation_id, now)
         self._current_event_type = spoken.event_type
         if spoken.event_type in OPENER_EVENTS:
@@ -605,23 +762,13 @@ class CommentaryDirector:
         now: float,
         *,
         commit: bool = True,
+        node_override: GraphNode | None = None,
+        gates_checked: bool = False,
+        graph_score: float | None = None,
     ) -> CommentaryUtterance | None:
-        sector_gate = self._sector_speak_gate(envelope, now)
-        if sector_gate is not None:
+        if not gates_checked and self._editorial_gate(envelope, now) is not None:
             return None
-        hunt_gate = self._gap_hunt_tts_gate(envelope, now)
-        if hunt_gate is not None:
-            return None
-        briefs_gate = self._session_briefs_gate(envelope, now)
-        if briefs_gate is not None:
-            return None
-        opener_gate = self._opener_gate(envelope, now)
-        if opener_gate is not None:
-            return None
-        pair_gate = self._incident_pair_gate(envelope, now)
-        if pair_gate is not None:
-            return None
-        node = self._pick_node(envelope, now)
+        node = node_override or self._pick_node(envelope, now)
         if node is None:
             synthetic = self._utterance_from_formatter(envelope)
             if synthetic is None:
@@ -633,7 +780,8 @@ class CommentaryDirector:
                 )
                 return None
             return synthetic
-        if commit and now < self._cooldowns.get(node.id, 0.0):
+        graph_active = _graph_mode(self.settings) == "active" and node_override is not None
+        if commit and not graph_active and now < self._cooldowns.get(node.id, 0.0):
             self._record(
                 action="skipped",
                 reason="node_cooldown",
@@ -655,29 +803,60 @@ class CommentaryDirector:
                 )
                 return None
             resolved = "unknown"
-        texts = node.variant_bucket(self.language, resolved)
-        if not texts:
-            self._record(
-                action="skipped",
-                reason="no_variant",
-                now=now,
-                event_type=envelope.event_type,
-                node_id=node.id,
-                emotion=resolved,
-            )
-            return None
         bindings = slot_bindings(envelope, resolved, language=self.language)
-        spoken = choose_filled_line(texts, bindings, self.rng, history=self._recent)
-        if spoken is None:
-            self._record(
-                action="skipped",
-                reason="slot_unbound",
-                now=now,
-                event_type=envelope.event_type,
-                node_id=node.id,
+        fact_pack: dict[str, Any] | None = None
+        composition_path: tuple[str, ...] = ()
+        graph_path: tuple[str, ...] = ()
+        if self.settings.llm_polish:
+            composition = build_skeleton(
+                envelope,
+                node,
+                graph=self.graph,
+                story=self._composition_context,
+                bindings=bindings,
                 emotion=resolved,
+                language=self.language,
+                recent=self._recent,
+                rng=self.rng,
             )
-            return None
+            if composition is None:
+                self._record(
+                    action="skipped",
+                    reason="composer_insufficient_facts",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    emotion=resolved,
+                )
+                return None
+            spoken = composition.text
+            fact_pack = composition.fact_pack
+            composition_path = composition.tree_path
+            graph_path = composition.graph_path
+        else:
+            texts = node.variant_bucket(self.language, resolved)
+            if not texts:
+                self._record(
+                    action="skipped",
+                    reason="no_variant",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    emotion=resolved,
+                )
+                return None
+            chosen = choose_filled_line(texts, bindings, self.rng, history=self._recent)
+            if chosen is None:
+                self._record(
+                    action="skipped",
+                    reason="slot_unbound",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    emotion=resolved,
+                )
+                return None
+            spoken = chosen
         spoken, hero_names, hero_name = self._apply_hero_mix(spoken)
         issues = validate_utterance(spoken, node)
         if issues:
@@ -701,13 +880,18 @@ class CommentaryDirector:
             max(estimate_seconds(spoken, ssml=spoken if "<" in spoken else None), 0.6),
         )
         if commit:
-            self._cooldowns[node.id] = now + node.cooldown_s
+            if not graph_active:
+                self._cooldowns[node.id] = now + node.cooldown_s
             self._busy_until = now + duration
-            self._global_ready_at = now + self.settings.cooldown_s
+            self._global_ready_at = self._next_ready_at(now, duration=duration)
             self._last = _LastSpoken(node.id, envelope.correlation_id, now)
             self._recent.remember(spoken)
             self._note_sector_spoken(envelope)
             self._current_event_type = envelope.event_type
+        story_token = (
+            self.story_registry.token_for(envelope) if self.story_registry is not None else None
+        )
+        graph_candidate = self._graph_candidate(node, envelope, story_token=story_token)
         return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
@@ -722,7 +906,220 @@ class CommentaryDirector:
             past_framing=False,
             hero_names=hero_names,
             hero_name=hero_name,
+            fact_pack=fact_pack,
+            composition_path=composition_path,
+            graph_path=graph_path,
+            story_token=story_token,
+            graph_candidate=graph_candidate,
+            editorial_score=graph_score,
         )
+
+    def _evaluate_graph(
+        self,
+        envelopes: list[EventEnvelope],
+        *,
+        emotion: str,
+        now: float,
+    ) -> GraphSelection | None:
+        runtime = self.graph_runtime
+        if runtime is None:
+            return None
+        candidates: list[GraphCandidate] = []
+        try:
+            for envelope in envelopes:
+                if (
+                    _graph_mode(self.settings) == "active"
+                    and self._editorial_gate(envelope, now) is not None
+                ):
+                    continue
+                metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
+                branch = metrics.get("branch")
+                nodes = self.graph.nodes_for(
+                    envelope.event_type,
+                    envelope.phase,
+                    mode=envelope.mode,
+                    branch=str(branch) if branch is not None else None,
+                )
+                token = (
+                    self.story_registry.token_for(envelope)
+                    if self.story_registry is not None
+                    else None
+                )
+                for node in nodes:
+                    if _graph_mode(self.settings) == "active" and not self._node_available(
+                        node, envelope, emotion
+                    ):
+                        continue
+                    candidate = self._graph_candidate(node, envelope, story_token=token)
+                    if candidate is not None:
+                        candidates.append(candidate)
+            winner = runtime.select(candidates, now=now)
+            self._last_graph_winner = winner
+            self._last_graph_error = None
+            for candidate in candidates:
+                score = runtime.score(candidate, now=now)
+                selected = winner is not None and winner.candidate == candidate
+                self._emit_graph_decision(
+                    candidate,
+                    score,
+                    now=now,
+                    decision="selected" if selected else "rejected",
+                    reason=_graph_reason(score, selected=selected, runtime=runtime),
+                )
+            return winner
+        except Exception as exc:
+            self._last_graph_error = f"{type(exc).__name__}: {exc}"
+            logger.warning(
+                "commentary graph ranking failed; legacy path remains available", exc_info=True
+            )
+            self._emit_graph_error(now=now)
+            return None
+
+    def _active_selection_order(
+        self,
+        ranked: list[EventEnvelope],
+        winner: GraphSelection | None,
+    ) -> list[EventEnvelope]:
+        if _graph_mode(self.settings) != "active" or self._last_graph_error is not None:
+            return ranked
+        selected = winner.candidate.envelope if winner is not None else None
+        available = [env for env in ranked if not self._has_graph_nodes(env)]
+        if selected is not None:
+            available.append(selected)
+        order = {id(envelope): index for index, envelope in enumerate(ranked)}
+        available.sort(key=lambda env: (-env.priority, order.get(id(env), len(order))))
+        return available
+
+    def _has_graph_nodes(self, envelope: EventEnvelope) -> bool:
+        metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
+        branch = metrics.get("branch")
+        return bool(
+            self.graph.nodes_for(
+                envelope.event_type,
+                envelope.phase,
+                mode=envelope.mode,
+                branch=str(branch) if branch is not None else None,
+            )
+        )
+
+    def _next_ready_at(self, now: float, *, duration: float) -> float:
+        if _graph_mode(self.settings) == "active":
+            return now + duration + _ACTIVE_TECHNICAL_GAP_S
+        return now + self.settings.cooldown_s
+
+    def _node_available(
+        self,
+        node: GraphNode,
+        envelope: EventEnvelope,
+        emotion: str,
+    ) -> bool:
+        resolved = emotion
+        if resolved not in node.hr_states and resolved != "unknown":
+            if "unknown" not in node.hr_states:
+                return False
+            resolved = "unknown"
+        if self.settings.llm_polish:
+            return True
+        bindings = slot_bindings(envelope, resolved, language=self.language)
+        return any(
+            bool(line.strip()) and not leftover_slots(line)
+            for line in (
+                fill_slots(text, bindings) for text in node.variant_bucket(self.language, resolved)
+            )
+        )
+
+    def _editorial_gate(self, envelope: EventEnvelope, now: float) -> str | None:
+        for gate in (
+            self._sector_speak_gate,
+            self._gap_hunt_tts_gate,
+            self._session_briefs_gate,
+            self._opener_gate,
+            self._incident_pair_gate,
+        ):
+            reason = gate(envelope, now)
+            if reason is not None:
+                return reason
+        return None
+
+    def _graph_candidate(
+        self,
+        node: GraphNode,
+        envelope: EventEnvelope,
+        *,
+        story_token: MiniStoryToken | None,
+    ) -> GraphCandidate | None:
+        runtime = self.graph_runtime
+        if (
+            runtime is None
+            or _graph_mode(self.settings) == "legacy"
+            or node.id not in self.graph.nodes
+        ):
+            return None
+        run_epoch = story_token.run_epoch if story_token is not None else _run_epoch(envelope)
+        story_id = story_token.story_id if story_token is not None else None
+        revision = story_token.revision if story_token is not None else envelope.sequence
+        return candidate_from_envelope(
+            node,
+            envelope,
+            run_epoch=run_epoch,
+            story_id=story_id,
+            source_revision=revision,
+        )
+
+    def _emit_graph_decision(
+        self,
+        candidate: GraphCandidate,
+        score: ScoreBreakdown,
+        *,
+        now: float,
+        decision: str,
+        reason: str,
+    ) -> None:
+        hook = self.on_graph_decision
+        if hook is None:
+            return
+        runtime = self.graph_runtime
+        if runtime is None:
+            return
+        try:
+            hook(
+                {
+                    "action": "graph_score",
+                    "reason": reason,
+                    "graphMode": _graph_mode(self.settings),
+                    "decision": decision,
+                    "eventId": candidate.event_id,
+                    "eventType": candidate.event_type,
+                    "storyId": candidate.story_id,
+                    "runEpoch": candidate.run_epoch,
+                    "nodeId": candidate.node_id,
+                    "semanticKey": candidate.semantic_key,
+                    "score": score.final,
+                    "threshold": runtime.settings.selection_threshold,
+                    "components": _score_components(score),
+                },
+                now,
+            )
+        except Exception:
+            logger.debug("commentary graph decision hook failed", exc_info=True)
+
+    def _emit_graph_error(self, *, now: float) -> None:
+        hook = self.on_graph_decision
+        if hook is None:
+            return
+        try:
+            hook(
+                {
+                    "action": "graph_score",
+                    "reason": "legacy_fallback",
+                    "graphMode": _graph_mode(self.settings),
+                    "decision": "error",
+                    "error": self._last_graph_error,
+                },
+                now,
+            )
+        except Exception:
+            logger.debug("commentary graph decision hook failed", exc_info=True)
 
     def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         """Return a skip reason when sector speak must stay silent; else None."""
@@ -800,6 +1197,8 @@ class CommentaryDirector:
 
     def _incident_pair_gate(self, envelope: EventEnvelope, now: float) -> str | None:
         """At most one of INCIDENT / INCIDENT_AFTERMATH per tick. Prefer INCIDENT."""
+        if _graph_mode(self.settings) == "active":
+            return None
         if envelope.event_type not in _INCIDENT_PAIR_EVENTS:
             return None
         last = self._last
@@ -885,12 +1284,87 @@ def _prefer_incident_over_aftermath(ranked: list[EventEnvelope]) -> list[EventEn
     return ranked
 
 
+def _is_speak_beat(envelope: EventEnvelope) -> bool:
+    if envelope.phase in _SPEAK_PHASES:
+        return True
+    return envelope.phase == "UPDATE" and envelope.event_type in _UPDATE_SPEAK_EVENTS
+
+
 def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: float) -> bool:
     if gap < edge.min_gap_s or gap > edge.max_gap_s:
         return False
     if edge.same_correlation and last_corr and incoming_corr and last_corr != incoming_corr:
         return False
     return True
+
+
+def _graph_mode(settings: CommentarySettings) -> str:
+    mode = str(getattr(settings, "graph_runtime_mode", "legacy")).strip().lower()
+    return mode if mode in {"legacy", "shadow", "active"} else "legacy"
+
+
+def _selection_for_envelope(
+    selection: GraphSelection | None,
+    envelope: EventEnvelope,
+) -> GraphSelection | None:
+    if selection is None:
+        return None
+    return selection if selection.candidate.event_id == envelope.event_id else None
+
+
+def _run_epoch(envelope: EventEnvelope) -> int:
+    value = envelope.metrics.get("runEpoch")
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return 0
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _score_components(score: ScoreBreakdown) -> dict[str, float]:
+    return {
+        "base": score.base,
+        "transition": score.transition,
+        "closure": score.closure,
+        "materialChange": score.material_change,
+        "silence": score.silence,
+        "nodeFatigue": score.node_fatigue,
+        "semanticFatigue": score.semantic_fatigue,
+        "edgeFatigue": score.edge_fatigue,
+        "pathFatigue": score.path_fatigue,
+    }
+
+
+def _graph_reason(
+    score: ScoreBreakdown,
+    *,
+    selected: bool,
+    runtime: SequenceGraphRuntime,
+) -> str:
+    if selected:
+        if score.critical_floor:
+            return "critical_floor"
+        if score.closure > 0:
+            return "story_closure"
+        if score.material_change > 0:
+            return "material_change"
+        if score.transition > 0:
+            return "story_continuation"
+        if score.silence > 0:
+            return "silence_promoted"
+        return "highest_score"
+    if score.final < runtime.settings.selection_threshold:
+        if score.path_fatigue < 0:
+            return "path_repeat"
+        if score.semantic_fatigue < 0:
+            return "semantic_repeat"
+        return "below_threshold"
+    if score.path_fatigue < score.semantic_fatigue:
+        return "path_repeat"
+    if score.semantic_fatigue < 0:
+        return "semantic_repeat"
+    return "highest_score"
 
 
 def choose_filled_line(
@@ -952,11 +1426,19 @@ def slot_bindings(
         "old_position": _first(metrics, "oldPosition"),
         "target_name": (target.display_name if target is not None else None)
         or _first(metrics, "targetName", "target_name"),
-        "leader_name": _first(metrics, "leaderName", "leader", "leader_name"),
+        "leader_name": _first(metrics, "oldLeaderName", "leaderName", "leader", "leader_name"),
+        "p1_name": _first(metrics, "p1Name", "p1_name"),
+        "p2_name": _first(metrics, "p2Name", "p2_name"),
+        "p3_name": _first(metrics, "p3Name", "p3_name"),
         "lap": _first(metrics, "lap"),
         "lap_time": _first(metrics, "lapTime"),
         "delta": _first(metrics, "delta", "deltaToBest"),
         "gap": _first(metrics, "gap"),
+        "front_target_name": _first(metrics, "frontTargetName", "front_target_name"),
+        "front_gap": _first(metrics, "frontGap", "front_gap"),
+        "front_position": _first(metrics, "frontTargetPosition", "front_target_position"),
+        "rear_target_name": _first(metrics, "rearTargetName", "rear_target_name"),
+        "rear_gap": _first(metrics, "rearGap", "rear_gap"),
         "bpm": _first(metrics, "bpm"),
         "streak": _first(metrics, "streak"),
         "value": _first(metrics, "value"),
@@ -981,6 +1463,18 @@ def slot_bindings(
         "mode": mode,
         "kind": _spoken_kind(_first(metrics, "kind"), cs=cs),
         "fact": _first(metrics, "fact"),
+        "current_lap": _first(metrics, "current_lap", "currentLap"),
+        "lap_context": _first(metrics, "lap_context", "lapContext"),
+        "race_phase": _first(metrics, "race_phase", "racePhase"),
+        "remaining_context": _first(metrics, "remaining_context", "remainingContext"),
+        "hero_irating": _first(metrics, "hero_irating"),
+        "hero_safety_rating": _first(metrics, "hero_safety_rating"),
+        "hero_car": _first(metrics, "hero_car"),
+        "hero_start_position": _first(metrics, "hero_start_position"),
+        "target_irating": _first(metrics, "target_irating"),
+        "target_safety_rating": _first(metrics, "target_safety_rating"),
+        "target_car": _first(metrics, "target_car"),
+        "target_nationality": _first(metrics, "target_nationality"),
     }
     return format_spoken_bindings(raw)
 

@@ -2,7 +2,7 @@
 
 Commentary-only. One recap from the stream quali bag; missing bag skips.
 Parade padding stops on SessionState Racing or a green flag (N5 speaks green).
-Not a rolling-start screenplay: at most two pad lines.
+Parade padding repeats until green, capped so it cannot spam.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ QUALI_RECAP = "QUALI_RECAP"
 PARADE_PAD = "PARADE_PAD"
 _RECAP_PRIORITY = 66
 _PAD_PRIORITY = 30
-PARADE_COOLDOWN_S = 25.0
-PARADE_MAX = 2
+PARADE_COOLDOWN_S = 20.0
+PARADE_MAX = 12
 IRSDK_PARADE_LAPS = 3
 IRSDK_RACING = 4
 

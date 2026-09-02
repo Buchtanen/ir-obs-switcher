@@ -9,7 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from irswitch.events.stream import thaw_context
 from irswitch.overlay.bus import OverlayBus
+from irswitch.overlay.consumer import OverlayConsumer
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.replay import OverlayReplayer
 from irswitch.overlay.runtime import OverlayRuntime
@@ -76,6 +78,17 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
             "nodeId": "lap.complete",
             "emotion": "neutral",
             "text": "Lap in the books.",
+            "storyId": "story:0:1",
+            "storyRevision": 1,
+            "runEpoch": 0,
+            "heroOrderRevision": 0,
+            "graphMode": "shadow",
+            "decision": "selected",
+            "eventId": "event:1",
+            "semanticKey": "lap:1",
+            "score": 51.0,
+            "threshold": 45.0,
+            "components": {"base": 50.0, "transition": 1.0},
         },
         111.3,
         _race(),
@@ -87,6 +100,9 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     assert rows[0]["t_stream"] == pytest.approx(10.0)
     assert rows[0]["t_session"] == pytest.approx(12.5)
     assert rows[0]["t_green"] == pytest.approx(0.0)
+    commentary = next(row for row in rows if row["type"] == "commentary")
+    assert commentary["graphMode"] == "shadow"
+    assert commentary["components"]["base"] == 50.0
     assert "event" in types
     assert "decision" in types
     assert "stories" in types
@@ -94,6 +110,10 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     commentary = next(row for row in rows if row["type"] == "commentary")
     assert commentary["text"] == "Lap in the books."
     assert commentary["action"] == "speak"
+    assert commentary["storyId"] == "story:0:1"
+    assert commentary["storyRevision"] == 1
+    assert commentary["runEpoch"] == 0
+    assert commentary["heroOrderRevision"] == 0
     assert "scene" in types
     assert tape.path is None
 
@@ -103,6 +123,29 @@ def test_disabled_tape_writes_nothing(tmp_path: Path) -> None:
     tape.observe(_race(), 1.0, _settings(tmp_path, enabled=False))
     assert tape.path is None
     assert list(tmp_path.glob("*.jsonl")) == []
+
+
+def test_same_session_run_epoch_resets_green_but_preserves_tape_clock(tmp_path: Path) -> None:
+    tape = OverlaySessionTape(get_stream_origin_mono=lambda: 100.0, get_version=lambda: "test")
+    settings = _settings(tmp_path)
+    tape.observe(_race(session_state=3, session_time=105.0), 110.0, settings)
+    tape.observe(_race(session_time=106.0), 111.0, settings)
+    path = tape.path
+    tape.observe(_race(run_epoch=1, session_state=3, session_time=0.2), 120.0, settings)
+    tape.observe(_race(run_epoch=1, session_state=4, session_time=4.0), 124.0, settings)
+    tape.observe(_race(run_epoch=1, session_state=4, session_time=5.0), 125.0, settings)
+    assert tape.path == path
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    restarts = [row for row in rows if row["type"] == "run_reset"]
+    assert len(restarts) == 1
+    assert restarts[0]["run_epoch"] == 1
+    assert restarts[0]["t_green"] is None
+    greens = [row for row in rows if row["type"] == "green"]
+    assert len(greens) == 2
+    assert greens[-1]["run_epoch"] == 1
+    assert greens[-1]["t_green"] == 0.0
+    assert greens[-1]["t_mono"] == 14.0
+    assert greens[-1]["t_stream"] == 24.0
 
 
 def test_playback_offset_prefers_t_mono() -> None:
@@ -172,7 +215,36 @@ def test_overlay_runtime_constructs_with_practice_emitters() -> None:
     assert "SectorSplitEmitter" in names
 
 
-def test_overlay_runtime_disconnect_clears_stories() -> None:
+@pytest.mark.asyncio
+async def test_runtime_marshals_tts_story_transition_onto_overlay_loop() -> None:
+    overlay = OverlaySettings(event_engine=EventEngineFeatureSettings(v2_payload=True))
+    runtime = OverlayRuntime(lambda: SimpleNamespace(overlay=overlay), None, OverlayBus())
+    received: list[dict] = []
+    runtime.overlay_consumer.enqueue_story_transition = received.append  # type: ignore[method-assign]
+    runtime._runtime_loop = asyncio.get_running_loop()
+    entry = {
+        "storyId": "story:0:1",
+        "storyRevision": 1,
+        "runEpoch": 0,
+        "heroOrderRevision": 0,
+        "correlationId": "battle:1",
+        "eventType": "HUNTING",
+        "action": "speaking",
+    }
+
+    worker = __import__("threading").Thread(
+        target=runtime._ministory_lifecycle_hook,
+        args=(entry,),
+    )
+    worker.start()
+    worker.join(timeout=1.0)
+    await asyncio.sleep(0)
+
+    assert received == [entry]
+
+
+@pytest.mark.asyncio
+async def test_overlay_runtime_disconnect_clears_stories() -> None:
     """Link drop / iRacing quit must blank the HUD, not leave hunting + SYSINFO."""
     overlay = OverlaySettings(event_engine=EventEngineFeatureSettings(v2_payload=True))
     bus = OverlayBus()
@@ -182,6 +254,13 @@ def test_overlay_runtime_disconnect_clears_stories() -> None:
     bus.set_active_events([{"name": "hunting"}])
     assert runtime._idle_when_disconnected(_race(connected=False)) is True
     assert runtime._hud_live is False
+    payload = runtime.pipeline.context_payload
+    assert payload is not None
+    context = thaw_context(payload)
+    assert context["hud"]["active_events"] == []
+    assert context["hud"]["active_stories_v4"] == []
+    consumer = OverlayConsumer(runtime._overlay_subscription, bus)
+    await consumer.apply_latest_presentation()
     assert bus.active_stories_v4 == []
     assert bus.active_events == []
     assert runtime._idle_when_disconnected(_race(connected=True)) is False

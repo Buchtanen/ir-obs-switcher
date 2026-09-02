@@ -26,6 +26,7 @@ WATCH_BY_EVENT: dict[str, str] = {
     "FIELD_FACT": "briefs",
     "WEATHER_CHANGE": "briefs",
     "SESSION_WRAP": "briefs",
+    "LEADER_CHANGE": "briefs",
     "SESSION_PREVIEW": "briefs",
 }
 

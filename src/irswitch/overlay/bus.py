@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Iterable
+from copy import deepcopy
 from typing import Any
 
 from aiohttp.web_ws import WebSocketResponse
@@ -64,8 +65,7 @@ class OverlayBus:
             if extra:
                 payload.update(extra)
             await ws.send_str(json.dumps(payload))
-            if self.active_stories_v4:
-                await ws.send_str(json.dumps(state_snapshot_envelope(self.active_stories_v4)))
+            await ws.send_str(json.dumps(state_snapshot_envelope(self.active_stories_v4)))
         except Exception:
             logger.debug("Overlay WS snapshot send failed", exc_info=True)
             self._clients.discard(ws)
@@ -90,7 +90,9 @@ class OverlayBus:
         self._dirty.add("events")
 
     def set_active_stories_v4(self, stories: list[dict[str, Any]]) -> None:
-        self.active_stories_v4 = list(stories)
+        if stories != self.active_stories_v4:
+            self.active_stories_v4 = deepcopy(stories)
+            self._dirty.add("stories_v4")
 
     async def publish_event(self, envelope: dict[str, Any]) -> None:
         try:
@@ -114,6 +116,8 @@ class OverlayBus:
             messages.append(state_envelope("system", self.system.to_dict()))
         if "events" in dirty:
             messages.append({"type": "activeEvents", "data": self.active_events})
+        if "stories_v4" in dirty:
+            messages.append(state_snapshot_envelope(self.active_stories_v4))
         for msg in messages:
             await self._broadcast(msg)
 

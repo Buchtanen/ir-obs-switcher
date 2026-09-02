@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import pytest
+
 from irswitch.events.invalid_lap import InvalidLapEmitter
 from irswitch.events.rival_threat import RivalThreatEmitter
 from irswitch.events.target_locked import TargetLockedEmitter
@@ -32,6 +34,7 @@ def test_rival_threat_emits_when_closing_fast() -> None:
     state = replace(
         _race_from_dict({"connected": True}),
         overlay_mode="RACE",
+        position=7,
         gap_behind=1.2,
         closing_rate_behind=0.4,
         opponent_behind=OpponentInfo(car_idx=23, position=8),
@@ -47,12 +50,53 @@ def test_rival_threat_prefers_class_position() -> None:
     state = replace(
         _race_from_dict({"connected": True}),
         overlay_mode="RACE",
+        class_position=5,
         gap_behind=1.2,
         closing_rate_behind=0.4,
         opponent_behind=OpponentInfo(car_idx=23, position=18, class_position=6),
     )
     events = emitter.tick(state, 0.0)
     assert events[0].data["rivalPosition"] == 6
+
+
+@pytest.mark.parametrize("gap", [-1.0, float("nan"), float("inf")])
+def test_rival_threat_rejects_invalid_gap(gap: float) -> None:
+    state = replace(
+        _race_from_dict({"connected": True}),
+        overlay_mode="RACE",
+        position=7,
+        gap_behind=gap,
+        closing_rate_behind=0.4,
+        opponent_behind=OpponentInfo(car_idx=23, position=8),
+    )
+    assert RivalThreatEmitter().tick(state, 0.0) == []
+
+
+def test_rival_threat_clears_during_enter_cooldown() -> None:
+    emitter = RivalThreatEmitter()
+    active = replace(
+        _race_from_dict({"connected": True}),
+        overlay_mode="RACE",
+        position=7,
+        gap_behind=1.2,
+        closing_rate_behind=0.4,
+        opponent_behind=OpponentInfo(car_idx=23, position=8),
+    )
+    assert emitter.tick(active, 0.0)[0].phase == "enter"
+    exited = emitter.tick(replace(active, gap_behind=float("nan")), 1.0)
+    assert len(exited) == 1 and exited[0].phase == "exit"
+
+
+def test_rival_threat_requires_rival_to_be_behind_in_class() -> None:
+    state = replace(
+        _race_from_dict({"connected": True}),
+        overlay_mode="RACE",
+        class_position=5,
+        gap_behind=1.2,
+        closing_rate_behind=0.4,
+        opponent_behind=OpponentInfo(car_idx=23, position=8, class_position=4),
+    )
+    assert RivalThreatEmitter().tick(state, 0.0) == []
 
 
 def test_target_locked_once_per_reference() -> None:

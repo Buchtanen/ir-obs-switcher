@@ -3,11 +3,12 @@
 Kritické zhodnocení [n12_async_consumers.md](n12_async_consumers.md) (Commentary Director V2:
 jeden producer, dvě nezávislé fronty, OverlayConsumer + CommentaryConsumer).
 
-**Rozsah:** pouze N12. Narrative epic (#181), skeleton composer (#195) a pit-wall CSS (#198) nejsou
-součástí tohoto review.
+**Historical review scope:** this review evaluated async N12 only. Narrative epic (#181), skeleton composer (#195) and pit-wall CSS (#198) were not part of this review.
 
 **Stav kódu při review:** commit `9d6f626` na větvi `cursor/narrative-observers-epic-4749`;
 runtime na `master` / #181 je stále synchronní `EventFanout` + `OverlayRuntime` composition root.
+
+**Later integration decision:** the owner subsequently required #195 on the same N12 integration branch after the isolation waves. That does not invalidate this review's sequencing warning; it supersedes only the delivery-scope exclusion. Current evidence is in [n12_implementation_report.md](n12_implementation_report.md).
 
 **Reviewer:** cloud agent (kritický pohled po handoveru od desktop agenta).
 

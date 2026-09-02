@@ -1,6 +1,6 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) (2026-09-01). Narrative landing continues on `master` (#181). **Commentary Director V2 / N12 async isolation is specified, not implemented.**
+**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) and narrative observers via #181. **Commentary Director V2 / N12 is implemented on integration branch `refactor/200-n12-async-consumers` under [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200).**
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — reshaped after two reviews vs this umbrella. N-tasks **extend** P0–P5. N9 cover cut. Incident v1 = off_track vs unknown; Speed is motion not classify-primary. Finish = three booleans (`session_checkered` ≠ checkered bit). Opener mutex. Landing order **N1 → N2 → N4 → N8 → N11 A**. Gap-hunt TTS keys live under `[commentary]`.  
 **Audience:** architecture / next epic planning
@@ -88,7 +88,7 @@ Neznamená to sledovat celý grid. Jen okolí hero. **Locked: 2+2** pro RaceObse
 | CommentaryPath | Výběr, defer, hard-interrupt (flag), LLM framing, TTS | Měnit HUD priority |
 | OBS SM | Scény | Zůstat oddělená |
 
-### 2.1 Current gap after P0
+### 2.1 Historical gap after P0
 
 P0 changed the naming and failure boundary, but not the execution model:
 
@@ -103,9 +103,13 @@ P0 changed the naming and failure boundary, but not the execution model:
 - RaceObserver-derived envelopes are drained after the engine tick and bypass
   shared arbitration.
 
-The current code isolates exceptions, but a slow consumer still occupies the
-same race tick and overlay remains the composition root for commentary. That is
-not the independent model required for Commentary Director V2.
+The pre-N12 code isolated exceptions, but a slow consumer still occupied the
+same race tick and overlay remained the composition root for commentary. That
+was not the independent model required for Commentary Director V2.
+
+Issue #200 resolves this gap with `RaceRuntime`, immutable batches, bounded
+broadcast subscriptions and independently supervised peer consumers. See the
+[N12 implementation report](tasks/n12_implementation_report.md).
 
 ### 2.2 Commentary Director V2 — independent async consumers
 
@@ -419,7 +423,7 @@ sequenced before `session_briefs` sidecars; gated by `commentary.session_briefs`
 Lane/released stay HUD-only. **Issue #177.**  
 **Next:** done for ATTACK_RANGE / PIT_STOPPED. Further copy = epic **N11 wave A** (stream_start / in_car only).
 
-### V2 / N12 — Commentary Director async isolation (specified)
+### V2 / N12 — Commentary Director async isolation ✅ integration
 
 Extract the race/event producer from `OverlayRuntime`; make overlay and
 commentary independently supervised async consumers with separate bounded
@@ -430,8 +434,15 @@ The linked critical review is incorporated in N12's binding implementation
 appendix (freeze, derived merge, context/control/filler, coalescing, replay, and
 timing/idempotence contracts).
 
-V2/N12 is a follow-up after the #181 live listen. It does not change P0–P5 behavior,
-current INI defaults, or the #181 landing order.
+V2/N12 was implemented after #181. It does not change P0–P5 behavior or current
+INI defaults. N12.5 remains an optional future Windows-spawn subprocess split;
+the default is the delivered independently supervised asyncio V2a model.
+
+The same integration branch now also carries the sequenced #195 extension:
+`RaceObserver` owns bounded accepted-beat history, frozen context transports it,
+and the commentary consumer deterministically composes two to four facts by
+walking up to three existing graph nodes before optional style-only polish.
+Authored single-line selection remains unchanged when `llm_polish=false`.
 
 ---
 

@@ -643,8 +643,8 @@ Real-time updates stavu služby.
   {"type":"stream_chapter","chapter":{"title":"Race","offset_seconds":842,"session_type":"Race","created_at_ms":1704111242000}}
   ```
 - Legacy klienti, kteří každou zprávu parsují jako `/status`, musí **ignorovat** objekty s polem `type` (`stream_chapter` / `stream_chapters_snapshot`) — status snapshoty `type` nemají.
-- `offset_seconds` je floor z `stream_duration_current_session_seconds` (monotonic session clock); při nedostupnosti duration = `0`.
-- Seznam se maže na začátku **nové** stream session. Po potvrzeném stopu (debounce ≥ 2 s proti flickeru) zůstane, včetně volitelného `end_title` markeru, kvůli zápisu na YouTube VOD.
+- `offset_seconds` je floor ze společných broadcast hodin. Autoritativní zdroj je OBS WebSocket v5 `outputDuration` v milisekundách; při jeho výpadku hodiny pokračují monotónně a v rámci jednoho broadcastu se nikdy nevrátí zpět.
+- Krátký stop (< 2 s) zachová čas i historii. Známý stejný broadcast ID zachová stejnou osu i přes delší reconnect. Historie a čas se resetují společně až při potvrzeném novém broadcastu. Pokud se po reconnectu odstraní dříve přidaný koncový marker, server pošle nový `stream_chapters_snapshot`, aby klient nahradil celou historii.
 - Při `[stream_chapters] youtube_vod = true` se timestampy zapisují do YouTube VOD description **až po skončení streamu** (blok `--- irswitch chapters ---`), s retry 0 s / 30 s / 3 min / 10 min. Formát `00:00` první, mezery ≥ 10 s. Vyžaduje OAuth write scope `youtube` (ne jen `readonly`). OBS `CreateRecordChapter` se nepoužívá. Pokud description obsahuje řádek `Track:`, flush ho přepíše display name z `WeekendInfo` (ne šablona Imola).
 
 **Příklad použití** (JavaScript):
@@ -807,15 +807,15 @@ Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`).
 
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
-- **Mluvit na serveru** — `POST /api/commentary/speak` → Windows SAPI (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`)
+- **Mluvit na serveru** — `POST /api/commentary/speak` → SAPI / SuperTonic / espeak (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`; SuperTonic syntéza běží během fade-out, play až je duck dole)
 - **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
-- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `overlay.language`)
+- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`)
 
 **API**
 
 | Method | URL | Poznámka |
 | --- | --- | --- |
-| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, sample řádek, `audioHint` (VAD) |
+| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
 | `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
@@ -856,7 +856,7 @@ Když je v `config.ini` zapnuto `[event_engine] v2_payload = true`, transientní
 | `type` | Kdy | Účel |
 |--------|-----|------|
 | `snapshot` | hned po connectu | race / bio / system + `activeEvents` (legacy aktivní eventy) |
-| `STATE_SNAPSHOT` | po connectu, pokud běží V4 stories | autoritativní seznam aktivních V4 příběhů (`activeStories`) |
+| `STATE_SNAPSHOT` | vždy po connectu a coalesced po změně V4 stories | autoritativní seznam aktivních V4 příběhů (`activeStories`), i prázdný |
 | `state` | coalesced | doménový patch (`race`, `bio`, `system`) |
 | `event` | okamžitě | transientní událost — legacy nebo V4 podle flagu |
 
@@ -888,10 +888,10 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
   "monotonicMs": 120000,
   "priority": 10,
   "dedupeKey": "lap:12",
-  "correlationId": "lap:12",
-  "storyKey": "lap:12",
+  "correlationId": "run:1:lap:12",
+  "storyKey": "run:1:lap:12",
   "subject": { "carId": "player" },
-  "metrics": { "lap": 12, "lapTime": 92.4 },
+  "metrics": { "lap": 12, "lapTime": 92.4, "runEpoch": 1 },
   "copy": { "headlineToken": "lap.headline", "statusToken": "lap.status" },
   "presentation": {
     "widget": "lap_complete",
@@ -906,7 +906,25 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 
 Časy v `metrics` jsou **sekundy** (iRSDK float). HUD je formátuje jako `m:ss.fff` a delty jako `+0.318` / `-0.418`. Do WS neposílej předformátované stringy.
 
-**`STATE_SNAPSHOT`** — druhá zpráva po reconnectu, pokud manager drží aktivní V4 stories:
+`runEpoch` rozlišuje opakované starty pod stejným iRacing session klíčem. Po potvrzeném přetočení `SessionTime` se zvýší a `correlationId` dostane prefix `run:<epoch>:`. ENTER/UPDATE/EXIT z předchozího runu se proto nemohou spárovat s novým závodem.
+
+Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniStory`:
+
+```json
+{
+  "storyId": "story:1:42",
+  "storyRevision": 2,
+  "runEpoch": 1,
+  "heroOrderRevision": 3,
+  "correlationId": "run:1:battle:hunting:17",
+  "eventType": "HUNTING",
+  "state": "speaking"
+}
+```
+
+`state` je `ready`, `building`, `committed`, `speaking`, `resolved`, `completed`, `interrupted` nebo `invalidated`. Vyšší `storyRevision` je autoritativní; opožděný nižší stav se ignoruje.
+
+**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`, ale odstraní ji až TTS `completed`/`interrupted`/`invalidated` nebo reset. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
 
 ```json
 {
@@ -916,13 +934,13 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
       "eventType": "HUNTING",
       "phase": "ACTIVE",
       "sequence": 7,
-      "correlationId": "battle:hunting:17"
+      "correlationId": "run:1:battle:hunting:17"
     }
   ]
 }
 ```
 
-Frontend (`overlay.js`) aplikuje `activeStories` před live streamem, aby reconnect obnovil persistentní battle / pit widgety. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
+Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
 
 ### Overlay session tape (JSONL)
 
@@ -936,15 +954,17 @@ Každý řádek má hodiny v sekundách:
 | `t_mono` | od otevření tape — **tohle používá `--replay`** (nespí na VOD offsetu) |
 | `t_stream` | od startu OBS streamu (`null` když nestreamuješ) |
 | `t_session` | iRacing `SessionTime` |
-| `t_green` | od prvního `SessionState=4` (Racing) na tomto tape |
+| `t_green` | od prvního `SessionState=4` (Racing) v aktuálním `run_epoch` |
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`.
+Každý řádek navíc nese `run_epoch`. Potvrzený restart závodu ve stejné session zachová soubor, `t_mono` i `t_stream`, zapíše řádek `run_reset` a vynuluje pouze původ `t_green` pro nový run.
+
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`/`run_reset`.
 
 Řádky `commentary` a `llm_polish` se zapisují **jen při runtime DEBUG** (`GET/POST /logging/level` → `DEBUG`) — pro offline vyhodnocení speak/skip a LLM request/response bez spamu na disk. Ostatní tape typy (`event`, `decision`, …) zůstávají pod `[overlay] session_tape`.
 
 | Typ | Obsah |
 |-----|--------|
-| `commentary` | speak/skip z CommentaryDirector (`action`, `reason`, `eventType`, `nodeId`, `text`, …) |
+| `commentary` | enqueue/speak/skip a MiniStory lifecycle (`action`, `reason`, `eventType`, `nodeId`, `text`, `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision`, …) |
 | `llm_polish` | jeden polish pokus (`outcome`, `skeleton`, `spoken`, `request`, `response`, `latencyMs`, …) |
 
 **Event catalog**
