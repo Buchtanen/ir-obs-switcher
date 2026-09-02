@@ -7,16 +7,21 @@ from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.graph_runtime import GraphScoringSettings, SequenceGraphRuntime
 from irswitch.commentary.tts import NullTtsSink
 from irswitch.events.envelope import EventEnvelope, make_envelope
-from irswitch.overlay.settings import CommentarySettings
+from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
 
 
-def _director(**score_overrides: float) -> tuple[CommentaryDirector, SequenceGraphRuntime]:
+def _director(
+    *,
+    defer: bool = False,
+    **score_overrides: float,
+) -> tuple[CommentaryDirector, SequenceGraphRuntime]:
     graph = load_sequence_graph()
     settings = CommentarySettings(
         enabled=True,
         cooldown_s=0.0,
         use_hr_emotion=False,
         graph_runtime_mode="active",
+        scheduler=CommentarySchedulerSettings(defer_enabled=defer),
     )
     director = CommentaryDirector(graph=graph, settings=settings, sink=NullTtsSink())
     runtime = SequenceGraphRuntime(
@@ -53,6 +58,20 @@ def _field_fact(event_id: str, *, priority: int = 99) -> EventEnvelope:
         priority=priority,
         correlation_id="field:position",
         metrics={"fact": "position", "position": 5},
+    )
+
+
+def _side_by_side(event_id: str, *, priority: int = 1, target: int = 7) -> EventEnvelope:
+    return make_envelope(
+        event_type="SIDE_BY_SIDE",
+        event_id=event_id,
+        sequence=int(event_id.rsplit(":", 1)[-1]),
+        phase="ENTER",
+        mode="RACE",
+        priority=priority,
+        correlation_id=f"battle:{target}",
+        target={"car_id": str(target), "display_name": "Rossi"},
+        metrics={"gap": 0.2, "targetCarIdx": target, "position": 5},
     )
 
 
@@ -167,3 +186,16 @@ def test_active_incoming_filler_batch_does_not_request_another_filler() -> None:
     assert spoken is not None
     assert spoken.event_type == "FIELD_FACT"
     assert calls == []
+
+
+def test_active_busy_defer_replacement_uses_graph_score_not_transport_priority() -> None:
+    director, _runtime = _director(defer=True)
+    director._busy_until = 10.0
+
+    assert director.observe([_hunting("event:1", priority=99)], None, 1.0) is None
+    assert director.observe([_side_by_side("event:2", priority=1)], None, 2.0) is None
+
+    spoken = director.tick(10.1)
+    assert spoken is not None
+    assert spoken.event_type == "SIDE_BY_SIDE"
+    assert spoken.editorial_score == 70.0

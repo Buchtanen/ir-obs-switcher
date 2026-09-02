@@ -689,7 +689,12 @@ class CommentaryDirector:
             )
             if draft is None:
                 continue
-            ok = self._scheduler.park(draft, priority=envelope.priority, now=now)
+            defer_priority = (
+                draft.editorial_score
+                if draft.editorial_score is not None
+                else float(envelope.priority)
+            )
+            ok = self._scheduler.park(draft, priority=defer_priority, now=now)
             self._record(
                 action="skipped",
                 reason="deferred" if ok else "deferred_dropped",

@@ -16,14 +16,14 @@ _HERO_ORDER_TYPES = frozenset({"POSITION_GAINED", "POSITION_LOST"})
 class _HeapItem:
     """Max-heap via negated priority; stable with seq."""
 
-    sort_key: tuple[int, float, int]
+    sort_key: tuple[float, float, int]
     item: DeferredSpeech = field(compare=False)
 
 
 @dataclass(frozen=True)
 class DeferredSpeech:
     utterance: CommentaryUtterance
-    priority: int
+    priority: float
     expires_at: float
     parked_at: float
 
@@ -58,12 +58,12 @@ class SpeechScheduler:
         # order changes have editorial preemption rights.
         return event_type in _HERO_ORDER_TYPES and current_event_type != event_type
 
-    def park(self, utterance: CommentaryUtterance, *, priority: int, now: float) -> bool:
+    def park(self, utterance: CommentaryUtterance, *, priority: float, now: float) -> bool:
         """Queue best utterance only. Returns False if dropped (lower prio / disabled)."""
         if not self.settings.defer_enabled:
             return False
         self.expire(now)
-        incoming = int(priority)
+        incoming = float(priority)
         if self._heap:
             best_prio = max(entry.item.priority for entry in self._heap)
             if incoming < best_prio:
@@ -124,7 +124,7 @@ class SpeechScheduler:
             return False
         return (now - last_spoke_at) >= float(self.settings.max_silence_s)
 
-    def _evict_lowest(self, incoming_priority: int) -> bool:
+    def _evict_lowest(self, incoming_priority: float) -> bool:
         """Evict lowest-priority parked item if incoming is higher-or-equal. Else reject."""
         if not self._heap:
             return True
