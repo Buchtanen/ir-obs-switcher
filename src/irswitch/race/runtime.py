@@ -172,6 +172,8 @@ class RaceRuntime:
             envelope, locale=self._overlay_settings().language
         )
         sink = director.sink
+        if hasattr(sink, "on_story_debug"):
+            sink.on_story_debug = self._ministory_tape_hook
         previous_spoken = getattr(sink, "on_spoken_text", None)
 
         def _spoken(text: str) -> None:
@@ -374,6 +376,11 @@ class RaceRuntime:
             time.monotonic(),
             self._last_race,
         )
+
+    def _ministory_tape_hook(self, entry: dict[str, Any]) -> None:
+        if not self._tape_debug_enabled() or self.mode == "replay":
+            return
+        self._tape.record_commentary(entry, time.monotonic(), self._last_race)
 
     def _build_commentary(self, overlay: OverlaySettings) -> CommentaryDirector | None:
         """Load the sequence graph once. Fail-soft if the JSON is broken."""

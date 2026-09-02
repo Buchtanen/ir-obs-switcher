@@ -948,7 +948,7 @@ Každý řádek navíc nese `run_epoch`. Potvrzený restart závodu ve stejné s
 
 | Typ | Obsah |
 |-----|--------|
-| `commentary` | speak/skip z CommentaryDirector (`action`, `reason`, `eventType`, `nodeId`, `text`, …) |
+| `commentary` | enqueue/speak/skip a MiniStory lifecycle (`action`, `reason`, `eventType`, `nodeId`, `text`, `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision`, …) |
 | `llm_polish` | jeden polish pokus (`outcome`, `skeleton`, `spoken`, `request`, `response`, `latencyMs`, …) |
 
 **Event catalog**

@@ -37,6 +37,7 @@ from irswitch.events.envelope import EventEnvelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
+from irswitch.race.ministory import MiniStoryRegistry
 from irswitch.race.watcher_log import WatcherLog, watch_name_for
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,7 @@ class CommentaryDirector:
     watcher_log: WatcherLog | None = None
     on_decision: Callable[[dict[str, Any], float], None] | None = None
     _composition_context: dict[str, Any] = field(default_factory=dict, repr=False)
+    story_registry: MiniStoryRegistry | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -439,6 +441,9 @@ class CommentaryDirector:
             past_framing=False,
             hero_names=hero_names,
             hero_name=hero_name,
+            story_token=(
+                self.story_registry.token_for(envelope) if self.story_registry is not None else None
+            ),
         )
 
     def observe(
@@ -548,7 +553,13 @@ class CommentaryDirector:
                 logger.warning("tts interrupt failed", exc_info=True)
         self._busy_until = now
         self._global_ready_at = now
+        self._scheduler.clear()
         self._record(action="skipped", reason="interrupted", now=now)
+
+    def hero_order_changed(self, now: float) -> None:
+        """The only routine race change allowed to preempt active narration."""
+        if self._is_busy(now):
+            self._hard_interrupt(now)
 
     def _park_ranked(
         self,
@@ -606,6 +617,7 @@ class CommentaryDirector:
                 fact_pack=utterance.fact_pack,
                 composition_path=utterance.composition_path,
                 graph_path=utterance.graph_path,
+                story_token=utterance.story_token,
             )
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
@@ -787,6 +799,9 @@ class CommentaryDirector:
             fact_pack=fact_pack,
             composition_path=composition_path,
             graph_path=graph_path,
+            story_token=(
+                self.story_registry.token_for(envelope) if self.story_registry is not None else None
+            ),
         )
 
     def _sector_speak_gate(self, envelope: EventEnvelope, now: float) -> str | None:

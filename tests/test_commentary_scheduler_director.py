@@ -47,6 +47,17 @@ def _incident(*, now_ms: int = 10100) -> object:
     )
 
 
+def _position(*, now_ms: int = 10100) -> object:
+    return make_envelope(
+        event_type="POSITION_GAINED",
+        phase="RESULT",
+        mode="RACE",
+        priority=95,
+        monotonic_ms=now_ms,
+        metrics={"position": 4},
+    )
+
+
 def test_busy_defers_instead_of_drop() -> None:
     director = _director(defer=True)
     first = director.observe([_overtake()], None, 10.0)
@@ -71,12 +82,14 @@ def test_busy_without_defer_still_skips() -> None:
     assert director.decisions(1)[-1]["reason"] == "busy"
 
 
-def test_hard_interrupt_clears_busy_for_incident() -> None:
+def test_hero_order_change_interrupts_but_incident_does_not() -> None:
     director = _director(defer=True, hard_interrupt=True)
     assert director.observe([_overtake()], None, 10.0) is not None
-    spoken = director.observe([_incident()], None, 10.2)
+    assert director.observe([_incident()], None, 10.1) is None
+    assert director.decisions(1)[-1]["reason"] == "deferred"
+    spoken = director.observe([_position()], None, 10.2)
     assert spoken is not None
-    assert spoken.event_type == "INCIDENT"
+    assert spoken.event_type == "POSITION_GAINED"
     reasons = [d["reason"] for d in director.decisions(5)]
     assert "interrupted" in reasons
 

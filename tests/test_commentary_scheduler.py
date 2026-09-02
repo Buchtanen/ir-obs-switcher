@@ -78,13 +78,14 @@ def test_ttl_expiry() -> None:
     assert sched.pop_ready(16.0) is None
 
 
-def test_hard_interrupt_only_for_incident_when_enabled() -> None:
+def test_hard_interrupt_only_for_hero_order_change() -> None:
     off = SpeechScheduler(settings=CommentarySchedulerSettings(hard_interrupt=False))
     assert off.should_hard_interrupt("INCIDENT", current_event_type="HUNTING") is False
+    assert off.should_hard_interrupt("POSITION_GAINED", current_event_type="HUNTING") is True
     on = SpeechScheduler(settings=CommentarySchedulerSettings(hard_interrupt=True))
-    assert on.should_hard_interrupt("INCIDENT", current_event_type="HUNTING") is True
     assert on.should_hard_interrupt("INCIDENT", current_event_type="FINISH") is False
     assert on.should_hard_interrupt("OVERTAKE", current_event_type="HUNTING") is False
+    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="HUNTING") is True
 
 
 def test_silence_due() -> None:

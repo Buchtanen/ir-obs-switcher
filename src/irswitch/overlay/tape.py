@@ -231,6 +231,12 @@ class OverlaySessionTape:
                 "nodeId": entry.get("nodeId") or entry.get("node_id") or "",
                 "emotion": entry.get("emotion") or "",
                 "text": entry.get("text") or "",
+                "storyId": entry.get("storyId") or entry.get("story_id") or "",
+                "storyRevision": entry.get("storyRevision", entry.get("story_revision")),
+                "runEpoch": entry.get("runEpoch", entry.get("run_epoch")),
+                "heroOrderRevision": entry.get(
+                    "heroOrderRevision", entry.get("hero_order_revision")
+                ),
             },
         )
 

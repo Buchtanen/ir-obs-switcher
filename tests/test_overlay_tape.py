@@ -78,6 +78,10 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
             "nodeId": "lap.complete",
             "emotion": "neutral",
             "text": "Lap in the books.",
+            "storyId": "story:0:1",
+            "storyRevision": 1,
+            "runEpoch": 0,
+            "heroOrderRevision": 0,
         },
         111.3,
         _race(),
@@ -96,6 +100,10 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     commentary = next(row for row in rows if row["type"] == "commentary")
     assert commentary["text"] == "Lap in the books."
     assert commentary["action"] == "speak"
+    assert commentary["storyId"] == "story:0:1"
+    assert commentary["storyRevision"] == 1
+    assert commentary["runEpoch"] == 0
+    assert commentary["heroOrderRevision"] == 0
     assert "scene" in types
     assert tape.path is None
 

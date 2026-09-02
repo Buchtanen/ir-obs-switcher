@@ -9,7 +9,7 @@ from irswitch.commentary.tts import CommentaryUtterance
 from irswitch.overlay.settings import CommentarySchedulerSettings
 
 _INCIDENT_TYPES = frozenset({"INCIDENT", "INVALID_LAP"})
-_NO_INTERRUPT_TYPES = frozenset({"FINISH", "FINAL_LAP"})
+_HERO_ORDER_TYPES = frozenset({"POSITION_GAINED", "POSITION_LOST"})
 
 
 @dataclass(order=True)
@@ -53,13 +53,10 @@ class SpeechScheduler:
         return float(self.settings.default_ttl_s)
 
     def should_hard_interrupt(self, event_type: str, *, current_event_type: str | None) -> bool:
-        if not self.settings.hard_interrupt:
-            return False
-        if event_type not in _INCIDENT_TYPES:
-            return False
-        if current_event_type in _NO_INTERRUPT_TYPES:
-            return False
-        return True
+        # ``hard_interrupt`` remains parseable for compatibility, but incidents
+        # no longer tear down a committed mini-story. Only authoritative hero
+        # order changes have editorial preemption rights.
+        return event_type in _HERO_ORDER_TYPES and current_event_type != event_type
 
     def park(self, utterance: CommentaryUtterance, *, priority: int, now: float) -> bool:
         """Queue best utterance only. Returns False if dropped (lower prio / disabled)."""

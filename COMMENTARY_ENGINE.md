@@ -31,6 +31,7 @@ iRacing / BLE HR
        └─ llm_polish=true: microplan + selected facts + style card
     → validate_utterance
     → independent TtsSink worker (optional grounded LLM generation)
+    → MiniStory commit gate against latest run/order/relation state
     → Windows SAPI / espeak-ng / NullTtsSink
 ```
 
@@ -104,6 +105,18 @@ The model writes one or two freshly phrased sentences inside the node TTS limit.
 
 All 54 active graph nodes and all 24 edges have compatibility tests. `leader_change` (prio 75) speaks class P1 changes; do not invent an on-track pass. Parade pads repeat until green (cap 12, 20 s). `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
 
+### Editorial mini-story lifecycle
+
+`MiniStoryRegistry` separates the lifetime of source telemetry from the lifetime of narration. The commentary consumer keeps a thread-safe fact ledger while Qwen runs on the serial TTS worker. Immediately after generation and before audio starts, the worker atomically checks the story token:
+
+- unchanged live identity is committed and receives a narrative lease;
+- a normal relation `EXIT` before commit becomes a short result-oriented realization (one remaining Qwen call at most, never more than two calls total), with a deterministic result sentence as fallback;
+- a session/run reset, relation identity mismatch, or hero-order revision mismatch invalidates the uncommitted line;
+- an ordinary `EXIT` after speech starts records resolution but lets the committed narration finish;
+- an authoritative hero class-position change is the only routine hard preemption. It invalidates waiting stories, interrupts the active backend process, restores ducking in `finally`, and allows the new position story to lead.
+
+Deferred candidates remain depth-one and replace lower-or-equal priority drafts, so an old FIFO backlog is never narrated. DEBUG tape commentary rows include `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision` and commit/speaking/completed/interrupted actions.
+
 ## TTS validator
 
 `validate_utterance()` rejects lines that will sound wrong:
@@ -133,7 +146,7 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** sits behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM generation runs (#180). With `llm_polish=true`, LAN Ollama `qwen3:4b-instruct-2507-q4_K_M` receives the anchor and fact plan and may use the full node budget for one or two sentences. Invalid output retries the same plan up to `llm_max_attempts` inside `llm_timeout_s`; timeout, transport failure or exhausted validation falls back to the anchor. Before generation/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** sits behind the in-flight line (replace-by-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM generation runs (#180). With `llm_polish=true`, LAN Ollama `qwen3:4b-instruct-2507-q4_K_M` receives the compact microplan and selected facts and may use the full node budget for one or two sentences. One hard semantic rejection may retry; timeout/transport failure and exhausted validation immediately use the complete canonical fact realization. The mini-story commit gate then checks current run, hero order and source resolution before starting audio. Before generation/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). The featured driver's name/nickname is mixed into he/him/his only. Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test
