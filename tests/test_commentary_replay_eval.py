@@ -5,12 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from irswitch.commentary.replay_eval import (
     EvaluationCase,
     evaluate_case,
     evaluate_corpus,
     load_corpus,
     load_polish_records,
+    replay_live,
     resolve_cases,
     summarize,
 )
@@ -60,6 +63,13 @@ def test_corpus_captures_known_semantic_and_source_defects() -> None:
     assert report["issuesByCode"]["ineligible_source_story"] >= 3
     assert report["issuesByCode"]["forbidden_term"] >= 3
     assert report["issuesByCode"]["invented_selected_fact_number"] >= 1
+
+
+def test_live_replay_rejects_non_http_endpoint_before_opening() -> None:
+    record = load_polish_records(TAPES)[0]
+
+    with pytest.raises(ValueError, match="must use http or https"):
+        replay_live(record, "file:///tmp/commentary-response.json")
 
 
 def test_selected_fact_number_check_does_not_use_global_telemetry(tmp_path: Path) -> None:

@@ -653,7 +653,7 @@ Phases 1–6 are implemented on the feature branch and covered by focused plus f
 
 Current automated evidence:
 
-- `pytest -q`: 1,352 passed;
+- `pytest -q`: 1,353 passed;
 - `ruff check src tests`: passed;
 - `black --check src tests`: 320 files unchanged;
 - `mypy src/irswitch`: 173 source files passed;

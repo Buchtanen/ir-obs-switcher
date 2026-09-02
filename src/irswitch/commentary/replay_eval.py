@@ -10,6 +10,7 @@ import argparse
 import json
 import re
 import statistics
+import urllib.parse
 import urllib.request
 from collections import Counter
 from collections.abc import Iterable, Sequence
@@ -345,13 +346,17 @@ def evaluate_corpus(
 
 def replay_live(record: PolishRecord, base_url: str, timeout_s: float = 12.0) -> str:
     """Repeat one stored request against an OpenAI-compatible local endpoint."""
+    parsed = urllib.parse.urlsplit(base_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("live replay URL must use http or https and include a host")
     request = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions",
         data=json.dumps(record.request).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=timeout_s) as response:  # noqa: S310
+    # B310 is suppressed only after the explicit HTTP(S) scheme and host validation above.
+    with urllib.request.urlopen(request, timeout=timeout_s) as response:  # noqa: S310  # nosec B310
         payload = json.loads(response.read().decode("utf-8"))
     choices = payload.get("choices") if isinstance(payload, dict) else None
     if not isinstance(choices, list) or not choices:
