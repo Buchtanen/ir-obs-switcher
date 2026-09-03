@@ -55,6 +55,40 @@ def test_exit_during_building_becomes_resolved_commit() -> None:
     assert decision.fact_pack["microplan"]["story_state"] == "resolved"
 
 
+def test_finish_resolution_preserves_session_result_fact() -> None:
+    registry = MiniStoryRegistry()
+    registry.observe_context(_context())
+    finish = make_envelope(
+        event_type="FINISH",
+        phase="RESULT",
+        mode="RACE",
+        correlation_id="finish:7",
+        subject=EventSubject(car_id="7"),
+        metrics={"position": 12},
+    )
+    token = registry.observe(finish).token
+    assert token is not None
+    registry.observe(make_envelope(**{**finish.__dict__, "phase": "EXIT"}))
+    decision = registry.commit(
+        token,
+        {
+            "version": "commentary-facts/3",
+            "canonical": "His race is complete.",
+            "required_facts": [{"id": "beat:finish", "text": "His race is complete."}],
+            "optional_facts": [],
+            "forbidden_claims": [],
+            "microplan": {"relation": "session_result", "story_state": "live"},
+            "style_card": {"id": "session_result"},
+        },
+        locale="en",
+    )
+    assert decision.status == CommitStatus.RESOLVED
+    assert decision.canonical == "His race is complete."
+    assert decision.fact_pack["microplan"]["relation"] == "session_result"
+    assert decision.fact_pack["required_facts"][0]["id"] == "beat:finish"
+    assert decision.fact_pack["style_card"]["id"] == "session_result"
+
+
 def test_exit_after_speech_commit_does_not_cancel_lease() -> None:
     registry = MiniStoryRegistry()
     registry.observe_context(_context())

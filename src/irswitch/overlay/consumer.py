@@ -232,6 +232,20 @@ class OverlayConsumer:
                     self._story_wires[story_id] = deepcopy(wire)
                     if story.get("state") == "resolved" and story_id in self._story_leases:
                         resolved = deepcopy(self._story_leases[story_id])
+                        for key in (
+                            "eventId",
+                            "sequence",
+                            "sessionId",
+                            "eventType",
+                            "mode",
+                            "priority",
+                            "dedupeKey",
+                            "correlationId",
+                            "occurredAt",
+                            "monotonicMs",
+                        ):
+                            if key in wire:
+                                resolved[key] = deepcopy(wire[key])
                         resolved["phase"] = "RESULT"
                         resolved["metrics"] = deepcopy(wire.get("metrics") or {})
                         resolved["miniStory"] = _story_meta(story, state="resolved")

@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import struct
+import subprocess
 from pathlib import Path
+
+import pytest
 
 from irswitch.overlay.http import web_root
 
@@ -82,6 +86,38 @@ def test_v4_story_snapshots_reconcile_without_clearing_leased_cards() -> None:
     body = script.split("applyStateSnapshot(stories) {", 1)[1].split("\n  },", 1)[0]
     assert "this.clear()" not in body
     assert "miniStory" in script
+    assert "isStale(envelope, { snapshot: Boolean(options.snapshot) })" in script
+    assert "seq < prev || (seq === prev && !snapshot)" in script
+    assert "delete node.dataset.storyLease" in script
+
+
+def test_v4_equal_sequence_snapshot_is_fresh_and_terminal_snapshot_hides() -> None:
+    node_bin = shutil.which("node")
+    if node_bin is None:
+        pytest.skip("node is not installed")
+    module_uri = (web_root() / "overlay" / "js" / "display-v4.js").as_uri()
+    program = f"""
+      const mod = await import({json.dumps(module_uri)});
+      mod.DisplayV4.clear();
+      const event = {{ correlationId: 'battle:7', sequence: 7, phase: 'ACTIVE' }};
+      if (mod.isStale(event)) throw new Error('first event rejected');
+      if (mod.isStale(event, {{ snapshot: true }})) throw new Error('equal snapshot rejected');
+      if (!mod.isStale(event)) throw new Error('duplicate live event accepted');
+      const classes = {{ add() {{}}, remove() {{}} }};
+      const card = {{ dataset: {{ snapshotManaged: 'true' }}, classList: classes, remove() {{}} }};
+      mod.DisplayV4.active.set('battle:7', card);
+      mod.DisplayV4.applyStateSnapshot([]);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      if (mod.DisplayV4.active.size !== 0) throw new Error('terminal snapshot left card active');
+    """
+    completed = subprocess.run(
+        [node_bin, "--experimental-default-type=module", "--input-type=module", "-e", program],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_v4_themes_have_expected_family_dirs() -> None:

@@ -105,6 +105,24 @@ def test_disabled_flag_is_silent_even_with_text() -> None:
     assert sink.spoken == []
 
 
+def test_same_direction_position_change_does_not_interrupt_finish_or_itself() -> None:
+    sink = NullTtsSink(force_busy=True)
+    director = CommentaryDirector(
+        graph=_graph(filled=True),
+        settings=CommentarySettings(enabled=True),
+        sink=sink,
+    )
+    director._current_event_type = "POSITION_LOST"
+    director.hero_order_changed(10.0, "POSITION_LOST")
+    assert sink.interrupted == 0
+    director._current_event_type = "FINISH"
+    director.hero_order_changed(11.0, "POSITION_LOST")
+    assert sink.interrupted == 0
+    director._current_event_type = "HUNTING"
+    director.hero_order_changed(12.0, "POSITION_LOST")
+    assert sink.interrupted == 1
+
+
 def test_speaks_filled_variant_and_binds_slots() -> None:
     sink = NullTtsSink()
     director = CommentaryDirector(

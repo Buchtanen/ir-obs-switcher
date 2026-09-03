@@ -940,7 +940,7 @@ Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniSt
 }
 ```
 
-Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
+Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Autoritativní snapshot smí převzít už vykreslenou kartu se stejným `correlationId` a stejnou `sequence`; rovná sekvence proto není pro snapshot považována za stale. Převzatá karta se odstraní, jakmile v dalším snapshotu chybí. Leased `EXIT` se publikuje jako `RESULT` s identitou, sekvencí a časy právě přijatého EXIT eventu. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; po zániku lease neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
 
 ### Overlay session tape (JSONL)
 

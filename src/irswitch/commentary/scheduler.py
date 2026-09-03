@@ -5,6 +5,7 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass, field
 
+from irswitch.commentary.priorities import editorial_priority
 from irswitch.commentary.tts import CommentaryUtterance
 from irswitch.overlay.settings import CommentarySchedulerSettings
 
@@ -56,7 +57,11 @@ class SpeechScheduler:
         # ``hard_interrupt`` remains parseable for compatibility, but incidents
         # no longer tear down a committed mini-story. Only authoritative hero
         # order changes have editorial preemption rights.
-        return event_type in _HERO_ORDER_TYPES and current_event_type != event_type
+        if event_type not in _HERO_ORDER_TYPES or current_event_type == event_type:
+            return False
+        if current_event_type is None:
+            return True
+        return editorial_priority(event_type) > editorial_priority(current_event_type)
 
     def park(self, utterance: CommentaryUtterance, *, priority: float, now: float) -> bool:
         """Queue best utterance only. Returns False if dropped (lower prio / disabled)."""

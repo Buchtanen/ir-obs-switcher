@@ -101,6 +101,15 @@ class RecentUtteranceHistory:
         self._tails.append(utterance_tail(text, n=self.tail_tokens))
         self._raws.append(str(text).strip())
 
+    def forget_last(self, text: str) -> None:
+        """Undo an optimistic remember when a queued line never becomes audible."""
+        raw = str(text).strip()
+        if not self._raws or self._raws[-1] != raw:
+            return
+        self._raws.pop()
+        self._norms.pop()
+        self._tails.pop()
+
     def recent(self, limit: int | None = None) -> tuple[str, ...]:
         """Return a bounded oldest-to-newest copy for fact-pack anti-repeat hints."""
         if limit is None:

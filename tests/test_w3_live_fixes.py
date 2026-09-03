@@ -56,7 +56,7 @@ def test_polish_prompt_omits_recent_history() -> None:
     assert "Ignore prior commentary" in req["messages"][0]["content"]
 
 
-def test_process_sink_polish_fail_speaks_skeleton(monkeypatch) -> None:
+def test_process_sink_polish_fail_rejects_skeleton(monkeypatch) -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
     spoken: list[str] = []
@@ -100,8 +100,7 @@ def test_process_sink_polish_fail_speaks_skeleton(monkeypatch) -> None:
             node=node,
         )
     )
-    assert spoken
-    assert "thirty" in spoken[0].lower() or "30" in spoken[0]
+    assert spoken == []
 
 
 def test_director_decision_hook_survives_ring_buffer() -> None:

@@ -4,7 +4,7 @@ import { fmtBpmDelta, fmtDelta, fmtGap, fmtLapTime, fmtRate } from "./timing-for
 
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.18";
+const ASSET_CACHE = "1.2.19";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
 
@@ -352,12 +352,12 @@ function applyIconMode(iconEl) {
   iconEl.classList.toggle("mode-full-canvas", mode !== "glyph");
 }
 
-function isStale(envelope) {
+export function isStale(envelope, { snapshot = false } = {}) {
   const cid = envelope.correlationId || envelope.storyKey || envelope.eventId;
   if (!cid) return false;
   const seq = Number(envelope.sequence || 0);
   const prev = lastSequence.get(cid) || 0;
-  if (seq <= prev && envelope.phase !== "EXIT") return true;
+  if ((seq < prev || (seq === prev && !snapshot)) && envelope.phase !== "EXIT") return true;
   lastSequence.set(cid, Math.max(prev, seq));
   return false;
 }
@@ -1160,7 +1160,7 @@ export const DisplayV4 = {
   show(envelope, options = {}) {
     if (!envelope || envelope.format !== "v4") return null;
     const golden = Boolean(options.golden || options.container);
-    if (!golden && isStale(envelope)) return null;
+    if (!golden && isStale(envelope, { snapshot: Boolean(options.snapshot) })) return null;
     const phase = String(envelope.phase || "RESULT").toUpperCase();
     if (phase === "EXIT") {
       this.hide(widgetKey(envelope, resolveStateKey(envelope), { golden }));
@@ -1195,6 +1195,10 @@ export const DisplayV4 = {
       node.dataset.storyLease = "true";
       node.dataset.storyId = envelope.miniStory.storyId || "";
       node.dataset.storyRevision = String(envelope.miniStory.storyRevision || 0);
+    } else {
+      delete node.dataset.storyLease;
+      delete node.dataset.storyId;
+      delete node.dataset.storyRevision;
     }
     node.classList.toggle("phase-compact", phase === "COMPACT");
     const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";

@@ -82,16 +82,17 @@ def test_busy_without_defer_still_skips() -> None:
     assert director.decisions(1)[-1]["reason"] == "busy"
 
 
-def test_hero_order_change_interrupts_but_incident_does_not() -> None:
+def test_waiting_incident_outranks_later_position_change() -> None:
     director = _director(defer=True, hard_interrupt=True)
     assert director.observe([_overtake()], None, 10.0) is not None
     assert director.observe([_incident()], None, 10.1) is None
     assert director.decisions(1)[-1]["reason"] == "deferred"
-    spoken = director.observe([_position()], None, 10.2)
+    assert director.observe([_position()], None, 10.2) is None
+    assert director.decisions(1)[-1]["reason"] == "deferred_dropped"
+    flush_at = max(director._busy_until, director._global_ready_at) + 0.05
+    spoken = director.tick(flush_at)
     assert spoken is not None
-    assert spoken.event_type == "POSITION_GAINED"
-    reasons = [d["reason"] for d in director.decisions(5)]
-    assert "interrupted" in reasons
+    assert spoken.event_type == "INCIDENT"
 
 
 def test_observed_busy_defers_after_estimate_expires() -> None:

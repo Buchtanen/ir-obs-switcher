@@ -554,10 +554,6 @@ def _current_clauses(
                 ),
                 details,
             )
-        return (
-            _Clause("beat", "Ztrácí pozici" if cs else "He loses a position", ("beat:loss",)),
-            details,
-        )
         if position:
             return (
                 _Clause(
@@ -567,6 +563,10 @@ def _current_clauses(
                 ),
                 details,
             )
+        return (
+            _Clause("beat", "Ztrácí pozici" if cs else "He loses a position", ("beat:loss",)),
+            details,
+        )
 
     if event == "FINISH":
         # A FINISH event does not guarantee a confirmed final classification.

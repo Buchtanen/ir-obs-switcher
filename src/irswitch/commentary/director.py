@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+import queue
 import random
+import time
 from collections import deque
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -30,6 +32,7 @@ from irswitch.commentary.graph_runtime import (
     candidate_from_envelope,
 )
 from irswitch.commentary.opener import OPENER_EVENTS, STREAM_START, OpenerMutex
+from irswitch.commentary.priorities import editorial_priority
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
 from irswitch.commentary.speech_hero import mix_hero_name, resolve_hero_names
@@ -142,6 +145,9 @@ class CommentaryDirector:
     graph_runtime: SequenceGraphRuntime | None = field(default=None, repr=False)
     _last_graph_winner: GraphSelection | None = field(default=None, init=False, repr=False)
     _last_graph_error: str | None = field(default=None, init=False, repr=False)
+    _rejected_candidates: queue.SimpleQueue[tuple[CommentaryUtterance, str, float]] = field(
+        default_factory=queue.SimpleQueue, init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         size = max(1, int(self.decision_log_size))
@@ -158,7 +164,52 @@ class CommentaryDirector:
         ):
             sink_with_hook: Any = self.sink
             sink_with_hook.on_spoken_text = self._recent.remember
+        if (
+            hasattr(self.sink, "on_candidate_rejected")
+            and getattr(self.sink, "on_candidate_rejected", None) is None
+        ):
+            rejection_sink: Any = self.sink
+            rejection_sink.on_candidate_rejected = self._candidate_rejected
         self._sync_scheduler_settings()
+
+    def _candidate_rejected(self, utterance: CommentaryUtterance, outcome: str) -> None:
+        """Marshal a worker-thread rejection back onto the consumer lane."""
+        self._rejected_candidates.put((utterance, outcome, time.monotonic()))
+
+    def _drain_candidate_rejections(self) -> None:
+        """Release optimistic selection state on the single consumer lane."""
+        while True:
+            try:
+                utterance, outcome, now = self._rejected_candidates.get_nowait()
+            except queue.Empty:
+                return
+            self._apply_candidate_rejection(utterance, outcome, now)
+
+    def _apply_candidate_rejection(
+        self, utterance: CommentaryUtterance, outcome: str, now: float
+    ) -> None:
+        self._busy_until = min(self._busy_until, now)
+        self._global_ready_at = min(self._global_ready_at, now)
+        self._cooldowns.pop(utterance.node_id, None)
+        if (
+            self._last is not None
+            and self._last.node_id == utterance.node_id
+            and self._last.correlation_id == utterance.correlation_id
+        ):
+            self._last = None
+        self._recent.forget_last(utterance.text)
+        if utterance.event_type in OPENER_EVENTS:
+            self.opener.reset()
+        if self._current_event_type == utterance.event_type:
+            self._current_event_type = None
+        self._record(
+            action="skipped",
+            reason="llm_polish_rejected",
+            now=now,
+            event_type=utterance.event_type,
+            node_id=utterance.node_id,
+            text=outcome,
+        )
 
     def note_hero_names(self, names: Sequence[str] | None) -> None:
         """iRacing-derived first/last tokens; config override still wins at mix time."""
@@ -224,6 +275,11 @@ class CommentaryDirector:
         self._composition_context = {}
         self._last_graph_winner = None
         self._last_graph_error = None
+        while True:
+            try:
+                self._rejected_candidates.get_nowait()
+            except queue.Empty:
+                break
         self._sync_scheduler_settings()
 
     def status_snapshot(self, now: float, *, enabled: bool | None = None) -> dict[str, Any]:
@@ -385,6 +441,7 @@ class CommentaryDirector:
         allow_filler: bool = True,
     ) -> CommentaryUtterance | None:
         """Idle flush / silence watchdog. Call once per race frame when enabled."""
+        self._drain_candidate_rejections()
         if not self.settings.enabled:
             return None
         self._sync_scheduler_settings()
@@ -512,7 +569,7 @@ class CommentaryDirector:
             correlation_id=envelope.correlation_id,
             estimated_seconds=min(node.tts.max_seconds, max(0.8, len(text.split()) * 0.35)),
             node=node,
-            priority=int(envelope.priority),
+            priority=editorial_priority(envelope.event_type, envelope.metrics),
             past_framing=False,
             hero_names=hero_names,
             hero_name=hero_name,
@@ -530,6 +587,7 @@ class CommentaryDirector:
         enabled: bool | None = None,
         language: str | None = None,
     ) -> CommentaryUtterance | None:
+        self._drain_candidate_rejections()
         if not (self.settings.enabled if enabled is None else enabled):
             if envelopes:
                 self._record(action="skipped", reason="disabled", now=now)
@@ -544,7 +602,7 @@ class CommentaryDirector:
 
         ranked = sorted(
             (env for env in envelopes if _is_speak_beat(env)),
-            key=lambda env: env.priority,
+            key=lambda env: editorial_priority(env.event_type, env.metrics),
             reverse=True,
         )
         ranked = _prefer_incident_over_aftermath(ranked)
@@ -648,9 +706,14 @@ class CommentaryDirector:
         self._scheduler.clear()
         self._record(action="skipped", reason="interrupted", now=now)
 
-    def hero_order_changed(self, now: float) -> None:
+    def hero_order_changed(self, now: float, event_type: str | None = None) -> None:
         """The only routine race change allowed to preempt active narration."""
-        if self._is_busy(now):
+        if self._is_busy(now) and (
+            event_type is None
+            or self._scheduler.should_hard_interrupt(
+                event_type, current_event_type=self._current_event_type
+            )
+        ):
             self._hard_interrupt(now)
 
     def _park_ranked(
@@ -677,11 +740,7 @@ class CommentaryDirector:
             )
             if draft is None:
                 continue
-            defer_priority = (
-                draft.editorial_score
-                if draft.editorial_score is not None
-                else float(envelope.priority)
-            )
+            defer_priority = float(draft.priority)
             ok = self._scheduler.park(draft, priority=defer_priority, now=now)
             self._record(
                 action="skipped",
@@ -902,7 +961,7 @@ class CommentaryDirector:
             correlation_id=envelope.correlation_id,
             estimated_seconds=duration,
             node=node,
-            priority=int(envelope.priority),
+            priority=editorial_priority(envelope.event_type, envelope.metrics),
             past_framing=False,
             hero_names=hero_names,
             hero_name=hero_name,
@@ -987,7 +1046,12 @@ class CommentaryDirector:
         if selected is not None:
             available.append(selected)
         order = {id(envelope): index for index, envelope in enumerate(ranked)}
-        available.sort(key=lambda env: (-env.priority, order.get(id(env), len(order))))
+        available.sort(
+            key=lambda env: (
+                -editorial_priority(env.event_type, env.metrics),
+                order.get(id(env), len(order)),
+            )
+        )
         return available
 
     def _has_graph_nodes(self, envelope: EventEnvelope) -> bool:

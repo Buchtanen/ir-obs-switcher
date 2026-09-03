@@ -1,7 +1,7 @@
 import { DisplayManager, applySysinfo, applyPersistentArt } from "./display.js";
 
 /** Bump with index.html ?v= so OBS CEF does not keep stale JS/CSS. */
-const OVERLAY_ASSET_VER = "1.2.18";
+const OVERLAY_ASSET_VER = "1.2.19";
 
 const BACKOFF = [1000, 2000, 5000, 10000];
 
