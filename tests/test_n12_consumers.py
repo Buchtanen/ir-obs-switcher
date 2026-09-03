@@ -216,7 +216,13 @@ async def test_source_exit_resolves_but_does_not_remove_building_story_lease() -
     await consumer.apply_story_transitions()
 
     resolved = {**story, "storyRevision": 2, "state": "resolved"}
-    exit_wire = {**enter, "phase": "EXIT", "metrics": {"lap": 4, "lapTime": 61.2}}
+    exit_wire = {
+        **enter,
+        "eventId": "session:LAP_COMPLETE:2",
+        "sequence": 2,
+        "phase": "EXIT",
+        "metrics": {"lap": 4, "lapTime": 61.2},
+    }
     await consumer.handle(
         _batch(
             stream_sequence=2,
@@ -229,6 +235,8 @@ async def test_source_exit_resolves_but_does_not_remove_building_story_lease() -
 
     assert bus.active_stories_v4[0]["phase"] == "RESULT"
     assert bus.active_stories_v4[0]["miniStory"] == {**resolved, "state": "resolved"}
+    assert bus.active_stories_v4[0]["sequence"] == 2
+    assert bus.active_stories_v4[0]["eventId"] == "session:LAP_COMPLETE:2"
 
 
 @pytest.mark.asyncio

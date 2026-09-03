@@ -7,8 +7,10 @@ import threading
 import time
 from typing import Any
 
+from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.duck import reset_shared_ducker
-from irswitch.commentary.graph import GraphNode, SlotSpec, TtsLimits
+from irswitch.commentary.graph import GraphNode, SlotSpec, TtsLimits, load_sequence_graph
+from irswitch.commentary.polish import PolishOutcome
 from irswitch.commentary.tts import (
     CommentaryUtterance,
     ProcessTtsSink,
@@ -258,6 +260,71 @@ def test_process_sink_depth_one_keeps_higher_priority(monkeypatch: Any) -> None:
     assert sink.wait_idle(timeout_s=2.0)
     assert speak_order == ["first", "high"]
     assert sink.pending_count() == 0
+
+
+def test_failed_llm_polish_is_silent_and_next_waiter_speaks(monkeypatch: Any) -> None:
+    first_started = threading.Event()
+    release = threading.Event()
+    spoken: list[str] = []
+    story_debug: list[dict[str, Any]] = []
+
+    def polish(text: str, *_args: Any, **_kwargs: Any) -> PolishOutcome:
+        if text == "bad skeleton":
+            first_started.set()
+            release.wait(timeout=2.0)
+            return PolishOutcome(
+                text=text,
+                outcome="retry_exhausted",
+                latency_ms=1.0,
+                skeleton=text,
+                request={},
+                attempts=2,
+            )
+        return PolishOutcome(
+            text="accepted next line",
+            outcome="ok",
+            latency_ms=1.0,
+            skeleton=text,
+            request={},
+            attempts=1,
+        )
+
+    def speak(text: str, **_kwargs: Any) -> TtsResult:
+        spoken.append(text)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.polish_skeleton", polish)
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", speak)
+    sink = ProcessTtsSink(
+        CommentarySettings(llm_polish=True, tts_backend="null"),
+        on_story_debug=story_debug.append,
+    )
+    sink.enqueue(_sample_utterance(text="bad skeleton", event_id="bad", priority=80))
+    assert first_started.wait(timeout=1.0)
+    sink.enqueue(_sample_utterance(text="waiting story", event_id="next", priority=90))
+    release.set()
+
+    assert sink.wait_idle(timeout_s=2.0)
+    assert spoken == ["accepted next line"]
+    assert any(row.get("reason") == "llm_polish_rejected" for row in story_debug)
+
+
+def test_llm_rejection_releases_director_busy_state_on_next_tick() -> None:
+    sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
+    director = CommentaryDirector(
+        graph=load_sequence_graph(),
+        settings=CommentarySettings(enabled=True, llm_polish=True, tts_backend="null"),
+        sink=sink,
+    )
+    now = time.monotonic()
+    director._busy_until = now + 10.0
+    director._global_ready_at = now + 10.0
+    assert sink.on_candidate_rejected is not None
+    sink.on_candidate_rejected(_sample_utterance(), "retry_exhausted")
+    assert director._busy_until > now
+    director.tick(now + 0.1, allow_filler=False)
+    assert director._busy_until <= now + 0.1
+    assert director._global_ready_at <= now + 0.1
 
 
 def test_process_sink_queue_invariant_single_worker(monkeypatch: Any) -> None:

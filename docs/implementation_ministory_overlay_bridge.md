@@ -11,16 +11,16 @@ Commentary already made its final freshness decision after Qwen returned, but V4
 - TTS opens a presentation lease at queue acceptance and emits versioned lifecycle transitions. Queue replacement/interruption explicitly closes dropped leases.
 - `RaceRuntime` forwards worker transitions with `loop.call_soon_threadsafe()`; no TTS-thread code touches `OverlayBus` or asyncio-owned state.
 - `OverlayConsumer` owns a bounded/coalesced lifecycle inbox and merges leased cards with the producer's source snapshot. Older revisions are ignored.
-- Source `EXIT` changes a leased card to `RESULT`; `completed`, `interrupted`, `invalidated`, session reset and run reset remove it. A terminal correlation tombstone prevents a stale source snapshot from reviving the card.
-- The V4 renderer reconciles authoritative snapshots instead of clearing every card. Narrative leases disable client hold timers; events without a lease keep existing behavior.
-- Overlay asset cache identity is `1.2.18` so OBS CEF cannot retain the previous renderer.
+- Source `EXIT` changes a leased card to `RESULT` and carries the EXIT event's fresh identity, sequence and timestamps; `completed`, `interrupted`, `invalidated`, session reset and run reset remove it. A terminal correlation tombstone prevents a stale source snapshot from reviving the card.
+- The V4 renderer reconciles authoritative snapshots instead of clearing every card. A snapshot may adopt an already rendered card at an equal sequence, then removes that snapshot-managed card when it disappears from a later snapshot. Narrative leases disable client hold timers and are cleared when a later ordinary event reuses the card; events without a lease keep existing behavior.
+- Overlay asset cache identity is `1.2.19` so OBS CEF cannot retain the previous renderer.
 
 ## Evidence
 
 - Producer/consumer tests cover shared frozen identity, replay adoption and preserved hero-order preemption.
 - MiniStory/TTS tests cover building, resolved revision propagation and orphan-free queue replacement.
 - Overlay tests cover live/building/speaking/completed, source EXIT to result, stale revision rejection, reset/reconnect state and thread marshalling.
-- JS contract tests require incremental snapshot reconciliation and MiniStory-aware rendering.
+- JS contract tests require incremental snapshot reconciliation, equal-sequence adoption, terminal removal and MiniStory-aware rendering.
 
 ## Docs and config impact
 

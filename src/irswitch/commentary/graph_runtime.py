@@ -21,6 +21,7 @@ from irswitch.commentary.graph import (
     SemanticPolicy,
     SequenceGraph,
 )
+from irswitch.commentary.priorities import editorial_priority
 from irswitch.events.envelope import EventEnvelope
 
 SILENCE_NODE_ID = "__silence__"
@@ -320,6 +321,7 @@ class SequenceGraphRuntime:
             return None
         ranked.sort(
             key=lambda item: (
+                -item.candidate.priority,
                 -item.score.final,
                 -criticality_rank[self.graph.nodes[item.candidate.node_id].editorial.criticality],
                 -self.graph.nodes[item.candidate.node_id].speak_priority,
@@ -479,7 +481,7 @@ def candidate_from_envelope(
         source_revision=source_revision,
         semantic_key="|".join(semantic),
         material_revision="|".join(material),
-        priority=envelope.priority,
+        priority=editorial_priority(envelope.event_type, envelope.metrics),
         source_sequence=envelope.sequence,
         envelope=envelope,
     )

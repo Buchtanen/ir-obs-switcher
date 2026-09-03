@@ -2,7 +2,7 @@
  * V4 cyclic dry-test demo — DisplayV4 envelopes on a ~28s loop.
  * Mirrors demo.js beat order; parent page reads overlay-demo-cue postMessages.
  */
-import { applySysinfo } from "./display.js?v=1.2.18";
+import { applySysinfo } from "./display.js?v=1.2.19";
 import {
   DisplayV4,
   syncSysinfoGlow,
@@ -15,7 +15,7 @@ import {
   v4FixtureLapComplete,
   v4FixturePersonalBest,
   v4FixturePositionGained,
-} from "./display-v4.js?v=1.2.18";
+} from "./display-v4.js?v=1.2.19";
 
 const LOOP_MS = 28000;
 

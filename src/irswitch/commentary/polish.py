@@ -796,7 +796,7 @@ class PolishOutcome:
             "attempts": self.attempts,
             "skeleton": self.skeleton,
             "polished": self.text if self.outcome == "ok" else last,
-            "spoken": self.text,
+            "spoken": self.text if self.outcome in {"ok", "fallback_disabled"} else None,
             "request": self.request,
             "response": self.response,
             "factPack": self.fact_pack,
@@ -810,6 +810,7 @@ class PolishOutcome:
                 self.fact_pack.get("optional_facts", []) if grounded and self.fact_pack else []
             ),
             "fallbackUsed": self.outcome != "ok",
+            "audible": self.outcome in {"ok", "fallback_disabled"},
             "attemptLog": list(self.attempt_log),
             "microplan": self.fact_pack.get("microplan") if self.fact_pack else None,
         }

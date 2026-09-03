@@ -424,6 +424,13 @@ def _resolved_fact_pack(
     relation = str(micro.get("relation") or "")
     target = roles.get("target") or roles.get("front") or ""
     cs = locale.lower().startswith("cs")
+    if story.event_type == "FINISH" or relation == "session_result":
+        canonical = str(
+            pack.get("canonical") or ("Jeho závod skončil." if cs else "His race is complete.")
+        )
+        micro.update(story_state="resolved", canonical=canonical, source_revision=story.revision)
+        pack.update(canonical=canonical, microplan=micro)
+        return pack
     if relation == "hero_under_pressure":
         canonical = (
             f"Tlak od jezdce {target} pro tuto chvíli polevil."
@@ -444,7 +451,7 @@ def _resolved_fact_pack(
             if cs
             else "That two-front battle has broken up for now."
         )
-    else:
+    elif relation in {"hero_attacks_target", "hero_closing_on_target"}:
         canonical = (
             f"Útočné okno na jezdce {target} se pro tuto chvíli zavřelo."
             if cs and target
@@ -456,6 +463,15 @@ def _resolved_fact_pack(
                     if target
                     else "The attacking window has closed for now."
                 )
+            )
+        )
+    else:
+        canonical = str(
+            pack.get("canonical")
+            or (
+                "Původní situace už není aktuální."
+                if cs
+                else "The earlier situation is no longer current."
             )
         )
     micro.update(story_state="resolved", canonical=canonical, source_revision=story.revision)

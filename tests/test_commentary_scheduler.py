@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from irswitch.commentary.graph import load_sequence_graph
+from irswitch.commentary.priorities import editorial_priority
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.tts import CommentaryUtterance
 from irswitch.overlay.settings import CommentarySchedulerSettings
@@ -86,6 +87,29 @@ def test_hard_interrupt_only_for_hero_order_change() -> None:
     assert on.should_hard_interrupt("INCIDENT", current_event_type="FINISH") is False
     assert on.should_hard_interrupt("OVERTAKE", current_event_type="HUNTING") is False
     assert on.should_hard_interrupt("POSITION_LOST", current_event_type="HUNTING") is True
+    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="POSITION_LOST") is False
+    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="FINISH") is False
+
+
+def test_editorial_priority_is_strict_and_orders_flags() -> None:
+    assert editorial_priority("FINISH") > editorial_priority("STREAM_START")
+    assert editorial_priority("STREAM_START") > editorial_priority(
+        "SESSION_FLAG", {"branch": "red"}
+    )
+    assert editorial_priority("SESSION_FLAG", {"branch": "red"}) > editorial_priority(
+        "SESSION_FLAG", {"branch": "checkered"}
+    )
+    assert editorial_priority("SESSION_FLAG", {"branch": "checkered"}) > editorial_priority(
+        "SESSION_FLAG", {"branch": "yellow"}
+    )
+    assert editorial_priority("SESSION_FLAG", {"branch": "yellow"}) > editorial_priority(
+        "SESSION_FLAG", {"branch": "green"}
+    )
+    assert editorial_priority("SESSION_FLAG", {"branch": "green"}) > editorial_priority("INCIDENT")
+    assert editorial_priority("INCIDENT") > editorial_priority("OVERTAKE")
+    assert editorial_priority("POSITION_LOST") > editorial_priority("HUNTED")
+    assert editorial_priority("HUNTING") > editorial_priority("SECTOR_BEST")
+    assert editorial_priority("SECTOR_SPLIT") > editorial_priority("LAP_COMPLETE")
 
 
 def test_silence_due() -> None:

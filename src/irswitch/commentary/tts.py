@@ -35,6 +35,7 @@ PolishDebugHook = Callable[[dict[str, Any]], None]
 SpokenTextHook = Callable[[str], None]
 StoryDebugHook = Callable[[dict[str, Any]], None]
 GraphLifecycleHook = Callable[[str, GraphCandidate, float], None]
+CandidateRejectedHook = Callable[["CommentaryUtterance", str], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
 
 
@@ -106,6 +107,7 @@ class NullTtsSink:
     dropped: list[CommentaryUtterance] = field(default_factory=list)
     story_registry: MiniStoryRegistry | None = None
     on_graph_lifecycle: GraphLifecycleHook | None = None
+    on_candidate_rejected: CandidateRejectedHook | None = None
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         token = utterance.story_token
@@ -181,6 +183,7 @@ class ProcessTtsSink:
     on_spoken_text: SpokenTextHook | None = None
     on_story_debug: StoryDebugHook | None = None
     on_graph_lifecycle: GraphLifecycleHook | None = None
+    on_candidate_rejected: CandidateRejectedHook | None = None
     story_registry: MiniStoryRegistry | None = None
     _queue: queue.SimpleQueue[CommentaryUtterance | object] = field(
         default_factory=queue.SimpleQueue, repr=False
@@ -364,6 +367,14 @@ class ProcessTtsSink:
                 )
             outcome = polish_skeleton(spoken_text, utterance.node, self.settings, **polish_kwargs)
             self._emit_polish_debug(utterance, outcome)
+            if cancelled():
+                return
+            if outcome.outcome != "ok" or not (outcome.text or "").strip():
+                self._reject_polish(
+                    utterance,
+                    outcome.outcome if outcome.outcome != "ok" else "empty_ok",
+                )
+                return
             polished = (outcome.text or "").strip()
             if polished:
                 spoken_text = numbers_to_words(polished, utterance.locale)
@@ -409,7 +420,22 @@ class ProcessTtsSink:
                         composition_path=utterance.composition_path,
                     )
                     self._emit_polish_debug(utterance, resolved_outcome)
-                    spoken_text = resolved_outcome.text or decision.canonical
+                    if cancelled():
+                        return
+                    if (
+                        resolved_outcome.outcome != "ok"
+                        or not (resolved_outcome.text or "").strip()
+                    ):
+                        self._reject_polish(
+                            utterance,
+                            (
+                                resolved_outcome.outcome
+                                if resolved_outcome.outcome != "ok"
+                                else "empty_ok"
+                            ),
+                        )
+                        return
+                    spoken_text = resolved_outcome.text
                 spoken_text = numbers_to_words(spoken_text, utterance.locale)
                 spoken_text = mix_hero_name(
                     spoken_text,
@@ -524,6 +550,33 @@ class ProcessTtsSink:
         if registry is not None:
             registry.invalidate(token)
         self._emit_story_debug(token, "invalidated", reason)
+
+    def _reject_polish(self, utterance: CommentaryUtterance, outcome: str) -> None:
+        """Release a rejected candidate without ever speaking its authored anchor."""
+        token = utterance.story_token
+        if token is not None:
+            self._close_queued_story(utterance, "llm_polish_rejected")
+        else:
+            hook = self.on_story_debug
+            if hook is not None:
+                try:
+                    hook(
+                        {
+                            "action": "skipped",
+                            "reason": "llm_polish_rejected",
+                            "outcome": outcome,
+                            "eventType": utterance.event_type,
+                            "correlationId": utterance.correlation_id,
+                        }
+                    )
+                except Exception:
+                    logger.debug("commentary polish rejection hook failed", exc_info=True)
+        rejected = self.on_candidate_rejected
+        if rejected is not None:
+            try:
+                rejected(utterance, outcome)
+            except Exception:
+                logger.debug("commentary rejection callback failed", exc_info=True)
 
 
 def detect_backend(preferred: str = "auto") -> str:

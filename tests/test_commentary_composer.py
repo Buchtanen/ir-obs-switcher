@@ -183,6 +183,28 @@ def test_composer_omits_unbound_target_and_builds_czech_parts() -> None:
     assert result.fact_pack["target"] == {}
 
 
+def test_position_loss_without_named_target_keeps_current_position() -> None:
+    graph = load_sequence_graph()
+    envelope = make_envelope(
+        event_type="POSITION_LOST",
+        phase="RESULT",
+        mode="RACE",
+        metrics={"position": 30},
+    )
+    node = graph.nodes_for("POSITION_LOST", "RESULT")[0]
+    result = build_skeleton(
+        envelope,
+        node,
+        graph=graph,
+        story={"race": {"class_position": 30}, "story": {"recent_beats": []}},
+        bindings=slot_bindings(envelope, "unknown"),
+        emotion="unknown",
+        language="en",
+    )
+    assert result is not None
+    assert "P30" in result.text
+
+
 def test_director_uses_composer_only_for_polish_path() -> None:
     graph = _graph()
     envelope = make_envelope(

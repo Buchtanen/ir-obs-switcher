@@ -184,7 +184,7 @@ class CommentaryConsumer:
         self._sync_graph_run(latest, now=now)
         if self.story_registry.hero_order_revision > self._seen_hero_order_revision:
             self._seen_hero_order_revision = self.story_registry.hero_order_revision
-            self.director.hero_order_changed(now)
+            self.director.hero_order_changed(now, self._order_event_type(batch))
         self._apply_story_context(context)
         bio = self._bio_from_context(context)
         envelopes: list[EventEnvelope] = []
@@ -398,6 +398,19 @@ class CommentaryConsumer:
         except asyncio.QueueFull:
             return None
         self._outstanding_filler = request
+        return None
+
+    @staticmethod
+    def _order_event_type(batch: FrozenAcceptedEventBatch) -> str | None:
+        for accepted in batch.events:
+            if "commentary" not in accepted.audiences:
+                continue
+            try:
+                event_type = thaw_envelope(accepted.envelope).event_type
+            except Exception:
+                continue
+            if event_type in {"POSITION_GAINED", "POSITION_LOST"}:
+                return event_type
         return None
 
     def _apply_settings(self) -> None:

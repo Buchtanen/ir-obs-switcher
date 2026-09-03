@@ -77,6 +77,32 @@ def test_semantic_identity_ignores_wording_and_scoring_does_not_mutate_fatigue()
     assert penalized < baseline
 
 
+def test_strict_editorial_tier_beats_graph_score() -> None:
+    runtime = _runtime()
+    runtime.reset(run_epoch=1, now=0.0)
+    start = _candidate("stream_start", event_id="start", event_type="STREAM_START", phase="ENTER")
+    incident = _candidate(
+        "incident",
+        event_id="incident",
+        event_type="INCIDENT",
+        metrics={"incidentPoints": 4},
+    )
+    assert runtime.score(incident, now=1.0).final > runtime.score(start, now=1.0).final
+    selected = runtime.select([incident, start], now=1.0)
+    assert selected is not None
+    assert selected.candidate.event_type == "STREAM_START"
+
+
+def test_finish_is_absolute_graph_frontier() -> None:
+    runtime = _runtime()
+    runtime.reset(run_epoch=1, now=0.0)
+    finish = _candidate("finish", event_id="finish", event_type="FINISH")
+    start = _candidate("stream_start", event_id="start", event_type="STREAM_START", phase="ENTER")
+    selected = runtime.select([start, finish], now=1.0)
+    assert selected is not None
+    assert selected.candidate.event_type == "FINISH"
+
+
 def test_material_gap_band_change_receives_bonus() -> None:
     runtime = _runtime()
     runtime.reset(run_epoch=1, now=0.0)
