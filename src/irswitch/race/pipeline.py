@@ -110,6 +110,8 @@ class RacePipeline:
         system: Any | None = None,
         hud: dict[str, Any] | None = None,
         grid_story: bool = False,
+        editorial: dict[str, object] | None = None,
+        prepared: dict[str, object] | None = None,
     ) -> FrozenContextSnapshot:
         self._context_version += 1
         payload = build_context_payload(
@@ -127,6 +129,8 @@ class RacePipeline:
             system=system,
             hud=hud,
             grid_story=grid_story,
+            editorial=editorial,
+            prepared=prepared,
         )
         if self.story_registry is not None:
             self.story_registry.observe_context(payload)
@@ -256,6 +260,8 @@ def build_context_payload(
     system: Any | None = None,
     hud: dict[str, Any] | None = None,
     grid_story: bool = False,
+    editorial: dict[str, object] | None = None,
+    prepared: dict[str, object] | None = None,
 ) -> dict[str, Any]:
     story_payload = _jsonable(asdict(story)) if story is not None else {}
     story_payload["driver_profiles"] = driver_profiles or {}
@@ -295,6 +301,8 @@ def build_context_payload(
         "situation": situation,
         "system": system_payload,
         "hud": hud_payload,
+        "editorial": _jsonable(editorial or {}),
+        "prepared": _jsonable(prepared or {}),
         "config": {
             "generation": config_generation,
             "language": language,

@@ -10,11 +10,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from irswitch.commentary.anti_repeat import RecentUtteranceHistory, prefer_fresh_candidates
-from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph
+from irswitch.commentary.graph import GraphEdge, GraphNode, SequenceGraph, scenario_selectors
 from irswitch.commentary.microplan import CommentaryMicroplan
+from irswitch.commentary.story_identity import edge_identity_matches
 from irswitch.commentary.style_cards import select_style_card
 from irswitch.commentary.validator import fill_slots, leftover_slots
-from irswitch.events.envelope import EventEnvelope
+from irswitch.events.envelope import EventEnvelope, make_envelope
 
 FACT_PACK_VERSION = "commentary-facts/3"
 MAX_FACTS = 2
@@ -47,6 +48,7 @@ class _BeatRef:
     correlation_id: str
     monotonic_ms: int
     target_name: str | None = None
+    envelope: EventEnvelope | None = None
 
 
 def build_skeleton(
@@ -198,6 +200,7 @@ def _graph_path(
         correlation_id=envelope.correlation_id,
         monotonic_ms=int(envelope.monotonic_ms or 0),
         target_name=(envelope.target.display_name if envelope.target is not None else None),
+        envelope=envelope,
     )
     refs = _history_refs(graph, context)
     chain: list[_BeatRef] = [current]
@@ -237,6 +240,7 @@ def _history_refs(graph: SequenceGraph, context: dict[str, Any]) -> list[_BeatRe
             phase,
             mode=mode,
             branch=str(branch) if branch not in (None, "") else None,
+            **scenario_selectors(raw, raw.get("confidence", 1.0)),
         )
         if not candidates:
             continue
@@ -249,6 +253,19 @@ def _history_refs(graph: SequenceGraph, context: dict[str, Any]) -> list[_BeatRe
                 correlation_id=str(raw.get("correlation_id") or ""),
                 monotonic_ms=_int(raw.get("monotonic_ms")) or 0,
                 target_name=_text(raw.get("target_name")),
+                envelope=make_envelope(
+                    event_type=event_type,
+                    phase=phase,
+                    mode=mode,
+                    session_id=str(raw.get("session_id") or ""),
+                    correlation_id=str(raw.get("correlation_id") or ""),
+                    subject={"car_id": str(raw.get("hero_id") or "player")},
+                    metrics={
+                        "runEpoch": raw.get("run_epoch"),
+                        "scenarioId": raw.get("scenario_id"),
+                        "parentStoryId": raw.get("parent_story_id"),
+                    },
+                ),
             )
         )
     return refs
@@ -261,6 +278,13 @@ def _matching_edge(
 ) -> GraphEdge | None:
     gap_s = max(0.0, (current.monotonic_ms - prior.monotonic_ms) / 1000.0)
     for edge in graph.outgoing(prior.node_id):
+        if not edge.legacy_identity_compatible:
+            if (
+                prior.envelope is None
+                or current.envelope is None
+                or not edge_identity_matches(edge, prior.envelope, current.envelope)
+            ):
+                continue
         if edge.target != current.node_id:
             continue
         if gap_s < edge.min_gap_s or gap_s > edge.max_gap_s:
@@ -318,7 +342,7 @@ def _history_label(node_id: str, target: str | None, *, cs: bool) -> str:
             "gain_found": "od nalezeného tempa",
             "hot_lap": "od rychlého kola",
             "final_lap": "od posledního kola",
-            "incident": "od incidentu",
+            "incident": "od změny bodového součtu",
             "incident_aftermath": "přes jeho následky",
             "session_checkered": "od šachovnicové vlajky",
             "session_wrap": "přes shrnutí jízdy",
@@ -337,7 +361,7 @@ def _history_label(node_id: str, target: str | None, *, cs: bool) -> str:
             "gain_found": "from the pace he found",
             "hot_lap": "from the quick lap",
             "final_lap": "from the final lap",
-            "incident": "from the incident",
+            "incident": "from the point-count update",
             "incident_aftermath": "through its aftermath",
             "session_checkered": "from the checkered flag",
             "session_wrap": "through the session wrap",
@@ -377,8 +401,20 @@ def _current_clauses(
         if name:
             primary = _Clause(
                 "beat",
-                f"Stahuje {name}" if cs else f"He is closing on {name}",
-                ("target:name", "beat:relation"),
+                (
+                    (f"Z {position}. místa stahuje {name}" if position else f"Stahuje {name}")
+                    if cs
+                    else (
+                        f"He is closing on {name} from P{position}"
+                        if position
+                        else f"He is closing on {name}"
+                    )
+                ),
+                (
+                    ("target:name", "hero:position", "beat:relation")
+                    if position
+                    else ("target:name", "beat:relation")
+                ),
             )
         else:
             primary = _Clause(
@@ -811,7 +847,11 @@ def _fact_pack(
         ),
         "hero": _compact(
             {
-                "class_position": race.get("class_position") or race.get("position"),
+                "class_position": (
+                    _positive_position(_bound(bindings, "position"))
+                    or race.get("class_position")
+                    or race.get("position")
+                ),
                 "lap_time": _bound(bindings, "lap_time"),
                 "delta": _bound(bindings, "delta"),
                 "streak": _bound(bindings, "streak"),

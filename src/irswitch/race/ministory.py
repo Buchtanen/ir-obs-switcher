@@ -134,6 +134,7 @@ class MiniStoryRegistry:
         except ValueError:
             state = MiniStoryState.READY
         with self._lock:
+            self._supersede_excursion_beats(envelope)
             existing = self._story_for_token(token)
             if existing is not None:
                 existing.metrics.update(deepcopy(envelope.metrics))
@@ -188,6 +189,13 @@ class MiniStoryRegistry:
                 self.reset(session_id=session_id or self._session_id, run_epoch=run_epoch)
             else:
                 self._session_id = session_id or self._session_id
+            for story in self._stories.values():
+                if (
+                    story.event_type == "TRACK_EXCURSION"
+                    and story.state in {MiniStoryState.READY, MiniStoryState.RESOLVED}
+                    and not _excursion_fact_current(story.metrics, race)
+                ):
+                    story.state = MiniStoryState.INVALIDATED
             changed = (
                 position is not None
                 and self._hero_position is not None
@@ -206,6 +214,7 @@ class MiniStoryRegistry:
         run_epoch = _integer(envelope.metrics.get("runEpoch")) or self._run_epoch
         identity = _identity(envelope)
         with self._lock:
+            self._supersede_excursion_beats(envelope)
             if envelope.event_type in _POSITION_EVENTS and envelope.phase in {"ENTER", "RESULT"}:
                 new_position = _positive_integer(
                     envelope.metrics.get("classPosition") or envelope.metrics.get("position")
@@ -269,6 +278,26 @@ class MiniStoryRegistry:
 
             token = _token(story)
             return MiniStoryObservation(token, narrate=True, state=story.state)
+
+    def _supersede_excursion_beats(self, envelope: EventEnvelope) -> None:
+        """A newer fact replaces uncommitted speech, never the already audible beat."""
+        parent = envelope.metrics.get("parentStoryId")
+        if envelope.event_type != "TRACK_EXCURSION" or not parent:
+            return
+        at = envelope.metrics.get("observedAt")
+        if not isinstance(at, (int, float)):
+            return
+        for story in self._stories.values():
+            previous_at = story.metrics.get("observedAt")
+            if (
+                story.event_type == "TRACK_EXCURSION"
+                and story.metrics.get("parentStoryId") == parent
+                and story.correlation_id != envelope.correlation_id
+                and isinstance(previous_at, (int, float))
+                and previous_at <= at
+                and story.state in {MiniStoryState.READY, MiniStoryState.RESOLVED}
+            ):
+                story.state = MiniStoryState.INVALIDATED
 
     def token_for(self, envelope: EventEnvelope) -> MiniStoryToken | None:
         with self._lock:
@@ -493,6 +522,30 @@ def _resolved_fact_pack(
         },
     )
     return pack
+
+
+def _excursion_fact_current(metrics: dict[str, Any], race: dict[str, Any]) -> bool:
+    # Missing fields in old/minimal contexts do not invent contrary evidence.
+    if race.get("connected") is False or race.get("data_quality", "ok") != "ok":
+        return False
+    if "player_car_idx" in race and race["player_car_idx"] != metrics.get("heroCarIdx"):
+        return False
+    beat = metrics.get("beatId")
+    surface, speed, tow = (
+        race.get("player_track_surface"),
+        race.get("speed_mps"),
+        race.get("player_tow_time"),
+    )
+    if beat in {"track_rejoined", "motion_restored"}:
+        if "player_track_surface" in race and surface != 3:
+            return False
+        if race.get("on_pit_road") or (isinstance(tow, (int, float)) and tow > 0):
+            return False
+    if beat == "motion_restored" and "speed_mps" in race:
+        return isinstance(speed, (int, float)) and speed >= 2.5
+    if beat == "stopped" and "speed_mps" in race:
+        return isinstance(speed, (int, float)) and speed <= 1.0
+    return True
 
 
 def _integer(value: object) -> int | None:

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
+from irswitch.events.scenarios.track_excursion import TrackExcursionDetector
 from irswitch.iracing.drivers import speakable_name_mix_for_car
 from irswitch.iracing.sdk_units import as_completed_lap_time, format_lap_time
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
@@ -52,6 +53,8 @@ class RaceObserver:
     stream: StreamMemory = field(default_factory=StreamMemory)
     history: StoryHistory = field(default_factory=StoryHistory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
+    excursion: TrackExcursionDetector = field(default_factory=TrackExcursionDetector)
+    _scenario_pending: list[EventEnvelope] = field(default_factory=list)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
     flags: SessionFlagFsm = field(default_factory=SessionFlagFsm)
@@ -69,6 +72,10 @@ class RaceObserver:
     _was_on_pit_road: bool = False
 
     def apply_settings(self, settings: RaceObserverSettings) -> None:
+        if settings.scenario_mode != self.settings.scenario_mode:
+            self.excursion.reset(reason="scenario_mode_changed")
+            self.aftermath.reset()
+            self._scenario_pending.clear()
         self.settings = settings
 
     def reset_session(self) -> None:
@@ -84,6 +91,8 @@ class RaceObserver:
         self._was_on_pit_road = False
         self.history.clear()
         self.aftermath.reset()
+        self.excursion.reset(reason="session_reset")
+        self._scenario_pending.clear()
         self.narrative.reset_session()
         self.timing_hunt.reset()
         self.flags.reset()
@@ -99,6 +108,8 @@ class RaceObserver:
         """Drain derived commentary envelopes (narrative, aftermath, flags, timing hunt)."""
         out = self.narrative.take_pending()
         out.extend(self.aftermath.take_pending())
+        out.extend(self._scenario_pending)
+        self._scenario_pending.clear()
         out.extend(self.flags.take_pending())
         out.extend(self.timing_hunt.take_pending())
         out.extend(self.grid_story.take_pending())
@@ -157,6 +168,7 @@ class RaceObserver:
             self.timing_hunt.reset()
             self.flags.reset()
             self.grid_story.reset()
+            self.stream.reset_race_grid()
             if key:
                 self.stream.note_session(key)
 
@@ -191,6 +203,16 @@ class RaceObserver:
             self.stream.note_quali(
                 state.class_position or snap.class_position,
                 state.best_lap_time if state.best_lap_time is not None else snap.best_lap_time,
+                class_id=snap.player_car_class,
+                subsession_id=snap.subsession_id,
+            )
+        elif overlay_mode == "RACE" and not (
+            state.flag_green or state.session_state == 4 or state.player_finished
+        ):
+            self.stream.note_race_grid(
+                state.class_position or snap.class_position,
+                class_id=snap.player_car_class,
+                subsession_id=snap.subsession_id,
             )
         ctx = StoryContext(
             session_key=key,
@@ -211,6 +233,9 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
             recent_beats=self.history.snapshot(),
             quali_bag=self.stream.quali_bag(),
+            race_grid_position=self.stream.race_grid_position,
+            race_grid_class_id=self.stream.race_grid_class_id,
+            race_grid_subsession_id=self.stream.race_grid_subsession_id,
             run_epoch=state.run_epoch,
         )
         self._context = ctx
@@ -223,9 +248,25 @@ class RaceObserver:
         except Exception:
             logger.warning("StreamNarrativeFsm.tick failed", exc_info=True)
         try:
-            self.aftermath.tick(state, now, log=self.watches)
+            if self.settings.scenario_mode != "active":
+                self.aftermath.tick(state, now, log=self.watches)
+            if self.settings.scenario_mode != "legacy":
+                beats = self.excursion.tick(state, now)
+                if self.settings.scenario_mode == "active":
+                    self._scenario_pending.extend(beats)
+                for beat in beats:
+                    note(
+                        self.watches,
+                        watch="track_excursion",
+                        kind=str(beat.metrics["beatId"]),
+                        emitted=self.settings.scenario_mode == "active",
+                        reason=str(beat.metrics["reason"]),
+                        confidence=beat.confidence,
+                        now=now,
+                    )
         except Exception:
-            logger.warning("IncidentAftermathFsm.tick failed", exc_info=True)
+            self.excursion.reset(reason="detector_error", now=now)
+            logger.warning("Excursion/aftermath detector failed", exc_info=True)
         try:
             self.timing_hunt.tick(snap, state, now, log=self.watches)
         except Exception:

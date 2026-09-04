@@ -938,6 +938,14 @@ async def main_loop(
                         if state_now is not None:
                             set_current_state(state_now)
                     elif stream_edge == "obs_stream_stopped":
+                        try:
+                            from irswitch.commentary.stream_context import (
+                                notify_overlay_stream_stopped,
+                            )
+
+                            notify_overlay_stream_stopped()
+                        except Exception:
+                            logger.debug("stream-stop commentary hook failed", exc_info=True)
 
                         async def _rebroadcast() -> None:
                             state_now = get_current_state()
@@ -1560,6 +1568,7 @@ async def run_service(
             bus,
             mode=resolved_mode,
             replay_path=replay_path,
+            youtube_oauth_manager=oauth_manager,
         )
         set_overlay_runtime(overlay_runtime)
         overlay_task = asyncio.create_task(overlay_runtime.run(), name="overlay_runtime")

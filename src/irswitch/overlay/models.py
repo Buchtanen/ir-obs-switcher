@@ -98,6 +98,7 @@ class RaceState:
     position: int | None = None
     class_position: int | None = None
     class_field_size: int | None = None
+    player_car_class: int | None = None
     leader_car_idx: int | None = None
     leader_name: str | None = None
     p1_name: str | None = None

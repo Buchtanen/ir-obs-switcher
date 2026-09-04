@@ -19,6 +19,8 @@ class QualiBag:
 
     class_position: int
     best_lap_s: float | None = None
+    class_id: int | None = None
+    subsession_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,16 @@ class StoryBeat:
     rear_target_name: str | None = None
     rear_gap: int | float | str | None = None
     run_epoch: int = 0
+    session_id: str = ""
+    hero_id: str = ""
+    scenario_id: str = ""
+    parent_story_id: str = ""
+    beat_role: str = ""
+    primary_relation: str = ""
+    cause: str = ""
+    outcome: str = ""
+    evidence_level: str = ""
+    confidence: float = 1.0
 
 
 @dataclass
@@ -84,6 +96,16 @@ class StoryHistory:
                 correlation_id=str(envelope.correlation_id or ""),
                 monotonic_ms=max(0, int(envelope.monotonic_ms or 0)),
                 run_epoch=run_epoch,
+                session_id=envelope.session_id,
+                hero_id=envelope.subject.car_id,
+                scenario_id=str(metrics.get("scenarioId") or ""),
+                parent_story_id=str(metrics.get("parentStoryId") or ""),
+                beat_role=str(metrics.get("beatRole") or ""),
+                primary_relation=str(metrics.get("primaryRelation") or ""),
+                cause=str(metrics.get("cause") or ""),
+                outcome=str(metrics.get("outcome") or ""),
+                evidence_level=str(metrics.get("evidenceLevel") or ""),
+                confidence=envelope.confidence,
                 target_name=(
                     str(target.display_name).strip()
                     if target is not None and target.display_name
@@ -131,6 +153,9 @@ class StoryContext:
     stream_sessions: tuple[str, ...] = ()
     recent_beats: tuple[StoryBeat, ...] = ()
     quali_bag: QualiBag | None = None
+    race_grid_position: int | None = None
+    race_grid_class_id: int | None = None
+    race_grid_subsession_id: str | None = None
     run_epoch: int = 0
 
     def slot_bindings(self) -> dict[str, Any]:
@@ -162,6 +187,11 @@ class StreamMemory:
     rival_seen: dict[int, str] = field(default_factory=dict)
     quali_class_position: int | None = None
     quali_best_lap_s: float | None = None
+    quali_class_id: int | None = None
+    quali_subsession_id: str | None = None
+    race_grid_position: int | None = None
+    race_grid_class_id: int | None = None
+    race_grid_subsession_id: str | None = None
 
     def note_session(self, session_key: str) -> None:
         if not session_key:
@@ -182,10 +212,19 @@ class StreamMemory:
             for key in keys:
                 self.rival_seen.pop(key, None)
 
-    def note_quali(self, class_position: int | None, best_lap_s: float | None) -> None:
+    def note_quali(
+        self,
+        class_position: int | None,
+        best_lap_s: float | None,
+        *,
+        class_id: int | None = None,
+        subsession_id: str | None = None,
+    ) -> None:
         """Keep last-good quali class position and official best lap (seconds)."""
         if class_position is not None and int(class_position) > 0:
             self.quali_class_position = int(class_position)
+            self.quali_class_id = class_id
+            self.quali_subsession_id = subsession_id
         seconds = as_completed_lap_time(best_lap_s)
         if seconds is not None:
             self.quali_best_lap_s = seconds
@@ -194,13 +233,35 @@ class StreamMemory:
         """None when this stream never saw a quali class position."""
         if self.quali_class_position is None:
             return None
-        return QualiBag(self.quali_class_position, self.quali_best_lap_s)
+        return QualiBag(
+            self.quali_class_position,
+            self.quali_best_lap_s,
+            self.quali_class_id,
+            self.quali_subsession_id,
+        )
+
+    def reset_race_grid(self) -> None:
+        self.race_grid_position = None
+        self.race_grid_class_id = None
+        self.race_grid_subsession_id = None
+
+    def note_race_grid(
+        self, position: int | None, *, class_id: int | None, subsession_id: str | None
+    ) -> None:
+        if position is None or position <= 0:
+            return
+        self.race_grid_position = int(position)
+        self.race_grid_class_id = class_id
+        self.race_grid_subsession_id = subsession_id
 
     def reset_stream(self) -> None:
         self.sessions_seen.clear()
         self.rival_seen.clear()
         self.quali_class_position = None
         self.quali_best_lap_s = None
+        self.quali_class_id = None
+        self.quali_subsession_id = None
+        self.reset_race_grid()
 
 
 def _first(metrics: dict[str, Any], *keys: str) -> object | None:

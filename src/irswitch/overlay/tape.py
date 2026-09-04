@@ -216,6 +216,11 @@ class OverlaySessionTape:
             return
         self._write(now, state, {"type": "stories", "activeStories": list(stories)})
 
+    def record_scenario(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """Sparse detection/invalidation evidence for development, also in shadow mode."""
+        if self._path is not None:
+            self._write(now, state, {**entry, "type": "race_scenario"})
+
     def record_commentary(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
         """Speak/skip row from CommentaryDirector (DEBUG tape only; caller gates)."""
         if self._path is None:
@@ -240,6 +245,9 @@ class OverlaySessionTape:
                 "graphMode": entry.get("graphMode"),
                 "decision": entry.get("decision"),
                 "eventId": entry.get("eventId"),
+                "parentStoryId": entry.get("parentStoryId"),
+                "correlationId": entry.get("correlationId"),
+                "beatId": entry.get("beatId"),
                 "semanticKey": entry.get("semanticKey"),
                 "score": entry.get("score"),
                 "threshold": entry.get("threshold"),
@@ -247,6 +255,35 @@ class OverlaySessionTape:
                 "error": entry.get("error"),
             },
         )
+
+    def record_prepared_filler(
+        self, entry: dict[str, Any], now: float, state: RaceState | None
+    ) -> None:
+        """Compact shadow/active evidence without prompts, tokens, or generated text."""
+        if self._path is None:
+            return
+        payload = {
+            "type": "prepared_filler",
+            "action": entry.get("action"),
+            "reason": entry.get("reason"),
+            "stage": entry.get("stage"),
+            "planId": entry.get("planId"),
+            "situationId": entry.get("situationId"),
+            "variantId": entry.get("variantId"),
+            "nodeId": entry.get("nodeId"),
+            "semanticKey": entry.get("semanticKey"),
+            "legacyNodeId": entry.get("legacyNodeId"),
+            "legacySemanticKey": entry.get("legacySemanticKey"),
+            "divergence": entry.get("divergence"),
+            "comparisonReason": entry.get("comparisonReason"),
+            "decision": entry.get("decision"),
+            "score": entry.get("score"),
+            "threshold": entry.get("threshold"),
+            "components": entry.get("components"),
+        }
+        if "acceptedTexts" in entry:
+            payload["acceptedTexts"] = entry["acceptedTexts"]
+        self._write(now, state, payload)
 
     def record_llm_polish(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
         """One remote polish attempt (request/response for offline review)."""

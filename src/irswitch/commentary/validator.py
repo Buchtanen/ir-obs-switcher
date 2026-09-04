@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
+from irswitch.commentary.semantic_vocabulary import validate_node_vocabulary
 
 _TERMINAL = re.compile(r"[.!?…][\"')\]]*$")
 _MULTI_PUNCT = re.compile(r"[!?]{2,}|\.{3,}|…{2,}")
@@ -62,6 +63,10 @@ def validate_utterance(
         issues.append(ValidationIssue("url", "URLs are not speakable"))
 
     spoken = _plain_text(stripped)
+    issues.extend(
+        ValidationIssue(item.code, item.message)
+        for item in validate_node_vocabulary(spoken, node.id)
+    )
     if _MULTI_PUNCT.search(spoken):
         issues.append(
             ValidationIssue(

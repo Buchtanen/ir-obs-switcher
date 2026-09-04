@@ -48,6 +48,10 @@ class SpeechScheduler:
     def __len__(self) -> int:
         return len(self._heap)
 
+    def peek(self) -> DeferredSpeech | None:
+        """Inspect the one pending candidate without changing its lifetime."""
+        return self._heap[0].item if self._heap else None
+
     def ttl_for(self, event_type: str) -> float:
         if event_type in _INCIDENT_TYPES:
             return float(self.settings.incident_ttl_s)
@@ -65,7 +69,7 @@ class SpeechScheduler:
 
     def park(self, utterance: CommentaryUtterance, *, priority: float, now: float) -> bool:
         """Queue best utterance only. Returns False if dropped (lower prio / disabled)."""
-        if not self.settings.defer_enabled:
+        if not self.settings.defer_enabled and utterance.event_type != "TRACK_EXCURSION":
             return False
         self.expire(now)
         incoming = float(priority)

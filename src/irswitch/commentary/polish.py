@@ -1,7 +1,7 @@
-"""Optional grounded LLM commentary generation over authored anchors. Fail-soft.
+"""Optional grounded LLM commentary generation from compact factual data. Fail-soft.
 
-The model receives explicit required/optional propositions and never owns race
-truth. Invalid output falls back to the authored anchor in the TTS worker.
+The model receives selected structured facts and never owns race truth. Invalid
+output rejects that candidate before TTS; canonical text remains diagnostic state.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
 from irswitch.commentary.speech_numbers import numbers_to_words
+from irswitch.commentary.style_cards import mood_for_node
 from irswitch.commentary.validator import validate_utterance
 from irswitch.overlay.settings import CommentarySettings
 
@@ -264,6 +265,8 @@ def _request_char_limit(
     tts: TtsLimits,
     fact_pack: dict[str, Any] | None,
 ) -> int:
+    if _is_microplan(fact_pack):
+        return min(160, int(tts.max_chars))
     return int(tts.max_chars) if _is_grounded(fact_pack) else polish_char_limit(skeleton, tts)
 
 
@@ -296,7 +299,7 @@ def _expansion_code(
     tts: TtsLimits,
     fact_pack: dict[str, Any] | None,
 ) -> str | None:
-    if _BANNED_PHRASE.search(content or ""):
+    if not _is_microplan(fact_pack) and _BANNED_PHRASE.search(content or ""):
         return "banned_phrase"
     if len((content or "").strip()) > _request_char_limit(skeleton, tts, fact_pack):
         return "expanded"
@@ -440,7 +443,22 @@ def _invented_numbers(
 
 def _number_words(text: str) -> set[str]:
     tokens = re.findall(r"[\wáčďéěíňóřšťúůýž]+", (text or "").casefold())
-    return {token for token in tokens if token in _NUMBER_WORD_TOKENS}
+    found: set[str] = set()
+    for index, token in enumerate(tokens):
+        if token not in _NUMBER_WORD_TOKENS:
+            continue
+        # "a real one" is an atmospheric pronoun, not the number 1.
+        if token == "one" and index > 0 and tokens[index - 1] in {
+            "a",
+            "another",
+            "real",
+            "that",
+            "the",
+            "this",
+        }:
+            continue
+        found.add(token)
+    return found
 
 
 def _invented_name(
@@ -449,11 +467,23 @@ def _invented_name(
     driver_names: Sequence[str],
     fact_pack: dict[str, Any],
 ) -> bool:
+    micro = fact_pack.get("microplan")
+    roles = micro.get("actor_roles") if isinstance(micro, dict) else ()
+    role_names = (
+        [
+            str(item[1])
+            for item in roles
+            if isinstance(item, (list, tuple)) and len(item) == 2
+        ]
+        if isinstance(roles, (list, tuple))
+        else []
+    )
     allowed_text = " ".join(
         [
             skeleton,
             *(str(item) for item in fact_pack.get("allowed_names", [])),
             *(str(item) for item in driver_names),
+            *role_names,
         ]
     ).casefold()
     allowed_tokens = set(re.findall(r"[\wáčďéěíňóřšťúůýž'-]+", allowed_text))
@@ -532,6 +562,14 @@ def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
     relation = str(pack.get("beat", {}).get("relation") or "")
     target = str(pack.get("target", {}).get("name") or "")
     codes: list[str] = []
+    micro = pack.get("microplan")
+    roles = micro.get("actor_roles") if isinstance(micro, dict) else ()
+    for item in roles if isinstance(roles, (list, tuple)) else ():
+        if not isinstance(item, (list, tuple)) or len(item) != 2:
+            continue
+        name = str(item[1]).strip()
+        if name and not _contains_term(text.casefold(), name):
+            codes.append("missing_required_name")
     if relation == "hero_between_two_fronts":
         attack = re.search(r"\b(attack\w*|fight|útočí|útok)\b", text, re.I)
         pressure = re.search(
@@ -572,12 +610,22 @@ def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
     source = _selected_text(pack)
     for concept in (
         r"\b(?:wins?|won|victory|vítězí)\b",
-        r"\b(?:yellow|safety car|crash\w*|collision|žlutá|nehoda)\b",
+        r"\b(?:yellow|safety car|crash\w*|collision|contact|damage\w*|retir\w*|dnf|"
+        r"žlutá|nehoda|kontakt\w*|poškoz\w*|odstoup\w*)\b|"
+        r"\b(?:no signal|no response|radio silence)\b",
         r"\b(?:final lap|last lap|poslední kolo)\b",
         r"\b(?:fastest|nejrychlejší)\b",
     ):
         if re.search(concept, text, re.I) and not re.search(concept, source, re.I):
             codes.append("unsupported_event")
+    if re.search(
+        r"\b(?:will|going to|set to|sure to|bound to|bude|chystá se)\b", text, re.I
+    ) and not re.search(
+        r"\b(?:will|going to|set to|sure to|bound to|bude|chystá se)\b",
+        _selected_text(pack),
+        re.I,
+    ):
+        codes.append("unsupported_prediction")
     return codes
 
 
@@ -629,11 +677,13 @@ def _system_prompt(
 ) -> str:
     if _is_microplan(fact_pack):
         language = "Czech" if locale.lower().startswith("cs") else "English"
+        cap = _request_char_limit(skeleton, tts, fact_pack)
         return (
-            f"Write vivid, natural {language} TV race commentary, third person, 1-2 sentences, at most {tts.max_chars} characters. "
-            "Give the source facts fresh broadcast phrasing; preserve every required fact and actor direction. Optional facts may be omitted. "
-            "No new names, numbers, causes, predictions or events. Example is style only, not evidence. "
-            "Output only the call."
+            f"You are a live TV race commentator. Write ONE fresh call in {language} from DATA "
+            "only. STYLE is mood/energy only — never copy its words or sentence shape. Vivid "
+            "atmosphere is OK. Keep every name, number and position from DATA. Do not invent new "
+            "names, new numbers, damage, retirement, or future outcomes. "
+            f"Max {cap} characters, 1-2 sentences. Output only the call."
         )
     if _is_grounded(fact_pack):
         cap = _request_char_limit(skeleton, tts, fact_pack)
@@ -692,33 +742,22 @@ def _user_content(
     composition_path: Sequence[str] = (),
 ) -> str:
     if _is_microplan(fact_pack):
-        micro = fact_pack.get("microplan") or {}
-        card = fact_pack.get("style_card") or {}
-        parts = [f"TIME FRAME: {micro.get('story_state', 'live')}"]
-        if past:
-            parts.append(
-                "Delayed call; describe the supplied facts retrospectively without inventing an outcome."
-            )
+        beat = fact_pack.get("beat") or {}
+        node_id = str(beat.get("node") or "")
+        parts = [
+            "DATA: "
+            + json.dumps(
+                _microplan_data(fact_pack, past=past),
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            f"STYLE mood only (do not copy): {mood_for_node(node_id)}",
+        ]
         if rejected:
             parts.append(
-                "SAFETY RETRY: State only the source facts directly. Output a clean commentary line, no labels or instructions."
+                "Correct only these factual validation failures: " + ", ".join(rejected) + "."
             )
-        else:
-            optional = " ".join(str(f.get("text", "")) for f in fact_pack.get("optional_facts", []))
-            if optional:
-                parts.append("OPTIONAL SOURCE: " + optional)
-            parts.append(
-                "STYLE DIRECTION: " + str(card.get("guidance") or "Fact first, natural cadence.")
-            )
-            if card.get("example"):
-                parts.append(str(card["example"]))
-        forbidden = fact_pack.get("forbidden_claims", [])
-        if forbidden:
-            parts.append("DO NOT CLAIM: " + ", ".join(forbidden))
-        parts.append(
-            "SOURCE FACTS (preserve meaning, do not copy wording): "
-            + " ".join(str(f.get("text", "")) for f in fact_pack.get("required_facts", []))
-        )
+        parts.append("Write a NEW broadcast line.")
         return "\n".join(parts)
     if _is_grounded(fact_pack):
         required = fact_pack.get("required_facts", [])
@@ -766,6 +805,110 @@ def _user_content(
         if previous:
             parts.append(f"REJECTED TEXT:\n{previous}")
     return "\n".join(parts)
+
+
+def _microplan_data(fact_pack: dict[str, Any], *, past: bool) -> dict[str, Any]:
+    """Flatten selected facts into labeled data without leaking a template sentence."""
+    micro = fact_pack.get("microplan")
+    micro = micro if isinstance(micro, dict) else {}
+    beat = fact_pack.get("beat")
+    beat = beat if isinstance(beat, dict) else {}
+    roles_raw = micro.get("actor_roles")
+    roles = {
+        str(item[0]): str(item[1])
+        for item in roles_raw
+        if isinstance(item, (list, tuple)) and len(item) == 2 and str(item[1]).strip()
+    } if isinstance(roles_raw, (list, tuple)) else {}
+    relation = str(micro.get("relation") or beat.get("relation") or "factual_beat")
+    node_id = str(beat.get("node") or "")
+    data: dict[str, Any] = {}
+    if hero := roles.get("hero"):
+        data["driver"] = hero
+
+    target = roles.get("target")
+    front = roles.get("front")
+    rear = roles.get("rear")
+    action = {
+        "hero_closing_on_target": "closing on the target",
+        "target_closing_on_hero": "applying pressure from behind",
+        "hero_passed_target": "completed a pass",
+        "hero_gained_position": "gained a position",
+        "hero_lost_position": "lost a position",
+        "hero_between_two_fronts": "attacking ahead while under pressure from behind",
+        "class_leader_changed": "lead changed",
+        "session_result": "session result confirmed",
+    }.get(relation)
+    if relation == "hero_closing_on_target" and target:
+        data["closing_on"] = target
+    elif relation == "target_closing_on_hero" and target:
+        data["pressure_from"] = target
+    elif relation == "hero_passed_target" and target:
+        data["passed"] = target
+    elif relation == "hero_lost_position" and target:
+        data["lost_position_to"] = target
+    elif target:
+        data["target"] = target
+    if front:
+        data["target_ahead"] = front
+    if rear:
+        data["pressure_from"] = rear
+
+    action = action or {
+        "incident_off_track": "ran off the track",
+        "quali_recap": "qualified",
+        "lap_complete": "completed a lap",
+        "personal_best": "set a personal best",
+    }.get(node_id, node_id.replace("_", " "))
+    data["action"] = action
+    data["time_frame"] = "moments_ago" if past else str(micro.get("story_state") or "live")
+
+    required_text = " ".join(
+        str(item.get("text") or "")
+        for item in fact_pack.get("required_facts", [])
+        if isinstance(item, dict)
+    )
+    structured = (
+        ("position", fact_pack.get("hero", {}).get("class_position")),
+        ("lap", fact_pack.get("session", {}).get("lap")),
+        ("lap_time", fact_pack.get("hero", {}).get("lap_time")),
+        ("delta", fact_pack.get("hero", {}).get("delta")),
+        ("streak", fact_pack.get("hero", {}).get("streak")),
+        ("gap", fact_pack.get("target", {}).get("gap")),
+        ("gap_ahead", fact_pack.get("front_target", {}).get("gap")),
+        ("gap_behind", fact_pack.get("rear_target", {}).get("gap")),
+    )
+    used_numbers: set[str] = set()
+    for key, value in structured:
+        if value is None or not _value_occurs(required_text, value):
+            continue
+        data[key] = f"P{value}" if key == "position" else value
+        used_numbers.add(_normalize_number(value))
+    required_numbers = {
+        _normalize_number(value)
+        for item in fact_pack.get("required_facts", [])
+        if isinstance(item, dict)
+        for value in item.get("required_numbers", [])
+    }
+    remaining = sorted(required_numbers - used_numbers)
+    if remaining:
+        data["values"] = remaining
+
+    known_names = {value.casefold() for value in roles.values()}
+    other_names = [
+        str(value)
+        for value in fact_pack.get("allowed_names", [])
+        if str(value).strip() and str(value).casefold() not in known_names
+    ]
+    if other_names:
+        data["other_drivers"] = other_names
+    return data
+
+
+def _value_occurs(text: str, value: object) -> bool:
+    expected = _normalize_number(value)
+    return any(
+        _normalize_number(match.group(0)) == expected for match in _NUMBER_LITERAL.finditer(text)
+    )
 
 
 @dataclass(frozen=True)
@@ -839,10 +982,12 @@ def build_polish_request(
 ) -> dict[str, Any]:
     tts = _tts_for(node)
     text = skeleton.strip()
-    return {
+    microplan = _is_microplan(fact_pack)
+    predict = max(16, min(256, int(settings.llm_num_predict)))
+    request: dict[str, Any] = {
         "model": settings.llm_model,
         "temperature": settings.llm_temperature,
-        "max_tokens": _completion_tokens(settings, tts, text, fact_pack),
+        "max_tokens": predict if microplan else _completion_tokens(settings, tts, text, fact_pack),
         # Native Ollama + OpenAI-compat: keep Qwen3 from spending the token
         # budget on a thinking trace (empty content / timeout).
         "think": False,
@@ -872,6 +1017,15 @@ def build_polish_request(
             },
         ],
     }
+    if microplan:
+        request["options"] = {
+            "num_ctx": max(256, min(8192, int(settings.llm_num_ctx))),
+            "num_thread": 4,
+            "num_predict": predict,
+            "top_k": max(1, min(100, int(settings.llm_top_k))),
+            "top_p": max(0.0, min(1.0, float(settings.llm_top_p))),
+        }
+    return request
 
 
 def _failed(

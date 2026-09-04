@@ -54,6 +54,10 @@ def editorial_priority(event_type: str, metrics: Mapping[str, Any] | None = None
         kind = str(values.get("branch") or values.get("kind") or "").lower()
         return _FLAG_PRIORITY.get(kind, 850)
     if event in _INCIDENT:
+        if event == "INCIDENT" and (metrics or {}).get("branch") == "points":
+            return 150
+        return 800
+    if event == "TRACK_EXCURSION":
         return 800
     if event in _POSITION:
         return 700

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "default": "immediate, vivid, broadcast",
+  "nodes": {
+    "incident_off_track": "urgent, startled, clipped",
+    "hunted": "pressure, mirrors, tense",
+    "hunting": "pursuit, hungry, accelerating",
+    "overtake": "decisive, punchy, celebratory",
+    "quali_recap": "matter-of-fact, grid-set",
+    "lap_complete": "clean, clock-focused, brisk"
+  }
+}
