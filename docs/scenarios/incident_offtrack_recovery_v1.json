@@ -1,0 +1,791 @@
+{
+  "schemaVersion": 1,
+  "status": "design_reference",
+  "scenarioId": "incident_offtrack_recovery",
+  "scenarioVersion": 1,
+  "baseline": {
+    "branch": "codex/fix-overlay-commentary-test-7",
+    "commit": "4497040",
+    "preserves": [
+      "strict_editorial_tiers",
+      "one_current_waiter",
+      "latest_equal_tier_replaces_waiter",
+      "ministory_commit_revalidation",
+      "llm_failure_is_silent",
+      "run_epoch_namespacing"
+    ]
+  },
+  "scope": {
+    "overlayModes": [
+      "PRACTICE",
+      "QUALIFYING",
+      "RACE",
+      "GENERIC"
+    ],
+    "subject": "hero",
+    "requiresConnected": true
+  },
+  "identity": {
+    "fields": [
+      "subsession_id",
+      "session_num",
+      "run_epoch",
+      "player_car_idx",
+      "episode_sequence"
+    ],
+    "episodeIdTemplate": "scenario:{scenarioId}:session:{subsession_id}:{session_num}:run:{run_epoch}:hero:{player_car_idx}:episode:{episode_sequence}",
+    "parentStoryId": "episode_id",
+    "beatCorrelationTemplate": "{episode_id}:beat:{beat_id}"
+  },
+  "parameters": {
+    "incidentNarrationMinDelta": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2,
+      "configBinding": "events.incident_min_delta"
+    },
+    "coalesceWindowS": 0.75,
+    "preIncidentEvidenceWindowS": 0.4,
+    "classificationWindowS": 1.2,
+    "surfaceHoldS": 0.2,
+    "motionHoldS": 0.35,
+    "recoveryHoldS": 0.6,
+    "stalledSpeedMps": 1.0,
+    "rollingSpeedMps": 2.5,
+    "movingDistanceEpsilon": 0.0008,
+    "episodeTimeoutS": 90.0,
+    "disconnectGraceS": 1.0
+  },
+  "observations": {
+    "incidents": {
+      "field": "RaceState.incidents",
+      "unit": "count",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    },
+    "trackSurface": {
+      "field": "RaceState.player_track_surface",
+      "unit": "iracing_track_location",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    },
+    "towTime": {
+      "field": "RaceState.player_tow_time",
+      "unit": "seconds",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    },
+    "speed": {
+      "field": "RaceState.speed_mps",
+      "unit": "meters_per_second",
+      "maxAgeS": 0.25,
+      "missingPolicy": "use_lap_distance_fallback"
+    },
+    "lapDistance": {
+      "field": "RaceState.player_lap_dist_pct",
+      "unit": "lap_fraction",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    },
+    "position": {
+      "field": "RaceState.class_position",
+      "fallbackField": "RaceState.position",
+      "unit": "ordinal",
+      "maxAgeS": 1.0,
+      "missingPolicy": "omit_metric"
+    }
+  },
+  "features": {
+    "incidentEdge": {
+      "estimator": "counter_positive_delta",
+      "inputs": [
+        "incidents"
+      ],
+      "resetScope": "run"
+    },
+    "surfaceHistory": {
+      "estimator": "bounded_categorical_history",
+      "inputs": [
+        "trackSurface"
+      ],
+      "historyWindowS": 1.6,
+      "resetScope": "run"
+    },
+    "motion": {
+      "estimator": "speed_with_wrapped_lap_distance_fallback",
+      "inputs": [
+        "speed",
+        "lapDistance"
+      ],
+      "resetScope": "episode"
+    }
+  },
+  "states": [
+    {
+      "id": "IDLE",
+      "initial": true,
+      "terminal": false,
+      "meaning": "No incident-recovery episode is active."
+    },
+    {
+      "id": "CLASSIFYING",
+      "initial": false,
+      "terminal": false,
+      "meaning": "An incident edge exists and bounded consequence evidence is being collected."
+    },
+    {
+      "id": "DISPLACED_OFF_TRACK",
+      "initial": false,
+      "terminal": false,
+      "meaning": "Off-track evidence is stable; wait for confirmed on-track recovery."
+    },
+    {
+      "id": "STALLED_ON_TRACK",
+      "initial": false,
+      "terminal": false,
+      "meaning": "The hero remains on track but motion is stably below the stopped threshold."
+    },
+    {
+      "id": "TOWING",
+      "initial": false,
+      "terminal": false,
+      "meaning": "Authoritative tow evidence exists; wait for tow clear and on-track motion."
+    },
+    {
+      "id": "ROLLING",
+      "initial": false,
+      "terminal": true,
+      "meaning": "The hero stayed on track and retained confirmed motion; no recovery closure is needed."
+    },
+    {
+      "id": "RECOVERED",
+      "initial": false,
+      "terminal": true,
+      "meaning": "The hero returned to confirmed usable on-track motion."
+    },
+    {
+      "id": "UNKNOWN_RESOLVED",
+      "initial": false,
+      "terminal": true,
+      "meaning": "The incident exists but consequence evidence was insufficient; abstain."
+    },
+    {
+      "id": "TIMED_OUT",
+      "initial": false,
+      "terminal": true,
+      "meaning": "The episode exceeded its bounded lifetime without a supported closure."
+    }
+  ],
+  "transitions": [
+    {
+      "id": "start_incident_episode",
+      "order": 10,
+      "from": [
+        "IDLE"
+      ],
+      "to": "CLASSIFYING",
+      "guard": "incident_count_rising",
+      "holdS": 0.0,
+      "actions": [
+        "create_episode",
+        "capture_preincident_surface_window",
+        "schedule_incident_root"
+      ],
+      "reason": "incident_counter_positive_edge"
+    },
+    {
+      "id": "coalesce_incident_increment",
+      "order": 20,
+      "from": [
+        "CLASSIFYING",
+        "DISPLACED_OFF_TRACK",
+        "STALLED_ON_TRACK",
+        "TOWING"
+      ],
+      "to": "SAME",
+      "guard": "incident_count_rising_within_coalesce_window",
+      "holdS": 0.0,
+      "actions": [
+        "increase_episode_delta",
+        "update_incident_total"
+      ],
+      "reason": "incident_increment_coalesced"
+    },
+    {
+      "id": "classify_towing",
+      "order": 30,
+      "from": [
+        "CLASSIFYING"
+      ],
+      "to": "TOWING",
+      "guard": "tow_active",
+      "withinS": 1.2,
+      "holdS": 0.0,
+      "enterConfidence": 0.99,
+      "actions": [
+        "emit_incident_if_narratable",
+        "emit_aftermath_towing"
+      ],
+      "reason": "authoritative_tow_seen"
+    },
+    {
+      "id": "classify_off_track",
+      "order": 40,
+      "from": [
+        "CLASSIFYING"
+      ],
+      "to": "DISPLACED_OFF_TRACK",
+      "guard": "surface_off_track_held_in_incident_window",
+      "withinS": 1.2,
+      "holdS": 0.2,
+      "enterConfidence": 0.8,
+      "actions": [
+        "emit_incident_off_track_if_narratable",
+        "emit_aftermath_off_track"
+      ],
+      "reason": "off_track_seen_in_incident_window"
+    },
+    {
+      "id": "classify_stalled_on_track",
+      "order": 50,
+      "from": [
+        "CLASSIFYING"
+      ],
+      "to": "STALLED_ON_TRACK",
+      "guard": "on_track_stopped_held",
+      "withinS": 1.2,
+      "holdS": 0.35,
+      "enterConfidence": 0.8,
+      "actions": [
+        "emit_incident_unknown_if_narratable",
+        "emit_aftermath_stalled_on_track"
+      ],
+      "reason": "on_track_low_motion_confirmed"
+    },
+    {
+      "id": "classify_rolling",
+      "order": 60,
+      "from": [
+        "CLASSIFYING"
+      ],
+      "to": "ROLLING",
+      "guard": "on_track_motion_held",
+      "withinS": 1.2,
+      "holdS": 0.35,
+      "enterConfidence": 0.75,
+      "actions": [
+        "emit_incident_unknown_if_narratable",
+        "emit_aftermath_rolling"
+      ],
+      "reason": "on_track_motion_confirmed"
+    },
+    {
+      "id": "classification_unknown",
+      "order": 70,
+      "from": [
+        "CLASSIFYING"
+      ],
+      "to": "UNKNOWN_RESOLVED",
+      "guard": "classification_deadline_without_supported_state",
+      "afterS": 1.2,
+      "holdS": 0.0,
+      "actions": [
+        "emit_incident_unknown_if_narratable",
+        "record_abstention"
+      ],
+      "reason": "insufficient_consequence_evidence"
+    },
+    {
+      "id": "recover_from_off_track",
+      "order": 80,
+      "from": [
+        "DISPLACED_OFF_TRACK"
+      ],
+      "to": "RECOVERED",
+      "guard": "on_track_not_towing_motion_held",
+      "holdS": 0.6,
+      "enterConfidence": 0.85,
+      "actions": [
+        "emit_back_under_way"
+      ],
+      "reason": "off_track_recovery_confirmed"
+    },
+    {
+      "id": "recover_from_stall",
+      "order": 90,
+      "from": [
+        "STALLED_ON_TRACK"
+      ],
+      "to": "RECOVERED",
+      "guard": "on_track_not_towing_motion_held",
+      "holdS": 0.6,
+      "enterConfidence": 0.85,
+      "actions": [
+        "emit_back_under_way"
+      ],
+      "reason": "stalled_recovery_confirmed"
+    },
+    {
+      "id": "recover_from_tow",
+      "order": 100,
+      "from": [
+        "TOWING"
+      ],
+      "to": "RECOVERED",
+      "guard": "tow_cleared_on_track_motion_held",
+      "holdS": 0.6,
+      "enterConfidence": 0.9,
+      "actions": [
+        "emit_back_under_way"
+      ],
+      "reason": "tow_recovery_confirmed"
+    },
+    {
+      "id": "episode_timeout",
+      "order": 110,
+      "from": [
+        "CLASSIFYING",
+        "DISPLACED_OFF_TRACK",
+        "STALLED_ON_TRACK",
+        "TOWING"
+      ],
+      "to": "TIMED_OUT",
+      "guard": "episode_age_exceeded",
+      "afterS": 90.0,
+      "clock": "episode",
+      "holdS": 0.0,
+      "actions": [
+        "record_timeout"
+      ],
+      "reason": "episode_timeout_without_closure"
+    }
+  ],
+  "emissions": {
+    "incident": {
+      "beatId": "incident",
+      "eventType": "INCIDENT",
+      "phase": "RESULT",
+      "channel": "alert",
+      "prioritySource": "event_priorities.incident",
+      "emitWhen": "episode_delta_gte_incident_narration_min_delta",
+      "metrics": [
+        "value",
+        "total",
+        "branch",
+        "nearbyCarIdx",
+        "nearbyGap",
+        "scenarioId",
+        "scenarioVersion",
+        "episodeId",
+        "parentStoryId"
+      ]
+    },
+    "aftermath": {
+      "beatId": "aftermath",
+      "eventType": "INCIDENT_AFTERMATH",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 72,
+      "compatibility": {
+        "kind": {
+          "off_track": "stalled",
+          "stalled_on_track": "stalled",
+          "towing": "stalled",
+          "rolling": "rolling"
+        }
+      },
+      "metrics": [
+        "kind",
+        "cause",
+        "value",
+        "total",
+        "surface",
+        "tow",
+        "position",
+        "scenarioId",
+        "scenarioVersion",
+        "episodeId",
+        "parentStoryId"
+      ]
+    },
+    "recovery": {
+      "beatId": "recovery",
+      "eventType": "BACK_UNDER_WAY",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 68,
+      "metrics": [
+        "kind",
+        "total",
+        "position",
+        "recoveredFrom",
+        "scenarioId",
+        "scenarioVersion",
+        "episodeId",
+        "parentStoryId"
+      ]
+    }
+  },
+  "coalescing": {
+    "key": [
+      "scenarioId",
+      "subsession_id",
+      "session_num",
+      "run_epoch",
+      "player_car_idx"
+    ],
+    "windowS": 0.75,
+    "terminalQuietPeriodS": 0.75,
+    "policy": "update_active_episode_else_start_new"
+  },
+  "terminalPolicy": {
+    "retainForS": 0.75,
+    "then": "release_episode_and_return_to_idle",
+    "lateFramesMayReopen": false
+  },
+  "conflicts": {
+    "nearbyOpponent": "context_only_never_assign_cause",
+    "pitRoad": "do_not_suppress_incident_truth",
+    "playerFinished": "allow_detection_director_owns_speech",
+    "newIncidentOutsideCoalesceWindow": "start_new_episode_after_current_terminal_or_timeout",
+    "sameBatchIncidentAndAftermath": "emit_both_prefer_incident_for_speech"
+  },
+  "resets": [
+    {
+      "reason": "session_changed",
+      "action": "invalidate_without_emission"
+    },
+    {
+      "reason": "run_epoch_changed",
+      "action": "invalidate_without_emission"
+    },
+    {
+      "reason": "hero_changed",
+      "action": "invalidate_without_emission"
+    },
+    {
+      "reason": "disconnect_grace_exceeded",
+      "action": "invalidate_without_emission"
+    }
+  ],
+  "director": {
+    "beatTiers": {
+      "INCIDENT": 800,
+      "INCIDENT_AFTERMATH": 250,
+      "BACK_UNDER_WAY_BASELINE": 100,
+      "BACK_UNDER_WAY_TARGET_WITH_VALID_EPISODE": 250
+    },
+    "sameBatchPolicy": "prefer_incident_over_aftermath",
+    "closure": {
+      "eventType": "BACK_UNDER_WAY",
+      "requiresSameParentStory": true,
+      "maxGapS": 90.0
+    },
+    "directClosureEdge": "allow_incident_to_back_under_way_when_aftermath_was_not_spoken",
+    "confidencePolicy": "within_tier_only",
+    "llmMayChangeFacts": false
+  },
+  "acceptanceTraces": [
+    {
+      "id": "off_track_then_recovered",
+      "description": "Incident edge, stable off-track evidence, then confirmed on-track motion.",
+      "initial": {
+        "subsession_id": "test7",
+        "session_num": 0,
+        "run_epoch": 0,
+        "player_car_idx": 12,
+        "incidents": 0,
+        "trackSurface": "ON_TRACK",
+        "towTime": 0.0,
+        "speed": 42.0,
+        "lapDistance": 0.40
+      },
+      "timeline": [
+        {
+          "t": 0.0,
+          "set": {
+            "incidents": 0,
+            "trackSurface": "ON_TRACK",
+            "speed": 42.0,
+            "lapDistance": 0.4
+          }
+        },
+        {
+          "t": 0.05,
+          "set": {
+            "incidents": 2,
+            "trackSurface": "OFF_TRACK",
+            "speed": 18.0,
+            "lapDistance": 0.401
+          }
+        },
+        {
+          "t": 0.26,
+          "set": {
+            "trackSurface": "OFF_TRACK",
+            "speed": 0.4,
+            "lapDistance": 0.4011
+          }
+        },
+        {
+          "t": 7.5,
+          "set": {
+            "trackSurface": "ON_TRACK",
+            "speed": 3.0,
+            "lapDistance": 0.4013
+          }
+        },
+        {
+          "t": 8.15,
+          "set": {
+            "trackSurface": "ON_TRACK",
+            "speed": 8.0,
+            "lapDistance": 0.4024
+          }
+        }
+      ],
+      "expectTransitions": [
+        "IDLE->CLASSIFYING",
+        "CLASSIFYING->DISPLACED_OFF_TRACK",
+        "DISPLACED_OFF_TRACK->RECOVERED"
+      ],
+      "expectEvents": [
+        {
+          "eventType": "INCIDENT",
+          "phase": "RESULT",
+          "branch": "off_track",
+          "earliestT": 0.05,
+          "latestT": 0.3
+        },
+        {
+          "eventType": "INCIDENT_AFTERMATH",
+          "phase": "RESULT",
+          "cause": "off_track",
+          "earliestT": 0.25,
+          "latestT": 0.5
+        },
+        {
+          "eventType": "BACK_UNDER_WAY",
+          "phase": "RESULT",
+          "earliestT": 8.1,
+          "latestT": 8.3
+        }
+      ],
+      "forbidEvents": []
+    },
+    {
+      "id": "isolated_surface_glitch",
+      "description": "One off-track sample is insufficient; the episode remains rolling or unknown.",
+      "initial": {
+        "subsession_id": "negative",
+        "session_num": 0,
+        "run_epoch": 0,
+        "player_car_idx": 12,
+        "incidents": 0,
+        "trackSurface": "ON_TRACK",
+        "towTime": 0.0,
+        "speed": 35.0,
+        "lapDistance": 0.2
+      },
+      "timeline": [
+        {
+          "t": 0.0,
+          "set": {
+            "incidents": 0,
+            "trackSurface": "ON_TRACK",
+            "speed": 35.0
+          }
+        },
+        {
+          "t": 0.1,
+          "set": {
+            "incidents": 2,
+            "trackSurface": "OFF_TRACK",
+            "speed": 34.0
+          }
+        },
+        {
+          "t": 0.18,
+          "set": {
+            "trackSurface": "ON_TRACK",
+            "speed": 34.0
+          }
+        },
+        {
+          "t": 0.55,
+          "set": {
+            "trackSurface": "ON_TRACK",
+            "speed": 33.0
+          }
+        }
+      ],
+      "expectTransitions": [
+        "IDLE->CLASSIFYING",
+        "CLASSIFYING->ROLLING"
+      ],
+      "expectEvents": [
+        {
+          "eventType": "INCIDENT",
+          "phase": "RESULT",
+          "branch": "unknown"
+        },
+        {
+          "eventType": "INCIDENT_AFTERMATH",
+          "phase": "RESULT",
+          "cause": "rolling"
+        }
+      ],
+      "forbidEvents": [
+        "BACK_UNDER_WAY"
+      ]
+    },
+    {
+      "id": "missing_motion_abstains",
+      "description": "Missing speed and lap distance cannot prove recovery.",
+      "initial": {
+        "subsession_id": "missing",
+        "session_num": 0,
+        "run_epoch": 0,
+        "player_car_idx": 12,
+        "incidents": 0,
+        "trackSurface": "ON_TRACK",
+        "towTime": 0.0,
+        "speed": null,
+        "lapDistance": null
+      },
+      "timeline": [
+        {
+          "t": 0.0,
+          "set": {
+            "incidents": 0,
+            "trackSurface": "ON_TRACK"
+          }
+        },
+        {
+          "t": 0.1,
+          "set": {
+            "incidents": 2,
+            "trackSurface": "OFF_TRACK"
+          }
+        },
+        {
+          "t": 0.35,
+          "set": {
+            "trackSurface": "OFF_TRACK"
+          }
+        },
+        {
+          "t": 4.0,
+          "set": {
+            "trackSurface": "ON_TRACK",
+            "speed": null,
+            "lapDistance": null
+          }
+        },
+        {
+          "t": 5.0,
+          "set": {
+            "trackSurface": "ON_TRACK",
+            "speed": null,
+            "lapDistance": null
+          }
+        }
+      ],
+      "expectTransitions": [
+        "IDLE->CLASSIFYING",
+        "CLASSIFYING->DISPLACED_OFF_TRACK"
+      ],
+      "expectEvents": [
+        {
+          "eventType": "INCIDENT",
+          "phase": "RESULT",
+          "branch": "off_track"
+        },
+        {
+          "eventType": "INCIDENT_AFTERMATH",
+          "phase": "RESULT",
+          "cause": "off_track"
+        }
+      ],
+      "forbidEvents": [
+        "BACK_UNDER_WAY"
+      ]
+    },
+    {
+      "id": "run_change_invalidates_episode",
+      "description": "Recovery after a run change cannot close the old episode.",
+      "initial": {
+        "subsession_id": "restart",
+        "session_num": 0,
+        "run_epoch": 0,
+        "player_car_idx": 12,
+        "incidents": 0,
+        "trackSurface": "ON_TRACK",
+        "towTime": 0.0,
+        "speed": 30.0,
+        "lapDistance": 0.7
+      },
+      "timeline": [
+        {
+          "t": 0.0,
+          "set": {
+            "incidents": 0,
+            "trackSurface": "ON_TRACK"
+          }
+        },
+        {
+          "t": 0.1,
+          "set": {
+            "incidents": 2,
+            "trackSurface": "OFF_TRACK",
+            "speed": 0.0
+          }
+        },
+        {
+          "t": 0.35,
+          "set": {
+            "trackSurface": "OFF_TRACK",
+            "speed": 0.0
+          }
+        },
+        {
+          "t": 2.0,
+          "set": {
+            "run_epoch": 1,
+            "incidents": 0,
+            "trackSurface": "ON_TRACK",
+            "speed": 20.0
+          }
+        },
+        {
+          "t": 2.8,
+          "set": {
+            "run_epoch": 1,
+            "trackSurface": "ON_TRACK",
+            "speed": 25.0
+          }
+        }
+      ],
+      "expectTransitions": [
+        "IDLE->CLASSIFYING",
+        "CLASSIFYING->DISPLACED_OFF_TRACK"
+      ],
+      "expectResetReason": "run_epoch_changed",
+      "expectEvents": [
+        {
+          "eventType": "INCIDENT",
+          "phase": "RESULT",
+          "branch": "off_track"
+        },
+        {
+          "eventType": "INCIDENT_AFTERMATH",
+          "phase": "RESULT",
+          "cause": "off_track"
+        }
+      ],
+      "forbidEvents": [
+        "BACK_UNDER_WAY"
+      ]
+    }
+  ]
+}

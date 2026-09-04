@@ -61,7 +61,25 @@ def test_valid_config_loads(tmp_path: Path) -> None:
     assert config.stream_chapters.start_title == "Stream start"
     assert config.stream_chapters.end_title == "Stream end"
     assert config.stream_chapters.youtube_vod is False
-    assert config.overlay.commentary.graph_runtime_mode == "legacy"
+    assert config.overlay.commentary.graph_runtime_mode == "active"
+    assert config.overlay.commentary.prepared_filler.mode == "active"
+    assert config.overlay.commentary.llm_temperature == 0.4
+    assert config.overlay.commentary.llm_top_p == 0.85
+    assert config.overlay.commentary.llm_top_k == 30
+    assert config.overlay.commentary.llm_num_predict == 45
+    assert config.overlay.commentary.llm_num_ctx == 512
+    assert config.overlay.race_observer.scenario_mode == "active"
+
+
+@pytest.mark.parametrize(
+    "mode, expected",
+    [("active", "active"), ("shadow", "shadow"), ("legacy", "legacy"), ("invalid", "legacy")],
+)
+def test_race_scenario_mode_config(tmp_path: Path, mode: str, expected: str) -> None:
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(f"\n[race_scenarios]\nmode = {mode}\n")
+    assert AppConfig.from_file(path).overlay.race_observer.scenario_mode == expected
 
 
 @pytest.mark.parametrize("mode", ["legacy", "shadow", "active"])

@@ -35,3 +35,17 @@ def notify_overlay_stream_started(now: float | None = None) -> None:
         notify(now if now is not None else time.monotonic())
     except Exception:
         logger.warning("stream-start commentary bridge failed", exc_info=True)
+
+
+def notify_overlay_stream_stopped(now: float | None = None) -> None:
+    """Falling OBS stream edge. No-op when overlay/commentary is down."""
+    try:
+        runtime = get_overlay_runtime()
+        if runtime is None:
+            return
+        notify = getattr(runtime, "notify_obs_stream_stopped", None)
+        if not callable(notify):
+            return
+        notify(now if now is not None else time.monotonic())
+    except Exception:
+        logger.warning("stream-stop commentary bridge failed", exc_info=True)

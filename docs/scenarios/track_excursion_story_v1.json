@@ -1,0 +1,708 @@
+{
+  "schemaVersion": 1,
+  "status": "design_reference",
+  "scenarioId": "track_excursion_story",
+  "scenarioVersion": 1,
+  "baseline": {
+    "branch": "codex/fix-overlay-commentary-test-7",
+    "commit": "4497040"
+  },
+  "composes": [
+    "incident_offtrack_recovery/v1",
+    "pit_cycle/current",
+    "race_run_epoch/current",
+    "editorial_ministory/current"
+  ],
+  "productContract": {
+    "primaryTruth": "track_excursion",
+    "genericIncidentNarrationAllowed": false,
+    "incidentVocabularyAllowedOnlyFor": "INCIDENT_POINTS_UPDATE",
+    "unknownCausePolicy": "speak_confirmed_core_only",
+    "unknownOutcomePolicy": "wait_or_end_silently"
+  },
+  "identity": {
+    "parentStoryId": "track_excursion_episode_id",
+    "requiredFields": [
+      "subsession_id",
+      "session_num",
+      "run_epoch",
+      "player_car_idx",
+      "episode_sequence"
+    ],
+    "causeTemporalRelations": [
+      "before_core",
+      "during_core",
+      "after_core"
+    ]
+  },
+  "evidenceLevels": [
+    "CONFIRMED",
+    "PROBABLE_HIGH",
+    "PROBABLE_LOW",
+    "UNKNOWN"
+  ],
+  "atomicFacts": {
+    "currentReliable": [
+      "OFF_TRACK_ENTERED",
+      "OFF_TRACK_ACTIVE",
+      "BACK_ON_TRACK",
+      "MOTION_RESTORED",
+      "STOPPED",
+      "TOW_ACTIVE",
+      "PIT_ENTRY_DRIVEN",
+      "RESET_TO_PITS"
+    ],
+    "requiresNewFeatures": [
+      "LOSS_OF_CONTROL",
+      "SLIDE",
+      "SPIN",
+      "CONTACT_VEHICLE",
+      "CONTACT_BARRIER",
+      "BRAKING_OVERSHOOT",
+      "AVOIDANCE_MANEUVER",
+      "DAMAGE_CONFIRMED",
+      "NORMAL_RUNNING_RESUMED",
+      "PACE_LOSS_SUSTAINED"
+    ]
+  },
+  "causeHypotheses": {
+    "LOSS_OF_CONTROL": {
+      "minimumNarrationConfidence": 0.9,
+      "requiredFeatureGroups": [
+        "vehicle_dynamics",
+        "motion_history"
+      ],
+      "fallback": "CAUSE_UNKNOWN"
+    },
+    "SLIDE": {
+      "minimumNarrationConfidence": 0.9,
+      "requiredFeatureGroups": [
+        "sideslip",
+        "yaw_mismatch",
+        "steering_response"
+      ],
+      "excludes": [
+        "SPIN"
+      ],
+      "fallback": "LOSS_OF_CONTROL"
+    },
+    "SPIN": {
+      "minimumNarrationConfidence": 0.9,
+      "requiredFeatureGroups": [
+        "yaw_accumulation",
+        "forward_progress_loss"
+      ],
+      "fallback": "LOSS_OF_CONTROL"
+    },
+    "CONTACT_VEHICLE": {
+      "minimumNarrationConfidence": 0.95,
+      "requiredFeatureGroups": [
+        "impact_impulse",
+        "independent_relative_vehicle_evidence"
+      ],
+      "proximityAloneIsSufficient": false,
+      "mayNameDriverWithoutIndependentIdentity": false,
+      "fallback": "CONTACT_UNKNOWN"
+    },
+    "CONTACT_BARRIER": {
+      "minimumNarrationConfidence": 0.95,
+      "requiredFeatureGroups": [
+        "impact_impulse",
+        "independent_boundary_evidence"
+      ],
+      "fallback": "CONTACT_UNKNOWN"
+    },
+    "BRAKING_OVERSHOOT": {
+      "minimumNarrationConfidence": 0.92,
+      "requiredFeatureGroups": [
+        "trusted_track_car_braking_reference",
+        "late_brake_deviation",
+        "entry_speed_deviation",
+        "compatible_trajectory_result"
+      ],
+      "fallback": "CAUSE_UNKNOWN"
+    },
+    "AVOIDANCE_MANEUVER": {
+      "minimumNarrationConfidence": 0.95,
+      "requiredFeatureGroups": [
+        "collision_corridor",
+        "evasive_input",
+        "temporal_precedence"
+      ],
+      "fallback": "CAUSE_UNKNOWN"
+    },
+    "CAUSE_UNKNOWN": {
+      "minimumNarrationConfidence": 0.0,
+      "speechPolicy": "omit_cause"
+    }
+  },
+  "episodeStart": {
+    "guard": "surface_off_track_held",
+    "attachPreRollS": 2.0,
+    "preRollFacts": [
+      "LOSS_OF_CONTROL",
+      "SLIDE",
+      "SPIN",
+      "CONTACT_VEHICLE",
+      "CONTACT_BARRIER",
+      "CONTACT_UNKNOWN",
+      "BRAKING_OVERSHOOT",
+      "AVOIDANCE_MANEUVER"
+    ],
+    "onTrackSaveStartsThisScenario": false,
+    "onTrackSaveScenario": "vehicle_control_story"
+  },
+  "regions": {
+    "location": {
+      "initial": "ON_TRACK",
+      "states": [
+        "ON_TRACK",
+        "OFF_TRACK_ENTERED",
+        "OFF_TRACK_ACTIVE",
+        "REJOINED",
+        "PIT",
+        "NOT_IN_WORLD"
+      ]
+    },
+    "control": {
+      "initial": "STABLE",
+      "states": [
+        "STABLE",
+        "LOSS_OF_CONTROL",
+        "SLIDE",
+        "SPIN",
+        "STOPPED",
+        "CONTROL_REGAINED",
+        "UNKNOWN"
+      ]
+    },
+    "contact": {
+      "initial": "NONE",
+      "states": [
+        "NONE",
+        "CONTACT_UNKNOWN",
+        "CONTACT_VEHICLE",
+        "CONTACT_BARRIER"
+      ],
+      "attributes": [
+        "temporal_relation",
+        "confidence",
+        "target_identity"
+      ]
+    },
+    "consequence": {
+      "initial": "EVALUATING",
+      "states": [
+        "EVALUATING",
+        "NORMAL_PACE",
+        "PACE_LOSS_SUSTAINED",
+        "DAMAGE_SUSPECTED",
+        "DAMAGE_CONFIRMED",
+        "LIMPING_TO_PITS",
+        "PIT_FOR_REPAIRS",
+        "TOW_STARTED",
+        "RESET_TO_PITS",
+        "RUN_CONTINUATION_LOST",
+        "RESOLVED_UNKNOWN"
+      ]
+    }
+  },
+  "transitions": [
+    {
+      "id": "confirm_off_track",
+      "region": "location",
+      "from": [
+        "ON_TRACK"
+      ],
+      "to": "OFF_TRACK_ENTERED",
+      "guard": "surface_off_track_held",
+      "minimumConfidence": 0.85,
+      "emit": "TRACK_EXCURSION"
+    },
+    {
+      "id": "off_track_active",
+      "region": "location",
+      "from": [
+        "OFF_TRACK_ENTERED"
+      ],
+      "to": "OFF_TRACK_ACTIVE",
+      "guard": "surface_remains_off_track",
+      "emit": null
+    },
+    {
+      "id": "off_track_to_stopped",
+      "region": "control",
+      "from": [
+        "STABLE",
+        "LOSS_OF_CONTROL",
+        "SLIDE",
+        "SPIN",
+        "UNKNOWN"
+      ],
+      "to": "STOPPED",
+      "whenRegions": {
+        "location": [
+          "OFF_TRACK_ENTERED",
+          "OFF_TRACK_ACTIVE"
+        ]
+      },
+      "guard": "motion_below_stopped_threshold_held",
+      "emit": "STOPPED_AFTER_EXCURSION"
+    },
+    {
+      "id": "contact_after_core",
+      "region": "contact",
+      "from": [
+        "NONE",
+        "CONTACT_UNKNOWN"
+      ],
+      "toFromGuard": [
+        "CONTACT_UNKNOWN",
+        "CONTACT_VEHICLE",
+        "CONTACT_BARRIER"
+      ],
+      "whenRegions": {
+        "location": [
+          "OFF_TRACK_ENTERED",
+          "OFF_TRACK_ACTIVE",
+          "REJOINED"
+        ]
+      },
+      "guard": "contact_evidence_classified",
+      "setAttribute": {
+        "temporal_relation": "after_core"
+      },
+      "emit": "CONTACT"
+    },
+    {
+      "id": "damage_suspected_after_contact",
+      "region": "consequence",
+      "from": [
+        "EVALUATING",
+        "NORMAL_PACE",
+        "PACE_LOSS_SUSTAINED"
+      ],
+      "to": "DAMAGE_SUSPECTED",
+      "whenRegions": {
+        "contact": [
+          "CONTACT_UNKNOWN",
+          "CONTACT_VEHICLE",
+          "CONTACT_BARRIER"
+        ]
+      },
+      "guard": "contact_plus_sustained_vehicle_degradation",
+      "emit": "DAMAGE_SUSPECTED"
+    },
+    {
+      "id": "rejoin_surface",
+      "region": "location",
+      "from": [
+        "OFF_TRACK_ENTERED",
+        "OFF_TRACK_ACTIVE"
+      ],
+      "to": "REJOINED",
+      "guard": "surface_on_track_held",
+      "minimumConfidence": 0.85,
+      "emit": "BACK_ON_TRACK"
+    },
+    {
+      "id": "control_restored",
+      "region": "control",
+      "from": [
+        "LOSS_OF_CONTROL",
+        "SLIDE",
+        "SPIN",
+        "STOPPED",
+        "UNKNOWN"
+      ],
+      "to": "CONTROL_REGAINED",
+      "whenRegions": {
+        "location": [
+          "REJOINED",
+          "ON_TRACK"
+        ]
+      },
+      "guard": "on_track_controlled_motion_held",
+      "minimumConfidence": 0.85,
+      "emit": "CONTROL_REGAINED"
+    },
+    {
+      "id": "normal_pace",
+      "region": "consequence",
+      "from": [
+        "EVALUATING",
+        "PACE_LOSS_SUSTAINED",
+        "DAMAGE_SUSPECTED"
+      ],
+      "to": "NORMAL_PACE",
+      "whenRegions": {
+        "location": [
+          "REJOINED",
+          "ON_TRACK"
+        ]
+      },
+      "guard": "local_pace_normal_held",
+      "emit": "NORMAL_RUNNING_RESUMED"
+    },
+    {
+      "id": "sustained_pace_loss",
+      "region": "consequence",
+      "from": [
+        "EVALUATING",
+        "NORMAL_PACE"
+      ],
+      "to": "PACE_LOSS_SUSTAINED",
+      "whenRegions": {
+        "location": [
+          "REJOINED",
+          "ON_TRACK"
+        ]
+      },
+      "guard": "local_pace_loss_held",
+      "emit": "PACE_LOSS_SUSTAINED"
+    },
+    {
+      "id": "race_tow",
+      "region": "consequence",
+      "from": [
+        "EVALUATING",
+        "NORMAL_PACE",
+        "PACE_LOSS_SUSTAINED",
+        "DAMAGE_SUSPECTED",
+        "DAMAGE_CONFIRMED"
+      ],
+      "to": "TOW_STARTED",
+      "guard": "tow_active_in_race_mode",
+      "minimumConfidence": 0.99,
+      "emit": "TOW_STARTED"
+    },
+    {
+      "id": "practice_quali_reset",
+      "region": "consequence",
+      "from": [
+        "EVALUATING",
+        "NORMAL_PACE",
+        "PACE_LOSS_SUSTAINED",
+        "DAMAGE_SUSPECTED",
+        "DAMAGE_CONFIRMED"
+      ],
+      "to": "RESET_TO_PITS",
+      "guard": "reset_teleport_in_practice_or_qualifying",
+      "minimumConfidence": 0.95,
+      "emit": "RESET_TO_PITS"
+    },
+    {
+      "id": "limp_to_pits",
+      "region": "consequence",
+      "from": [
+        "PACE_LOSS_SUSTAINED",
+        "DAMAGE_SUSPECTED"
+      ],
+      "to": "LIMPING_TO_PITS",
+      "guard": "continuous_slow_progress_then_pit_approach",
+      "emit": "LIMPING_TO_PITS"
+    },
+    {
+      "id": "repair_confirmed",
+      "region": "consequence",
+      "from": [
+        "LIMPING_TO_PITS",
+        "DAMAGE_SUSPECTED"
+      ],
+      "to": "PIT_FOR_REPAIRS",
+      "guard": "driven_pit_entry_with_repair_evidence",
+      "emit": "PIT_FOR_REPAIRS"
+    }
+  ],
+  "outcomeRules": {
+    "BACK_ON_TRACK": "surface_fact_only",
+    "CONTROL_REGAINED": "control_fact_only",
+    "NORMAL_RUNNING_RESUMED": "pace_fact_only",
+    "PACE_LOSS_SUSTAINED": "must_not_assert_damage",
+    "LIMPING_TO_PITS": "may_say_slow_and_heading_to_pits",
+    "PIT_FOR_REPAIRS": "requires_repair_confirmation",
+    "TOW_STARTED": "must_not_assert_final_retirement",
+    "RESET_TO_PITS": "must_not_call_driven_pit_entry"
+  },
+  "commentary": {
+    "specificTruthDominatesGeneric": true,
+    "genericIncidentNodeEligibleForTrackExcursion": false,
+    "allowedIncidentVocabularyEventTypes": [
+      "INCIDENT_POINTS_UPDATE"
+    ],
+    "forbiddenLexemes": {
+      "cs": [
+        "incident",
+        "incidentu",
+        "incidentem",
+        "incidenty",
+        "incidentů",
+        "incidentech"
+      ],
+      "en": [
+        "incident",
+        "incidents"
+      ]
+    },
+    "compoundRootPolicy": "one_sentence_when_cause_and_core_share_parent_and_temporal_relation",
+    "weakCausePolicy": "omit_not_hedge",
+    "llmFailurePolicy": "silent"
+  },
+  "graphMigration": {
+    "sourceGraphVersion": 2,
+    "targetGraphVersion": 3,
+    "currentCoverage": {
+      "nodes": [
+        "incident",
+        "incident_off_track",
+        "incident_unknown",
+        "incident_aftermath",
+        "back_under_way"
+      ],
+      "edges": [
+        "incident->incident_aftermath:any_episode",
+        "incident_aftermath->back_under_way:same_correlation"
+      ],
+      "knownBreak": "incident_off_track_has_no_path_to_aftermath_or_back_under_way"
+    },
+    "retireNodes": [
+      "incident_unknown"
+    ],
+    "migrateNodes": {
+      "incident": "incident_points_update",
+      "incident_off_track": "track_excursion",
+      "incident_aftermath": "split_by_semantic_fact",
+      "back_under_way": "split_into_track_rejoined_control_regained_normal_running"
+    },
+    "candidateFields": [
+      "scenario_id",
+      "parent_story_id",
+      "beat_role",
+      "primary_relation",
+      "cause",
+      "outcome",
+      "temporal_relation",
+      "evidence_level",
+      "confidence"
+    ],
+    "edgeIdentityPolicies": [
+      "same_correlation",
+      "same_parent_story",
+      "caused_by_parent_story",
+      "same_run",
+      "any"
+    ],
+    "semanticPolicy": "scenario_episode",
+    "materialChangePolicy": "scenario_beat",
+    "rootNodes": [
+      "track_excursion",
+      "loss_of_control_to_excursion",
+      "slide_to_excursion",
+      "spin_to_excursion",
+      "vehicle_contact_to_excursion",
+      "barrier_contact_to_excursion",
+      "braking_overshoot_to_excursion",
+      "avoidance_to_excursion"
+    ],
+    "developmentNodes": [
+      "stopped_after_excursion",
+      "vehicle_contact_after_excursion",
+      "barrier_contact_after_excursion",
+      "pace_loss_sustained",
+      "limping_to_pits"
+    ],
+    "closureNodes": [
+      "track_rejoined",
+      "control_regained",
+      "normal_running_resumed"
+    ],
+    "terminalNodes": [
+      "pit_for_repairs",
+      "tow_started_race",
+      "reset_to_pits",
+      "run_continuation_lost"
+    ],
+    "requiredPathClasses": [
+      "roots->stopped_after_excursion",
+      "roots->contact_after_excursion",
+      "roots->track_rejoined",
+      "roots->tow_started_race",
+      "roots->reset_to_pits",
+      "track_rejoined->control_regained",
+      "track_rejoined->normal_running_resumed",
+      "track_rejoined->pace_loss_sustained",
+      "control_regained->normal_running_resumed",
+      "control_regained->pace_loss_sustained",
+      "pace_loss_sustained->normal_running_resumed",
+      "pace_loss_sustained->limping_to_pits",
+      "limping_to_pits->pit_entry",
+      "limping_to_pits->pit_for_repairs"
+    ],
+    "requiredDirectSkipClosures": [
+      "roots->track_rejoined",
+      "roots->normal_running_resumed",
+      "roots->pace_loss_sustained",
+      "roots->limping_to_pits",
+      "roots->pit_for_repairs",
+      "roots->tow_started_race",
+      "roots->reset_to_pits",
+      "stopped_after_excursion->normal_running_resumed",
+      "stopped_after_excursion->pace_loss_sustained",
+      "stopped_after_excursion->limping_to_pits"
+    ],
+    "selectionRules": {
+      "rootCompoundDominatesSeparateCauseAndCore": true,
+      "confirmedCoreDominatesIncidentPoints": true,
+      "oneRootUtterancePerParentStory": true,
+      "coalesceRejoinControlAndPaceWithinCompositionWindow": true,
+      "differentParentStoriesNeverSuppressEachOther": true
+    },
+    "validationRules": {
+      "physicalNodesMayUseIncidentVocabulary": false,
+      "incidentPointsNodeMayUseIncidentVocabulary": true,
+      "newCycleEdgesMayUseAnyIdentity": false,
+      "everySelectableRootMustReachValidModeTerminals": true,
+      "repairNodeRequiresConfirmedRepairEvidence": true
+    }
+  },
+  "exampleNarratives": [
+    {
+      "facts": [
+        "OFF_TRACK_ENTERED"
+      ],
+      "cs": "Vyjel mimo trať."
+    },
+    {
+      "facts": [
+        "SLIDE",
+        "OFF_TRACK_ENTERED"
+      ],
+      "cs": "Auto šlo do smyku a skončilo mimo trať."
+    },
+    {
+      "facts": [
+        "CONTACT_VEHICLE",
+        "OFF_TRACK_ENTERED"
+      ],
+      "cs": "Po kontaktu s vozem vedle končí mimo trať."
+    },
+    {
+      "facts": [
+        "BRAKING_OVERSHOOT",
+        "OFF_TRACK_ENTERED"
+      ],
+      "cs": "Probrzdil nájezd a vyjel mimo trať."
+    },
+    {
+      "facts": [
+        "AVOIDANCE_MANEUVER",
+        "OFF_TRACK_ENTERED"
+      ],
+      "cs": "Při úhybném manévru vyjel mimo trať."
+    },
+    {
+      "facts": [
+        "CONTROL_REGAINED"
+      ],
+      "cs": "Auto srovnal a pokračuje."
+    },
+    {
+      "facts": [
+        "PACE_LOSS_SUSTAINED"
+      ],
+      "cs": "Pokračuje, ale výrazně pomaleji."
+    },
+    {
+      "facts": [
+        "LIMPING_TO_PITS"
+      ],
+      "cs": "Pomalu dojíždí zbytek kola a míří do boxů."
+    },
+    {
+      "facts": [
+        "TOW_STARTED"
+      ],
+      "cs": "Auto zůstalo stát a následuje odtah."
+    },
+    {
+      "facts": [
+        "RESET_TO_PITS"
+      ],
+      "cs": "Resetuje do boxů; toto kolo končí."
+    }
+  ],
+  "acceptanceCases": [
+    {
+      "id": "off_track_suppresses_generic_incident_copy",
+      "given": [
+        "incident_counter_rise",
+        "OFF_TRACK_ENTERED"
+      ],
+      "mustSelectSemanticFact": "OFF_TRACK_ENTERED",
+      "mustNotSelectNode": "incident",
+      "mustNotContainLexeme": "incident"
+    },
+    {
+      "id": "contact_after_excursion_is_not_assumed_cause",
+      "given": [
+        "OFF_TRACK_ENTERED@0.0",
+        "CONTACT_PROBABLE@0.8"
+      ],
+      "expectTemporalRelation": "after_core",
+      "mustNotClaim": "contact_caused_excursion"
+    },
+    {
+      "id": "slow_rejoin_does_not_assert_damage",
+      "given": [
+        "BACK_ON_TRACK",
+        "PACE_LOSS_SUSTAINED"
+      ],
+      "maySay": [
+        "back_on_track",
+        "continuing_slowly"
+      ],
+      "mustNotSay": [
+        "damage_confirmed",
+        "pit_for_repairs"
+      ]
+    },
+    {
+      "id": "race_tow_is_not_retirement",
+      "mode": "RACE",
+      "given": [
+        "OFF_TRACK_ENTERED",
+        "STOPPED",
+        "TOW_ACTIVE"
+      ],
+      "expectOutcome": "TOW_STARTED",
+      "mustNotSay": "retired"
+    },
+    {
+      "id": "practice_reset_is_not_driven_pit_entry",
+      "mode": "PRACTICE",
+      "given": [
+        "OFF_TRACK_ENTERED",
+        "reset_teleport_signature"
+      ],
+      "expectOutcome": "RESET_TO_PITS",
+      "forbidOutcome": "PIT_ENTRY_DRIVEN"
+    },
+    {
+      "id": "unknown_cause_keeps_specific_core",
+      "given": [
+        "CAUSE_UNKNOWN",
+        "OFF_TRACK_ENTERED"
+      ],
+      "mustSayFact": "OFF_TRACK_ENTERED",
+      "mustOmit": "cause"
+    },
+    {
+      "id": "incident_word_allowed_for_points_only",
+      "givenEventType": "INCIDENT_POINTS_UPDATE",
+      "givenMetrics": {
+        "incidentPoints": 4
+      },
+      "mayContainLexeme": "incident"
+    }
+  ]
+}

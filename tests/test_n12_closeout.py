@@ -196,12 +196,19 @@ def test_pipeline_context_includes_quali_bag_grid_story_system_and_hud() -> None
             "active_stories_v4": [{"eventType": "HUNTING"}],
         },
         grid_story=True,
+        prepared={"start_mode": "rolling", "field_size": 20},
     )
 
-    assert payload["story"]["quali_bag"] == {"class_position": 4, "best_lap_s": 90.0}
+    assert payload["story"]["quali_bag"] == {
+        "class_position": 4,
+        "best_lap_s": 90.0,
+        "class_id": None,
+        "subsession_id": None,
+    }
     assert payload["config"]["grid_story"] is True
     assert payload["system"]["cpu"]["load"] is None
     assert payload["hud"]["active_events"] == [{"id": "a"}]
+    assert payload["prepared"] == {"start_mode": "rolling", "field_size": 20}
 
 
 @pytest.mark.asyncio

@@ -52,6 +52,34 @@ def load_style_cards() -> tuple[StyleCard, ...]:
     return cards
 
 
+@lru_cache(maxsize=1)
+def load_node_moods() -> tuple[str, dict[str, str]]:
+    """Load short per-node mood hints; never full example sentences."""
+    path = Path(__file__).resolve().parent / "data" / "node_moods.json"
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    default = _validated_mood(raw.get("default"), key="default")
+    nodes = raw.get("nodes")
+    if not isinstance(nodes, dict):
+        raise ValueError("node mood catalog must contain an object named nodes")
+    return default, {
+        str(node_id): _validated_mood(mood, key=str(node_id))
+        for node_id, mood in nodes.items()
+    }
+
+
+def mood_for_node(node_id: str) -> str:
+    default, nodes = load_node_moods()
+    return nodes.get(str(node_id), default)
+
+
+def _validated_mood(value: object, *, key: str) -> str:
+    mood = str(value or "").strip()
+    words = [part.strip() for part in mood.split(",") if part.strip()]
+    if not 2 <= len(words) <= 4 or any(len(part.split()) > 2 for part in words):
+        raise ValueError(f"node mood {key!r} must contain 2-4 short comma-separated adjectives")
+    return ", ".join(words)
+
+
 def select_style_card(
     ids: tuple[str, ...], relation: str, state: str, count: int, *, index: int = 0
 ) -> StyleCard:

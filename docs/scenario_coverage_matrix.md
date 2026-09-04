@@ -1,8 +1,8 @@
 # Scenario coverage matrix (overlay · commentary · OBS)
 
-**Status:** inventory — **re-pinned 2026-09-02** with stateful commentary graph modes on #210 (active implementation is opt-in; default remains `legacy`). Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.
+**Status:** inventory — **re-pinned 2026-09-02** with stateful commentary graph modes on #210. Active graph and prepared commentary are the defaults whenever master commentary is enabled. Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.
 
-**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 finish split shipped on the stacked epic; N5 `SESSION_FLAG` is commentary-only, gated)
+**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 finish split shipped on the stacked epic; N5 `SESSION_FLAG` is commentary-only, gated), [race_scenario_engine_spec.md](race_scenario_engine_spec.md) (proposed deterministic scenario contract; no runtime change yet), [track_excursion_story_spec.md](track_excursion_story_spec.md) (off-track causes, outcomes, and spoken-language contract), [track_excursion_implementation_plan.md](track_excursion_implementation_plan.md) (sequenced implementation, ownership, and rollout gates), [buffered editorial microstories](commentary_content_db_plan.md#11-buffered-editorial-microstories--proposed-expansion) (proposed stream/session intro, out-lap, start and conclusion orchestration)
 
 ## 0. Two session concepts — do not mix
 
@@ -31,7 +31,22 @@ TelemetrySnapshot
 
 **Sidecars (commentary):** `InCarDetector` (`ENTER_CAR`), `SessionBriefsDetector` (intros / SoF / weather) — not classic emitters.
 
+**Prepared editorial scenarios:** the prepared graph owns 53 concrete EN/CS semantic contracts. The producer-owned stage FSM scopes plans by
+stream/session/run/stage/stint/class, reserves bounded capacity for the current and predicted next
+stage, and closes Practice/Qualifying/Race through confirmed-result branches. Session/run reset
+keeps only the currently speaking unit; disconnect cancels generation; OBS stop hard-invalidates
+generation, waiters and TTS. Validation proceeds directly through the audible
+[private-stream active matrix](commentary_prepared_active_test.md); iRacing Data API enrichment is
+backlog and is not required for the core cut.
+
 ## 2. Feature defaults (`config.example.ini`)
+
+### `[race_scenarios]`
+
+`mode=active` (development default) connects the new current-signal excursion detector and replaces
+legacy aftermath speech. Graph v3 covers root, stop, rejoin, renewed motion, Race tow and observed
+pit return. Causes, damage, repairs and ESC/reset remain unknown. `shadow` logs only the new path;
+`legacy` disables it. See [exact live coverage and test protocol](track_excursion_live_test.md).
 
 ### `[event_engine]` (example profile = all on)
 
@@ -222,6 +237,9 @@ From `event_catalog.json` fallbacks:
 4. `TIME_LOST` / `SECTOR_SPLIT` — plate fallback / sector speak opt-in  
 5. Reserved bio plates without emitters  
 6. Overlay + commentary are **peers** via `EventFanout` (P0). Sidecars (`InCarDetector`, `SessionBriefsDetector`) still feed commentary only.
+7. Prepared intro/out-lap/start/conclusion coverage runs by default in `active` when commentary is
+   enabled. The private-stream matrix validates audible output directly; `legacy` remains the
+   immediate rollback path and `shadow` an optional diagnostic mode.
 
 ## 7. Evidence map
 

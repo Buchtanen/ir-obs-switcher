@@ -8,7 +8,7 @@ import random
 import time
 from collections import deque
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from irswitch.commentary.anti_repeat import (
@@ -36,6 +36,7 @@ from irswitch.commentary.priorities import editorial_priority
 from irswitch.commentary.scheduler import SpeechScheduler
 from irswitch.commentary.slot_format import format_spoken_bindings
 from irswitch.commentary.speech_hero import mix_hero_name, resolve_hero_names
+from irswitch.commentary.story_identity import edge_identity_matches
 from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink, TtsSink, build_tts_sink
 from irswitch.commentary.validator import (
     estimate_seconds,
@@ -103,6 +104,7 @@ class _LastSpoken:
     node_id: str
     correlation_id: str
     at: float
+    envelope: EventEnvelope | None = None
 
 
 @dataclass
@@ -132,6 +134,7 @@ class CommentaryDirector:
     _current_event_type: str | None = None
     filler_provider: Callable[[float], EventEnvelope | None] | None = None
     filler_formatter: Callable[[EventEnvelope], str | None] | None = None
+    _prepared_graph_candidate: GraphCandidate | None = None
     _iracing_hero_names: tuple[str, ...] = field(default_factory=tuple)
     opener: OpenerMutex = field(default_factory=OpenerMutex)
     # N7: race_observer.grid_story — skip SESSION_INTRO_RACE when the quali bag exists.
@@ -446,9 +449,15 @@ class CommentaryDirector:
             return None
         self._sync_scheduler_settings()
         graph_active = _graph_mode(self.settings) == "active" and self.graph_runtime is not None
-        if not self._scheduler.settings.defer_enabled and not graph_active:
+        prepared_mode = getattr(getattr(self.settings, "prepared_filler", None), "mode", "legacy")
+        if (
+            not self._scheduler.settings.defer_enabled
+            and not graph_active
+            and prepared_mode == "legacy"
+            and not len(self._scheduler)
+        ):
             return None
-        if self._scheduler.settings.defer_enabled:
+        if self._scheduler.settings.defer_enabled or len(self._scheduler):
             for expired in self._scheduler.expire(now):
                 self._record(
                     action="skipped",
@@ -460,9 +469,7 @@ class CommentaryDirector:
                 )
         if now < self._busy_until or now < self._global_ready_at or self._sink_busy():
             return None
-        deferred = (
-            self._scheduler.pop_ready(now) if self._scheduler.settings.defer_enabled else None
-        )
+        deferred = self._scheduler.pop_ready(now)
         if deferred is not None:
             # Speak only the best deferred line; drop the rest (never drain queue).
             for dropped in self._scheduler.clear():
@@ -511,44 +518,138 @@ class CommentaryDirector:
         # Prefer graph node when authored; else template formatter from RaceObserver.
         emotion = "unknown"
         graph_winner: GraphSelection | None = None
-        if _graph_mode(self.settings) == "active":
+        is_prepared = isinstance(envelope.metrics.get("preparedText"), str)
+        if _graph_mode(self.settings) == "active" and not is_prepared:
             graph_winner = self._evaluate_graph([envelope], emotion=emotion, now=now)
             if graph_winner is None:
                 return None
+        prepared_node = None
+        if (
+            is_prepared
+            and self._prepared_graph_candidate is not None
+            and self._prepared_graph_candidate.event_id == envelope.event_id
+        ):
+            prepared_node = self.graph.nodes.get(self._prepared_graph_candidate.node_id)
         drafted = self._consider(
             envelope,
             emotion,
             now,
             commit=False,
             node_override=(
-                self.graph.nodes[graph_winner.candidate.node_id]
-                if graph_winner is not None
-                else None
+                prepared_node
+                if prepared_node is not None
+                else (
+                    self.graph.nodes[graph_winner.candidate.node_id]
+                    if graph_winner is not None
+                    else None
+                )
             ),
-            gates_checked=graph_winner is not None,
+            gates_checked=graph_winner is not None or is_prepared,
             graph_score=graph_winner.score.final if graph_winner is not None else None,
         )
         if drafted is not None:
             return self._speak_prepared(drafted, now=now, reason="silence_fill", past=False)
         return None
 
-    def _utterance_from_formatter(self, envelope: EventEnvelope) -> CommentaryUtterance | None:
+    def rank_prepared_fillers(
+        self, envelopes: list[EventEnvelope], *, now: float
+    ) -> EventEnvelope | None:
+        """Rank already-grounded prepared topics with the existing graph runtime."""
+        self._prepared_graph_candidate = None
+        runtime = self.graph_runtime
+        candidates: list[GraphCandidate] = []
+        for envelope in envelopes:
+            node_id = str(envelope.metrics.get("preparedNodeId") or "")
+            node = self.graph.nodes.get(node_id)
+            if node is None or node.prepared is None:
+                self._record(
+                    action="skipped",
+                    reason="graph_contract_missing",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node_id,
+                )
+                continue
+            candidate = candidate_from_envelope(
+                node,
+                envelope,
+                run_epoch=_run_epoch(envelope),
+                story_id=None,
+                source_revision=envelope.sequence,
+            )
+            candidate = replace(
+                candidate,
+                semantic_key=str(
+                    envelope.metrics.get("preparedSemanticKey") or candidate.semantic_key
+                ),
+                material_revision=str(
+                    envelope.metrics.get("preparedMaterialRevision") or candidate.material_revision
+                ),
+                priority=node.speak_priority,
+            )
+            candidates.append(candidate)
+        if not candidates:
+            return None
+        if runtime is None:
+            return max(candidates, key=lambda item: (item.priority, item.node_id)).envelope
+        winner = runtime.select(candidates, now=now)
+        self._prepared_graph_candidate = winner.candidate if winner is not None else None
+        for candidate in candidates:
+            score = runtime.score(candidate, now=now)
+            self._emit_graph_decision(
+                candidate,
+                score,
+                now=now,
+                decision=(
+                    "selected"
+                    if winner is not None and winner.candidate == candidate
+                    else "rejected"
+                ),
+                reason=_graph_reason(
+                    score,
+                    selected=winner is not None and winner.candidate == candidate,
+                    runtime=runtime,
+                ),
+            )
+        return winner.candidate.envelope if winner is not None else None
+
+    def _utterance_from_formatter(
+        self, envelope: EventEnvelope, *, node: GraphNode | None = None
+    ) -> CommentaryUtterance | None:
         """Build a one-off utterance when the graph has no matching node."""
-        formatter = self.filler_formatter
-        if formatter is None:
-            return None
-        try:
-            text = formatter(envelope)
-        except Exception:
-            logger.warning("filler_formatter failed", exc_info=True)
-            return None
+        prepared_text = envelope.metrics.get("preparedText")
+        text: str | None
+        if isinstance(prepared_text, str):
+            text = prepared_text.strip()
+        else:
+            formatter = self.filler_formatter
+            if formatter is None:
+                return None
+            try:
+                text = formatter(envelope)
+            except Exception:
+                logger.warning("filler_formatter failed", exc_info=True)
+                return None
         if not text:
             return None
-        text, hero_names, hero_name = self._apply_hero_mix(text)
+        prepared = isinstance(prepared_text, str)
+        prepared_candidate = self._prepared_graph_candidate
+        if (
+            prepared_candidate is not None
+            and prepared_candidate.event_id != envelope.event_id
+        ):
+            prepared_candidate = None
+        hero_names: tuple[str, ...]
+        hero_name: str | None
+        if prepared:
+            hero_names, hero_name = (), None
+        else:
+            text, hero_names, hero_name = self._apply_hero_mix(text)
         from irswitch.commentary.graph import GraphNode, TtsLimits
 
-        node = GraphNode(
-            id=f"fmt:{envelope.event_type.lower()}",
+        prepared_limit = self.settings.prepared_filler.max_utterance_s
+        node = node or GraphNode(
+            id=str(envelope.metrics.get("preparedNodeId") or f"fmt:{envelope.event_type.lower()}"),
             family="session",
             event_types=(envelope.event_type,),
             phases=("RESULT",),
@@ -556,7 +657,7 @@ class CommentaryDirector:
             cooldown_s=8.0,
             slots=(),
             hr_states=("unknown",),
-            tts=TtsLimits(),
+            tts=(TtsLimits(max_chars=600, max_seconds=prepared_limit) if prepared else TtsLimits()),
             variants={},
         )
         return CommentaryUtterance(
@@ -576,6 +677,15 @@ class CommentaryDirector:
             story_token=(
                 self.story_registry.token_for(envelope) if self.story_registry is not None else None
             ),
+            prepared=prepared,
+            prepared_plan_id=_optional_text(envelope.metrics.get("preparedPlanId")),
+            prepared_variant_id=_optional_text(envelope.metrics.get("preparedVariantId")),
+            prepared_fatal_episode=_optional_int(envelope.metrics.get("preparedFatalEpisode")),
+            prepared_stage=_optional_text(envelope.metrics.get("preparedStage")),
+            prepared_stage_epoch=_optional_int(envelope.metrics.get("preparedStageEpoch")) or 0,
+            prepared_stream_epoch=_optional_int(envelope.metrics.get("preparedStreamEpoch")) or 0,
+            prepared_terminal=bool(envelope.metrics.get("preparedTerminal")),
+            graph_candidate=(prepared_candidate if prepared else None),
         )
 
     def observe(
@@ -596,6 +706,29 @@ class CommentaryDirector:
         if language is not None:
             self.language = normalize_language(language)
 
+        pending = self._scheduler.peek()
+        if pending is not None and pending.utterance.event_type == "TRACK_EXCURSION":
+            prior = pending.utterance.graph_candidate
+            for envelope in envelopes:
+                newer_phase = (
+                    prior is not None
+                    and envelope.event_type == "TRACK_EXCURSION"
+                    and envelope.subject.car_id == prior.envelope.subject.car_id
+                    and envelope.monotonic_ms >= prior.envelope.monotonic_ms
+                )
+                higher_tier = (
+                    editorial_priority(envelope.event_type, envelope.metrics) > pending.priority
+                )
+                if _is_speak_beat(envelope) and (newer_phase or higher_tier):
+                    self._scheduler.clear()
+                    self._record(
+                        action="skipped",
+                        reason="pending_scenario_superseded",
+                        now=now,
+                        event_type=pending.utterance.event_type,
+                        node_id=pending.utterance.node_id,
+                    )
+                    break
         flushed = self.tick(now, bio, allow_filler=not envelopes)
         if flushed is not None and not envelopes:
             return flushed
@@ -630,7 +763,7 @@ class CommentaryDirector:
             ):
                 self._hard_interrupt(now)
                 busy = False
-            elif self._scheduler.settings.defer_enabled:
+            elif self._scheduler.settings.defer_enabled or top.event_type == "TRACK_EXCURSION":
                 return self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             else:
                 self._record(
@@ -642,6 +775,8 @@ class CommentaryDirector:
                 return None
 
         if now < self._global_ready_at:
+            if selected_ranked and selected_ranked[0].event_type == "TRACK_EXCURSION":
+                return self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             if envelopes:
                 self._record(
                     action="skipped",
@@ -653,7 +788,10 @@ class CommentaryDirector:
 
         if flushed is not None:
             # Already spoke a deferred line this tick; park new arrivals if any.
-            if selected_ranked and self._scheduler.settings.defer_enabled:
+            if selected_ranked and (
+                self._scheduler.settings.defer_enabled
+                or selected_ranked[0].event_type == "TRACK_EXCURSION"
+            ):
                 self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             return flushed
 
@@ -797,7 +935,12 @@ class CommentaryDirector:
             self._cooldowns[spoken.node_id] = now + spoken.node.cooldown_s
         self._busy_until = now + duration
         self._global_ready_at = self._next_ready_at(now, duration=duration)
-        self._last = _LastSpoken(spoken.node_id, spoken.correlation_id, now)
+        self._last = _LastSpoken(
+            spoken.node_id,
+            spoken.correlation_id,
+            now,
+            spoken.graph_candidate.envelope if spoken.graph_candidate else None,
+        )
         self._current_event_type = spoken.event_type
         if spoken.event_type in OPENER_EVENTS:
             self.opener.note(spoken.event_type, now)
@@ -839,6 +982,8 @@ class CommentaryDirector:
                 )
                 return None
             return synthetic
+        if isinstance(envelope.metrics.get("preparedText"), str):
+            return self._utterance_from_formatter(envelope, node=node)
         graph_active = _graph_mode(self.settings) == "active" and node_override is not None
         if commit and not graph_active and now < self._cooldowns.get(node.id, 0.0):
             self._record(
@@ -943,7 +1088,7 @@ class CommentaryDirector:
                 self._cooldowns[node.id] = now + node.cooldown_s
             self._busy_until = now + duration
             self._global_ready_at = self._next_ready_at(now, duration=duration)
-            self._last = _LastSpoken(node.id, envelope.correlation_id, now)
+            self._last = _LastSpoken(node.id, envelope.correlation_id, now, envelope)
             self._recent.remember(spoken)
             self._note_sector_spoken(envelope)
             self._current_event_type = envelope.event_type
@@ -991,14 +1136,7 @@ class CommentaryDirector:
                     and self._editorial_gate(envelope, now) is not None
                 ):
                     continue
-                metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
-                branch = metrics.get("branch")
-                nodes = self.graph.nodes_for(
-                    envelope.event_type,
-                    envelope.phase,
-                    mode=envelope.mode,
-                    branch=str(branch) if branch is not None else None,
-                )
+                nodes = self.graph.nodes_for_envelope(envelope)
                 token = (
                     self.story_registry.token_for(envelope)
                     if self.story_registry is not None
@@ -1055,16 +1193,7 @@ class CommentaryDirector:
         return available
 
     def _has_graph_nodes(self, envelope: EventEnvelope) -> bool:
-        metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
-        branch = metrics.get("branch")
-        return bool(
-            self.graph.nodes_for(
-                envelope.event_type,
-                envelope.phase,
-                mode=envelope.mode,
-                branch=str(branch) if branch is not None else None,
-            )
-        )
+        return bool(self.graph.nodes_for_envelope(envelope))
 
     def _next_ready_at(self, now: float, *, duration: float) -> float:
         if _graph_mode(self.settings) == "active":
@@ -1113,7 +1242,7 @@ class CommentaryDirector:
         story_token: MiniStoryToken | None,
     ) -> GraphCandidate | None:
         runtime = self.graph_runtime
-        if (
+        if envelope.event_type != "TRACK_EXCURSION" and (
             runtime is None
             or _graph_mode(self.settings) == "legacy"
             or node.id not in self.graph.nodes
@@ -1153,6 +1282,9 @@ class CommentaryDirector:
                     "graphMode": _graph_mode(self.settings),
                     "decision": decision,
                     "eventId": candidate.event_id,
+                    "parentStoryId": candidate.parent_story_id,
+                    "correlationId": candidate.correlation_id,
+                    "beatId": candidate.envelope.metrics.get("beatId"),
                     "eventType": candidate.event_type,
                     "storyId": candidate.story_id,
                     "runEpoch": candidate.run_epoch,
@@ -1303,14 +1435,7 @@ class CommentaryDirector:
         self._sector_speaks_by_lap[lap] = self._sector_speaks_by_lap.get(lap, 0) + 1
 
     def _pick_node(self, envelope: EventEnvelope, now: float) -> GraphNode | None:
-        metrics = envelope.metrics if isinstance(envelope.metrics, dict) else {}
-        branch = metrics.get("branch")
-        candidates = self.graph.nodes_for(
-            envelope.event_type,
-            envelope.phase,
-            mode=envelope.mode,
-            branch=str(branch) if branch is not None else None,
-        )
+        candidates = self.graph.nodes_for_envelope(envelope)
         if not candidates:
             return None
         if self._last is not None:
@@ -1334,7 +1459,14 @@ class CommentaryDirector:
             node = wanted.get(edge.target)
             if node is None:
                 continue
-            if not _edge_matches(edge, last.correlation_id, envelope.correlation_id, gap):
+            if not edge.legacy_identity_compatible:
+                if (
+                    last.envelope is None
+                    or not edge.min_gap_s <= gap <= edge.max_gap_s
+                    or not edge_identity_matches(edge, last.envelope, envelope)
+                ):
+                    continue
+            elif not _edge_matches(edge, last.correlation_id, envelope.correlation_id, gap):
                 continue
             return node
         return None
@@ -1342,6 +1474,19 @@ class CommentaryDirector:
 
 def _prefer_incident_over_aftermath(ranked: list[EventEnvelope]) -> list[EventEnvelope]:
     """Same-tick list: drop INCIDENT_AFTERMATH when INCIDENT is also ranked."""
+    # Detector order is causal inside a batch. Keep the newest fact per parent;
+    # no delayed stopped/rejoin headline when motion is already confirmed.
+    latest = {
+        env.metrics.get("parentStoryId"): env
+        for env in ranked
+        if env.event_type == "TRACK_EXCURSION" and env.metrics.get("parentStoryId")
+    }
+    ranked = [
+        env
+        for env in ranked
+        if env.event_type != "TRACK_EXCURSION"
+        or latest.get(env.metrics.get("parentStoryId"), env) is env
+    ]
     types = {env.event_type for env in ranked}
     if "INCIDENT" in types and "INCIDENT_AFTERMATH" in types:
         return [env for env in ranked if env.event_type != "INCIDENT_AFTERMATH"]
@@ -1355,6 +1500,8 @@ def _is_speak_beat(envelope: EventEnvelope) -> bool:
 
 
 def _edge_matches(edge: GraphEdge, last_corr: str, incoming_corr: str, gap: float) -> bool:
+    if not edge.legacy_identity_compatible:
+        return False
     if gap < edge.min_gap_s or gap > edge.max_gap_s:
         return False
     if edge.same_correlation and last_corr and incoming_corr and last_corr != incoming_corr:
@@ -1611,3 +1758,21 @@ def _first(metrics: dict[str, object], *keys: str) -> object | None:
         if key in metrics and metrics[key] not in (None, ""):
             return metrics[key]
     return None
+
+
+def _optional_text(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    return text or None
+
+
+def _optional_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if value is not None and not isinstance(value, (str, int, float)):
+        return None
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None

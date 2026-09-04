@@ -681,11 +681,12 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `[stream_chapters].*` (enabled, titles, end_title, triggers, youtube_vod)
 - overlay sampling Hz, battle thresholdy, HR/sysinfo feature flags, theme, event priority (`PUT /api/config` nebo reload INI)
 - `overlay.language`, `overlay.v4_*`, `overlay.session_tape` a všechny `event_engine.*` flagy
-- `commentary.enabled`, `commentary.use_hr_emotion`, `commentary.cooldown_s`, `commentary.max_utterance_s`, `commentary.tts_backend`, `commentary.tts_voice`, `commentary.tts_rate`, `commentary.tts_steps`, `commentary.audio_device`, `commentary.duck_input`, `commentary.duck_ratio`, `commentary.duck_fade_ms`, `commentary.decision_log_size`, `commentary.sector_speak`, `commentary.sector_speak_max_per_lap`, `commentary.session_briefs`, `commentary.stream_start`, `commentary.gap_hunt_tts_in_practice`, `commentary.gap_hunt_tts_in_qualifying`, `commentary.llm_polish`, `commentary.llm_base_url`, `commentary.llm_model`, `commentary.llm_timeout_s`, `commentary.llm_temperature`, `commentary.llm_max_tokens`, `commentary.llm_max_attempts`, `commentary.driver_name`, `commentary.driver_nickname`, `commentary.scheduler.defer_enabled`, `commentary.scheduler.hard_interrupt`, `commentary.scheduler.max_deferred`, `commentary.scheduler.default_ttl_s`, `commentary.scheduler.incident_ttl_s`, `commentary.scheduler.max_silence_s`, `commentary.scheduler.llm_past_framing`, `commentary.graph_runtime.mode`
+- všechny klíče `commentary.*`, `commentary.scheduler.*`, `commentary.graph_runtime.*` a `commentary.prepared_filler.*`
 - `race_observer.leader_pace_cooldown_s`
 - `race_observer.incident_classify`
 - `race_observer.flags`
 - `race_observer.grid_story`
+- `race_scenarios.mode`
 
 ### Vyžaduje restart procesu
 
@@ -709,8 +710,9 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` `session_tape_dir` (default `recordings`) — adresář tape souborů; změna vyžaduje restart. `..` v cestě se ignoruje.
 - `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. Missing `[event_engine]` = all off. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` / `quali_projection` enable S1/S2(/S3) split callouts (`SECTOR_SPLIT`) in Practice and Quali (absolute sector time; detector uses iRSDK `SplitTimeInfo` sector lines, with geometric 1/3+2/3 only as fallback). Practice still also emits `GAIN_FOUND` / `TIME_LOST` vs a reference lap; `quali_projection` still emits projected lap / position attack / hot lap. Race never announces splits — battles and gaps stay the race overlay. `SessionState` 5 (checkered) is only the **session clock**; widgets stay live on the flying lap until `player_finished` / `mute_field` (S/F post-checkered, eligible pit-rise if the car was on track at checkered, or CoolDown fallback). Already in pits at checkered is not finish. After mute only `finish` / `final_lap` (plus widget EXIT) stay live; hunting, pits, and lap noise are muted. Invalid-lap HUD/commentary is Practice and Quali only (never Race). Pit stories start only after a driven on-track stint (lobby sit-in-car, ESC teleport, and tow do not).
 - `[commentary]` základ: `enabled=false`, `use_hr_emotion=true`, `cooldown_s=4.0`, `max_utterance_s=14.0`; TTS používá `tts_backend` (`auto`|`sapi`|`espeak`|`supertonic`|`null`), `tts_voice`, `tts_rate`, `tts_steps` (jen SuperTonic, default 6) a `audio_device` plus volitelné OBS ducking klíče `duck_input`, `duck_ratio`, `duck_fade_ms`. `sector_speak`, `session_briefs`, `stream_start` a P/Q gap-hunt zůstávají samostatné opt-in přepínače popsané v `config/config.example.ini`.
-- `[commentary.graph_runtime]` `mode` řídí postupné nasazení stavového grafu. `legacy` (výchozí) zachová dnešní výběr; `shadow` počítá skóre a diagnostiku bez změny slyšitelného komentáře; `active` zapne stavové skórování. Neznámá hodnota bezpečně spadne na `legacy`. Skórovací váhy nejsou uživatelská konfigurace; `commentary.scheduler.max_silence_s` zůstává zdrojem hard hranice ticha.
-- `[commentary]` `llm_polish` (default `false`) zapíná jazykovou realizaci přes OpenAI-compatible HTTP. `commentary-facts/3` posílá pouze vybrané povinné/volitelné propozice, role aktérů a kompatibilní style card; nesouvisející telemetrie, recent komentář ani autorský anchor se modelu neposílají. Kompletní deterministická realizace vybraných faktů je bezpečný fallback. `llm_base_url` má default `http://127.0.0.1:11434/v1`, `llm_model` `qwen3:4b-instruct-2507-q4_K_M`, `llm_timeout_s=12.0`, `llm_temperature=0.45`, `llm_max_tokens=360` a `llm_max_attempts=2` (clamp 1–2). Běžná cesta má jeden request; pouze věcně odmítnutý obsah dostane druhý, přísnější prompt. Transportní chyba a timeout se neopakují. Style warning neopakuje inference. Validator kontroluje vybrané aktéry, čísla, pozice a směr vztahu; `P13`/`S1` se neposuzují jako jména. Teplota mění variabilitu formulace, nikoli povolená fakta.
+- `[commentary.graph_runtime]` `mode` řídí stavový graf. `active` je výchozí a zapíná stavové skórování; `shadow` počítá skóre jen diagnosticky a `legacy` je okamžitý rollback na původní výběr. Neznámá hodnota bezpečně spadne na `legacy`. Skórovací váhy nejsou uživatelská konfigurace; `commentary.scheduler.max_silence_s` zůstává zdrojem hard hranice ticha.
+- `[commentary.prepared_filler]` připravuje asynchronně 3–5 variant pro aktuální i očekávanou následující editoriální situaci. `reserved_current_stage` a `reserved_next_stage` garantují jejich podíl v omezeném `max_ready_plans` bufferu. Připravený graf vlastní 53 konkrétních významových kontraktů; runtime do nich váže pouze ověřené okruhové, počasové, rosterové/AI, pohybové, startovní a výsledkové fakty. Výchozí `active` přehrává pouze validní připravený text a při vyčerpaném LLM i prázdném bufferu řekne jednou za chybovou epizodu pevnou fatal hlášku, potom mlčí. `shadow` zůstává volitelná neslyšitelná diagnostika a `legacy` okamžitý rollback. Session/run reset ponechá právě mluvenou jednotku, ale zruší waiter a generování; iRacing disconnect zastaví generování a OBS stop přeruší i TTS. `youtube_history=true` používá stávající jediný Google OAuth účet a načte pouze veřejné dokončené streamy jako paměť pro různorodost formulací, nikoli jako aktuální závodní fakta. `iracing_history=true` bez samostatného iRacing OAuth hlásí `not_configured`; konektor zůstává backlog a přihlášení ani scraping se neimprovizují. Slyšitelná provozní zkouška: [`docs/commentary_prepared_active_test.md`](docs/commentary_prepared_active_test.md).
+- `[commentary]` `llm_polish` (default `false`) zapíná jazykovou realizaci přes OpenAI-compatible HTTP. Aktivní `commentary-facts/3` prompt má jen `DATA: {…}`, krátký per-node `STYLE mood only` a pokyn napsat nový TV call; neposílá skeleton, template/example větu, `MUST KEEP`, unrelated telemetry, recent komentář ani autorský anchor. Defaulty pro Ollama polish jsou `llm_temperature=0.4`, `llm_top_p=0.85`, `llm_top_k=30`, `llm_num_predict=45`, `llm_num_ctx=512`, stále s `think=false` a `reasoning_effort=none`. `llm_max_tokens=360` zůstává stropem legacy/multi-variant generation; DATA+STYLE request používá `llm_num_predict` také jako top-level `max_tokens`. Validator tvrdě kontroluje dodaná jména, čísla, pozice, směr relace a nepodložené/predikované výsledky; atmosférické formulace jsou povolené, zatímco TTS délka a technická bezpečnost zůstávají samostatnou bránou. První faktické odmítnutí dostane jediný correction retry bez template či rejected outputu.
 - TTS zůstává fail-soft a sériové: `auto` používá Windows SAPI nebo `espeak-ng`, `supertonic` je opt-in CPU ONNX (extra `.[supertonic]`, model v RAM, 4/2 vlákna, výstup 44.1 kHz — CABLE Input/Output nastav na 16-bit 44100 Hz), `null` je tichý test backend. `auto` SuperTonic nikdy nevybere. `decision_log_size` má default 32. Testovací stránka je [`GET /commentary`](API.md#get-commentary); živý feed zůstává tichý při `enabled=false`.
 - `[race_observer]` `leader_pace_cooldown_s` (default `300`) — minimum seconds between leader field-fact fillers. Other filler kinds (position/gap/weather) still rotate; missing section uses the default. Later incident/flag keys land on this same section.
 - `[race_observer]` `incident_classify` (default `false`) — when true, HUD/commentary `INCIDENT` envelopes set `metrics.branch` to `off_track` (`PlayerTrackSurface == OffTrack` around the tick) or `unknown`. Nearby cars (`nearbyCarIdx` / `nearbyGap`) are metrics only — never a spoken kind (`contact_object` is refused). Leave off until trusted. Same-tick speech: engine `INCIDENT` (delta ≥ `events.incident_min_delta`, default **2**, prio 90) wins over derived `INCIDENT_AFTERMATH` (any count rise, prio 72). 1× off-track therefore speaks aftermath only unless you lower `incident_min_delta`. Speed motion for P3 aftermath is not INI: stalled ≤ 1.0 m/s, rolling ≥ 2.5 m/s (`race/aftermath.py`); missing Speed still uses LapDistPct. Classify stays surface-first (off-track/tow is stalled even if Speed > 0) so `BACK_UNDER_WAY` can still fire. No `INCIDENT_RECOVERED`.
@@ -723,17 +725,38 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 
 **Migration:** new optional `commentary.stream_start` (default `false`). OBS going live does not speak until this is on (and `commentary.enabled=true`). Missing key = off.
 
-**Migration:** efektivní `llm_max_attempts` se mění z rozsahu 1–8 na 1–2 a default z 5 na 2. Existující vyšší hodnota je při načtení omezena na 2. `llm_timeout_s` zůstává wall-clock rozpočet celé realizace. Po dvou věcně odmítnutých odpovědích nebo po prvním výpadku se přečte kompletní canonical realization z vybraných faktů, ne obecný autorský anchor.
+**Migration:** efektivní `llm_max_attempts` se mění z rozsahu 1–8 na 1–2 a default z 5 na 2. Existující vyšší hodnota je při načtení omezena na 2. `llm_timeout_s` zůstává wall-clock rozpočet celé realizace. Po dvou věcně odmítnutých odpovědích nebo po prvním výpadku se daný polish kandidát před TTS zahodí; TTS pipeline ani její čekající fronta se tímto promptovým řezem nemění.
 
 **Migration:** new optional `commentary.gap_hunt_tts_in_practice` / `commentary.gap_hunt_tts_in_qualifying` (default `false`). HUD hunting in P/Q is unchanged; spoken gap-hunt stays off until explicitly enabled.
 
 **Migration:** new optional `[race_observer]` `leader_pace_cooldown_s` (default `300`). Missing section = 300 s between leader field facts; other filler kinds still rotate.
 
-**Migration:** new optional `[race_observer]` `incident_classify` (default `false`). Missing key = generic INCIDENT (no `metrics.branch`). Aftermath still fires on any incident-count rise. `events.incident_min_delta` stays 2.
+**Historical migration:** optional `[race_observer]` `incident_classify` defaults false. Legacy/shadow aftermath fires on count rises; active scenario behavior is described below. `events.incident_min_delta` stays 2.
 
 **Migration:** new optional `[race_observer]` `flags` (default `false`). Missing key = no SESSION_FLAG speech. Checkered bit still does not finish the player.
 
 **Migration:** new optional `[race_observer]` `grid_story` (default `false`). Missing key = no quali recap / parade pad. Independent of `commentary.session_briefs`.
+
+### Track Excursion development mode (#216)
+
+`[race_scenarios] mode` accepts `active` (new **default**), `shadow`, or `legacy`.
+Active connects current-signal off-track/stopped/rejoin/motion/Race-tow/pit-return facts to
+commentary through graph v3. Shadow runs the new detector for diagnostics only alongside legacy
+speech; legacy disables it. An invalid value warns and falls back to legacy. Hot reload resets
+detector state. No master commentary enablement, HUD layout, or graph-scoring mode is changed.
+
+Migration: configs without this section now use active development detection, as approved for
+#216. Set `mode=legacy` to restore old detection (not the removed misleading speech copy).
+The new scenario can retain one latest pending line even if global `scheduler.defer_enabled=false`.
+The legacy `incident_classify`/aftermath behavior above applies only in legacy/shadow: active mode
+disables the old aftermath and makes speech `INCIDENT` a numeric point-delta update (`points`
+branch). Surface evidence opens the new excursion independently of incident counters.
+Missing evidence stays unknown; a pit return is not a diagnosis of damage, repair or ESC.
+
+With `overlay.session_tape=true`, sparse `race_scenario` rows and `TRACK_EXCURSION` commentary/TTS
+diagnostics are recorded even at INFO. This is an exception to the older DEBUG-only commentary
+rule above; other commentary and LLM request/response detail still require DEBUG.
+See [guard thresholds, exact coverage and test/log protocol](docs/track_excursion_live_test.md).
 
 **Migration:** optional `commentary.tts_backend=supertonic` plus extra `pip install -e ".[supertonic]"`. Missing extra fails soft to silent `null`. `auto` still selects SAPI/espeak. New `commentary.tts_steps` default 6 (clamp 5–12). SuperTonic `tts_voice` is `M1`–`M5` / `F1`–`F5`; a leftover SAPI description falls back to `M1`. Missing `tts_steps` keeps 6.
 
@@ -741,7 +764,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 
 **Migration:** optional `[commentary.scheduler]` keeps `defer_enabled=false`, `hard_interrupt=false`, `max_deferred=8`, `default_ttl_s=12`, `incident_ttl_s=45`, `max_silence_s=33`, `llm_past_framing=true`. When `defer_enabled=true`, busy arrivals park **at most one best** line by priority/TTL (lower priority → `deferred_dropped`); idle flush speaks that one as `spoken_deferred` and clears any remainder — the queue is never spoken sequentially. `hard_interrupt` remains accepted for config compatibility, but incidents no longer interrupt a committed mini-story. Authoritative `POSITION_GAINED` / `POSITION_LOST` preempt regardless of the legacy flag; ordinary EXIT/incident lets current narration finish. Silence watchdog logs `silence_no_filler` until RaceObserver supplies weather/field facts (P2).
 
-**Migration:** optional `[commentary.graph_runtime]` starts with `mode=legacy`. `shadow` is observational and does not change audible selection. `active` is an explicit opt-in during this compatibility release; switching back to `legacy` is the immediate rollback and does not require downgrading graph data.
+**Migration:** chybějící `[commentary.graph_runtime]` i `[commentary.prepared_filler]` nyní znamenají `mode=active`. To se projeví jen při `commentary.enabled=true`. Pro rychlý návrat nastav oba režimy na `legacy`; `shadow` zůstává volitelný diagnostický režim a nevyžaduje downgrade grafových dat.
 **Full V4 demo profile** (mirrored in `config/config.example.ini`; production code defaults stay off until you opt in):
 
 ```ini

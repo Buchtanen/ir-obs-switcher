@@ -93,6 +93,22 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
         111.3,
         _race(),
     )
+    tape.record_prepared_filler(
+        {
+            "action": "shadow_selected",
+            "reason": "prepared_filler",
+            "stage": "STREAM_LOBBY_INTRO",
+            "planId": "sha256:plan",
+            "variantId": "sha256:variant",
+            "legacyNodeId": "field_fact",
+            "legacySemanticKey": "field.position",
+            "divergence": "different_semantic",
+            "comparisonReason": "legacy_candidate",
+            "text": "must not be retained",
+        },
+        111.4,
+        _race(),
+    )
     tape.observe(_race(connected=False, overlay_mode="GENERIC"), 120.0, settings)
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     types = [row["type"] for row in rows]
@@ -107,6 +123,12 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     assert "decision" in types
     assert "stories" in types
     assert "commentary" in types
+    assert "prepared_filler" in types
+    prepared = next(row for row in rows if row["type"] == "prepared_filler")
+    assert prepared["planId"] == "sha256:plan"
+    assert prepared["legacyNodeId"] == "field_fact"
+    assert prepared["divergence"] == "different_semantic"
+    assert "text" not in prepared
     commentary = next(row for row in rows if row["type"] == "commentary")
     assert commentary["text"] == "Lap in the books."
     assert commentary["action"] == "speak"
@@ -123,6 +145,68 @@ def test_disabled_tape_writes_nothing(tmp_path: Path) -> None:
     tape.observe(_race(), 1.0, _settings(tmp_path, enabled=False))
     assert tape.path is None
     assert list(tmp_path.glob("*.jsonl")) == []
+
+
+def test_prepared_generated_text_is_retained_only_in_debug(monkeypatch: object) -> None:
+    runtime = OverlayRuntime(lambda: SimpleNamespace(overlay=OverlaySettings()), None, OverlayBus())
+    recorded: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        runtime._tape,
+        "record_prepared_filler",
+        lambda entry, _now, _state: recorded.append(entry),
+    )
+    entry = {
+        "eventType": "PREPARED_FILLER",
+        "action": "generated",
+        "acceptedTexts": ["Audit this accepted variant."],
+    }
+
+    monkeypatch.setattr(runtime, "_tape_debug_enabled", lambda: False)
+    runtime._record_commentary_decision(entry, 1.0)
+    assert "acceptedTexts" not in recorded[-1]
+
+    monkeypatch.setattr(runtime, "_tape_debug_enabled", lambda: True)
+    runtime._record_commentary_decision(entry, 2.0)
+    assert recorded[-1]["acceptedTexts"] == ["Audit this accepted variant."]
+
+
+def test_scenario_evidence_and_speech_keep_identity_and_clocks(tmp_path: Path) -> None:
+    tape = OverlaySessionTape(get_stream_origin_mono=lambda: 100.0, get_version=lambda: "test")
+    tape.observe(_race(), 110.0, _settings(tmp_path))
+    path = tape.path
+    assert path is not None
+    tape.record_scenario(
+        {
+            "action": "detected",
+            "parentStoryId": "parent",
+            "beatId": "offtrack",
+            "scenarioMode": "shadow",
+            "reason": "surface_offtrack_held",
+        },
+        111.0,
+        _race(),
+    )
+    tape.record_commentary(
+        {
+            "action": "tts_result",
+            "parentStoryId": "parent",
+            "beatId": "offtrack",
+            "correlationId": "parent:offtrack",
+            "eventType": "TRACK_EXCURSION",
+            "text": "He has gone off track.",
+        },
+        112.0,
+        _race(),
+    )
+    tape.close()
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    detected = next(row for row in rows if row["type"] == "race_scenario")
+    spoken = next(row for row in rows if row["type"] == "commentary")
+    assert detected["scenarioMode"] == "shadow"
+    assert detected["t_stream"] == 11.0
+    assert spoken["t_stream"] == 12.0
+    assert spoken["parentStoryId"] == detected["parentStoryId"]
+    assert spoken["correlationId"] == "parent:offtrack"
 
 
 def test_same_session_run_epoch_resets_green_but_preserves_tape_clock(tmp_path: Path) -> None:

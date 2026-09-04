@@ -6,6 +6,7 @@ import pytest
 
 from irswitch.commentary.graph import (
     COMMENTARY_ONLY_EVENTS,
+    GRAPH_VERSION,
     Criticality,
     EditorialPolicy,
     SemanticPolicy,
@@ -18,7 +19,7 @@ from irswitch.events.event_catalog import catalog_entries, catalog_fallbacks
 
 def test_default_graph_loads_and_is_fully_filled() -> None:
     graph = load_sequence_graph()
-    assert graph.version == 2
+    assert graph.version == GRAPH_VERSION
     assert "overtake" in graph.nodes
     assert graph.nodes["overtake"].event_types == ("OVERTAKE",)
     assert graph.unfilled_cells() == []
@@ -27,7 +28,12 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes_for("BATTLE_FOR_POSITION", "ENTER")[0].id == "two_front_battle"
     # Dense content from commentary-extension-texts (#130 M0) + W4/H4 session briefs
     # + observer fillers + session_checkered + N11 A + sparse B/C/D.
-    assert len(graph.nodes) == 54
+    assert {
+        "track_excursion",
+        "track_rejoined",
+        "motion_restored",
+        "tow_started_race",
+    } <= graph.nodes.keys()
     assert "leader_change" in graph.nodes
     assert graph.nodes["leader_change"].event_types == ("LEADER_CHANGE",)
     assert graph.nodes["leader_change"].speak_priority == 75
@@ -39,7 +45,7 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
     assert graph.nodes["stream_start"].event_types == ("STREAM_START",)
     assert graph.nodes["stream_start"].tts.max_seconds >= 15.0
     assert graph.nodes["in_car_race"].modes == ("race",)
-    assert len(graph.edges) == 24
+    assert graph.outgoing("track_excursion")
     assert all(node.editorial.policy for node in graph.nodes.values())
     assert all(edge.editorial.transition_bonus >= 0 for edge in graph.edges)
     assert graph.nodes["hunting"].editorial.policy is EditorialPolicy.LIVE_RELATION
@@ -194,6 +200,20 @@ def test_live_graph_picks_mode_in_car_then_generic() -> None:
     assert recap[0].id == "quali_recap"
     pad = graph.nodes_for("PARADE_PAD", "RESULT")
     assert pad[0].id == "parade_pad"
+
+
+def test_current_offtrack_root_reaches_closure_without_intermediate_speech() -> None:
+    graph = load_sequence_graph()
+    targets = {edge.target for edge in graph.outgoing("track_excursion")}
+    assert {
+        "track_rejoined",
+        "motion_restored",
+        "tow_started_race",
+        "pit_return_observed",
+    } <= targets
+    assert all(
+        edge.identity.value == "same_parent_story" for edge in graph.outgoing("track_excursion")
+    )
 
 
 def test_stream_start_and_session_flag_graphs_load() -> None:

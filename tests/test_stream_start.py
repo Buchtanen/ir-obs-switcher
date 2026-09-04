@@ -12,15 +12,18 @@ from irswitch.commentary.opener import OpenerMutex
 from irswitch.commentary.stream_context import (
     make_stream_start_envelope,
     notify_overlay_stream_started,
+    notify_overlay_stream_stopped,
 )
 from irswitch.commentary.tts import NullTtsSink
 from irswitch.commentary.validator import estimate_seconds, validate_utterance
 from irswitch.events.envelope import make_envelope
+from irswitch.events.stream import thaw_context
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.http import reset_overlay_server, set_overlay_runtime
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.runtime import OverlayRuntime
 from irswitch.overlay.settings import CommentarySettings, OverlaySettings
+from irswitch.race.editorial_stage import EditorialStage
 
 
 def test_opener_mutex_stream_start_blocks_in_car() -> None:
@@ -131,3 +134,38 @@ def test_notify_overlay_calls_runtime(monkeypatch: object) -> None:
     )
     notify_overlay_stream_started(9.0)
     assert called == [9.0]
+
+
+def test_notify_overlay_stop_calls_runtime(monkeypatch: object) -> None:
+    called: list[float] = []
+
+    class _Runtime:
+        def notify_obs_stream_stopped(self, now: float) -> None:
+            called.append(now)
+
+    monkeypatch.setattr(
+        "irswitch.commentary.stream_context.get_overlay_runtime",
+        lambda: _Runtime(),
+    )
+    notify_overlay_stream_stopped(10.0)
+    assert called == [10.0]
+
+
+def test_runtime_stream_stop_hard_invalidates_prepared_and_publishes_context() -> None:
+    reset_overlay_server()
+    overlay = OverlaySettings(
+        commentary=CommentarySettings(enabled=True, tts_backend="null", cooldown_s=0.0)
+    )
+    runtime = OverlayRuntime(lambda: SimpleNamespace(overlay=overlay), None, OverlayBus())
+    runtime.notify_obs_stream_started(5.0)
+    sink = runtime.commentary_consumer.director.sink
+    interrupted_before = getattr(sink, "interrupted", 0)
+
+    runtime.notify_obs_stream_stopped(6.0)
+
+    assert runtime.editorial_stage.snapshot.stage == EditorialStage.INACTIVE
+    assert runtime.commentary_consumer.prepared_filler.buffer.desired == ()
+    assert getattr(sink, "interrupted", 0) == interrupted_before + 1
+    payload = runtime.pipeline.context_payload
+    assert payload is not None
+    assert thaw_context(payload)["editorial"]["stage"] == "INACTIVE"

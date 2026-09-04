@@ -7,6 +7,7 @@ import pytest
 from irswitch.commentary.composer import build_skeleton
 from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.polish import build_polish_request, fact_violation_codes, polish_skeleton
+from irswitch.commentary.style_cards import load_node_moods
 from irswitch.events.envelope import make_envelope
 from irswitch.overlay.settings import CommentarySettings
 
@@ -108,6 +109,86 @@ def test_compact_request_omits_anchor_telemetry_and_changes_retry():
     assert "allowed_numbers" not in prompt and "provenance" not in prompt
     assert first["messages"] != strict["messages"]
     assert len(prompt) < 1400
+
+
+def test_g1_request_is_data_plus_short_node_mood_without_template_sentence():
+    result = plan("HUNTED", "hunted", hero_name="Buchtanen", target_name="Flint")
+    request = build_polish_request(
+        result.text,
+        CommentarySettings(),
+        node=load_sequence_graph().nodes["hunted"],
+        fact_pack=result.fact_pack,
+    )
+
+    system = request["messages"][0]["content"]
+    user = request["messages"][1]["content"]
+    assert system.startswith("You are a live TV race commentator.")
+    assert "STYLE is mood/energy only" in system
+    assert "Vivid atmosphere is OK" in system
+    assert "DATA:" in user
+    assert '"driver":"Buchtanen"' in user
+    assert '"pressure_from":"Flint"' in user
+    assert '"action":"applying pressure from behind"' in user
+    assert "STYLE mood only (do not copy): pressure, mirrors, tense" in user
+    assert user.endswith("Write a NEW broadcast line.")
+    assert result.text not in user
+    assert "Example:" not in user
+    assert "MUST KEEP" not in user
+    assert request["temperature"] == 0.4
+    assert request["max_tokens"] == 45
+    assert request["options"] == {
+        "num_ctx": 512,
+        "num_thread": 4,
+        "num_predict": 45,
+        "top_k": 30,
+        "top_p": 0.85,
+    }
+
+    hunting = plan(
+        "HUNTING", "hunting", hero_name="Richard", target_name="Garner", position=2
+    )
+    hunting_user = build_polish_request(
+        hunting.text,
+        CommentarySettings(),
+        node=load_sequence_graph().nodes["hunting"],
+        fact_pack=hunting.fact_pack,
+    )["messages"][1]["content"]
+    assert '"driver":"Richard"' in hunting_user
+    assert '"closing_on":"Garner"' in hunting_user
+    assert '"position":"P2"' in hunting_user
+    assert "STYLE mood only (do not copy): pursuit, hungry, accelerating" in hunting_user
+
+
+def test_node_mood_catalog_is_short_and_references_real_nodes():
+    default, moods = load_node_moods()
+    graph = load_sequence_graph()
+    assert set(moods) <= set(graph.nodes)
+    assert moods["incident_off_track"] == "urgent, startled, clipped"
+    assert moods["overtake"] == "decisive, punchy, celebratory"
+    for mood in (default, *moods.values()):
+        assert 2 <= len(mood.split(",")) <= 4
+        assert "." not in mood
+
+
+def test_microplan_accepts_atmosphere_but_rejects_new_outcome():
+    result = plan("HUNTED", "hunted", hero_name="Buchtanen", target_name="Flint")
+    vivid = "Buchtanen’s mirrors flash—Flint’s pressure bites, tight and cold, right behind."
+    assert not fact_violation_codes(result.text, vivid, fact_pack=result.fact_pack)
+
+    predicted = "Buchtanen feels Flint closing from behind and will win this fight."
+    codes = fact_violation_codes(result.text, predicted, fact_pack=result.fact_pack)
+    assert "unsupported_prediction" in codes
+    assert "unsupported_event" in codes
+
+    incident = plan("INCIDENT", "incident_off_track", hero_name="Buchtanen")
+    atmospheric = "Buchtanen hits the track’s edge—no warning. That’s a real one."
+    assert "invented_number" not in fact_violation_codes(
+        incident.text, atmospheric, fact_pack=incident.fact_pack
+    )
+    unsupported_state = "Buchtanen is off track—no signal, no response."
+    assert "unsupported_event" in fact_violation_codes(
+        incident.text, unsupported_state, fact_pack=incident.fact_pack
+    )
 
 
 def test_style_warning_does_not_retry_and_attempts_are_recorded():

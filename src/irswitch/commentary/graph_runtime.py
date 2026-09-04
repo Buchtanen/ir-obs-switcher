@@ -15,6 +15,7 @@ from typing import Any, TypeVar
 
 from irswitch.commentary.graph import (
     Criticality,
+    EdgeIdentityPolicy,
     GraphEdge,
     GraphNode,
     MaterialChangePolicy,
@@ -91,6 +92,16 @@ class GraphCandidate:
     priority: int
     source_sequence: int
     envelope: EventEnvelope
+    scenario_id: str = ""
+    parent_story_id: str = ""
+    caused_by_parent_story_id: str = ""
+    beat_role: str = ""
+    primary_relation: str = ""
+    cause: str = ""
+    outcome: str = ""
+    temporal_relation: str = ""
+    evidence_level: str = ""
+    confidence: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -126,6 +137,11 @@ class _PreviousNode:
     node_id: str
     correlation_id: str
     spoken_at: float
+    session_id: str
+    hero_id: str
+    run_epoch: int
+    scenario_id: str
+    parent_story_id: str
 
 
 _K = TypeVar("_K")
@@ -223,8 +239,9 @@ class SequenceGraphRuntime:
     def score(self, candidate: GraphCandidate, *, now: float) -> ScoreBreakdown:
         """Calculate a score without mutating traversal state."""
         node = self.graph.nodes.get(candidate.node_id)
-        if node is None or candidate.run_epoch != self.run_epoch:
+        if not self._candidate_available(candidate, node):
             return _unavailable_score()
+        assert node is not None
 
         edge = self._matching_edge(candidate, now=now)
         transition = float(edge.editorial.transition_bonus) if edge is not None else 0.0
@@ -314,7 +331,7 @@ class SequenceGraphRuntime:
         }
         for candidate in candidates:
             node = self.graph.nodes.get(candidate.node_id)
-            if node is None or candidate.run_epoch != self.run_epoch:
+            if not self._candidate_available(candidate, node):
                 continue
             ranked.append(GraphSelection(candidate=candidate, score=self.score(candidate, now=now)))
         if not ranked:
@@ -340,8 +357,9 @@ class SequenceGraphRuntime:
         if candidate.run_epoch != self.run_epoch or candidate.event_id in self._occurrences:
             return False
         node = self.graph.nodes.get(candidate.node_id)
-        if node is None:
+        if not self._candidate_available(candidate, node):
             return False
+        assert node is not None
 
         previous = self._previous
         paths = self._candidate_paths(candidate.node_id)
@@ -389,6 +407,11 @@ class SequenceGraphRuntime:
             node_id=candidate.node_id,
             correlation_id=candidate.correlation_id,
             spoken_at=now,
+            session_id=candidate.envelope.session_id,
+            hero_id=candidate.envelope.subject.car_id,
+            run_epoch=candidate.run_epoch,
+            scenario_id=candidate.scenario_id,
+            parent_story_id=candidate.parent_story_id,
         )
         self._speaking = True
         return True
@@ -401,11 +424,29 @@ class SequenceGraphRuntime:
         for edge in self.graph.outgoing(previous.node_id):
             if edge.target != candidate.node_id:
                 continue
-            if edge.same_correlation and previous.correlation_id != candidate.correlation_id:
+            if not _edge_identity_matches(edge, previous, candidate):
                 continue
-            if edge.min_gap_s <= gap <= edge.max_gap_s:
+            if now >= previous.spoken_at and edge.min_gap_s <= gap <= edge.max_gap_s:
                 return edge
         return None
+
+    def _candidate_available(self, candidate: GraphCandidate, node: GraphNode | None) -> bool:
+        if node is None or candidate.run_epoch != self.run_epoch:
+            return False
+        if node.editorial.semantic_policy is SemanticPolicy.SCENARIO_EPISODE and not (
+            candidate.scenario_id and candidate.parent_story_id and candidate.primary_relation
+        ):
+            return False
+        return node.match.matches(
+            scenario_id=candidate.scenario_id,
+            beat_role=candidate.beat_role,
+            primary_relation=candidate.primary_relation,
+            cause=candidate.cause,
+            outcome=candidate.outcome,
+            temporal_relation=candidate.temporal_relation,
+            evidence_level=candidate.evidence_level,
+            confidence=candidate.confidence,
+        )
 
     def _candidate_paths(self, node_id: str) -> tuple[tuple[str, ...], ...]:
         existing = tuple(self._spoken_path)
@@ -484,6 +525,18 @@ def candidate_from_envelope(
         priority=editorial_priority(envelope.event_type, envelope.metrics),
         source_sequence=envelope.sequence,
         envelope=envelope,
+        scenario_id=_scenario_text(envelope.metrics, "scenarioId", "scenario_id"),
+        parent_story_id=_scenario_text(envelope.metrics, "parentStoryId", "parent_story_id"),
+        caused_by_parent_story_id=_scenario_text(
+            envelope.metrics, "causedByParentStoryId", "caused_by_parent_story_id"
+        ),
+        beat_role=_scenario_text(envelope.metrics, "beatRole", "beat_role"),
+        primary_relation=_scenario_text(envelope.metrics, "primaryRelation", "primary_relation"),
+        cause=_scenario_text(envelope.metrics, "cause"),
+        outcome=_scenario_text(envelope.metrics, "outcome"),
+        temporal_relation=_scenario_text(envelope.metrics, "temporalRelation", "temporal_relation"),
+        evidence_level=_scenario_text(envelope.metrics, "evidenceLevel", "evidence_level"),
+        confidence=envelope.confidence,
     )
 
 
@@ -501,7 +554,13 @@ def _semantic_parts(
     hero_id = envelope.subject.car_id or "player"
     semantic: tuple[str, ...]
 
-    if policy is SemanticPolicy.UNIQUE_RESULT:
+    if policy is SemanticPolicy.SCENARIO_EPISODE:
+        semantic = base + (
+            _scenario_text(metrics, "scenarioId", "scenario_id"),
+            _scenario_text(metrics, "parentStoryId", "parent_story_id"),
+            _scenario_text(metrics, "primaryRelation", "primary_relation"),
+        )
+    elif policy is SemanticPolicy.UNIQUE_RESULT:
         semantic = base + (envelope.event_type, envelope.event_id)
     elif policy is SemanticPolicy.POSITION_RESULT:
         old = _metric(metrics, "oldPosition", "old_position", default="?")
@@ -530,6 +589,13 @@ def _semantic_parts(
 def _material_parts(node: GraphNode, envelope: EventEnvelope) -> tuple[str, ...]:
     metrics = envelope.metrics
     policy = node.editorial.material_change_policy
+    if policy is MaterialChangePolicy.SCENARIO_BEAT:
+        return (
+            _scenario_text(metrics, "beatRole", "beat_role"),
+            _scenario_text(metrics, "cause"),
+            _scenario_text(metrics, "outcome"),
+            _scenario_text(metrics, "temporalRelation", "temporal_relation"),
+        )
     if policy is MaterialChangePolicy.OCCURRENCE:
         return (envelope.event_id,)
     if policy is MaterialChangePolicy.POSITION_CHANGE:
@@ -571,6 +637,51 @@ def _target_id(envelope: EventEnvelope) -> str:
     if envelope.target is not None:
         return envelope.target.car_id
     return envelope.subject.car_id or "player"
+
+
+def _scenario_text(metrics: dict[str, Any], *keys: str) -> str:
+    value = _metric(metrics, *keys)
+    return value if isinstance(value, str) else ""
+
+
+def _edge_identity_matches(
+    edge: GraphEdge, previous: _PreviousNode, candidate: GraphCandidate
+) -> bool:
+    # Preserve graph-v1/v2 legacy-only ANY behavior. Scenario edges may not use it.
+    if edge.identity is EdgeIdentityPolicy.ANY:
+        return True
+    if previous.parent_story_id or candidate.parent_story_id:
+        if (
+            previous.session_id != candidate.envelope.session_id
+            or previous.hero_id != candidate.envelope.subject.car_id
+            or previous.run_epoch != candidate.run_epoch
+        ):
+            return False
+        # Correlations may never alias two unrelated parent episodes.
+        if (
+            previous.correlation_id == candidate.correlation_id
+            and previous.parent_story_id != candidate.parent_story_id
+        ):
+            return False
+    if edge.identity is EdgeIdentityPolicy.SAME_CORRELATION:
+        return bool(previous.correlation_id) and previous.correlation_id == candidate.correlation_id
+    if edge.identity is EdgeIdentityPolicy.SAME_PARENT_STORY:
+        return bool(
+            previous.parent_story_id
+            and previous.parent_story_id == candidate.parent_story_id
+            and previous.scenario_id
+            and previous.scenario_id == candidate.scenario_id
+        )
+    if edge.identity is EdgeIdentityPolicy.CAUSED_BY_PARENT_STORY:
+        return bool(
+            previous.parent_story_id
+            and previous.parent_story_id == candidate.caused_by_parent_story_id
+        )
+    return (
+        previous.session_id == candidate.envelope.session_id
+        and previous.hero_id == candidate.envelope.subject.car_id
+        and previous.run_epoch == candidate.run_epoch
+    )
 
 
 def _context_revision(metrics: dict[str, Any], phase: str) -> tuple[str, ...]:

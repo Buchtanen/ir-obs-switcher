@@ -39,6 +39,8 @@ PRIORITY_NODES = {
 
 
 def _expected_density(node_id: str) -> int:
+    if node_id == "incident":
+        return 4  # Numeric delta copy replaces old speculative contact prose.
     return PRIORITY_DENSITY if node_id in PRIORITY_NODES else STANDARD_DENSITY
 
 

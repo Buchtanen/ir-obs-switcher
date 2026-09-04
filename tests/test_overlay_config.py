@@ -205,9 +205,59 @@ def test_commentary_graph_runtime_mode_put_roundtrip(tmp_path: Path) -> None:
     assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "shadow"
     spec = field_by_key("commentary.graph_runtime.mode")
     assert spec is not None
+    assert spec.default == "active"
     assert spec.choices == ("legacy", "shadow", "active")
     with pytest.raises(ValueError):
         coerce_value(spec, "experimental")
+
+
+def test_prepared_filler_put_roundtrip(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+
+    applied = apply_overlay_values(
+        path,
+        {
+            "commentary.prepared_filler.mode": "active",
+            "commentary.prepared_filler.max_inflight": 3,
+            "commentary.prepared_filler.youtube_history": True,
+        },
+    )
+
+    assert applied == [
+        "commentary.prepared_filler.max_inflight",
+        "commentary.prepared_filler.mode",
+        "commentary.prepared_filler.youtube_history",
+    ]
+    prepared = AppConfig.from_file(path).overlay.commentary.prepared_filler
+    assert prepared.mode == "active"
+    assert prepared.max_inflight == 3
+    assert prepared.youtube_history is True
+    spec = field_by_key("commentary.prepared_filler.mode")
+    assert spec is not None
+    assert spec.default == "active"
+
+
+def test_llm_polish_sampling_put_roundtrip(tmp_path: Path) -> None:
+    path = _minimal_ini(tmp_path)
+    values = {
+        "commentary.llm_temperature": 0.4,
+        "commentary.llm_top_p": 0.85,
+        "commentary.llm_top_k": 30,
+        "commentary.llm_num_predict": 45,
+        "commentary.llm_num_ctx": 512,
+    }
+
+    assert apply_overlay_values(path, values) == sorted(values)
+    settings = AppConfig.from_file(path).overlay.commentary
+    assert settings.llm_temperature == 0.4
+    assert settings.llm_top_p == 0.85
+    assert settings.llm_top_k == 30
+    assert settings.llm_num_predict == 45
+    assert settings.llm_num_ctx == 512
+    for key, expected in values.items():
+        spec = field_by_key(key)
+        assert spec is not None
+        assert spec.default == expected
 
 
 def test_live_overlay_fields_are_hot_reloadable() -> None:

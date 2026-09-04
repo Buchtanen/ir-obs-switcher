@@ -262,6 +262,30 @@ def test_process_sink_depth_one_keeps_higher_priority(monkeypatch: Any) -> None:
     assert sink.pending_count() == 0
 
 
+def test_discard_queued_preserves_current_speech_but_drops_old_waiter(monkeypatch: Any) -> None:
+    gate = threading.Event()
+    first_started = threading.Event()
+    speak_order: list[str] = []
+
+    def blocked_speak(text: str, **_kwargs: Any) -> TtsResult:
+        speak_order.append(text)
+        first_started.set()
+        gate.wait(timeout=2.0)
+        return TtsResult(backend="null", spoken=True, error=None)
+
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", blocked_speak)
+    sink = ProcessTtsSink(CommentarySettings(tts_backend="null"))
+    sink.enqueue(_sample_utterance(text="current", event_id="current", priority=40))
+    assert first_started.wait(timeout=1.0)
+    sink.enqueue(_sample_utterance(text="old waiter", event_id="old", priority=40))
+
+    sink.discard_queued()
+    gate.set()
+
+    assert sink.wait_idle(timeout_s=2.0)
+    assert speak_order == ["current"]
+
+
 def test_failed_llm_polish_is_silent_and_next_waiter_speaks(monkeypatch: Any) -> None:
     first_started = threading.Event()
     release = threading.Event()

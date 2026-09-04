@@ -8,7 +8,7 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import fields, replace
-from typing import Any
+from typing import Any, Literal
 
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.graph_runtime import (
@@ -16,9 +16,16 @@ from irswitch.commentary.graph_runtime import (
     GraphScoringSettings,
     SequenceGraphRuntime,
 )
-from irswitch.commentary.tts import ProcessTtsSink
+from irswitch.commentary.prepared_filler import (
+    OpenAICompatiblePreparedGenerator,
+    PreparedFillerCoordinator,
+    PreparedSelection,
+    build_prepared_filler_plans,
+)
+from irswitch.commentary.tts import CommentaryUtterance, ProcessTtsSink
+from irswitch.commentary.youtube_history import YouTubeHistorySource
 from irswitch.events.async_fanout import EventSubscription
-from irswitch.events.envelope import EventEnvelope
+from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.stream import (
     ConfigUpdate,
     FillerRequest,
@@ -32,7 +39,12 @@ from irswitch.events.stream import (
     thaw_story_payload,
 )
 from irswitch.overlay.models import BioState
-from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
+from irswitch.overlay.settings import (
+    CommentarySchedulerSettings,
+    CommentarySettings,
+    PreparedFillerSettings,
+)
+from irswitch.race.editorial_stage import EditorialStage, EditorialStageFeedback
 from irswitch.race.ministory import MiniStoryRegistry
 
 
@@ -47,14 +59,18 @@ class CommentaryConsumer:
         *,
         decision_hook: Callable[[dict[str, Any], float], None] | None = None,
         story_registry: MiniStoryRegistry | None = None,
+        prepared_stage_hook: Callable[[EditorialStageFeedback], None] | None = None,
+        youtube_oauth_manager: Any | None = None,
     ) -> None:
         self.subscription = subscription
         self.director = director
         self._settings, self._language = get_settings()
         self._decision_hook = decision_hook
+        self._prepared_stage_hook = prepared_stage_hook
         self._filler_requests: asyncio.Queue[FillerRequest] = asyncio.Queue(maxsize=1)
         self._filler_results: asyncio.Queue[FillerResult] = asyncio.Queue(maxsize=1)
         self._outstanding_filler: FillerRequest | None = None
+        self._pending_prepared_shadow: dict[str, object] | None = None
         self.running = False
         self.processed = 0
         self.failures = 0
@@ -75,6 +91,17 @@ class CommentaryConsumer:
         self._graph_lifecycle: queue.SimpleQueue[tuple[str, GraphCandidate, float]] = (
             queue.SimpleQueue()
         )
+        self._prepared_lifecycle: queue.SimpleQueue[tuple[str, CommentaryUtterance, float]] = (
+            queue.SimpleQueue()
+        )
+        self.youtube_history = YouTubeHistorySource(youtube_oauth_manager)
+        self.prepared_filler = PreparedFillerCoordinator(
+            self._settings.prepared_filler,
+            OpenAICompatiblePreparedGenerator(
+                self._settings, history_titles=lambda: self.youtube_history.titles
+            ),
+            diagnostic=self._prepared_diagnostic,
+        )
         self._seen_hero_order_revision = self.story_registry.hero_order_revision
         self.director.story_registry = self.story_registry
         self.director.graph_runtime = self.graph_runtime
@@ -85,8 +112,13 @@ class CommentaryConsumer:
         self.director.on_graph_decision = self._forward_decision
         if hasattr(self.director.sink, "on_graph_lifecycle"):
             self.director.sink.on_graph_lifecycle = self._enqueue_graph_lifecycle
+        if hasattr(self.director.sink, "on_prepared_lifecycle"):
+            self.director.sink.on_prepared_lifecycle = self._enqueue_prepared_lifecycle
+        if hasattr(self.director.sink, "prepared_commit_validator"):
+            self.director.sink.prepared_commit_validator = self._prepared_commit_is_current
 
     async def run(self) -> None:
+        self.prepared_filler.reopen()
         self.running = True
         try:
             while True:
@@ -107,10 +139,13 @@ class CommentaryConsumer:
                     )
         finally:
             self.running = False
+            await self.prepared_filler.close()
+            await self.youtube_history.close()
             self.director.sink.interrupt()
 
     async def handle(self, item: StreamItem) -> None:
         self._drain_graph_lifecycle()
+        self._drain_prepared_lifecycle()
         self._drain_filler_results(time.monotonic())
         self.last_stream_sequence = item.stream_sequence
         if isinstance(item, SessionReset):
@@ -121,6 +156,9 @@ class CommentaryConsumer:
             self._processed_ids.clear()
             self._processed_order.clear()
             self._outstanding_filler = None
+            self._pending_prepared_shadow = None
+            self.prepared_filler.reconcile(())
+            self.director.sink.discard_queued()
             self._drain_queue(self._filler_requests)
             self._drain_queue(self._filler_results)
             self.processed += 1
@@ -131,6 +169,7 @@ class CommentaryConsumer:
             return
         self._observe_batch(item)
         self._drain_graph_lifecycle()
+        self._drain_prepared_lifecycle()
         self.processed += 1
 
     def take_filler_request(self) -> FillerRequest | None:
@@ -154,6 +193,18 @@ class CommentaryConsumer:
         """Preserve opener mutex at producer acceptance before async dequeue."""
         self.director.opener.note("STREAM_START", now)
 
+    def invalidate_prepared(self, *, interrupt_tts: bool) -> None:
+        """Immediately invalidate generated, queued and in-flight prepared work."""
+        self.prepared_filler.reconcile(())
+        self._drain_queue(self._filler_requests)
+        self._drain_queue(self._filler_results)
+        self._outstanding_filler = None
+        self._pending_prepared_shadow = None
+        if interrupt_tts:
+            self.director.sink.interrupt()
+        else:
+            self.director.sink.discard_queued()
+
     def status_snapshot(self, now: float | None = None) -> dict[str, Any]:
         settings, _ = self._settings_snapshot()
         return {
@@ -169,6 +220,35 @@ class CommentaryConsumer:
             "lastError": self.last_error,
             "lastStreamSequence": self.last_stream_sequence,
             "fillerOutstanding": self._outstanding_filler is not None,
+            "preparedFiller": self._prepared_status(settings),
+        }
+
+    def _prepared_status(self, settings: CommentarySettings) -> dict[str, object]:
+        editorial: dict[str, Any] = {}
+        payload = self.subscription.latest_context
+        if payload is not None:
+            context = thaw_context(payload)
+            raw = context.get("editorial")
+            editorial = raw if isinstance(raw, dict) else {}
+        desired = self.prepared_filler.buffer.desired
+        raw_stage_epoch = editorial.get("stage_epoch")
+        stage_epoch = raw_stage_epoch if isinstance(raw_stage_epoch, int) else 0
+        return {
+            **self.prepared_filler.status(),
+            "stage": str(editorial.get("stage") or "INACTIVE"),
+            "stageEpoch": stage_epoch,
+            "contextRevision": desired[0].material_revision if desired else None,
+            "sources": {
+                "irsdk": (
+                    "disabled"
+                    if settings.prepared_filler.mode == "legacy"
+                    else ("ready" if desired else "waiting_context")
+                ),
+                "youtube": self.youtube_history.status(),
+                "iracing": (
+                    "not_configured" if settings.prepared_filler.iracing_history else "disabled"
+                ),
+            },
         }
 
     def _observe_batch(self, batch: FrozenAcceptedEventBatch) -> None:
@@ -180,6 +260,7 @@ class CommentaryConsumer:
             self._record_skip("session_context_stale", now)
             return
         self._apply_settings()
+        self._observe_prepared(latest)
         self.story_registry.observe_context(latest)
         self._sync_graph_run(latest, now=now)
         if self.story_registry.hero_order_revision > self._seen_hero_order_revision:
@@ -188,16 +269,21 @@ class CommentaryConsumer:
         self._apply_story_context(context)
         bio = self._bio_from_context(context)
         envelopes: list[EventEnvelope] = []
+        has_legacy_filler = False
+        legacy_filler_ids: set[str] = set()
         for accepted in batch.events:
             if "commentary" not in accepted.audiences:
                 continue
             if accepted.source == "filler":
                 self._outstanding_filler = None
+                has_legacy_filler = True
             if accepted.event_id in self._processed_ids:
                 self.duplicates += 1
                 self._record_skip("duplicate_event", now, accepted.event_id)
                 continue
             envelope = thaw_envelope(accepted.envelope)
+            if accepted.source == "filler":
+                legacy_filler_ids.add(envelope.event_id)
             self._apply_context_bindings(envelope, context, latest)
             if self._situation_no_longer_current(context, latest):
                 self._strip_situation_slots(envelope)
@@ -230,18 +316,27 @@ class CommentaryConsumer:
             envelopes.append(envelope)
             self._remember(accepted.event_id)
         if not envelopes:
+            if has_legacy_filler:
+                self._record_prepared_shadow_comparison(None, reason="legacy_not_narrated")
             return
         envelopes = self._prefer_two_front(envelopes, latest, now)
         if not envelopes:
+            if has_legacy_filler:
+                self._record_prepared_shadow_comparison(None, reason="legacy_not_eligible")
             return
         settings, language = self._settings_snapshot()
-        self.director.observe(
+        spoken = self.director.observe(
             envelopes,
             bio,
             now,
             enabled=settings.enabled,
             language=language,
         )
+        if has_legacy_filler:
+            if spoken is not None and spoken.event_id in legacy_filler_ids:
+                self._record_prepared_shadow_comparison(spoken, reason="legacy_candidate")
+            else:
+                self._record_prepared_shadow_comparison(None, reason="live_preempted")
 
     def _prefer_two_front(
         self,
@@ -362,15 +457,18 @@ class CommentaryConsumer:
             return
         try:
             self._drain_graph_lifecycle()
+            self._drain_prepared_lifecycle()
             self._drain_filler_results(time.monotonic())
             context = thaw_context(latest_payload)
             self._apply_settings()
+            self._observe_prepared(context)
             self.story_registry.observe_context(context)
             if self.story_registry.hero_order_revision > self._seen_hero_order_revision:
                 self._seen_hero_order_revision = self.story_registry.hero_order_revision
                 self.director.hero_order_changed(time.monotonic())
             self.director.tick(time.monotonic(), self._bio_from_context(context))
             self._drain_graph_lifecycle()
+            self._drain_prepared_lifecycle()
         except Exception as exc:
             self.failures += 1
             self.last_error = f"{type(exc).__name__}: {exc}"
@@ -384,6 +482,60 @@ class CommentaryConsumer:
         settings, language = self._settings_snapshot()
         if not settings.enabled or not session_id:
             return None
+        prepared_mode = settings.prepared_filler.mode
+        shadow_probe: dict[str, object] | None = None
+        if prepared_mode != "legacy":
+            editorial = context.get("editorial")
+            editorial = editorial if isinstance(editorial, dict) else {}
+            stage = str(editorial.get("stage") or "")
+            selections = self.prepared_filler.buffer.selections(stage, int(now * 1000))
+            prepared_envelopes = [
+                self._prepared_envelope(selection, context, stage, now) for selection in selections
+            ]
+            selected_envelope = self.director.rank_prepared_fillers(prepared_envelopes, now=now)
+            if selected_envelope is not None:
+                if prepared_mode == "active":
+                    return selected_envelope
+                self._prepared_diagnostic(
+                    {
+                        "action": "shadow_selected",
+                        "planId": selected_envelope.metrics.get("preparedPlanId"),
+                        "variantId": selected_envelope.metrics.get("preparedVariantId"),
+                        "stage": stage,
+                    }
+                )
+                shadow_probe = {
+                    "planId": selected_envelope.metrics.get("preparedPlanId"),
+                    "semanticKey": selected_envelope.metrics.get("preparedSemanticKey"),
+                    "stage": stage,
+                }
+            elif not selections and prepared_mode == "active":
+                notice = self.prepared_filler.fatal_notice(language)
+                if notice is None:
+                    return None
+                episode, text = notice
+                return make_envelope(
+                    event_type="PREPARED_FATAL",
+                    phase="RESULT",
+                    mode="GENERIC",
+                    priority=60,
+                    monotonic_ms=int(now * 1000),
+                    correlation_id=f"prepared-fatal:{episode}",
+                    metrics={
+                        "preparedText": text,
+                        "preparedNodeId": "prepared_filler_fatal_notice",
+                        "preparedFatalEpisode": episode,
+                        "preparedStage": stage,
+                    },
+                )
+            if prepared_mode == "active":
+                return None
+            if shadow_probe is None:
+                shadow_probe = {
+                    "planId": None,
+                    "semanticKey": None,
+                    "stage": stage,
+                }
         if self._outstanding_filler is not None:
             return None
         request = FillerRequest(
@@ -397,8 +549,44 @@ class CommentaryConsumer:
             self._filler_requests.put_nowait(request)
         except asyncio.QueueFull:
             return None
+        self._pending_prepared_shadow = shadow_probe
         self._outstanding_filler = request
         return None
+
+    @staticmethod
+    def _prepared_envelope(
+        selection: PreparedSelection, context: dict[str, Any], stage: str, now: float
+    ) -> EventEnvelope:
+        identity = context.get("identity")
+        identity = identity if isinstance(identity, dict) else {}
+        editorial = context.get("editorial")
+        editorial = editorial if isinstance(editorial, dict) else {}
+        return make_envelope(
+            event_type="PREPARED_FILLER",
+            event_id=(f"prepared:{selection.variant.variant_id}:{int(now * 1000)}"),
+            phase="RESULT",
+            mode=str(identity.get("overlay_mode") or "GENERIC"),
+            session_id=str(context.get("session_id") or ""),
+            priority=8,
+            monotonic_ms=int(now * 1000),
+            correlation_id=selection.plan.situation_id,
+            metrics={
+                "preparedText": selection.variant.text,
+                "preparedNodeId": selection.plan.node_id,
+                "preparedPlanId": selection.plan.plan_id,
+                "preparedVariantId": selection.variant.variant_id,
+                "preparedStage": stage,
+                "preparedStageEpoch": selection.plan.stage_epoch,
+                "preparedStreamEpoch": editorial.get("stream_epoch", 0),
+                "preparedTerminal": selection.plan.terminal,
+                "preparedSemanticKey": selection.plan.semantic_key,
+                "preparedMaterialRevision": selection.plan.material_revision,
+                "preparedTier": selection.plan.tier,
+                "fact": selection.plan.semantic_key,
+                "value": selection.plan.material_revision,
+                "runEpoch": identity.get("run_epoch", 0),
+            },
+        )
 
     @staticmethod
     def _order_event_type(batch: FrozenAcceptedEventBatch) -> str | None:
@@ -420,6 +608,11 @@ class CommentaryConsumer:
         sink = self.director.sink
         if isinstance(sink, ProcessTtsSink):
             sink.settings = settings
+        self.prepared_filler.settings = settings.prepared_filler
+        self.prepared_filler.buffer.settings = settings.prepared_filler
+        generator = self.prepared_filler.generator
+        if isinstance(generator, OpenAICompatiblePreparedGenerator):
+            generator.commentary = settings
         if self.graph_runtime.settings.max_silence_s != settings.scheduler.max_silence_s:
             self.graph_runtime.settings = replace(
                 self.graph_runtime.settings,
@@ -427,6 +620,7 @@ class CommentaryConsumer:
             )
 
     def _apply_config_update(self, item: ConfigUpdate) -> None:
+        previous_mode = self._settings.prepared_filler.mode
         payload = thaw_config(item.frozen_config)
         raw = payload.get("commentary")
         if isinstance(raw, dict):
@@ -435,6 +629,11 @@ class CommentaryConsumer:
         if isinstance(language, str) and language.strip():
             self._language = language
         self._apply_settings()
+        if self._settings.prepared_filler.mode != previous_mode:
+            self.invalidate_prepared(interrupt_tts=False)
+            latest = self.subscription.latest_context
+            if latest is not None:
+                self._observe_prepared(thaw_context(latest))
 
     def _settings_snapshot(self) -> tuple[CommentarySettings, str]:
         return self._settings, self._language
@@ -535,12 +734,128 @@ class CommentaryConsumer:
     ) -> None:
         self._graph_lifecycle.put((action, candidate, now))
 
+    def _enqueue_prepared_lifecycle(
+        self, action: str, utterance: CommentaryUtterance, now: float
+    ) -> None:
+        self._prepared_lifecycle.put((action, utterance, now))
+
+    def _drain_prepared_lifecycle(self) -> None:
+        while True:
+            try:
+                action, utterance, now = self._prepared_lifecycle.get_nowait()
+            except queue.Empty:
+                return
+            if action != "speaking":
+                continue
+            if utterance.prepared_variant_id:
+                self.prepared_filler.mark_spoken(utterance.prepared_variant_id, int(now * 1000))
+            if utterance.prepared_fatal_episode is not None:
+                self.prepared_filler.mark_fatal_notice_spoken(utterance.prepared_fatal_episode)
+            stage = utterance.prepared_stage
+            if (
+                stage
+                and self.prepared_filler.buffer.stage_drained(stage)
+                and self._prepared_stage_hook is not None
+            ):
+                try:
+                    editorial_stage = EditorialStage(stage)
+                except ValueError:
+                    continue
+                feedback_actions: dict[
+                    EditorialStage,
+                    Literal[
+                        "intro_chain_completed",
+                        "session_intro_completed",
+                        "conclusion_completed",
+                    ],
+                ] = {
+                    EditorialStage.STREAM_LOBBY_INTRO: "intro_chain_completed",
+                    EditorialStage.SESSION_EVENT_INTRO: "session_intro_completed",
+                    EditorialStage.SESSION_CONCLUSION: "conclusion_completed",
+                }
+                feedback_action = feedback_actions.get(editorial_stage)
+                if feedback_action is not None:
+                    self._prepared_stage_hook(
+                        EditorialStageFeedback(
+                            stream_epoch=utterance.prepared_stream_epoch,
+                            stage_epoch=utterance.prepared_stage_epoch,
+                            stage=editorial_stage,
+                            action=feedback_action,
+                            observed_monotonic_ms=int(now * 1000),
+                        )
+                    )
+
+    def _observe_prepared(self, context: dict[str, Any]) -> None:
+        settings, language = self._settings_snapshot()
+        prepared = settings.prepared_filler
+        self.youtube_history.configure(
+            enabled=bool(
+                settings.enabled and prepared.mode != "legacy" and prepared.youtube_history
+            ),
+            days=prepared.youtube_history_days,
+            max_items=prepared.youtube_history_max_items,
+        )
+        self.youtube_history.observe()
+        plans = (
+            build_prepared_filler_plans(context, language, graph=self.director.graph)
+            if settings.enabled and prepared.mode != "legacy"
+            else ()
+        )
+        raw_editorial = context.get("editorial")
+        raw_editorial = raw_editorial if isinstance(raw_editorial, dict) else {}
+        self.prepared_filler.reconcile(plans, current_stage=str(raw_editorial.get("stage") or ""))
+
+    def _prepared_commit_is_current(self, utterance: CommentaryUtterance, now: float) -> bool:
+        if self._settings.prepared_filler.mode != "active":
+            return False
+        if utterance.prepared_fatal_episode is not None:
+            return (
+                self.prepared_filler.health.value == "fatal"
+                and utterance.prepared_fatal_episode == self.prepared_filler.fatal_episode
+                and not self.prepared_filler.fatal_notice_spoken
+            )
+        if not utterance.prepared_plan_id or not utterance.prepared_stage:
+            return False
+        payload = self.subscription.latest_context
+        if payload is None:
+            return False
+        context = thaw_context(payload)
+        editorial = context.get("editorial")
+        if not isinstance(editorial, dict):
+            return False
+        stage = str(editorial.get("stage") or "")
+        if stage != utterance.prepared_stage:
+            return False
+        return self.prepared_filler.buffer.is_current(
+            utterance.prepared_plan_id, stage, int(now * 1000)
+        )
+
+    def _prepared_diagnostic(self, entry: dict[str, Any]) -> None:
+        self._forward_decision(
+            {"eventType": "PREPARED_FILLER", "reason": "prepared_filler", **entry},
+            time.monotonic(),
+        )
+
     def _drain_graph_lifecycle(self) -> None:
         while True:
             try:
                 action, candidate, now = self._graph_lifecycle.get_nowait()
             except queue.Empty:
                 return
+            if candidate.event_type == "TRACK_EXCURSION":
+                self._forward_decision(
+                    {
+                        "action": action,
+                        "reason": "tts_lifecycle",
+                        "eventType": candidate.event_type,
+                        "eventId": candidate.event_id,
+                        "nodeId": candidate.node_id,
+                        "parentStoryId": candidate.parent_story_id,
+                        "correlationId": candidate.correlation_id,
+                        "beatId": candidate.envelope.metrics.get("beatId"),
+                    },
+                    now,
+                )
             if action == "speaking":
                 self.graph_runtime.record_speaking(candidate, now=now)
             elif action == "completed":
@@ -555,6 +870,45 @@ class CommentaryConsumer:
             except asyncio.QueueEmpty:
                 return
             self.graph_runtime.note_filler_result(status=result.status, now=now)
+            self._record_prepared_shadow_comparison(None, reason=result.status)
+
+    def _record_prepared_shadow_comparison(
+        self, utterance: CommentaryUtterance | None, *, reason: str
+    ) -> None:
+        pending = self._pending_prepared_shadow
+        if pending is None:
+            return
+        self._pending_prepared_shadow = None
+        prepared_semantic = pending.get("semanticKey")
+        legacy_node = utterance.node_id if utterance is not None else None
+        legacy_semantic = None
+        if utterance is not None:
+            candidate = utterance.graph_candidate
+            legacy_semantic = candidate.semantic_key if candidate is not None else utterance.node_id
+        if reason in {"live_preempted", "stale", "disabled"}:
+            divergence = "not_eligible"
+        elif prepared_semantic is None and legacy_semantic is None:
+            divergence = "not_ready"
+        elif prepared_semantic is None:
+            divergence = "legacy_only"
+        elif legacy_semantic is None:
+            divergence = "shadow_only"
+        elif prepared_semantic == legacy_semantic:
+            divergence = "same_semantic"
+        else:
+            divergence = "different_semantic"
+        self._prepared_diagnostic(
+            {
+                "action": "shadow_compared",
+                "planId": pending.get("planId"),
+                "stage": pending.get("stage"),
+                "semanticKey": prepared_semantic,
+                "legacyNodeId": legacy_node,
+                "legacySemanticKey": legacy_semantic,
+                "divergence": divergence,
+                "comparisonReason": reason,
+            }
+        )
 
     def _sync_graph_run(self, context: dict[str, Any], *, now: float) -> None:
         identity = context.get("identity")
@@ -597,7 +951,7 @@ def _commentary_settings_from_dict(
     values = {
         field.name: raw.get(field.name, getattr(fallback, field.name))
         for field in fields(CommentarySettings)
-        if field.name != "scheduler"
+        if field.name not in {"scheduler", "prepared_filler"}
     }
     scheduler_raw = raw.get("scheduler")
     if isinstance(scheduler_raw, dict):
@@ -609,9 +963,21 @@ def _commentary_settings_from_dict(
         )
     else:
         scheduler = fallback.scheduler
+    prepared_raw = raw.get("prepared_filler")
+    if isinstance(prepared_raw, dict):
+        prepared_filler = PreparedFillerSettings(
+            **{
+                field.name: prepared_raw.get(
+                    field.name, getattr(fallback.prepared_filler, field.name)
+                )
+                for field in fields(PreparedFillerSettings)
+            }
+        )
+    else:
+        prepared_filler = fallback.prepared_filler
     mode = str(values.get("graph_runtime_mode", fallback.graph_runtime_mode)).strip().lower()
     values["graph_runtime_mode"] = mode if mode in {"legacy", "shadow", "active"} else "legacy"
-    return CommentarySettings(**values, scheduler=scheduler)
+    return CommentarySettings(**values, scheduler=scheduler, prepared_filler=prepared_filler)
 
 
 def _lap_context(situation: dict[str, Any], *, language: str) -> str | None:

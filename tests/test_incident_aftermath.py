@@ -91,7 +91,9 @@ def test_observer_formatter_and_derived_drain() -> None:
         },
         timestamp=1.0,
     )
-    observer = RaceObserver()
+    from irswitch.overlay.settings import RaceObserverSettings
+
+    observer = RaceObserver(settings=RaceObserverSettings(scenario_mode="legacy"))
     state = _state(incidents=0, surface=OFF_TRACK, dist=0.3)
     observer.observe(snap, state, now=1.0)
     state2 = _state(incidents=2, surface=OFF_TRACK, dist=0.3)
@@ -230,3 +232,47 @@ def test_delta_one_is_aftermath_only() -> None:
     out = fsm.tick(_state(incidents=3, surface=OFF_TRACK), 1.0)
     assert len(out) == 1
     assert out[0].event_type == "INCIDENT_AFTERMATH"
+
+
+def test_design_reference_off_track_then_recovery_timing_and_identity() -> None:
+    """Synthetic spec trace inspired by Test 7; not a replay of the original tape."""
+    fsm = IncidentAftermathFsm()
+    assert (
+        fsm.tick(
+            _state(incidents=0, surface=ON_TRACK, dist=0.4000, speed_mps=42.0),
+            0.0,
+        )
+        == []
+    )
+
+    aftermath = fsm.tick(
+        _state(incidents=2, surface=OFF_TRACK, dist=0.4010, speed_mps=18.0),
+        0.05,
+    )
+    assert [env.event_type for env in aftermath] == ["INCIDENT_AFTERMATH"]
+    assert aftermath[0].metrics["kind"] == "stalled"
+
+    # Still moving off track is not misclassified as an on-track recovery.
+    assert (
+        fsm.tick(
+            _state(incidents=2, surface=OFF_TRACK, dist=0.4011, speed_mps=0.4),
+            0.26,
+        )
+        == []
+    )
+
+    assert (
+        fsm.tick(
+            _state(incidents=2, surface=ON_TRACK, dist=0.4013, speed_mps=3.0),
+            7.50,
+        )
+        == []
+    )
+    recovery = fsm.tick(
+        _state(incidents=2, surface=ON_TRACK, dist=0.4024, speed_mps=8.0),
+        8.15,
+    )
+
+    assert [env.event_type for env in recovery] == ["BACK_UNDER_WAY"]
+    assert recovery[0].monotonic_ms == 8150
+    assert recovery[0].correlation_id == aftermath[0].correlation_id

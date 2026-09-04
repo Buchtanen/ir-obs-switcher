@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 4,
   "locales": [
     "en",
     "cs"
@@ -3146,7 +3146,7 @@
         {
           "name": "value",
           "type": "int",
-          "example": 4
+          "example": 2
         }
       ],
       "hr_states": [
@@ -3155,122 +3155,58 @@
         "pushing",
         "high"
       ],
-      "notes": "Short. No blame speech. Overlay already flashes.",
+      "notes": "Numeric incident-point delta only. Never infer contact, off-track or control.",
       "variants": {
         "en": {
           "neutral": [
-            "Contact there. His incident count moves to {value}.",
-            "A moment for him. That is {value} on the tally.",
-            "Something happened out there, and he gathers it up.",
-            "An incident logged, and the count is now {value}.",
-            "The tally changes to {value} after that moment.",
-            "He gathers the car and continues without blame.",
-            "A brief interruption enters the race record.",
-            "Viewers saw the moment, and now the race moves on.",
-            "The incident changes the count, not the whole story.",
-            "He restores the line after a rough passage, and the picture is clear.",
-            "That interruption is logged and left behind.",
-            "The next task is simply to recover the rhythm."
+            "His incident point count increases by {value}.",
+            "Another {value} incident points are added to his tally.",
+            "The counter records {value} additional incident points.",
+            "His tally goes up by {value} incident points."
           ],
           "focused": [
-            "A scrappy moment, and he resets straight away.",
-            "Incident there. He is already back on the racing line.",
-            "A small mistake, quickly tidied up. Count at {value}.",
-            "That is {value} incidents now, but he looks composed.",
-            "The tally changes to {value} after that moment.",
-            "He gathers the car and continues without blame.",
-            "A brief interruption enters the race record.",
-            "Viewers saw the moment, and now the race moves on.",
-            "The incident changes the count, not the whole story.",
-            "He restores the line after a rough passage, with every detail measured.",
-            "That interruption is logged and left behind.",
-            "The next task is simply to recover the rhythm, all part of the plan."
+            "His incident point count increases by {value}.",
+            "Another {value} incident points are added to his tally.",
+            "The counter records {value} additional incident points.",
+            "His tally goes up by {value} incident points."
           ],
           "pushing": [
-            "A knock there. He shakes it off and keeps charging.",
-            "Incident number {value}, and he is straight back on it.",
-            "That cost him a beat. He is already chasing again.",
-            "A rough moment, but the pace is right back with him.",
-            "The tally changes to {value} after that moment.",
-            "He gathers the car and continues without blame.",
-            "A brief interruption enters the race record.",
-            "Viewers saw the moment, and now the race moves on.",
-            "The incident changes the count, not the whole story.",
-            "He restores the line after a rough passage.",
-            "That interruption is logged and left behind.",
-            "The next task is simply to recover the rhythm."
+            "His incident point count increases by {value}.",
+            "Another {value} incident points are added to his tally.",
+            "The counter records {value} additional incident points.",
+            "His tally goes up by {value} incident points."
           ],
           "high": [
-            "Big moment there! He gathers it up!",
-            "That was close! Incident {value} on the sheet!",
-            "A hit, and he is fighting to keep it pointed straight!",
-            "What a save! He keeps it going after that one!",
-            "The tally changes to {value} after that moment!",
-            "He gathers the car and continues without blame!",
-            "A brief interruption enters the race record!",
-            "Viewers saw the moment, and now the race moves on!",
-            "The incident changes the count, not the whole story!",
-            "He restores the line after a rough passage!",
-            "That interruption is logged and left behind!",
-            "The next task is simply to recover the rhythm!"
+            "His incident point count increases by {value}.",
+            "Another {value} incident points are added to his tally.",
+            "The counter records {value} additional incident points.",
+            "His tally goes up by {value} incident points."
           ]
         },
         "cs": {
           "neutral": [
-            "Zapsaný incident, celkem {value}. Jede dál.",
-            "Malý kontakt a v protokolu je {value}.",
-            "Něco se tam stalo, ale pokračuje.",
-            "Incident na kontě, počítadlo hlásí {value}.",
-            "Po tomhle momentu se počítadlo mění na {value}.",
-            "Srovnává vůz a pokračuje bez hledání viníka, obraz závodu je jasný.",
-            "Krátké přerušení se zapisuje do průběhu závodu, příběh pokračuje.",
-            "Diváci moment viděli a závod teď pokračuje, další fáze se rýsuje.",
-            "Incident mění počet, ne celý příběh.",
-            "Po hrubším průjezdu vrací vůz do stopy, obraz závodu je jasný.",
-            "Tahle událost je zapsaná a zůstává za ním, příběh pokračuje.",
-            "Dalším úkolem je prostě vrátit rytmus, další fáze se rýsuje."
+            "Počet incidentních bodů se mu zvýšil o {value}.",
+            "Na kontě mu přibylo {value} incidentních bodů.",
+            "Počítadlo mu připsalo dalších {value} incidentních bodů.",
+            "Jeho součet narostl o {value} incidentních bodů."
           ],
           "focused": [
-            "Incident. Srovnává to a vrací se do rytmu.",
-            "Krátký moment a hned je zpátky ve své lajně.",
-            "Zaváhání bez následků. Počítadlo je na {value}.",
-            "Incident si zapsal, hlavu ale nesklopil.",
-            "Po tomhle momentu se počítadlo mění na {value}.",
-            "Srovnává vůz a pokračuje bez hledání viníka, každý detail má změřený.",
-            "Krátké přerušení se zapisuje do průběhu závodu, už myslí na další krok.",
-            "Diváci moment viděli a závod teď pokračuje, přesně podle plánu.",
-            "Incident mění počet, ne celý příběh, soustředění zůstává pevné.",
-            "Po hrubším průjezdu vrací vůz do stopy, každý detail má změřený.",
-            "Tahle událost je zapsaná a zůstává za ním, už myslí na další krok.",
-            "Dalším úkolem je prostě vrátit rytmus, přesně podle plánu."
+            "Počet incidentních bodů se mu zvýšil o {value}.",
+            "Na kontě mu přibylo {value} incidentních bodů.",
+            "Počítadlo mu připsalo dalších {value} incidentních bodů.",
+            "Jeho součet narostl o {value} incidentních bodů."
           ],
           "pushing": [
-            "Incident, a přesto hned zase šlape na gas.",
-            "Setřepal to a jede dál naplno.",
-            "Ťukanec je zapsaný, celkem {value}. Tempo nepolevuje.",
-            "Krátká chyba a okamžitě zpět na plný gas.",
-            "Po tomhle momentu se počítadlo mění na {value}, tlak dál roste.",
-            "Srovnává vůz a pokračuje bez hledání viníka, tempo pořád zvedá.",
-            "Krátké přerušení se zapisuje do průběhu závodu, pořád hledá něco navíc.",
-            "Diváci moment viděli a závod teď pokračuje, bez náznaku polevení.",
-            "Incident mění počet, ne celý příběh, tlak dál roste.",
-            "Po hrubším průjezdu vrací vůz do stopy, tempo pořád zvedá.",
-            "Tahle událost je zapsaná a zůstává za ním, pořád hledá něco navíc.",
-            "Dalším úkolem je prostě vrátit rytmus, bez náznaku polevení."
+            "Počet incidentních bodů se mu zvýšil o {value}.",
+            "Na kontě mu přibylo {value} incidentních bodů.",
+            "Počítadlo mu připsalo dalších {value} incidentních bodů.",
+            "Jeho součet narostl o {value} incidentních bodů."
           ],
           "high": [
-            "Incident! Srovnává to a pokračuje dál!",
-            "Velký moment, ale udržel to a jede!",
-            "To bylo o vlásek! Počítadlo hlásí {value}!",
-            "Zachránil to a pořád je v závodě!",
-            "Po tomhle momentu se počítadlo mění na {value}, napětí stoupá!",
-            "Srovnává vůz a pokračuje bez hledání viníka, závod kolem něj ožívá!",
-            "Krátké přerušení se zapisuje do průběhu závodu, momentum nabírá sílu!",
-            "Diváci moment viděli a závod teď pokračuje, tohle začíná být ostré!",
-            "Incident mění počet, ne celý příběh, napětí stoupá!",
-            "Po hrubším průjezdu vrací vůz do stopy, závod kolem něj ožívá!",
-            "Tahle událost je zapsaná a zůstává za ním, momentum nabírá sílu!",
-            "Dalším úkolem je prostě vrátit rytmus, tohle začíná být ostré!"
+            "Počet incidentních bodů se mu zvýšil o {value}.",
+            "Na kontě mu přibylo {value} incidentních bodů.",
+            "Počítadlo mu připsalo dalších {value} incidentních bodů.",
+            "Jeho součet narostl o {value} incidentních bodů."
           ]
         }
       },
@@ -6075,7 +6011,6 @@
             "Aftermath from P{position} — the picture is clear.",
             "He holds P{position} while the dust settles.",
             "From P{position} the recovery story begins.",
-            "The incident is over, and the next beat is recovery.",
             "Viewers wait to see how he gathers it up.",
             "A short pause after contact before the race resumes.",
             "He settles the car and looks for a way forward."
@@ -6105,8 +6040,7 @@
             "He claws at recovery from P{position}.",
             "Contact done — he wants pace back immediately.",
             "Viewers see him fighting through the aftermath.",
-            "The hit costs a beat, not the whole charge.",
-            "He refuses to let the incident end the push."
+            "The hit costs a beat, not the whole charge."
           ],
           "high": [
             "He is {kind} after that hit!",
@@ -6133,7 +6067,6 @@
             "Dozvuk z {position}. místa — obraz je jasný.",
             "Drží {position}. místo, dokud se prach neusadí.",
             "Z {position}. místa začíná příběh návratu.",
-            "Incident je pryč a další fáze je zotavení.",
             "Diváci čekají, jak to srovná.",
             "Krátká pauza po kontaktu, než závod znovu naskočí.",
             "Usazuje vůz a hledá cestu dál."
@@ -6163,8 +6096,7 @@
             "Z {position}. místa se drápe zpátky do tempa.",
             "Kontakt hotový — tempo chce hned zpátky.",
             "Diváci vidí, jak se protlouká dozvukem.",
-            "Zásah bere jen takt, ne celý nápor.",
-            "Nenechá incident ukončit tlak."
+            "Zásah bere jen takt, ne celý nápor."
           ],
           "high": [
             "Po tom zásahu {kind}!",
@@ -6823,6 +6755,57 @@
         "material_change_policy": "occurrence"
       }
     },
+    "prepared_filler": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 28,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Validated prepared text is supplied by the bounded buffer; variants here are schema-only and are never the audible source.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Prepared commentary is ready.",
+            "The prepared commentary buffer is ready.",
+            "A prepared commentary line is available.",
+            "The next prepared commentary unit is ready."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Připravený komentář je k dispozici.",
+            "Zásobník připraveného komentáře je hotový.",
+            "Je k dispozici připravená komentátorská věta.",
+            "Další připravený komentář je hotový."
+          ]
+        }
+      },
+      "tts": {
+        "max_chars": 600,
+        "max_seconds": 28.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1.25,
+        "silence_affinity": 1.0,
+        "material_change_policy": "context_value"
+      }
+    },
     "field_fact": {
       "family": "session",
       "event_types": [
@@ -7107,22 +7090,22 @@
         "unknown"
       ],
       "branch": "off_track",
-      "notes": "N11 B. Spoken off-track; never names wall vs car. Generic incident stays for unclassified.",
+      "notes": "Legacy surface classification; active excursions use track_excursion instead.",
       "variants": {
         "en": {
           "neutral": [
-            "He ran off the track.",
-            "The car left the racing surface.",
-            "He is in the runoff, not on the line.",
-            "That moment put him off the road."
+            "He has gone off the track.",
+            "The car has left the track.",
+            "He is off track here.",
+            "He has gone beyond the track limits."
           ]
         },
         "cs": {
           "neutral": [
-            "Sjel z trati.",
-            "Auto opustilo závodní stopu.",
-            "Je v únikové zóně, ne na čáře.",
-            "Ten moment ho sundal z asfaltu."
+            "Vyjel mimo trať.",
+            "Auto opustilo trať.",
+            "Auto skončilo mimo trať.",
+            "Dostal se za limity trati."
           ]
         }
       },
@@ -7145,27 +7128,33 @@
       ],
       "speak_priority": 88,
       "cooldown_s": 10,
-      "slots": [],
+      "slots": [
+        {
+          "name": "value",
+          "type": "int",
+          "example": 2
+        }
+      ],
       "hr_states": [
         "unknown"
       ],
       "branch": "unknown",
-      "notes": "N11 B. Classified unknown; still no contact_car/object. Nearby cars stay metrics.",
+      "notes": "Numeric incident-point delta only. Never infer contact, off-track or control.",
       "variants": {
         "en": {
           "neutral": [
-            "An incident is on the sheet.",
-            "The count moved after that moment.",
-            "A beat is logged against him.",
-            "The tally ticks without a named cause."
+            "His incident point count increases by {value}.",
+            "Another {value} incident points are added to his tally.",
+            "The counter records {value} additional incident points.",
+            "His tally goes up by {value} incident points."
           ]
         },
         "cs": {
           "neutral": [
-            "Incident je na listině.",
-            "Po tomhle momentu se posunulo skóre.",
-            "Je mu zapsaný zásah.",
-            "Počítadlo se hýbe, příčina zůstává bez jména."
+            "Počet incidentních bodů se mu zvýšil o {value}.",
+            "Na kontě mu přibylo {value} incidentních bodů.",
+            "Počítadlo mu připsalo dalších {value} incidentních bodů.",
+            "Jeho součet narostl o {value} incidentních bodů."
           ]
         }
       },
@@ -7383,6 +7372,3598 @@
         "silence_affinity": 1.0,
         "material_change_policy": "context_value"
       }
+    },
+    "track_excursion": {
+      "family": "exception",
+      "event_types": [
+        "TRACK_EXCURSION"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "branch": "offtrack",
+      "modes": [
+        "race",
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 90,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "match": {
+        "scenario_id": [
+          "track_excursion"
+        ],
+        "beat_role": [
+          "root"
+        ],
+        "primary_relation": "track_excursion",
+        "outcome": [
+          "unknown"
+        ],
+        "evidence_level": [
+          "CONFIRMED"
+        ],
+        "minimum_confidence": 1.0
+      },
+      "notes": "Current-signal fact only. Unknown cause/damage. No incident/contact/control/pace claims.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He has gone off the track.",
+            "The car has left the track.",
+            "He is off track here.",
+            "He has gone beyond the track limits."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Vyjel mimo trať.",
+            "Auto opustilo trať.",
+            "Auto skončilo mimo trať.",
+            "Dostal se za limity trati."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "scenario_episode",
+        "criticality": "story",
+        "repeat_weight": 0.5,
+        "silence_affinity": 0.0,
+        "material_change_policy": "scenario_beat"
+      }
+    },
+    "stopped_after_excursion": {
+      "family": "exception",
+      "event_types": [
+        "TRACK_EXCURSION"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "branch": "stopped",
+      "modes": [
+        "race",
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 90,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "match": {
+        "scenario_id": [
+          "track_excursion"
+        ],
+        "beat_role": [
+          "development"
+        ],
+        "primary_relation": "track_excursion",
+        "outcome": [
+          "stopped_after_excursion"
+        ],
+        "evidence_level": [
+          "CONFIRMED"
+        ],
+        "minimum_confidence": 1.0
+      },
+      "notes": "Current-signal fact only. Unknown cause/damage. No incident/contact/control/pace claims.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "The car has stopped after going off track.",
+            "After that off-track, the car is now stationary."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Po vyjetí mimo trať auto zastavilo.",
+            "Po tom výjezdu mimo trať teď auto stojí."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "scenario_episode",
+        "criticality": "story",
+        "repeat_weight": 0.5,
+        "silence_affinity": 0.0,
+        "material_change_policy": "scenario_beat"
+      }
+    },
+    "track_rejoined": {
+      "family": "exception",
+      "event_types": [
+        "TRACK_EXCURSION"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "branch": "track_rejoined",
+      "modes": [
+        "race",
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 90,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "match": {
+        "scenario_id": [
+          "track_excursion"
+        ],
+        "beat_role": [
+          "closure"
+        ],
+        "primary_relation": "track_excursion",
+        "outcome": [
+          "back_on_track"
+        ],
+        "evidence_level": [
+          "CONFIRMED"
+        ],
+        "minimum_confidence": 1.0
+      },
+      "notes": "Current-signal fact only. Unknown cause/damage. No incident/contact/control/pace claims.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He has returned to the track.",
+            "The car is back on the track."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Vrátil se na trať.",
+            "Auto je zpátky na trati."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "scenario_episode",
+        "criticality": "story",
+        "repeat_weight": 0.5,
+        "silence_affinity": 0.0,
+        "material_change_policy": "scenario_beat"
+      }
+    },
+    "motion_restored": {
+      "family": "exception",
+      "event_types": [
+        "TRACK_EXCURSION"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "branch": "motion_restored",
+      "modes": [
+        "race",
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 90,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "match": {
+        "scenario_id": [
+          "track_excursion"
+        ],
+        "beat_role": [
+          "terminal"
+        ],
+        "primary_relation": "track_excursion",
+        "outcome": [
+          "motion_restored"
+        ],
+        "evidence_level": [
+          "CONFIRMED"
+        ],
+        "minimum_confidence": 1.0
+      },
+      "notes": "Current-signal fact only. Unknown cause/damage. No incident/contact/control/pace claims.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He is moving on the track again after going off.",
+            "After that off-track, he is back on the track and moving."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Po vyjetí mimo trať už znovu jede po trati.",
+            "Je zpátky na trati a auto se znovu pohybuje."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "scenario_episode",
+        "criticality": "story",
+        "repeat_weight": 0.5,
+        "silence_affinity": 0.0,
+        "material_change_policy": "scenario_beat"
+      }
+    },
+    "tow_started_race": {
+      "family": "exception",
+      "event_types": [
+        "TRACK_EXCURSION"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "branch": "tow_started_race",
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 90,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "match": {
+        "scenario_id": [
+          "track_excursion"
+        ],
+        "beat_role": [
+          "terminal"
+        ],
+        "primary_relation": "track_excursion",
+        "outcome": [
+          "tow_started"
+        ],
+        "evidence_level": [
+          "CONFIRMED"
+        ],
+        "minimum_confidence": 1.0
+      },
+      "notes": "Current-signal fact only. Unknown cause/damage. No incident/contact/control/pace claims.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "A tow has started after that off-track.",
+            "After going off track, the car is now being towed."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Po vyjetí mimo trať začal odtah.",
+            "Po tom výjezdu mimo trať teď auto odtahují."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "scenario_episode",
+        "criticality": "story",
+        "repeat_weight": 0.5,
+        "silence_affinity": 0.0,
+        "material_change_policy": "scenario_beat"
+      }
+    },
+    "pit_return_observed": {
+      "family": "exception",
+      "event_types": [
+        "TRACK_EXCURSION"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "branch": "pit_return_observed",
+      "modes": [
+        "race",
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 90,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "match": {
+        "scenario_id": [
+          "track_excursion"
+        ],
+        "beat_role": [
+          "terminal"
+        ],
+        "primary_relation": "track_excursion",
+        "outcome": [
+          "pit_return_observed"
+        ],
+        "evidence_level": [
+          "CONFIRMED"
+        ],
+        "minimum_confidence": 1.0
+      },
+      "notes": "Current-signal fact only. Unknown cause/damage. No incident/contact/control/pace claims.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "He has returned to the pits after going off track.",
+            "After that off-track, the car is now in the pits."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Po vyjetí mimo trať se vrátil do boxů.",
+            "Po tom výjezdu mimo trať je auto v boxech."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "scenario_episode",
+        "criticality": "story",
+        "repeat_weight": 0.5,
+        "silence_affinity": 0.0,
+        "material_change_policy": "scenario_beat"
+      }
+    },
+    "stream_intro_venue": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 40,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "track"
+        ],
+        "optional_facts": [
+          "layout",
+          "city",
+          "country"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Introduce the current venue using only verified location facts.",
+          "cs": "Představ aktuální okruh pouze pomocí ověřených údajů o místě."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Introduce the current venue using only verified location facts."
+          ],
+          "cs": [
+            "Představ aktuální okruh pouze pomocí ověřených údajů o místě."
+          ]
+        }
+      }
+    },
+    "stream_intro_circuit_character": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "track",
+          "circuit_length"
+        ],
+        "optional_facts": [
+          "turn_count",
+          "track_type",
+          "track_direction"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe verified circuit characteristics without inferring difficulty.",
+          "cs": "Popiš ověřené vlastnosti okruhu bez domýšlení obtížnosti."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame",
+          "difficulty"
+        ],
+        "anchors": {
+          "en": [
+            "Describe verified circuit characteristics without inferring difficulty."
+          ],
+          "cs": [
+            "Popiš ověřené vlastnosti okruhu bez domýšlení obtížnosti."
+          ]
+        }
+      }
+    },
+    "stream_intro_conditions": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "sky"
+        ],
+        "optional_facts": [
+          "air_temperature",
+          "track_temperature",
+          "wind_speed",
+          "precipitation"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Summarize the current measured weather conditions.",
+          "cs": "Shrň aktuální naměřené počasí."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Summarize the current measured weather conditions."
+          ],
+          "cs": [
+            "Shrň aktuální naměřené počasí."
+          ]
+        }
+      }
+    },
+    "stream_intro_surface_state": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "surface_wetness"
+        ],
+        "optional_facts": [
+          "rubber_state"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "State the verified wetness and rubber condition as separate facts.",
+          "cs": "Uveď ověřenou vlhkost a pogumování jako oddělené skutečnosti."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the verified wetness and rubber condition as separate facts."
+          ],
+          "cs": [
+            "Uveď ověřenou vlhkost a pogumování jako oddělené skutečnosti."
+          ]
+        }
+      }
+    },
+    "stream_intro_field_overall": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "field_size"
+        ],
+        "optional_facts": [
+          "overall_sof"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Introduce the overall eligible field and label unofficial strength correctly.",
+          "cs": "Představ celé způsobilé pole a správně označ neoficiální sílu pole."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Introduce the overall eligible field and label unofficial strength correctly."
+          ],
+          "cs": [
+            "Představ celé způsobilé pole a správně označ neoficiální sílu pole."
+          ]
+        }
+      }
+    },
+    "stream_intro_field_class": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "class_field_size"
+        ],
+        "optional_facts": [
+          "class_sof"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the hero class field without confusing it with the overall field.",
+          "cs": "Popiš pole jezdcovy třídy bez záměny s celým startovním polem."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the hero class field without confusing it with the overall field."
+          ],
+          "cs": [
+            "Popiš pole jezdcovy třídy bez záměny s celým startovním polem."
+          ]
+        }
+      }
+    },
+    "stream_intro_ai_field": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 2,
+        "terminal": false,
+        "required_facts": [
+          "ai_count"
+        ],
+        "optional_facts": [
+          "ai_ratio"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Report verified AI participation without inferring it from missing rating.",
+          "cs": "Uveď ověřenou účast AI bez odvozování z chybějícího ratingu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Report verified AI participation without inferring it from missing rating."
+          ],
+          "cs": [
+            "Uveď ověřenou účast AI bez odvozování z chybějícího ratingu."
+          ]
+        }
+      }
+    },
+    "practice_quiet_track": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO",
+          "IN_CAR_PREP"
+        ],
+        "tier": 2,
+        "terminal": false,
+        "required_facts": [
+          "circulating_cars"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe a held low-traffic Practice state without predicting lap quality.",
+          "cs": "Popiš potvrzený klidný provoz v tréninku bez předpovědi kvality kola."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe a held low-traffic Practice state without predicting lap quality."
+          ],
+          "cs": [
+            "Popiš potvrzený klidný provoz v tréninku bez předpovědi kvality kola."
+          ]
+        }
+      }
+    },
+    "event_intro_practice": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice"
+      ],
+      "speak_priority": 44,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_EVENT_INTRO"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track",
+          "class_field_size"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Introduce Practice as a preparation session using current facts.",
+          "cs": "Uveď trénink jako přípravnou session pomocí aktuálních faktů."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Introduce Practice as a preparation session using current facts."
+          ],
+          "cs": [
+            "Uveď trénink jako přípravnou session pomocí aktuálních faktů."
+          ]
+        }
+      }
+    },
+    "event_intro_qualifying": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 44,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_EVENT_INTRO"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track",
+          "class_field_size"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Introduce Qualifying and its timed-lap purpose without predicting a result.",
+          "cs": "Uveď kvalifikaci a význam měřeného kola bez předpovědi výsledku."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Introduce Qualifying and its timed-lap purpose without predicting a result."
+          ],
+          "cs": [
+            "Uveď kvalifikaci a význam měřeného kola bez předpovědi výsledku."
+          ]
+        }
+      }
+    },
+    "event_intro_race": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 48,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_EVENT_INTRO"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track",
+          "class_field_size"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Introduce the Race handoff without predicting performance.",
+          "cs": "Uveď přechod do závodu bez předpovědi výkonu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Introduce the Race handoff without predicting performance."
+          ],
+          "cs": [
+            "Uveď přechod do závodu bez předpovědi výkonu."
+          ]
+        }
+      }
+    },
+    "hero_prepares_to_drive": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "IN_CAR_PREP"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "hero_position"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the driver entering the car after exposed intro topics.",
+          "cs": "Popiš vstup jezdce do auta po již odvyprávěném úvodu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the driver entering the car after exposed intro topics."
+          ],
+          "cs": [
+            "Popiš vstup jezdce do auta po již odvyprávěném úvodu."
+          ]
+        }
+      }
+    },
+    "engine_started": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "IN_CAR_PREP"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "engine_state"
+        ],
+        "optional_facts": [],
+        "relation": "context",
+        "intent": {
+          "en": "State an engine start only from confirmed stalled-to-running evidence.",
+          "cs": "Oznam nastartování pouze z potvrzeného přechodu motoru do běhu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State an engine start only from confirmed stalled-to-running evidence."
+          ],
+          "cs": [
+            "Oznam nastartování pouze z potvrzeného přechodu motoru do běhu."
+          ]
+        }
+      }
+    },
+    "rollout_started": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "IN_CAR_PREP"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "rollout_state"
+        ],
+        "optional_facts": [],
+        "relation": "context",
+        "intent": {
+          "en": "State that movement from the garage, pits or grid has begun.",
+          "cs": "Oznam, že začal výjezd z garáže, boxů nebo roštu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that movement from the garage, pits or grid has begun."
+          ],
+          "cs": [
+            "Oznam, že začal výjezd z garáže, boxů nebo roštu."
+          ]
+        }
+      }
+    },
+    "out_lap_preparation": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 38,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "OUT_LAP"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "out_lap"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the confirmed out-lap episode without calling it a timed lap.",
+          "cs": "Popiš potvrzené výjezdové kolo bez označení za měřené."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the confirmed out-lap episode without calling it a timed lap."
+          ],
+          "cs": [
+            "Popiš potvrzené výjezdové kolo bez označení za měřené."
+          ]
+        }
+      }
+    },
+    "out_lap_field_context": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "OUT_LAP"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "traffic_band"
+        ],
+        "optional_facts": [
+          "class_field_size"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Add verified traffic context to the current out lap.",
+          "cs": "Doplň ověřený provozní kontext aktuálního výjezdového kola."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Add verified traffic context to the current out lap."
+          ],
+          "cs": [
+            "Doplň ověřený provozní kontext aktuálního výjezdového kola."
+          ]
+        }
+      }
+    },
+    "returned_to_car": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "IN_CAR_PREP"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Acknowledge a return to the car without claiming a setup change.",
+          "cs": "Oznam návrat do auta bez tvrzení, že se změnilo nastavení."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame",
+          "setup_improvement"
+        ],
+        "anchors": {
+          "en": [
+            "Acknowledge a return to the car without claiming a setup change."
+          ],
+          "cs": [
+            "Oznam návrat do auta bez tvrzení, že se změnilo nastavení."
+          ]
+        }
+      }
+    },
+    "race_quali_recap_result": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 46,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "GRID_PREP"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "qualifying_position"
+        ],
+        "optional_facts": [
+          "best_lap_seconds"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Recap the same-stream qualifying result before the race.",
+          "cs": "Shrň výsledek kvalifikace ze stejného streamu před závodem."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Recap the same-stream qualifying result before the race."
+          ],
+          "cs": [
+            "Shrň výsledek kvalifikace ze stejného streamu před závodem."
+          ]
+        }
+      }
+    },
+    "race_grid_field": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 45,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "GRID_PREP"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "start_position"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "field_size"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the verified race grid and hero start position.",
+          "cs": "Popiš ověřený rošt a startovní pozici jezdce."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the verified race grid and hero start position."
+          ],
+          "cs": [
+            "Popiš ověřený rošt a startovní pozici jezdce."
+          ]
+        }
+      }
+    },
+    "race_grid_highest_rated": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "GRID_PREP"
+        ],
+        "tier": 2,
+        "terminal": false,
+        "required_facts": [
+          "highest_rated_driver"
+        ],
+        "optional_facts": [
+          "class_sof"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Identify the verified highest-rated entrant as context, never as a predicted winner.",
+          "cs": "Označ ověřeného nejvýše hodnoceného jezdce pouze jako kontext, ne jako favorita."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame",
+          "nationality"
+        ],
+        "anchors": {
+          "en": [
+            "Identify the verified highest-rated entrant as context, never as a predicted winner."
+          ],
+          "cs": [
+            "Označ ověřeného nejvýše hodnoceného jezdce pouze jako kontext, ne jako favorita."
+          ]
+        }
+      }
+    },
+    "rolling_start_setup": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 45,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "GRID_PREP",
+          "FORMATION_OR_LIGHTS"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "start_mode"
+        ],
+        "optional_facts": [
+          "class_field_size"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe a verified rolling-start setup.",
+          "cs": "Popiš ověřenou proceduru letmého startu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe a verified rolling-start setup."
+          ],
+          "cs": [
+            "Popiš ověřenou proceduru letmého startu."
+          ]
+        }
+      }
+    },
+    "formation_lap_preparation": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 44,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "FORMATION_OR_LIGHTS"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "formation_state"
+        ],
+        "optional_facts": [
+          "start_position"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe preparation during a confirmed formation lap.",
+          "cs": "Popiš přípravu během potvrzeného formačního kola."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe preparation during a confirmed formation lap."
+          ],
+          "cs": [
+            "Popiš přípravu během potvrzeného formačního kola."
+          ]
+        }
+      }
+    },
+    "formation_lap_tension": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "FORMATION_OR_LIGHTS"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "distance_to_start"
+        ],
+        "optional_facts": [
+          "hr_band"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the verified approach to the start line without predicting the launch.",
+          "cs": "Popiš ověřené přiblížení ke startovní čáře bez předpovědi startu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the verified approach to the start line without predicting the launch."
+          ],
+          "cs": [
+            "Popiš ověřené přiblížení ke startovní čáře bez předpovědi startu."
+          ]
+        }
+      }
+    },
+    "standing_start_setup": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 45,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "GRID_PREP",
+          "FORMATION_OR_LIGHTS"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "start_mode"
+        ],
+        "optional_facts": [
+          "start_position"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe a verified standing-start setup.",
+          "cs": "Popiš ověřenou proceduru pevného startu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe a verified standing-start setup."
+          ],
+          "cs": [
+            "Popiš ověřenou proceduru pevného startu."
+          ]
+        }
+      }
+    },
+    "start_lights_ready": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 70,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "tts": {
+        "max_chars": 80,
+        "max_seconds": 4.0
+      },
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "FORMATION_OR_LIGHTS"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "start_ready"
+        ],
+        "optional_facts": [],
+        "relation": "context",
+        "intent": {
+          "en": "Call the confirmed ready light state briefly.",
+          "cs": "Stručně oznam potvrzený stav ready."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Call the confirmed ready light state briefly."
+          ],
+          "cs": [
+            "Stručně oznam potvrzený stav ready."
+          ]
+        }
+      }
+    },
+    "start_lights_set": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 75,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "tts": {
+        "max_chars": 80,
+        "max_seconds": 4.0
+      },
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "FORMATION_OR_LIGHTS"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "start_set"
+        ],
+        "optional_facts": [],
+        "relation": "context",
+        "intent": {
+          "en": "Call the confirmed set light state briefly or remain silent.",
+          "cs": "Stručně oznam potvrzený stav set, případně zůstaň potichu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Call the confirmed set light state briefly or remain silent."
+          ],
+          "cs": [
+            "Stručně oznam potvrzený stav set, případně zůstaň potichu."
+          ]
+        }
+      }
+    },
+    "practice_checkered_summary": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice"
+      ],
+      "speak_priority": 56,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "result_status"
+        ],
+        "optional_facts": [
+          "completed_laps",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Summarize confirmed Practice completion using available measured value.",
+          "cs": "Shrň potvrzený konec tréninku pomocí dostupné naměřené hodnoty."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Summarize confirmed Practice completion using available measured value."
+          ],
+          "cs": [
+            "Shrň potvrzený konec tréninku pomocí dostupné naměřené hodnoty."
+          ]
+        }
+      }
+    },
+    "practice_value_debrief": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice"
+      ],
+      "speak_priority": 58,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 1,
+        "terminal": true,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the neutral value of completed Practice without inventing improvement.",
+          "cs": "Popiš neutrální přínos dokončeného tréninku bez vymyšleného zlepšení."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame",
+          "setup_improvement"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the neutral value of completed Practice without inventing improvement."
+          ],
+          "cs": [
+            "Popiš neutrální přínos dokončeného tréninku bez vymyšleného zlepšení."
+          ]
+        }
+      }
+    },
+    "practice_lobby_break": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 2,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Bridge a return to the lobby as a possible break, not a confirmed setup change.",
+          "cs": "Přemosť návrat do lobby jako možnou pauzu, ne potvrzenou změnu nastavení."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame",
+          "setup_improvement"
+        ],
+        "anchors": {
+          "en": [
+            "Bridge a return to the lobby as a possible break, not a confirmed setup change."
+          ],
+          "cs": [
+            "Přemosť návrat do lobby jako možnou pauzu, ne potvrzenou změnu nastavení."
+          ]
+        }
+      }
+    },
+    "quali_result_pole": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed class pole result.",
+          "cs": "Oznam potvrzenou pole position ve třídě."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed class pole result."
+          ],
+          "cs": [
+            "Oznam potvrzenou pole position ve třídě."
+          ]
+        }
+      }
+    },
+    "quali_result_podium": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed class top-three qualifying result.",
+          "cs": "Oznam potvrzený výsledek kvalifikace v první trojici třídy."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed class top-three qualifying result."
+          ],
+          "cs": [
+            "Oznam potvrzený výsledek kvalifikace v první trojici třídy."
+          ]
+        }
+      }
+    },
+    "quali_result_top_third": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed top-third qualifying result.",
+          "cs": "Oznam potvrzený výsledek kvalifikace v horní třetině."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed top-third qualifying result."
+          ],
+          "cs": [
+            "Oznam potvrzený výsledek kvalifikace v horní třetině."
+          ]
+        }
+      }
+    },
+    "quali_result_middle_third": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed middle-third qualifying result.",
+          "cs": "Oznam potvrzený výsledek kvalifikace ve střední třetině."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed middle-third qualifying result."
+          ],
+          "cs": [
+            "Oznam potvrzený výsledek kvalifikace ve střední třetině."
+          ]
+        }
+      }
+    },
+    "quali_result_rear_third": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed rear-third qualifying result neutrally.",
+          "cs": "Oznam neutrálně potvrzený výsledek kvalifikace v zadní třetině."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed rear-third qualifying result neutrally."
+          ],
+          "cs": [
+            "Oznam neutrálně potvrzený výsledek kvalifikace v zadní třetině."
+          ]
+        }
+      }
+    },
+    "quali_result_classified": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed qualifying position when field-band context is unavailable.",
+          "cs": "Oznam potvrzenou kvalifikační pozici, když nelze určit pásmo pole."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed qualifying position when field-band context is unavailable."
+          ],
+          "cs": [
+            "Oznam potvrzenou kvalifikační pozici, když nelze určit pásmo pole."
+          ]
+        }
+      }
+    },
+    "quali_result_unclassified": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 60,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "best_lap_seconds",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State that no confirmed qualifying classification is available without inventing a position.",
+          "cs": "Oznam, že není dostupná potvrzená kvalifikace, bez vymyšlení pozice."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that no confirmed qualifying classification is available without inventing a position."
+          ],
+          "cs": [
+            "Oznam, že není dostupná potvrzená kvalifikace, bez vymyšlení pozice."
+          ]
+        }
+      }
+    },
+    "quali_to_race_bridge": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 58,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 1,
+        "terminal": true,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "finish_position",
+          "track"
+        ],
+        "relation": "stage_transition",
+        "intent": {
+          "en": "Bridge from the confirmed qualifying chapter to the race without prediction.",
+          "cs": "Přejdi od potvrzené kvalifikace k závodu bez předpovědi."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Bridge from the confirmed qualifying chapter to the race without prediction."
+          ],
+          "cs": [
+            "Přejdi od potvrzené kvalifikace k závodu bez předpovědi."
+          ]
+        }
+      }
+    },
+    "race_result_win": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed class race win.",
+          "cs": "Oznam potvrzené vítězství v závodě ve třídě."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed class race win."
+          ],
+          "cs": [
+            "Oznam potvrzené vítězství v závodě ve třídě."
+          ]
+        }
+      }
+    },
+    "race_result_podium": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed class race podium.",
+          "cs": "Oznam potvrzené pódiové umístění v závodě ve třídě."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed class race podium."
+          ],
+          "cs": [
+            "Oznam potvrzené pódiové umístění v závodě ve třídě."
+          ]
+        }
+      }
+    },
+    "race_result_top_third": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed top-third race finish.",
+          "cs": "Oznam potvrzený výsledek závodu v horní třetině."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed top-third race finish."
+          ],
+          "cs": [
+            "Oznam potvrzený výsledek závodu v horní třetině."
+          ]
+        }
+      }
+    },
+    "race_result_middle_third": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed middle-third race finish.",
+          "cs": "Oznam potvrzený výsledek závodu ve střední třetině."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed middle-third race finish."
+          ],
+          "cs": [
+            "Oznam potvrzený výsledek závodu ve střední třetině."
+          ]
+        }
+      }
+    },
+    "race_result_rear_third": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed rear-third race finish neutrally.",
+          "cs": "Oznam neutrálně potvrzený výsledek závodu v zadní třetině."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed rear-third race finish neutrally."
+          ],
+          "cs": [
+            "Oznam neutrálně potvrzený výsledek závodu v zadní třetině."
+          ]
+        }
+      }
+    },
+    "race_result_classified": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State the confirmed race finish when field-band context is unavailable.",
+          "cs": "Oznam potvrzený výsledek závodu, když nelze určit pásmo pole."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the confirmed race finish when field-band context is unavailable."
+          ],
+          "cs": [
+            "Oznam potvrzený výsledek závodu, když nelze určit pásmo pole."
+          ]
+        }
+      }
+    },
+    "race_result_unclassified": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 62,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "result_status"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "confirmed_result",
+        "intent": {
+          "en": "State that no confirmed race classification is available without inventing a position.",
+          "cs": "Oznam, že není dostupná potvrzená klasifikace závodu, bez vymyšlení pozice."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that no confirmed race classification is available without inventing a position."
+          ],
+          "cs": [
+            "Oznam, že není dostupná potvrzená klasifikace závodu, bez vymyšlení pozice."
+          ]
+        }
+      }
+    },
+    "race_result_gain_vs_quali": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 63,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "qualifying_position",
+          "result_status",
+          "result_relation"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "finish_better_than_qualifying",
+        "intent": {
+          "en": "State that the confirmed race finish improved on qualifying.",
+          "cs": "Oznam, že potvrzený výsledek závodu je lepší než kvalifikace."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that the confirmed race finish improved on qualifying."
+          ],
+          "cs": [
+            "Oznam, že potvrzený výsledek závodu je lepší než kvalifikace."
+          ]
+        }
+      }
+    },
+    "race_result_hold_vs_quali": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 63,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "qualifying_position",
+          "result_status",
+          "result_relation"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "finish_equal_to_qualifying",
+        "intent": {
+          "en": "State that the confirmed race finish matched qualifying.",
+          "cs": "Oznam, že potvrzený výsledek závodu odpovídá kvalifikaci."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that the confirmed race finish matched qualifying."
+          ],
+          "cs": [
+            "Oznam, že potvrzený výsledek závodu odpovídá kvalifikaci."
+          ]
+        }
+      }
+    },
+    "race_result_loss_vs_quali": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 63,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "qualifying_position",
+          "result_status",
+          "result_relation"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "finish_worse_than_qualifying",
+        "intent": {
+          "en": "State that the confirmed race finish was worse than qualifying without assigning blame.",
+          "cs": "Oznam, že potvrzený výsledek závodu je horší než kvalifikace, bez připisování viny."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that the confirmed race finish was worse than qualifying without assigning blame."
+          ],
+          "cs": [
+            "Oznam, že potvrzený výsledek závodu je horší než kvalifikace, bez připisování viny."
+          ]
+        }
+      }
+    },
+    "race_result_gain_vs_grid": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 63,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "grid_position",
+          "result_status",
+          "result_relation"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "finish_better_than_grid",
+        "intent": {
+          "en": "State that the confirmed race finish improved on the start position.",
+          "cs": "Oznam, že potvrzený výsledek závodu je lepší než startovní pozice."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that the confirmed race finish improved on the start position."
+          ],
+          "cs": [
+            "Oznam, že potvrzený výsledek závodu je lepší než startovní pozice."
+          ]
+        }
+      }
+    },
+    "race_result_hold_vs_grid": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 63,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "grid_position",
+          "result_status",
+          "result_relation"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "finish_equal_to_grid",
+        "intent": {
+          "en": "State that the confirmed race finish matched the start position.",
+          "cs": "Oznam, že potvrzený výsledek závodu odpovídá startovní pozici."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that the confirmed race finish matched the start position."
+          ],
+          "cs": [
+            "Oznam, že potvrzený výsledek závodu odpovídá startovní pozici."
+          ]
+        }
+      }
+    },
+    "race_result_loss_vs_grid": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "race"
+      ],
+      "speak_priority": 63,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "finish_position",
+          "grid_position",
+          "result_status",
+          "result_relation"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "finish_worse_than_grid",
+        "intent": {
+          "en": "State that the confirmed race finish was worse than the start position without assigning blame.",
+          "cs": "Oznam, že potvrzený výsledek závodu je horší než startovní pozice, bez připisování viny."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State that the confirmed race finish was worse than the start position without assigning blame."
+          ],
+          "cs": [
+            "Oznam, že potvrzený výsledek závodu je horší než startovní pozice, bez připisování viny."
+          ]
+        }
+      }
+    },
+    "result_unconfirmed": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 54,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "SESSION_CONCLUSION"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "result_status"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "unconfirmed_result",
+        "intent": {
+          "en": "Close the session generically because no confirmed classification arrived; do not state a position.",
+          "cs": "Uzavři session obecně, protože nepřišla potvrzená klasifikace; neuváděj pozici."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame",
+          "result_certainty"
+        ],
+        "anchors": {
+          "en": [
+            "Close the session generically because no confirmed classification arrived; do not state a position."
+          ],
+          "cs": [
+            "Uzavři session obecně, protože nepřišla potvrzená klasifikace; neuváděj pozici."
+          ]
+        }
+      }
+    },
+    "stream_chapter_bridge": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 40,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "story_result",
+        "semantic_policy": "unique_result",
+        "criticality": "story",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "BETWEEN_SESSIONS"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "track"
+        ],
+        "relation": "stage_transition",
+        "intent": {
+          "en": "Bridge to the next stream chapter or neutral close without prediction.",
+          "cs": "Přejdi k další kapitole streamu nebo neutrálnímu závěru bez předpovědi."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Bridge to the next stream chapter or neutral close without prediction."
+          ],
+          "cs": [
+            "Přejdi k další kapitole streamu nebo neutrálnímu závěru bez předpovědi."
+          ]
+        }
+      }
+    },
+    "prepared_filler_fatal_notice": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FATAL"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 24,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "occurrence"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO",
+          "SESSION_EVENT_INTRO",
+          "IN_CAR_PREP",
+          "OUT_LAP",
+          "GRID_PREP",
+          "FORMATION_OR_LIGHTS",
+          "LIVE_SESSION",
+          "SESSION_CONCLUSION",
+          "BETWEEN_SESSIONS"
+        ],
+        "tier": 0,
+        "terminal": true,
+        "required_facts": [],
+        "optional_facts": [],
+        "relation": "none",
+        "intent": {
+          "en": "Announce the fixed prepared-commentary fatal condition once, then remain silent.",
+          "cs": "Jednou oznam pevnou fatální chybu připraveného komentáře a potom zůstaň potichu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Announce the fixed prepared-commentary fatal condition once, then remain silent."
+          ],
+          "cs": [
+            "Jednou oznam pevnou fatální chybu připraveného komentáře a potom zůstaň potichu."
+          ]
+        }
+      }
     }
   },
   "edges": [
@@ -7390,9 +10971,9 @@
       "from": "hunting",
       "to": "side_by_side",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 1.5,
-        "max_gap_s": 25
+        "max_gap_s": 25,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7404,9 +10985,9 @@
       "from": "hunting",
       "to": "overtake",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 1.0,
-        "max_gap_s": 30
+        "max_gap_s": 30,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7418,9 +10999,9 @@
       "from": "side_by_side",
       "to": "overtake",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 0.4,
-        "max_gap_s": 12
+        "max_gap_s": 12,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7432,9 +11013,9 @@
       "from": "overtake",
       "to": "leader_change",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0.4,
-        "max_gap_s": 20
+        "max_gap_s": 20,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7446,9 +11027,9 @@
       "from": "leader_change",
       "to": "hunting",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 1.0,
-        "max_gap_s": 40
+        "max_gap_s": 40,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7460,9 +11041,9 @@
       "from": "overtake",
       "to": "battle_won",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 0.5,
-        "max_gap_s": 10
+        "max_gap_s": 10,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7474,9 +11055,9 @@
       "from": "hunted",
       "to": "position_lost",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 0.5,
-        "max_gap_s": 20
+        "max_gap_s": 20,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7488,9 +11069,9 @@
       "from": "rival_threat",
       "to": "hunted",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 2.0,
-        "max_gap_s": 40
+        "max_gap_s": 40,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7502,9 +11083,9 @@
       "from": "gain_found",
       "to": "target_locked",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 2.0,
-        "max_gap_s": 60
+        "max_gap_s": 60,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7516,9 +11097,9 @@
       "from": "hot_lap",
       "to": "projected_lap",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 1.0,
-        "max_gap_s": 20
+        "max_gap_s": 20,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7530,9 +11111,9 @@
       "from": "pit_entry",
       "to": "back_on_track",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 2.0,
-        "max_gap_s": 90
+        "max_gap_s": 90,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7544,9 +11125,9 @@
       "from": "pit_entry",
       "to": "pit_outcome",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 4.0,
-        "max_gap_s": 90
+        "max_gap_s": 90,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7558,9 +11139,9 @@
       "from": "final_lap",
       "to": "finish",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 5.0,
-        "max_gap_s": 240
+        "max_gap_s": 240,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7572,9 +11153,9 @@
       "from": "incident",
       "to": "invalid_lap",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0.2,
-        "max_gap_s": 8
+        "max_gap_s": 8,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7586,9 +11167,9 @@
       "from": "hunting",
       "to": "attack_range",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 1.0,
-        "max_gap_s": 30
+        "max_gap_s": 30,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7600,9 +11181,9 @@
       "from": "attack_range",
       "to": "side_by_side",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0.5,
-        "max_gap_s": 20
+        "max_gap_s": 20,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7614,9 +11195,9 @@
       "from": "pit_entry",
       "to": "pit_stopped",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 0.5,
-        "max_gap_s": 40
+        "max_gap_s": 40,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7628,9 +11209,9 @@
       "from": "pit_stopped",
       "to": "back_on_track",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 0.5,
-        "max_gap_s": 60
+        "max_gap_s": 60,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7642,9 +11223,9 @@
       "from": "incident",
       "to": "incident_aftermath",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0.5,
-        "max_gap_s": 20
+        "max_gap_s": 20,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7656,9 +11237,9 @@
       "from": "incident_aftermath",
       "to": "back_under_way",
       "when": {
-        "same_correlation": true,
         "min_gap_s": 0.5,
-        "max_gap_s": 90
+        "max_gap_s": 90,
+        "identity": "same_correlation"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7670,9 +11251,9 @@
       "from": "session_checkered",
       "to": "session_wrap",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0.2,
-        "max_gap_s": 90
+        "max_gap_s": 90,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7684,9 +11265,9 @@
       "from": "session_wrap",
       "to": "session_preview",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0.2,
-        "max_gap_s": 15
+        "max_gap_s": 15,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7698,9 +11279,9 @@
       "from": "hunting",
       "to": "two_front_battle",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0,
-        "max_gap_s": 3
+        "max_gap_s": 3,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
@@ -7712,14 +11293,1288 @@
       "from": "hunted",
       "to": "two_front_battle",
       "when": {
-        "same_correlation": false,
         "min_gap_s": 0,
-        "max_gap_s": 3
+        "max_gap_s": 3,
+        "identity": "any"
       },
       "editorial": {
         "transition_bonus": 8,
         "closure": false,
         "repeat_weight": 1.0
+      }
+    },
+    {
+      "from": "track_excursion",
+      "to": "stopped_after_excursion",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_excursion",
+      "to": "track_rejoined",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_excursion",
+      "to": "motion_restored",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_excursion",
+      "to": "tow_started_race",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_excursion",
+      "to": "pit_return_observed",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "stopped_after_excursion",
+      "to": "track_rejoined",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "stopped_after_excursion",
+      "to": "motion_restored",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "stopped_after_excursion",
+      "to": "tow_started_race",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "stopped_after_excursion",
+      "to": "pit_return_observed",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_rejoined",
+      "to": "stopped_after_excursion",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": false,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_rejoined",
+      "to": "motion_restored",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_rejoined",
+      "to": "tow_started_race",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "track_rejoined",
+      "to": "pit_return_observed",
+      "when": {
+        "identity": "same_parent_story",
+        "min_gap_s": 0,
+        "max_gap_s": 90
+      },
+      "editorial": {
+        "transition_bonus": 8,
+        "closure": true,
+        "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "stream_start",
+      "to": "stream_intro_venue",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_venue",
+      "to": "stream_intro_circuit_character",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_circuit_character",
+      "to": "stream_intro_conditions",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_conditions",
+      "to": "stream_intro_surface_state",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_surface_state",
+      "to": "stream_intro_field_overall",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_field_overall",
+      "to": "stream_intro_field_class",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_field_class",
+      "to": "stream_intro_ai_field",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_intro_field_class",
+      "to": "practice_quiet_track",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "event_intro_practice",
+      "to": "hero_prepares_to_drive",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "event_intro_qualifying",
+      "to": "hero_prepares_to_drive",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "event_intro_race",
+      "to": "hero_prepares_to_drive",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "hero_prepares_to_drive",
+      "to": "engine_started",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "hero_prepares_to_drive",
+      "to": "rollout_started",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "engine_started",
+      "to": "rollout_started",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "rollout_started",
+      "to": "out_lap_preparation",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "out_lap_preparation",
+      "to": "out_lap_field_context",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "hero_prepares_to_drive",
+      "to": "returned_to_car",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "event_intro_race",
+      "to": "race_quali_recap_result",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "event_intro_race",
+      "to": "race_grid_field",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_quali_recap_result",
+      "to": "race_grid_field",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_grid_field",
+      "to": "race_grid_highest_rated",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_grid_field",
+      "to": "rolling_start_setup",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_grid_field",
+      "to": "standing_start_setup",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "rolling_start_setup",
+      "to": "formation_lap_preparation",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "formation_lap_preparation",
+      "to": "formation_lap_tension",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "standing_start_setup",
+      "to": "start_lights_ready",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "start_lights_ready",
+      "to": "start_lights_set",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "practice_checkered_summary",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "practice_checkered_summary",
+      "to": "practice_value_debrief",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "practice_value_debrief",
+      "to": "practice_lobby_break",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "formation_lap_tension",
+      "to": "session_flag_green",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "start_lights_set",
+      "to": "session_flag_green",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 30
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_pole",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_podium",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_top_third",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_middle_third",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_rear_third",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_classified",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "quali_result_unclassified",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_pole",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_podium",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_top_third",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_middle_third",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_rear_third",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_classified",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_result_unclassified",
+      "to": "quali_to_race_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_win",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_podium",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_gain_vs_quali",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_hold_vs_quali",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_loss_vs_quali",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_gain_vs_grid",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_hold_vs_grid",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_loss_vs_grid",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_top_third",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_middle_third",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_rear_third",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_classified",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "race_result_unclassified",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "practice_checkered_summary",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "practice_value_debrief",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "practice_lobby_break",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "quali_to_race_bridge",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_win",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_podium",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_gain_vs_quali",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_hold_vs_quali",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_loss_vs_quali",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_gain_vs_grid",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_hold_vs_grid",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_loss_vs_grid",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_top_third",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_middle_third",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_rear_third",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_classified",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "race_result_unclassified",
+      "to": "stream_chapter_bridge",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 600
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_checkered",
+      "to": "result_unconfirmed",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "finish",
+      "to": "result_unconfirmed",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 120
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": true,
+        "repeat_weight": 1
       }
     }
   ]

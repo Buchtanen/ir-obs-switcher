@@ -152,6 +152,28 @@ class CommentarySchedulerSettings:
 
 
 @dataclass(frozen=True)
+class PreparedFillerSettings:
+    """Bounded pre-generated commentary rollout and capacity contract."""
+
+    # Low-level fail-safe default. AppConfig promotes missing INI rollout keys to active.
+    mode: str = "shadow"
+    max_ready_plans: int = 24
+    reserved_current_stage: int = 8
+    reserved_next_stage: int = 6
+    max_inflight: int = 2
+    variants_min: int = 3
+    variants_max: int = 5
+    generation_timeout_s: float = 30.0
+    generation_max_attempts: int = 2
+    max_utterance_s: float = 28.0
+    youtube_history: bool = False
+    youtube_history_days: int = 90
+    youtube_history_max_items: int = 100
+    iracing_history: bool = False
+    system_filler: bool = False
+
+
+@dataclass(frozen=True)
 class CommentarySettings:
     """Spoken commentary rollout. Default off; no audio until enabled on stream PC."""
 
@@ -182,14 +204,20 @@ class CommentarySettings:
     llm_base_url: str = "http://127.0.0.1:11434/v1"
     llm_model: str = "qwen3:4b-instruct-2507-q4_K_M"
     llm_timeout_s: float = 12.0
-    llm_temperature: float = 0.45
+    llm_temperature: float = 0.4
+    llm_top_p: float = 0.85
+    llm_top_k: int = 30
+    llm_num_predict: int = 45
+    llm_num_ctx: int = 512
     llm_max_tokens: int = 360
     llm_max_attempts: int = 2
     # Spoken hero identity. Empty = iRacing UserName first/last tokens.
     driver_name: str = ""
     driver_nickname: str = ""
     scheduler: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
+    # Low-level fail-safe default. AppConfig promotes a missing INI key to active.
     graph_runtime_mode: str = "legacy"
+    prepared_filler: PreparedFillerSettings = field(default_factory=PreparedFillerSettings)
 
 
 @dataclass(frozen=True)
@@ -203,6 +231,8 @@ class RaceObserverSettings:
     flags: bool = False
     # Quali recap + ParadeLaps padding. Default off. Independent of session_briefs.
     grid_story: bool = False
+    # Development rollout: current-signal excursion replaces legacy aftermath.
+    scenario_mode: str = "active"  # [race_scenarios] mode = legacy | shadow | active
 
 
 @dataclass(frozen=True)

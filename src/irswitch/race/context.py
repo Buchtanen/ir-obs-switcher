@@ -105,6 +105,7 @@ class RaceContextAnalyzer:
             position=snap.position,
             class_position=snap.class_position,
             class_field_size=len(standings) or None,
+            player_car_class=snap.player_car_class,
             leader_car_idx=leader[1] if leader else None,
             leader_name=leader[2] if leader else None,
             p1_name=standings[0][2] if len(standings) > 0 else None,

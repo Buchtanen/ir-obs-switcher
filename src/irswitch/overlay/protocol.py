@@ -21,6 +21,11 @@ class CandidateEvent:
     duration: float | None = None
     cooldown: float | None = None
     overlay: bool = True
+    confidence: float = 1.0
+    reason: str = ""
+    scenario_id: str = ""
+    episode_id: str = ""
+    parent_story_id: str = ""
 
 
 @dataclass

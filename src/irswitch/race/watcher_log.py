@@ -19,6 +19,7 @@ WATCH_BY_EVENT: dict[str, str] = {
     "SESSION_FLAG": "flags",
     "INCIDENT": "incidents",
     "INCIDENT_AFTERMATH": "aftermath",
+    "TRACK_EXCURSION": "track_excursion",
     "BACK_UNDER_WAY": "aftermath",
     "PACE_HUNT": "hunt",
     "QUALI_RECAP": "grid_story",

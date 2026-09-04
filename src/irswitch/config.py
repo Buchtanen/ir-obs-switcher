@@ -5,7 +5,7 @@ from __future__ import annotations
 import configparser
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from irswitch.logic.stream_chapters import StreamChaptersSettings, load_stream_chapters_settings
@@ -24,6 +24,7 @@ from irswitch.overlay.settings import (
     OverlayTapeSettings,
     OverlayV4Settings,
     OvertakeClassifierSettings,
+    PreparedFillerSettings,
     RaceObserverSettings,
     SamplingSettings,
     SystemInfoSettings,
@@ -370,6 +371,103 @@ def _load_commentary_graph_runtime(
     return raw if raw in {"legacy", "shadow", "active"} else "legacy"
 
 
+def _load_prepared_filler(
+    parser: configparser.ConfigParser,
+    defaults: PreparedFillerSettings,
+) -> PreparedFillerSettings:
+    section = "commentary.prepared_filler"
+    mode = _get_str(parser, section, "mode", defaults.mode).lower()
+    if mode not in {"legacy", "shadow", "active"}:
+        logger.warning("Invalid commentary.prepared_filler.mode=%r; using legacy", mode)
+        mode = "legacy"
+    capacity = max(
+        3, min(64, _get_int(parser, section, "max_ready_plans", defaults.max_ready_plans))
+    )
+    current = max(
+        0,
+        min(
+            capacity,
+            _get_int(parser, section, "reserved_current_stage", defaults.reserved_current_stage),
+        ),
+    )
+    next_stage = max(
+        0,
+        min(
+            capacity - current,
+            _get_int(parser, section, "reserved_next_stage", defaults.reserved_next_stage),
+        ),
+    )
+    minimum = max(3, min(5, _get_int(parser, section, "variants_min", defaults.variants_min)))
+    maximum = max(
+        minimum,
+        min(5, _get_int(parser, section, "variants_max", defaults.variants_max)),
+    )
+    return PreparedFillerSettings(
+        mode=mode,
+        max_ready_plans=capacity,
+        reserved_current_stage=current,
+        reserved_next_stage=next_stage,
+        max_inflight=max(
+            1, min(4, _get_int(parser, section, "max_inflight", defaults.max_inflight))
+        ),
+        variants_min=minimum,
+        variants_max=maximum,
+        generation_timeout_s=max(
+            2.0,
+            min(
+                120.0,
+                _get_float(parser, section, "generation_timeout_s", defaults.generation_timeout_s),
+            ),
+        ),
+        generation_max_attempts=max(
+            1,
+            min(
+                3,
+                _get_int(
+                    parser, section, "generation_max_attempts", defaults.generation_max_attempts
+                ),
+            ),
+        ),
+        max_utterance_s=max(
+            8.0,
+            min(
+                40.0,
+                _get_float(parser, section, "max_utterance_s", defaults.max_utterance_s),
+            ),
+        ),
+        youtube_history=_get_bool(parser, section, "youtube_history", defaults.youtube_history),
+        youtube_history_days=max(
+            7,
+            min(
+                365,
+                _get_int(parser, section, "youtube_history_days", defaults.youtube_history_days),
+            ),
+        ),
+        youtube_history_max_items=max(
+            10,
+            min(
+                500,
+                _get_int(
+                    parser,
+                    section,
+                    "youtube_history_max_items",
+                    defaults.youtube_history_max_items,
+                ),
+            ),
+        ),
+        iracing_history=_get_bool(parser, section, "iracing_history", defaults.iracing_history),
+        system_filler=_get_bool(parser, section, "system_filler", defaults.system_filler),
+    )
+
+
+def _load_scenario_mode(parser: configparser.ConfigParser, default: str) -> str:
+    raw = _get_str(parser, "race_scenarios", "mode", default).lower()
+    if raw not in {"legacy", "shadow", "active"}:
+        logger.warning("Invalid race_scenarios.mode=%r; using legacy", raw)
+        return "legacy"
+    return raw
+
+
 def _clamp_tts_rate(value: int) -> int:
     return max(-10, min(10, int(value)))
 
@@ -564,6 +662,36 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
+        llm_top_p=max(
+            0.0,
+            min(
+                1.0,
+                _get_float(parser, "commentary", "llm_top_p", commentary_defaults.llm_top_p),
+            ),
+        ),
+        llm_top_k=max(
+            1,
+            min(100, _get_int(parser, "commentary", "llm_top_k", commentary_defaults.llm_top_k)),
+        ),
+        llm_num_predict=max(
+            16,
+            min(
+                256,
+                _get_int(
+                    parser,
+                    "commentary",
+                    "llm_num_predict",
+                    commentary_defaults.llm_num_predict,
+                ),
+            ),
+        ),
+        llm_num_ctx=max(
+            256,
+            min(
+                8192,
+                _get_int(parser, "commentary", "llm_num_ctx", commentary_defaults.llm_num_ctx),
+            ),
+        ),
         llm_max_tokens=max(
             32,
             min(
@@ -590,13 +718,16 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
         ),
         scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
-        graph_runtime_mode=_load_commentary_graph_runtime(
-            parser, commentary_defaults.graph_runtime_mode
+        graph_runtime_mode=_load_commentary_graph_runtime(parser, "active"),
+        prepared_filler=_load_prepared_filler(
+            parser,
+            replace(commentary_defaults.prepared_filler, mode="active"),
         ),
     )
 
     ro_defaults = defaults.race_observer
     race_observer = RaceObserverSettings(
+        scenario_mode=_load_scenario_mode(parser, ro_defaults.scenario_mode),
         leader_pace_cooldown_s=max(
             0.0,
             min(
