@@ -22,6 +22,7 @@ from irswitch.overlay.settings import (
     OverlayV4Settings,
 )
 from irswitch.overlay.tape import OverlaySessionTape, playback_offset, safe_tape_dir
+from irswitch.race.runtime import RaceRuntime
 
 
 def _settings(tmp_path: Path, *, enabled: bool = True) -> OverlaySettings:
@@ -297,3 +298,42 @@ def test_tape_opens_when_session_type_comes_from_session_name(tmp_path: Path) ->
     )
     tape.observe(warmup, 11.0, _settings(tmp_path))
     assert tape.path is None
+
+
+def test_llm_polish_records_without_debug_when_llm_rows(
+    tmp_path: Path, monkeypatch: object
+) -> None:
+    settings = _settings(tmp_path)
+    runtime = RaceRuntime(lambda: SimpleNamespace(overlay=settings), None, OverlayBus())
+    monkeypatch.setattr(runtime, "_tape_debug_enabled", lambda: False)
+    runtime._tape.observe(_race(), 10.0, settings)
+    runtime._last_race = _race()
+    runtime._llm_polish_tape_hook({"outcome": "ok", "nodeId": "hunting"})
+    path = runtime._tape.path
+    assert path is not None
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    assert any(row.get("type") == "llm_polish" and row.get("nodeId") == "hunting" for row in rows)
+
+
+def test_llm_polish_skipped_when_llm_rows_false_unless_debug(
+    tmp_path: Path, monkeypatch: object
+) -> None:
+    settings = OverlaySettings(
+        theme="cyber_racing",
+        v4=OverlayV4Settings(renderer=True),
+        tape=OverlayTapeSettings(enabled=True, directory=str(tmp_path), llm_rows=False),
+    )
+    runtime = RaceRuntime(lambda: SimpleNamespace(overlay=settings), None, OverlayBus())
+    monkeypatch.setattr(runtime, "_tape_debug_enabled", lambda: False)
+    runtime._tape.observe(_race(), 10.0, settings)
+    runtime._last_race = _race()
+    runtime._llm_polish_tape_hook({"outcome": "ok", "nodeId": "hunting"})
+    path = runtime._tape.path
+    assert path is not None
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    assert not any(row.get("type") == "llm_polish" for row in rows)
+
+    monkeypatch.setattr(runtime, "_tape_debug_enabled", lambda: True)
+    runtime._llm_polish_tape_hook({"outcome": "ok", "nodeId": "hunting"})
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    assert any(row.get("type") == "llm_polish" for row in rows)

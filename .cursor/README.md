@@ -33,7 +33,7 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `iracing-sdk-display-format` — iRSDK jednotky, sentinely (`-1`, 32767) a HUD formát časů (`m:ss.fff`)
 - `iracing-session-glossary` — session vs stream vs weekend vs `DrivingMode.RACE` vs `overlay_mode`; jeden extract path; nikdy `WeekendInfo.EventType`
 - `overlay-hud-copy` — HUD tokeny v `overlay/i18n.py`; golden ≠ live OBS
-- `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`
+- `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`; `llm_polish` na INFO při `session_tape_llm`
 - `commentary-lora-dataset` — kde jsou `llm_polish` páry, eval cases, ChatML (`ir-commentary-lora`); mapa `docs/commentary_lora_dataset.md`
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
 

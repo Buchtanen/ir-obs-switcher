@@ -359,11 +359,17 @@ class RaceRuntime:
         self._sector_sig = sig
 
     def _tape_debug_enabled(self) -> bool:
-        """Commentary / LLM polish tape rows only while runtime log level is DEBUG."""
+        """Verbose commentary skip/lifecycle tape rows while runtime log level is DEBUG."""
         return get_runtime_log_level() == "DEBUG"
 
+    def _llm_tape_enabled(self) -> bool:
+        """Persist polish pairs for dataset capture whenever the tape file is open."""
+        if self.mode == "replay":
+            return False
+        return self._overlay_settings().tape.llm_rows or self._tape_debug_enabled()
+
     def _llm_polish_tape_hook(self, record: dict[str, Any]) -> None:
-        if not self._tape_debug_enabled() or self.mode == "replay":
+        if not self._llm_tape_enabled():
             return
         self._tape.record_llm_polish(record, time.monotonic(), self._last_race)
 

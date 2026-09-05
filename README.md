@@ -158,7 +158,7 @@ Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
 - **URL**: `http://127.0.0.1:17321/overlay` — transparentní 1920×1080 overlay. Live HUD (SYSINFO + karty) je jen při zapojeném iRacing; link drop / quit → overlay je prázdný. `?demo=1` tohle nerespektuje.
 - **Dry test**: `http://127.0.0.1:17321/overlay/demo` — tmavé jeviště, **V4** cyklický scénář HUD (~28&nbsp;s loop) bez OBS/iRacing; v UI lze přepnout na legacy V3
 - **Časy na HUD**: iRSDK posílá sekundy (invalid často `-1`). Overlay je formátuje jako iRacing F3 / SimHub (`m:ss.fff`, delta `+0.318`). WS `metrics` zůstávají čísla.
-- **Session tape**: při PRACTICE/QUALIFY/RACE zapisuje JSONL do `recordings/` (`t_stream` = VOD, `t_session` / `t_green` = iRacing, `t_mono` = replay delay). Vypnutí: `[overlay] session_tape = false`. Replay: `irswitchd --config config\config.ini --replay recordings\overlay-….jsonl`
+- **Session tape**: při PRACTICE/QUALIFY/RACE zapisuje JSONL do `recordings/` (`t_stream` = VOD, `t_session` / `t_green` = iRacing, `t_mono` = replay delay). Vypnutí: `[overlay] session_tape = false`. `llm_polish` páry i na INFO (`session_tape_llm=true`); čistý archiv je privátní `ir-commentary-lora` (`.\scripts\push_tapes_to_lora_repo.ps1 -Clean`). Replay: `irswitchd --config config\config.ini --replay recordings\overlay-….jsonl`
 - **Debug**: `http://127.0.0.1:17321/overlay/debug` — ruční TEST eventy
 - **Config**: `http://127.0.0.1:17321/config` — sampling, battle, BLE, sysinfo, theme
 - **WebSocket**: `ws://127.0.0.1:17321/ws/overlay` (oddělený od switcher `/ws`)

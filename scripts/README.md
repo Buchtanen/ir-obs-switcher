@@ -2,6 +2,16 @@
 
 Tento adresář obsahuje pomocné skripty pro správu projektu.
 
+## Commentary dataset (private `ir-commentary-lora`)
+
+`push_tapes_to_lora_repo.ps1` zkopíruje `recordings/overlay-*.jsonl` do
+`../ir-commentary-lora/tapes/inbox/` (nebo `$env:IRSWITCH_LORA_REPO`).
+`-Clean` spustí `scripts/clean_tapes.py` v tom repu (bez modelu).
+
+```powershell
+.\scripts\push_tapes_to_lora_repo.ps1 -Clean
+```
+
 ## Verzování
 
 ### `check_release_please_lock.py`

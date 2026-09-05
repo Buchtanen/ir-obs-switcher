@@ -62,6 +62,20 @@ repeat stored requests against an OpenAI-compatible local Qwen endpoint, add
 `--live-url http://localhost:11434/v1` and optionally `--live-limit N`. CI and
 the normal test suite never require the local model.
 
+Live `llm_polish` pairs are written to the session tape at INFO when
+`overlay.session_tape_llm=true` (default). Do not commit those JSONL files here.
+Copy them into the private sibling repo
+[`ir-commentary-lora`](https://github.com/Buchtanen/ir-commentary-lora)
+(`tapes/inbox/`), then:
+
+```powershell
+.\scripts\push_tapes_to_lora_repo.ps1 -Clean
+```
+
+`scripts/clean_tapes.py` in that repo drops HUD spam, keeps polish rows, and
+emits ChatML SFT/DPO without calling a model. LoRA weight training is out of
+scope for this tree.
+
 Rules:
 
 - Hook **accepted envelopes only**. Raw candidates are too noisy.

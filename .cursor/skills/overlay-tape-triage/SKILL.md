@@ -38,8 +38,8 @@ If header `overlayMode` is `RACE` during Quali → skill `iracing-session-glossa
 | `scene` | OBS scene / drivingMode change |
 | `decision` | event engine emit/suppress/preempt |
 | `stories` | active V4 stories |
-| `commentary` | director speak/reject — **only at runtime DEBUG** |
-| `llm_polish` | optional polish — **only at runtime DEBUG** |
+| `commentary` | director speak/reject — **DEBUG** (skip spam); spoken/TTS also appear after clean |
+| `llm_polish` | polish request/response — **INFO when `session_tape_llm=true`** (dataset capture) |
 | `stream_origin` | OBS stream clock attached |
 
 Clocks on each row: `t_stream` (VOD), `t_session` (`SessionTime`), `t_green`, `t_mono` (replay sleep), `t` (best). Align VOD to `t_stream`, not `t_session`.
