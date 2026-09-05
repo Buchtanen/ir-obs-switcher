@@ -44,8 +44,8 @@ backlog and is not required for the core cut.
 ### `[race_scenarios]`
 
 `mode=active` (development default) connects the new current-signal excursion detector and replaces
-legacy aftermath speech. Graph v3 covers root, stop, rejoin, renewed motion, Race tow and observed
-pit return. Causes, damage, repairs and ESC/reset remain unknown. `shadow` logs only the new path;
+legacy aftermath speech. Graph v3 covers root, stop, rejoin, renewed motion, Race tow, observed
+pit return and S7a local pace (loss or resumed). Causes, damage, repairs and ESC/reset remain unknown. `shadow` logs only the new path;
 `legacy` disables it. See [exact live coverage and test protocol](track_excursion_live_test.md).
 
 ### `[event_engine]` (example profile = all on)

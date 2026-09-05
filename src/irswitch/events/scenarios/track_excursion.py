@@ -24,6 +24,12 @@ ENTRY_HOLD_S = 0.2
 REJOIN_HOLD_S = 0.2
 STOP_HOLD_S = 0.35
 MOTION_HOLD_S = 0.6
+PACE_BINS = 50
+PACE_LOSS_RATIO = 0.55
+PACE_OK_RATIO = 0.85
+PACE_HOLD_S = 4.0
+PACE_HOLD_DIST = 0.08
+PACE_START_BAND = 0.05
 
 
 @dataclass
@@ -42,6 +48,10 @@ class TrackExcursionDetector:
     _emitted: set[str] = field(default_factory=set)
     _evidence_sig: tuple[object, ...] | None = None
     _trace: deque[dict[str, Any]] = field(default_factory=lambda: deque(maxlen=128))
+    _pace_bins: list[float | None] = field(default_factory=lambda: [None] * PACE_BINS)
+    _frozen_pace: list[float | None] | None = None
+    _pace_origin_dist: float | None = None
+    _pace_origin_at: float | None = None
 
     def reset(self, *, reason: str = "reset", now: float | None = None) -> None:
         if self._episode:
@@ -58,6 +68,11 @@ class TrackExcursionDetector:
         self._holds.clear()
         self._emitted.clear()
         self._last_at = None
+        self._frozen_pace = None
+        self._pace_origin_dist = None
+        self._pace_origin_at = None
+        if reason == "scope_changed":
+            self._pace_bins = [None] * PACE_BINS
 
     def take_trace(self) -> list[dict[str, Any]]:
         out = list(self._trace)
@@ -94,27 +109,33 @@ class TrackExcursionDetector:
             speed_band,
             tow_band,
         )
+        session_live = (
+            state.connected
+            and scope is not None
+            and state.overlay_mode in {"RACE", "PRACTICE", "QUALIFYING"}
+        )
         if sig != self._evidence_sig:
             self._evidence_sig = sig
-            self._trace.append(
-                {
-                    "action": "observation_changed",
-                    "at": now,
-                    "parentStoryId": self._episode,
-                    "scenarioId": SCENARIO_ID,
-                    "reason": "evidence_changed",
-                    "connected": state.connected,
-                    "dataQuality": state.data_quality,
-                    "surface": state.player_track_surface,
-                    "onPitRoad": state.on_pit_road,
-                    "speedBand": speed_band,
-                    "speedMps": speed_value,
-                    "towTime": tow_value,
-                    "towEvidence": tow_band,
-                    "runEpoch": state.run_epoch,
-                    "heroCarIdx": state.player_car_idx,
-                }
-            )
+            if session_live or self._episode:
+                self._trace.append(
+                    {
+                        "action": "observation_changed",
+                        "at": now,
+                        "parentStoryId": self._episode,
+                        "scenarioId": SCENARIO_ID,
+                        "reason": "evidence_changed",
+                        "connected": state.connected,
+                        "dataQuality": state.data_quality,
+                        "surface": state.player_track_surface,
+                        "onPitRoad": state.on_pit_road,
+                        "speedBand": speed_band,
+                        "speedMps": speed_value,
+                        "towTime": tow_value,
+                        "towEvidence": tow_band,
+                        "runEpoch": state.run_epoch,
+                        "heroCarIdx": state.player_car_idx,
+                    }
+                )
         if (
             not state.connected
             or scope is None
@@ -144,6 +165,7 @@ class TrackExcursionDetector:
         # or loading into an already off-track snapshot as a new excursion.
         if not self._episode and on_track:
             self._armed = True
+            self._observe_pace(state)
         if not self._episode:
             if not self._held("offtrack", self._armed and off_track, ENTRY_HOLD_S, now):
                 return []
@@ -204,12 +226,21 @@ class TrackExcursionDetector:
                     state, now, "track_rejoined", "closure", "back_on_track", "surface_ontrack_held"
                 )
             )
-        if moving and "track_rejoined" in self._emitted:
-            produced.extend(
-                self._terminal(
-                    state, now, "motion_restored", "motion_restored", "ontrack_speed_moving_held"
+        if moving and "track_rejoined" in self._emitted and "motion_restored" not in self._emitted:
+            produced.append(
+                self._emit(
+                    state,
+                    now,
+                    "motion_restored",
+                    "terminal",
+                    "motion_restored",
+                    "ontrack_speed_moving_held",
                 )
             )
+            self._pace_origin_dist = _number(state.player_lap_dist_pct)
+            self._pace_origin_at = now
+        if "motion_restored" in self._emitted:
+            produced.extend(self._pace_followup(state, now))
         return produced
 
     def _open_episode(
@@ -221,6 +252,7 @@ class TrackExcursionDetector:
         self._emitted.clear()
         self._holds.clear()
         self._armed = False
+        self._frozen_pace = list(self._pace_bins)
         return [self._emit(state, now, "offtrack", "root", "unknown", "surface_offtrack_held")]
 
     def _held(self, key: str, matched: bool, duration: float, now: float) -> bool:
@@ -238,7 +270,76 @@ class TrackExcursionDetector:
         self._holds.clear()
         self._emitted.clear()
         self._armed = False
+        self._frozen_pace = None
+        self._pace_origin_dist = None
+        self._pace_origin_at = None
         return [event]
+
+    def _observe_pace(self, state: RaceState) -> None:
+        dist = _number(state.player_lap_dist_pct)
+        speed = _number(state.speed_mps)
+        index = _pace_bin(dist)
+        if index is None or speed is None or speed < 2.5:
+            return
+        previous = self._pace_bins[index]
+        self._pace_bins[index] = speed if previous is None else (0.7 * previous) + (0.3 * speed)
+
+    def _pace_followup(self, state: RaceState, now: float) -> list[EventEnvelope]:
+        if "motion_restored" not in self._emitted or self._frozen_pace is None:
+            return []
+        dist = _number(state.player_lap_dist_pct)
+        speed = _number(state.speed_mps)
+        index = _pace_bin(dist)
+        reference = None if index is None else self._frozen_pace[index]
+        if (
+            dist is None
+            or speed is None
+            or index is None
+            or reference is None
+            or reference <= 0
+            or not math.isfinite(reference)
+        ):
+            self._holds.pop("pace_loss", None)
+            self._holds.pop("pace_ok", None)
+            return []
+        ratio = speed / reference
+        travel = _dist_travel(self._pace_origin_dist, dist)
+        if ratio < PACE_LOSS_RATIO:
+            self._holds.pop("pace_ok", None)
+            loss_ready = self._held("pace_loss", True, PACE_HOLD_S, now)
+            if (
+                loss_ready
+                and travel >= PACE_HOLD_DIST
+                and "pace_loss_sustained" not in self._emitted
+            ):
+                event = self._emit(
+                    state,
+                    now,
+                    "pace_loss_sustained",
+                    "development",
+                    "pace_loss_sustained",
+                    "local_pace_loss_held",
+                )
+                event.metrics["paceRatio"] = round(ratio, 3)
+                return [event]
+            return []
+        if ratio >= PACE_OK_RATIO:
+            self._holds.pop("pace_loss", None)
+            ok_ready = self._held("pace_ok", True, PACE_HOLD_S, now)
+            if ok_ready and travel >= PACE_HOLD_DIST:
+                events = self._terminal(
+                    state,
+                    now,
+                    "normal_running_resumed",
+                    "normal_running_resumed",
+                    "local_pace_normal_held",
+                )
+                events[0].metrics["paceRatio"] = round(ratio, 3)
+                return events
+            return []
+        self._holds.pop("pace_loss", None)
+        self._holds.pop("pace_ok", None)
+        return []
 
     def _emit(
         self, state: RaceState, now: float, beat_id: str, role: str, outcome: str, reason: str
@@ -296,6 +397,24 @@ class TrackExcursionDetector:
         self._emitted.add(beat_id)
         self._trace.append({"action": "detected", "at": now, **event.metrics})
         return event
+
+
+def _pace_bin(dist: float | None) -> int | None:
+    if dist is None or dist < PACE_START_BAND or dist > (1.0 - PACE_START_BAND):
+        return None
+    index = int(dist * PACE_BINS)
+    if index < 0 or index >= PACE_BINS:
+        return None
+    return index
+
+
+def _dist_travel(start: float | None, current: float | None) -> float:
+    if start is None or current is None:
+        return 0.0
+    delta = current - start
+    if delta < -0.5:
+        delta += 1.0
+    return max(0.0, delta)
 
 
 def _number(value: object) -> float | None:

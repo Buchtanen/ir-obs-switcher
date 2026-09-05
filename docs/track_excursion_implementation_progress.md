@@ -56,10 +56,10 @@ was added.
 | S1 / P1 generic engine | Foundation tested; composite schema/compiler and production bindings unfinished |
 | S2 current signals | Connected subset; no proven Practice/Qualify ESC, repairs or prolonged damage follow-up |
 | S3–S6 wiring / graph / rollout | Connected for development; synthetic E2E passes; real test/comparison pending |
-| S8–S9 / P4–P7 causes and pace | No slide/spin/contact/braking/avoidance/damage classifier or calibrated confidence |
+| S8–S9 / P5–P7 causes | No slide/spin/contact/braking/avoidance/damage classifier |
+| S7a local pace | Synthetic detector + graph green; **live Windows/iRacing/OBS listen still open** (evidence pack in the live test contract) |
 
-`motion_restored` is not `control_regained` or `normal_running_resumed` and currently closes the
-small observable episode. `pit_return_observed` is not `pit_for_repairs` or `reset_to_pits`.
+`motion_restored` is not `control_regained`. It no longer closes the episode; `normal_running_resumed`, tow, pit return or timeout do. `pit_return_observed` is not `pit_for_repairs` or `reset_to_pits`.
 Timeout and lost evidence invalidate silently, not as asserted physical outcomes.
 
 ## Evidence

@@ -8,6 +8,7 @@ import re
 from difflib import SequenceMatcher
 from pathlib import Path
 
+from irswitch.commentary.anti_repeat import utterance_tail
 from irswitch.commentary.graph import GRAPH_VERSION, GraphNode, load_sequence_graph
 from irswitch.commentary.validator import fill_slots, validate_utterance
 
@@ -76,39 +77,37 @@ WAVE_LEADER_NODES = {"leader_change"}
 WAVE_BCD_SPARSE = 1
 WAVE_BD_DENSITY = 4
 WAVE_LEADER_DENSITY = 3
+EXCURSION_DEV_NODES = {
+    "stopped_after_excursion",
+    "track_rejoined",
+    "motion_restored",
+    "tow_started_race",
+    "pit_return_observed",
+}
+PACE_NODES = {"pace_loss_sustained", "normal_running_resumed"}
 
 
-def _expected_density(node_id: str) -> int:
+def _density_range(node_id: str) -> tuple[int, int]:
+    """Inclusive authored-line bounds. Densify-to-16 is no longer the contract."""
     if node_id == "prepared_filler":
-        # Schema-only fallback; audible text always comes from the validated buffer.
-        return 4
-    if node_id in {"incident", "track_excursion"}:
-        return 4
-    if node_id in {
-        "stopped_after_excursion",
-        "track_rejoined",
-        "motion_restored",
-        "tow_started_race",
-        "pit_return_observed",
-    }:
-        return 2
-    if node_id in PRIORITY_NODES:
-        return 16
+        return (4, 4)
+    if node_id in {"incident", "track_excursion"} | EXCURSION_DEV_NODES | PACE_NODES:
+        return (4, 4)
+    if node_id in PRIORITY_NODES or node_id == "field_fact":
+        return (6, 8)
     if node_id in SESSION_BRIEF_NODES:
-        return 10
-    if node_id == "field_fact":
-        return 16
+        return (8, 10)
     if node_id == "weather_change":
-        return 13
+        return (8, 10)
     if node_id in WAVE_A_NODES:
-        return WAVE_A_DENSITY
+        return (WAVE_A_DENSITY, WAVE_A_DENSITY)
     if node_id in WAVE_C_NODES:
-        return WAVE_BCD_SPARSE
+        return (WAVE_BCD_SPARSE, 2)
     if node_id in WAVE_B_NODES or node_id in WAVE_D_NODES:
-        return WAVE_BD_DENSITY
+        return (WAVE_BD_DENSITY, WAVE_BD_DENSITY)
     if node_id in WAVE_LEADER_NODES:
-        return WAVE_LEADER_DENSITY
-    return 12
+        return (WAVE_LEADER_DENSITY, WAVE_LEADER_DENSITY)
+    return (6, 8)
 
 
 def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
@@ -127,7 +126,7 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
             # Prepared anchors are generation/review guidance, not audible
             # legacy variants and therefore use their own contract tests.
             continue
-        expected = _expected_density(node.id)
+        low, high = _density_range(node.id)
         emotions = {"neutral" if state == "unknown" else state for state in node.hr_states}
         examples = {slot.name: slot.example for slot in node.slots}
         for locale, buckets in node.variants.items():
@@ -136,7 +135,14 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                 if node.id == "incident_aftermath":
                     assert lines  # Legacy-only copy with forbidden noun removed.
                 else:
-                    assert len(lines) == expected, (node.id, locale, emotion)
+                    assert low <= len(lines) <= high, (
+                        node.id,
+                        locale,
+                        emotion,
+                        len(lines),
+                        low,
+                        high,
+                    )
                 assert len(set(lines)) == len(lines), (node.id, locale, emotion)
                 for line in lines:
                     assert validate_utterance(line, node) == [], (
@@ -153,12 +159,11 @@ def test_every_active_cell_meets_density_and_all_lines_validate() -> None:
                         bound,
                     )
                 total += len(lines)
-    # Densified graph + W4/H4 briefs + observer fillers + session_checkered + N11A (72) + N11 B/C/D (38) + leader_change (18).
-    assert total > 4000
+    assert total > 1500
 
 
-def test_append_patch_exactly_matches_graph_tails() -> None:
-    graph = load_sequence_graph()
+def test_historical_densify_patch_is_archived_not_runtime_lock() -> None:
+    """W7 densify appends must not pin live graph tails after prune/differentiate."""
     patch = _json(PATCH_PATH)
     assert patch["graph_version"] == 1
     assert patch["merge_mode"] == "append"
@@ -167,36 +172,45 @@ def test_append_patch_exactly_matches_graph_tails() -> None:
     assert isinstance(patches, list)
     assert len(patches) == 188
 
-    appended = 0
-    for item in patches:
-        assert isinstance(item, dict)
-        node = graph.nodes[str(item["node_id"])]
-        lines = node.variants[str(item["locale"])][str(item["emotion"])]
-        additions = item["append_lines"]
-        assert isinstance(additions, list)
-        assert item["baseline_line_count"] == 4
-        assert lines[:4]
-        if node.id not in {"incident", "incident_aftermath"}:
-            assert lines[4:] == tuple(additions)
-        appended += len(additions)
-    assert appended == 2008
 
-
-def test_target_name_nodes_have_slot_light_fallback_ratio() -> None:
+def test_target_name_nodes_keep_slot_light_fallback() -> None:
     graph = load_sequence_graph()
-    lines: list[str] = []
     for node_id in TARGET_NAME_NODES:
         node = graph.nodes[node_id]
         emotions = {"neutral" if state == "unknown" else state for state in node.hr_states}
         for buckets in node.variants.values():
             for emotion in emotions:
                 cell = buckets[emotion]
-                assert sum("{target_name}" not in line for line in cell) == 6
-                lines.extend(cell)
-    light = sum("{target_name}" not in line for line in lines)
-    assert len(lines) == 576
-    assert light == 216
-    assert light / len(lines) == 0.375
+                light = sum("{target_name}" not in line for line in cell)
+                assert light >= max(2, (len(cell) + 2) // 3), (node_id, emotion, light, len(cell))
+
+
+def test_authored_filler_tails_are_unique_per_locale() -> None:
+    graph = load_sequence_graph()
+    for locale in graph.locales:
+        by_node: dict[str, set[str]] = {}
+        for node in graph.nodes.values():
+            if node.prepared is not None:
+                continue
+            if node.id in SESSION_BRIEF_NODES:
+                continue
+            for emotion, lines in (node.variants.get(locale) or {}).items():
+                cell_tails: list[str] = []
+                for line in lines:
+                    tail = utterance_tail(line, n=5)
+                    if not tail:
+                        continue
+                    assert tail not in cell_tails, (node.id, locale, emotion, tail, line)
+                    cell_tails.append(tail)
+                by_node.setdefault(node.id, set()).update(cell_tails)
+        owned: dict[str, str] = {}
+        for node_id, tails in by_node.items():
+            if node_id in SESSION_BRIEF_NODES:
+                continue
+            for tail in tails:
+                previous = owned.get(tail)
+                assert previous in (None, node_id), (locale, tail, previous, node_id)
+                owned[tail] = node_id
 
 
 def test_no_near_duplicates_within_active_cells() -> None:

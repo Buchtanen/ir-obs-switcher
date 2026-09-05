@@ -33,6 +33,8 @@ def test_default_graph_loads_and_is_fully_filled() -> None:
         "track_rejoined",
         "motion_restored",
         "tow_started_race",
+        "pace_loss_sustained",
+        "normal_running_resumed",
     } <= graph.nodes.keys()
     assert "leader_change" in graph.nodes
     assert graph.nodes["leader_change"].event_types == ("LEADER_CHANGE",)

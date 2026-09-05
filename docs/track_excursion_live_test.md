@@ -23,9 +23,11 @@ pro komentář, nepřidává HUD kartu. Stávající HUD wire payload zůstává
 | `offtrack` | předtím platný vzorek na trati; OffTrack souvisle 0,2 s; mimo boxy; tow = 0 | „Vyjel mimo trať.“ |
 | `stopped` | během epizody rychlost ≤ 1 m/s po 0,35 s, povrch na/mimo trati, tow = 0 | „Po vyjetí mimo trať auto zastavilo.“ |
 | `track_rejoined` | OnTrack souvisle 0,2 s, mimo boxy, tow = 0 | „Vrátil se na trať.“ |
-| `motion_restored` | OnTrack a rychlost ≥ 2,5 m/s souvisle 0,6 s | „Po vyjetí mimo trať už znovu jede po trati.“ |
+| `motion_restored` | OnTrack a rychlost ≥ 2,5 m/s souvisle 0,6 s | „Po vyjetí mimo trať už znovu jede po trati.“ Epizoda zůstává otevřená pro S7a pace. |
 | `tow_started_race` | kladný tow timer v režimu RACE | „Po vyjetí mimo trať začal odtah.“ |
 | `pit_return_observed` | OnPitRoad a pit surface souvisle 0,2 s | „Po vyjetí mimo trať se vrátil do boxů.“ |
+| `pace_loss_sustained` | po `motion_restored`; rychlost / frozen dist-bin < 0,55 po 4 s a ≥ 8 % kola | „Pokračuje výrazně pomaleji.“ Bez poškození. |
+| `normal_running_resumed` | po `motion_restored`; poměr ≥ 0,85 po 4 s a ≥ 8 % kola | „Tempo je zase zpátky.“ Uzavírá epizodu. |
 
 Chybějící rychlost není nula. Chybějící tow timer nepotvrzuje „netáhne se“. Body incidentů
 nejsou potřeba pro začátek vyjetí. U rychlostních hran jsou úmyslně různé prahy a časové výdrže;
@@ -36,8 +38,10 @@ vyjetí po již potvrzeném návratu dostává nové ID epizody. Epizoda po 90 s
 bez podporovaného konce tiše expiruje. Timeout není potvrzený návrat ani ukončení závodu.
 Hodnota confidence 1,0 znamená splnění tohoto pravidla, **ne empiricky kalibrovanou přesnost**.
 
-Obnovení pohybu, odtah a návrat do boxů nyní uzavírají tuto měřitelnou epizodu. `track_rejoined`
-sám ještě ne. Zatím neexistuje dlouhé sledování poškozeného auta po obnovení pohybu.
+Obnovení pohybu epizodu **neuzavírá**. Odtah, návrat do boxů, obnovené lokální tempo
+(`normal_running_resumed`) nebo timeout 90 s ji uzavřou. `track_rejoined` sám ještě ne.
+Chybějící dist-bin, start/cíl pás (prvních/posledních 5 % kola) nebo poměr mezi 0,55 a 0,85
+znamená abstain, ne vymyšlený závěr. `pace_loss_sustained` není poškození, limp ani oprava.
 
 ## Režimy a kompatibilita
 
@@ -72,8 +76,9 @@ lokálně zachyceno a zaznamenáno; v active se nezapíná zároveň druhý publ
 ## Co zatím tvrdit neumíme
 
 Smyk, hodiny, kontakt s konkrétním autem/bariérou, minutí brzdného bodu, vyhýbací manévr,
-poškození, zázračné zachycení, návrat k běžnému tempu, dojíždění na opravu ani ESC/reset do
+poškození, zázračné zachycení, dojíždění na opravu ani ESC/reset do
 boxů v Practice/Qualify. Z návratu do boxů **nevyplývá oprava ani stisk ESC**.
+Lokální pace-loss/resume (S7a) mluví jen o tempu vůči frozen dist-bin mapě, ne o poškození.
 Všechny tyto příčiny/následky zůstávají neznámé; nejsou vydávány za hotové klasifikátory.
 
 „Incident“ a české tvary jsou zakázané mimo dva výslovně číselné legacy uzly. Root vyžaduje
@@ -82,11 +87,13 @@ kontrolu LLM výstupu i finální TTS text. LLM chyba může způsobit ticho; sa
 
 ## Co je v logu
 
-Při zapnuté session tape se i na INFO zapisují:
+Při zapnuté session tape se i na INFO zapisují, **jen když je tape soubor otevřený**
+(iRacing connected v Practice/Qualify/Race). Bez hry se nezapisuje nic.
 
 - `type=race_scenario`: změny kategorií vstupního důkazu, detekované fáze a invalidace;
   `scenarioMode`, `parentStoryId`, `beatId`, důvod, povrch, rychlost, tow, časy.
-  Nezapisuje se každá změna rychlosti ani každý telemetry tick.
+  Nezapisuje se každá změna rychlosti ani každý telemetry tick. Idle disconnect bez
+  otevřené epizody negeneruje ani `observation_changed`.
 - `type=commentary`, `eventType=TRACK_EXCURSION`: rozhodnutí, dostupné graph skóre a TTS
   lifecycle s ID. Process TTS navíc zapisuje `tts_requested`, `tts_result` včetně finálního
   textu a výsledku; SuperTonic přidá `playback_requested` po syntéze a čekání na duck fade.
@@ -99,17 +106,37 @@ pro základní detekce a nové TTS fáze stačí INFO.
 Session soubor je `recordings/overlay-<utc>-<subsession>-<session>.jsonl`. Řádky mají společné
 `t_stream`, `t_session` a monotónní časy. Při porovnávání neplést video/stream clock se session time.
 
+## Evidence pack (živý poslech)
+
+TDD-exception: tento checkout nemůže řídit iRacing ani poslouchat v OBS CEF.
+Náhrada: video + session tape + identita níž. Syntetické pytesty nedávají precision/recall.
+
+Zaznamenat **spolu** (jeden poslech = jeden balík):
+
+1. `git rev-parse HEAD` a `git status -sb` (dirty tree ano/ne).
+2. `GET http://127.0.0.1:17321/health` → `version`, `status`, `checks.iracing`, `checks.obs`.
+3. Overlay cache z `/overlay/` HTML (`?v=` musí sedět s `OVERLAY_ASSET_VER`).
+4. Konfigurace: `[race_scenarios] mode` (chybějící sekce = default `active`),
+   `[commentary] enabled=true`, `[overlay] session_tape=true`.
+5. Session tape `recordings/overlay-<utc>-<subsession>-<session>.jsonl` — soubor se otevře
+   jen při connected Practice/Qualify/Race. Idle disconnect bez otevřené pásky
+   nezapisuje `race_scenario` ani INFO.
+6. Video stejné relace (OBS VOD / local capture).
+
 ## Průběh ručního testu
 
-1. Nasadit pracovní změny na stroj se službou a ověřit konfiguraci; zde služba restartována nebyla.
+1. Nasadit pracovní strom (editable `irswitchd.exe` nebo rebuild) a **restartovat** službu.
+   Ověřit health + overlay `?v=` + config výše. OBS Browser Source → Refresh cache.
 2. Na bezpečném testovacím kole: krátký off-track bez bodů → návrat v pohybu.
 3. Další pokus: off-track → zastavení → návrat; zopakovat s komentátorem zrovna uprostřed věty.
-4. V odpovídajícím testu ověřit Race odtah a Practice/Qualify návrat do boxů. Nemá zaznít
+4. Po obnovení pohybu: jet dál výrazně pomalu přes několik úseků vs vrátit tempo. Má zaznít
+   pace-loss nebo recovered pace, ne poškození.
+5. V odpovídajícím testu ověřit Race odtah a Practice/Qualify návrat do boxů. Nemá zaznít
    neprokázaná oprava, kontakt nebo ESC.
-5. Vyzkoušet výpadek, změnu run/jezdce a normální nájezd do boxů bez předchozího off-tracku.
+6. Vyzkoušet výpadek, změnu run/jezdce a normální nájezd do boxů bez předchozího off-tracku.
    Bez starého příběhu se nesmí objevit jeho závěr.
-6. Uchovat video + session tape + použitou konfiguraci a identitu build/commitu.
-7. Pro každý `parentStoryId` porovnat: vizuální hranice děje → detekce → výběr → finální řeč.
+7. Uchovat evidence pack z oddílu výše.
+8. Pro každý `parentStoryId` porovnat: vizuální hranice děje → detekce → výběr → finální řeč.
    Zapsat správné/chybné/chybějící fáze, zpoždění, potlačení a konkrétní důvod. Teprve z těchto
    označení vyhodnotit precision/recall a latence; samotné syntetické testy tyto metriky nedávají.
 

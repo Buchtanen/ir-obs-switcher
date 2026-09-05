@@ -113,6 +113,11 @@ _UNPROVEN = re.compile(
     r"(?:lost|regain\w*) control|normal (?:pace|speed)|pod kontrolou|běžn\w* tempo",
     re.I,
 )
+_DAMAGE_ONLY = re.compile(
+    r"\b(?:contact\w*|collis\w*|crash\w*|spun|spin\w*|slid\w*|skid\w*|damag\w*|repair\w*|"
+    r"kontakt\w*|koliz\w*|náraz\w*|smyk\w*|hodiny|poškoz\w*|oprav\w*)\b",
+    re.I,
+)
 
 
 def validate_node_vocabulary(text: str, node_id: str) -> tuple[VocabularyViolation, ...]:
@@ -135,6 +140,28 @@ def validate_node_vocabulary(text: str, node_id: str) -> tuple[VocabularyViolati
                 VocabularyViolation(
                     "unproven_excursion_claim",
                     "Cause, control and damage remain unknown",
+                    match.group(),
+                    match.start(),
+                    match.end(),
+                )
+            )
+    if node_id == "pace_loss_sustained":
+        for match in _UNPROVEN.finditer(text):
+            out.append(
+                VocabularyViolation(
+                    "unproven_excursion_claim",
+                    "Pace loss must not claim damage, cause or recovered pace",
+                    match.group(),
+                    match.start(),
+                    match.end(),
+                )
+            )
+    if node_id == "normal_running_resumed":
+        for match in _DAMAGE_ONLY.finditer(text):
+            out.append(
+                VocabularyViolation(
+                    "unproven_excursion_claim",
+                    "Restored pace must not claim damage or cause",
                     match.group(),
                     match.start(),
                     match.end(),
