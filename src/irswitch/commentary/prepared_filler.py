@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import re
+import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -281,6 +282,7 @@ class _BufferedPlan:
     exhausted: bool = False
     generation_complete: bool = False
     last_error: str | None = None
+    last_attempt_mono: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -343,8 +345,14 @@ class PreparedFillerBuffer:
             ),
         ):
             entry = self._items[plan.situation_id]
-            if entry.generation_complete or len(entry.variants) >= self.settings.variants_max:
+            if len(entry.variants) >= self.settings.variants_max:
                 continue
+            if entry.generation_complete:
+                if not self._can_recover(entry):
+                    continue
+                entry.generation_complete = False
+                entry.exhausted = False
+                entry.attempts = 0
             count = self.settings.variants_max - len(entry.variants)
             jobs.append((plan, count, tuple(sorted(entry.variants))))
         return jobs
@@ -379,9 +387,22 @@ class PreparedFillerBuffer:
             return
         entry.attempts += 1
         entry.last_error = error
+        entry.last_attempt_mono = time.monotonic()
         if entry.attempts >= self.settings.generation_max_attempts:
             entry.generation_complete = True
             entry.exhausted = len(entry.variants) < self.settings.variants_min
+
+    def attempt_count(self, plan: PreparedFillerPlan) -> int:
+        entry = self._items.get(plan.situation_id)
+        if entry is None or entry.plan.plan_id != plan.plan_id:
+            return 0
+        return entry.attempts
+
+    def _can_recover(self, entry: _BufferedPlan) -> bool:
+        if entry.last_attempt_mono <= 0:
+            return False
+        cooldown = max(0.0, self.settings.generation_retry_cooldown_s)
+        return (time.monotonic() - entry.last_attempt_mono) >= cooldown
 
     def select(self, stage: str, now_ms: int) -> PreparedSelection | None:
         eligible = self._eligible(stage, now_ms)
@@ -473,13 +494,15 @@ class PreparedFillerBuffer:
             "variants": sum(len(entry.variants) for entry in self._items.values()),
             "exhaustedPlans": sum(entry.exhausted for entry in self._items.values()),
             "staleDropped": self.stale_dropped,
-            "readyCurrentStage": sum(
-                self.current_stage in entry.plan.allowed_stages
-                and len(entry.variants) >= self.settings.variants_min
-                for entry in self._items.values()
-            )
-            if self.current_stage
-            else 0,
+            "readyCurrentStage": (
+                sum(
+                    self.current_stage in entry.plan.allowed_stages
+                    and len(entry.variants) >= self.settings.variants_min
+                    for entry in self._items.values()
+                )
+                if self.current_stage
+                else 0
+            ),
             "readyNextStage": sum(
                 self.current_stage not in entry.plan.allowed_stages
                 and len(entry.variants) >= self.settings.variants_min
@@ -649,7 +672,9 @@ class PreparedFillerCoordinator:
     def _schedule(self) -> None:
         slots = max(0, self.settings.max_inflight - len(self._tasks))
         for plan, count, hashes in self.buffer.need_generation():
-            if slots <= 0 or plan.plan_id in self._tasks:
+            if plan.plan_id in self._tasks:
+                continue
+            if slots <= 0:
                 break
             task = asyncio.create_task(
                 self._generate(plan, count, hashes, self._epoch),
@@ -658,47 +683,60 @@ class PreparedFillerCoordinator:
             self._tasks[plan.plan_id] = task
             slots -= 1
 
+    def _pop_current_task(self, plan: PreparedFillerPlan) -> None:
+        current = asyncio.current_task()
+        if self._tasks.get(plan.plan_id) is current:
+            self._tasks.pop(plan.plan_id, None)
+
     async def _generate(
         self, plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...], epoch: int
     ) -> None:
         error: str | None = None
         valid: list[str] = []
+        merged = 0
         try:
             texts = await asyncio.wait_for(
                 self.generator(plan, count, hashes),
                 timeout=self.settings.generation_timeout_s,
             )
-            valid, errors = validate_generated_variants(plan, texts, self.settings)
-            if epoch == self._epoch:
-                self.generated += self.buffer.merge(plan, valid)
+            if epoch != self._epoch:
+                error = "stale"
+            else:
+                valid, errors = validate_generated_variants(plan, texts, self.settings)
+                merged = self.buffer.merge(plan, valid)
+                self.generated += merged
                 self.rejected += len(errors)
-            error = errors[0] if errors else None
+                if errors:
+                    error = errors[0]
+                elif merged == 0:
+                    error = "empty"
         except asyncio.CancelledError:
+            self._pop_current_task(plan)
+            if not self._closed:
+                self._emit("cancelled", plan, "cancelled")
             raise
         except TimeoutError:
             error = "timeout"
             if epoch == self._epoch:
                 self.rejected += 1
-        except Exception:
-            error = "transport"
+        except Exception as exc:
+            error = classify_prepared_generation_error(exc)
             if epoch == self._epoch:
                 self.rejected += 1
-        finally:
-            if epoch == self._epoch:
-                self.buffer.note_attempt(plan, error)
-                self.last_error = error
-            current = asyncio.current_task()
-            if self._tasks.get(plan.plan_id) is current:
-                self._tasks.pop(plan.plan_id, None)
-            if not self._closed and epoch == self._epoch:
+        self._pop_current_task(plan)
+        if epoch == self._epoch:
+            self.buffer.note_attempt(plan, error)
+            self.last_error = error
+            if not self._closed:
                 self._schedule()
                 self._refresh_health()
-                self._emit(
-                    "generated" if error is None else "rejected",
-                    plan,
-                    error,
-                    accepted_texts=valid,
-                )
+            if merged > 0:
+                action, reason = "generated", None
+            else:
+                action, reason = "rejected", error or "empty"
+            self._emit(action, plan, reason, accepted_texts=valid, merged_count=merged)
+        elif not self._closed:
+            self._emit("rejected", plan, "stale", accepted_texts=(), merged_count=0)
 
     def _refresh_health(self) -> None:
         previous = self.health
@@ -734,9 +772,12 @@ class PreparedFillerCoordinator:
         reason: str | None,
         *,
         accepted_texts: Iterable[str] = (),
+        merged_count: int = 0,
     ) -> None:
         if self.diagnostic is None:
             return
+        status = self.buffer.status()
+        ready = status["readyPlans"] if isinstance(status["readyPlans"], int) else 0
         self.diagnostic(
             {
                 "action": action,
@@ -745,9 +786,84 @@ class PreparedFillerCoordinator:
                 "nodeId": plan.node_id,
                 "semanticKey": plan.semantic_key,
                 "reason": reason,
+                "stage": self.buffer.current_stage or None,
+                "attempt": self.buffer.attempt_count(plan),
+                "mergedCount": merged_count,
+                "desiredCount": len(self.buffer.desired),
+                "readyCount": ready,
+                "fatalEpisode": self.fatal_episode,
                 "acceptedTexts": list(accepted_texts),
             }
         )
+
+
+_PREPARED_VALUE_ERROR_CODES = frozenset(
+    {
+        "timeout",
+        "cancelled",
+        "invalid_json",
+        "truncated",
+        "plan_mismatch",
+        "empty",
+        "stale",
+        "http",
+        "transport",
+    }
+)
+
+
+def classify_prepared_generation_error(exc: BaseException) -> str:
+    """Map a generator failure to a tape-stable diagnostic code."""
+    if isinstance(exc, asyncio.CancelledError):
+        return "cancelled"
+    if isinstance(exc, TimeoutError):
+        return "timeout"
+    if isinstance(exc, json.JSONDecodeError):
+        return "invalid_json"
+    if isinstance(exc, aiohttp.ClientResponseError):
+        return f"http_{exc.status}"
+    if isinstance(exc, (aiohttp.ClientError, ConnectionError, OSError)):
+        return "http"
+    if isinstance(exc, ValueError):
+        code = str(exc).strip()
+        if code in _PREPARED_VALUE_ERROR_CODES or code.startswith("http_"):
+            return code
+        return "invalid_json" if "json" in code.lower() else "transport"
+    if isinstance(exc, (KeyError, TypeError, IndexError)):
+        return "invalid_json"
+    return "transport"
+
+
+def decode_prepared_generation_payload(raw: object, plan_id: str) -> list[str]:
+    """Decode a chat-completions envelope into variant strings or a coded ValueError."""
+    if not isinstance(raw, dict):
+        raise ValueError("invalid_json")
+    choices = raw.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        raise ValueError("invalid_json")
+    choice = choices[0]
+    finish = str(choice.get("finish_reason") or "")
+    message = choice.get("message")
+    if not isinstance(message, dict):
+        raise ValueError("invalid_json")
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("truncated" if finish == "length" else "empty")
+    try:
+        decoded = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise ValueError("truncated" if finish == "length" else "invalid_json") from exc
+    if not isinstance(decoded, dict):
+        raise ValueError("invalid_json")
+    if decoded.get("schema") != "prepared-filler/1" or decoded.get("planId") != plan_id:
+        raise ValueError("plan_mismatch")
+    variants = decoded.get("variants")
+    if not isinstance(variants, list):
+        raise ValueError("invalid_json")
+    texts = [item for item in variants if isinstance(item, str)]
+    if finish == "length" and not texts:
+        raise ValueError("truncated")
+    return texts
 
 
 class OpenAICompatiblePreparedGenerator:
@@ -781,14 +897,7 @@ class OpenAICompatiblePreparedGenerator:
             async with session.post(url, json=payload) as response:
                 response.raise_for_status()
                 raw = await response.json()
-        content = raw["choices"][0]["message"]["content"]
-        decoded = json.loads(content)
-        if decoded.get("schema") != "prepared-filler/1" or decoded.get("planId") != plan.plan_id:
-            raise ValueError("plan_mismatch")
-        variants = decoded.get("variants")
-        if not isinstance(variants, list):
-            raise ValueError("invalid_json")
-        return [item for item in variants if isinstance(item, str)][:count]
+        return decode_prepared_generation_payload(raw, plan.plan_id)[:count]
 
 
 def build_prepared_filler_plans(
@@ -1069,16 +1178,20 @@ def build_prepared_filler_plans(
                 "stream_intro_field_class",
                 "stream_intro_ai_field",
             ):
-                if node_id == "stream_intro_conditions" and sum(
-                    facts.get(fact_id) is not None
-                    for fact_id in (
-                        "sky",
-                        "air_temperature",
-                        "track_temperature",
-                        "wind_speed",
-                        "precipitation",
+                if (
+                    node_id == "stream_intro_conditions"
+                    and sum(
+                        facts.get(fact_id) is not None
+                        for fact_id in (
+                            "sky",
+                            "air_temperature",
+                            "track_temperature",
+                            "wind_speed",
+                            "precipitation",
+                        )
                     )
-                ) < 2:
+                    < 2
+                ):
                     continue
                 add_node(node_id, planned_stage, planned_epoch)
             add_node("practice_quiet_track", planned_stage, planned_epoch)
@@ -1405,9 +1518,11 @@ def _prepared_context_fact(
                 "standing": "pevný start" if cs else "standing start",
             },
             "distance_to_start": {
-                "near": "vůz se blíží ke startovní čáře"
-                if cs
-                else "the car is approaching the start line",
+                "near": (
+                    "vůz se blíží ke startovní čáře"
+                    if cs
+                    else "the car is approaching the start line"
+                ),
             },
             "surface_wetness": {
                 "dry": "suchý povrch" if cs else "dry surface",
@@ -1478,7 +1593,9 @@ def _unsupported_claim(plan: PreparedFillerPlan, normalized: str) -> str | None:
     for fact in plan.required:
         remainder = remainder.replace(_normalize_text(fact.spoken_value), " ")
     for category in plan.forbidden_claims:
-        if any(pattern.search(remainder) for pattern in _FORBIDDEN_CLAIM_PATTERNS.get(category, ())):
+        if any(
+            pattern.search(remainder) for pattern in _FORBIDDEN_CLAIM_PATTERNS.get(category, ())
+        ):
             return category
     return None
 

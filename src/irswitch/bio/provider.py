@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import logging
 import sys
+import threading
 import time
 from collections.abc import Callable
 from typing import Any
@@ -20,6 +21,47 @@ logger = logging.getLogger(__name__)
 
 HR_SERVICE = "0000180d-0000-1000-8000-00805f9b34fb"
 HR_MEASUREMENT = "00002a37-0000-1000-8000-00805f9b34fb"
+_CONNECT_TIMEOUT_S = 15.0
+_tls = threading.local()
+
+
+def _winrt_sta_hooks() -> tuple[Any, Any] | None:
+    try:
+        from bleak.backends.winrt.util import allow_sta, uninitialize_sta
+    except ImportError:
+        return None
+    return uninitialize_sta, allow_sta
+
+
+def reset_winrt_prepared() -> None:
+    _tls.ready = False
+
+
+def prepare_winrt_ble(*, allow_sta_fallback: bool = False) -> None:
+    """Prepare this thread's COM apartment for Bleak WinRT.
+
+    Headless irswitch has no Windows message pump. ``uninitialize_sta()`` lets
+    WinRT init MTA on this thread. ``allow_sta()`` only skips the check and can
+    leave GATT ``get_services`` hanging — use it only as an explicit fallback.
+    """
+    if getattr(_tls, "ready", False) or sys.platform != "win32":
+        return
+    hooks = _winrt_sta_hooks()
+    if hooks is None:
+        _tls.ready = True
+        return
+    uninitialize_sta, allow_sta = hooks
+    try:
+        uninitialize_sta()
+    except Exception:
+        logger.debug("BLE WinRT uninitialize_sta failed", exc_info=True)
+    if allow_sta_fallback:
+        try:
+            allow_sta()
+        except Exception:
+            logger.debug("BLE WinRT allow_sta failed", exc_info=True)
+    _tls.ready = True
+    logger.info("BLE WinRT apartment prepared allow_sta=%s", allow_sta_fallback)
 
 
 def _hash_address(address: str) -> str:
@@ -101,6 +143,22 @@ async def pair_if_supported(client: Any) -> None:
         logger.debug("BLE pair skipped", exc_info=True)
 
 
+async def connect_or_timeout(client: Any, timeout_s: float) -> None:
+    """Connect without waiting for an un-cancellable WinRT future after timeout."""
+    task = asyncio.create_task(client.connect())
+    done, _pending = await asyncio.wait({task}, timeout=timeout_s)
+    if task not in done:
+        task.cancel()
+        try:
+            await asyncio.wait_for(client.disconnect(), timeout=2.0)
+        except Exception:
+            pass
+        raise RuntimeError("BLE connect timeout")
+    exc = task.exception()
+    if exc is not None:
+        raise exc
+
+
 class BleHeartRateProvider:
     """
     Notifications-only HR reader.
@@ -121,6 +179,8 @@ class BleHeartRateProvider:
         self._history = HeartRateHistory(window_seconds=settings.baseline_window)
         self._state = BioState()
         self._stop = asyncio.Event()
+        self._stop_flag = threading.Event()
+        self._main_loop: asyncio.AbstractEventLoop | None = None
         self._task: asyncio.Task[Any] | None = None
 
     @property
@@ -166,6 +226,23 @@ class BleHeartRateProvider:
         self._sampling = sampling
         self._history.window_seconds = settings.baseline_window
 
+    def _emit_state(self) -> None:
+        callback = self._on_state
+        if callback is None:
+            return
+        state = self._state
+        loop = self._main_loop
+        if loop is None or loop.is_closed():
+            callback(state)
+            return
+        try:
+            if asyncio.get_running_loop() is loop:
+                callback(state)
+                return
+        except RuntimeError:
+            pass
+        loop.call_soon_threadsafe(callback, state)
+
     def ingest_measurement(self, payload: bytes, now: float | None = None) -> BioState:
         """Parse a raw 0x2A37 payload (used by tests and mock)."""
         now = time.monotonic() if now is None else now
@@ -189,8 +266,7 @@ class BleHeartRateProvider:
             state=hr_state,
             rr_intervals=rr,
         )
-        if self._on_state:
-            self._on_state(self._state)
+        self._emit_state()
         return self._state
 
     def set_status(self, status: str, *, device_name: str | None = None) -> BioState:
@@ -204,11 +280,12 @@ class BleHeartRateProvider:
             state=self._state.state if status == "connected" else "unknown",
             rr_intervals=self._state.rr_intervals if status == "connected" else (),
         )
-        if self._on_state:
-            self._on_state(self._state)
+        self._emit_state()
         return self._state
 
     async def run(self) -> None:
+        self._main_loop = asyncio.get_running_loop()
+        self._stop_flag.clear()
         if not self._settings.enabled:
             self.set_status("disconnected")
             await self._stop.wait()
@@ -226,15 +303,15 @@ class BleHeartRateProvider:
             await self._stop.wait()
             return
         backoff = 1.0
-        while not self._stop.is_set():
+        while not self._stop.is_set() and not self._stop_flag.is_set():
             try:
-                await self._connect_once()
+                await asyncio.to_thread(self._connect_once_sync)
                 backoff = 1.0
             except asyncio.CancelledError:
                 raise
             except Exception:
                 logger.warning("BLE heart-rate session failed", exc_info=True)
-            if self._stop.is_set() or not self._settings.reconnect:
+            if self._stop.is_set() or self._stop_flag.is_set() or not self._settings.reconnect:
                 break
             self.set_status("reconnecting")
             try:
@@ -243,7 +320,14 @@ class BleHeartRateProvider:
                 pass
             backoff = min(backoff * 2, 30.0)
 
+    def _connect_once_sync(self) -> None:
+        """Own thread + event loop so WinRT can use MTA and complete GATT ops."""
+        reset_winrt_prepared()
+        prepare_winrt_ble(allow_sta_fallback=False)
+        asyncio.run(self._connect_once())
+
     async def stop(self) -> None:
+        self._stop_flag.set()
         self._stop.set()
         if self._task is not None:
             self._task.cancel()
@@ -255,20 +339,48 @@ class BleHeartRateProvider:
     async def _connect_once(self) -> None:
         from bleak import BleakClient, BleakScanner
 
+        prepare_winrt_ble(allow_sta_fallback=False)
         self.set_status("connecting")
         device = await self._scan(BleakScanner)
         if device is None:
             raise RuntimeError("no heart-rate device")
         address = _device_address(device) or str(device)
         name = _device_name(device, None) or None
+        self.set_status("connecting", device_name=name)
         logger.info("BLE connecting device=%s", _hash_address(str(address)))
         disconnected = asyncio.Event()
 
         def _on_disconnect(_client: object) -> None:
             disconnected.set()
 
-        async with BleakClient(device, disconnected_callback=_on_disconnect) as client:
-            await pair_if_supported(client)
+        client: Any | None = None
+        last_error: Exception | None = None
+        for cached in (True, False):
+            if self._stop_flag.is_set():
+                return
+            candidate = BleakClient(
+                device,
+                disconnected_callback=_on_disconnect,
+                timeout=_CONNECT_TIMEOUT_S,
+                pair=True,
+                services=[HR_SERVICE],
+                winrt={"use_cached_services": cached},
+            )
+            try:
+                await connect_or_timeout(candidate, _CONNECT_TIMEOUT_S)
+                client = candidate
+                logger.info("BLE GATT ready cached=%s", cached)
+                break
+            except Exception as exc:
+                last_error = exc
+                logger.info("BLE connect cached=%s failed: %s", cached, exc)
+                try:
+                    await candidate.disconnect()
+                except Exception:
+                    pass
+        if client is None:
+            raise last_error or RuntimeError("BLE connect failed")
+        try:
             self.set_status("connected", device_name=name)
 
             def _notify(_char: object, data: bytearray) -> None:
@@ -278,15 +390,19 @@ class BleHeartRateProvider:
                     logger.debug("HR parse failed", exc_info=True)
 
             await client.start_notify(HR_MEASUREMENT, _notify)
-            waiters = [
-                asyncio.create_task(disconnected.wait()),
-                asyncio.create_task(self._stop.wait()),
-            ]
-            done, pending = await asyncio.wait(waiters, return_when=asyncio.FIRST_COMPLETED)
-            for task in pending:
-                task.cancel()
+            while not self._stop_flag.is_set():
+                try:
+                    await asyncio.wait_for(disconnected.wait(), timeout=0.25)
+                    break
+                except TimeoutError:
+                    continue
             try:
                 await client.stop_notify(HR_MEASUREMENT)
+            except Exception:
+                pass
+        finally:
+            try:
+                await client.disconnect()
             except Exception:
                 pass
         self.set_status("disconnected")

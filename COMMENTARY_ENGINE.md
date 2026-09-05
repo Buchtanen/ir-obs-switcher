@@ -5,7 +5,9 @@
 
 **Track Excursion development integration (#216):** `[race_scenarios] mode=active` now defaults
 to the current-signal detector on `codex/fix-overlay-commentary-test-7`. Off-track, stopped,
-rejoined, moving again, Race tow and observed pit return use parent-scoped graph-v3 nodes.
+rejoined, moving again, Race tow, observed pit return, and S7a local pace (sustained loss or
+resumed running vs a frozen dist-bin map) use parent-scoped graph-v3 nodes. `motion_restored`
+no longer closes the episode; tow, pit return, recovered pace, or timeout still do.
 The observer publishes through N12; the old aftermath is disabled in this mode. Numeric incident
 points remain separate from physical facts. Vocabulary is checked through final TTS.
 See the [live test contract](docs/track_excursion_live_test.md) for precise thresholds, logs,
@@ -83,6 +85,13 @@ Copy them into the private sibling repo
 `scripts/clean_tapes.py` in that repo drops HUD spam, keeps polish rows, and
 emits ChatML SFT/DPO without calling a model. LoRA weight training is out of
 scope for this tree.
+
+### Dataset map (agents)
+
+Polish pairs, eval cases, prompt families, and the private ChatML repo:
+[docs/commentary_lora_dataset.md](docs/commentary_lora_dataset.md).
+Skill: `commentary-lora-dataset`. Do not mix SKELETON / ANCHOR / facts-3 / live
+`DATA:` in one test or SFT split. Raw `recordings/` stay gitignored.
 
 Rules:
 
@@ -233,7 +242,13 @@ validovaných variant. Očekávaný next-stage plán používá budoucí `stage_
 přechodu zůstane připravený, ale změna stream/session/run/stint/class ho invaliduje. Výchozí `active` vybírá
 nejméně exponovanou variantu a potvrzuje expozici až při TTS `speaking`. Připravený text se znovu
 neposílá do LLM polish. Selhání generace nikdy nespadne do obecného textu; prázdný vyčerpaný buffer
-má jedinou lokální fatal hlášku a potom ticho do zotavení.
+má jedinou lokální fatal hlášku a potom ticho do zotavení. Cancel zapíše `cancelled`
+a nepočítá pokus. JSON/schema/HTTP chyby mají vlastní kódy (`invalid_json`,
+`plan_mismatch`, `truncated`, `http_*`, `empty`, `stale`), ne souhrnné `transport`.
+Po vyčerpání attempt budgetu se buffer znovu zkouší po `generation_retry_cooldown_s`
+(výchozích 15 s) a ponechá už přijaté varianty. Practice/Quali `session_state==4`
+není race green — lobby/in-car/out-lap zůstávají dosažitelné; race green pořád
+přeruší prepared vrstvu.
 
 Připravený graf obsahuje 53 konkrétních uzlů. Každý nese stage/mode, prioritu, terminalitu,
 požadované a volitelné fakty, vztah, zakázaná tvrzení a lokalizovaný EN/CS záměr s anchors.
@@ -328,7 +343,7 @@ Spoken lines live in `variants.{en|cs}.{emotion}`. With `llm_polish=false`, the 
 | --- | --- |
 | W0–W5 EN | Complete |
 | W6 CS | Complete |
-| VOICE | Stream-viewer broadcast (3rd person); ~4 lines/cell (**752** lines) |
+| VOICE | Stream-viewer broadcast (3rd person); hot cells **6–8** distinct frames, not densify-to-16 |
 | W7 polish | Optional |
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).

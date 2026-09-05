@@ -271,6 +271,7 @@ Pass previous/next node sample lines and the `commentary-facts/1` clause trace w
 - [x] W5 — EN bio + invalid_lap (gpt-5; unfilled 99 → 94; **EN complete**)
 - [x] W6 — CS parity all-at-once (claude-opus parallel W6a/b/c; unfilled 94 → **0**)
 - [x] VOICE — stream-viewer broadcast + denser matrix (~4 lines/cell; **426 → 752** lines)
+- [x] Hygiene — prune hot cells to 6–8 distinct frames; shared filler tails removed (except frozen session-brief proposals)
 - [x] N11 A — `stream_start` (long node TTS cap, slot-free EN+CS) + mode `in_car_*` (generic `in_car` kept)
 - [x] N11 B/C/D — sparse `incident_*` branches, flag one-liners, `quali_recap` / `parade_pad`
 - [ ] W7 — optional wording polish after live composer listening (composer runtime shipped)
@@ -860,7 +861,7 @@ Normative transitions and side effects:
 | `OUT_LAP` | valid S/F wrap | `LIVE_SESSION` | expire unused out-lap plans |
 | `OUT_LAP` | pit return/tow/reset/run/session change | matching safe stage | expire the out-lap scope without claiming a lap |
 | `GRID_PREP` | ParadeLaps/rolling formation or standing-start preparation | `FORMATION_OR_LIGHTS` | keep only start-compatible plans |
-| `FORMATION_OR_LIGHTS` | green/Racing accepted | `LIVE_SESSION` | expire every unused pre-start plan |
+| `FORMATION_OR_LIGHTS` | Race green or Race `session_state==4` | `LIVE_SESSION` | expire every unused pre-start plan. Practice/Quali racing clock is not this edge. |
 | P/Q active stage | checkered/end accepted | `SESSION_CONCLUSION` | result-specific plan waits for confirmed result; generic debrief may generate immediately |
 | Race active stage | `player_finished` accepted | `SESSION_CONCLUSION` | freeze confirmed finish and comparison inputs |
 | `SESSION_CONCLUSION` | conclusion exhausted plus lobby/new session | `BETWEEN_SESSIONS` | retain exposed topics and same-stream `QualiBag` only |

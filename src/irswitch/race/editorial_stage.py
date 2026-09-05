@@ -169,7 +169,7 @@ class EditorialStageController:
             self._practice_intro_draining = False
             self._out_lap_origin = None
             self._transition(EditorialStage.SESSION_CONCLUSION, item.observed_monotonic_ms)
-        elif item.green or item.session_state == 4:
+        elif item.overlay_mode == "RACE" and (item.green or item.session_state == 4):
             self._practice_intro_draining = False
             self._out_lap_origin = None
             self._transition(EditorialStage.LIVE_SESSION, item.observed_monotonic_ms)

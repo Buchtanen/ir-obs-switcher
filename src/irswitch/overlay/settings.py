@@ -138,6 +138,7 @@ class OverlayTapeSettings:
     directory: str = "recordings"
     # llm_polish rows while the tape file is open (independent of log level).
     llm_rows: bool = True
+    field: bool = True
 
 
 @dataclass(frozen=True)
@@ -167,6 +168,8 @@ class PreparedFillerSettings:
     variants_max: int = 5
     generation_timeout_s: float = 30.0
     generation_max_attempts: int = 2
+    # In-memory backoff after the attempt budget; not an INI key.
+    generation_retry_cooldown_s: float = 15.0
     max_utterance_s: float = 28.0
     youtube_history: bool = False
     youtube_history_days: int = 90

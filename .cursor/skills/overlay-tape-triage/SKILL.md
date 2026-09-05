@@ -38,7 +38,9 @@ If header `overlayMode` is `RACE` during Quali → skill `iracing-session-glossa
 | `scene` | OBS scene / drivingMode change |
 | `decision` | event engine emit/suppress/preempt |
 | `stories` | active V4 stories |
+| `field` | per-tick official vs live place (`officialPosition` / `livePosition`, `cars[]`) — audit start/order lag |
 | `commentary` | director speak/reject — **DEBUG** (skip spam); spoken/TTS also appear after clean |
+| `prepared_filler` | coordinator lifecycle: `action` + `reason` (`cancelled`, `empty`, `stale`, `plan_mismatch`, `invalid_json`, `truncated`, `http_*`, `timeout`, `transport`) plus `stage` / `attempt` / `mergedCount`. `acceptedTexts` only at runtime DEBUG. Empty `generated` + `acceptedTexts=[]` was a Test 8 bug, not a filled buffer. |
 | `llm_polish` | polish request/response — **INFO when `session_tape_llm=true`** (dataset capture) |
 | `stream_origin` | OBS stream clock attached |
 
@@ -64,4 +66,10 @@ Skip BLE reconnect, OBS poll, SSL. If commentary rows are missing on tape, runti
 - likely layer: extract / overlay copy / commentary graph / OBS cache
 
 Do not “fix display-v4” because VOD showed a raw token until i18n + CEF are checked (skill `overlay-hud-copy`).
+
+## 6. LoRA / eval data (not HUD triage)
+
+ChatML, SFT/DPO, prompt-family mixing, private `ir-commentary-lora`:
+skill `commentary-lora-dataset` and `docs/commentary_lora_dataset.md`.
+Do not copy raw tapes into this public repo.
 ---

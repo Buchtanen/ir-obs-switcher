@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 
+import aiohttp
 import pytest
 
 from irswitch.commentary.prepared_filler import (
@@ -13,6 +14,8 @@ from irswitch.commentary.prepared_filler import (
     PreparedFillerPlan,
     _generation_request,
     build_prepared_filler_plans,
+    classify_prepared_generation_error,
+    decode_prepared_generation_payload,
     result_band,
     validate_generated_variants,
 )
@@ -367,9 +370,7 @@ def test_start_light_plan_enforces_short_graph_tts_limit() -> None:
 
     valid, errors = validate_generated_variants(
         plan,
-        [
-            "The start lights are set. The field now waits together in complete silence."
-        ],
+        ["The start lights are set. The field now waits together in complete silence."],
         PreparedFillerSettings(max_utterance_s=13.0),
     )
 
@@ -393,7 +394,8 @@ def test_coordinator_stops_top_up_after_attempt_budget() -> None:
         coordinator.reconcile([_plan()])
         await asyncio.wait_for(coordinator.wait_idle(), timeout=1)
         assert calls == 2
-        assert coordinator.health == PreparedFillerHealth.READY
+        assert coordinator.health == PreparedFillerHealth.DEGRADED
+        assert coordinator.last_error == "empty"
         assert coordinator.status()["inflight"] == 0
         await coordinator.close()
 
@@ -806,6 +808,7 @@ def test_coordinator_can_reopen_after_supervisor_restart() -> None:
 def test_context_invalidation_cancels_inflight_generation() -> None:
     started = asyncio.Event()
     cancelled = asyncio.Event()
+    events: list[dict[str, object]] = []
 
     async def generator(plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]) -> list[str]:
         started.set()
@@ -816,14 +819,23 @@ def test_context_invalidation_cancels_inflight_generation() -> None:
             raise
 
     async def exercise() -> None:
-        coordinator = PreparedFillerCoordinator(PreparedFillerSettings(mode="shadow"), generator)
-        coordinator.reconcile([_plan()], current_stage="STREAM_LOBBY_INTRO")
+        plan = _plan()
+        coordinator = PreparedFillerCoordinator(
+            PreparedFillerSettings(mode="shadow"),
+            generator,
+            diagnostic=events.append,
+        )
+        coordinator.reconcile([plan], current_stage="STREAM_LOBBY_INTRO")
         await asyncio.wait_for(started.wait(), timeout=1)
         coordinator.reconcile((), current_stage="WAIT_CONTEXT")
         await asyncio.wait_for(cancelled.wait(), timeout=1)
         await asyncio.sleep(0)
         assert coordinator.status()["inflight"] == 0
         assert coordinator.buffer.desired == ()
+        assert coordinator.buffer.attempt_count(plan) == 0
+        assert [item["action"] for item in events] == ["cancelled"]
+        assert events[0]["reason"] == "cancelled"
+        assert events[0]["stage"] == "WAIT_CONTEXT"
         await coordinator.close()
 
     asyncio.run(exercise())
@@ -861,3 +873,218 @@ def test_next_stage_readiness_does_not_mask_current_stage_fatal() -> None:
         await coordinator.close()
 
     asyncio.run(exercise())
+
+
+def test_empty_generation_is_rejected_not_generated() -> None:
+    events: list[dict[str, object]] = []
+
+    async def generator(plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]) -> list[str]:
+        return []
+
+    async def exercise() -> None:
+        coordinator = PreparedFillerCoordinator(
+            PreparedFillerSettings(mode="shadow", generation_max_attempts=1),
+            generator,
+            diagnostic=events.append,
+        )
+        coordinator.reconcile([_plan()], current_stage="STREAM_LOBBY_INTRO")
+        await coordinator.wait_idle()
+        assert [item["action"] for item in events] == ["rejected"]
+        assert events[0]["reason"] == "empty"
+        assert events[0]["acceptedTexts"] == []
+        assert events[0]["stage"] == "STREAM_LOBBY_INTRO"
+        assert events[0]["attempt"] == 1
+        assert events[0]["mergedCount"] == 0
+        await coordinator.close()
+
+    asyncio.run(exercise())
+
+
+def test_plan_mismatch_is_not_transport() -> None:
+    events: list[dict[str, object]] = []
+
+    async def generator(plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]) -> list[str]:
+        raise ValueError("plan_mismatch")
+
+    async def exercise() -> None:
+        coordinator = PreparedFillerCoordinator(
+            PreparedFillerSettings(mode="shadow", generation_max_attempts=1),
+            generator,
+            diagnostic=events.append,
+        )
+        coordinator.reconcile([_plan()], current_stage="STREAM_LOBBY_INTRO")
+        await coordinator.wait_idle()
+        assert events[0]["action"] == "rejected"
+        assert events[0]["reason"] == "plan_mismatch"
+        await coordinator.close()
+
+    asyncio.run(exercise())
+
+
+def test_schedule_continues_past_inflight_plan() -> None:
+    started: list[str] = []
+    hold = asyncio.Event()
+
+    def _next_plan() -> PreparedFillerPlan:
+        return PreparedFillerPlan.create(
+            node_id="prepared.formation",
+            semantic_key="formation.setup",
+            locale="en",
+            scope_key="stream:1:stage:2",
+            stage_epoch=2,
+            allowed_stages=("FORMATION_OR_LIGHTS",),
+            required=(FactProposition("track", "Spa", "telemetry", "r1", "Spa"),),
+        )
+
+    async def exercise() -> None:
+        current = _plan(stage="GRID_PREP")
+        following = _next_plan()
+        first = asyncio.Event()
+        second = asyncio.Event()
+
+        async def gated(plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]) -> list[str]:
+            started.append(plan.semantic_key)
+            if plan.semantic_key == "stream.venue":
+                first.set()
+            else:
+                second.set()
+            await hold.wait()
+            return _variants(count=count)
+
+        coordinator = PreparedFillerCoordinator(
+            PreparedFillerSettings(mode="shadow", max_inflight=2),
+            gated,
+        )
+        coordinator.reconcile([current], current_stage="GRID_PREP")
+        await asyncio.wait_for(first.wait(), timeout=1)
+        assert started == ["stream.venue"]
+        coordinator.reconcile([current, following], current_stage="GRID_PREP")
+        await asyncio.wait_for(second.wait(), timeout=1)
+        assert started == ["stream.venue", "formation.setup"]
+        hold.set()
+        await coordinator.wait_idle()
+        await coordinator.close()
+
+    asyncio.run(exercise())
+
+
+def test_stale_epoch_does_not_fill_or_count_attempt() -> None:
+    release = asyncio.Event()
+    events: list[dict[str, object]] = []
+
+    async def exercise() -> None:
+        started = asyncio.Event()
+
+        async def generator(
+            plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]
+        ) -> list[str]:
+            started.set()
+            await release.wait()
+            return _variants(count=count)
+
+        plan = _plan()
+        coordinator = PreparedFillerCoordinator(
+            PreparedFillerSettings(mode="shadow"),
+            generator,
+            diagnostic=events.append,
+        )
+        coordinator.reconcile([plan], current_stage="STREAM_LOBBY_INTRO")
+        await asyncio.wait_for(started.wait(), timeout=1)
+        coordinator._epoch += 1
+        release.set()
+        await coordinator.wait_idle()
+        assert coordinator.buffer.select("STREAM_LOBBY_INTRO", 1) is None
+        assert coordinator.buffer.attempt_count(plan) == 0
+        assert events[-1]["action"] == "rejected"
+        assert events[-1]["reason"] == "stale"
+        await coordinator.close()
+
+    asyncio.run(exercise())
+
+
+def test_attempt_budget_recovers_after_cooldown() -> None:
+    calls = 0
+
+    async def generator(plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]) -> list[str]:
+        nonlocal calls
+        calls += 1
+        return []
+
+    async def exercise() -> None:
+        coordinator = PreparedFillerCoordinator(
+            PreparedFillerSettings(
+                mode="shadow",
+                generation_max_attempts=2,
+                generation_retry_cooldown_s=0.01,
+            ),
+            generator,
+        )
+        plan = _plan()
+        coordinator.reconcile([plan], current_stage="STREAM_LOBBY_INTRO")
+        await coordinator.wait_idle()
+        assert calls == 2
+        assert coordinator.health == PreparedFillerHealth.FATAL
+        await asyncio.sleep(0.02)
+        coordinator.reconcile([plan], current_stage="STREAM_LOBBY_INTRO")
+        await coordinator.wait_idle()
+        assert calls == 4
+        await coordinator.close()
+
+    asyncio.run(exercise())
+
+
+def test_classify_and_decode_keep_distinct_codes() -> None:
+    assert classify_prepared_generation_error(ValueError("plan_mismatch")) == "plan_mismatch"
+    assert classify_prepared_generation_error(ValueError("invalid_json")) == "invalid_json"
+    assert classify_prepared_generation_error(json.JSONDecodeError("x", "x", 0)) == "invalid_json"
+    assert classify_prepared_generation_error(TimeoutError()) == "timeout"
+    assert classify_prepared_generation_error(aiohttp.ClientConnectionError()) == "http"
+
+    plan_id = "sha256:plan"
+    payload = {
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "message": {
+                    "content": json.dumps(
+                        {
+                            "schema": "prepared-filler/1",
+                            "planId": plan_id,
+                            "variants": ["alpha", "beta"],
+                        }
+                    )
+                },
+            }
+        ]
+    }
+    assert decode_prepared_generation_payload(payload, plan_id) == ["alpha", "beta"]
+
+    truncated = {
+        "choices": [
+            {
+                "finish_reason": "length",
+                "message": {"content": '{"schema": "prepared-filler/1"'},
+            }
+        ]
+    }
+    with pytest.raises(ValueError, match="truncated"):
+        decode_prepared_generation_payload(truncated, plan_id)
+
+    mismatch = {
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "message": {
+                    "content": json.dumps(
+                        {
+                            "schema": "prepared-filler/1",
+                            "planId": "other",
+                            "variants": ["alpha"],
+                        }
+                    )
+                },
+            }
+        ]
+    }
+    with pytest.raises(ValueError, match="plan_mismatch"):
+        decode_prepared_generation_payload(mismatch, plan_id)

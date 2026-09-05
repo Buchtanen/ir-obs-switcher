@@ -1,4 +1,4 @@
-"""Session-scoped overlay HUD tape (JSONL). Fail-soft; no telemetry ticks.
+"""Session-scoped overlay HUD tape (JSONL). Fail-soft; field rows are sampled, not 60 Hz.
 
 Clocks (seconds):
 - ``t_mono`` — from tape open (replay delay)
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_MODES = frozenset({"PRACTICE", "QUALIFYING", "RACE"})
 IRSDK_STATE_RACING = 4
-TAPE_SCHEMA = "1.0"
+TAPE_SCHEMA = "1.1"
 _SLUG = re.compile(r"[^A-Za-z0-9._-]+")
 CLOCK_KEYS = frozenset({"t", "t_mono", "t_stream", "t_session", "t_green"})
 
@@ -125,6 +125,7 @@ class OverlaySessionTape:
         self._scene_sig: tuple[str | None, str | None] | None = None
         self._noted_stream = False
         self._run_epoch = 0
+        self._field_enabled = True
 
     @property
     def path(self) -> Path | None:
@@ -156,6 +157,7 @@ class OverlaySessionTape:
 
     def observe(self, state: RaceState, now: float, settings: OverlaySettings) -> None:
         tape = settings.tape
+        self._field_enabled = bool(tape.field)
         if not tape.enabled:
             self.close()
             return
@@ -280,6 +282,11 @@ class OverlaySessionTape:
             "score": entry.get("score"),
             "threshold": entry.get("threshold"),
             "components": entry.get("components"),
+            "attempt": entry.get("attempt"),
+            "mergedCount": entry.get("mergedCount"),
+            "desiredCount": entry.get("desiredCount"),
+            "readyCount": entry.get("readyCount"),
+            "fatalEpisode": entry.get("fatalEpisode"),
         }
         if "acceptedTexts" in entry:
             payload["acceptedTexts"] = entry["acceptedTexts"]
@@ -290,6 +297,14 @@ class OverlaySessionTape:
         if self._path is None:
             return
         self._write(now, state, {"type": "llm_polish", **entry})
+
+    def record_field(self, payload: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """Per-tick official vs live field dump for offline position audits."""
+        if self._path is None or not self._field_enabled:
+            return
+        body = dict(payload)
+        body["type"] = "field"
+        self._write(now, state, body)
 
     def _open(self, state: RaceState, now: float, settings: OverlaySettings, key: str) -> None:
         directory = Path(safe_tape_dir(settings.tape.directory))

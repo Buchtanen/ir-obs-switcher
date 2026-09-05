@@ -79,6 +79,44 @@ def test_practice_pit_return_reopens_preparation_before_next_out_lap() -> None:
     assert next_exit.stint_epoch == 2
 
 
+def test_practice_racing_clock_does_not_skip_intro() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state())
+    snap = stages.observe(_state(in_car=True, on_pit_road=True, session_state=4, green=True))
+    assert snap.stage == EditorialStage.STREAM_LOBBY_INTRO
+    assert snap.practice_intro_draining is True
+    assert stages.complete_intro_chain().stage == EditorialStage.IN_CAR_PREP
+    out_lap = stages.observe(
+        _state(in_car=True, on_pit_road=False, lap_completed=2, session_state=4)
+    )
+    assert out_lap.stage == EditorialStage.OUT_LAP
+
+
+def test_qualifying_racing_clock_does_not_skip_event_intro() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state(overlay_mode="QUALIFYING"))
+    snap = stages.observe(
+        _state(
+            overlay_mode="QUALIFYING",
+            in_car=True,
+            on_pit_road=True,
+            session_state=4,
+            green=True,
+        )
+    )
+    assert snap.stage == EditorialStage.SESSION_EVENT_INTRO
+
+
+def test_race_session_state_four_still_preempts_to_live() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state(overlay_mode="RACE"))
+    snap = stages.observe(_state(overlay_mode="RACE", in_car=True, session_state=4, green=False))
+    assert snap.stage == EditorialStage.LIVE_SESSION
+
+
 def test_green_and_finish_take_precedence() -> None:
     stages = EditorialStageController()
     stages.note_stream_started()
