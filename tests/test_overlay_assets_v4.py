@@ -89,12 +89,43 @@ def test_v4_story_snapshots_reconcile_without_clearing_leased_cards() -> None:
     assert "isStale(envelope, { snapshot: Boolean(options.snapshot) })" in script
     assert "seq < prev || (seq === prev && !snapshot)" in script
     assert "delete node.dataset.storyLease" in script
+    assert 'new Set(["building", "committed", "speaking"])' in script
+    assert "LIVE_STORY_LEASE.has(storyState)" in script
+    assert '["building", "committed", "speaking", "resolved"]' not in script
+    assert 'node.dataset.storyLease === "true"' in body
+    assert "holdExpired" in script
+    assert "function expireHold(key, seq)" in script
+    show = script.split("show(envelope, options = {}) {", 1)[1].split("\n  },", 1)[0]
+    assert "expireHold(exitKey" in show
+    assert "expiredSeq != null" in show
+    assert "seq <= expiredSeq" in show
+    assert "holdExpired.delete(key)" in show
+    assert 'node.dataset.storyLease = "true"' in show
+    assert "delete node.dataset.storyLease" in show
+    assert "expireHold(key, node.dataset.sequence)" in body
+    hold = script.split("function scheduleHoldTimer", 1)[1].split("\n}", 1)[0]
+    assert 'node.dataset.storyLease === "true"' in hold
+    assert "expireHold(key, seq)" in hold
+    overlay = (web_root() / "overlay" / "js" / "overlay.js").read_text(encoding="utf-8")
+    assert "window.__v4Display?.clear?.()" in overlay
+    assert "applyStateSnapshot?.(msg.activeStories || [])" in overlay
 
 
-def test_v4_equal_sequence_snapshot_is_fresh_and_terminal_snapshot_hides() -> None:
+def _run_display_v4_node(program: str, *, timeout: float = 3) -> None:
     node_bin = shutil.which("node")
     if node_bin is None:
         pytest.skip("node is not installed")
+    completed = subprocess.run(
+        [node_bin, "--input-type=module", "-e", program],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    assert completed.returncode == 0, completed.stderr + completed.stdout
+
+
+def test_v4_equal_sequence_snapshot_is_fresh_and_terminal_snapshot_hides() -> None:
     module_uri = (web_root() / "overlay" / "js" / "display-v4.js").as_uri()
     program = f"""
       const mod = await import({json.dumps(module_uri)});
@@ -106,18 +137,164 @@ def test_v4_equal_sequence_snapshot_is_fresh_and_terminal_snapshot_hides() -> No
       const classes = {{ add() {{}}, remove() {{}} }};
       const card = {{ dataset: {{ snapshotManaged: 'true' }}, classList: classes, remove() {{}} }};
       mod.DisplayV4.active.set('battle:7', card);
+      const leased = {{ dataset: {{ storyLease: 'true' }}, classList: classes, remove() {{}} }};
+      mod.DisplayV4.active.set('v4:stale-lease', leased);
       mod.DisplayV4.applyStateSnapshot([]);
       await new Promise((resolve) => setTimeout(resolve, 350));
       if (mod.DisplayV4.active.size !== 0) throw new Error('terminal snapshot left card active');
     """
-    completed = subprocess.run(
-        [node_bin, "--experimental-default-type=module", "--input-type=module", "-e", program],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=3,
-    )
-    assert completed.returncode == 0, completed.stderr
+    _run_display_v4_node(program)
+
+
+def test_v4_resolved_story_drops_lease_and_hold_blocks_revival() -> None:
+    """Live lease is speaking-only; RESULT hold then rejects same-or-older snapshots."""
+    module_uri = (web_root() / "overlay" / "js" / "display-v4.js").as_uri()
+    program = f"""
+      const byId = new Map();
+      class FakeClassList {{
+        constructor() {{ this._s = new Set(); }}
+        add(...xs) {{ xs.forEach((x) => x && this._s.add(x)); }}
+        remove(...xs) {{ xs.forEach((x) => this._s.delete(x)); }}
+        toggle(x, force) {{
+          if (force === true) this._s.add(x);
+          else if (force === false) this._s.delete(x);
+          else if (this._s.has(x)) this._s.delete(x); else this._s.add(x);
+          return this._s.has(x);
+        }}
+        contains(x) {{ return this._s.has(x); }}
+      }}
+      class El {{
+        constructor(tag) {{
+          this.tagName = String(tag).toUpperCase();
+          this.children = [];
+          this.dataset = {{}};
+          this.style = {{}};
+          this.classList = new FakeClassList();
+          this.parent = null;
+          this._id = "";
+        }}
+        get className() {{ return [...this.classList._s].join(" "); }}
+        set className(v) {{
+          this.classList._s = new Set(String(v).split(/\\s+/).filter(Boolean));
+        }}
+        get id() {{ return this._id; }}
+        set id(v) {{
+          this._id = String(v || "");
+          if (this._id) byId.set(this._id, this);
+        }}
+        set innerHTML(_html) {{
+          this.children = [];
+          for (const cls of ["title", "subtitle", "value", "meta"]) {{
+            const child = new El("div");
+            child.className = cls;
+            this.appendChild(child);
+          }}
+        }}
+        setAttribute(_name, _value) {{}}
+        getAttribute(_name) {{ return null; }}
+        play() {{ return Promise.resolve(); }}
+        pause() {{}}
+        append(...nodes) {{ nodes.forEach((n) => this.appendChild(n)); }}
+        appendChild(node) {{
+          node.parent = this;
+          this.children.push(node);
+          return node;
+        }}
+        replaceChildren(...nodes) {{
+          this.children = [];
+          nodes.forEach((n) => this.appendChild(n));
+        }}
+        remove() {{
+          if (!this.parent) return;
+          this.parent.children = this.parent.children.filter((c) => c !== this);
+          this.parent = null;
+        }}
+        querySelector(sel) {{
+          const cls = sel.startsWith(".") ? sel.slice(1) : null;
+          const walk = (n) => {{
+            if (cls && String(n.className || "").split(/\\s+/).includes(cls)) return n;
+            for (const c of n.children) {{
+              const hit = walk(c);
+              if (hit) return hit;
+            }}
+            return null;
+          }};
+          for (const c of this.children) {{
+            const hit = walk(c);
+            if (hit) return hit;
+          }}
+          return null;
+        }}
+      }}
+      const html = new El("html");
+      const body = new El("body");
+      globalThis.document = {{
+        documentElement: html,
+        body,
+        createElement: (tag) => new El(tag),
+        getElementById: (id) => byId.get(id) || null,
+      }};
+      globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+      const mod = await import({json.dumps(module_uri)});
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      const envelope = (overrides = {{}}) => ({{
+        format: "v4",
+        eventType: "LAP_COMPLETE",
+        phase: "RESULT",
+        sequence: 7,
+        correlationId: "lap:7",
+        presentation: {{ minHoldMs: 40, variant: "lap_complete" }},
+        miniStory: {{ state: "resolved", storyId: "s1", storyRevision: 2 }},
+        ...overrides,
+      }});
+      const speaking = envelope({{
+        phase: "ACTIVE",
+        miniStory: {{ state: "speaking", storyId: "s1", storyRevision: 1 }},
+      }});
+
+      mod.DisplayV4.clear();
+      const live = mod.DisplayV4.show(speaking);
+      if (!live || live.dataset.storyLease !== "true") throw new Error("speaking must lease");
+      await wait(80);
+      if (!mod.DisplayV4.active.has("v4:lap:7")) throw new Error("speaking card expired");
+      if (live._exitTimer) throw new Error("speaking scheduled RESULT hold");
+
+      const resolvedNode = mod.DisplayV4.show(envelope(), {{ snapshot: true }});
+      if (!resolvedNode) throw new Error("resolved RESULT rejected");
+      if (resolvedNode.dataset.storyLease === "true") throw new Error("resolved kept storyLease");
+      await wait(80);
+      await wait(350);
+      if (mod.DisplayV4.active.size !== 0) throw new Error("RESULT hold left card active");
+
+      mod.DisplayV4.applyStateSnapshot([envelope()]);
+      await wait(50);
+      if (mod.DisplayV4.active.size !== 0) throw new Error("expired RESULT revived by snapshot");
+
+      const newer = mod.DisplayV4.show(envelope({{ sequence: 8 }}));
+      if (!newer) throw new Error("newer sequence must show after hold");
+      mod.DisplayV4.clear();
+
+      const leased = mod.DisplayV4.show(speaking);
+      if (!leased) throw new Error("speaking remount failed");
+      mod.DisplayV4.applyStateSnapshot([]);
+      await wait(350);
+      if (mod.DisplayV4.active.size !== 0) throw new Error("empty snapshot left leased card");
+      if (mod.DisplayV4.show(speaking)) throw new Error("speaking revived after empty snapshot");
+      if (mod.DisplayV4.show(envelope({{ snapshot: true }}))) throw new Error("resolved snapshot revived after empty");
+
+      mod.DisplayV4.clear();
+      if (!mod.DisplayV4.show(speaking)) throw new Error("clear must allow a new lease");
+      const exitEnvelope = envelope({{
+        phase: "EXIT",
+        sequence: 8,
+        miniStory: {{ state: "speaking", storyId: "s1", storyRevision: 1 }},
+      }});
+      if (mod.DisplayV4.show(exitEnvelope) !== null) throw new Error("EXIT must hide");
+      await wait(350);
+      if (mod.DisplayV4.active.size !== 0) throw new Error("EXIT left card active");
+      if (mod.DisplayV4.show(envelope({{ sequence: 8 }}))) throw new Error("same-seq RESULT revived after EXIT");
+    """
+    _run_display_v4_node(program, timeout=8)
 
 
 def test_v4_themes_have_expected_family_dirs() -> None:

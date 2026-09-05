@@ -17,11 +17,15 @@ or add a speech/model dependency.
   the same correlation and sequence. Equal sequence is not a stale snapshot.
 - A card adopted by the snapshot is removed when it is absent from a later
   snapshot, including terminal mini-story and session reset snapshots.
-- A terminal mini-story cannot retain an immortal `storyLease`; a later ordinary
-  event can use its configured hold timer normally.
+- A terminal mini-story cannot retain an immortal `storyLease`. Only
+  `building` / `committed` / `speaking` lease the card. `resolved` and later
+  states use the RESULT hold timer; an empty snapshot also removes leftover
+  leased cards.
 - When an EXIT is represented by a resolved leased RESULT, that RESULT carries
   the fresh identity, sequence and timestamps of the EXIT event.
-- Overlay JS cache versions remain in lockstep.
+- Overlay JS cache versions remain in lockstep (`1.2.21`).
+- EXIT, empty/terminal snapshots and elapsed RESULT holds tombstone that widget
+  sequence so a same-or-older snapshot or speaking event cannot revive the card.
 
 ### Commentary fallback and selection
 
@@ -80,3 +84,20 @@ The relevant focused test suites, formatting checks and type checks must pass.
 payloads and public configuration keys are unchanged, so `API.md`, `.env.example`
 and runtime configuration need no contract change. Overlay asset version is bumped
 because browser-source JavaScript changes.
+
+## Remaining OBS gate (Test 7 overlay)
+
+Automated JS coverage proves: equal-sequence snapshot adoption, empty snapshot
+removal of leftover leases, `resolved` dropping `storyLease`, RESULT hold, and
+same-or-older snapshot revival blocked (`holdExpired`).
+
+OBS Browser Source is still a separate cache. After service restart with
+`OVERLAY_ASSET_VER` / `?v=` lockstep (currently `1.2.21`):
+
+1. Overlay URL `http://127.0.0.1:17321/overlay/` — HTML/JS query matches the token.
+2. OBS Browser Source → **Refresh cache** (Cursor/golden gallery is not CEF).
+3. Live: EXIT / empty snapshot / new session leaves no stale V4 card; rejected
+   LLM polish stays silent.
+
+TDD-exception: this checkout cannot operate OBS CEF. Alternative verification is
+the steps above on the streaming machine.

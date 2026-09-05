@@ -12,8 +12,10 @@ Commentary already made its final freshness decision after Qwen returned, but V4
 - `RaceRuntime` forwards worker transitions with `loop.call_soon_threadsafe()`; no TTS-thread code touches `OverlayBus` or asyncio-owned state.
 - `OverlayConsumer` owns a bounded/coalesced lifecycle inbox and merges leased cards with the producer's source snapshot. Older revisions are ignored.
 - Source `EXIT` changes a leased card to `RESULT` and carries the EXIT event's fresh identity, sequence and timestamps; `completed`, `interrupted`, `invalidated`, session reset and run reset remove it. A terminal correlation tombstone prevents a stale source snapshot from reviving the card.
-- The V4 renderer reconciles authoritative snapshots instead of clearing every card. A snapshot may adopt an already rendered card at an equal sequence, then removes that snapshot-managed card when it disappears from a later snapshot. Narrative leases disable client hold timers and are cleared when a later ordinary event reuses the card; events without a lease keep existing behavior.
-- Overlay asset cache identity is `1.2.19` so OBS CEF cannot retain the previous renderer.
+- The V4 renderer reconciles authoritative snapshots instead of clearing every card. A snapshot may adopt an already rendered card at an equal sequence, then removes that snapshot-managed or leftover-leased card when it disappears from a later snapshot. Live narrative leases (`building` / `committed` / `speaking`) disable client hold timers. Terminal `resolved` (and later) states drop the lease so the RESULT hold timer can fire; the same-or-older snapshot cannot revive an expired RESULT.
+- Overlay asset cache identity is `1.2.21` so OBS CEF cannot retain the previous renderer.
+  EXIT, empty/terminal snapshots and RESULT hold share one sequence tombstone; speaking no
+  longer revives a same-or-older card after teardown.
 
 ## Evidence
 

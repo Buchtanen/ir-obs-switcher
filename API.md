@@ -951,7 +951,7 @@ Příklad objektu `miniStory`:
 
 `state` je `ready`, `building`, `committed`, `speaking`, `resolved`, `completed`, `interrupted` nebo `invalidated`. Vyšší `storyRevision` je autoritativní; opožděný nižší stav se ignoruje.
 
-**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`, ale odstraní ji až TTS `completed`/`interrupted`/`invalidated` nebo reset. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
+**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`. Live lease platí jen pro `building` / `committed` / `speaking`; `resolved` už lease nedrží a RESULT drží jen `minHoldMs`. TTS `completed`/`interrupted`/`invalidated`, prázdný snapshot, hold timer nebo reset kartu odstraní. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
 
 ```json
 {
