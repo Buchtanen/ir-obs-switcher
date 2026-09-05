@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from irswitch.events.position import place_of, should_seed_place
 from irswitch.overlay.models import OpponentInfo, RaceState
 from irswitch.overlay.protocol import CandidateEvent
 from irswitch.overlay.settings import BattleSettings, EventPrioritySettings
@@ -36,16 +37,26 @@ class OvertakeClassifierEmitter:
         self._pending: int | None = None
         self._pending_since: float | None = None
         self._tracked_ahead: _TrackedAhead | None = None
+        self._source: str | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
         if not state.connected:
             self._confirmed = None
             self._pending = None
             self._tracked_ahead = None
+            self._source = None
             return []
 
-        current = state.class_position if state.class_position is not None else state.position
+        current = place_of(state)
         if current is None:
+            return []
+        source, seed = should_seed_place(state, self._source)
+        self._source = source
+        if seed:
+            self._confirmed = current
+            self._pending = None
+            self._pending_since = None
+            self._track_ahead(state)
             return []
 
         if self._confirmed is None:

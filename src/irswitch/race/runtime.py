@@ -56,6 +56,7 @@ from irswitch.race.editorial_stage import (
 from irswitch.race.grid_story import QUALI_RECAP
 from irswitch.race.ministory import MiniStoryRegistry
 from irswitch.race.observer import RaceObserver
+from irswitch.race.order import field_tape_payload
 from irswitch.race.pipeline import AcceptedRecord, RacePipeline, build_situation_payload
 from irswitch.race.prepared_facts import PreparedFactCollector
 from irswitch.race.run import RunClock
@@ -982,7 +983,10 @@ class RaceRuntime:
         if tape_active:
             self._sync_tape(state, now)
         scenario_mode = self._overlay_settings().race_observer.scenario_mode
+        tape_open = self._tape.path is not None
         for trace in self.race_observer.excursion.take_trace():
+            if not tape_open:
+                continue
             trace["scenarioMode"] = scenario_mode
             self._tape.record_scenario(trace, now, state)
             logger.info(
@@ -1125,7 +1129,11 @@ class RaceRuntime:
     def _sync_tape(self, state: RaceState, now: float) -> None:
         if self.mode == "replay":
             return
-        self._tape.observe(state, now, self._overlay_settings())
+        settings = self._overlay_settings()
+        self._tape.observe(state, now, settings)
+        snap = self._last_snapshot
+        if self._tape.path is not None and snap is not None and snap.connected:
+            self._tape.record_field(field_tape_payload(snap, state), now, state)
 
     def _drain_tape_side(self, now: float) -> None:
         if self.mode == "replay" or self.manager_v2 is None:

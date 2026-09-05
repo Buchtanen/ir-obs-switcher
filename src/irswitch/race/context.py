@@ -10,10 +10,17 @@ from irswitch.race.history import GapHistory
 from irswitch.race.opponents import (
     class_position_of,
     estimated_gap_seconds,
-    is_active_racer,
     overall_position_of,
     relevant_ahead_behind,
     same_class,
+)
+from irswitch.race.order import (
+    IRSDK_STATE_CHECKERED,
+    RaceOrder,
+    calculate_race_order,
+    field_length,
+    player_place,
+    race_progress,
 )
 from irswitch.race.session_end import SessionEndTracker
 
@@ -29,6 +36,11 @@ class RaceContextAnalyzer:
         self._last_ahead_idx: int | None = None
         self._last_behind_idx: int | None = None
         self._session_end = SessionEndTracker()
+        self._last_progress: dict[int, float] = {}
+        self._frozen_progress: dict[int, float] = {}
+        self._result_overall: int | None = None
+        self._result_class: int | None = None
+        self._result_field: int | None = None
 
     def reset(self) -> None:
         self._ahead_history.clear()
@@ -36,13 +48,20 @@ class RaceContextAnalyzer:
         self._last_ahead_idx = None
         self._last_behind_idx = None
         self._session_end.reset()
+        self._last_progress = {}
+        self._frozen_progress = {}
+        self._result_overall = None
+        self._result_class = None
+        self._result_field = None
 
     def analyze(self, snap: TelemetrySnapshot) -> RaceState:
         player_idx = snap.player_car_idx
         if not snap.connected or player_idx is None:
             self.reset()
             return RaceState(connected=False)
-        ahead_idx, behind_idx = relevant_ahead_behind(snap)
+        self._update_finish_freeze(snap)
+        order = calculate_race_order(snap, frozen_progress=self._frozen_progress)
+        ahead_idx, behind_idx = relevant_ahead_behind(snap, order)
         if ahead_idx != self._last_ahead_idx:
             self._ahead_history.clear()
             self._last_ahead_idx = ahead_idx
@@ -67,8 +86,8 @@ class RaceContextAnalyzer:
         if ahead_idx is not None:
             opponent_ahead = OpponentInfo(
                 car_idx=ahead_idx,
-                position=overall_position_of(snap, ahead_idx),
-                class_position=class_position_of(snap, ahead_idx),
+                position=overall_position_of(snap, ahead_idx, order),
+                class_position=class_position_of(snap, ahead_idx, order),
                 gap=gap_ahead,
                 closing_rate=close_ahead,
                 display_name=_driver_name(snap, ahead_idx),
@@ -77,8 +96,8 @@ class RaceContextAnalyzer:
         if behind_idx is not None:
             opponent_behind = OpponentInfo(
                 car_idx=behind_idx,
-                position=overall_position_of(snap, behind_idx),
-                class_position=class_position_of(snap, behind_idx),
+                position=overall_position_of(snap, behind_idx, order),
+                class_position=class_position_of(snap, behind_idx, order),
                 gap=gap_behind,
                 closing_rate=close_behind,
                 display_name=_driver_name(snap, behind_idx),
@@ -97,14 +116,35 @@ class RaceContextAnalyzer:
             player_lap_dist_pct=snap.player_lap_dist_pct,
         )
 
-        standings = _class_standings(snap, player_idx)
+        live_overall, live_class = player_place(order, player_idx)
+        hud_overall = live_overall if live_overall is not None else snap.position
+        hud_class = live_class if live_class is not None else snap.class_position
+        standings = _class_standings(snap, player_idx, order)
+        field_size = len(standings) or None
+        if player_finished or mute_field:
+            if self._result_class is None and self._result_overall is None:
+                self._result_class = hud_class
+                self._result_overall = hud_overall
+                self._result_field = field_size
+            hud_class = self._result_class if self._result_class is not None else hud_class
+            hud_overall = self._result_overall if self._result_overall is not None else hud_overall
+            field_size = self._result_field if self._result_field is not None else field_size
+        else:
+            self._result_class = None
+            self._result_overall = None
+            self._result_field = None
         leader = standings[0] if standings else None
         return RaceState(
             connected=True,
             player_car_idx=snap.player_car_idx,
-            position=snap.position,
-            class_position=snap.class_position,
-            class_field_size=len(standings) or None,
+            position=hud_overall,
+            class_position=hud_class,
+            official_position=snap.position,
+            official_class_position=snap.class_position,
+            position_source=order.source,
+            car_idx_live_position=order.overall,
+            car_idx_live_class_position=order.class_pos,
+            class_field_size=field_size,
             player_car_class=snap.player_car_class,
             leader_car_idx=leader[1] if leader else None,
             leader_name=leader[2] if leader else None,
@@ -154,16 +194,29 @@ class RaceContextAnalyzer:
             car_idx_last_lap_time=snap.car_idx_last_lap_time,
         )
 
+    def _update_finish_freeze(self, snap: TelemetrySnapshot) -> None:
+        if (snap.session_state or 0) < IRSDK_STATE_CHECKERED:
+            self._last_progress = {}
+            self._frozen_progress = {}
+            return
+        n = field_length(snap)
+        for idx in range(n):
+            prog = race_progress(snap, idx, racing=True)
+            if prog is not None:
+                self._last_progress[idx] = prog
+            elif idx in self._last_progress:
+                self._frozen_progress.setdefault(idx, self._last_progress[idx])
 
-def _class_standings(snap: TelemetrySnapshot, player_idx: int) -> list[tuple[int, int, str | None]]:
-    n = max(len(snap.car_idx_class_position), len(snap.car_idx_driver_name), 0)
+
+def _class_standings(
+    snap: TelemetrySnapshot, player_idx: int, order: RaceOrder
+) -> list[tuple[int, int, str | None]]:
+    n = max(len(order.class_pos), len(snap.car_idx_driver_name), 0)
     rows: list[tuple[int, int, str | None]] = []
     for car_idx in range(n):
         if car_idx != player_idx and not same_class(snap, car_idx, player_idx):
             continue
-        if car_idx != player_idx and not is_active_racer(snap, car_idx, player_idx):
-            continue
-        cp = class_position_of(snap, car_idx)
+        cp = class_position_of(snap, car_idx, order)
         if cp is None or cp <= 0:
             continue
         rows.append((cp, car_idx, _driver_name(snap, car_idx)))

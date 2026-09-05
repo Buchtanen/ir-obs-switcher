@@ -554,6 +554,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
             _get_str(parser, "overlay", "session_tape_dir", defaults.tape.directory)
         ),
         llm_rows=_get_bool(parser, "overlay", "session_tape_llm", defaults.tape.llm_rows),
+        field=_get_bool(parser, "overlay", "session_tape_field", defaults.tape.field),
     )
 
     ee_defaults = defaults.event_engine

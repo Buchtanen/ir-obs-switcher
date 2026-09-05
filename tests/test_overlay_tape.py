@@ -12,7 +12,7 @@ import pytest
 from irswitch.events.stream import thaw_context
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.consumer import OverlayConsumer
-from irswitch.overlay.models import RaceState
+from irswitch.overlay.models import RaceState, TelemetrySnapshot
 from irswitch.overlay.replay import OverlayReplayer
 from irswitch.overlay.runtime import OverlayRuntime
 from irswitch.overlay.settings import (
@@ -105,6 +105,11 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
             "legacySemanticKey": "field.position",
             "divergence": "different_semantic",
             "comparisonReason": "legacy_candidate",
+            "attempt": 2,
+            "mergedCount": 0,
+            "desiredCount": 3,
+            "readyCount": 1,
+            "fatalEpisode": 0,
             "text": "must not be retained",
         },
         111.4,
@@ -129,6 +134,11 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     assert prepared["planId"] == "sha256:plan"
     assert prepared["legacyNodeId"] == "field_fact"
     assert prepared["divergence"] == "different_semantic"
+    assert prepared["attempt"] == 2
+    assert prepared["mergedCount"] == 0
+    assert prepared["desiredCount"] == 3
+    assert prepared["readyCount"] == 1
+    assert prepared["fatalEpisode"] == 0
     assert "text" not in prepared
     commentary = next(row for row in rows if row["type"] == "commentary")
     assert commentary["text"] == "Lap in the books."
@@ -139,6 +149,117 @@ def test_tape_writes_header_event_decision_scene_not_on_generic(
     assert commentary["heroOrderRevision"] == 0
     assert "scene" in types
     assert tape.path is None
+
+
+def test_disconnected_idle_does_not_open_tape(tmp_path: Path) -> None:
+    tape = OverlaySessionTape(get_version=lambda: "x")
+    tape.observe(_race(connected=False, overlay_mode="GENERIC"), 1.0, _settings(tmp_path))
+    tape.record_scenario({"action": "observation_changed", "reason": "evidence_changed"}, 1.0, None)
+    assert tape.path is None
+    assert list(tmp_path.glob("*.jsonl")) == []
+
+
+def _runtime_with_tape(tmp_path: Path) -> RaceRuntime:
+    settings = OverlaySettings(
+        theme="cyber_racing",
+        v4=OverlayV4Settings(renderer=True),
+        tape=OverlayTapeSettings(enabled=True, directory=str(tmp_path)),
+    )
+    return RaceRuntime(lambda: SimpleNamespace(overlay=settings), None, OverlayBus())
+
+
+def _quiet_race_tick(runtime: RaceRuntime, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runtime, "_observe_timing", lambda *_a, **_k: None)
+    monkeypatch.setattr(runtime, "_observe_race_story", lambda *_a, **_k: None)
+    monkeypatch.setattr(runtime, "_apply_sector_points", lambda *_a, **_k: None)
+    monkeypatch.setattr(runtime.session, "in_warmup", lambda _now: True)
+
+
+@pytest.mark.asyncio
+async def test_disconnected_runtime_skips_scenario_when_tape_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runtime = _runtime_with_tape(tmp_path)
+    _quiet_race_tick(runtime, monkeypatch)
+    recorded: list[object] = []
+    monkeypatch.setattr(runtime._tape, "record_scenario", lambda *args, **_k: recorded.append(args))
+    monkeypatch.setattr(
+        runtime.race_observer.excursion,
+        "take_trace",
+        lambda: [{"action": "observation_changed", "reason": "evidence_changed"}],
+    )
+    monkeypatch.setattr(
+        runtime.analyzer,
+        "analyze",
+        lambda _snap: RaceState(connected=False, overlay_mode="GENERIC"),
+    )
+
+    async def read() -> TelemetrySnapshot:
+        return TelemetrySnapshot.disconnected()
+
+    monkeypatch.setattr(runtime, "_read_telemetry", read)
+    await runtime._tick_race()
+    assert runtime._tape.path is None
+    assert recorded == []
+    assert list(tmp_path.glob("*.jsonl")) == []
+
+
+@pytest.mark.asyncio
+async def test_connected_runtime_records_scenario_on_open_tape(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runtime = _runtime_with_tape(tmp_path)
+    _quiet_race_tick(runtime, monkeypatch)
+    recorded: list[dict[str, object]] = []
+    original = runtime._tape.record_scenario
+
+    def spy(entry: dict[str, object], now: float, state: RaceState | None) -> None:
+        recorded.append(entry)
+        original(entry, now, state)
+
+    monkeypatch.setattr(runtime._tape, "record_scenario", spy)
+    monkeypatch.setattr(
+        runtime.race_observer.excursion,
+        "take_trace",
+        lambda: [{"action": "beat_emitted", "reason": "offtrack", "beatId": "offtrack"}],
+    )
+    monkeypatch.setattr(
+        runtime.analyzer,
+        "analyze",
+        lambda _snap: RaceState(
+            connected=True,
+            overlay_mode="RACE",
+            session_num=0,
+            subsession_id="777",
+            session_time=12.0,
+            session_state=4,
+        ),
+    )
+
+    async def read() -> TelemetrySnapshot:
+        return TelemetrySnapshot(
+            connected=True,
+            player_car_idx=0,
+            session_num=0,
+            subsession_id="777",
+            track_id="1",
+            session_type="Race",
+            session_time=12.0,
+            session_state=4,
+        )
+
+    monkeypatch.setattr(runtime, "_read_telemetry", read)
+    await runtime._tick_race()
+    assert runtime._tape.path is not None
+    assert recorded
+    assert recorded[0]["action"] == "beat_emitted"
+    assert recorded[0]["scenarioMode"] == "active"
+    rows = [
+        json.loads(line)
+        for line in runtime._tape.path.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+    assert any(row.get("type") == "race_scenario" for row in rows)
 
 
 def test_disabled_tape_writes_nothing(tmp_path: Path) -> None:
@@ -384,6 +505,7 @@ def test_tape_opens_when_session_type_comes_from_session_name(tmp_path: Path) ->
     assert tape.path is None
 
 
+<<<<<<< HEAD
 def test_llm_polish_records_without_debug_when_llm_rows(
     tmp_path: Path, monkeypatch: object
 ) -> None:
@@ -421,3 +543,69 @@ def test_llm_polish_skipped_when_llm_rows_false_unless_debug(
     runtime._llm_polish_tape_hook({"outcome": "ok", "nodeId": "hunting"})
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
     assert any(row.get("type") == "llm_polish" for row in rows)
+
+
+def test_tape_writes_field_rows_by_default(tmp_path: Path) -> None:
+    tape = OverlaySessionTape(
+        get_stream_origin_mono=lambda: 100.0,
+        get_obs_scene=lambda: "Race",
+        get_driving_mode=lambda: "RACE",
+        get_version=lambda: "1.2.0-test",
+    )
+    settings = _settings(tmp_path)
+    state = _race(
+        position=6,
+        class_position=4,
+        official_position=8,
+        official_class_position=5,
+        position_source="live",
+        car_idx_live_position=(8, 6),
+        car_idx_live_class_position=(5, 4),
+        player_car_idx=1,
+    )
+    tape.observe(state, 110.0, settings)
+    snap = TelemetrySnapshot(
+        connected=True,
+        player_car_idx=1,
+        session_type="Race",
+        session_state=4,
+        position=8,
+        class_position=5,
+        car_idx_position=(8, 8),
+        car_idx_class_position=(5, 5),
+        car_idx_lap_dist_pct=(0.1, 0.4),
+        car_idx_driver_name=("A", "Hero"),
+        car_idx_track_surface=(3, 3),
+    )
+    from irswitch.race.order import field_tape_payload
+
+    tape.record_field(field_tape_payload(snap, state), 110.2, state)
+    path = tape.path
+    assert path is not None
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    assert rows[0]["schemaVersion"] == "1.1"
+    field = next(row for row in rows if row["type"] == "field")
+    assert field["officialClassPosition"] == 5
+    assert field["liveClassPosition"] == 4
+    assert field["positionSource"] == "live"
+    assert field["cars"]
+
+
+def test_tape_field_can_be_disabled(tmp_path: Path) -> None:
+    tape = OverlaySessionTape(
+        get_stream_origin_mono=lambda: 100.0,
+        get_obs_scene=lambda: "Race",
+        get_driving_mode=lambda: "RACE",
+        get_version=lambda: "test",
+    )
+    settings = OverlaySettings(
+        theme="cyber_racing",
+        v4=OverlayV4Settings(renderer=True),
+        tape=OverlayTapeSettings(enabled=True, directory=str(tmp_path), field=False),
+    )
+    tape.observe(_race(), 110.0, settings)
+    tape.record_field({"playerCarIdx": 0, "cars": []}, 110.2, _race())
+    path = tape.path
+    assert path is not None
+    types = [json.loads(line)["type"] for line in path.read_text(encoding="utf-8").splitlines()]
+    assert "field" not in types

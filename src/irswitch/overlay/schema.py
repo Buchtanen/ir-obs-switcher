@@ -100,6 +100,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Write llm_polish request/response rows while the session tape is open (not DEBUG-gated).",
     ),
     FieldSpec(
+        "overlay.session_tape_field",
+        "bool",
+        True,
+        True,
+        "overlay",
+        "Write per-tick field snapshots (official vs live place) onto the session tape.",
+    ),
+    FieldSpec(
         "event_engine.v2_payload",
         "bool",
         False,
@@ -1209,6 +1217,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "overlay.session_tape": s.tape.enabled,
         "overlay.session_tape_dir": s.tape.directory,
         "overlay.session_tape_llm": s.tape.llm_rows,
+        "overlay.session_tape_field": s.tape.field,
         "event_engine.v2_payload": s.event_engine.v2_payload,
         "event_engine.practice": s.event_engine.practice,
         "event_engine.quali_projection": s.event_engine.quali_projection,

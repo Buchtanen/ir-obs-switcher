@@ -26,6 +26,7 @@ from irswitch.race.opponents import (
     relevant_near_field,
     same_class,
 )
+from irswitch.race.order import order_from_state
 from irswitch.race.story import HeroSnapshot, StoryContext, StoryHistory, StreamMemory
 from irswitch.race.timing_hunt import TimingHuntFsm
 from irswitch.race.watcher_log import WatcherLog, note
@@ -175,7 +176,12 @@ class RaceObserver:
         ahead: list[NearFieldCar] = []
         behind: list[NearFieldCar] = []
         if snap.connected and snap.player_car_idx is not None:
-            ahead, behind = relevant_near_field(snap, ahead_n=self.ahead_n, behind_n=self.behind_n)
+            ahead, behind = relevant_near_field(
+                snap,
+                ahead_n=self.ahead_n,
+                behind_n=self.behind_n,
+                order=order_from_state(state),
+            )
             self.stream.note_rivals([*ahead, *behind])
 
         hero_name = None
@@ -191,7 +197,7 @@ class RaceObserver:
         if not hero_names and hero_name:
             hero_names = (hero_name,)
 
-        leader_name, leader_cp = _find_leader(snap)
+        leader_name, leader_cp = _find_leader(snap, state)
 
         weather = None
         if telemetry_data is not None:
@@ -664,11 +670,19 @@ def _delta(a: float | None, b: float | None, threshold: float) -> bool:
     return abs(float(b) - float(a)) >= threshold
 
 
-def _find_leader(snap: TelemetrySnapshot) -> tuple[str | None, int | None]:
+def _find_leader(
+    snap: TelemetrySnapshot, state: RaceState | None = None
+) -> tuple[str | None, int | None]:
     player_idx = snap.player_car_idx
     if player_idx is None:
         return None, None
-    n = max(len(snap.car_idx_class_position), len(snap.car_idx_driver_name), 0)
+    order = order_from_state(state) if state is not None else None
+    n = max(
+        len(snap.car_idx_class_position),
+        len(snap.car_idx_driver_name),
+        len(order.class_pos) if order is not None else 0,
+        0,
+    )
     best_idx: int | None = None
     best_cp = 10_000
     for car_idx in range(n):
@@ -677,7 +691,7 @@ def _find_leader(snap: TelemetrySnapshot) -> tuple[str | None, int | None]:
                 continue
             if not same_class(snap, car_idx, player_idx):
                 continue
-        cp = class_position_of(snap, car_idx)
+        cp = class_position_of(snap, car_idx, order)
         if cp is None or cp <= 0:
             continue
         if cp < best_cp:
@@ -687,4 +701,4 @@ def _find_leader(snap: TelemetrySnapshot) -> tuple[str | None, int | None]:
         return None, None
     names = snap.car_idx_driver_name
     name = names[best_idx] if 0 <= best_idx < len(names) else None
-    return (name if name else None), best_cp
+    return name if name else None, best_cp

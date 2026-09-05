@@ -49,11 +49,15 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "LapDistPct",
     "CarIdxLapDistPct",
     "CarIdxLapCompleted",
+    "CarIdxLap",
     "CarIdxClass",
     "CarIdxClassPosition",
     "CarIdxPosition",
     "CarIdxOnPitRoad",
     "CarIdxEstTime",
+    "CarIdxF2Time",
+    "CarIdxPaceLine",
+    "CarIdxPaceRow",
     "CarIdxBestLapTime",
     "CarIdxLastLapTime",
     "Speed",
@@ -123,6 +127,18 @@ def _lap_count_tuple(value: object) -> tuple[int | None, ...]:
 
 def _position_tuple(value: object) -> tuple[int | None, ...]:
     return tuple(as_grid_position(item) for item in _as_sequence(value))
+
+
+def _pace_tuple(value: object) -> tuple[int | None, ...]:
+    """CarIdxPaceLine / PaceRow. -1 = not pacing."""
+    items: list[int | None] = []
+    for item in _as_sequence(value):
+        number = as_int(item)
+        if number is None or number < 0:
+            items.append(None)
+        else:
+            items.append(number)
+    return tuple(items)
 
 
 def _bool_tuple(value: object) -> tuple[bool | None, ...]:
@@ -198,11 +214,15 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         player_car_class=as_int(data.get("PlayerCarClass")),
         car_idx_lap_dist_pct=lap_dist_pcts,
         car_idx_lap_completed=_lap_count_tuple(data.get("CarIdxLapCompleted")),
+        car_idx_lap=_lap_count_tuple(data.get("CarIdxLap")),
         car_idx_class=_int_tuple(data.get("CarIdxClass")),
         car_idx_class_position=_position_tuple(data.get("CarIdxClassPosition")),
         car_idx_position=_position_tuple(data.get("CarIdxPosition")),
         car_idx_on_pit_road=_bool_tuple(data.get("CarIdxOnPitRoad")),
         car_idx_est_time=_est_time_tuple(data.get("CarIdxEstTime")),
+        car_idx_f2_time=_est_time_tuple(data.get("CarIdxF2Time")),
+        car_idx_pace_line=_pace_tuple(data.get("CarIdxPaceLine")),
+        car_idx_pace_row=_pace_tuple(data.get("CarIdxPaceRow")),
         car_idx_best_lap_time=_completed_lap_tuple(data.get("CarIdxBestLapTime")),
         car_idx_last_lap_time=_completed_lap_tuple(data.get("CarIdxLastLapTime")),
         car_idx_track_surface=_int_tuple(data.get("CarIdxTrackSurface")),

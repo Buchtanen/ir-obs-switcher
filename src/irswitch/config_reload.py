@@ -36,6 +36,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "overlay.v4_renderer",
         "overlay.session_tape",
         "overlay.session_tape_llm",
+        "overlay.session_tape_field",
         "event_engine.v2_payload",
         "event_engine.practice",
         "event_engine.quali_projection",

@@ -985,14 +985,15 @@ Každý řádek má hodiny v sekundách:
 
 Každý řádek navíc nese `run_epoch`. Potvrzený restart závodu ve stejné session zachová soubor, `t_mono` i `t_stream`, zapíše řádek `run_reset` a vynuluje pouze původ `t_green` pro nový run.
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `prepared_filler`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne diagnostické řádky včetně `commentary`/`prepared_filler`/`llm_polish`.
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `prepared_filler`, `llm_polish`, `field`. `--replay` skipne diagnostické řádky včetně `commentary`/`prepared_filler`/`llm_polish`/`field`.
 
-Řádky `commentary` (speak/skip) se zapisují **jen při runtime DEBUG**. Řádky `llm_polish` se zapisují při otevřeném tape a `overlay.session_tape_llm=true` (default) **i na INFO** — páry pro privátní dataset repo. `session_tape_llm=false` vrátí DEBUG-only. Replay je nezapisuje.
+Řádky `commentary` (speak/skip) se zapisují **jen při runtime DEBUG**. Řádky `llm_polish` se zapisují při otevřeném tape a `overlay.session_tape_llm=true` (default) **i na INFO** — páry pro privátní dataset repo. `session_tape_llm=false` vrátí DEBUG-only. Replay je nezapisuje. `field` se vypíná zvlášť `[overlay] session_tape_field = false`.
 
 | Typ | Obsah |
 |-----|--------|
 | `commentary` | enqueue/speak/skip a MiniStory lifecycle (`action`, `reason`, `eventType`, `nodeId`, `text`, `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision`, …) |
 | `llm_polish` | jeden polish pokus (`outcome`, `skeleton`, `spoken`, `request`, `response`, `latencyMs`, …) |
+| `field` | per-tick field dump: `positionSource` (`live`/`official`/`grid`), `officialPosition` / `livePosition` (a class varianty), `cars[]` s `lap`, `lapDone`, `pct`, `offP`/`offCP`, `liveP`/`liveCP`, `cls`, `pit`, `surf`, `est`, `f2`, `paceLine`, `paceRow`. V Race po green je HUD place live running order, ne F3 `CarIdxPosition`. |
 
 **Event catalog**
 

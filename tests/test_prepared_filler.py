@@ -771,6 +771,16 @@ def test_race_result_rejects_stale_comparisons_and_uses_safe_fallbacks() -> None
     ]
 
 
+def test_result_plan_identity_follows_finish_position() -> None:
+    mid = build_prepared_filler_plans(_conclusion_context("RACE", position=16, field_size=30), "en")
+    rear = build_prepared_filler_plans(
+        _conclusion_context("RACE", position=25, field_size=30), "en"
+    )
+    assert [plan.semantic_key for plan in mid][0] == "race_result_middle_third"
+    assert [plan.semantic_key for plan in rear][0] == "race_result_rear_third"
+    assert mid[0].plan_id != rear[0].plan_id
+
+
 def test_unconfirmed_result_waits_then_uses_generic_close() -> None:
     waiting = build_prepared_filler_plans(
         _conclusion_context("QUALIFYING", position=3, confirmed=False, captured_ms=8_999),

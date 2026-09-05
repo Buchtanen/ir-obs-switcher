@@ -257,6 +257,8 @@ přímo na tyto uzly; obecný `prepared_filler` zůstává jen pro kompatibilitu
 Chybějící kontrakt je fail-soft `graph_contract_missing`. Ready/set uzly mají vlastní krátký
 čtyřsekundový TTS limit a green/live události vždy zůstávají nad prepared vrstvou.
 
+Po `player_finished` producent zmrazí hero `class_position` / field size — prepared
+result `planId` se nesmí měnit s live place churnem po cíli (Test 8 P30→P16→P25).
 Session conclusion čeká na potvrzený výsledek. Practice používá checkered/lap/best-lap debrief;
 Qualifying vybírá pole/pódium/třetinu pole a bridge do závodu; Race dává přednost výhře/pódiu,
 potom srovnání se stejně scoped `QualiBag`, startovním místem a absolutním pásmem. Bez potvrzení
