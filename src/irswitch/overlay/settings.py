@@ -136,6 +136,8 @@ class OverlayTapeSettings:
 
     enabled: bool = True
     directory: str = "recordings"
+    # llm_polish rows while the tape file is open (independent of log level).
+    llm_rows: bool = True
 
 
 @dataclass(frozen=True)

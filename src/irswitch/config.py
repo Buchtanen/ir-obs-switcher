@@ -455,6 +455,7 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         directory=safe_tape_dir(
             _get_str(parser, "overlay", "session_tape_dir", defaults.tape.directory)
         ),
+        llm_rows=_get_bool(parser, "overlay", "session_tape_llm", defaults.tape.llm_rows),
     )
 
     ee_defaults = defaults.event_engine

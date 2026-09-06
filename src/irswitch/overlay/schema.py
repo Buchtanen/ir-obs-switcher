@@ -93,6 +93,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Directory for overlay session JSONL files (restart to change).",
     ),
     FieldSpec(
+        "overlay.session_tape_llm",
+        "bool",
+        True,
+        True,
+        "overlay",
+        "Write llm_polish request/response rows while the session tape is open (not DEBUG-gated).",
+    ),
+    FieldSpec(
         "event_engine.v2_payload",
         "bool",
         False,
@@ -1018,6 +1026,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "overlay.v4_renderer": s.v4.renderer,
         "overlay.session_tape": s.tape.enabled,
         "overlay.session_tape_dir": s.tape.directory,
+        "overlay.session_tape_llm": s.tape.llm_rows,
         "event_engine.v2_payload": s.event_engine.v2_payload,
         "event_engine.practice": s.event_engine.practice,
         "event_engine.quali_projection": s.event_engine.quali_projection,

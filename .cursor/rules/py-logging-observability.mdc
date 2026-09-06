@@ -22,7 +22,9 @@ Prefer **structured, intent-based** logs over noisy traces.
 - BLE reconnect / HR sample jitter
 - OBS websocket flicker / per-poll stream status
 - per-tick emitter “no emit”
-- `commentary` / `llm_polish` tape rows (already DEBUG-gated)
+- `commentary` skip/lifecycle tape rows (DEBUG-gated)
+
+`llm_polish` tape rows are **not** DEBUG-gated when `overlay.session_tape_llm=true` (dataset capture on INFO streams).
 
 Rules:
 
