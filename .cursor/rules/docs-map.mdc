@@ -35,5 +35,9 @@ When you change… you must review/update…
 - **Cursor automation (rules / skills / commands / agents)**
   - `.cursor/README.md`
 
+- **Commentary LoRA / polish datasets / eval tapes**
+  - `docs/commentary_lora_dataset.md`
+  - private sibling `ir-commentary-lora` (`DATASETS.md`, not this public repo)
+
 PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`).
 
