@@ -3,7 +3,7 @@
 **Status:** idea — not scheduled, no implementation in this document  
 **Priority:** nice-to-have  
 **Baseline:** Event Engine V4 catalog + `/config` FieldSpec UI (master). Visual node chrome is stronger after Pit Wall themes land ([#118](https://github.com/Buchtanen/ir-obs-switcher/pull/118)).  
-**Related:** [`EVENT_ENGINE_V4_PARALLEL_PLAN.md`](../EVENT_ENGINE_V4_PARALLEL_PLAN.md) §0.5.2 (INI + FieldSpec stays the config contract)
+**Related:** INI + FieldSpec stays the config contract (`CONFIG.md`). Idea only — not implemented.
 
 This file captures a product idea so it is not rediscovered from scratch. It is **not** current behavior. Do not treat anything below as a shipping contract until a later work item promotes a slice.
 
@@ -42,7 +42,7 @@ iRacing / bio / system
 | Web UI | `/config` form, `/overlay/debug` JSON, `/overlay/demo` loop | no graph |
 | Scene switcher | `logic/` mode → OBS scene | **separate product**; do not mix |
 
-`EVENT_ENGINE_V4_PARALLEL_PLAN.md` already rejected a second config format beside INI (no YAML trees as a parallel source of truth).
+A second config format beside INI (YAML trees as a parallel source of truth) is rejected. Autorita je `CONFIG.md` + `config.example.ini`.
 
 ---
 

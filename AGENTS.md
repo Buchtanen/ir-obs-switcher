@@ -15,5 +15,5 @@ Task skills (start/restart, YouTube OAuth) live in:
 - Respect layer boundaries: `iracing/` extract, `obs/` client, `logic/` scenes, `events/`/`overlay/`/`commentary/`/`race/` peers, `server/` glue — see `.cursor/rules/py-architecture-layers.mdc`.
 - Async-first: no blocking in async loops; background tasks must be owned/cancellable; cooldowns are time-based (monotonic).
 - Evidence required for behavior changes: tests or explicit TDD-exception + verification plan.
-- Docs/config are part of the contract; update relevant docs when behavior changes.
+- Docs/config are part of the contract. Lookup starts at `docs/dokumentace/`; skill `dokumentace` + agent `docs-keeper` must keep it current.
 - No new dependencies unless explicitly requested + reviewed.

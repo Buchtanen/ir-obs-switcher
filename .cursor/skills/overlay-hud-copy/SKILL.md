@@ -16,7 +16,7 @@ Two catalogs. Mixing them is the usual “token on widget” / “wrong spoken l
 | --- | --- | --- |
 | HUD widget text | `src/irswitch/overlay/i18n.py` (`EN` / `CS`) | `display-v4.js` `resolveCopy` / `resolveHeadline` |
 | Spoken commentary | `src/irswitch/commentary/data/sequence_graph.json` | director + TTS |
-| GR/VR dashboard | `irswitch.i18n` | dashboards only |
+| GR dashboard | `irswitch.i18n` | dashboards only |
 
 Do not put HUD strings in the sequence graph. Do not put spoken sentences in overlay i18n.
 

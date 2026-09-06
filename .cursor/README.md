@@ -35,6 +35,7 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `overlay-hud-copy` — HUD tokeny v `overlay/i18n.py`; golden ≠ live OBS
 - `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`; `llm_polish` na INFO při `session_tape_llm`
 - `commentary-lora-dataset` — kde jsou `llm_polish` páry, eval cases, ChatML (`ir-commentary-lora`); mapa `docs/commentary_lora_dataset.md`
+- `dokumentace` — lookup `docs/dokumentace/` před grepem; po změně `src/` aktualizovat domain page (držel `docs-keeper`)
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
 
 ### Doporučené workflow
@@ -42,7 +43,7 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `/flow` → issue → diary → docs → QA → PR popis
 - `/ensure-issue` → vytvoří/najde issue pro větev
 - `/dev-diary` → zapíše průběh do issue
-- `/docs-impact` → zkontroluje a doplní docs podle změn
+- `/docs-impact` → `docs-keeper` + skill `dokumentace`: index + kontrakty, ne tichý skip
 - `/qa` → lint/test + overlay `?v=` lockstep když se měnil HUD
 - `/pr-description` → připraví PR popis podle policy
 - `/restart-service` → start/stop/restart + ověření health/verze + cache bump

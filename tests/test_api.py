@@ -92,6 +92,17 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
 
 
 @pytest.mark.asyncio
+async def test_vr_status_removed(app: web.Application) -> None:
+    """GET /vr-status is gone; RaceLab widget is not a product surface."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/vr-status")
+            assert resp.status == 404
+
+
+@pytest.mark.asyncio
 async def test_get_status(app: web.Application, initial_state: SwitchState) -> None:
     """Test GET /status endpoint."""
     from aiohttp.test_utils import TestClient, TestServer
@@ -394,7 +405,6 @@ dashboard_gr_background_image =
 dashboard_gr_logo_obs =
 dashboard_gr_logo_iracing =
 dashboard_gr_logo_app =
-dashboard_vr_icons_path =
 dashboard_event_log_size = 50
 """)
 
@@ -488,7 +498,6 @@ dashboard_gr_background_image =
 dashboard_gr_logo_obs =
 dashboard_gr_logo_iracing =
 dashboard_gr_logo_app =
-dashboard_vr_icons_path =
 dashboard_event_log_size = 50
 """)
             resp2 = await client.post("/config/reload")

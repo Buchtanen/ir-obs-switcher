@@ -23,9 +23,10 @@ Hot-fix bez PR → `/hotfix` (repro, test, restart). Tento command je na issue �
      - jinak přidej nový (What changed / Why / Evidence / Docs / Next / Risks)
 
 3) **Docs impact**
-   - Použij subagenta `/docs-keeper`:
-     - z diffu odvoď, které docs jsou relevantní (dle `docs-map.mdc`)
-     - udělej minimální update (nebo explicitně „Docs: no change (reason …)”)
+   - Použij subagenta `/docs-keeper` (skill `dokumentace`):
+     - lookup `docs/dokumentace/` — když index nestačí, doplň ho
+     - update domain page + kontrakty z `docs-map.mdc`
+     - nebo explicitně „Docs: no change (reason …)” — tichý skip = defect
 
 4) **QA**
    - Použij subagenta `/verifier`:

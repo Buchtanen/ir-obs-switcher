@@ -71,6 +71,5 @@ Then wait; force-kill `irswitchd` only if the port is still held.
 ## Verify
 
 - GR: `http://127.0.0.1:17321/gr-status`
-- VR: `http://127.0.0.1:17321/vr-status`
 - Overlay (after bump): `http://127.0.0.1:17321/overlay/` — HTML/JS query must match the new token
 - OAuth (optional): `GET /oauth/status` — see skill `youtube-oauth`

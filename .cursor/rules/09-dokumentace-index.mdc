@@ -1,0 +1,30 @@
+---
+description: Lookup and keep docs/dokumentace current on every task
+alwaysApply: true
+---
+
+## Lookup before code
+
+Do **not** start by grepping `src/` or inventing a module.
+
+1. `docs/dokumentace/README.md` — domain lookup table
+2. Matching `docs/dokumentace/domeny/*.md`
+3. Open-PR-only work: `docs/dokumentace/inflight/README.md`
+4. INI → `CONFIG.md`. HTTP → `API.md`. V4 canvas → `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md`
+
+If the index cannot answer “where does this live?”, the index is wrong. Fix the page in the same change.
+
+## Maintain after every change
+
+Same bar as `CONFIG.md` for a new INI key. Skill `dokumentace`. Agent `docs-keeper` **must apply** the update (`/flow`, `/docs-impact`). Silent skip is a defect.
+
+When `src/irswitch/`, overlay/events/commentary/race behavior, tests/CI contract, or an open-PR module changes:
+
+- update matching `docs/dokumentace/domeny/*.md` (path map: `docs-map.mdc`)
+- new file or data flow → `architektura.md` + `mapa-souboru.md` + index row
+- exists only on an open PR → `inflight/`, not as shipped in `domeny/`
+- otherwise write **`Docs: no change (reason …)`** in the PR/diary
+
+Do **not** finish `/flow`, a PR, or a task with a `src/irswitch/` diff and a silent docs skip.
+
+No TUI. No `/vr-status` / RaceLab widget. Do not document them back in.

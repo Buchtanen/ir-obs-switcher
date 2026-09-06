@@ -1,8 +1,9 @@
 # Commentary content DB + fill plan
 
 **Status:** implemented authored-content baseline plus prepared buffered-microstory runtime;
-audible private-stream validation remains pending (§11–§24)
-**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), PR #120 (`cursor/commentary-engine-2dc4`)  
+audible private-stream validation remains pending (§11–§24).
+`sequence_graph.json` + `graph.py` are the content store; waves W1–W6a filled EN/CS cells.
+**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [domeny/commentary](dokumentace/domeny/commentary.md)
 **Out of scope:** Neo4j or any new runtime DB dependency; overlay HUD / Event Engine math; OBS media sink
 
 ## 1. Intent check (keep re-reading)

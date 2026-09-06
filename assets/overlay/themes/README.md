@@ -1,37 +1,13 @@
 # Overlay theme packs (source)
 
-Art-source packs for Pit Wall themes. Runtime ships curated copies under
-`src/irswitch/web/themes-v4/pit_wall_{dark,light}/` (ingest:
-`scripts/ingest_pit_wall_themes_v4.py`).
+Art-source packy. Runtime kopie: `src/irswitch/web/themes-v4/` (ingest `scripts/ingest_pit_wall_themes_v4.py`).
 
-| Directory | Display name | Runtime theme id | Status |
-|-----------|--------------|------------------|--------|
-| `pit_wall_dark/` | Pit Wall Dark | `pit_wall_dark` | Wired into V4 (glyph + plates + motion) |
-| `pit_wall_light/` | Pit Wall Light | `pit_wall_light` | Wired into V4 (glyph + plates + motion) |
+| Directory | Runtime id | Docs |
+| --- | --- | --- |
+| `pit_wall_dark/` | `pit_wall_dark` | [PIT_WALL.md](docs/PIT_WALL.md) |
+| `pit_wall_light/` | `pit_wall_light` | stejný shared + delta v PIT_WALL |
 
-Each pack includes:
+V4 layout kontrakt: [overlay_v4_layout_sizing_motion_spec.md](docs/overlay_v4_layout_sizing_motion_spec.md).
+V3 raster (cyber_racing / stealth_graphite / night_attack): `src/irswitch/web/themes/` — legacy fallback, ne V4 pravda.
 
-- SVG masters (`frames/`, `icons/`, `accents/`, `textures/`)
-- `manifest.json` + `theme-tokens.json`
-- `references/docs/` (IMPLEMENTATION, motion, naming, OBS)
-- HTML/CSS composition examples
-- `packages/*.zip` export archives + `archive-index.json`
-
-Shared implementation contract for upcoming renderer work (from PR #115):
-
-- `docs/overlay_v4_layout_sizing_motion_spec.md` — layout / sizing / motion contract
-- `docs/overlay_v4_layout_sizing_motion_spec_review.md` — CDP review notes
-- `docs/V4_RENDERER_SIZING_SPEC_REVIEW.md` — renderer sizing review (root cause)
-
-Start with each pack's `README.md` and `references/docs/IMPLEMENTATION.md`, plus
-the shared layout/sizing/motion spec above.
-
-The authoritative renderer inputs in each pack are:
-
-- `accents/event-visual-map.json` - 35 V4 state definitions, 35 event routes,
-  template layer registries, tone/rail selection and explicit battle-zone aliases;
-- `theme-tokens.json` - native geometry, icon box and SYSINFO runtime grid;
-- `motion/manifest.json` - motion intent and CSS/WebM delivery status.
-
-Do **not** place theme files directly under `assets/overlay/` — always use a
-namespaced directory under `assets/overlay/themes/<theme_id>/`.
+Autorita v packu: `accents/event-visual-map.json`, `theme-tokens.json`, `motion/manifest.json`.

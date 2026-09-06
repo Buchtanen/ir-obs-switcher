@@ -1,12 +1,11 @@
 # Commentary product suite
 
-**Status:** active prep (build gradually on content branch)  
-**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 (engine) + this content PR  
-**Audience:** stream viewers (broadcast voice).  
-**Composer:** grounded authored-anchor + `commentary-facts/2` planner in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md); the [skeleton PoC](commentary_llm_skeleton_poc.md) is historical. Live Windows/Ollama `qwen3:4b-instruct-2507-q4_K_M` listen pending.
-**Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
-**Active architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 plus implemented V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. Evidence: [N12 implementation report](tasks/n12_implementation_report.md). Next target: [live data channels and adaptive sampling](live_data_channels_sampling_spec.md) (shared latest-state channels; not yet runtime).
-**Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
+**Status:** living product suite on `master` (graph + N12 consumers + director). Open work: [inflight commentary architecture](dokumentace/inflight/commentary-architecture.md).
+**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), [domeny/commentary](dokumentace/domeny/commentary.md)
+**Audience:** stream viewers (broadcast voice).
+**Composer:** grounded authored-anchor + `commentary-facts/2` planner in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md).
+**Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)
+**Runtime architecture:** [docs/dokumentace/architektura.md](dokumentace/architektura.md) — one race producer, independent overlay/commentary consumers (`events/async_fanout.py`). Next spec (not runtime): [live_data_channels_sampling_spec.md](live_data_channels_sampling_spec.md).
 
 ## 0. How we test (your order — source of truth)
 
@@ -99,7 +98,7 @@ Codes: `disabled`, `busy`, `global_cooldown`, `node_cooldown`, `no_node`, `hr_ga
 
 Typed `stream_start` node + OBS or HTTP trigger; viewer voice; fail-soft.
 
-**Plan:** [narrative_observers_epic.md](narrative_observers_epic.md) task **N8** (TTS) + optional **N9** (overlay cover). Do not implement ad-hoc in this suite doc.
+**Plan:** N8 stream-start TTS is on `master` (`commentary/stream_context.py`). N9 overlay cover remains CUT. Open work: [inflight/commentary-architecture](dokumentace/inflight/commentary-architecture.md).
 
 ### P4 — Sink productization (later, light)
 

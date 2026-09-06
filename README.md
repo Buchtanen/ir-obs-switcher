@@ -1,8 +1,8 @@
 # iRacing → OBS Auto Scene Switcher (Python)
 
-[![Tests](https://github.com/Buchtanen/richa/workflows/Tests/badge.svg)](https://github.com/Buchtanen/richa/actions)
-[![CodeQL](https://github.com/Buchtanen/richa/workflows/CodeQL%20Security%20Analysis/badge.svg)](https://github.com/Buchtanen/richa/actions)
-[![Security](https://github.com/Buchtanen/richa/workflows/Security%20Checks/badge.svg)](https://github.com/Buchtanen/richa/actions)
+[![Tests](https://github.com/Buchtanen/ir-obs-switcher/workflows/Tests/badge.svg)](https://github.com/Buchtanen/ir-obs-switcher/actions)
+[![CodeQL](https://github.com/Buchtanen/ir-obs-switcher/workflows/CodeQL%20Security%20Analysis/badge.svg)](https://github.com/Buchtanen/ir-obs-switcher/actions)
+[![Security](https://github.com/Buchtanen/ir-obs-switcher/workflows/Security%20Checks/badge.svg)](https://github.com/Buchtanen/ir-obs-switcher/actions)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -26,6 +26,8 @@ Představ si situaci:
 **Výsledek**: Můžeš se soustředit na jízdu, zatímco aplikace se stará o celý stream workflow.
 
 ---
+
+Lookup pro agenty i lidi (než grep `src/`): **[docs/dokumentace/README.md](docs/dokumentace/README.md)**.
 
 ## Obsah
 
@@ -176,13 +178,6 @@ irswitchd --config config\config.ini --replay recordings\battle.jsonl
 
 Overlay závislosti (`bleak`, `psutil`, `nvidia-ml-py`) jdou s `pip install -e .`. GPU čísla bere NVML. CPU package na Windows: LibreHardwareMonitor 0.9.5+ **zrušil WMI** — overlay čte `http://127.0.0.1:8085/data.json` (Options → Remote Web Server → Run, File → Hardware → CPU zaškrtnuté). Když LHM bindne jen na LAN IP, overlay to vezme z `LibreHardwareMonitor.config`. Starší LHM pořád WMI `root\LibreHardwareMonitor`. Stock Windows **nemá** CPU package power. FPS/FT berou iRacing — mimo 3D zůstanou prázdné. **LHM je prerekvizita** pro správné sysinfo CPU package údaje; admin Extensions kartu ukazuje, jestli LHM HTTP běží. Plán plného sysinfo přes LHM: [docs/sysinfo_lhm_upgrade_spec.md](docs/sysinfo_lhm_upgrade_spec.md).
 
-### VR Dashboard (pro VR)
-
-- **URL**: `http://127.0.0.1:17321/vr-status`
-- **Funkce**: Minimalistický design, bílé písmo, větší fonty
-- **Omezení**: RaceLab VR widgety nepodporují auto-refresh - widget se neaktualizuje automaticky
-- **Více informací**: Viz [VR_SUPPORT.md](VR_SUPPORT.md) a [RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md)
-
 ---
 
 ## Obsluha aplikace
@@ -305,19 +300,16 @@ Pro **restart bez ručního startu** použij GR **Restart Service** / `POST /res
 
 ## Další dokumentace
 
-- **[CONFIG.md](CONFIG.md)** - Kompletní popis konfigurace
-- **[COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md)** - Komentář / TTS: graf sekvencí, EN mock (in-car / lap / pit / back on track), validator, zadání textů
-- **[docs/commentary_content_db_plan.md](docs/commentary_content_db_plan.md)** - Plán content DB (JSON graf) + vlny plnění textů + handoff na textový model
-- **[docs/commentary_product_suite.md](docs/commentary_product_suite.md)** - Produktová sada commentary (live readiness, why-quiet, stream start, sink, budget)
-- **[API.md](API.md)** - Dokumentace REST API a WebSocket endpointů
-- **[LOCALIZATION.md](LOCALIZATION.md)** - Popis lokalizace a podporovaných jazyků
-- **[BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)** - Návod pro vytvoření EXE a nastavení jako služby
-- **[RELEASE_POLICY.md](RELEASE_POLICY.md)** - Release PR model, semver labely na PR
-- **[VERSIONING.md](VERSIONING.md)** - Kde žije verze aplikace a jak se zobrazuje
-- **[YOUTUBE_API_SETUP.md](YOUTUBE_API_SETUP.md)** - Postup nastavení YouTube API tokenu v Google Console
-- **[VR_SUPPORT.md](VR_SUPPORT.md)** - VR support - příslib, záměr a popis problému
-- **[RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md)** - Návod pro nastavení VR dashboardu v RaceLab VR
-- **[STATUS.md](STATUS.md)** - Přehled stavu projektu a co je hotové
-- **[CHANGELOG.md](CHANGELOG.md)** - Historie změn projektu
-- **[tests.md](tests.md)** - Detailní dokumentace všech testů
-- **[docs/event_graph_editor_spec.md](docs/event_graph_editor_spec.md)** - Nápad (nice-to-have): grafický editor eventů / prahů — není implementováno
+- **[docs/dokumentace/README.md](docs/dokumentace/README.md)** — index (lookup před grepem)
+- **[STATUS.md](STATUS.md)** — krátký snapshot vs codebase
+- **[CONFIG.md](CONFIG.md)** — INI kontrakt
+- **[API.md](API.md)** — REST / WS
+- **[COMMENTARY_ENGINE.md](COMMENTARY_ENGINE.md)** — commentary / TTS
+- **[docs/commentary_product_suite.md](docs/commentary_product_suite.md)** — commentary produkt
+- **[LOCALIZATION.md](LOCALIZATION.md)** — GR/admin i18n
+- **[BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)** — EXE / služba
+- **[RELEASE_POLICY.md](RELEASE_POLICY.md)** / **[VERSIONING.md](VERSIONING.md)**
+- **[YOUTUBE_API_SETUP.md](YOUTUBE_API_SETUP.md)**
+- **[CHANGELOG.md](CHANGELOG.md)**
+- **[tests.md](tests.md)** — jak pouštět testy
+- **[docs/event_graph_editor_spec.md](docs/event_graph_editor_spec.md)** — nápad, není implementováno

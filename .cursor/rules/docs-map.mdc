@@ -7,9 +7,15 @@ alwaysApply: true
 
 When you change… you must review/update…
 
+- **Any `src/irswitch/` behavior, files, or boundaries**
+  - matching `docs/dokumentace/domeny/<balík>.md`
+  - `docs/dokumentace/mapa-souboru.md` and `architektura.md` when files or data flow change
+  - `docs/dokumentace/inflight/` when it exists only on an open PR
+
 - **Config keys / defaults / behavior**
   - `CONFIG.md`
   - `config/config.example.ini`
+  - `docs/dokumentace/domeny/config.md`
   - (if distro impacted) `BUILD_AND_DEPLOY.md`
 
 - **CLI flags / run instructions / startup scripts**
@@ -18,6 +24,7 @@ When you change… you must review/update…
 
 - **API endpoints / payloads / dashboards’ JS calls**
   - `API.md`
+  - `docs/dokumentace/domeny/server.md`
 
 - **Build / distribution / installer / shortcuts / autostart**
   - `BUILD_AND_DEPLOY.md`
@@ -28,16 +35,21 @@ When you change… you must review/update…
   - `VERSIONING.md` / `README_VERSIONING.md` (if relevant)
   - `.release-please-manifest.json` must stay in lockstep with `pyproject.toml`
 
-- **VR dashboards / RaceLab setup**
-  - `VR_SUPPORT.md`
-  - `RACELAB_VR_SETUP.md`
+- **Overlay HUD / V4 renderer / Pit Wall art**
+  - `docs/dokumentace/domeny/overlay.md`
+  - `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md`
+  - `assets/overlay/themes/docs/PIT_WALL.md` (theme packs)
+  - `src/irswitch/web/overlay/GOLDEN_V4.md` (golden fixtures)
 
-- **Cursor automation (rules / skills / commands / agents)**
-  - `.cursor/README.md`
+- **Commentary product / graph / TTS**
+  - `docs/dokumentace/domeny/commentary.md`
+  - `COMMENTARY_ENGINE.md`
 
 - **Commentary LoRA / polish datasets / eval tapes**
   - `docs/commentary_lora_dataset.md`
   - private sibling `ir-commentary-lora` (`DATASETS.md`, not this public repo)
 
-PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`).
+- **Cursor automation (rules / skills / commands / agents)**
+  - `.cursor/README.md`
 
+PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`) including `docs/dokumentace/`.

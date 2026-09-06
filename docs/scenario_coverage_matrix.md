@@ -2,7 +2,7 @@
 
 **Status:** inventory — **re-pinned 2026-09-02** with stateful commentary graph modes on #210. Active graph and prepared commentary are the defaults whenever master commentary is enabled. Historical analysis still cites `feat/ollama-vod-joint-test` @ `0997ffc` for pre-umbrella rows.
 
-**Related:** [observers_decoupling_plan.md](observers_decoupling_plan.md), [narrative_observers_epic.md](narrative_observers_epic.md) (N4 finish split shipped on the stacked epic; N5 `SESSION_FLAG` is commentary-only, gated), [race_scenario_engine_spec.md](race_scenario_engine_spec.md) (proposed deterministic scenario contract; no runtime change yet), [track_excursion_story_spec.md](track_excursion_story_spec.md) (off-track causes, outcomes, and spoken-language contract), [track_excursion_implementation_plan.md](track_excursion_implementation_plan.md) (sequenced implementation, ownership, and rollout gates), [buffered editorial microstories](commentary_content_db_plan.md#11-buffered-editorial-microstories--proposed-expansion) (proposed stream/session intro, out-lap, start and conclusion orchestration)
+**Related:** [architektura](dokumentace/architektura.md), [domeny/commentary](dokumentace/domeny/commentary.md). N4 finish split and N5 `SESSION_FLAG` are on `master` (commentary-only, gated). Living specs: [race_scenario_engine_spec.md](race_scenario_engine_spec.md), [track_excursion_story_spec.md](track_excursion_story_spec.md), [track_excursion_implementation_plan.md](track_excursion_implementation_plan.md), [buffered editorial microstories](commentary_content_db_plan.md#11-buffered-editorial-microstories--proposed-expansion).
 
 ## 0. Two session concepts — do not mix
 
@@ -256,6 +256,6 @@ From `event_catalog.json` fallbacks:
 
 ## Docs impact
 
-- New: this file  
-- Related plan: [observers_decoupling_plan.md](observers_decoupling_plan.md)  
+- New: this file
+- Related: [docs/dokumentace/architektura.md](dokumentace/architektura.md)
 - No config/API change in this docs-only change

@@ -8,7 +8,7 @@ alwaysApply: true
 - **What**: iRacing → OBS auto scene switcher (long-running service) + web dashboards.
 - **Why**: VR use-case (no monitor/keyboard) → automate OBS scenes/stream flow based on iRacing state.
 - **Runtime**: Windows-first, Python **3.11+**, async-first (`aiohttp`), OBS via `obsws-python` (obs-websocket v5), iRacing via `pyirsdk`.
-- **Hosting**: GitHub `Buchtanen/ir-obs-switcher` (not GitLab). Dashboards: `http://127.0.0.1:17321/gr-status` and `/vr-status`. Overlay HUD: `/overlay/` (OBS Browser Source, not Cursor browser).
+- **Hosting**: GitHub `Buchtanen/ir-obs-switcher` (not GitLab). Operator dashboard: `http://127.0.0.1:17321/gr-status`. Overlay HUD: `/overlay/` (OBS Browser Source, not Cursor browser). No VR/RaceLab widget.
 - **Layers**: `iracing/` extract, `obs/` client, `logic/` scenes, `events/` + `overlay/` + `commentary/` + `race/` peers, `server/` glue only — see `py-architecture-layers.mdc`.
 
 ## Engineering posture
@@ -19,7 +19,8 @@ alwaysApply: true
 
 ## Primary docs
 
-- `README.md` (how to run, dashboards)
+- `docs/dokumentace/README.md` — lookup before grepping `src/`
+- `README.md` (how to run, GR dashboard)
 - `CONFIG.md` + `config/config.example.ini` (configuration contract)
 - `API.md` (REST/WS)
 - `RELEASE_POLICY.md` (Release PR model; semver labels on PRs)

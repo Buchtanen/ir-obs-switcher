@@ -1,0 +1,77 @@
+# Dokumentace irswitch — mapa pro lidi i modely
+
+**Čti tohle dřív, než začneš grepovat `src/`.** Po změně kódu **stejnou složku zase aktualizuj** (skill `dokumentace`, agent `docs-keeper`). Tichý skip není OK — buď page, nebo `Docs: no change (reason …)`.
+
+Tato složka je **architektonický index** aktuálního `master`: co který modul dělá, kde končí jeho pravomoc, kam tečou data. Otevřená práce je jen v [inflight/](inflight/README.md).
+
+Není to náhrada kontraktů. INI, HTTP a release zůstanou v souborech dole.
+
+## Pořadí čtení
+
+1. [Jak číst](jak-cist.md) — vrstvy pravdy
+2. [Architektura](architektura.md) — dva pipeline, N12 fan-out
+3. [Stav](stav.md) — co je na `master` teď
+4. Doména z tabulky
+5. Až potom kód
+
+## Rychlý lookup
+
+| Chci změnit / pochopit | Čti | Nesahaj sem napřed |
+| --- | --- | --- |
+| OBS scény, debounce, cooldown, GARAGE vs LOBBY | [logic](domeny/logic.md), [iracing](domeny/iracing.md) | `overlay/`, `events/` |
+| `DrivingMode`, `SwitchState` | [runtime](domeny/runtime.md), [logic](domeny/logic.md) | Event Engine |
+| iRSDK telemetrie, sentinely | [iracing](domeny/iracing.md) | `logic/` (žádné SDK volání) |
+| OBS WebSocket, stream start/stop | [obs](domeny/obs.md) | policy v clientovi |
+| HTTP/WS, `/health`, admin, GR | [server](domeny/server.md), [API.md](../../API.md) | `logic/` z handleru |
+| Overlay HUD, V4, tape | [overlay](domeny/overlay.md), [V4 spec](../../assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md) | scene switcher |
+| Battle / lap / pit, arbitration, fan-out | [events](domeny/events.md) | interpretace v `iracing/` |
+| TTS, sequence graph, director | [commentary](domeny/commentary.md) | HUD copy |
+| RaceState, observer, gapy | [race](domeny/race.md) | scene switcher |
+| BLE tep, sysinfo, LHM | [bio](domeny/bio.md), [system](domeny/system.md) | `iracing/` |
+| INI, hot-reload | [config](domeny/config.md), [CONFIG.md](../../CONFIG.md) | — |
+| YouTube title | [oauth](domeny/oauth-youtube.md) | scene switch |
+| HUD copy / overlay i18n | [i18n](domeny/i18n.md) | dashboard `i18n.py` |
+| Testy, CI, release | [testy-ci](domeny/testy-ci.md) | — |
+| Otevřená práce | [inflight](inflight/README.md) | jako by už bylo na master |
+
+## Domény (`src/irswitch/`)
+
+| Doména | Balík | Dokument |
+| --- | --- | --- |
+| Runtime / entry | `main.py` | [runtime](domeny/runtime.md) |
+| iRacing extraction | `iracing/` | [iracing](domeny/iracing.md) |
+| OBS client | `obs/` | [obs](domeny/obs.md) |
+| Scene switcher | `logic/` | [logic](domeny/logic.md) |
+| HTTP glue | `server/` | [server](domeny/server.md) |
+| Overlay runtime | `overlay/` | [overlay](domeny/overlay.md) |
+| Event Engine | `events/` | [events](domeny/events.md) |
+| Commentary / TTS | `commentary/` | [commentary](domeny/commentary.md) |
+| Race interpretation | `race/` | [race](domeny/race.md) |
+| Sampling | `sampling/` | [sampling](domeny/sampling.md) |
+| Heart rate | `bio/` | [bio](domeny/bio.md) |
+| Sysinfo | `system/` | [system](domeny/system.md) |
+| Config | `config.py`, `config_reload.py` | [config](domeny/config.md) |
+| Dashboard i18n | `i18n.py` | [i18n](domeny/i18n.md) |
+| YouTube OAuth | `oauth.py` | [oauth-youtube](domeny/oauth-youtube.md) |
+| Util | `util/` | [util](domeny/util.md) |
+| Web UI | `web/` | [web](domeny/web.md) |
+
+Souborová mapa: [mapa-souboru.md](mapa-souboru.md).
+
+## Kontrakty (nemnožit sem)
+
+| Téma | Autorita |
+| --- | --- |
+| INI klíče | [CONFIG.md](../../CONFIG.md) + `config/config.example.ini` |
+| REST / WS | [API.md](../../API.md) |
+| Start / GR URL | [README.md](../../README.md) |
+| EXE / služba | [BUILD_AND_DEPLOY.md](../../BUILD_AND_DEPLOY.md) |
+| Semver / Release PR | [RELEASE_POLICY.md](../../RELEASE_POLICY.md) |
+| Verze v `/health` | [VERSIONING.md](../../VERSIONING.md) |
+| Commentary produkt | [COMMENTARY_ENGINE.md](../../COMMENTARY_ENGINE.md) |
+| V4 canvas | [overlay_v4_layout_sizing_motion_spec.md](../../assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md) |
+| Pit Wall packy | [PIT_WALL.md](../../assets/overlay/themes/docs/PIT_WALL.md) |
+| Golden V4 | [GOLDEN_V4.md](../../src/irswitch/web/overlay/GOLDEN_V4.md) |
+| Cursor | [.cursor/README.md](../../.cursor/README.md) |
+
+Žádné TUI. Žádný `/vr-status`. Operator UI je `/gr-status` + `/admin`. Overlay je OBS Browser Source.

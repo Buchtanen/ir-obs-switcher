@@ -22,7 +22,7 @@ Goal: one **admin shell** (`/admin`) as the primary **read-only** operator overv
 
 **Go-live streaming (LIVE/IDLE, duration)** remains on `/gr-status` until Slice 2 migrates controls. Until then `/admin` is “primary overview”, not “full replacement of GR”.
 
-VR widget (`/vr-status`) stays minimal and separate (RaceLab constraints).
+VR/RaceLab widget `/vr-status` is **removed**. Operator UI is `/gr-status` + `/admin`.
 
 ---
 
@@ -45,7 +45,6 @@ VR widget (`/vr-status`) stays minimal and separate (RaceLab constraints).
 /admin/features        Overlay + commentary + tape + event_engine flags
 /admin/activity        Merged feed (history + lifecycle; not raw active_events snapshot spam)
 /gr-status             Switcher controls + streaming (legacy until Slice 2)
-/vr-status             Unchanged VR widget
 ```
 
 Future rename (Slice 2 UX, optional): `connections` (iRacing, OBS, BLE, LHM, YouTube) vs `features` (overlay, commentary, tape, sysinfo, event_engine). Slice 1.1 keeps path `/admin/extensions` but documents LHM as **prerequisite**, not a user “enable” toggle.

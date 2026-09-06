@@ -19,7 +19,7 @@ Update **all relevant docs in this repo** (not just one file). Typical mapping:
 - **API endpoints / payloads** → `API.md`
 - **Build / distribution / installer** → `BUILD_AND_DEPLOY.md`
 - **Release process / semver labeling** → `RELEASE_POLICY.md` (and related docs)
-- **VR / dashboard specifics** → `VR_SUPPORT.md`, `RACELAB_VR_SETUP.md`
+- **Architecture / module lookup** → `docs/dokumentace/` (skill `dokumentace`, agent `docs-keeper`)
 - **Cursor automation** → `.cursor/README.md` (and the changed rule/skill/command files)
 
 ## PR requirement

@@ -12,6 +12,7 @@ Ověřit, že změny v repu jsou konzistentní s pravidly a že kvalita je OK:
 - žádné nové deps bez explicitního požadavku
 - žádné secrety v diffech
 - u behavior změn: důkaz (test nebo TDD-exception)
+- u `src/irswitch/` diffu: matching `docs/dokumentace/domeny/*.md` nebo `Docs: no change (reason …)` — jinak BAD
 
 ## Postup
 1) Zjisti kontext změn:
