@@ -6,7 +6,7 @@
 **Layout:** extend flat `src/irswitch/race/*.py` (`observer.py`, `aftermath.py`, `narrative.py`, `session_end.py`, `story.py`, `grid_story.py`). There is **no** `race/observer/` package.  
 **Task slices:** [docs/tasks/](tasks/) — sequential commits on this branch. N7 landed as opt-in (`race_observer.grid_story`); live listen still decides density.
 
-This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen. Commentary Director V2 async isolation is captured as follow-up **N12**; it does not widen the current landing.
+This epic expands the locked decoupling plan with the **broadcast story**. v1 is a **narrow landing** on the umbrella. Later kinds/cover/flag trees wait for a live listen. Commentary Director V2 async isolation (**N12**) is on `master`. The next architecture target is [live data channels and adaptive sampling](live_data_channels_sampling_spec.md): current state without duplicate source polling, and which slow/static values may be sampled below the race cadence.
 
 ---
 

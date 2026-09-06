@@ -1,6 +1,7 @@
 # Observers & decoupling plan (overlay · commentary · race · TTS)
 
-**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) and narrative observers via #181. **Commentary Director V2 / N12 is implemented on integration branch `refactor/200-n12-async-consumers` under [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200).**
+**Status:** P0–P5 merged via [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) and narrative observers via #181. **Commentary Director V2 / N12 is on `master`** ([#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200)).
+**Next target:** [live data channels and adaptive sampling](live_data_channels_sampling_spec.md) specifies shared live-state access and multi-rate/change-driven sampling. Spec-only until a follow-up implementation issue.
 **Depends on inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — reshaped after two reviews vs this umbrella. N-tasks **extend** P0–P5. N9 cover cut. Incident v1 = off_track vs unknown; Speed is motion not classify-primary. Finish = three booleans (`session_checkered` ≠ checkered bit). Opener mutex. Landing order **N1 → N2 → N4 → N8 → N11 A**. Gap-hunt TTS keys live under `[commentary]`.  
 **Audience:** architecture / next epic planning
