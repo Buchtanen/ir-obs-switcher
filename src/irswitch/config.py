@@ -87,7 +87,6 @@ class AppConfig:
     dashboard_gr_logo_obs: str | None
     dashboard_gr_logo_iracing: str | None
     dashboard_gr_logo_app: str | None
-    dashboard_vr_icons_path: str | None
     dashboard_event_log_size: int
 
     # [oauth] - Optional OAuth credentials for YouTube API
@@ -215,7 +214,6 @@ class AppConfig:
         dashboard_gr_logo_obs: str | None = None
         dashboard_gr_logo_iracing: str | None = None
         dashboard_gr_logo_app: str | None = None
-        dashboard_vr_icons_path: str | None = None
         dashboard_event_log_size = 50
 
         if parser.has_section("dashboards"):
@@ -230,7 +228,6 @@ class AppConfig:
             dashboard_gr_logo_obs = dashboards_section.get("dashboard_gr_logo_obs") or None
             dashboard_gr_logo_iracing = dashboards_section.get("dashboard_gr_logo_iracing") or None
             dashboard_gr_logo_app = dashboards_section.get("dashboard_gr_logo_app") or None
-            dashboard_vr_icons_path = dashboards_section.get("dashboard_vr_icons_path") or None
 
             dashboard_event_log_size = parser.getint(
                 "dashboards", "dashboard_event_log_size", fallback=50
@@ -294,7 +291,6 @@ class AppConfig:
             dashboard_gr_logo_obs=dashboard_gr_logo_obs,
             dashboard_gr_logo_iracing=dashboard_gr_logo_iracing,
             dashboard_gr_logo_app=dashboard_gr_logo_app,
-            dashboard_vr_icons_path=dashboard_vr_icons_path,
             dashboard_event_log_size=dashboard_event_log_size,
             oauth_client_id=oauth_client_id,
             oauth_client_secret=oauth_client_secret,

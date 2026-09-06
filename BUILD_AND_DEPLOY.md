@@ -370,7 +370,6 @@ nssm status irswitchd
   ```ini
   log_file = logs/irswitch.log              # → C:\irswitch\dist\logs\irswitch.log
   dashboard_gr_background_image = bg.png    # → C:\irswitch\dist\bg.png
-  dashboard_vr_icons_path = icons/          # → C:\irswitch\dist\icons\
   ```
 
 - Pokud chceš absolutní cesty, použij plnou cestu:

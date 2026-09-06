@@ -27,7 +27,6 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
 - [HTML Dashboardy](#html-dashboardy)
   - [GET /admin](#get-admin)
   - [GET /gr-status](#get-gr-status)
-  - [GET /vr-status](#get-vr-status)
   - [GET /test](#get-test)
   - [GET /overlay](#get-overlay)
   - [GET /overlay/debug](#get-overlaydebug)
@@ -741,23 +740,6 @@ Velký dashboard / switcher controls (legacy GR Dashboard).
 
 ---
 
-### GET /vr-status
-
-Minimalistický dashboard pro VR.
-
-**URL**: `http://127.0.0.1:17321/vr-status`
-
-**Method**: `GET`
-
-**Popis**: 
-- Minimalistický design, bílé písmo, větší fonty
-- Bez JavaScriptu (pro RaceLab VR)
-- ⚠️ **Omezení**: RaceLab VR widgety nepodporují auto-refresh - widget se neaktualizuje automaticky
-
-**Více informací**: Viz [VR_SUPPORT.md](VR_SUPPORT.md) a [RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md) pro detaily a alternativy.
-
----
-
 ### GET /test
 
 Test widget pro ověření JavaScript funkcionality.
@@ -769,8 +751,6 @@ Test widget pro ověření JavaScript funkcionality.
 **Popis**: 
 - Jednoduchý widget pro testování JavaScript funkcionality v běžném webovém prohlížeči
 - Zobrazí "JS JEDE" pokud JavaScript funguje správně
-
-**Poznámka**: Tento widget **není určen pro RaceLab VR**, protože RaceLab VR widgety nepodporují JavaScript ani auto-refresh.
 
 ---
 

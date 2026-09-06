@@ -24,7 +24,6 @@ from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
 from irswitch.server.dashboards import (
     handle_gr_status,
     handle_test_widget,
-    handle_vr_status,
 )
 from irswitch.server.event_log import get_event_log
 from irswitch.server.metrics import get_metrics
@@ -1320,7 +1319,6 @@ def create_app() -> web.Application:
     app.router.add_post("/reset", handle_reset)
     app.router.add_post("/stream/reinit", handle_stream_reinit)
     app.router.add_get("/gr-status", handle_gr_status)
-    app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)
     app.router.add_get("/ws", handle_websocket)
     app.router.add_get("/oauth/initiate", handle_oauth_initiate)

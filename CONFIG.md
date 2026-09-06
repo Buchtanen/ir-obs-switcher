@@ -566,20 +566,7 @@ Cesta k logu aplikace pro GR dashboard.
 dashboard_gr_logo_app = assets/app_logo.png
 ```
 
-### `dashboard_vr_icons_path` (volitelné)
-
-Cesta k adresáři s ikonami pro VR dashboard (`/vr-status`).
-
-**Kdy použít**: Pokud chceš vlastní ikony pro VR dashboard místo výchozích.
-
-**Formát**: Relativní nebo absolutní cesta k adresáři obsahujícímu ikony.
-
-**Jak to funguje**: VR dashboard používá ikony z tohoto adresáře pro zobrazení stavu.
-
-**Příklad**: 
-```ini
-dashboard_vr_icons_path = assets/vr_icons/
-```
+Klíč `dashboard_vr_icons_path` je **zrušený** (VR/RaceLab widget `/vr-status` neexistuje). Zůstane-li v `config.ini`, parser ho ignoruje.
 
 ---
 
@@ -646,7 +633,6 @@ title_race = Race
   ```ini
   log_file = logs/irswitch.log              # → C:\irswitch\dist\logs\irswitch.log
   dashboard_gr_background_image = bg.png    # → C:\irswitch\dist\bg.png
-  dashboard_vr_icons_path = icons/          # → C:\irswitch\dist\icons\
   ```
 
 - Pokud chceš absolutní cesty, použij plnou cestu:
