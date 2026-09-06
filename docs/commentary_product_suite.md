@@ -129,8 +129,8 @@ Docs + status only first. **VAD remains OS routing.** No new dep unless approved
 | P2 decision log | Done — director ring + `/api/commentary/decisions` + `/commentary` panel |
 | P3–P5 | Queued |
 | P6 | Authored prune to 6–8 distinct frames; session briefs unchanged |
-| N12 V2a async isolation | Implemented on integration branch; Windows/OBS live validation pending |
-| #195 graph-path composer | Implemented on the N12 integration branch; 54 nodes / 24 edges covered (includes `leader_change`) |
+| N12 V2a async isolation | Shipped on `master`; Windows/OBS live listening still pending |
+| #195 graph-path composer | Shipped on `master`; 54 nodes / 24 edges covered (includes `leader_change`) |
 
 ---
 

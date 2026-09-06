@@ -24,7 +24,8 @@ Viz [inflight/README.md](inflight/README.md).
 
 | Téma | Issue / PR | Docs |
 | --- | --- | --- |
-| Commentary architecture (graph continuity, excursion remainder, multi-sentence, prompt profiles, dataset export) | #220, #216, #223, #222, #219 | [commentary-architecture](inflight/commentary-architecture.md) |
+| Commentary architecture (graph continuity, multi-sentence, prompt profiles, dataset export) | #220, #223, #222, #219 | [commentary-architecture](inflight/commentary-architecture.md) |
+| Track Excursion remainder (taxonomy / live OBS) | #216 — current-signal subset **už shipped** | [commentary-architecture](inflight/commentary-architecture.md), [events.md](domeny/events.md) |
 | Live data channels / adaptive sampling | #212 (spec #213) | [live_data_channels_sampling_spec.md](../live_data_channels_sampling_spec.md) |
 | Dependabot `upload-artifact` v7 | #162 | [pr-162](inflight/pr-162-dependabot.md) |
 | Admin Slice 2–3, LHM canonical bus, SoF overlay cards | specs v `docs/` | domain pages |
