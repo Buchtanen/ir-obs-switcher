@@ -6,7 +6,7 @@ Director: accepted envelope → sequence graph → TTS. Peer consumer (N12), ne 
 
 - `headlineToken` / overlay i18n sem nepatří.
 - Scene switcher sem nepatří.
-- Open work: [inflight/commentary-architecture.md](../inflight/commentary-architecture.md).
+- Open work: [inflight/commentary-architecture.md](../inflight/commentary-architecture.md), [I3 publisher](../inflight/scenario-engine-publisher.md).
 
 ## Key files
 

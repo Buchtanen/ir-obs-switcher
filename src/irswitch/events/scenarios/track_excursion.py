@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 from collections import deque
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -79,6 +80,10 @@ class TrackExcursionDetector:
         out = list(self._trace)
         self._trace.clear()
         return out
+
+    def note_trace(self, row: Mapping[str, Any]) -> None:
+        """Append engine/publisher diagnostics onto the existing tape drain."""
+        self._trace.append(dict(row))
 
     def tick(self, state: RaceState, now: float) -> list[EventEnvelope]:
         if not math.isfinite(now) or now < 0:

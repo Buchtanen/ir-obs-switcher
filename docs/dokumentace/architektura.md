@@ -62,8 +62,9 @@ Vlastní tasky (`TaskRegistry`). Hz z `[sampling]`.
 1. `read_telemetry()` → `TelemetrySnapshot` (nebo mock/replay).
 2. Session reset, timing crossings, `RaceContextAnalyzer` / observer.
 3. Sidecar (`InCarDetector`, `SessionBriefsDetector`).
-4. `EventEngine.tick` → kandidáti → manager → accepted batch.
-5. `AsyncEventFanout` → `OverlayConsumer` + `CommentaryConsumer`.
+4. Observer derived envelopes: excursion = detector features → `ScenarioEngine` gate → `TRACK_EXCURSION` (jen `active`).
+5. `EventEngine.tick` → kandidáti → manager → accepted batch.
+6. `AsyncEventFanout` → `OverlayConsumer` + `CommentaryConsumer`.
 
 Módy overlay: `live` | `mock` | `replay`.
 

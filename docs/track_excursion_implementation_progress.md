@@ -44,20 +44,21 @@ Exact guards, limitations, configuration and manual acceptance procedure:
 - Optional CandidateEvent fields exist but are not the live adapter: this slice uses the
   observer's commentary-only derived-envelope path.
 
-The native subset **does not execute the generic atomic kernel or design JSON yet**.
-Loader registry membership is not executable handler readiness. No SDK extraction or dependency
-was added.
+The native subset now gates speech through `ScenarioEngine` +
+`events/scenarios/data/track_excursion_v1.json`. The detector remains the feature source.
+The composite `track_excursion_story_v1.json` is still design-only. No cause-threshold
+classifiers were added. No SDK extraction or dependency was added.
 
 ## Remaining work
 
 | Area | Status / next evidence |
 | --- | --- |
 | S0 / S7 Test 7 13:44 | Original tape absent locally; video timing not verified |
-| S1 / P1 generic engine | Foundation tested; composite schema/compiler and production bindings unfinished |
+| S1 / P1 generic engine | I3: `track_excursion_v1.json` + named guards gate speech; composite story JSON still design-only |
 | S2 current signals | Connected subset; no proven Practice/Qualify ESC, repairs or prolonged damage follow-up |
-| S3–S6 wiring / graph / rollout | Connected for development; synthetic E2E passes; real test/comparison pending |
+| S3–S6 wiring / graph / rollout | I3 publisher wired; live listen is not a gate |
 | S8–S9 / P5–P7 causes | No slide/spin/contact/braking/avoidance/damage classifier |
-| S7a local pace | Synthetic detector + graph green; **live Windows/iRacing/OBS listen still open** (evidence pack in the live test contract) |
+| S7a local pace | Synthetic detector + graph green; live listen optional, not a wiring gate |
 
 `motion_restored` is not `control_regained`. It no longer closes the episode; `normal_running_resumed`, tow, pit return or timeout do. `pit_return_observed` is not `pit_for_repairs` or `reset_to_pits`.
 Timeout and lost evidence invalidate silently, not as asserted physical outcomes.

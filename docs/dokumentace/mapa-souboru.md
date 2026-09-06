@@ -92,7 +92,12 @@ Hledej podle tabulky, ne full-repo grep napoprvé.
 | `stream.py` | Frozen stream items |
 | Emittery | `battle.py`, `position.py`, `overtake.py`, `lap.py`, `incident.py`, `pit.py`, … |
 | `adapters/` | RaceEvent → V4 envelope |
-| `scenarios/` | Deterministic scenario engine (#216 subset): `engine.py`, `registry.py`, `loader.py`, `model.py`, `track_excursion.py` |
+| `scenarios/engine.py` / `loader.py` / `registry.py` / `model.py` | Atomické FSM + JSON loader (ne HUD `engine.py`) |
+| `scenarios/track_excursion.py` | Native holds / evidence (feature source) |
+| `scenarios/track_excursion_runtime.py` | Jediný `TRACK_EXCURSION` speaking publisher |
+| `scenarios/data/track_excursion_v1.json` | Spustitelná atomická definice |
+
+Složený `docs/scenarios/track_excursion_story_v1.json` je design-only a nespouští se.
 
 ## `commentary/`
 
@@ -117,7 +122,7 @@ Hledej podle tabulky, ne full-repo grep napoprvé.
 | Soubor | Role |
 | --- | --- |
 | `runtime.py` / `pipeline.py` | N12 composition |
-| `observer.py` | Race observer |
+| `observer.py` | Race observer; excursion detector + engine gate |
 | `context.py` | Snapshot → RaceState |
 | `opponents.py` | Ahead/behind, gapy |
 | `flags.py` / `aftermath.py` / `narrative.py` / `story.py` | Narrative |

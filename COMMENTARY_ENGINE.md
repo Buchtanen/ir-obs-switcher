@@ -2,15 +2,13 @@
 
 **Status:** on `master` — EN+CS prepared graph, N12 independent consumers, stateful graph runtime (`active | shadow | legacy`), bounded story history, graph-owned prepared commentary, TTS and `/commentary`. When commentary is enabled, active prepared playback is the default. Windows/OBS/Ollama live listening still pending.
 
-**Track Excursion development integration (#216):** `[race_scenarios] mode=active` now defaults
-to the current-signal detector on `master`. Off-track, stopped,
-rejoined, moving again, Race tow, observed pit return, and S7a local pace (sustained loss or
-resumed running vs a frozen dist-bin map) use parent-scoped graph-v3 nodes. `motion_restored`
-no longer closes the episode; tow, pit return, recovered pace, or timeout still do.
-The observer publishes through N12; the old aftermath is disabled in this mode. Numeric incident
-points remain separate from physical facts. Vocabulary is checked through final TTS.
-See the [live test contract](docs/track_excursion_live_test.md) for precise thresholds, logs,
-rollback and unsupported causes/endings. Windows/OBS validation is still pending.
+**Track Excursion (#216):** current-signal subset is on `master`. This branch: `mode=active`
+speaks through `ScenarioEngine`; `TrackExcursionDetector` is the feature source, not a
+second speaker. Off-track, stopped, rejoined, moving again, Race tow, observed pit return,
+and S7a local pace use parent-scoped graph-v3 nodes. `motion_restored` does not close the
+episode; tow, pit return, recovered pace, or timeout still do. Aftermath is off in `active`.
+Numeric incident points stay separate. Causes stay `unknown` (taxonomy elsewhere).
+See the [live test contract](docs/track_excursion_live_test.md).
 
 ## Why
 

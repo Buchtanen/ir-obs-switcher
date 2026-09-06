@@ -341,7 +341,7 @@ Procento průměrné doby loadingu, kdy se spustí broadcast (0-100).
 - `30-50` - spustí se brzy během loadingu
 - `70-90` - spustí se později, téměř na konci loadingu
 
-**Jak to funguje**: Pokud průměrný loading (proces → in-sim scéna) trvá 55 s a nastavíš `50`, broadcast se spustí po ~27.5 s. Průměr se bere z `data/loading_history.json` (posledních až 50 záznamů). Bez historie se použije `default_loading_time_seconds`.
+**Jak to funguje**: Pokud průměrný loading (proces → in-sim scéna) trvá 55 s a nastavíš `75`, broadcast se spustí po ~41 s. Průměr se bere z `data/loading_history.json` (posledních až 50 záznamů). Bez historie se `auto_start_at_percent` **nepoužije** — platí natvrdo `default_loading_time_seconds`.
 
 **Příklad**: 
 ```ini
@@ -354,7 +354,7 @@ Výchozí doba loadingu, pokud nemáš historii (použije se při prvním spušt
 
 **Kdy použít**: Nastav podle typické doby loadingu na tvém systému.
 
-**Jak to funguje**: Aplikace zapisuje dobu od naskočení procesu hry do první in-sim scény a z toho počítá průměr. Při prvním spuštění (prázdná historie) použije tuto hodnotu. QUIT / zmizení procesu bez vstupu do hry se nezapisuje.
+**Jak to funguje**: Aplikace zapisuje dobu od naskočení procesu hry do první in-sim scény a z toho počítá průměr. Při prázdné historii je to **tvrdý delay v sekundách** (bez násobení `auto_start_at_percent`). QUIT / zmizení procesu bez vstupu do hry se nezapisuje.
 
 **Příklad**: 
 ```ini
@@ -746,10 +746,13 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 ### Track Excursion development mode (#216)
 
 `[race_scenarios] mode` accepts `active` (new **default**), `shadow`, or `legacy`.
-Active connects current-signal off-track/stopped/rejoin/motion/Race-tow/pit-return facts to
-commentary through graph v3. Shadow runs the new detector for diagnostics only alongside legacy
-speech; legacy disables it. An invalid value warns and falls back to legacy. Hot reload resets
-detector state. No master commentary enablement, HUD layout, or graph-scoring mode is changed.
+Active connects current-signal off-track/stopped/rejoin/motion/Race-tow/pit-return/S7a pace
+facts to commentary through graph v3. The detector owns holds and evidence;
+`ScenarioEngine` (`events/scenarios/data/track_excursion_v1.json`) is the only speaking
+publisher. Shadow ticks detector + engine for diagnostics/tape and keeps legacy aftermath
+speech; legacy disables the new path. Engine fail-soft publishes nothing (no dual speaker).
+An invalid value warns and falls back to legacy. Hot reload resets detector and engine
+state. No master commentary enablement, HUD layout, or graph-scoring mode is changed.
 
 Migration: configs without this section now use active development detection, as approved for
 #216. Set `mode=legacy` to restore old detection (not the removed misleading speech copy).

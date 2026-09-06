@@ -19,6 +19,14 @@ REGISTERED_GUARD_IDS: frozenset[str] = frozenset(
         "surface_off_track_held_in_incident_window",
         "tow_active",
         "tow_cleared_on_track_motion_held",
+        "excursion_offtrack_ready",
+        "excursion_stopped_ready",
+        "excursion_rejoined_ready",
+        "excursion_motion_ready",
+        "excursion_tow_ready",
+        "excursion_pit_ready",
+        "excursion_pace_loss_ready",
+        "excursion_pace_ok_ready",
     }
 )
 
@@ -39,6 +47,14 @@ REGISTERED_ACTION_IDS: frozenset[str] = frozenset(
         "record_timeout",
         "schedule_incident_root",
         "update_incident_total",
+        "emit_excursion_offtrack",
+        "emit_excursion_stopped",
+        "emit_excursion_rejoined",
+        "emit_excursion_motion",
+        "emit_excursion_tow",
+        "emit_excursion_pit",
+        "emit_excursion_pace_loss",
+        "emit_excursion_pace_ok",
     }
 )
 

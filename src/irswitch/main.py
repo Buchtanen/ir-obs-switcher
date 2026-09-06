@@ -68,6 +68,7 @@ from irswitch.util.hotkeys import (
 )
 from irswitch.util.loading_tracker import (
     LoadingTimeTracker,
+    auto_start_delay_seconds,
     decide_process_loading_clock,
     should_start_process_loading_clock,
 )
@@ -635,18 +636,29 @@ async def main_loop(
                 if auto_start_scheduled_ts is None:
                     # Calculate when to start broadcast
                     avg_loading = loading_tracker.get_average_loading_time()
-                    use_default = len(loading_tracker.history) == 0
-                    if use_default:
+                    has_history = len(loading_tracker.history) > 0
+                    delay_s = auto_start_delay_seconds(
+                        average_s=avg_loading,
+                        percent=config.auto_start_at_percent,
+                        has_history=has_history,
+                        default_s=config.default_loading_time_seconds,
+                    )
+                    if not has_history:
                         logger.info(
-                            f"No loading history available, using default: "
-                            f"{config.default_loading_time_seconds}s"
+                            f"No loading history available, using hard fallback: {delay_s:.2f}s"
                         )
-
-                    start_delay_ms = int(avg_loading * config.auto_start_at_percent / 100.0 * 1000)
+                    start_delay_ms = int(delay_s * 1000)
                     auto_start_scheduled_ts = loading_start_ts + start_delay_ms
                     logger.debug(
                         f"Auto-start broadcast scheduled at {start_delay_ms}ms "
-                        f"({config.auto_start_at_percent}% of {avg_loading:.2f}s average)"
+                        + (
+                            f"(hard fallback {delay_s:.2f}s)"
+                            if not has_history
+                            else (
+                                f"({config.auto_start_at_percent}% of "
+                                f"{avg_loading:.2f}s average)"
+                            )
+                        )
                     )
 
                 current_ts = now_ms()

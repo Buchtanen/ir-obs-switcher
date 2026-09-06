@@ -7,6 +7,7 @@
 [CONFIG.md](../../../CONFIG.md) + `config/config.example.ini`. Sem nekopíruj celé INI.
 
 Shipped pointers: `[diagnostics] voice` → `util/diagnostic_voice.py`; `[race_scenarios] mode` → `events/scenarios/`; `[overlay] session_tape_llm` (default true); `[commentary.graph_runtime] mode=active`.
+Na této větvi `active` publikuje `TRACK_EXCURSION` jen přes `ScenarioEngine`.
 
 ## Zrušené klíče
 

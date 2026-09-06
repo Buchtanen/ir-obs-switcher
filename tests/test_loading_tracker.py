@@ -12,6 +12,7 @@ import pytest
 from irswitch.models import DrivingMode
 from irswitch.util.loading_tracker import (
     LoadingTimeTracker,
+    auto_start_delay_seconds,
     decide_process_loading_clock,
     should_start_process_loading_clock,
 )
@@ -106,6 +107,17 @@ def test_get_average_with_history(tracker_with_history: LoadingTimeTracker) -> N
     avg = tracker_with_history.get_average_loading_time()
     assert avg != 12.0  # Should use actual history, not default
     assert 10.0 < avg < 14.0  # Reasonable range
+
+
+def test_auto_start_fallback_is_hard_delay_not_percented() -> None:
+    assert (
+        auto_start_delay_seconds(average_s=15.0, percent=75, has_history=False, default_s=15.0)
+        == 15.0
+    )
+    assert (
+        auto_start_delay_seconds(average_s=52.0, percent=75, has_history=True, default_s=15.0)
+        == 39.0
+    )
 
 
 def test_get_average_without_history(temp_history_file: Path) -> None:
