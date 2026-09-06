@@ -746,10 +746,13 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 ### Track Excursion development mode (#216)
 
 `[race_scenarios] mode` accepts `active` (new **default**), `shadow`, or `legacy`.
-Active connects current-signal off-track/stopped/rejoin/motion/Race-tow/pit-return facts to
-commentary through graph v3. Shadow runs the new detector for diagnostics only alongside legacy
-speech; legacy disables it. An invalid value warns and falls back to legacy. Hot reload resets
-detector state. No master commentary enablement, HUD layout, or graph-scoring mode is changed.
+Active connects current-signal off-track/stopped/rejoin/motion/Race-tow/pit-return/S7a pace
+facts to commentary through graph v3. The detector owns holds and evidence;
+`ScenarioEngine` (`events/scenarios/data/track_excursion_v1.json`) is the only speaking
+publisher. Shadow ticks detector + engine for diagnostics/tape and keeps legacy aftermath
+speech; legacy disables the new path. Engine fail-soft publishes nothing (no dual speaker).
+An invalid value warns and falls back to legacy. Hot reload resets detector and engine
+state. No master commentary enablement, HUD layout, or graph-scoring mode is changed.
 
 Migration: configs without this section now use active development detection, as approved for
 #216. Set `mode=legacy` to restore old detection (not the removed misleading speech copy).

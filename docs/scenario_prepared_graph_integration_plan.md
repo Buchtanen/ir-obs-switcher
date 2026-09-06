@@ -1,7 +1,7 @@
 # Integration plan — Track Excursion (#216) + prepared graph (#217)
 
 **Branch:** `feat/scenario-and-prepared-graph`  
-**Base:** `origin/master` @ `79a15d7` (#226 squash)  
+**Base:** `origin/master` @ `d24f3e8` (#230 docs currency + #229)  
 **Issues:** [#216](https://github.com/Buchtanen/ir-obs-switcher/issues/216) open; [#217](https://github.com/Buchtanen/ir-obs-switcher/issues/217) closed (on master)  
 **Status:** I0 + I1 done. I2 dropped (not a gate). I3 wired (engine is the sole publisher).
 
@@ -10,9 +10,10 @@ This is the living index. Detailed contracts stay in the #216 docs.
 ## 1. Why this branch exists
 
 #216 native subset + #217 prepared graph landed on master via #226 (`79a15d7`).
-This branch is only for #216 I3 (ScenarioEngine as the sole publisher).
+Master docs index is `docs/dokumentace/` (#229). This branch is only #216 I3
+(ScenarioEngine as the sole publisher). Taxonomie příčin se řeší jinde.
 
-## 2. What is already on master (`79a15d7`)
+## 2. What is already on master (`d24f3e8`)
 
 ### #216 — native Track Excursion subset
 
@@ -53,7 +54,7 @@ I0 exit (done 2026-09-06):
 
 - [x] #226 merged to master (`79a15d7`)
 - [x] #215 / #218 / #217 / #225 closed
-- [x] This branch rebased onto `79a15d7`
+- [x] This branch rebased onto current `origin/master` (`d24f3e8`)
 
 ## 4. After I0 — remaining implementation
 
@@ -117,5 +118,6 @@ Config: `[race_scenarios].mode` and `[commentary.prepared_filler].*` already spe
 
 ## 7. Suggested next action
 
-1. I3 code path is wired. Live listen is not a merge gate.
+1. Rebased onto `origin/master` `d24f3e8` (#230 docs currency). I3 docs re-confronted.
 2. Remaining to ship: PR to `master` (`semver:minor`) and restart the local service.
+3. Composite story JSON / cause taxonomy: out of scope here.
