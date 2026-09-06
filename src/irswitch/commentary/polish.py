@@ -1296,7 +1296,9 @@ def _incident_points(fact_pack: dict[str, Any]) -> int | None:
 
 def _selected_hero_value(fact_pack: dict[str, Any], field: str) -> object | None:
     raw = fact_pack.get("hero")
-    value = raw.get(field) if isinstance(raw, dict) else None
+    if not isinstance(raw, dict):
+        return None
+    value: object | None = raw.get(field)
     if value is None or not _value_occurs(_selected_text(fact_pack), value):
         return None
     return value
@@ -1304,7 +1306,9 @@ def _selected_hero_value(fact_pack: dict[str, Any], field: str) -> object | None
 
 def _selected_session_value(fact_pack: dict[str, Any], field: str) -> object | None:
     raw = fact_pack.get("session")
-    value = raw.get(field) if isinstance(raw, dict) else None
+    if not isinstance(raw, dict):
+        return None
+    value: object | None = raw.get(field)
     if value is None or not _value_occurs(_selected_text(fact_pack), value):
         return None
     return value

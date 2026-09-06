@@ -74,11 +74,11 @@ def class_position_of(
     order: RaceOrder | None = None,
 ) -> int | None:
     if order is not None and car_idx < len(order.class_pos):
-        value = order.class_pos[car_idx]
-        if isinstance(value, int):
-            return value
-    value = _get(snap.car_idx_class_position, car_idx)
-    return int(value) if isinstance(value, (int, float)) else None
+        ordered = order.class_pos[car_idx]
+        if isinstance(ordered, int):
+            return ordered
+    raw = _get(snap.car_idx_class_position, car_idx)
+    return int(raw) if isinstance(raw, (int, float)) else None
 
 
 def overall_position_of(
@@ -87,11 +87,11 @@ def overall_position_of(
     order: RaceOrder | None = None,
 ) -> int | None:
     if order is not None and car_idx < len(order.overall):
-        value = order.overall[car_idx]
-        if isinstance(value, int):
-            return value
-    value = _get(snap.car_idx_position, car_idx)
-    return int(value) if isinstance(value, (int, float)) else None
+        ordered = order.overall[car_idx]
+        if isinstance(ordered, int):
+            return ordered
+    raw = _get(snap.car_idx_position, car_idx)
+    return int(raw) if isinstance(raw, (int, float)) else None
 
 
 def relevant_ahead_behind(

@@ -106,7 +106,9 @@ async def paired_ble_target(address: str) -> tuple[str, str | None] | None:
     if not looks_like_ble_address(address):
         return None
     try:
-        from winrt.windows.devices.bluetooth import BluetoothLEDevice
+        from winrt.windows.devices.bluetooth import (  # type: ignore[import-not-found]
+            BluetoothLEDevice,
+        )
     except ImportError:
         return None
     try:
