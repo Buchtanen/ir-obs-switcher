@@ -34,6 +34,7 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `iracing-session-glossary` — session vs stream vs weekend vs `DrivingMode.RACE` vs `overlay_mode`; jeden extract path; nikdy `WeekendInfo.EventType`
 - `overlay-hud-copy` — HUD tokeny v `overlay/i18n.py`; golden ≠ live OBS
 - `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`
+- `commentary-lora-dataset` — kde jsou `llm_polish` páry, eval cases, ChatML (`ir-commentary-lora`); mapa `docs/commentary_lora_dataset.md`
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
 
 ### Doporučené workflow
