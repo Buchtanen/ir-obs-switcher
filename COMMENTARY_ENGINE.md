@@ -3,6 +3,8 @@
 **Status:** EN+CS graph v2, N12 independent consumers, stateful graph runtime (`legacy | shadow | active`), bounded story history, grounded commentary planner, TTS and `/commentary`. Commentary and active graph mode both remain explicit opt-ins.
 **Implementation branch:** `feat/stateful-commentary-sequence-graph`; Windows/OBS/Ollama live validation pending.
 
+> **Cílový refaktor:** [Commentary narrative runtime specification](docs/commentary_narrative_runtime_spec.md) odděluje session lineage, fakta, epizody, beaty, režii a EN-only realizaci. Tento dokument nadále popisuje chování na `master@0ce75d4`; návrh není implementovaný runtime.
+
 ## Why
 
 Overlay copy is i18n **tokens** (`PŘEDJETÍ`), not speech. Event Engine already decides *what happened* and *who won arbitration*. Commentary sits **after** that and decides *whether to speak* and *which sequence node* to use.
