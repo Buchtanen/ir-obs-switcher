@@ -4,7 +4,7 @@ Status: current-signal subset connected for **active development testing**, not 
 composite taxonomy and not yet a validated Windows/OBS deployment.
 
 Tracking: [#216](https://github.com/Buchtanen/ir-obs-switcher/issues/216).
-Base: `codex/fix-overlay-commentary-test-7`, `4497040`.
+Base: `master` (subset shipped; remaining work #216).
 The user's 2026-09-03 instruction approves connecting first, logging, then evaluating; the
 earlier legacy-default/shadow-first activation sequence is superseded for this subset.
 

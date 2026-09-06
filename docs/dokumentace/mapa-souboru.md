@@ -72,7 +72,9 @@ Hledej podle tabulky, ne full-repo grep napoprvé.
 | `consumer.py` | N12 overlay consumer |
 | `models.py` | Snapshot / RaceState / Bio / System |
 | `protocol.py` | Candidate / RaceEvent / WS envelope |
-| `tape.py` | JSONL session tape |
+| `tape.py` | JSONL session tape (`llm_polish` na INFO když `session_tape_llm`) |
+| `schema.py` | FieldSpec / overlay field schema |
+| `replay.py` / `replay_input.py` | JSONL replay do overlay ticku |
 | `display.py` / `display_v4.py` | Server-side display mapping |
 | `i18n.py` | HUD copy |
 | `v4_manifest_schema.py` | Theme manifest validace |
@@ -90,6 +92,7 @@ Hledej podle tabulky, ne full-repo grep napoprvé.
 | `stream.py` | Frozen stream items |
 | Emittery | `battle.py`, `position.py`, `overtake.py`, `lap.py`, `incident.py`, `pit.py`, … |
 | `adapters/` | RaceEvent → V4 envelope |
+| `scenarios/` | Deterministic scenario engine (#216 subset): `engine.py`, `registry.py`, `loader.py`, `model.py`, `track_excursion.py` |
 
 ## `commentary/`
 
@@ -104,6 +107,8 @@ Hledej podle tabulky, ne full-repo grep napoprvé.
 | `prepared_filler.py` / `llm_lane.py` / `style_cards.py` | Prepared filler + polish lane |
 | `speech_hero.py` / `story_identity.py` | Hero naming / story identity |
 | `replay_eval.py` | Recorded `llm_polish` eval (not CI-required) |
+| `http.py` | `/commentary` TTS test UI |
+| `validator.py` | Utterance / graph cell validation |
 | `in_car.py` / `session_briefs.py` / `opener.py` | Sidecar |
 | `stream_context.py` | Stream-start TTS + opener mutex |
 
@@ -124,7 +129,7 @@ Hledej podle tabulky, ne full-repo grep napoprvé.
 
 ## `bio/`, `system/`, `sampling/`, `util/`
 
-`bio/provider.py` BLE HR. `system/provider.py` + `lhm_http.py` sysinfo. `sampling/scheduler.py` poll helper (adaptive channels **nejsou** runtime — spec #212). `util/clock.py` monotonic; `single_instance.py` bind před init.
+`bio/provider.py` BLE HR. `system/provider.py` + `lhm_http.py` sysinfo. `sampling/scheduler.py` poll helper (adaptive channels **nejsou** runtime — spec #212). `util/clock.py` monotonic; `single_instance.py` bind před init; `diagnostic_voice.py` opt-in EN SAPI operator hlášky (`[diagnostics] voice`).
 
 ## `web/`
 

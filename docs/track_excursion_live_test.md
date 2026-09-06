@@ -1,6 +1,6 @@
 # Track Excursion — aktivní vývojový test (#216)
 
-Základ: `codex/fix-overlay-commentary-test-7`, `4497040`. Nová cesta je napojená v kódu;
+Základ: `master` (current-signal subset). Nová cesta je napojená v kódu;
 samotná úprava pracovního stromu nerestartuje ani neaktualizuje běžící Windows službu.
 
 ## Co skutečně běží

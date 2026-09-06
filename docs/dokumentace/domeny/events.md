@@ -10,10 +10,11 @@ Kandidáti z `RaceState`, arbitration, V4 envelope. Nepíše TTS ani OBS scény.
 ## Key files
 
 `engine.py`, `manager_v2.py`, `envelope.py`, `arbitration.py`, `async_fanout.py`, emittery, `adapters/`.
+`scenarios/` — track-excursion current-signal subset (`track_excursion.py`, `[race_scenarios]`). Širší taxonomy je pořád #216.
 
 ## Tests
 
-`tests/test_event_*.py`, `tests/test_n12_*.py`.
+`tests/test_event_*.py`, `tests/test_n12_*.py`, `tests/test_scenario_*.py`, `tests/test_track_excursion_live.py`.
 
 ## Related
 

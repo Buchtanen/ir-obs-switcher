@@ -1,16 +1,13 @@
 # Stateful commentary sequence graph — specification and implementation plan
 
-**Status:** implementation complete through Phase 6 on `feat/stateful-commentary-sequence-graph`; Phase 7 live acceptance pending
+**Status:** shipped on `master` (stateful graph + N12). Live OBS/Ollama listening still pending.
 
-**Base branch:** `refactor/200-n12-async-consumers`
+**Tracking:** [#210](https://github.com/Buchtanen/ir-obs-switcher/issues/210) (N12/#200 landed).
 
-**Baseline commit:** `8788f95`
+**Related:** [Commentary engine](../COMMENTARY_ENGINE.md), [domeny/commentary](dokumentace/domeny/commentary.md)
 
-**Tracking:** [#210](https://github.com/Buchtanen/ir-obs-switcher/issues/210), based on the [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200) N12 consumer split
-
-**Related:** [Commentary engine](../COMMENTARY_ENGINE.md), [Test 6 analysis](overlay_commentary_test_6_analysis.md), [Test 6 fix plan](overlay_commentary_test_6_fix_implementation_plan.md), [Editorial MiniStory lifecycle](implementation_editorial_ministory.md)
-
-This document began as the design contract for a future commentary-policy change. It now also records the implemented feature-branch behavior and remaining rollout gates. The shipped configuration default is still `legacy`; `shadow` and `active` must be selected explicitly until live acceptance and release review are complete.
+This document began as the design contract. Runtime default in `config.example.ini` is
+`[commentary.graph_runtime] mode=active`. `legacy` / `shadow` remain selectable.
 
 ---
 

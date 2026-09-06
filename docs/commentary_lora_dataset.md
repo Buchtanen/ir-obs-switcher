@@ -27,12 +27,11 @@ sibling [ir-commentary-lora](https://github.com/Buchtanen/ir-commentary-lora)
 
 ## When `llm_polish` is missing
 
-INFO streams on **current master / Test 7** write HUD tape but **no** polish
-pairs. That is expected, not “polish is dead”.
+On current `master`, `[overlay] session_tape_llm=true` (default after #228) writes
+`llm_polish` pairs on INFO while `commentary.llm_polish=true` and a tape is open.
 
-- Today: set runtime log level **DEBUG**, or use an older DEBUG tape.
-- After #219 (`overlay.session_tape_llm=true`, default): polish rows on INFO
-  while `commentary.llm_polish=true`. `session_tape_llm=false` restores DEBUG-only.
+- Missing pairs: polish off, tape off, or `session_tape_llm=false` (DEBUG-only).
+- Still open (#219): compile/export into the private `ir-commentary-lora` datasets.
 
 Replay never writes polish rows.
 

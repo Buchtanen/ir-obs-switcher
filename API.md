@@ -22,6 +22,10 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /api/events](#get-apievents)
   - [GET /api/admin/status](#get-apiadminstatus)
   - [GET /api/admin/activity](#get-apiadminactivity)
+  - [GET /oauth/initiate](#get-oauthinitiate)
+  - [GET /oauth/callback](#get-oauthcallback)
+  - [GET /oauth/status](#get-oauthstatus)
+  - [POST /oauth/revoke](#post-oauthrevoke)
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
 - [HTML Dashboardy](#html-dashboardy)
@@ -31,12 +35,14 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /overlay](#get-overlay)
   - [GET /overlay/debug](#get-overlaydebug)
   - [GET /overlay/demo](#get-overlaydemo)
+  - [GET /overlay/golden](#get-overlaygolden)
   - [GET /config](#get-config)
   - [GET /commentary](#get-commentary)
 - [Overlay API](#overlay-api)
   - [WS /ws/overlay](#ws-wsoverlay)
   - [V4 event envelopes (`v2_payload=true`)](#v4-event-envelopes-v2_payloadtrue)
   - [GET /api/overlay/snapshot](#get-apioverlaysnapshot)
+  - [GET /api/overlay/i18n](#get-apioverlayi18n)
   - [POST /overlay/debug/emit](#post-overlaydebugemit)
   - [GET /api/config](#get-apiconfig)
   - [PUT /api/config](#put-apiconfig)
@@ -618,6 +624,26 @@ Merged activity feed (newest-first): switcher EventLog + commentary decisions + 
 
 `occurredAt` = wall-clock UTC epoch seconds (všechny zdroje). `source`: `switcher` | `commentary` | `overlay`. Overlay items are **lifecycle history**, not a live `active_events` dump.
 
+### GET /oauth/initiate
+
+Start YouTube OAuth (stream title/description na GR). Scene switch **nepotřebuje** OAuth.
+
+**Response**: 200 `{authorizationUrl, state}` nebo 503 když `[oauth]` / env credentials chybí.
+
+### GET /oauth/callback
+
+Redirect z Google. Vymění `code` za token; uloží `data/youtube_oauth_token.json` (gitignored).
+
+### GET /oauth/status
+
+`{configured, authenticated}` — GR tlačítko „Fetch stream info“.
+
+### POST /oauth/revoke
+
+Smaže lokální token. Setup: [YOUTUBE_API_SETUP.md](YOUTUBE_API_SETUP.md), skill `youtube-oauth`.
+
+Žádný `/vr-status`.
+
 ---
 
 ## WebSocket Endpoint
@@ -777,6 +803,10 @@ Ruční TEST eventy (HUNTING, LAP, …). Write volá `POST /overlay/debug/emit`.
 ### GET /overlay/demo
 
 Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1&renderer=v4` (default), auto-scénář V4 (HUNTING → HUNTED → LAP COMPLETE → PB → POSITION → INCIDENT → HR → FINAL → FINISH) v ~28&nbsp;s loopu. Bez OBS a bez iRacing. Theme a renderer (v4 / legacy v3) se přepínají v UI.
+
+### GET /overlay/golden
+
+Statická golden gallery (`overlay/golden.html`). Není live OBS acceptance — viz [GOLDEN_V4.md](src/irswitch/web/overlay/GOLDEN_V4.md). Live freeze: `/overlay?demo=1&layout=golden`.
 
 ### GET /config
 
@@ -989,6 +1019,10 @@ Související flagy: viz [CONFIG.md](CONFIG.md) — `[event_engine]` (`v2_payloa
 ### GET /api/overlay/snapshot
 
 JSON snapshot + `theme` + `assets` (stejný payload jako první WS zpráva). Chybějící soubor je `null`, overlay spadne na CSS desku.
+
+### GET /api/overlay/i18n
+
+HUD copy catalog pro aktuální `overlay.language` (+ EN fallback). `{language, copyCatalog}`. Ne dashboard `i18n.py`.
 
 ### POST /overlay/debug/emit
 

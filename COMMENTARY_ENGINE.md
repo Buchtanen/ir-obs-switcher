@@ -1,10 +1,9 @@
 # Commentary engine (Phase 0)
 
-**Status:** EN+CS prepared graph, N12 independent consumers, stateful graph runtime (`active | shadow | legacy`), bounded story history, graph-owned prepared commentary, TTS and `/commentary`. When commentary is enabled, active prepared playback is the default.
-**Implementation branch:** `codex/fix-overlay-commentary-test-7`; Windows/OBS/Ollama live validation pending.
+**Status:** on `master` — EN+CS prepared graph, N12 independent consumers, stateful graph runtime (`active | shadow | legacy`), bounded story history, graph-owned prepared commentary, TTS and `/commentary`. When commentary is enabled, active prepared playback is the default. Windows/OBS/Ollama live listening still pending.
 
 **Track Excursion development integration (#216):** `[race_scenarios] mode=active` now defaults
-to the current-signal detector on `codex/fix-overlay-commentary-test-7`. Off-track, stopped,
+to the current-signal detector on `master`. Off-track, stopped,
 rejoined, moving again, Race tow, observed pit return, and S7a local pace (sustained loss or
 resumed running vs a frozen dist-bin map) use parent-scoped graph-v3 nodes. `motion_restored`
 no longer closes the episode; tow, pit return, recovered pace, or timeout still do.

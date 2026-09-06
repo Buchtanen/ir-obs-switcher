@@ -137,7 +137,7 @@ Starting main loop
 
 ## HTML Dashboards
 
-Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
+Aplikace poskytuje operator admin + legacy switcher dashboard. Žádný `/vr-status` / RaceLab widget.
 
 ### Admin (primární)
 

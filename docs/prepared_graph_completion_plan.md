@@ -1,7 +1,7 @@
 # Prepared commentary graph completion plan
 
-Status: automated implementation complete on `codex/fix-overlay-commentary-test-7`; active is the
-default and audible stream-PC validation remains pending.
+Status: shipped on `master` (#217 closed). Active is the default; audible stream-PC validation
+remains pending.
 
 ## Context
 

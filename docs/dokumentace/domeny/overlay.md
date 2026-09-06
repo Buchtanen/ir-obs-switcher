@@ -10,7 +10,7 @@ V3 raster v `web/themes/` je fallback, ne aktuální layout pravda.
 
 ## Key files
 
-`runtime.py`, `bus.py`, `http.py`, `consumer.py`, `tape.py`, `display_v4.py`, `i18n.py`. JS: `web/overlay/js/display-v4.js` (HUD cluster — jeden agent, sekvenčně).
+`runtime.py`, `bus.py`, `http.py` (`/overlay`, `/overlay/golden`, `/api/overlay/i18n`), `consumer.py`, `tape.py`, `schema.py`, `replay.py`, `display_v4.py`, `i18n.py`. JS: `web/overlay/js/display-v4.js` (HUD cluster — jeden agent, sekvenčně).
 
 ## Tests
 

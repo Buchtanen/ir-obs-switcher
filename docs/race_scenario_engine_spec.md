@@ -1,13 +1,14 @@
 # Deterministic race scenario engine — specification and implementation plan
 
-**Status:** proposed, implementation-ready; no runtime behavior changed by this document
+**Status:** living target spec. Current-signal subset is on `master` (`events/scenarios/`,
+`[race_scenarios] mode=active`). This document is still the broader taxonomy — not a claim
+that every section is runtime.
 
 Implementation status: [progress](track_excursion_implementation_progress.md), tracked in
-[#216](https://github.com/Buchtanen/ir-obs-switcher/issues/216). A native current-signal subset
-is connected for active development testing; this document remains the broader target.
+[#216](https://github.com/Buchtanen/ir-obs-switcher/issues/216).
 See [actual behavior and test protocol](track_excursion_live_test.md).
 
-**Baseline branch:** `codex/fix-overlay-commentary-test-7`
+**Baseline:** `master` (subset landed with commentary/scenario stack; live OBS gate still open)
 
 **Baseline commit:** `4497040` (`fix: harden overlay and commentary lifecycle (#215)`)
 
