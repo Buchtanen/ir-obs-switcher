@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from irswitch.events.position import place_of, should_seed_place
+from irswitch.events.position import PositionSwingTracker, _position_change_event, place_of
 from irswitch.overlay.models import OpponentInfo, RaceState
 from irswitch.overlay.protocol import CandidateEvent
 from irswitch.overlay.settings import BattleSettings, EventPrioritySettings
@@ -27,64 +27,28 @@ class _TrackedAhead:
 
 
 class OvertakeClassifierEmitter:
-    """Position stability + overtake classification when flag is enabled."""
+    """Position swing tracker + overtake classification when flag is enabled."""
 
     def __init__(self, battle: BattleSettings, priorities: EventPrioritySettings) -> None:
-        self._stable_s = battle.position_stable_seconds
+        self._tracker = PositionSwingTracker(battle)
         self._classifier = battle.overtake
         self._priorities = priorities
-        self._confirmed: int | None = None
-        self._pending: int | None = None
-        self._pending_since: float | None = None
         self._tracked_ahead: _TrackedAhead | None = None
-        self._source: str | None = None
 
     def tick(self, state: RaceState, now: float) -> list[CandidateEvent]:
         if not state.connected:
-            self._confirmed = None
-            self._pending = None
+            self._tracker.reset()
             self._tracked_ahead = None
-            self._source = None
             return []
 
-        current = place_of(state)
-        if current is None:
-            return []
-        source, seed = should_seed_place(state, self._source)
-        self._source = source
-        if seed:
-            self._confirmed = current
-            self._pending = None
-            self._pending_since = None
-            self._track_ahead(state)
+        swing = self._tracker.tick(state, now)
+        if swing is None:
+            current = place_of(state)
+            if current is not None and current == self._tracker.confirmed:
+                self._track_ahead(state)
             return []
 
-        if self._confirmed is None:
-            self._confirmed = current
-            self._track_ahead(state)
-            return []
-
-        if current == self._confirmed:
-            self._pending = None
-            self._pending_since = None
-            self._track_ahead(state)
-            return []
-
-        if self._pending != current:
-            self._pending = current
-            self._pending_since = now
-            return []
-
-        if self._pending_since is None or now - self._pending_since < self._stable_s:
-            return []
-
-        old = self._confirmed
-        self._confirmed = current
-        self._pending = None
-        delta = old - current
-        direction = "gain" if delta > 0 else "loss"
-
-        if direction == "gain" and self._is_confident_overtake(state):
+        if swing.places == 1 and swing.delta > 0 and self._is_confident_overtake(state):
             passed = self._tracked_ahead.opponent if self._tracked_ahead else None
             return [
                 CandidateEvent(
@@ -93,9 +57,10 @@ class OvertakeClassifierEmitter:
                     priority=self._priorities.overtake,
                     phase="trigger",
                     data={
-                        "oldPosition": old,
-                        "newPosition": current,
-                        "delta": delta,
+                        "oldPosition": swing.old,
+                        "newPosition": swing.new,
+                        "delta": swing.delta,
+                        "places": swing.places,
                         "targetCarIdx": passed.car_idx if passed else None,
                         "targetPosition": passed.position if passed else None,
                         **(
@@ -107,20 +72,7 @@ class OvertakeClassifierEmitter:
                 )
             ]
 
-        return [
-            CandidateEvent(
-                name="position_change",
-                channel="alert",
-                priority=self._priorities.position_change,
-                phase="trigger",
-                data={
-                    "direction": direction,
-                    "oldPosition": old,
-                    "newPosition": current,
-                    "delta": delta,
-                },
-            )
-        ]
+        return [_position_change_event(swing, self._priorities.position_change)]
 
     def _track_ahead(self, state: RaceState) -> None:
         opp = state.opponent_ahead

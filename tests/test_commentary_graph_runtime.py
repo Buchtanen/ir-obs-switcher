@@ -373,6 +373,21 @@ def test_empty_or_below_threshold_candidate_set_stays_silent() -> None:
     assert runtime.select([low], now=1.0) is None
 
 
+def test_session_intro_practice_clears_default_threshold() -> None:
+    runtime = _runtime()
+    runtime.reset(run_epoch=1, now=0.0)
+    intro = _candidate(
+        "session_intro_practice",
+        event_id="intro:1",
+        metrics={"track": "Okayama"},
+    )
+    selected = runtime.select([intro], now=1.0)
+    assert selected is not None
+    assert selected.score.base == 36.0
+    assert selected.score.final >= runtime.settings.selection_threshold
+    assert runtime.settings.selection_threshold == 30.0
+
+
 def test_filler_due_uses_initial_silence_and_bounded_no_fact_backoff() -> None:
     runtime = _runtime(max_silence_s=30.0, filler_retry_s=5.0, no_fact_retry_s=10.0)
     runtime.reset(run_epoch=1, now=0.0)

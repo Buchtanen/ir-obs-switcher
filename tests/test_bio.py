@@ -77,6 +77,31 @@ def test_auto_ignores_name_without_hr_uuid() -> None:
     assert pick_heart_rate_device(rows, "auto") is None
 
 
+def test_looks_like_ble_address() -> None:
+    from irswitch.bio.provider import looks_like_ble_address
+
+    assert looks_like_ble_address("D5:19:FD:8F:D8:84")
+    assert looks_like_ble_address("d5-19-fd-8f-d8-84")
+    assert not looks_like_ble_address("Think")
+    assert not looks_like_ble_address("auto")
+
+
+def test_ble_connect_attempts_try_cached_without_repair_first() -> None:
+    from irswitch.bio.provider import HR_SERVICE, ble_connect_attempts
+
+    first = ble_connect_attempts()[0]
+    assert first["pair"] is False
+    assert first["services"] == [HR_SERVICE]
+    assert first["winrt"]["use_cached_services"] is True
+
+
+@pytest.mark.asyncio
+async def test_paired_ble_target_skips_non_mac() -> None:
+    from irswitch.bio.provider import paired_ble_target
+
+    assert await paired_ble_target("Think") is None
+
+
 def test_wanted_name_substring_wins() -> None:
     from irswitch.bio.provider import HR_SERVICE, pick_heart_rate_device
 
@@ -227,7 +252,7 @@ async def test_connect_once_pairs_before_services_and_shows_name(monkeypatch) ->
     )
     await provider._connect_once()
     assert constructed[0] == {
-        "pair": True,
+        "pair": False,
         "timeout": bio._CONNECT_TIMEOUT_S,
         "services": [bio.HR_SERVICE],
         "cached": True,

@@ -14,6 +14,7 @@ from irswitch.commentary.prepared_filler import (
     PreparedFillerPlan,
     _generation_request,
     build_prepared_filler_plans,
+    choose_live_prepared_selections,
     classify_prepared_generation_error,
     decode_prepared_generation_payload,
     result_band,
@@ -78,6 +79,26 @@ def test_material_revision_invalidates_old_variants() -> None:
 
     assert buffer.select("STREAM_LOBBY_INTRO", 2) is None
     assert buffer.merge(old, _variants()) == 0
+
+
+def test_practice_outro_handoff_builds_qualifying_event_intro() -> None:
+    context = {
+        "session_id": "42:0",
+        "identity": {"overlay_mode": "PRACTICE", "run_epoch": 1},
+        "race": {"class_field_size": 18},
+        "story": {},
+        "prepared": {},
+        "editorial": {
+            "stage": "SESSION_EVENT_INTRO",
+            "handoff_overlay_mode": "QUALIFYING",
+            "stage_epoch": 4,
+            "stream_epoch": 1,
+            "track_name": "Spa",
+        },
+    }
+    nodes = [plan.node_id for plan in build_prepared_filler_plans(context, "en")]
+    assert "event_intro_qualifying" in nodes
+    assert "event_intro_practice" not in nodes
 
 
 def test_validator_rejects_short_and_ungrounded_variants() -> None:
@@ -203,6 +224,7 @@ def test_generation_request_carries_the_graph_contract() -> None:
     user_message = messages[1]
     assert isinstance(user_message, dict)
     request = json.loads(str(user_message["content"]))
+    assert payload["max_tokens"] >= 1024
 
     assert request["nodeId"] == plan.node_id
     assert request["contractRevision"] == "contract-123"
@@ -339,6 +361,7 @@ def test_prepared_context_activates_every_non_result_stage_branch() -> None:
     assert {plan.node_id for plan in out_lap} == {
         "out_lap_preparation",
         "out_lap_field_context",
+        "quali_named_observation",
     }
     assert {plan.node_id for plan in grid} == {
         "race_quali_recap_result",
@@ -351,10 +374,97 @@ def test_prepared_context_activates_every_non_result_stage_branch() -> None:
         "formation_lap_preparation",
         "formation_lap_tension",
     }
+    live = build_prepared_filler_plans(
+        {
+            **_stage_context("LIVE_SESSION", "RACE", {"class_field_size": 18}),
+            "race": {
+                "player_car_class": 7,
+                "class_position": 6,
+                "class_field_size": 18,
+                "lap_completed": 4,
+            },
+            "editorial": {
+                "stage": "LIVE_SESSION",
+                "next_stage": "SESSION_CONCLUSION",
+                "stage_epoch": 7,
+                "stream_epoch": 1,
+                "stint_epoch": 2,
+                "track_name": "Spa",
+                "intro_line_spoken": False,
+            },
+        },
+        "en",
+    )
+    live_after_intro = build_prepared_filler_plans(
+        {
+            **_stage_context("LIVE_SESSION", "RACE", {"class_field_size": 18}),
+            "race": {
+                "player_car_class": 7,
+                "class_position": 6,
+                "class_field_size": 18,
+                "lap_completed": 4,
+            },
+            "editorial": {
+                "stage": "LIVE_SESSION",
+                "next_stage": "SESSION_CONCLUSION",
+                "stage_epoch": 7,
+                "stream_epoch": 1,
+                "stint_epoch": 2,
+                "track_name": "Spa",
+                "intro_line_spoken": True,
+            },
+        },
+        "en",
+    )
+
     assert {plan.node_id for plan in standing} == {
         "standing_start_setup",
     }
     assert [plan.node_id for plan in lights] == ["start_lights_set"]
+    assert {plan.node_id for plan in live if "LIVE_SESSION" in plan.allowed_stages} == {
+        "live_session_late_intro",
+        "live_session_place",
+        "live_session_field",
+        "live_session_stint",
+    }
+    assert "live_session_late_intro" not in {
+        plan.node_id for plan in live_after_intro if "LIVE_SESSION" in plan.allowed_stages
+    }
+
+
+def test_loading_lobby_can_plan_stream_color_without_track() -> None:
+    context = _stage_context("STREAM_LOBBY_INTRO", "PRACTICE", {})
+    context["session_id"] = "unknown:0"
+    context["editorial"]["track_name"] = ""
+    ids = {plan.node_id for plan in build_prepared_filler_plans(context, "en")}
+    assert "stream_loading_color" in ids
+    assert "stream_intro_venue" not in ids
+
+
+def test_named_observation_nodes_bind_when_facts_exist() -> None:
+    named = build_prepared_filler_plans(
+        {
+            **_stage_context(
+                "LIVE_SESSION",
+                "RACE",
+                {"highest_rated_driver": "Vervynckt", "class_field_size": 18},
+            ),
+            "race": {
+                "player_car_class": 7,
+                "class_position": 5,
+                "class_field_size": 18,
+                "lap_completed": 8,
+            },
+        },
+        "en",
+    )
+    assert any(plan.node_id == "named_field_observation" for plan in named)
+
+    qualify = build_prepared_filler_plans(
+        _stage_context("LIVE_SESSION", "QUALIFYING", {"highest_rated_driver": "Nash"}),
+        "en",
+    )
+    assert any(plan.node_id == "quali_named_observation" for plan in qualify)
 
 
 def test_start_light_plan_enforces_short_graph_tts_limit() -> None:
@@ -402,7 +512,7 @@ def test_coordinator_stops_top_up_after_attempt_budget() -> None:
     asyncio.run(exercise())
 
 
-def test_fatal_notice_is_once_per_episode_after_spoken_ack() -> None:
+def test_fatal_notice_stays_off_air_when_buffer_is_exhausted() -> None:
     async def generator(plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...]) -> list[str]:
         return []
 
@@ -413,11 +523,8 @@ def test_fatal_notice_is_once_per_episode_after_spoken_ack() -> None:
         coordinator.reconcile([_plan()])
         await coordinator.wait_idle()
         assert coordinator.health == PreparedFillerHealth.FATAL
-        notice = coordinator.fatal_notice("cs")
-        assert notice == (1, "LLM fatal error, nemám texty.")
-        assert coordinator.fatal_notice("cs") == notice
-        assert coordinator.mark_fatal_notice_spoken(1)
         assert coordinator.fatal_notice("cs") is None
+        assert coordinator.fatal_notice("en") is None
         assert not coordinator.mark_fatal_notice_spoken(1)
         await coordinator.close()
 
@@ -508,6 +615,256 @@ def test_prepared_next_stage_plan_survives_expected_transition() -> None:
 
     assert prefetched.plan_id == current.plan_id
     assert ":run:3:" in current.scope_key
+
+
+def test_intro_holdover_keeps_stream_intro_plan_after_race_green() -> None:
+    lobby = {
+        "session_id": "42:0",
+        "identity": {"overlay_mode": "RACE", "run_epoch": 1},
+        "race": {"class_field_size": 18, "class_position": 6, "player_car_class": 7},
+        "story": {},
+        "prepared": {},
+        "editorial": {
+            "stage": "STREAM_LOBBY_INTRO",
+            "next_stage": "SESSION_EVENT_INTRO",
+            "stage_epoch": 2,
+            "stream_epoch": 1,
+            "stint_epoch": 0,
+            "track_name": "Spa",
+        },
+    }
+    after_green = {
+        **lobby,
+        "editorial": {
+            "stage": "LIVE_SESSION",
+            "next_stage": "SESSION_CONCLUSION",
+            "stage_epoch": 3,
+            "stream_epoch": 1,
+            "stint_epoch": 0,
+            "track_name": "Spa",
+            "holdover_stage": "STREAM_LOBBY_INTRO",
+            "holdover_stage_epoch": 2,
+            "intro_line_spoken": False,
+        },
+    }
+
+    before = next(
+        plan
+        for plan in build_prepared_filler_plans(lobby, "en")
+        if plan.node_id == "stream_intro_venue"
+    )
+    held = next(
+        plan
+        for plan in build_prepared_filler_plans(after_green, "en")
+        if plan.node_id == "stream_intro_venue"
+    )
+    live_ids = {
+        plan.node_id
+        for plan in build_prepared_filler_plans(after_green, "en")
+        if "LIVE_SESSION" in plan.allowed_stages
+    }
+
+    assert held.plan_id == before.plan_id
+    assert "live_session_place" in live_ids
+    assert "live_session_late_intro" not in live_ids
+
+
+def test_race_start_sf_does_not_open_live_stint() -> None:
+    start = build_prepared_filler_plans(
+        {
+            **_stage_context("LIVE_SESSION", "RACE", {}),
+            "race": {
+                "player_car_class": 7,
+                "class_position": 6,
+                "class_field_size": 18,
+                "lap_completed": 1,
+                "green_lap_completed": 0,
+            },
+            "editorial": {
+                "stage": "LIVE_SESSION",
+                "stage_epoch": 7,
+                "stream_epoch": 1,
+                "stint_epoch": 0,
+                "track_name": "Spa",
+                "intro_line_spoken": True,
+            },
+        },
+        "en",
+    )
+    after_first_racing_lap = build_prepared_filler_plans(
+        {
+            **_stage_context("LIVE_SESSION", "RACE", {}),
+            "race": {
+                "player_car_class": 7,
+                "class_position": 6,
+                "class_field_size": 18,
+                "lap_completed": 2,
+                "green_lap_completed": 0,
+            },
+            "editorial": {
+                "stage": "LIVE_SESSION",
+                "stage_epoch": 7,
+                "stream_epoch": 1,
+                "stint_epoch": 0,
+                "track_name": "Spa",
+                "intro_line_spoken": True,
+            },
+        },
+        "en",
+    )
+    practice = build_prepared_filler_plans(
+        {
+            **_stage_context("LIVE_SESSION", "PRACTICE", {}),
+            "race": {
+                "player_car_class": 7,
+                "class_position": 6,
+                "class_field_size": 12,
+                "lap_completed": 1,
+            },
+            "editorial": {
+                "stage": "LIVE_SESSION",
+                "stage_epoch": 7,
+                "stream_epoch": 1,
+                "stint_epoch": 1,
+                "track_name": "Spa",
+                "intro_line_spoken": True,
+            },
+        },
+        "en",
+    )
+
+    assert "live_session_stint" not in {plan.node_id for plan in start}
+    assert "live_session_stint" in {plan.node_id for plan in after_first_racing_lap}
+    assert "live_session_stint" in {plan.node_id for plan in practice}
+
+
+def test_live_silence_can_speak_holdover_intro_after_live_had_a_turn() -> None:
+    settings = PreparedFillerSettings(variants_min=3, variants_max=5)
+    buffer = PreparedFillerBuffer(settings)
+    intro = PreparedFillerPlan.create(
+        node_id="stream_intro_venue",
+        semantic_key="stream_intro_venue",
+        locale="en",
+        scope_key="stream:1:stage:2",
+        stage_epoch=2,
+        allowed_stages=("STREAM_LOBBY_INTRO",),
+        required=(FactProposition("track", "Spa", "telemetry", "r1", "Spa"),),
+        tier=0,
+    )
+    live = PreparedFillerPlan.create(
+        node_id="live_session_place",
+        semantic_key="live_session_place",
+        locale="en",
+        scope_key="stream:1:stage:3",
+        stage_epoch=3,
+        allowed_stages=("LIVE_SESSION",),
+        required=(FactProposition("track", "Spa", "telemetry", "r1", "Spa"),),
+        tier=1,
+    )
+    buffer.reconcile(
+        [intro, live],
+        current_stage="LIVE_SESSION",
+        holdover_stage="STREAM_LOBBY_INTRO",
+    )
+    buffer.merge(intro, _variants("Spa"))
+    buffer.merge(live, _variants("place"))
+
+    first, first_stage = choose_live_prepared_selections(
+        buffer,
+        stage="LIVE_SESSION",
+        holdover_stage="STREAM_LOBBY_INTRO",
+        now_ms=1_000,
+    )
+    assert first_stage == "LIVE_SESSION"
+    assert {item.plan.node_id for item in first} == {"live_session_place"}
+
+    empty_live, empty_stage = choose_live_prepared_selections(
+        PreparedFillerBuffer(settings),
+        stage="LIVE_SESSION",
+        holdover_stage="STREAM_LOBBY_INTRO",
+        now_ms=1_000,
+    )
+    assert empty_live == ()
+    assert empty_stage == "LIVE_SESSION"
+
+    ready_intro_only = PreparedFillerBuffer(settings)
+    ready_intro_only.reconcile(
+        [intro], current_stage="LIVE_SESSION", holdover_stage="STREAM_LOBBY_INTRO"
+    )
+    ready_intro_only.merge(intro, _variants("Spa"))
+    waiting, waiting_stage = choose_live_prepared_selections(
+        ready_intro_only,
+        stage="LIVE_SESSION",
+        holdover_stage="STREAM_LOBBY_INTRO",
+        now_ms=2_000,
+    )
+    assert waiting_stage == "STREAM_LOBBY_INTRO"
+    assert {item.plan.node_id for item in waiting} == {"stream_intro_venue"}
+
+    spoken = buffer.select("LIVE_SESSION", 3_000)
+    assert spoken is not None
+    buffer.mark_spoken(spoken.variant.variant_id, 3_000)
+    later, later_stage = choose_live_prepared_selections(
+        buffer,
+        stage="LIVE_SESSION",
+        holdover_stage="STREAM_LOBBY_INTRO",
+        now_ms=4_000,
+    )
+    assert later_stage == "STREAM_LOBBY_INTRO"
+    assert {item.plan.node_id for item in later} == {"stream_intro_venue"}
+
+
+def test_buffer_reserves_holdover_plans_ahead_of_live_stage() -> None:
+    settings = PreparedFillerSettings(
+        max_ready_plans=6, reserved_current_stage=3, reserved_next_stage=2
+    )
+    buffer = PreparedFillerBuffer(settings)
+    holdover = [
+        PreparedFillerPlan.create(
+            node_id="stream_intro_venue",
+            semantic_key="stream_intro_venue",
+            locale="en",
+            scope_key="stream:1:stage:2",
+            stage_epoch=2,
+            allowed_stages=("STREAM_LOBBY_INTRO",),
+            required=(FactProposition("track", "Spa", "telemetry", "r1", "Spa"),),
+            tier=0,
+        )
+    ]
+    current = [
+        PreparedFillerPlan.create(
+            node_id=f"live.{index}",
+            semantic_key=f"live.{index}",
+            locale="en",
+            scope_key="stream:1:stage:3",
+            stage_epoch=3,
+            allowed_stages=("LIVE_SESSION",),
+            required=(FactProposition("track", "Spa", "telemetry", "r1", "Spa"),),
+            tier=index,
+        )
+        for index in range(4)
+    ]
+    following = [
+        PreparedFillerPlan.create(
+            node_id="result.close",
+            semantic_key="result.close",
+            locale="en",
+            scope_key="stream:1:stage:4",
+            stage_epoch=4,
+            allowed_stages=("SESSION_CONCLUSION",),
+            required=(FactProposition("track", "Spa", "telemetry", "r1", "Spa"),),
+        )
+    ]
+
+    buffer.reconcile(
+        [*holdover, *current, *following],
+        current_stage="LIVE_SESSION",
+        holdover_stage="STREAM_LOBBY_INTRO",
+    )
+
+    desired = buffer.desired
+    assert any(plan.node_id == "stream_intro_venue" for plan in desired)
+    assert sum("LIVE_SESSION" in plan.allowed_stages for plan in desired) >= 3
 
 
 @pytest.mark.parametrize(
@@ -1096,5 +1453,19 @@ def test_classify_and_decode_keep_distinct_codes() -> None:
             }
         ]
     }
-    with pytest.raises(ValueError, match="plan_mismatch"):
-        decode_prepared_generation_payload(mismatch, plan_id)
+    assert decode_prepared_generation_payload(mismatch, plan_id) == ["alpha"]
+
+    no_echo = {
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "message": {
+                    "content": json.dumps({"variants": ["beta sentence.", "gamma sentence."]})
+                },
+            }
+        ]
+    }
+    assert decode_prepared_generation_payload(no_echo, plan_id) == [
+        "beta sentence.",
+        "gamma sentence.",
+    ]

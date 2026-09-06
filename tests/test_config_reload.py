@@ -8,6 +8,7 @@ from pathlib import Path
 from irswitch.config import AppConfig
 from irswitch.config_reload import classify_reload_diff
 from irswitch.models import DrivingMode
+from irswitch.util.diagnostic_voice import DiagnosticVoiceSettings
 
 
 def _load_minimal(tmp_path: Path) -> AppConfig:
@@ -88,6 +89,14 @@ def test_classify_restart_keys(tmp_path: Path) -> None:
         "oauth.client_id",
         "obs.password",
     ]
+
+
+def test_classify_diagnostics_voice_is_live(tmp_path: Path) -> None:
+    old = _load_minimal(tmp_path)
+    new = replace(old, diagnostics=DiagnosticVoiceSettings(voice=True, cooldown_s=6.0))
+    applied, restart = classify_reload_diff(old, new)
+    assert applied == ["diagnostics.cooldown_s", "diagnostics.voice"]
+    assert restart == []
 
 
 def test_classify_mixed_live_and_restart(tmp_path: Path) -> None:

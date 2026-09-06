@@ -47,7 +47,7 @@ iRacing / BLE HR
     → TtsSink (Windows SAPI / SuperTonic CPU / espeak-ng / NullTtsSink)
 ```
 
-**Wired, default off:** optional local/LAN LLM realization receives labeled `DATA` built from the compact immutable microplan plus a 2–4 word per-node mood. It never receives the full graph, unrelated telemetry, authored anchor, example/template sentence or raw recent commentary. The default model is Ollama `qwen3:4b-instruct-2507-q4_K_M`; [the earlier skeleton PoC](docs/commentary_llm_skeleton_poc.md) remains historical context.
+**Wired, default off:** optional local/LAN LLM realization receives labeled English `DATA` built from the compact immutable microplan. Live polish is EN-only (no Czech system or situation strings). Probed 4B schemas use role keys (`chaser` / `hero` / `car_ahead` / `target` on hunted) and a `situation` that already names the other cars; color, energy and a bit of showmanship are allowed when they do not change names, numbers or events. Hunted DATA must not leak `relation` or the word `Target` as a name. Excursion / motion-restored / incident-points / finish / checkered use typed `situation` keys instead of raw `{action: …}`. Battle margins (`front_gap` / `rear_gap`) are spoken and sent as two-decimal `N.NN s`. The director fills `hero_name` from iRacing/config when the envelope subject has no display name. `parade_pad` speaks the authored line and skips live polish. The model does not receive STYLE, mood, authored anchor, example sentence or raw recent commentary. Untested live relations keep the older key names until a 4B probe is approved. Prepared filler keeps its own `prepared-filler/1` contract and is not re-polished; the speak path still runs `validate_utterance` (prepared length limits) before TTS. The default model is Ollama `qwen3:4b-instruct-2507-q4_K_M`; [the earlier skeleton PoC](docs/commentary_llm_skeleton_poc.md) remains historical context.
 
 Local Ollama smoke (2026-09-02): grounded `HUNTING` passed in two attempts (~1.7 s) with relation + gap + remaining-laps facts; `LEADER_CHANGE` passed on the first attempt (~0.7 s) without inventing an on-track pass. Windows/SAPI/OBS live listening is still pending.
 
@@ -103,6 +103,8 @@ Rules:
 - `in_car` is a commentary sidecar (`player_car_idx` rising, event type `ENTER_CAR`). It is **not** an overlay HUD catalog entry and is **not** pit entry.
 - Session intros / SoF / weather are commentary sidecars (`SessionBriefsDetector`, gated by `commentary.session_briefs`). They are **not** overlay HUD catalog entries.
 - `STREAM_START` is a commentary-only envelope from the OBS streaming rising edge (`commentary.stream_start`, default off). Graph node `stream_start` is a long slot-free welcome (`tts.max_seconds` ≥ 15); the process timeout uses that node cap so `commentary.max_utterance_s` (default 6) stays unchanged. An **opener mutex** (120 s) plus director `_busy_until` lets at most one of stream start / in-car / session intro / preview speak.
+- Session header/reset **discards waiters** and leaves in-flight TTS running. After that line ends, a stale same-scenario revision plus apology may speak unless the session is already gone. `STREAM_END` waits for the current sentence after iRacing QUIT (`Thanks for watching` / next broadcast). Then `stop_stream_after_seconds` (keep ≥ 15 so the 12 s outro can finish) may stop OBS. Race wrap/`SESSION_CONCLUSION` wait for the sim lobby after a race finish; they are not the stream outro.
+- Checkered is a flag episode (no hero in DATA, no implied win). `FINISH` is the next episode: hero placement (`He finishes in P{n}`). Live polish strips emoji after the model and never puts validator code names into the retry prompt.
 - Mode-specific `in_car_practice` / `in_car_qualify` / `in_car_race` nodes outrank generic `in_car` when `envelope.mode` matches. Generic `in_car` remains for warmup until those lines migrate.
 - Gap-hunt TTS (`HUNTING` / `HUNTED`) is off in practice/qualifying unless `commentary.gap_hunt_tts_in_practice` / `gap_hunt_tts_in_qualifying` is on. HUD hunting is unchanged. Race still speaks.
 - P/Q hunt-by-time is COMMENTARY_ONLY `PACE_HUNT` (`race/timing_hunt.py`): hero projected/best vs `CarIdxBestLapTime` of class P{n}. Unset times → silence. Quali HUD `position_attack` remains hero own PB.
@@ -144,7 +146,7 @@ Visual-only catalog events (`CPU_TEMP_HIGH`, `LINK_DROP`, `BLE_LOST`, gap `UPDAT
 
 The composer builds a complete deterministic canonical sentence and `commentary-microplan/1`. `commentary-facts/3` carries only selected propositions, actor roles, relation and time frame. The node id selects a short mood from `data/node_moods.json`; the older full style guidance/example remains internal and is not sent. Single-role stories select one required proposition plus at most one metric; two-front stories retain both actor directions. The authored variant remains useful for the non-LLM path but is not sent as wording for the model to copy.
 
-The model writes a new one- or two-sentence TV call from labeled `DATA`; `STYLE` is mood only and carries no sentence to echo. Hard guards cover supplied names/numbers/positions, relation direction, unsupported events and future outcomes. Vivid non-factual atmosphere is allowed. TTS length, punctuation and transport safety remain enforced separately. One hard rejection gets a factual correction request without the rejected text or a template sentence. A second rejection, empty accepted response, timeout or transport outage invalidates that candidate before TTS. The worker releases its busy estimate and continues with the highest-priority current waiter. With `llm_polish=false`, authored graph copy remains the intentional deterministic path.
+The model writes a new one- or two-sentence TV call from labeled `DATA` only (no STYLE/example). Hard guards cover supplied names/numbers/positions, relation direction, unsupported events and future outcomes. Vivid non-factual atmosphere is allowed. TTS length, punctuation and transport safety remain enforced separately. One hard rejection gets a factual correction request without the rejected text or a template sentence. A second rejection, empty accepted response, timeout or transport outage invalidates that candidate before TTS — the authored skeleton stays silent. Timeout / transport outage also speak a short on-air notice (`LLM nestihl dodat komentáře.` / `LLM did not deliver the commentary in time.`) on a 15 s cooldown so the broadcast hears the miss. Validator exhaustion stays silent. Live polish reserves the shared Ollama lane and cancels inflight prepared generate; prepared resumes only when no live polish is queued. The worker releases its busy estimate and continues with the highest-priority current waiter. With `llm_polish=false`, authored graph copy remains the intentional deterministic path.
 
 All 54 active graph nodes and all 24 edges have compatibility tests. `leader_change` (prio 75) speaks class P1 changes; do not invent an on-track pass. Parade pads repeat until green (cap 12, 20 s). `two_front_battle` is the only graph node allowed to speak an `UPDATE`; its node cooldown still controls cadence. Other UPDATE events remain silent.
 
@@ -156,7 +158,7 @@ All 54 active graph nodes and all 24 edges have compatibility tests. `leader_cha
 - a normal battle relation `EXIT` before commit becomes a short result-oriented realization (one remaining Qwen call at most, never more than two calls total); FINISH and other non-battle facts retain their original relation and canonical meaning;
 - a session/run reset, relation identity mismatch, or hero-order revision mismatch invalidates the uncommitted line;
 - an ordinary `EXIT` after speech starts records resolution but lets the committed narration finish;
-- an authoritative hero class-position change is the only routine hard preemption. It interrupts only a lower editorial tier and never another same-direction position result or FINISH. Repeated losses/gains therefore finish the line in flight while the newest equal-priority result replaces the waiter.
+- a started line is never hard-cut (including hero-order changes and session reset). Unstarted waiters are discarded. After the audible line ends, the same scenario is replayed from the current ledger and then a short apology (`Sorry, that last call was already old.` / `Promiňte, předchozí informace už neplatila.`). Session reset skips that revision because the story is gone. `STREAM_END` waits for the current sentence, then speaks.
 
 Deferred candidates remain depth-one and replace lower-or-equal priority drafts, so an old FIFO backlog is never narrated. Replaced/dropped waiters explicitly invalidate their story lease.
 
@@ -192,8 +194,9 @@ Each brief includes event types, slots + examples, emotion bands, previous/next 
 ## TTS
 
 - **Windows:** SAPI synthesizes into memory, then `winmm` plays to `commentary.audio_device` only (e.g. `CABLE Input`). SuperTonic (`tts_backend=supertonic`) synthesizes on CPU (model kept in RAM, 4/2 ONNX threads) and plays the same device at native 44.1 kHz via WASAPI shared (COM initialized on the worker thread; WDM-KS endpoints are skipped). Set CABLE Input/Output to 16-bit 44100 Hz. Empty device uses the Windows default (you will hear it). 16ch tokens are skipped when a stereo match exists. Hard interrupt stops SuperTonic playback; SAPI process kill already exists on this branch.
+- **Operator diagnostics ≠ commentary.** `[diagnostics] voice` is a separate SAPI lane on the Windows **default** device (empty device id). It never uses `ProcessTtsSink`, CABLE, or OBS duck, and it works when `commentary.enabled=false`. Catalog is fixed English (connected / stream / fatal). Prepared `health=FATAL` is not this lane.
 - **Linux:** `espeak-ng` / `espeak` if installed; otherwise `null`.
-- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** sits behind the in-flight line (replace-by-editorial-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM generation runs (#180). With `llm_polish=true`, LAN Ollama `qwen3:4b-instruct-2507-q4_K_M` receives compact labeled `DATA` plus a short per-node mood, with a 45-token generation budget and 512-token context by default. One hard semantic rejection may retry; timeout/transport failure, empty accepted output and exhausted validation reject the candidate without audio and release the next highest-priority waiter. The mini-story commit gate then checks current run, hero order and source resolution before starting audio. Before generation/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
+- Live speak is **serialised** on one daemon worker: `ProcessTtsSink.enqueue` never blocks the race loop. At most **one waiter** sits behind the in-flight line (replace-by-editorial-priority; no deep TTS backlog). Director busy is estimate **or** `sink.is_busy()` so defer stays honest while audio/LLM generation runs (#180). With `llm_polish=true`, LAN Ollama `qwen3:4b-instruct-2507-q4_K_M` receives compact labeled `DATA` (no mood line), with a 45-token generation budget and 512-token context by default. One hard semantic rejection may retry; timeout/transport failure, empty accepted output and exhausted validation reject the candidate without its authored audio. Timeout/unreachable polish speaks the LLM-miss notice (15 s cooldown). Live polish preempts prepared generate on the shared local LLM. The next highest-priority waiter is released. The mini-story commit gate then checks current run, hero order and source resolution before starting audio. Before generation/TTS, digit tokens and compact units are expanded to locale words (`speech_numbers.numbers_to_words`, EN/CS). Duck enter/exit still uses the shared nested-safe `VolumeDucker`.
 - **Browser preview** on `/commentary` uses Web Speech API (best short test on the gaming PC).
 
 ## Short test
@@ -242,20 +245,37 @@ validovaných variant. Očekávaný next-stage plán používá budoucí `stage_
 přechodu zůstane připravený, ale změna stream/session/run/stint/class ho invaliduje. Výchozí `active` vybírá
 nejméně exponovanou variantu a potvrzuje expozici až při TTS `speaking`. Připravený text se znovu
 neposílá do LLM polish. Selhání generace nikdy nespadne do obecného textu; prázdný vyčerpaný buffer
-má jedinou lokální fatal hlášku a potom ticho do zotavení. Cancel zapíše `cancelled`
-a nepočítá pokus. JSON/schema/HTTP chyby mají vlastní kódy (`invalid_json`,
+jde do `health=FATAL` a ticha, bez slyšitelné fatal hlášky. Cancel zapíše `cancelled`
+a nepočítá pokus. JSON/HTTP chyby mají vlastní kódy (`invalid_json`,
 `plan_mismatch`, `truncated`, `http_*`, `empty`, `stale`), ne souhrnné `transport`.
+Decode přijme `variants` i když model neokopíruje `planId` / schema; `planId`
+razítkuje caller. Prepared request používá `max_tokens >= 1024`. Director
+`selection_threshold` je 30. SuperTonic se nahřeje při `STREAM_LOBBY_INTRO`
+nebo první live editorial stage. Lobby intro (`STREAM_LOBBY_INTRO` i `SESSION_EVENT_INTRO`) se smí
+říct hned, jakmile má prepared variantu — nečeká na `max_silence_s` (33 s).
+Stream intro v lobby pokračuje session intro. Practice outro otevře Quali
+intro ještě v lobby; Quali outro otevře Race intro v lobby. Live session /
+holdover prepared dál čekají na ticho.
 Po vyčerpání attempt budgetu se buffer znovu zkouší po `generation_retry_cooldown_s`
 (výchozích 15 s) a ponechá už přijaté varianty. Practice/Quali `session_state==4`
-není race green — lobby/in-car/out-lap zůstávají dosažitelné; race green pořád
-přeruší prepared vrstvu.
+není race green — lobby/in-car/out-lap zůstávají dosažitelné. Race green / Race
+`session_state==4` přepne stage na `LIVE_SESSION`, ale úvod se nezahazuje:
+`holdover_stage` drží intro plán až do odříkání. První live fakty mají přednost;
+když live plány ještě nejsou ready nebo už měly tah, úvod vyplní prodlevu.
 
-Připravený graf obsahuje 53 konkrétních uzlů. Každý nese stage/mode, prioritu, terminalitu,
+Připravený graf obsahuje 60 konkrétních uzlů. Každý nese stage/mode, prioritu, terminalitu,
 požadované a volitelné fakty, vztah, zakázaná tvrzení a lokalizovaný EN/CS záměr s anchors.
 Runtime váže normalizované okruhové, počasové, rosterové, AI, pohybové a startovní skutečnosti
 přímo na tyto uzly; obecný `prepared_filler` zůstává jen pro kompatibilitu starých replayů.
 Chybějící kontrakt je fail-soft `graph_contract_missing`. Ready/set uzly mají vlastní krátký
-čtyřsekundový TTS limit a green/live události vždy zůstávají nad prepared vrstvou.
+čtyřsekundový TTS limit. Green/live události zůstávají nad prepared fillery, ale
+neuseknou právě mluvenou intro větu. `LIVE_SESSION` má vlastní prepared větve
+(`live_session_late_intro`, `live_session_place`, `live_session_field`,
+`live_session_stint`, `named_field_observation`, plus Quali `quali_named_observation`).
+Loading lobby má `stream_loading_color` i bez tratě. Chybějící fakty uzel jen přeskočí. Race stint nebere
+startovní S/F (`LapCompleted` 0→1); až druhé racing kolo proti `green_lap_completed`.
+Pozdní úvod se neopakuje, když holdover nebo lobby/event intro už jednu větu
+odříkaly. Hunting / 2/3-kolo continuity zůstává mimo tento slice (#220).
 
 Po `player_finished` producent zmrazí hero `class_position` / field size — prepared
 result `planId` se nesmí měnit s live place churnem po cíli (Test 8 P30→P16→P25).

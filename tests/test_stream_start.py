@@ -10,6 +10,7 @@ from irswitch.commentary.graph import load_sequence_graph
 from irswitch.commentary.in_car import InCarDetector
 from irswitch.commentary.opener import OpenerMutex
 from irswitch.commentary.stream_context import (
+    make_stream_end_envelope,
     make_stream_start_envelope,
     notify_overlay_stream_started,
     notify_overlay_stream_stopped,
@@ -169,3 +170,16 @@ def test_runtime_stream_stop_hard_invalidates_prepared_and_publishes_context() -
     payload = runtime.pipeline.context_payload
     assert payload is not None
     assert thaw_context(payload)["editorial"]["stage"] == "INACTIVE"
+
+
+def test_stream_end_envelope_and_graph_node() -> None:
+    envelope = make_stream_end_envelope(1.0)
+    assert envelope.event_type == "STREAM_END"
+    assert envelope.phase == "RESULT"
+    node = load_sequence_graph().nodes["stream_end"]
+    assert "STREAM_END" in node.event_types
+    issues = validate_utterance(
+        "Thanks for watching. We will meet again at the next broadcast.",
+        node,
+    )
+    assert issues == []

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-_FINISH = frozenset({"FINISH", "SESSION_WRAP", "SESSION_CHECKERED"})
+_FINISH = frozenset({"FINISH", "SESSION_WRAP", "SESSION_CHECKERED", "STREAM_END"})
 _START = frozenset({"RACE_START", "SESSION_START", "STREAM_START"})
 _INCIDENT = frozenset({"INCIDENT", "INVALID_LAP"})
 _POSITION = frozenset(

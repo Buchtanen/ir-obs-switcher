@@ -31,6 +31,14 @@ def opened(detector: TrackExcursionDetector) -> list:
     return detector.tick(state(player_track_surface=0), 0.41)
 
 
+def test_short_stale_window_still_opens_offtrack() -> None:
+    detector = TrackExcursionDetector()
+    assert detector.tick(state(), 0.0) == []
+    assert detector.tick(state(stale_for_ms=1200, player_track_surface=0), 0.2) == []
+    opened_events = detector.tick(state(stale_for_ms=1200, player_track_surface=0), 0.41)
+    assert [event.metrics["beatId"] for event in opened_events] == ["offtrack"]
+
+
 def test_offtrack_does_not_require_incident_points_and_keeps_parent_identity() -> None:
     detector = TrackExcursionDetector()
     root = opened(detector)
@@ -89,8 +97,34 @@ def test_unknown_surface_breaks_hold_and_large_time_gap_invalidates() -> None:
     opened(detector)
     assert detector.tick(state(), 0.6) == []
     assert detector.tick(state(player_track_surface=None), 0.8) == []
-    assert detector.tick(state(), 1.0) == []
-    assert detector.tick(state(), 3.0) == []
+    assert detector.tick(state(player_track_surface=None), 1.81) == []
+    traces = detector.take_trace()
+    assert any(t["reason"] == "surface_unavailable" for t in traces)
+    assert detector._episode == ""
+
+
+def test_open_episode_survives_sample_gap() -> None:
+    detector = TrackExcursionDetector()
+    root = opened(detector)
+    episode = root[0].metrics["parentStoryId"]
+    assert detector.tick(state(player_track_surface=0), 1.8) == []
+    assert detector._episode == episode
+    assert detector.tick(state(), 2.0) == []
+    rejoin = detector.tick(state(), 2.21)
+    moving = detector.tick(state(), 2.61)
+    assert rejoin[0].metrics["beatId"] == "track_rejoined"
+    assert moving[0].metrics["beatId"] == "motion_restored"
+    assert rejoin[0].metrics["parentStoryId"] == episode
+
+
+def test_preopen_sample_gap_still_resets() -> None:
+    detector = TrackExcursionDetector()
+    assert detector.tick(state(), 0.0) == []
+    assert detector.tick(state(player_track_surface=0), 0.2) == []
+    assert detector._episode == ""
+    assert detector.tick(state(player_track_surface=0), 1.3) == []
+    assert detector._episode == ""
+    assert detector._armed is False
 
 
 def test_duplicate_or_out_of_order_frames_never_advance_holds() -> None:

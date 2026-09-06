@@ -31,6 +31,54 @@ def test_stream_waits_for_context_then_opens_intro() -> None:
     assert snap.stream_epoch == 1
 
 
+def test_connected_loading_opens_lobby_for_stream_color() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    snap = stages.observe(_state(context_ready=False, session_id="unknown:0"))
+    assert snap.stage == EditorialStage.STREAM_LOBBY_INTRO
+    still = stages.observe(_state(context_ready=False, session_id="unknown:0"))
+    assert still.stage == EditorialStage.STREAM_LOBBY_INTRO
+
+
+def test_lobby_stream_intro_continues_to_session_intro() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state())
+    snap = stages.complete_intro_chain()
+    assert snap.stage == EditorialStage.SESSION_EVENT_INTRO
+    assert snap.practice_intro_draining is False
+
+
+def test_practice_outro_opens_quali_intro_in_lobby() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state())
+    stages.complete_intro_chain()
+    stages.observe(_state(session_checkered=True))
+    conclusion = stages.snapshot
+    assert conclusion.stage == EditorialStage.SESSION_CONCLUSION
+    handoff = stages.complete_conclusion()
+    assert handoff.stage == EditorialStage.SESSION_EVENT_INTRO
+    assert handoff.handoff_overlay_mode == "QUALIFYING"
+    assert handoff.next_stage == EditorialStage.IN_CAR_PREP
+
+    same_intro = stages.observe(_state(session_id="42:1", overlay_mode="QUALIFYING"))
+    assert same_intro.stage == EditorialStage.SESSION_EVENT_INTRO
+    assert same_intro.handoff_overlay_mode is None
+    assert same_intro.stage_epoch == handoff.stage_epoch
+
+
+def test_quali_outro_opens_race_intro_in_lobby() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state(session_id="42:1", overlay_mode="QUALIFYING"))
+    stages.observe(_state(session_id="42:1", overlay_mode="QUALIFYING", session_checkered=True))
+    handoff = stages.complete_conclusion()
+    assert handoff.stage == EditorialStage.SESSION_EVENT_INTRO
+    assert handoff.handoff_overlay_mode == "RACE"
+    assert handoff.next_stage == EditorialStage.GRID_PREP
+
+
 def test_practice_enter_car_drains_whole_intro() -> None:
     stages = EditorialStageController()
     stages.note_stream_started()
@@ -112,9 +160,68 @@ def test_qualifying_racing_clock_does_not_skip_event_intro() -> None:
 def test_race_session_state_four_still_preempts_to_live() -> None:
     stages = EditorialStageController()
     stages.note_stream_started()
-    stages.observe(_state(overlay_mode="RACE"))
+    intro = stages.observe(_state(overlay_mode="RACE"))
     snap = stages.observe(_state(overlay_mode="RACE", in_car=True, session_state=4, green=False))
     assert snap.stage == EditorialStage.LIVE_SESSION
+    assert snap.holdover_stage == EditorialStage.STREAM_LOBBY_INTRO
+    assert snap.holdover_stage_epoch == intro.stage_epoch
+    assert snap.intro_line_spoken is False
+
+
+def test_race_green_keeps_one_intro_sentence_then_clears_holdover() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started(1_000)
+    intro = stages.observe(_state(overlay_mode="RACE", observed_monotonic_ms=2_000))
+    live = stages.observe(
+        _state(overlay_mode="RACE", in_car=True, green=True, observed_monotonic_ms=3_000)
+    )
+    assert live.stage == EditorialStage.LIVE_SESSION
+    assert live.holdover_stage == EditorialStage.STREAM_LOBBY_INTRO
+    assert live.holdover_stage_epoch == intro.stage_epoch
+
+    spoken = stages.apply_feedback(
+        EditorialStageFeedback(
+            stream_epoch=live.stream_epoch,
+            stage_epoch=intro.stage_epoch,
+            stage=EditorialStage.STREAM_LOBBY_INTRO,
+            action="intro_holdover_completed",
+            observed_monotonic_ms=4_000,
+        )
+    )
+    assert spoken.stage == EditorialStage.LIVE_SESSION
+    assert spoken.holdover_stage is None
+    assert spoken.intro_line_spoken is True
+
+
+def test_intro_holdover_survives_long_live_delay() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started(1_000)
+    intro = stages.observe(_state(overlay_mode="RACE", observed_monotonic_ms=2_000))
+    stages.observe(
+        _state(overlay_mode="RACE", in_car=True, green=True, observed_monotonic_ms=3_000)
+    )
+    delayed = stages.observe(
+        _state(
+            overlay_mode="RACE",
+            in_car=True,
+            green=True,
+            observed_monotonic_ms=180_000,
+        )
+    )
+    assert delayed.stage == EditorialStage.LIVE_SESSION
+    assert delayed.holdover_stage == EditorialStage.STREAM_LOBBY_INTRO
+    assert delayed.holdover_stage_epoch == intro.stage_epoch
+    assert delayed.intro_line_spoken is False
+
+
+def test_race_conclusion_waits_for_lobby() -> None:
+    stages = EditorialStageController()
+    stages.note_stream_started()
+    stages.observe(_state(overlay_mode="RACE", in_car=True, green=True))
+    still_in_car = stages.observe(_state(overlay_mode="RACE", in_car=True, player_finished=True))
+    assert still_in_car.stage == EditorialStage.LIVE_SESSION
+    lobby = stages.observe(_state(overlay_mode="RACE", in_car=False, player_finished=True))
+    assert lobby.stage == EditorialStage.SESSION_CONCLUSION
 
 
 def test_green_and_finish_take_precedence() -> None:

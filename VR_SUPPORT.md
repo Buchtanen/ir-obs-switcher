@@ -6,6 +6,8 @@ Aplikace byla vytvořena primárně pro **použití ve VR** - když jezdíš ve 
 
 **Záměr**: Poskytnout VR uživatelům způsob, jak vidět aktuální stav aplikace přímo ve VR headsetu, bez nutnosti sundat headset a podívat se na monitor.
 
+**Operator diagnostics**: dashboard ve VR často nestíháš číst. Opt-in `[diagnostics] voice=true` přehraje krátké EN SAPI hlášky (Simulator running / iRacing disconnected, We are live / Stream stopped, switcher fatal) na **výchozí Windows playback device** — typicky sluchátka, ne CABLE. Nezávislé na `commentary.enabled`. Když OBS chytá desktop audio, hláška může jít i do streamu.
+
 ---
 
 ## Implementované řešení

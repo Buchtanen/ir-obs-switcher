@@ -96,6 +96,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "commentary.prepared_filler.youtube_history_max_items",
         "commentary.prepared_filler.iracing_history",
         "commentary.prepared_filler.system_filler",
+        "commentary.prepared_filler.speak_fatal_notice",
         "commentary.scheduler.defer_enabled",
         "commentary.scheduler.hard_interrupt",
         "commentary.scheduler.max_deferred",
@@ -124,6 +125,8 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "battle.hunted.activation_delay",
         "battle.hunted.exit_delay",
         "battle.position_stable_seconds",
+        "battle.position_swing_debounce_s",
+        "battle.position_incident_window_s",
         "battle.gap_history_seconds",
         "battle.overtake.max_gap",
         "battle.overtake.min_closing_rate",
@@ -169,6 +172,8 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "stream_chapters.trigger_session_types",
         "stream_chapters.session_titles",
         "stream_chapters.youtube_vod",
+        "diagnostics.voice",
+        "diagnostics.cooldown_s",
         *(f"scenes.{mode.name}" for mode in DrivingMode),
     }
 )
@@ -235,6 +240,8 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
         ),
         "stream_chapters.session_titles": dict(config.stream_chapters.session_titles),
         "stream_chapters.youtube_vod": config.stream_chapters.youtube_vod,
+        "diagnostics.voice": config.diagnostics.voice,
+        "diagnostics.cooldown_s": config.diagnostics.cooldown_s,
     }
     values.update(overlay_values(config.overlay))
     for mode in DrivingMode:

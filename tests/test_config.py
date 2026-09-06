@@ -69,6 +69,17 @@ def test_valid_config_loads(tmp_path: Path) -> None:
     assert config.overlay.commentary.llm_num_predict == 45
     assert config.overlay.commentary.llm_num_ctx == 512
     assert config.overlay.race_observer.scenario_mode == "active"
+    assert config.diagnostics.voice is False
+    assert config.diagnostics.cooldown_s == 4.0
+
+
+def test_diagnostics_voice_opt_in(tmp_path: Path) -> None:
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write("\n[diagnostics]\nvoice = true\ncooldown_s = 5.5\n")
+    config = AppConfig.from_file(path)
+    assert config.diagnostics.voice is True
+    assert config.diagnostics.cooldown_s == 5.5
 
 
 @pytest.mark.parametrize(

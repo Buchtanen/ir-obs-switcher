@@ -40,7 +40,9 @@
 P4 does **not** replace VAD and is **not required** for the mock→content SAPI test.  
 P4 later only adds observability / optional alternate sinks.
 
-Document under P4: “Recommended stream PC: set the process/default playback device so SAPI hits Virtual Audio Driver; leave headphones on a different endpoint.”
+Document under P4: “Recommended stream PC: set `commentary.audio_device` so commentary SAPI/SuperTonic hits Virtual Audio Driver (CABLE); leave headphones as the Windows default endpoint.”
+
+Operator diagnostics (`[diagnostics] voice`) always use that **default** endpoint, not CABLE. They are not a commentary sink and are outside the VAD path on purpose. Desktop-audio bleed into the VOD is accepted.
 
 ---
 

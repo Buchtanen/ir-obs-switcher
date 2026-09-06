@@ -103,7 +103,7 @@ def test_exit_after_speech_commit_does_not_cancel_lease() -> None:
     assert registry.state_of(token) == MiniStoryState.COMPLETED
 
 
-def test_order_change_interrupts_active_and_invalidates_waiting_story() -> None:
+def test_order_change_marks_active_stale_and_invalidates_waiting_story() -> None:
     registry = MiniStoryRegistry()
     registry.observe_context(_context(5))
     active = registry.observe(_relation()).token
@@ -119,7 +119,8 @@ def test_order_change_interrupts_active_and_invalidates_waiting_story() -> None:
     registry.commit(active, None, locale="en")
     registry.mark_speaking(active)
     assert registry.observe_context(_context(4)) is True
-    assert registry.state_of(active) == MiniStoryState.INTERRUPTED
+    assert registry.state_of(active) == MiniStoryState.SPEAKING
+    assert registry.stale_after_speech(active) is True
     assert registry.state_of(waiting) == MiniStoryState.INVALIDATED
     assert registry.commit(waiting, None, locale="en").status == CommitStatus.INVALIDATED
 
@@ -180,7 +181,8 @@ def test_position_event_advances_order_without_waiting_for_context() -> None:
     ).token
     assert position is not None
     assert position.hero_order_revision == 1
-    assert registry.state_of(old) == MiniStoryState.INTERRUPTED
+    assert registry.state_of(old) == MiniStoryState.SPEAKING
+    assert registry.stale_after_speech(old) is True
 
 
 def test_partial_exit_matches_but_conflicting_exit_is_ignored() -> None:
@@ -395,9 +397,7 @@ def test_epoch_invalidation_during_qwen_blocks_tts(monkeypatch: Any) -> None:
     assert spoken == []
 
 
-def test_hero_order_interrupt_cancels_active_speech_and_worker_is_reusable(
-    monkeypatch: Any,
-) -> None:
+def test_hero_order_change_lets_started_speech_finish(monkeypatch: Any) -> None:
     registry = MiniStoryRegistry()
     registry.observe_context(_context(5))
     first = registry.observe(_relation()).token
@@ -405,22 +405,19 @@ def test_hero_order_interrupt_cancels_active_speech_and_worker_is_reusable(
     started = threading.Event()
     spoken: list[str] = []
 
-    def cancellable_speak(text: str, *, cancelled=None, **_kwargs) -> TtsResult:
+    def speak_through(text: str, *, cancelled=None, **_kwargs) -> TtsResult:
+        _ = cancelled
         if text.startswith("He attacks"):
             started.set()
-            deadline = time.monotonic() + 2.0
-            while not cancelled() and time.monotonic() < deadline:
-                time.sleep(0.005)
-            return TtsResult("test", False, "interrupted")
+            time.sleep(0.02)
         spoken.append(text)
         return TtsResult("test", True)
 
-    monkeypatch.setattr("irswitch.commentary.tts.speak_text", cancellable_speak)
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", speak_through)
     sink = ProcessTtsSink(CommentarySettings(tts_backend="null"), story_registry=registry)
     sink.enqueue(_utterance(first))
     assert started.wait(timeout=1.0)
     assert registry.observe_context(_context(4)) is True
-    sink.interrupt()
     position = make_envelope(
         event_type="POSITION_GAINED",
         phase="RESULT",
@@ -431,6 +428,8 @@ def test_hero_order_interrupt_cancels_active_speech_and_worker_is_reusable(
     assert second is not None
     sink.enqueue(_utterance(second, event_type="POSITION_GAINED", text="He moves into P4."))
     assert sink.wait_idle(timeout_s=2.0)
-    assert registry.state_of(first) == MiniStoryState.INTERRUPTED
-    assert spoken == ["He moves into P four."]
+    assert registry.state_of(first) == MiniStoryState.COMPLETED
+    assert registry.stale_after_speech(first) is True
+    assert spoken[0].startswith("He attacks")
+    assert spoken[-1] == "He moves into P four."
     assert registry.state_of(second) == MiniStoryState.COMPLETED

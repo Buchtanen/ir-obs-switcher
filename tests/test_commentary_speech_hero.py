@@ -24,9 +24,12 @@ def test_english_his_becomes_possessive() -> None:
     assert text == "Richard's heart rate is climbing."
 
 
-def test_english_hes_becomes_name_is() -> None:
-    text = mix_hero_name("He's closing on Rossi.", ("Richard",), "en")
-    assert text == "Richard is closing on Rossi."
+def test_english_hes_is_left_alone() -> None:
+    text = mix_hero_name("He's got the final stretch locked in.", ("Buchtanen",), "en")
+    assert text == "He's got the final stretch locked in."
+    assert "is got" not in text
+    closing = mix_hero_name("He's closing on Rossi.", ("Richard",), "en")
+    assert closing == "He's closing on Rossi."
 
 
 def test_english_him() -> None:

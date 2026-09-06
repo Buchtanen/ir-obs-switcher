@@ -2592,7 +2592,7 @@
         "pushing",
         "high"
       ],
-      "notes": "Closing line. Past tense. No further race chatter after this node.",
+      "notes": "Hero placement episode only. Checkered/race-complete is a separate beat; wrap waits for lobby.",
       "variants": {
         "en": {
           "neutral": [
@@ -3090,6 +3090,55 @@
         "criticality": "story",
         "repeat_weight": 2.0,
         "silence_affinity": 0.1,
+        "material_change_policy": "once"
+      }
+    },
+    "stream_end": {
+      "family": "session",
+      "event_types": [
+        "STREAM_END"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 95,
+      "cooldown_s": 300,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "tts": {
+        "max_chars": 180,
+        "max_seconds": 12.0,
+        "ssml_allowed": [
+          "break",
+          "emphasis"
+        ],
+        "require_terminal_punct": true
+      },
+      "notes": "After iRacing QUIT, before OBS auto-stop. Thanks and next-stream wish only.",
+      "variants": {
+        "en": {
+          "neutral": [
+            "Thanks for watching. We will meet again at the next broadcast.",
+            "That is the end of the stream. Thanks for watching, and the next meeting is soon.",
+            "Thanks for following the session. The next broadcast is when this story continues."
+          ]
+        },
+        "cs": {
+          "neutral": [
+            "Díky za sledování. Uvidíme se u dalšího přenosu.",
+            "Tím dnešní přenos končí. Děkujeme za sledování a uvidíme se příště.",
+            "Díky, že jste byli s námi. Těšíme se u dalšího přenosu."
+          ]
+        }
+      },
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "critical",
+        "repeat_weight": 1.0,
+        "silence_affinity": 0.0,
         "material_change_policy": "once"
       }
     },
@@ -6225,6 +6274,65 @@
         "repeat_weight": 0.5,
         "silence_affinity": 0.0,
         "material_change_policy": "scenario_beat"
+      }
+    },
+    "stream_loading_color": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "speak_priority": 38,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.4,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "STREAM_LOBBY_INTRO"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [],
+        "optional_facts": [
+          "track",
+          "session",
+          "layout",
+          "city",
+          "country",
+          "sky"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Keep the stream warm while iRacing is still loading. Use only verified venue or session facts if present; otherwise light broadcast colour with no invented race, grid, or result claims.",
+          "cs": "Udrž stream v chodu, zatímco se iRacing ještě načítá. Použij jen ověřené údaje o trati nebo relaci; jinak lehkou streamovou barvu bez vymyšleného závodu, gridu nebo výsledku."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Keep the stream warm while iRacing is still loading. Use only verified venue or session facts if present; otherwise light broadcast colour with no invented race, grid, or result claims."
+          ],
+          "cs": [
+            "Udrž stream v chodu, zatímco se iRacing ještě načítá. Použij jen ověřené údaje o trati nebo relaci; jinak lehkou streamovou barvu bez vymyšleného závodu, gridu nebo výsledku."
+          ]
+        }
       }
     },
     "stream_intro_venue": {
@@ -9397,6 +9505,386 @@
         }
       }
     },
+    "live_session_late_intro": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 38,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "once_per_scope",
+        "semantic_policy": "once_scope",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "once"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "LIVE_SESSION"
+        ],
+        "tier": 0,
+        "terminal": false,
+        "required_facts": [
+          "track",
+          "session"
+        ],
+        "optional_facts": [
+          "layout",
+          "city",
+          "country"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Give a late venue-and-session intro when the live session started before the lobby chain finished.",
+          "cs": "Doříkej pozdní úvod okruhu a relace, když live session začala dřív, než doběhl lobby řetězec."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Give a late venue-and-session intro when the live session started before the lobby chain finished."
+          ],
+          "cs": [
+            "Doříkej pozdní úvod okruhu a relace, když live session začala dřív, než doběhl lobby řetězec."
+          ]
+        }
+      }
+    },
+    "live_session_place": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "context_value"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "LIVE_SESSION"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "class_position",
+          "session"
+        ],
+        "optional_facts": [
+          "class_field_size",
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "State the verified live class place without predicting the finish.",
+          "cs": "Řekni ověřené živé místo ve třídě bez předpovědi výsledku."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "State the verified live class place without predicting the finish."
+          ],
+          "cs": [
+            "Řekni ověřené živé místo ve třídě bez předpovědi výsledku."
+          ]
+        }
+      }
+    },
+    "live_session_field": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "context_value"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "LIVE_SESSION"
+        ],
+        "tier": 2,
+        "terminal": false,
+        "required_facts": [
+          "class_field_size",
+          "session"
+        ],
+        "optional_facts": [
+          "class_position",
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Describe the verified live class field around the current place.",
+          "cs": "Popiš ověřené živé pole třídy kolem aktuálního místa."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Describe the verified live class field around the current place."
+          ],
+          "cs": [
+            "Popiš ověřené živé pole třídy kolem aktuálního místa."
+          ]
+        }
+      }
+    },
+    "live_session_stint": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "context_value"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "LIVE_SESSION"
+        ],
+        "tier": 3,
+        "terminal": false,
+        "required_facts": [
+          "completed_laps",
+          "session"
+        ],
+        "optional_facts": [
+          "track",
+          "class_position"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Mark verified racing laps of the current live stint, never the start-line S/F.",
+          "cs": "Zaznamenej ověřená závodní kola aktuálního live stintu, nikoli startovní S/F."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Mark verified racing laps of the current live stint, never the start-line S/F."
+          ],
+          "cs": [
+            "Zaznamenej ověřená závodní kola aktuálního live stintu, nikoli startovní S/F."
+          ]
+        }
+      }
+    },
+    "named_field_observation": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "practice",
+        "qualify",
+        "race"
+      ],
+      "speak_priority": 34,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.5,
+        "material_change_policy": "context_value"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "LIVE_SESSION"
+        ],
+        "tier": 2,
+        "terminal": false,
+        "required_facts": [
+          "session",
+          "highest_rated_driver"
+        ],
+        "optional_facts": [
+          "hero_position",
+          "class_position",
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Name one verified nearby or featured driver as a live observation. Do not invent a battle, pass, or future result.",
+          "cs": "Pojmenuj jednoho ověřeného okolního nebo výrazného jezdce jako živé pozorování. Nevymýšlej souboj, předjetí ani budoucí výsledek."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Name one verified nearby or featured driver as a live observation. Do not invent a battle, pass, or future result."
+          ],
+          "cs": [
+            "Pojmenuj jednoho ověřeného okolního nebo výrazného jezdce jako živé pozorování. Nevymýšlej souboj, předjetí ani budoucí výsledek."
+          ]
+        }
+      }
+    },
+    "quali_named_observation": {
+      "family": "session",
+      "event_types": [
+        "PREPARED_FILLER"
+      ],
+      "phases": [
+        "RESULT"
+      ],
+      "modes": [
+        "qualify"
+      ],
+      "speak_priority": 36,
+      "cooldown_s": 0,
+      "slots": [],
+      "hr_states": [
+        "unknown"
+      ],
+      "notes": "Prepared-only graph contract. Anchors guide generation and review; they are never spoken as fallback.",
+      "variants": {},
+      "editorial": {
+        "policy": "periodic_context",
+        "semantic_policy": "context_fact",
+        "criticality": "context",
+        "repeat_weight": 1,
+        "silence_affinity": 0.45,
+        "material_change_policy": "context_value"
+      },
+      "prepared": {
+        "allowed_stages": [
+          "OUT_LAP",
+          "LIVE_SESSION"
+        ],
+        "tier": 1,
+        "terminal": false,
+        "required_facts": [
+          "session"
+        ],
+        "optional_facts": [
+          "hero_position",
+          "best_lap_seconds",
+          "highest_rated_driver",
+          "track"
+        ],
+        "relation": "context",
+        "intent": {
+          "en": "Make a qualifying-only observation of the current run or a named nearby driver. Say it is qualifying. Do not invent a race, a pass, or a grid result.",
+          "cs": "Udělej pozorování jen pro kvalifikaci o aktuálním pokusu nebo pojmenovaném okolním jezdci. Řekni, že jde o kvalifikaci. Nevymýšlej závod, předjetí ani výsledek na gridu."
+        },
+        "forbidden_claims": [
+          "cause",
+          "prediction",
+          "blame"
+        ],
+        "anchors": {
+          "en": [
+            "Make a qualifying-only observation of the current run or a named nearby driver. Say it is qualifying. Do not invent a race, a pass, or a grid result."
+          ],
+          "cs": [
+            "Udělej pozorování jen pro kvalifikaci o aktuálním pokusu nebo pojmenovaném okolním jezdci. Řekni, že jde o kvalifikaci. Nevymýšlej závod, předjetí ani výsledek na gridu."
+          ]
+        }
+      }
+    },
     "prepared_filler_fatal_notice": {
       "family": "session",
       "event_types": [
@@ -10257,6 +10745,34 @@
         "transition_bonus": 8,
         "closure": true,
         "repeat_weight": 0.5
+      }
+    },
+    {
+      "from": "stream_start",
+      "to": "stream_loading_color",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 180
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "stream_loading_color",
+      "to": "stream_intro_venue",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 180
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
       }
     },
     {
@@ -11348,6 +11864,118 @@
       "editorial": {
         "transition_bonus": 6,
         "closure": true,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "session_flag_green",
+      "to": "live_session_late_intro",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "out_lap_field_context",
+      "to": "live_session_late_intro",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "live_session_late_intro",
+      "to": "live_session_place",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "live_session_place",
+      "to": "live_session_field",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "live_session_field",
+      "to": "live_session_stint",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "live_session_stint",
+      "to": "named_field_observation",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 4,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "out_lap_field_context",
+      "to": "quali_named_observation",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 6,
+        "closure": false,
+        "repeat_weight": 1
+      }
+    },
+    {
+      "from": "live_session_late_intro",
+      "to": "quali_named_observation",
+      "when": {
+        "identity": "same_run",
+        "min_gap_s": 0,
+        "max_gap_s": 300
+      },
+      "editorial": {
+        "transition_bonus": 4,
+        "closure": false,
         "repeat_weight": 1
       }
     }

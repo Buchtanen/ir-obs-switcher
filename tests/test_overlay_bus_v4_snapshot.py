@@ -77,3 +77,22 @@ async def test_consumer_reset_clears_the_authoritative_wire_state() -> None:
     await consumer.handle(SessionReset("old", "new", "session_change", 1))
     snapshots = [json.loads(call.args[0]) for call in ws.send_str.await_args_list]
     assert {"type": "STATE_SNAPSHOT", "activeStories": []} in snapshots
+
+
+def test_finish_drops_live_battle_leases() -> None:
+    from irswitch.overlay.consumer import _clears_live_battle_cards
+
+    bus = OverlayBus()
+    consumer = OverlayConsumer(AsyncEventFanout().subscribe("overlay"), bus)
+    consumer._story_leases["battle"] = {
+        "eventType": "HUNTED",
+        "correlationId": "battle:rear:1",
+    }
+    consumer._story_leases["result"] = {
+        "eventType": "FINISH",
+        "correlationId": "session:FINISH",
+    }
+    assert _clears_live_battle_cards({"eventType": "FINISH"}) is True
+    consumer._drop_live_battle_leases()
+    assert "battle" not in consumer._story_leases
+    assert consumer._story_leases["result"]["eventType"] == "FINISH"

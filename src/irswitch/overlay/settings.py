@@ -42,11 +42,18 @@ class OvertakeClassifierSettings:
     min_closing_rate: float = 0.08
 
 
+def default_hunted_settings() -> HuntingSettings:
+    """Hunted is proximity, not a required close. Matching pace at ~0.5 s still counts."""
+    return HuntingSettings(min_closing_rate=-0.15, activation_delay=1.0)
+
+
 @dataclass(frozen=True)
 class BattleSettings:
     hunting: HuntingSettings = field(default_factory=HuntingSettings)
-    hunted: HuntingSettings = field(default_factory=HuntingSettings)
+    hunted: HuntingSettings = field(default_factory=default_hunted_settings)
     position_stable_seconds: float = 1.0
+    position_swing_debounce_s: float = 2.5
+    position_incident_window_s: float = 8.0
     gap_history_seconds: float = 3.0
     overtake: OvertakeClassifierSettings = field(default_factory=OvertakeClassifierSettings)
 
@@ -166,7 +173,7 @@ class PreparedFillerSettings:
     max_inflight: int = 2
     variants_min: int = 3
     variants_max: int = 5
-    generation_timeout_s: float = 30.0
+    generation_timeout_s: float = 75.0
     generation_max_attempts: int = 2
     # In-memory backoff after the attempt budget; not an INI key.
     generation_retry_cooldown_s: float = 15.0
@@ -176,6 +183,8 @@ class PreparedFillerSettings:
     youtube_history_max_items: int = 100
     iracing_history: bool = False
     system_filler: bool = False
+    # Never speak the on-air FATAL line. Health still goes FATAL for admin/tape.
+    speak_fatal_notice: bool = False
 
 
 @dataclass(frozen=True)

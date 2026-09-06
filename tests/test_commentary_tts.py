@@ -380,6 +380,67 @@ def test_process_sink_queue_invariant_single_worker(monkeypatch: Any) -> None:
     assert sink._worker.ident in workers_seen
 
 
+def test_process_sink_warm_loads_supertonic_once(monkeypatch: Any) -> None:
+    calls: list[str] = []
+
+    monkeypatch.setattr("irswitch.commentary.tts.detect_backend", lambda _pref="auto": "supertonic")
+
+    def fake_warm() -> None:
+        calls.append("warm")
+
+    monkeypatch.setattr("irswitch.commentary.supertonic_backend.warm_engine", fake_warm)
+    sink = ProcessTtsSink(CommentarySettings(tts_backend="supertonic"))
+    sink.warm()
+    sink.warm()
+    deadline = time.monotonic() + 1.0
+    while not calls and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert calls == ["warm"]
+    sink.close()
+
+
+def test_parade_pad_skips_live_polish(monkeypatch: Any) -> None:
+    called: list[str] = []
+    spoken: list[str] = []
+
+    def polish(text: str, *_args: Any, **_kwargs: Any) -> PolishOutcome:
+        called.append(text)
+        return PolishOutcome(
+            text="parade should not be polished",
+            outcome="ok",
+            latency_ms=1.0,
+            skeleton=text,
+            request={},
+            attempts=1,
+        )
+
+    def speak(text: str, **_kwargs: Any) -> TtsResult:
+        spoken.append(text)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.polish_skeleton", polish)
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", speak)
+    node = load_sequence_graph().nodes["parade_pad"]
+    sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
+    sink.enqueue(
+        CommentaryUtterance(
+            node_id="parade_pad",
+            locale="en",
+            emotion="unknown",
+            text="The pace lap is still rolling.",
+            event_type="PARADE_PAD",
+            event_id="parade-1",
+            correlation_id="c-parade",
+            estimated_seconds=2.0,
+            node=node,
+            priority=20,
+        )
+    )
+    assert sink.wait_idle(timeout_s=2.0)
+    assert called == []
+    assert spoken == ["The pace lap is still rolling."]
+
+
 def test_speak_timeout_exempts_stream_start_from_global_cap() -> None:
     settings = CommentarySettings(max_utterance_s=6.0)
     overtake = _sample_utterance()
@@ -396,3 +457,15 @@ def test_speak_timeout_exempts_stream_start_from_global_cap() -> None:
         tts=TtsLimits(max_chars=220, max_seconds=16.0),
     )
     assert speak_timeout_s(settings, event_type="STREAM_START", node=stream_node) == 26.0
+    stream_end = GraphNode(
+        id="stream_end",
+        family="session",
+        event_types=("STREAM_END",),
+        phases=("RESULT",),
+        speak_priority=1,
+        cooldown_s=1.0,
+        slots=(),
+        hr_states=("unknown",),
+        tts=TtsLimits(max_chars=180, max_seconds=12.0),
+    )
+    assert speak_timeout_s(settings, event_type="STREAM_END", node=stream_end) == 22.0

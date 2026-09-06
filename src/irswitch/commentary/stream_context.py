@@ -11,6 +11,18 @@ from irswitch.overlay.http import get_overlay_runtime
 logger = logging.getLogger(__name__)
 
 
+def make_stream_end_envelope(now: float) -> EventEnvelope:
+    return make_envelope(
+        event_type="STREAM_END",
+        phase="RESULT",
+        mode="GENERIC",
+        priority=38,
+        monotonic_ms=int(now * 1000),
+        dedupe_key="STREAM_END",
+        correlation_id="stream_end",
+    )
+
+
 def make_stream_start_envelope(now: float) -> EventEnvelope:
     return make_envelope(
         event_type="STREAM_START",

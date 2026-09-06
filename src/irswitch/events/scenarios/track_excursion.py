@@ -21,6 +21,7 @@ EVENT_TYPE = "TRACK_EXCURSION"
 MAX_SAMPLE_GAP_S = 1.0
 MAX_EPISODE_S = 90.0
 ENTRY_HOLD_S = 0.2
+STALE_LIMIT_MS = 1800.0
 REJOIN_HOLD_S = 0.2
 STOP_HOLD_S = 0.35
 MOTION_HOLD_S = 0.6
@@ -143,13 +144,14 @@ class TrackExcursionDetector:
             or state.data_quality != "ok"
             or (
                 state.stale_for_ms is not None
-                and (not math.isfinite(state.stale_for_ms) or state.stale_for_ms > 500)
+                and (not math.isfinite(state.stale_for_ms) or state.stale_for_ms > STALE_LIMIT_MS)
             )
         ):
             self.reset(reason="evidence_unavailable", now=now)
             return []
         if self._last_at is not None and now - self._last_at > MAX_SAMPLE_GAP_S:
-            self.reset(reason="sample_gap", now=now)
+            if not self._episode:
+                self.reset(reason="sample_gap", now=now)
         self._last_at = now
         if self._episode and now - self._started_at >= MAX_EPISODE_S:
             self.reset(reason="episode_timeout", now=now)

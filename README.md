@@ -141,6 +141,7 @@ Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
 
 - **URL**: `http://127.0.0.1:17321/admin`
 - **Funkce**: Live overview — server-side `health` (ready/blocking/warnings), switcher, extensions (BLE, Libre Hardware Monitor, sysinfo), features (overlay / commentary enabled vs active), merged activity feed (lifecycle ring)
+- **Operator voice** (opt-in `[diagnostics] voice=true`): krátké EN SAPI hlášky do výchozího Windows zařízení (iRacing / stream / fatal). Není to komentář; může protečet do desktop audio / VOD. Ve VR bez monitoru je to jediná provozní zpětná vazba do uší.
 - **Podstránky**: `/admin/extensions`, `/admin/features`, `/admin/activity`
 - **API**: `GET /api/admin/status`, `GET /api/admin/activity` (viz [API.md](API.md))
 - **Spec**: [docs/admin_dashboard_spec.md](docs/admin_dashboard_spec.md); sysinfo/LHM upgrade plán: [docs/sysinfo_lhm_upgrade_spec.md](docs/sysinfo_lhm_upgrade_spec.md)

@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal
 
+_NEXT_HANDOFF_MODE = {
+    "PRACTICE": "QUALIFYING",
+    "QUALIFYING": "RACE",
+}
+
 
 class EditorialStage(StrEnum):
     INACTIVE = "INACTIVE"
@@ -51,6 +56,10 @@ class EditorialStageSnapshot:
     stint_epoch: int
     next_stage: EditorialStage | None
     stage_started_monotonic_ms: int
+    holdover_stage: EditorialStage | None
+    holdover_stage_epoch: int
+    intro_line_spoken: bool
+    handoff_overlay_mode: str | None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -63,6 +72,12 @@ class EditorialStageSnapshot:
             "stint_epoch": self.stint_epoch,
             "next_stage": self.next_stage.value if self.next_stage is not None else None,
             "stage_started_monotonic_ms": self.stage_started_monotonic_ms,
+            "holdover_stage": (
+                self.holdover_stage.value if self.holdover_stage is not None else None
+            ),
+            "holdover_stage_epoch": self.holdover_stage_epoch,
+            "intro_line_spoken": self.intro_line_spoken,
+            "handoff_overlay_mode": self.handoff_overlay_mode,
         }
 
 
@@ -73,7 +88,12 @@ class EditorialStageFeedback:
     stream_epoch: int
     stage_epoch: int
     stage: EditorialStage
-    action: Literal["intro_chain_completed", "session_intro_completed", "conclusion_completed"]
+    action: Literal[
+        "intro_chain_completed",
+        "session_intro_completed",
+        "conclusion_completed",
+        "intro_holdover_completed",
+    ]
     observed_monotonic_ms: int
 
 
@@ -92,6 +112,10 @@ class EditorialStageController:
         self._out_lap_origin: int | None = None
         self._stage_started_monotonic_ms = 0
         self._overlay_mode = "GENERIC"
+        self._holdover_stage: EditorialStage | None = None
+        self._holdover_stage_epoch = 0
+        self._intro_line_spoken = False
+        self._handoff_overlay_mode: str | None = None
 
     @property
     def snapshot(self) -> EditorialStageSnapshot:
@@ -105,6 +129,10 @@ class EditorialStageController:
             stint_epoch=self._stint_epoch,
             next_stage=self._next_stage(),
             stage_started_monotonic_ms=self._stage_started_monotonic_ms,
+            holdover_stage=self._holdover_stage,
+            holdover_stage_epoch=self._holdover_stage_epoch,
+            intro_line_spoken=self._intro_line_spoken,
+            handoff_overlay_mode=self._handoff_overlay_mode,
         )
 
     def note_stream_started(self, observed_monotonic_ms: int = 0) -> EditorialStageSnapshot:
@@ -114,6 +142,9 @@ class EditorialStageController:
             self._run_epoch = 0
             self._stint_epoch = 0
             self._practice_intro_draining = False
+            self._clear_intro_holdover()
+            self._intro_line_spoken = False
+            self._handoff_overlay_mode = None
             self._transition(EditorialStage.WAIT_CONTEXT, observed_monotonic_ms)
         return self.snapshot
 
@@ -124,6 +155,9 @@ class EditorialStageController:
         self._practice_intro_draining = False
         self._out_lap_origin = None
         self._previous_pit = False
+        self._clear_intro_holdover()
+        self._intro_line_spoken = False
+        self._handoff_overlay_mode = None
         self._transition(EditorialStage.INACTIVE, observed_monotonic_ms)
         return self.snapshot
 
@@ -131,11 +165,21 @@ class EditorialStageController:
         if self._stage == EditorialStage.INACTIVE:
             return self.snapshot
         self._overlay_mode = item.overlay_mode
-        if not item.connected or not item.context_ready:
+        if not item.connected:
             self._session_id = None
             self._out_lap_origin = None
             self._practice_intro_draining = False
+            self._clear_intro_holdover()
+            self._intro_line_spoken = False
+            self._handoff_overlay_mode = None
             self._transition(EditorialStage.WAIT_CONTEXT, item.observed_monotonic_ms)
+            self._previous_pit = item.on_pit_road
+            return self.snapshot
+        if not item.context_ready:
+            # iRacing is connected but the session is still loading (~50 s).
+            # Stay in lobby so prepared filler can speak stream colour.
+            if self._stage in {EditorialStage.WAIT_CONTEXT, EditorialStage.STREAM_LOBBY_INTRO}:
+                self._transition(EditorialStage.STREAM_LOBBY_INTRO, item.observed_monotonic_ms)
             self._previous_pit = item.on_pit_road
             return self.snapshot
 
@@ -150,26 +194,40 @@ class EditorialStageController:
             self._practice_intro_draining = False
             self._out_lap_origin = None
             self._stint_epoch = 0
-            self._transition(
-                EditorialStage.SESSION_EVENT_INTRO, item.observed_monotonic_ms, force=True
-            )
+            if self._handoff_overlay_mode == item.overlay_mode and self._stage in {
+                EditorialStage.SESSION_EVENT_INTRO,
+                EditorialStage.IN_CAR_PREP,
+                EditorialStage.GRID_PREP,
+            }:
+                self._handoff_overlay_mode = None
+            else:
+                self._handoff_overlay_mode = None
+                self._clear_intro_holdover()
+                self._intro_line_spoken = False
+                self._transition(
+                    EditorialStage.SESSION_EVENT_INTRO, item.observed_monotonic_ms, force=True
+                )
         elif run_changed:
             self._practice_intro_draining = False
             self._out_lap_origin = None
             self._stint_epoch = 0
+            self._clear_intro_holdover()
+            self._intro_line_spoken = False
             self._transition(self._physical_stage(item), item.observed_monotonic_ms, force=True)
 
         if self._stage == EditorialStage.BETWEEN_SESSIONS and not (session_changed or run_changed):
             self._previous_pit = item.on_pit_road
             return self.snapshot
 
-        if item.player_finished or (
+        if (item.player_finished and (item.overlay_mode != "RACE" or not item.in_car)) or (
             item.session_checkered and item.overlay_mode in {"PRACTICE", "QUALIFYING"}
         ):
             self._practice_intro_draining = False
             self._out_lap_origin = None
+            self._clear_intro_holdover()
             self._transition(EditorialStage.SESSION_CONCLUSION, item.observed_monotonic_ms)
         elif item.overlay_mode == "RACE" and (item.green or item.session_state == 4):
+            self._arm_intro_holdover()
             self._practice_intro_draining = False
             self._out_lap_origin = None
             self._transition(EditorialStage.LIVE_SESSION, item.observed_monotonic_ms)
@@ -195,6 +253,14 @@ class EditorialStageController:
 
     def apply_feedback(self, feedback: EditorialStageFeedback) -> EditorialStageSnapshot:
         """Apply only completion feedback for the exact active stream/stage epoch."""
+        if feedback.action == "intro_holdover_completed":
+            if (
+                feedback.stream_epoch == self._stream_epoch
+                and self._holdover_stage == feedback.stage
+                and self._holdover_stage_epoch == feedback.stage_epoch
+            ):
+                self._clear_intro_holdover(spoken=True)
+            return self.snapshot
         if (
             feedback.stream_epoch != self._stream_epoch
             or feedback.stage_epoch != self._stage_epoch
@@ -212,8 +278,13 @@ class EditorialStageController:
     def complete_intro_chain(self, observed_monotonic_ms: int = 0) -> EditorialStageSnapshot:
         if self._stage != EditorialStage.STREAM_LOBBY_INTRO:
             return self.snapshot
+        draining = self._practice_intro_draining
         self._practice_intro_draining = False
-        self._transition(EditorialStage.IN_CAR_PREP, observed_monotonic_ms)
+        self._intro_line_spoken = True
+        # Still in lobby: speak the session intro next. Already in-car practice
+        # drains the stream chain straight into prep.
+        target = EditorialStage.IN_CAR_PREP if draining else EditorialStage.SESSION_EVENT_INTRO
+        self._transition(target, observed_monotonic_ms)
         return self.snapshot
 
     def complete_session_intro(self, item: EditorialStageInput) -> EditorialStageSnapshot:
@@ -224,16 +295,25 @@ class EditorialStageController:
     def complete_session_intro_at(self, observed_monotonic_ms: int) -> EditorialStageSnapshot:
         if self._stage != EditorialStage.SESSION_EVENT_INTRO:
             return self.snapshot
-        if self._overlay_mode == "RACE":
+        if self._overlay_mode == "RACE" or self._handoff_overlay_mode == "RACE":
             target = EditorialStage.GRID_PREP
         else:
             target = EditorialStage.IN_CAR_PREP
+        self._intro_line_spoken = True
         self._transition(target, observed_monotonic_ms)
         return self.snapshot
 
     def complete_conclusion(self, observed_monotonic_ms: int = 0) -> EditorialStageSnapshot:
-        if self._stage == EditorialStage.SESSION_CONCLUSION:
+        if self._stage != EditorialStage.SESSION_CONCLUSION:
+            return self.snapshot
+        handoff = _NEXT_HANDOFF_MODE.get(self._overlay_mode)
+        if handoff is None:
+            self._handoff_overlay_mode = None
             self._transition(EditorialStage.BETWEEN_SESSIONS, observed_monotonic_ms)
+            return self.snapshot
+        self._handoff_overlay_mode = handoff
+        self._intro_line_spoken = False
+        self._transition(EditorialStage.SESSION_EVENT_INTRO, observed_monotonic_ms)
         return self.snapshot
 
     def _observe_out_lap(self, item: EditorialStageInput) -> None:
@@ -277,6 +357,21 @@ class EditorialStageController:
             )
         return EditorialStage.LIVE_SESSION
 
+    def _arm_intro_holdover(self) -> None:
+        if self._stage not in {
+            EditorialStage.STREAM_LOBBY_INTRO,
+            EditorialStage.SESSION_EVENT_INTRO,
+        }:
+            return
+        self._holdover_stage = self._stage
+        self._holdover_stage_epoch = self._stage_epoch
+
+    def _clear_intro_holdover(self, *, spoken: bool = False) -> None:
+        if spoken:
+            self._intro_line_spoken = True
+        self._holdover_stage = None
+        self._holdover_stage_epoch = 0
+
     def _transition(
         self, stage: EditorialStage, observed_monotonic_ms: int = 0, *, force: bool = False
     ) -> None:
@@ -289,10 +384,16 @@ class EditorialStageController:
     def _next_stage(self) -> EditorialStage | None:
         if self._stage == EditorialStage.STREAM_LOBBY_INTRO:
             return EditorialStage.SESSION_EVENT_INTRO
+        if self._stage == EditorialStage.BETWEEN_SESSIONS:
+            return (
+                EditorialStage.SESSION_EVENT_INTRO
+                if self._overlay_mode in {"PRACTICE", "QUALIFYING"}
+                else None
+            )
         if self._stage == EditorialStage.SESSION_EVENT_INTRO:
             return (
                 EditorialStage.GRID_PREP
-                if self._overlay_mode == "RACE"
+                if self._overlay_mode == "RACE" or self._handoff_overlay_mode == "RACE"
                 else EditorialStage.IN_CAR_PREP
             )
         if self._stage == EditorialStage.IN_CAR_PREP:

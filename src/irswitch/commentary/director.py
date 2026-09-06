@@ -16,11 +16,12 @@ from irswitch.commentary.anti_repeat import (
     RecentUtteranceHistory,
     prefer_fresh_candidates,
 )
-from irswitch.commentary.composer import build_skeleton
+from irswitch.commentary.composer import build_skeleton, stale_call_apology, with_stale_apology
 from irswitch.commentary.graph import (
     GraphEdge,
     GraphNode,
     SequenceGraph,
+    TtsLimits,
     load_sequence_graph,
     normalize_graph_mode,
 )
@@ -44,7 +45,7 @@ from irswitch.commentary.validator import (
     leftover_slots,
     validate_utterance,
 )
-from irswitch.events.envelope import EventEnvelope
+from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.overlay.i18n import normalize_language
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
@@ -133,6 +134,7 @@ class CommentaryDirector:
     _scheduler: SpeechScheduler = field(default_factory=SpeechScheduler)
     _current_event_type: str | None = None
     filler_provider: Callable[[float], EventEnvelope | None] | None = None
+    prepared_prompt_ready: Callable[[], bool] | None = None
     filler_formatter: Callable[[EventEnvelope], str | None] | None = None
     _prepared_graph_candidate: GraphCandidate | None = None
     _iracing_hero_names: tuple[str, ...] = field(default_factory=tuple)
@@ -235,6 +237,16 @@ class CommentaryDirector:
             iracing_names=self._iracing_hero_names,
         )
 
+    def _with_hero_binding(self, bindings: dict[str, object]) -> dict[str, object]:
+        if bindings.get("hero_name"):
+            return bindings
+        names = self.hero_names()
+        if not names:
+            return bindings
+        filled = dict(bindings)
+        filled["hero_name"] = names[0]
+        return filled
+
     def _apply_hero_mix(self, text: str) -> tuple[str, tuple[str, ...], str | None]:
         names = self.hero_names()
         mixed = mix_hero_name(text, names, self.language, rng=self.rng)
@@ -263,17 +275,20 @@ class CommentaryDirector:
         )
 
     def reset(self) -> None:
+        keep_busy = self._sink_busy()
+        busy_until = self._busy_until if keep_busy else 0.0
+        current = self._current_event_type if keep_busy else None
         self._cooldowns.clear()
-        self._busy_until = 0.0
+        self._busy_until = busy_until
         self._last = None
-        self._global_ready_at = 0.0
+        self._global_ready_at = 0.0 if not keep_busy else self._global_ready_at
         size = max(1, int(getattr(self.settings, "decision_log_size", self.decision_log_size)))
         self.decision_log_size = size
         self._decisions = deque(maxlen=size)
         self._recent.clear()
         self._sector_speaks_by_lap.clear()
         self._scheduler.reset()
-        self._current_event_type = None
+        self._current_event_type = current
         self.opener.reset()
         self._composition_context = {}
         self._last_graph_winner = None
@@ -472,7 +487,7 @@ class CommentaryDirector:
         deferred = self._scheduler.pop_ready(now)
         if deferred is not None:
             # Speak only the best deferred line; drop the rest (never drain queue).
-            for dropped in self._scheduler.clear():
+            for dropped in self._scheduler.clear_non_hold():
                 self._record(
                     action="skipped",
                     reason="deferred_dropped",
@@ -488,21 +503,32 @@ class CommentaryDirector:
                 past=True,
             )
         runtime = self.graph_runtime
+        prompt_ready = allow_filler and self._prepared_prompt_ready()
         if graph_active and runtime is not None:
-            silence_due = allow_filler and runtime.filler_due(now)
+            silence_due = allow_filler and (runtime.filler_due(now) or prompt_ready)
         else:
             last_at = self._last.at if self._last is not None else None
-            silence_due = allow_filler and self._scheduler.silence_due(
-                last_spoke_at=last_at, now=now
+            silence_due = allow_filler and (
+                self._scheduler.silence_due(last_spoke_at=last_at, now=now) or prompt_ready
             )
         if silence_due:
-            if graph_active and runtime is not None:
+            if graph_active and runtime is not None and not prompt_ready:
                 runtime.note_filler_requested(now=now)
             spoken = self._speak_silence_filler(now)
             if spoken is not None:
                 return spoken
             self._record(action="skipped", reason="silence_no_filler", now=now)
         return None
+
+    def _prepared_prompt_ready(self) -> bool:
+        hook = self.prepared_prompt_ready
+        if hook is None:
+            return False
+        try:
+            return bool(hook())
+        except Exception:
+            logger.debug("prepared_prompt_ready failed", exc_info=True)
+            return False
 
     def _speak_silence_filler(self, now: float) -> CommentaryUtterance | None:
         provider = self.filler_provider
@@ -634,10 +660,7 @@ class CommentaryDirector:
             return None
         prepared = isinstance(prepared_text, str)
         prepared_candidate = self._prepared_graph_candidate
-        if (
-            prepared_candidate is not None
-            and prepared_candidate.event_id != envelope.event_id
-        ):
+        if prepared_candidate is not None and prepared_candidate.event_id != envelope.event_id:
             prepared_candidate = None
         hero_names: tuple[str, ...]
         hero_name: str | None
@@ -645,7 +668,6 @@ class CommentaryDirector:
             hero_names, hero_name = (), None
         else:
             text, hero_names, hero_name = self._apply_hero_mix(text)
-        from irswitch.commentary.graph import GraphNode, TtsLimits
 
         prepared_limit = self.settings.prepared_filler.max_utterance_s
         node = node or GraphNode(
@@ -660,6 +682,24 @@ class CommentaryDirector:
             tts=(TtsLimits(max_chars=600, max_seconds=prepared_limit) if prepared else TtsLimits()),
             variants={},
         )
+        if prepared:
+            issues = validate_utterance(
+                text,
+                node,
+                limits=TtsLimits(
+                    max_chars=600,
+                    max_seconds=prepared_limit,
+                    ssml_allowed=node.tts.ssml_allowed,
+                    require_terminal_punct=node.tts.require_terminal_punct,
+                ),
+            )
+            if issues:
+                logger.info(
+                    "commentary rejected node=%s codes=%s",
+                    node.id,
+                    [item.code for item in issues],
+                )
+                return None
         return CommentaryUtterance(
             node_id=node.id,
             locale=self.language,
@@ -763,7 +803,7 @@ class CommentaryDirector:
             ):
                 self._hard_interrupt(now)
                 busy = False
-            elif self._scheduler.settings.defer_enabled or top.event_type == "TRACK_EXCURSION":
+            elif self._scheduler.should_park_while_busy(top.event_type):
                 return self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             else:
                 self._record(
@@ -775,7 +815,9 @@ class CommentaryDirector:
                 return None
 
         if now < self._global_ready_at:
-            if selected_ranked and selected_ranked[0].event_type == "TRACK_EXCURSION":
+            if selected_ranked and self._scheduler.should_park_while_busy(
+                selected_ranked[0].event_type
+            ):
                 return self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             if envelopes:
                 self._record(
@@ -788,9 +830,8 @@ class CommentaryDirector:
 
         if flushed is not None:
             # Already spoke a deferred line this tick; park new arrivals if any.
-            if selected_ranked and (
-                self._scheduler.settings.defer_enabled
-                or selected_ranked[0].event_type == "TRACK_EXCURSION"
+            if selected_ranked and self._scheduler.should_park_while_busy(
+                selected_ranked[0].event_type
             ):
                 self._park_ranked(selected_ranked, bio, now, graph_winner=active_winner)
             return flushed
@@ -845,14 +886,66 @@ class CommentaryDirector:
         self._record(action="skipped", reason="interrupted", now=now)
 
     def hero_order_changed(self, now: float, event_type: str | None = None) -> None:
-        """The only routine race change allowed to preempt active narration."""
-        if self._is_busy(now) and (
-            event_type is None
-            or self._scheduler.should_hard_interrupt(
-                event_type, current_event_type=self._current_event_type
+        """Order changes no longer cut a started line; revision speaks after it."""
+        _ = (now, event_type)
+
+    def note_speech_finished(self, now: float) -> None:
+        """Audio ended; allow a same-scenario revision or parked STREAM_END."""
+        self._busy_until = now
+        self._current_event_type = None
+
+    def speak_stale_revision(
+        self,
+        previous: CommentaryUtterance,
+        now: float,
+        bio: BioState | None = None,
+    ) -> CommentaryUtterance | None:
+        """Replay the same story with current facts, then apologize."""
+        if previous.stale_revision or previous.prepared:
+            return None
+        registry = self.story_registry
+        if registry is None or not registry.stale_after_speech(previous.story_token):
+            return None
+        snapshot = registry.revision_snapshot(previous.story_token)
+        drafted: CommentaryUtterance | None = None
+        if snapshot is not None:
+            event_type, metrics = snapshot
+            envelope = make_envelope(
+                event_type=event_type,
+                phase="RESULT",
+                correlation_id=previous.correlation_id,
+                metrics=metrics,
             )
-        ):
-            self._hard_interrupt(now)
+            drafted = self._consider(
+                envelope,
+                previous.emotion,
+                now,
+                commit=True,
+                node_override=previous.node,
+                gates_checked=True,
+            )
+        if drafted is None:
+            apology = stale_call_apology(previous.locale)
+            drafted = replace(
+                previous,
+                text=apology,
+                estimated_seconds=1.6,
+                past_framing=True,
+                story_token=None,
+                graph_candidate=None,
+                apology_after=False,
+                stale_revision=True,
+            )
+        else:
+            drafted = replace(
+                drafted,
+                text=with_stale_apology(drafted.text, drafted.locale),
+                past_framing=True,
+                story_token=None,
+                apology_after=True,
+                stale_revision=True,
+            )
+        return self._speak_prepared(drafted, now=now, reason="stale_revision", past=True)
 
     def _park_ranked(
         self,
@@ -907,27 +1000,7 @@ class CommentaryDirector:
     ) -> CommentaryUtterance:
         spoken = utterance
         if past and utterance.past_framing is False:
-            spoken = CommentaryUtterance(
-                node_id=utterance.node_id,
-                locale=utterance.locale,
-                emotion=utterance.emotion,
-                text=utterance.text,
-                event_type=utterance.event_type,
-                event_id=utterance.event_id,
-                correlation_id=utterance.correlation_id,
-                estimated_seconds=utterance.estimated_seconds,
-                node=utterance.node,
-                priority=utterance.priority,
-                past_framing=True,
-                hero_names=utterance.hero_names,
-                hero_name=utterance.hero_name,
-                fact_pack=utterance.fact_pack,
-                composition_path=utterance.composition_path,
-                graph_path=utterance.graph_path,
-                story_token=utterance.story_token,
-                graph_candidate=utterance.graph_candidate,
-                editorial_score=utterance.editorial_score,
-            )
+            spoken = replace(utterance, past_framing=True)
         # Commit timing if this was a draft (deferred path).
         duration = spoken.estimated_seconds
         graph_active = _graph_mode(self.settings) == "active" and spoken.graph_candidate is not None
@@ -971,19 +1044,32 @@ class CommentaryDirector:
         if not gates_checked and self._editorial_gate(envelope, now) is not None:
             return None
         node = node_override or self._pick_node(envelope, now)
+        prepared_text = envelope.metrics.get("preparedText")
+        has_prepared = isinstance(prepared_text, str) and bool(str(prepared_text).strip())
         if node is None:
             synthetic = self._utterance_from_formatter(envelope)
             if synthetic is None:
                 self._record(
                     action="skipped",
-                    reason="no_node",
+                    reason="validator_reject" if has_prepared else "no_node",
                     now=now,
                     event_type=envelope.event_type,
+                    text=str(prepared_text or ""),
                 )
                 return None
             return synthetic
-        if isinstance(envelope.metrics.get("preparedText"), str):
-            return self._utterance_from_formatter(envelope, node=node)
+        if isinstance(prepared_text, str):
+            utterance = self._utterance_from_formatter(envelope, node=node)
+            if utterance is None:
+                self._record(
+                    action="skipped",
+                    reason="validator_reject",
+                    now=now,
+                    event_type=envelope.event_type,
+                    node_id=node.id,
+                    text=str(prepared_text),
+                )
+            return utterance
         graph_active = _graph_mode(self.settings) == "active" and node_override is not None
         if commit and not graph_active and now < self._cooldowns.get(node.id, 0.0):
             self._record(
@@ -1007,7 +1093,9 @@ class CommentaryDirector:
                 )
                 return None
             resolved = "unknown"
-        bindings = slot_bindings(envelope, resolved, language=self.language)
+        bindings = self._with_hero_binding(
+            slot_bindings(envelope, resolved, language=self.language)
+        )
         fact_pack: dict[str, Any] | None = None
         composition_path: tuple[str, ...] = ()
         graph_path: tuple[str, ...] = ()
@@ -1213,7 +1301,9 @@ class CommentaryDirector:
             resolved = "unknown"
         if self.settings.llm_polish:
             return True
-        bindings = slot_bindings(envelope, resolved, language=self.language)
+        bindings = self._with_hero_binding(
+            slot_bindings(envelope, resolved, language=self.language)
+        )
         return any(
             bool(line.strip()) and not leftover_slots(line)
             for line in (
@@ -1635,6 +1725,8 @@ def slot_bindings(
         "position": _first(metrics, "newPosition", "position", "classPosition")
         or subject.class_position,
         "old_position": _first(metrics, "oldPosition"),
+        "hero_name": (subject.display_name if subject.display_name else None)
+        or _first(metrics, "heroName", "hero_name", "driverName"),
         "target_name": (target.display_name if target is not None else None)
         or _first(metrics, "targetName", "target_name"),
         "leader_name": _first(metrics, "oldLeaderName", "leaderName", "leader", "leader_name"),
@@ -1644,6 +1736,7 @@ def slot_bindings(
         "lap": _first(metrics, "lap"),
         "lap_time": _first(metrics, "lapTime"),
         "delta": _first(metrics, "delta", "deltaToBest"),
+        "places": _first(metrics, "places"),
         "gap": _first(metrics, "gap"),
         "front_target_name": _first(metrics, "frontTargetName", "front_target_name"),
         "front_gap": _first(metrics, "frontGap", "front_gap"),

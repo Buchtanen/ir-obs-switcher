@@ -21,6 +21,7 @@ from irswitch.commentary.graph import (
     load_sequence_graph,
     normalize_graph_mode,
 )
+from irswitch.commentary.llm_lane import LlmPriorityLane
 from irswitch.overlay.settings import CommentarySettings, PreparedFillerSettings
 
 _SENTENCE_END = re.compile(r"[.!?]+(?:[\"'’)]*)?(?:\s+|$)")
@@ -312,14 +313,34 @@ class PreparedFillerBuffer:
     def desired(self) -> tuple[PreparedFillerPlan, ...]:
         return tuple(self._desired.values())
 
-    def reconcile(self, plans: Iterable[PreparedFillerPlan], *, current_stage: str = "") -> None:
+    def reconcile(
+        self,
+        plans: Iterable[PreparedFillerPlan],
+        *,
+        current_stage: str = "",
+        holdover_stage: str = "",
+    ) -> None:
         ordered = sorted(plans, key=lambda plan: (plan.tier, plan.situation_id, plan.plan_id))
         if not current_stage and ordered and ordered[0].allowed_stages:
             current_stage = ordered[0].allowed_stages[0]
         self.current_stage = current_stage
-        current = [plan for plan in ordered if current_stage in plan.allowed_stages]
-        following = [plan for plan in ordered if current_stage not in plan.allowed_stages]
-        selected = current[: self.settings.reserved_current_stage]
+        holdover = [
+            plan for plan in ordered if holdover_stage and holdover_stage in plan.allowed_stages
+        ]
+        current = [
+            plan
+            for plan in ordered
+            if current_stage in plan.allowed_stages
+            and (not holdover_stage or holdover_stage not in plan.allowed_stages)
+        ]
+        following = [
+            plan
+            for plan in ordered
+            if current_stage not in plan.allowed_stages
+            and (not holdover_stage or holdover_stage not in plan.allowed_stages)
+        ]
+        selected = holdover[:2]
+        selected.extend(current[: self.settings.reserved_current_stage])
         selected.extend(following[: self.settings.reserved_next_stage])
         selected_ids = {plan.situation_id for plan in selected}
         selected.extend(plan for plan in ordered if plan.situation_id not in selected_ids)
@@ -463,6 +484,12 @@ class PreparedFillerBuffer:
             return True
         return False
 
+    def plan_has_spoken(self, situation_id: str) -> bool:
+        entry = self._items.get(situation_id)
+        if entry is None:
+            return False
+        return any(item.spoken_count > 0 for item in entry.exposure.values())
+
     def is_current(self, plan_id: str, stage: str, now_ms: int) -> bool:
         return any(
             entry.plan.plan_id == plan_id
@@ -558,11 +585,13 @@ class PreparedFillerCoordinator:
         generator: PreparedGenerator,
         *,
         diagnostic: Callable[[dict[str, Any]], None] | None = None,
+        llm_lane: LlmPriorityLane | None = None,
     ) -> None:
         self.settings = settings
         self.generator = generator
         self.buffer = PreparedFillerBuffer(settings)
         self.diagnostic = diagnostic
+        self.llm_lane = llm_lane
         self.health = PreparedFillerHealth.DISABLED
         self.fatal_episode = 0
         self.fatal_notice_spoken = False
@@ -573,6 +602,12 @@ class PreparedFillerCoordinator:
         self._closed = False
         self._mode = settings.mode
         self._epoch = 0
+        self._loop: asyncio.AbstractEventLoop | None = None
+        if llm_lane is not None:
+            llm_lane.set_hooks(
+                on_preempt=self.preempt_prepared,
+                on_idle=self.resume_prepared,
+            )
 
     def reopen(self) -> None:
         """Allow the same consumer instance to recover after supervisor restart."""
@@ -580,10 +615,17 @@ class PreparedFillerCoordinator:
         if self.settings.mode == "legacy":
             self.health = PreparedFillerHealth.DISABLED
 
-    def reconcile(self, plans: Iterable[PreparedFillerPlan], *, current_stage: str = "") -> None:
+    def reconcile(
+        self,
+        plans: Iterable[PreparedFillerPlan],
+        *,
+        current_stage: str = "",
+        holdover_stage: str = "",
+    ) -> None:
         if self._closed:
             self.health = PreparedFillerHealth.DISABLED
             return
+        self._capture_loop()
         if self.settings.mode != self._mode:
             self._epoch += 1
             for task in self._tasks.values():
@@ -599,7 +641,7 @@ class PreparedFillerCoordinator:
             self.buffer.reconcile(())
             self.health = PreparedFillerHealth.DISABLED
             return
-        self.buffer.reconcile(plans, current_stage=current_stage)
+        self.buffer.reconcile(plans, current_stage=current_stage, holdover_stage=holdover_stage)
         desired_ids = {plan.plan_id for plan in self.buffer.desired}
         for plan_id, task in tuple(self._tasks.items()):
             if plan_id not in desired_ids:
@@ -631,6 +673,8 @@ class PreparedFillerCoordinator:
         return self.buffer.mark_spoken(variant_id, now_ms)
 
     def fatal_notice(self, locale: str) -> tuple[int, str] | None:
+        if not self.settings.speak_fatal_notice:
+            return None
         if self.settings.mode != "active" or self.health != PreparedFillerHealth.FATAL:
             return None
         if self.fatal_notice_spoken:
@@ -643,6 +687,8 @@ class PreparedFillerCoordinator:
         return self.fatal_episode, text
 
     def mark_fatal_notice_spoken(self, episode: int) -> bool:
+        if not self.settings.speak_fatal_notice:
+            return False
         if episode != self.fatal_episode or self.health != PreparedFillerHealth.FATAL:
             return False
         if self.fatal_notice_spoken:
@@ -667,14 +713,57 @@ class PreparedFillerCoordinator:
             "fatalEpisode": self.fatal_episode,
             "fatalNoticeSpoken": self.fatal_notice_spoken,
             "lastErrorCode": self.last_error,
+            "llmPaused": bool(self.llm_lane is not None and not self.llm_lane.allow_prepared()),
         }
 
+    def preempt_prepared(self) -> None:
+        """Cancel inflight generate so a live polish can take Ollama."""
+        self._run_on_loop(self._cancel_inflight)
+
+    def resume_prepared(self) -> None:
+        """Schedule again after the last live polish reservation drops."""
+        self._run_on_loop(self._schedule)
+
+    def _capture_loop(self) -> None:
+        if self._loop is not None and self._loop.is_running():
+            return
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+
+    def _run_on_loop(self, fn: Callable[[], None]) -> None:
+        self._capture_loop()
+        loop = self._loop
+        if loop is None or not loop.is_running():
+            fn()
+            return
+        try:
+            running = asyncio.get_running_loop()
+        except RuntimeError:
+            running = None
+        if running is loop:
+            fn()
+            return
+        loop.call_soon_threadsafe(fn)
+
+    def _cancel_inflight(self) -> None:
+        for task in tuple(self._tasks.values()):
+            task.cancel()
+
     def _schedule(self) -> None:
+        if self._closed:
+            return
+        self._capture_loop()
+        if self.llm_lane is not None and not self.llm_lane.allow_prepared():
+            return
         slots = max(0, self.settings.max_inflight - len(self._tasks))
         for plan, count, hashes in self.buffer.need_generation():
             if plan.plan_id in self._tasks:
                 continue
             if slots <= 0:
+                break
+            if self.llm_lane is not None and not self.llm_lane.allow_prepared():
                 break
             task = asyncio.create_task(
                 self._generate(plan, count, hashes, self._epoch),
@@ -682,6 +771,9 @@ class PreparedFillerCoordinator:
             )
             self._tasks[plan.plan_id] = task
             slots -= 1
+            if self.llm_lane is not None and not self.llm_lane.allow_prepared():
+                task.cancel()
+                break
 
     def _pop_current_task(self, plan: PreparedFillerPlan) -> None:
         current = asyncio.current_task()
@@ -691,6 +783,9 @@ class PreparedFillerCoordinator:
     async def _generate(
         self, plan: PreparedFillerPlan, count: int, hashes: tuple[str, ...], epoch: int
     ) -> None:
+        if self.llm_lane is not None and not self.llm_lane.allow_prepared():
+            self._pop_current_task(plan)
+            return
         error: str | None = None
         valid: list[str] = []
         merged = 0
@@ -835,7 +930,11 @@ def classify_prepared_generation_error(exc: BaseException) -> str:
 
 
 def decode_prepared_generation_payload(raw: object, plan_id: str) -> list[str]:
-    """Decode a chat-completions envelope into variant strings or a coded ValueError."""
+    """Decode a chat-completions envelope into variant strings or a coded ValueError.
+
+    ``plan_id`` stays on the signature for the caller; the model does not have to echo it.
+    """
+    del plan_id
     if not isinstance(raw, dict):
         raise ValueError("invalid_json")
     choices = raw.get("choices")
@@ -855,11 +954,9 @@ def decode_prepared_generation_payload(raw: object, plan_id: str) -> list[str]:
         raise ValueError("truncated" if finish == "length" else "invalid_json") from exc
     if not isinstance(decoded, dict):
         raise ValueError("invalid_json")
-    if decoded.get("schema") != "prepared-filler/1" or decoded.get("planId") != plan_id:
-        raise ValueError("plan_mismatch")
     variants = decoded.get("variants")
     if not isinstance(variants, list):
-        raise ValueError("invalid_json")
+        raise ValueError("truncated" if finish == "length" else "invalid_json")
     texts = [item for item in variants if isinstance(item, str)]
     if finish == "length" and not texts:
         raise ValueError("truncated")
@@ -898,6 +995,30 @@ class OpenAICompatiblePreparedGenerator:
                 response.raise_for_status()
                 raw = await response.json()
         return decode_prepared_generation_payload(raw, plan.plan_id)[:count]
+
+
+def choose_live_prepared_selections(
+    buffer: PreparedFillerBuffer,
+    *,
+    stage: str,
+    holdover_stage: str,
+    now_ms: int,
+) -> tuple[tuple[PreparedSelection, ...], str]:
+    """Keep leftover intro eligible during LIVE without blocking first live facts.
+
+    Unspoken live plans go first. If those are still generating, or every live
+    plan already had a turn, the holdover intro can fill the silence.
+    """
+    live = buffer.selections(stage, now_ms)
+    intro = buffer.selections(holdover_stage, now_ms) if holdover_stage else ()
+    unspoken_live = tuple(
+        item for item in live if not buffer.plan_has_spoken(item.plan.situation_id)
+    )
+    if unspoken_live:
+        return unspoken_live, stage
+    if intro:
+        return intro, holdover_stage
+    return live, stage
 
 
 def build_prepared_filler_plans(
@@ -958,7 +1079,11 @@ def build_prepared_filler_plans(
         finish_position_fact = FactProposition(
             "finish_position", position, "telemetry", revision, _spoken_position(position, locale)
         )
-    lap_count = _positive_integer(race.get("lap_completed"))
+    stage_epoch = _integer(editorial.get("stage_epoch"))
+    stream_epoch = _integer(editorial.get("stream_epoch"))
+    stint_epoch = _integer(editorial.get("stint_epoch"))
+    overlay_mode = str(identity.get("overlay_mode") or "").strip().upper()
+    lap_count = _stint_completed_laps(race, overlay_mode=overlay_mode)
     lap_fact = (
         FactProposition("completed_laps", lap_count, "telemetry", revision, str(lap_count))
         if lap_count is not None
@@ -976,10 +1101,6 @@ def build_prepared_filler_plans(
         if best_lap is not None
         else None
     )
-    stage_epoch = _integer(editorial.get("stage_epoch"))
-    stream_epoch = _integer(editorial.get("stream_epoch"))
-    stint_epoch = _integer(editorial.get("stint_epoch"))
-    overlay_mode = str(identity.get("overlay_mode") or "").strip().upper()
     graph_mode = normalize_graph_mode(overlay_mode)
     confirmed = bool(race.get("player_finished") or race.get("session_finished"))
     result_status_fact = FactProposition(
@@ -1068,6 +1189,8 @@ def build_prepared_filler_plans(
         node_id: str,
         planned_stage: str,
         planned_epoch: int,
+        *,
+        mode_override: str | None = None,
     ) -> None:
         node = sequence_graph.node(node_id)
         contract = node.prepared if node is not None else None
@@ -1075,9 +1198,16 @@ def build_prepared_filler_plans(
             return
         if planned_stage not in contract.allowed_stages:
             return
-        if node.modes and graph_mode not in node.modes:
+        effective_mode = normalize_graph_mode(mode_override) if mode_override else graph_mode
+        if node.modes and effective_mode not in node.modes:
             return
         bound = dict(facts)
+        if mode_override:
+            spoken_mode = _localized_mode(mode_override, locale)
+            if spoken_mode:
+                bound["session"] = FactProposition(
+                    "session", spoken_mode, "telemetry", revision, spoken_mode
+                )
         relation_fact = _relation_proposition(
             contract.relation,
             finish_position=_positive_integer(position),
@@ -1169,6 +1299,8 @@ def build_prepared_filler_plans(
 
     def add_stage(planned_stage: str, planned_epoch: int) -> None:
         if planned_stage == "STREAM_LOBBY_INTRO":
+            if facts.get("track") is None:
+                add_node("stream_loading_color", planned_stage, planned_epoch)
             for node_id in (
                 "stream_intro_venue",
                 "stream_intro_circuit_character",
@@ -1196,13 +1328,19 @@ def build_prepared_filler_plans(
                 add_node(node_id, planned_stage, planned_epoch)
             add_node("practice_quiet_track", planned_stage, planned_epoch)
         elif planned_stage == "SESSION_EVENT_INTRO":
+            intro_mode = _nonempty(editorial.get("handoff_overlay_mode")) or overlay_mode
             event_intro_node_id = {
                 "PRACTICE": "event_intro_practice",
                 "QUALIFYING": "event_intro_qualifying",
                 "RACE": "event_intro_race",
-            }.get(overlay_mode)
+            }.get(intro_mode)
             if event_intro_node_id is not None:
-                add_node(event_intro_node_id, planned_stage, planned_epoch)
+                add_node(
+                    event_intro_node_id,
+                    planned_stage,
+                    planned_epoch,
+                    mode_override=intro_mode if intro_mode != overlay_mode else None,
+                )
         elif planned_stage == "IN_CAR_PREP":
             add_node("hero_prepares_to_drive", planned_stage, planned_epoch)
             for node_id in (
@@ -1216,6 +1354,7 @@ def build_prepared_filler_plans(
         elif planned_stage == "OUT_LAP":
             add_node("out_lap_preparation", planned_stage, planned_epoch)
             add_node("out_lap_field_context", planned_stage, planned_epoch)
+            add_node("quali_named_observation", planned_stage, planned_epoch)
         elif planned_stage == "GRID_PREP":
             add_node("race_quali_recap_result", planned_stage, planned_epoch)
             add_node("race_grid_field", planned_stage, planned_epoch)
@@ -1236,11 +1375,26 @@ def build_prepared_filler_plans(
                     add_node("formation_lap_tension", planned_stage, planned_epoch)
                 elif str(prepared.get("start_mode") or "") == "standing":
                     add_node("standing_start_setup", planned_stage, planned_epoch)
+        elif planned_stage == "LIVE_SESSION":
+            skip_late_intro = bool(editorial.get("intro_line_spoken")) or bool(
+                editorial.get("holdover_stage")
+            )
+            if not skip_late_intro:
+                add_node("live_session_late_intro", planned_stage, planned_epoch)
+            add_node("live_session_place", planned_stage, planned_epoch)
+            add_node("live_session_field", planned_stage, planned_epoch)
+            add_node("live_session_stint", planned_stage, planned_epoch)
+            add_node("named_field_observation", planned_stage, planned_epoch)
+            add_node("quali_named_observation", planned_stage, planned_epoch)
         elif planned_stage == "SESSION_CONCLUSION":
             add_conclusion(planned_stage, planned_epoch)
         elif planned_stage == "BETWEEN_SESSIONS":
             add_node("stream_chapter_bridge", planned_stage, planned_epoch)
 
+    holdover_stage = _nonempty(editorial.get("holdover_stage"))
+    holdover_epoch = _integer(editorial.get("holdover_stage_epoch"))
+    if holdover_stage and holdover_stage != stage:
+        add_stage(holdover_stage, holdover_epoch)
     add_stage(stage, stage_epoch)
     next_stage = _nonempty(editorial.get("next_stage"))
     if next_stage and next_stage != stage:
@@ -1658,7 +1812,7 @@ def _generation_request(
     return {
         "model": settings.llm_model,
         "temperature": settings.llm_temperature,
-        "max_tokens": max(360, settings.llm_max_tokens),
+        "max_tokens": max(1024, settings.llm_max_tokens),
         "think": False,
         "reasoning_effort": "none",
         "messages": [
@@ -1674,6 +1828,24 @@ def _generation_request(
             {"role": "user", "content": json.dumps(facts, ensure_ascii=False, sort_keys=True)},
         ],
     }
+
+
+def _stint_completed_laps(race: dict[str, Any], *, overlay_mode: str) -> int | None:
+    """Ignore the blind start S/F; first racing lap after green is not a stint.
+
+    Race ``LapCompleted`` often ticks 0→1 at the start line. That wrap is not a
+    completed racing lap. Require two racing laps vs the witnessed green origin.
+    """
+    completed = _non_negative_integer(race.get("lap_completed"))
+    if completed is None:
+        return None
+    if overlay_mode != "RACE":
+        return completed if completed > 0 else None
+    green_lap = _non_negative_integer(race.get("green_lap_completed"))
+    if green_lap is None:
+        return completed if completed > 1 else None
+    racing = completed - green_lap
+    return racing if racing >= 2 else None
 
 
 def _normalize_text(value: object) -> str:

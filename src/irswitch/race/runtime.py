@@ -90,6 +90,7 @@ _SITUATION_SUPPRESS_TYPES = frozenset(
         "SESSION_INTRO_RACE",
         "ENTER_CAR",
         "STREAM_START",
+        "STREAM_END",
         "PIT_ENTRY",
         "PIT_LANE",
         "PIT_STOPPED",
@@ -213,6 +214,7 @@ class RaceRuntime:
         if hasattr(sink, "on_spoken_text"):
             sink.on_spoken_text = _spoken
         self._stream_start_emitted = False
+        self._stream_end_emitted = False
         self._commentary_available = True
         self.overlay_consumer = OverlayConsumer(
             self._overlay_subscription,
@@ -552,15 +554,44 @@ class RaceRuntime:
         except Exception:
             logger.warning("STREAM_START commentary failed", exc_info=True)
 
+    def notify_sim_quit(self, now: float) -> None:
+        """iRacing QUIT: stop leftover speech, then speak stream outro before OBS stop."""
+        overlay = self._overlay_settings()
+        if not overlay.commentary.enabled:
+            self.commentary_consumer.invalidate_prepared(interrupt_tts=False)
+            return
+        if getattr(self, "_stream_end_emitted", False):
+            return
+        try:
+            from irswitch.commentary.stream_context import make_stream_end_envelope
+
+            self.commentary_consumer.invalidate_prepared(interrupt_tts=False)
+            self.commentary_consumer.hold_current_tts()
+            envelope = make_stream_end_envelope(now)
+            self._ensure_context(now)
+            self.race_observer.note_accepted([envelope])
+            self.pipeline.publish_envelopes(
+                [envelope],
+                source="stream_end",
+                accepted_monotonic_ms=int(now * 1000),
+                poll_interval_ms=self._poll_interval_ms(),
+            )
+            self._stream_end_emitted = True
+        except Exception:
+            self.commentary_consumer.release_tts_hold()
+            logger.warning("STREAM_END commentary failed", exc_info=True)
+
     def notify_obs_stream_stopped(self, now: float) -> None:
         """OBS streaming falling edge invalidates prepared commentary state."""
         self.editorial_stage.note_stream_stopped(int(now * 1000))
         self.prepared_facts.reset()
         self._editorial_feedback.clear()
+        self.commentary_consumer.release_tts_hold()
         self.commentary_consumer.invalidate_prepared(interrupt_tts=True)
         self.race_observer.reset_stream()
         self._capture_context(self._last_race, now, hud=self._current_hud())
         self._stream_start_emitted = False
+        self._stream_end_emitted = False
 
     def _reset_commentary(self) -> None:
         """Compatibility hook; N12 config/reset delivery uses typed stream items."""

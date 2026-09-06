@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import re
 import sys
 import threading
 import time
@@ -64,8 +65,59 @@ def prepare_winrt_ble(*, allow_sta_fallback: bool = False) -> None:
     logger.info("BLE WinRT apartment prepared allow_sta=%s", allow_sta_fallback)
 
 
+_MAC_RE = re.compile(r"^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$", re.IGNORECASE)
+
+
 def _hash_address(address: str) -> str:
     return hashlib.sha256(address.encode("utf-8")).hexdigest()[:8]
+
+
+def looks_like_ble_address(value: str) -> bool:
+    return bool(_MAC_RE.match((value or "").strip()))
+
+
+def _address_int(address: str) -> int:
+    return int(address.replace(":", "").replace("-", ""), 16)
+
+
+def ble_connect_attempts() -> tuple[dict[str, Any], ...]:
+    """Already-bonded Windows devices time out if the first try re-pairs."""
+    return (
+        {
+            "pair": False,
+            "services": [HR_SERVICE],
+            "winrt": {"use_cached_services": True},
+        },
+        {
+            "pair": True,
+            "services": [HR_SERVICE],
+            "winrt": {"use_cached_services": True},
+        },
+        {
+            "pair": True,
+            "services": [HR_SERVICE],
+            "winrt": {"use_cached_services": False},
+        },
+    )
+
+
+async def paired_ble_target(address: str) -> tuple[str, str | None] | None:
+    """Return address+name when Windows already knows the paired device."""
+    if not looks_like_ble_address(address):
+        return None
+    try:
+        from winrt.windows.devices.bluetooth import BluetoothLEDevice
+    except ImportError:
+        return None
+    try:
+        device = await BluetoothLEDevice.from_bluetooth_address_async(_address_int(address))
+    except Exception:
+        logger.debug("BLE paired lookup failed address=%s", _hash_address(address), exc_info=True)
+        return None
+    if device is None:
+        return None
+    name = str(getattr(device, "name", None) or "").strip() or None
+    return address.strip(), name
 
 
 def _scan_rows(raw: Any) -> list[tuple[Any, Any | None]]:
@@ -341,11 +393,10 @@ class BleHeartRateProvider:
 
         prepare_winrt_ble(allow_sta_fallback=False)
         self.set_status("connecting")
-        device = await self._scan(BleakScanner)
-        if device is None:
+        target, name = await self._resolve_target(BleakScanner)
+        if target is None:
             raise RuntimeError("no heart-rate device")
-        address = _device_address(device) or str(device)
-        name = _device_name(device, None) or None
+        address = _device_address(target) or str(target)
         self.set_status("connecting", device_name=name)
         logger.info("BLE connecting device=%s", _hash_address(str(address)))
         disconnected = asyncio.Event()
@@ -355,25 +406,32 @@ class BleHeartRateProvider:
 
         client: Any | None = None
         last_error: Exception | None = None
-        for cached in (True, False):
+        for attempt in ble_connect_attempts():
             if self._stop_flag.is_set():
                 return
             candidate = BleakClient(
-                device,
+                target,
                 disconnected_callback=_on_disconnect,
                 timeout=_CONNECT_TIMEOUT_S,
-                pair=True,
-                services=[HR_SERVICE],
-                winrt={"use_cached_services": cached},
+                **attempt,
             )
             try:
                 await connect_or_timeout(candidate, _CONNECT_TIMEOUT_S)
                 client = candidate
-                logger.info("BLE GATT ready cached=%s", cached)
+                logger.info(
+                    "BLE GATT ready pair=%s cached=%s",
+                    attempt.get("pair"),
+                    (attempt.get("winrt") or {}).get("use_cached_services"),
+                )
                 break
             except Exception as exc:
                 last_error = exc
-                logger.info("BLE connect cached=%s failed: %s", cached, exc)
+                logger.info(
+                    "BLE connect pair=%s cached=%s failed: %s",
+                    attempt.get("pair"),
+                    (attempt.get("winrt") or {}).get("use_cached_services"),
+                    exc,
+                )
                 try:
                     await candidate.disconnect()
                 except Exception:
@@ -407,6 +465,22 @@ class BleHeartRateProvider:
                 pass
         self.set_status("disconnected")
 
+    async def _resolve_target(self, scanner_cls: Any) -> tuple[Any | None, str | None]:
+        wanted = (self._settings.device or "auto").strip()
+        if looks_like_ble_address(wanted):
+            paired = await paired_ble_target(wanted)
+            if paired is not None:
+                address, paired_name = paired
+                logger.info("BLE using paired address device=%s", _hash_address(address))
+                return address, paired_name or wanted
+        picked = await self._scan(scanner_cls)
+        if picked is not None:
+            return picked, _device_name(picked, None) or None
+        if looks_like_ble_address(wanted):
+            logger.info("BLE falling back to pinned address after empty scan")
+            return wanted, wanted
+        return None, None
+
     async def _scan(self, scanner_cls: Any) -> Any:
         wanted = (self._settings.device or "auto").strip()
         try:
@@ -416,5 +490,14 @@ class BleHeartRateProvider:
         rows = _scan_rows(raw)
         picked = pick_heart_rate_device(rows, wanted)
         if picked is None:
-            logger.warning("BLE HR scan matched nothing (devices=%s wanted=%s)", len(rows), wanted)
+            visible = [
+                _device_name(device, adv) or f"unnamed:{_device_address(device)[-5:]}"
+                for device, adv in rows
+            ]
+            logger.warning(
+                "BLE HR scan matched nothing (devices=%s wanted=%s visible=%s)",
+                len(rows),
+                wanted,
+                visible[:12],
+            )
         return picked

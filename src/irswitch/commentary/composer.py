@@ -394,6 +394,7 @@ def _current_clauses(
     rear = _bound(bindings, "rear_target_name")
     front_gap = _positive_metric(_bound(bindings, "front_gap"))
     rear_gap = _positive_metric(_bound(bindings, "rear_gap"))
+    places = _int(_bound(bindings, "places"))
     details: list[_Clause] = []
     primary: _Clause | None
 
@@ -490,6 +491,19 @@ def _current_clauses(
         return primary, details
 
     if event in {"OVERTAKE", "POSITION_GAINED", "BATTLE_WON"}:
+        if event == "POSITION_GAINED" and places is not None and places >= 2 and position:
+            return (
+                _Clause(
+                    "beat",
+                    (
+                        f"Získává {places} míst a jde na {position}. místo"
+                        if cs
+                        else f"He gains {places} positions to P{position}"
+                    ),
+                    ("hero:position", "hero:places", "beat:gain"),
+                ),
+                details,
+            )
         if position and name and event != "POSITION_GAINED":
             return (
                 _Clause(
@@ -577,6 +591,19 @@ def _current_clauses(
             return extra[0], extra[1:]
 
     if event == "POSITION_LOST":
+        if places is not None and places >= 2 and position:
+            return (
+                _Clause(
+                    "beat",
+                    (
+                        f"Ztrácí {places} míst a klesá na {position}. místo"
+                        if cs
+                        else f"He drops {places} positions to P{position}"
+                    ),
+                    ("hero:position", "hero:places", "beat:loss"),
+                ),
+                details,
+            )
         if position and name:
             return (
                 _Clause(
@@ -605,7 +632,15 @@ def _current_clauses(
         )
 
     if event == "FINISH":
-        # A FINISH event does not guarantee a confirmed final classification.
+        if position:
+            return (
+                _Clause(
+                    "beat",
+                    (f"Dojíždí na {position}. místě" if cs else f"He finishes in P{position}"),
+                    ("hero:position", "beat:placement"),
+                ),
+                details,
+            )
         return (
             _Clause(
                 "beat", "Jeho závod skončil" if cs else "His race is complete", ("beat:finish",)
@@ -839,7 +874,7 @@ def _fact_pack(
         "session": _compact(
             {
                 "mode": envelope.mode,
-                "lap": situation.get("current_lap") or _bound(bindings, "lap"),
+                "lap": _bound(bindings, "lap") or situation.get("current_lap"),
                 "laps_remain": situation.get("laps_remaining"),
                 "is_final_lap": situation.get("is_final_lap"),
                 "race_phase": situation.get("race_phase"),
@@ -847,19 +882,34 @@ def _fact_pack(
         ),
         "hero": _compact(
             {
+                "name": _bound(bindings, "hero_name"),
                 "class_position": (
                     _positive_position(_bound(bindings, "position"))
                     or race.get("class_position")
                     or race.get("position")
                 ),
+                "old_class_position": _positive_position(_bound(bindings, "old_position")),
+                "places": _int(_bound(bindings, "places")),
                 "lap_time": _bound(bindings, "lap_time"),
                 "delta": _bound(bindings, "delta"),
                 "streak": _bound(bindings, "streak"),
+                "incident_points": _int(_bound(bindings, "value")),
+                "value": _int(_bound(bindings, "value")),
             }
         ),
         "target": target,
         "front_target": front_target,
         "rear_target": rear_target,
+        "leader": _compact({"name": _bound(bindings, "leader_name")}),
+        "weather": _compact(
+            {
+                "skies": _bound(bindings, "skies"),
+                "air_temp": _bound(bindings, "air_temp"),
+                "track_temp": _bound(bindings, "track_temp"),
+                "wind_speed": _bound(bindings, "wind_speed"),
+                "precipitation": _bound(bindings, "precipitation"),
+            }
+        ),
         "field": {"ahead": ahead[:2], "behind": behind[:2]},
         "bio": {"hr_band": emotion},
     }
@@ -877,7 +927,7 @@ def _relation(event_type: str) -> str:
         "BATTLE_FOR_POSITION": "hero_between_two_fronts",
         "LEADER_CHANGE": "class_leader_changed",
         "SESSION_WRAP": "session_result",
-        "FINISH": "session_result",
+        "FINISH": "hero_placement",
     }.get(event_type.upper(), "factual_beat")
 
 
@@ -992,6 +1042,23 @@ def _ensure_terminal(text: str) -> str:
     if not clean:
         return clean
     return clean if clean[-1] in ".!?…" else clean + "."
+
+
+def stale_call_apology(locale: str) -> str:
+    """Spoken after a same-scenario revision when the previous line was already old."""
+    if locale.lower().startswith("cs"):
+        return "Promiňte, předchozí informace už neplatila."
+    return "Sorry, that last call was already old."
+
+
+def with_stale_apology(text: str, locale: str) -> str:
+    apology = stale_call_apology(locale)
+    spoken = (text or "").strip()
+    if not spoken:
+        return apology
+    if apology.rstrip(".!?").casefold() in spoken.casefold():
+        return spoken if spoken[-1] in ".!?" else spoken + "."
+    return f"{_ensure_terminal(spoken)} {apology}"
 
 
 def _fact_keys(clauses: list[_Clause]) -> set[str]:

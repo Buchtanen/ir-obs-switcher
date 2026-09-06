@@ -32,7 +32,7 @@ SILENCE_NODE_ID = "__silence__"
 class GraphScoringSettings:
     """Tunable score constants kept outside graph traversal state."""
 
-    selection_threshold: float = 45.0
+    selection_threshold: float = 30.0
     max_silence_s: float = 33.0
     max_silence_bonus: float = 30.0
     filler_retry_s: float = 5.0

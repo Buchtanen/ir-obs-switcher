@@ -99,7 +99,15 @@ def test_active_repeated_semantic_fact_falls_below_threshold() -> None:
     director._busy_until = 0.0
     director._global_ready_at = 0.0
 
-    repeated = director.observe([_hunting("event:2")], None, 3.0)
+    # Threshold 30 lets one fatigued hunting line through; the next repeat dies.
+    second = director.observe([_hunting("event:2")], None, 3.0)
+    assert second is not None and second.graph_candidate is not None
+    assert runtime.record_speaking(second.graph_candidate, now=3.0)
+    assert runtime.note_completed(now=4.0, run_epoch=0)
+    director._busy_until = 0.0
+    director._global_ready_at = 0.0
+
+    repeated = director.observe([_hunting("event:3")], None, 5.0)
 
     assert repeated is None
     assert director._last_graph_winner is None

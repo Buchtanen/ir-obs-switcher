@@ -16,11 +16,13 @@ from irswitch.commentary.graph_runtime import (
     GraphScoringSettings,
     SequenceGraphRuntime,
 )
+from irswitch.commentary.llm_lane import LlmPriorityLane
 from irswitch.commentary.prepared_filler import (
     OpenAICompatiblePreparedGenerator,
     PreparedFillerCoordinator,
     PreparedSelection,
     build_prepared_filler_plans,
+    choose_live_prepared_selections,
 )
 from irswitch.commentary.tts import CommentaryUtterance, ProcessTtsSink
 from irswitch.commentary.youtube_history import YouTubeHistorySource
@@ -77,6 +79,8 @@ class CommentaryConsumer:
         self.duplicates = 0
         self.expired = 0
         self.last_error: str | None = None
+        self._hold_current_tts = False
+        self._skip_stale_revision = False
         self.last_stream_sequence = 0
         self._processed_ids: set[str] = set()
         self._processed_order: list[str] = []
@@ -95,19 +99,25 @@ class CommentaryConsumer:
             queue.SimpleQueue()
         )
         self.youtube_history = YouTubeHistorySource(youtube_oauth_manager)
+        self.llm_lane = LlmPriorityLane()
         self.prepared_filler = PreparedFillerCoordinator(
             self._settings.prepared_filler,
             OpenAICompatiblePreparedGenerator(
                 self._settings, history_titles=lambda: self.youtube_history.titles
             ),
             diagnostic=self._prepared_diagnostic,
+            llm_lane=self.llm_lane,
         )
+        self._tts_warmed = False
         self._seen_hero_order_revision = self.story_registry.hero_order_revision
         self.director.story_registry = self.story_registry
         self.director.graph_runtime = self.graph_runtime
+        if hasattr(self.director.sink, "llm_lane"):
+            self.director.sink.llm_lane = self.llm_lane
         if hasattr(self.director.sink, "story_registry"):
             self.director.sink.story_registry = self.story_registry
         self.director.filler_provider = self._request_filler
+        self.director.prepared_prompt_ready = self._lobby_intro_ready
         self.director.on_decision = self._forward_decision
         self.director.on_graph_decision = self._forward_decision
         if hasattr(self.director.sink, "on_graph_lifecycle"):
@@ -158,7 +168,10 @@ class CommentaryConsumer:
             self._outstanding_filler = None
             self._pending_prepared_shadow = None
             self.prepared_filler.reconcile(())
-            self.director.sink.discard_queued()
+            busy = getattr(self.director.sink, "is_busy", None)
+            self._skip_stale_revision = bool(busy()) if callable(busy) else False
+            if not self._hold_current_tts:
+                self.director.sink.discard_queued()
             self._drain_queue(self._filler_requests)
             self._drain_queue(self._filler_results)
             self.processed += 1
@@ -192,6 +205,13 @@ class CommentaryConsumer:
     def note_stream_start_accepted(self, now: float) -> None:
         """Preserve opener mutex at producer acceptance before async dequeue."""
         self.director.opener.note("STREAM_START", now)
+
+    def hold_current_tts(self) -> None:
+        """Keep STREAM_END audible across the QUIT session reset."""
+        self._hold_current_tts = True
+
+    def release_tts_hold(self) -> None:
+        self._hold_current_tts = False
 
     def invalidate_prepared(self, *, interrupt_tts: bool) -> None:
         """Immediately invalidate generated, queued and in-flight prepared work."""
@@ -473,6 +493,24 @@ class CommentaryConsumer:
             self.failures += 1
             self.last_error = f"{type(exc).__name__}: {exc}"
 
+    def _lobby_intro_ready(self) -> bool:
+        """True when a lobby intro stage already has a speakable prepared variant."""
+        if self._settings.prepared_filler.mode != "active":
+            return False
+        payload = self.subscription.latest_context
+        if payload is None:
+            return False
+        context = thaw_context(payload)
+        editorial = context.get("editorial")
+        editorial = editorial if isinstance(editorial, dict) else {}
+        stage = str(editorial.get("stage") or "")
+        if stage not in {
+            EditorialStage.STREAM_LOBBY_INTRO.value,
+            EditorialStage.SESSION_EVENT_INTRO.value,
+        }:
+            return False
+        return self.prepared_filler.buffer.select(stage, int(time.monotonic() * 1000)) is not None
+
     def _request_filler(self, now: float) -> EventEnvelope | None:
         context_payload = self.subscription.latest_context
         if context_payload is None:
@@ -488,9 +526,16 @@ class CommentaryConsumer:
             editorial = context.get("editorial")
             editorial = editorial if isinstance(editorial, dict) else {}
             stage = str(editorial.get("stage") or "")
-            selections = self.prepared_filler.buffer.selections(stage, int(now * 1000))
+            holdover = str(editorial.get("holdover_stage") or "")
+            selections, spoken_stage = choose_live_prepared_selections(
+                self.prepared_filler.buffer,
+                stage=stage,
+                holdover_stage=holdover,
+                now_ms=int(now * 1000),
+            )
             prepared_envelopes = [
-                self._prepared_envelope(selection, context, stage, now) for selection in selections
+                self._prepared_envelope(selection, context, spoken_stage, now)
+                for selection in selections
             ]
             selected_envelope = self.director.rank_prepared_fillers(prepared_envelopes, now=now)
             if selected_envelope is not None:
@@ -734,6 +779,17 @@ class CommentaryConsumer:
     ) -> None:
         self._graph_lifecycle.put((action, candidate, now))
 
+    def _maybe_speak_stale_revision(self, utterance: CommentaryUtterance, now: float) -> None:
+        if self._skip_stale_revision:
+            self._skip_stale_revision = False
+            return
+        self.director.note_speech_finished(now)
+        latest_payload = self.subscription.latest_context
+        bio = None
+        if latest_payload is not None:
+            bio = self._bio_from_context(thaw_context(latest_payload))
+        self.director.speak_stale_revision(utterance, now, bio)
+
     def _enqueue_prepared_lifecycle(
         self, action: str, utterance: CommentaryUtterance, now: float
     ) -> None:
@@ -745,6 +801,9 @@ class CommentaryConsumer:
                 action, utterance, now = self._prepared_lifecycle.get_nowait()
             except queue.Empty:
                 return
+            if action == "completed":
+                self._maybe_speak_stale_revision(utterance, now)
+                continue
             if action != "speaking":
                 continue
             if utterance.prepared_variant_id:
@@ -752,40 +811,74 @@ class CommentaryConsumer:
             if utterance.prepared_fatal_episode is not None:
                 self.prepared_filler.mark_fatal_notice_spoken(utterance.prepared_fatal_episode)
             stage = utterance.prepared_stage
-            if (
-                stage
-                and self.prepared_filler.buffer.stage_drained(stage)
-                and self._prepared_stage_hook is not None
-            ):
-                try:
-                    editorial_stage = EditorialStage(stage)
-                except ValueError:
-                    continue
-                feedback_actions: dict[
-                    EditorialStage,
-                    Literal[
-                        "intro_chain_completed",
-                        "session_intro_completed",
-                        "conclusion_completed",
-                    ],
-                ] = {
-                    EditorialStage.STREAM_LOBBY_INTRO: "intro_chain_completed",
-                    EditorialStage.SESSION_EVENT_INTRO: "session_intro_completed",
-                    EditorialStage.SESSION_CONCLUSION: "conclusion_completed",
-                }
-                feedback_action = feedback_actions.get(editorial_stage)
-                if feedback_action is not None:
-                    self._prepared_stage_hook(
-                        EditorialStageFeedback(
-                            stream_epoch=utterance.prepared_stream_epoch,
-                            stage_epoch=utterance.prepared_stage_epoch,
-                            stage=editorial_stage,
-                            action=feedback_action,
-                            observed_monotonic_ms=int(now * 1000),
-                        )
+            if not stage or self._prepared_stage_hook is None:
+                continue
+            try:
+                editorial_stage = EditorialStage(stage)
+            except ValueError:
+                continue
+            holdover_stage = self._editorial_holdover_stage()
+            if holdover_stage and stage == holdover_stage:
+                self._prepared_stage_hook(
+                    EditorialStageFeedback(
+                        stream_epoch=utterance.prepared_stream_epoch,
+                        stage_epoch=utterance.prepared_stage_epoch,
+                        stage=editorial_stage,
+                        action="intro_holdover_completed",
+                        observed_monotonic_ms=int(now * 1000),
                     )
+                )
+                continue
+            if not self.prepared_filler.buffer.stage_drained(stage):
+                continue
+            feedback_actions: dict[
+                EditorialStage,
+                Literal[
+                    "intro_chain_completed",
+                    "session_intro_completed",
+                    "conclusion_completed",
+                ],
+            ] = {
+                EditorialStage.STREAM_LOBBY_INTRO: "intro_chain_completed",
+                EditorialStage.SESSION_EVENT_INTRO: "session_intro_completed",
+                EditorialStage.SESSION_CONCLUSION: "conclusion_completed",
+            }
+            feedback_action = feedback_actions.get(editorial_stage)
+            if feedback_action is not None:
+                self._prepared_stage_hook(
+                    EditorialStageFeedback(
+                        stream_epoch=utterance.prepared_stream_epoch,
+                        stage_epoch=utterance.prepared_stage_epoch,
+                        stage=editorial_stage,
+                        action=feedback_action,
+                        observed_monotonic_ms=int(now * 1000),
+                    )
+                )
+
+    def _maybe_warm_tts(self, context: dict[str, Any]) -> None:
+        if self._tts_warmed:
+            return
+        settings, _ = self._settings_snapshot()
+        if not settings.enabled:
+            return
+        editorial = context.get("editorial")
+        editorial = editorial if isinstance(editorial, dict) else {}
+        stage = str(editorial.get("stage") or "")
+        session_id = str(context.get("session_id") or "")
+        lobby = stage == EditorialStage.STREAM_LOBBY_INTRO.value
+        live = bool(session_id) and stage not in {"", "INACTIVE"}
+        if not (lobby or live):
+            return
+        warm = getattr(self.director.sink, "warm", None)
+        if callable(warm):
+            try:
+                warm()
+            except Exception:
+                __import__("logging").getLogger(__name__).debug("tts warm failed", exc_info=True)
+        self._tts_warmed = True
 
     def _observe_prepared(self, context: dict[str, Any]) -> None:
+        self._maybe_warm_tts(context)
         settings, language = self._settings_snapshot()
         prepared = settings.prepared_filler
         self.youtube_history.configure(
@@ -803,7 +896,11 @@ class CommentaryConsumer:
         )
         raw_editorial = context.get("editorial")
         raw_editorial = raw_editorial if isinstance(raw_editorial, dict) else {}
-        self.prepared_filler.reconcile(plans, current_stage=str(raw_editorial.get("stage") or ""))
+        self.prepared_filler.reconcile(
+            plans,
+            current_stage=str(raw_editorial.get("stage") or ""),
+            holdover_stage=str(raw_editorial.get("holdover_stage") or ""),
+        )
 
     def _prepared_commit_is_current(self, utterance: CommentaryUtterance, now: float) -> bool:
         if self._settings.prepared_filler.mode != "active":
@@ -824,11 +921,22 @@ class CommentaryConsumer:
         if not isinstance(editorial, dict):
             return False
         stage = str(editorial.get("stage") or "")
-        if stage != utterance.prepared_stage:
+        holdover = str(editorial.get("holdover_stage") or "")
+        commit_stage = str(utterance.prepared_stage)
+        if commit_stage != stage and commit_stage != holdover:
             return False
         return self.prepared_filler.buffer.is_current(
-            utterance.prepared_plan_id, stage, int(now * 1000)
+            utterance.prepared_plan_id, commit_stage, int(now * 1000)
         )
+
+    def _editorial_holdover_stage(self) -> str:
+        payload = self.subscription.latest_context
+        if payload is None:
+            return ""
+        editorial = thaw_context(payload).get("editorial")
+        if not isinstance(editorial, dict):
+            return ""
+        return str(editorial.get("holdover_stage") or "")
 
     def _prepared_diagnostic(self, entry: dict[str, Any]) -> None:
         self._forward_decision(

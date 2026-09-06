@@ -505,7 +505,6 @@ def test_tape_opens_when_session_type_comes_from_session_name(tmp_path: Path) ->
     assert tape.path is None
 
 
-<<<<<<< HEAD
 def test_llm_polish_records_without_debug_when_llm_rows(
     tmp_path: Path, monkeypatch: object
 ) -> None:

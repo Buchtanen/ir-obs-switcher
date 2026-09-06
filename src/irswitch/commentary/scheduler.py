@@ -5,12 +5,12 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass, field
 
-from irswitch.commentary.priorities import editorial_priority
 from irswitch.commentary.tts import CommentaryUtterance
 from irswitch.overlay.settings import CommentarySchedulerSettings
 
 _INCIDENT_TYPES = frozenset({"INCIDENT", "INVALID_LAP"})
-_HERO_ORDER_TYPES = frozenset({"POSITION_GAINED", "POSITION_LOST"})
+_HOLD_TYPES = frozenset({"INCIDENT", "TRACK_EXCURSION", "INVALID_LAP", "STREAM_END"})
+_ALWAYS_PARK = frozenset({"TRACK_EXCURSION", "STREAM_END"})
 
 
 @dataclass(order=True)
@@ -31,10 +31,10 @@ class DeferredSpeech:
 
 @dataclass
 class SpeechScheduler:
-    """Park at most one best utterance while TTS is busy; flush once when idle.
+    """Park one ordinary line plus one incident/excursion hold while TTS is busy.
 
-    Lower-priority arrivals are dropped. After a deferred line is spoken, any
-    remaining parked items are cleared — the queue is never drained sequentially.
+    Same-class arrivals replace only when priority is higher. After a deferred
+    line is spoken, ordinary leftovers are dropped; hold types stay parked.
     """
 
     settings: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
@@ -57,28 +57,36 @@ class SpeechScheduler:
             return float(self.settings.incident_ttl_s)
         return float(self.settings.default_ttl_s)
 
+    def should_park_while_busy(self, event_type: str) -> bool:
+        return bool(self.settings.defer_enabled) or event_type in _ALWAYS_PARK
+
     def should_hard_interrupt(self, event_type: str, *, current_event_type: str | None) -> bool:
-        # ``hard_interrupt`` remains parseable for compatibility, but incidents
-        # no longer tear down a committed mini-story. Only authoritative hero
-        # order changes have editorial preemption rights.
-        if event_type not in _HERO_ORDER_TYPES or current_event_type == event_type:
-            return False
-        if current_event_type is None:
-            return True
-        return editorial_priority(event_type) > editorial_priority(current_event_type)
+        # Started speech finishes. Stale facts get a same-scenario revision plus
+        # apology after the line ends; they do not tear down the audible beat.
+        return False
 
     def park(self, utterance: CommentaryUtterance, *, priority: float, now: float) -> bool:
         """Queue best utterance only. Returns False if dropped (lower prio / disabled)."""
-        if not self.settings.defer_enabled and utterance.event_type != "TRACK_EXCURSION":
+        if not self.should_park_while_busy(utterance.event_type):
             return False
         self.expire(now)
         incoming = float(priority)
-        if self._heap:
-            best_prio = max(entry.item.priority for entry in self._heap)
+        hold = utterance.event_type in _HOLD_TYPES
+        same = [
+            entry
+            for entry in self._heap
+            if (entry.item.utterance.event_type in _HOLD_TYPES) == hold
+        ]
+        other = [
+            entry
+            for entry in self._heap
+            if (entry.item.utterance.event_type in _HOLD_TYPES) != hold
+        ]
+        if same:
+            best_prio = max(entry.item.priority for entry in same)
             if incoming < best_prio:
                 return False
-            # Replace parked lower-or-equal priority — never grow a speak-all queue.
-            self._heap.clear()
+        self._heap = other
         expires = now + self.ttl_for(utterance.event_type)
         self._seq += 1
         heapq.heappush(
@@ -93,8 +101,8 @@ class SpeechScheduler:
                 ),
             ),
         )
-        # Cap is a safety net; policy keeps ≤1 best item.
-        max_n = max(1, int(self.settings.max_deferred))
+        # One hold + one ordinary line; config cap is a floor, not a single slot.
+        max_n = max(2, int(self.settings.max_deferred))
         while len(self._heap) > max_n:
             if not self._evict_lowest(incoming):
                 break
@@ -126,6 +134,19 @@ class SpeechScheduler:
         """Drop all parked items (after one deferred speak — no sequential drain)."""
         dropped = [entry.item for entry in self._heap]
         self._heap.clear()
+        return dropped
+
+    def clear_non_hold(self) -> list[DeferredSpeech]:
+        """Drop ordinary parked lines; keep incident / excursion for later."""
+        dropped: list[DeferredSpeech] = []
+        kept: list[_HeapItem] = []
+        for entry in self._heap:
+            if entry.item.utterance.event_type in _HOLD_TYPES:
+                kept.append(entry)
+            else:
+                dropped.append(entry.item)
+        heapq.heapify(kept)
+        self._heap = kept
         return dropped
 
     def silence_due(self, *, last_spoke_at: float | None, now: float) -> bool:

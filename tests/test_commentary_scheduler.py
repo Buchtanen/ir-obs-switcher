@@ -79,16 +79,13 @@ def test_ttl_expiry() -> None:
     assert sched.pop_ready(16.0) is None
 
 
-def test_hard_interrupt_only_for_hero_order_change() -> None:
+def test_started_speech_is_never_hard_interrupted() -> None:
     off = SpeechScheduler(settings=CommentarySchedulerSettings(hard_interrupt=False))
-    assert off.should_hard_interrupt("INCIDENT", current_event_type="HUNTING") is False
-    assert off.should_hard_interrupt("POSITION_GAINED", current_event_type="HUNTING") is True
+    assert off.should_hard_interrupt("POSITION_GAINED", current_event_type="HUNTING") is False
     on = SpeechScheduler(settings=CommentarySchedulerSettings(hard_interrupt=True))
     assert on.should_hard_interrupt("INCIDENT", current_event_type="FINISH") is False
-    assert on.should_hard_interrupt("OVERTAKE", current_event_type="HUNTING") is False
-    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="HUNTING") is True
-    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="POSITION_LOST") is False
-    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="FINISH") is False
+    assert on.should_hard_interrupt("POSITION_LOST", current_event_type="HUNTING") is False
+    assert on.should_park_while_busy("STREAM_END") is True
 
 
 def test_editorial_priority_is_strict_and_orders_flags() -> None:
@@ -117,6 +114,20 @@ def test_silence_due() -> None:
     assert sched.silence_due(last_spoke_at=None, now=100.0) is False
     assert sched.silence_due(last_spoke_at=50.0, now=82.0) is False
     assert sched.silence_due(last_spoke_at=50.0, now=83.0) is True
+
+
+def test_park_keeps_incident_beside_hunting() -> None:
+    sched = SpeechScheduler(
+        settings=CommentarySchedulerSettings(defer_enabled=True, max_deferred=1)
+    )
+    assert sched.park(_utt("HUNTING", "hunting"), priority=20, now=1.0)
+    assert sched.park(_utt("INCIDENT", "incident"), priority=90, now=1.1)
+    assert len(sched) == 2
+    dropped = sched.clear_non_hold()
+    assert [item.utterance.event_type for item in dropped] == ["HUNTING"]
+    remaining = sched.peek()
+    assert remaining is not None
+    assert remaining.utterance.event_type == "INCIDENT"
 
 
 def test_park_disabled_noop() -> None:

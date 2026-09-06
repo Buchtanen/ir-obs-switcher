@@ -30,6 +30,7 @@ from irswitch.overlay.settings import (
     SystemInfoSettings,
 )
 from irswitch.sampling.scheduler import clamp_hz
+from irswitch.util.diagnostic_voice import DiagnosticVoiceSettings
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,9 @@ class AppConfig:
 
     # Overlay / race pipeline (optional INI sections, defaults apply)
     overlay: OverlaySettings = field(default_factory=OverlaySettings)
+
+    # [diagnostics] operator ear lane. Missing section stays off.
+    diagnostics: DiagnosticVoiceSettings = field(default_factory=DiagnosticVoiceSettings)
 
     @classmethod
     def from_file(cls, path: Path | str) -> AppConfig:
@@ -253,6 +257,10 @@ class AppConfig:
 
         stream_chapters = load_stream_chapters_settings(parser)
         overlay = _load_overlay_settings(parser)
+        diagnostics = DiagnosticVoiceSettings(
+            voice=_get_bool(parser, "diagnostics", "voice", False),
+            cooldown_s=max(0.0, _get_float(parser, "diagnostics", "cooldown_s", 4.0)),
+        )
 
         result = cls(
             http_host=http_host,
@@ -292,6 +300,7 @@ class AppConfig:
             oauth_client_secret=oauth_client_secret,
             stream_chapters=stream_chapters,
             overlay=overlay,
+            diagnostics=diagnostics,
         )
         return result
 
@@ -457,6 +466,9 @@ def _load_prepared_filler(
         ),
         iracing_history=_get_bool(parser, section, "iracing_history", defaults.iracing_history),
         system_filler=_get_bool(parser, section, "system_filler", defaults.system_filler),
+        speak_fatal_notice=_get_bool(
+            parser, section, "speak_fatal_notice", defaults.speak_fatal_notice
+        ),
     )
 
 
@@ -480,8 +492,12 @@ def _clamp_duck_fade_ms(value: int) -> int:
     return max(0, min(3000, int(value)))
 
 
-def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSettings:
-    defaults = HuntingSettings()
+def _load_hunting(
+    parser: configparser.ConfigParser,
+    section: str,
+    defaults: HuntingSettings | None = None,
+) -> HuntingSettings:
+    defaults = defaults or HuntingSettings()
     return HuntingSettings(
         enter_gap=_get_float(parser, section, "enter_gap", defaults.enter_gap),
         exit_gap=_get_float(parser, section, "exit_gap", defaults.exit_gap),
@@ -823,9 +839,21 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         sampling=sampling,
         battle=BattleSettings(
             hunting=_load_hunting(parser, "battle.hunting"),
-            hunted=_load_hunting(parser, "battle.hunted"),
+            hunted=_load_hunting(parser, "battle.hunted", defaults.battle.hunted),
             position_stable_seconds=_get_float(
                 parser, "battle", "position_stable_seconds", defaults.battle.position_stable_seconds
+            ),
+            position_swing_debounce_s=_get_float(
+                parser,
+                "battle",
+                "position_swing_debounce_s",
+                defaults.battle.position_swing_debounce_s,
+            ),
+            position_incident_window_s=_get_float(
+                parser,
+                "battle",
+                "position_incident_window_s",
+                defaults.battle.position_incident_window_s,
             ),
             gap_history_seconds=_get_float(
                 parser, "battle", "gap_history_seconds", defaults.battle.gap_history_seconds

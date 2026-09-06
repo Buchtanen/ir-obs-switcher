@@ -24,6 +24,7 @@ COMMENTARY_ONLY_EVENTS = frozenset(
         "SESSION_CHECKERED",
         "SESSION_FLAG",
         "STREAM_START",
+        "STREAM_END",
         "PACE_HUNT",
         "QUALI_RECAP",
         "PARADE_PAD",

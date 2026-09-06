@@ -40,7 +40,7 @@ If header `overlayMode` is `RACE` during Quali → skill `iracing-session-glossa
 | `stories` | active V4 stories |
 | `field` | per-tick official vs live place (`officialPosition` / `livePosition`, `cars[]`) — audit start/order lag |
 | `commentary` | director speak/reject — **DEBUG** (skip spam); spoken/TTS also appear after clean |
-| `prepared_filler` | coordinator lifecycle: `action` + `reason` (`cancelled`, `empty`, `stale`, `plan_mismatch`, `invalid_json`, `truncated`, `http_*`, `timeout`, `transport`) plus `stage` / `attempt` / `mergedCount`. `acceptedTexts` only at runtime DEBUG. Empty `generated` + `acceptedTexts=[]` was a Test 8 bug, not a filled buffer. |
+| `prepared_filler` | coordinator lifecycle: `action` + `reason` (`cancelled`, `empty`, `stale`, `plan_mismatch`, `invalid_json`, `truncated`, `http_*`, `timeout`, `transport`) plus `stage` / `attempt` / `mergedCount`. `acceptedTexts` only at runtime DEBUG. Empty `generated` + `acceptedTexts=[]` was a Test 8 bug, not a filled buffer. After Race green expect leftover `holdover_stage` intro to stay eligible during LIVE silence, plus `live_session_*` plans. Race `live_session_stint` must not fire on the start S/F. Empty `LIVE_SESSION` is no longer the graph contract. Wrong `planId` echo is no longer a hard reject if `variants` exist. `PREPARED_FATAL` / “I have no text” must not appear as spoken commentary. |
 | `llm_polish` | polish request/response — **INFO when `session_tape_llm=true`** (dataset capture) |
 | `stream_origin` | OBS stream clock attached |
 

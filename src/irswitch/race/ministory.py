@@ -92,6 +92,7 @@ class _MiniStory:
     metrics: dict[str, Any]
     state: MiniStoryState = MiniStoryState.READY
     resolved_after_commit: bool = False
+    stale_while_speaking: bool = False
 
 
 @dataclass
@@ -391,19 +392,41 @@ class MiniStoryRegistry:
     def _story_for_token(self, token: MiniStoryToken) -> _MiniStory | None:
         return next((s for s in self._stories.values() if s.story_id == token.story_id), None)
 
+    def stale_after_speech(self, token: MiniStoryToken | None) -> bool:
+        """True when the audible line finished after its facts moved on."""
+        if token is None:
+            return False
+        with self._lock:
+            story = self._story_for_token(token)
+            if story is None:
+                return False
+            return bool(
+                story.stale_while_speaking
+                or story.resolved_after_commit
+                or story.revision > token.revision
+            )
+
+    def revision_snapshot(self, token: MiniStoryToken | None) -> tuple[str, dict[str, Any]] | None:
+        """Current event + metrics for the same story, if a revision is speakable."""
+        if token is None:
+            return None
+        with self._lock:
+            story = self._story_for_token(token)
+            if story is None:
+                return None
+            if not (story.resolved_after_commit or story.revision > token.revision):
+                return None
+            return story.event_type, deepcopy(story.metrics)
+
     def _invalidate_for_order_change(self) -> None:
         for story in self._stories.values():
-            if story.story_id == self._active_story_id and story.state in {
-                MiniStoryState.COMMITTED,
-                MiniStoryState.SPEAKING,
-            }:
-                story.state = MiniStoryState.INTERRUPTED
+            if story.state in {MiniStoryState.COMMITTED, MiniStoryState.SPEAKING}:
+                story.stale_while_speaking = True
             elif story.state not in {
                 MiniStoryState.COMPLETED,
                 MiniStoryState.INTERRUPTED,
             }:
                 story.state = MiniStoryState.INVALIDATED
-        self._active_story_id = None
 
 
 def _story_key(envelope: EventEnvelope) -> str:

@@ -205,6 +205,30 @@ def test_position_loss_without_named_target_keeps_current_position() -> None:
     assert "P30" in result.text
 
 
+def test_position_loss_cumulative_names_place_count() -> None:
+    graph = load_sequence_graph()
+    envelope = make_envelope(
+        event_type="POSITION_LOST",
+        phase="RESULT",
+        mode="RACE",
+        metrics={"oldPosition": 2, "newPosition": 8, "delta": -6, "places": 6},
+    )
+    node = graph.nodes_for("POSITION_LOST", "RESULT")[0]
+    result = build_skeleton(
+        envelope,
+        node,
+        graph=graph,
+        story={"race": {"class_position": 8}, "story": {"recent_beats": []}},
+        bindings=slot_bindings(envelope, "unknown"),
+        emotion="unknown",
+        language="en",
+    )
+    assert result is not None
+    assert "6" in result.text
+    assert "P8" in result.text
+    assert result.fact_pack["hero"]["places"] == 6
+
+
 def test_director_uses_composer_only_for_polish_path() -> None:
     graph = _graph()
     envelope = make_envelope(

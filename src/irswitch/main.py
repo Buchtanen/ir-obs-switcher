@@ -8,6 +8,7 @@ import logging
 import signal
 import sys
 import threading
+import time
 import webbrowser
 
 import aiohttp
@@ -53,6 +54,12 @@ from irswitch.server.event_log import EventLog, get_event_log, set_event_log
 from irswitch.server.metrics import get_metrics
 from irswitch.server.task_registry import TaskRegistry
 from irswitch.util.clock import now_ms
+from irswitch.util.diagnostic_voice import (
+    announce_diagnostic,
+    announce_fatal_blocking,
+    close_diagnostic_voice,
+    configure_diagnostic_voice,
+)
 from irswitch.util.hotkeys import (
     is_hotkey_pressed,
     start_listener,
@@ -442,6 +449,14 @@ async def main_loop(
                     quit_detected_ts = now_ms()
                     stream_stopped_after_quit = False
                     logger.debug("QUIT detected, starting reset timer")
+                    try:
+                        from irswitch.overlay.http import get_overlay_runtime
+
+                        runtime = get_overlay_runtime()
+                        if runtime is not None:
+                            runtime.notify_sim_quit(time.monotonic())
+                    except Exception:
+                        logger.warning("STREAM_END after QUIT failed", exc_info=True)
 
                 elapsed_ms = now_ms() - quit_detected_ts
                 quit_reset_seconds = 15  # Always reset QUIT after 15 seconds
@@ -842,11 +857,13 @@ async def main_loop(
                 if not is_quit_or_restart or connected_iracing:
                     if connected_iracing:
                         log_connection_restored(logger, "iRacing")
+                        announce_diagnostic("iracing_connected")
                         await event_log.add_event(
                             "connection_restored", "iRacing connection restored"
                         )
                     else:
                         log_connection_lost(logger, "iRacing")
+                        announce_diagnostic("iracing_disconnected")
                         await event_log.add_event("connection_lost", "iRacing connection lost")
 
             if connected_obs != current_state.connected_obs:
@@ -920,6 +937,7 @@ async def main_loop(
                     # Auto-refresh YouTube video/broadcast status on OBS start/stop
                     stream_edge = classify_streaming_edge(last_obs_streaming, is_streaming)
                     if stream_edge == "obs_stream_started":
+                        announce_diagnostic("stream_started")
                         loop_background_tasks.cancel("youtube_post_stop_status_refresh")
                         title, _ = await refresh_stream_status(
                             obs_client, event_log, "obs_stream_started"
@@ -938,6 +956,7 @@ async def main_loop(
                         if state_now is not None:
                             set_current_state(state_now)
                     elif stream_edge == "obs_stream_stopped":
+                        announce_diagnostic("stream_stopped")
                         try:
                             from irswitch.commentary.stream_context import (
                                 notify_overlay_stream_stopped,
@@ -1241,6 +1260,7 @@ async def main_loop(
             break
         except Exception as e:
             logger.error(f"Error in main loop: {e}", exc_info=True)
+            announce_diagnostic("switcher_fatal")
             # Continue loop even on error
             await asyncio.sleep(poll_interval)
 
@@ -1690,6 +1710,7 @@ async def run_service(
 
         # Restore ducked OBS volume before dropping the websocket.
         restore_shared_ducker()
+        close_diagnostic_voice()
         stop_listener()  # Stop hotkey listener
         await obs_client.disconnect()
         await runner.cleanup()
@@ -1706,6 +1727,7 @@ def main() -> int:
     except Exception as e:
         print(f"Error loading config: {e}", file=sys.stderr)
         return 1
+    configure_diagnostic_voice(config.diagnostics)
 
     overlay_input = "live"
     if args.mock:
@@ -1730,6 +1752,7 @@ def main() -> int:
         return 0
     except Exception as e:
         logger.error(f"Fatal error: {e}", exc_info=True)
+        announce_fatal_blocking()
         return 1
 
 

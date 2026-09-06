@@ -166,7 +166,7 @@ Also: manual override, autoswitch disabled, debounce, cooldown — state machine
 
 | Situation | Trigger | W | C | Flag |
 | --- | --- | --- | --- | --- |
-| Position gained/lost | Class/overall position stable `position_stable_seconds` | yes | yes | core / classifier |
+| Position gained/lost | Last place change must hold `position_stable_seconds`; incident / multi-place waits `position_swing_debounce_s` then one cumulative emit | yes | yes | core / classifier |
 | Overtake | Gain + confident pass (gap, not pit) | yes prio 80 | yes cd 8 / pri 85 | `overtake_classifier` |
 | Rival threat | Closing behind ≥ 0.25, gap ≤ 2.5 s | yes | yes cd 20 | Modes P/Q/R |
 

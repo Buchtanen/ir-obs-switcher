@@ -20,8 +20,7 @@ from urllib.parse import urlparse
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
 from irswitch.commentary.speech_numbers import numbers_to_words
-from irswitch.commentary.style_cards import mood_for_node
-from irswitch.commentary.validator import validate_utterance
+from irswitch.commentary.validator import strip_emoji, validate_utterance
 from irswitch.overlay.settings import CommentarySettings
 
 logger = logging.getLogger(__name__)
@@ -36,12 +35,15 @@ _EXPAND_RATIO = 1.35
 _MIN_ATTEMPT_S = 0.05
 
 _LEAD_CLAIM = re.compile(
-    r"\b(unchallenged lead|narrow lead|the lead|leads?|leading|leader)\b",
+    r"\b(unchallenged lead|narrow lead|the lead|leads?|leading|leader|"
+    r"victory|victories|winner|champ(?:ion)?|in first|in second|in third|"
+    r"claims? (?:the )?(?:win|victory)|takes? (?:the )?win)\b",
     re.IGNORECASE,
 )
 _LEAD_OK = re.compile(
     r"\b(unchallenged lead|narrow lead|the lead|leads?|leading|leader|"
-    r"pole|p\s*one|p\s*1|position\s*one)\b",
+    r"pole|p\s*one|p\s*1|position\s*one|victory|winner|in first|in second|"
+    r"in third)\b",
     re.IGNORECASE,
 )
 _POLE = re.compile(r"\bpole\b", re.IGNORECASE)
@@ -115,7 +117,13 @@ _RELATION_PATTERNS = {
         re.IGNORECASE,
     ),
     "session_result": re.compile(
-        r"\b(finishes?|finished|result|wrap|ends?|ending|complete|close|končí|skončil|uzavírá|výsledek|závěr|konec)\b",
+        r"\b(finish(?:es|ed)?|result|wrap|ends?|ending|complete|close|"
+        r"končí|skončil|uzavírá|výsledek|závěr|konec)\b",
+        re.IGNORECASE,
+    ),
+    "hero_placement": re.compile(
+        r"\b(?:p\s*\d+|finishes?(?:\s+in)?|crosses?(?:\s+the)?(?:\s+finish)?(?:\s+line)?|"
+        r"placement|classified|dojíždí|končí na|bere)\b",
         re.IGNORECASE,
     ),
 }
@@ -275,7 +283,7 @@ def _length_rule(tts: TtsLimits, skeleton: str) -> str:
     return (
         "Stream-viewer commentary only, third person about the featured driver. "
         "Same sentence count as the skeleton; "
-        "do not add a sentence. Richer wording of the same facts only. "
+        "do not add a sentence. Richer wording of the same facts. "
         f"Hard cap {cap} characters for this skeleton and {tts.max_seconds:g} seconds spoken. "
         "Do not welcome, recap unused history, or invent action."
     )
@@ -343,12 +351,21 @@ def fact_violation_codes(
     if _is_microplan(fact_pack):
         codes.extend(_role_violations(po, fact_pack))
         if re.search(
-            r"\b(?:Fix|REQUIRED|OPTIONAL|STRICT|Example|STYLE|Facts?|Call)\s*:|\b(?:invented_name|missing_required_fact|validator|commentary-facts)\b",
+            r"\b(?:Fix|REQUIRED|OPTIONAL|STRICT|Example|STYLE|Facts?|Call)\s*:|"
+            r"\b(?:invented_name|missing_required_fact|validator|commentary-facts)\b|"
+            r"\bno invented (?:numbers?|names?|rank|positions?)\b|"
+            r"\b(?:all )?positions validated\b|"
+            r"\bno number, no invented rank\b|"
+            r"\bno weather polarity(?: shift)?\b|"
+            r"\bweather polarity\b",
             po,
             re.I,
         ):
             codes.append("meta_output")
-    if _token_set(po, _P_TOKEN) - _token_set(sk, _P_TOKEN):
+    allowed_positions = _token_set(sk, _P_TOKEN)
+    if _is_microplan(fact_pack):
+        allowed_positions |= _token_set(_live_data_text(fact_pack), _P_TOKEN)
+    if _token_set(po, _P_TOKEN) - allowed_positions:
         codes.append("invented_position")
     if _token_set(po, _S_TOKEN) - _token_set(sk, _S_TOKEN):
         codes.append("invented_sector")
@@ -368,6 +385,7 @@ def fact_violation_codes(
             codes.append("invented_number")
         if _invented_name(sk, po, driver_names, fact_pack):
             codes.append("invented_name")
+        codes.extend(_weather_polarity_codes(po, fact_pack))
     return codes
 
 
@@ -391,9 +409,36 @@ def _missing_required_terms(polished: str, fact_pack: dict[str, Any]) -> bool:
             return True
         relation = str(fact.get("relation") or "")
         pattern = _RELATION_PATTERNS.get(relation)
-        if pattern is not None and pattern.search(polished) is None:
+        # Soft: empty terms/numbers mean the beat is a paraphrase lock, not a
+        # story-complete matcher. Invented names/numbers stay HARD elsewhere.
+        has_lock = (isinstance(terms, list) and any(str(term).strip() for term in terms)) or (
+            isinstance(numbers, list) and bool(numbers)
+        )
+        if has_lock and pattern is not None and pattern.search(polished) is None:
             return True
     return False
+
+
+def _selected_required_names(fact_pack: dict[str, Any]) -> list[str]:
+    """Only names locked by selected propositions, not every actor_role entity."""
+    names: list[str] = []
+    seen: set[str] = set()
+    raw = fact_pack.get("required_facts")
+    if not isinstance(raw, list):
+        return names
+    for fact in raw:
+        if not isinstance(fact, dict):
+            continue
+        terms = fact.get("required_terms")
+        if not isinstance(terms, list):
+            continue
+        for term in terms:
+            name = str(term).strip()
+            key = name.casefold()
+            if name and key not in seen:
+                seen.add(key)
+                names.append(name)
+    return names
 
 
 def _contains_term(folded: str, term: str) -> bool:
@@ -424,6 +469,7 @@ def _invented_numbers(
     # v3 never trusts a telemetry-wide allowlist, including imported/tampered packs.
     values = (
         list(_NUMBER_LITERAL.findall(_selected_text(fact_pack)))
+        + list(_NUMBER_LITERAL.findall(_live_data_text(fact_pack)))
         if _is_microplan(fact_pack)
         else fact_pack.get("allowed_numbers", [])
     )
@@ -448,14 +494,20 @@ def _number_words(text: str) -> set[str]:
         if token not in _NUMBER_WORD_TOKENS:
             continue
         # "a real one" is an atmospheric pronoun, not the number 1.
-        if token == "one" and index > 0 and tokens[index - 1] in {
-            "a",
-            "another",
-            "real",
-            "that",
-            "the",
-            "this",
-        }:
+        if (
+            token == "one"
+            and index > 0
+            and tokens[index - 1]
+            in {
+                "a",
+                "another",
+                "no",
+                "real",
+                "that",
+                "the",
+                "this",
+            }
+        ):
             continue
         found.add(token)
     return found
@@ -470,11 +522,7 @@ def _invented_name(
     micro = fact_pack.get("microplan")
     roles = micro.get("actor_roles") if isinstance(micro, dict) else ()
     role_names = (
-        [
-            str(item[1])
-            for item in roles
-            if isinstance(item, (list, tuple)) and len(item) == 2
-        ]
+        [str(item[1]) for item in roles if isinstance(item, (list, tuple)) and len(item) == 2]
         if isinstance(roles, (list, tuple))
         else []
     )
@@ -484,6 +532,7 @@ def _invented_name(
             *(str(item) for item in fact_pack.get("allowed_names", [])),
             *(str(item) for item in driver_names),
             *role_names,
+            _live_data_text(fact_pack) if _is_microplan(fact_pack) else "",
         ]
     ).casefold()
     allowed_tokens = set(re.findall(r"[\wáčďéěíňóřšťúůýž'-]+", allowed_text))
@@ -557,17 +606,46 @@ def _two_front_polarity_conflict(
     return front_behind is not None or rear_ahead is not None
 
 
+def _weather_polarity_codes(polished: str, fact_pack: dict[str, Any]) -> list[str]:
+    weather = fact_pack.get("weather")
+    weather = weather if isinstance(weather, dict) else {}
+    skies = str(weather.get("skies") or "").casefold()
+    wind = str(weather.get("wind_speed") or "").casefold()
+    precip = str(weather.get("precipitation") or "").casefold()
+    text = polished or ""
+    codes: list[str] = []
+    if skies and re.search(r"\b(?:overcast|cloudy|cloud)\b", skies):
+        if re.search(r"\b(?:clear|sunny|no clouds?)\b", text, re.I):
+            codes.append("weather_polarity")
+    if skies and re.search(r"\b(?:clear|sunny)\b", skies):
+        if re.search(r"\b(?:overcast|storm|downpour)\b", text, re.I):
+            codes.append("weather_polarity")
+    wind_number = _NUMBER_LITERAL.search(wind)
+    try:
+        wind_value = float(wind_number.group(0).replace(",", ".")) if wind_number else 0.0
+    except ValueError:
+        wind_value = 0.0
+    if wind_value > 0:
+        if re.search(r"\b(?:no wind|without wind|windless)\b", text, re.I):
+            codes.append("weather_polarity")
+    wet_source = f"{skies} {precip}"
+    if not re.search(r"\b(?:rain|wet|precip|storm)\b", wet_source) and re.search(
+        r"\b(?:rain(?:drops?)?|stormy|downpour)\b", text, re.I
+    ):
+        codes.append("weather_polarity")
+    return list(dict.fromkeys(codes))
+
+
 def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
     """Small family-specific guards; not an unrestricted natural-language judge."""
-    relation = str(pack.get("beat", {}).get("relation") or "")
-    target = str(pack.get("target", {}).get("name") or "")
-    codes: list[str] = []
     micro = pack.get("microplan")
-    roles = micro.get("actor_roles") if isinstance(micro, dict) else ()
-    for item in roles if isinstance(roles, (list, tuple)) else ():
-        if not isinstance(item, (list, tuple)) or len(item) != 2:
-            continue
-        name = str(item[1]).strip()
+    micro = micro if isinstance(micro, dict) else {}
+    relation = str(micro.get("relation") or pack.get("beat", {}).get("relation") or "")
+    target = str(pack.get("target", {}).get("name") or "") or str(
+        _actor_roles(pack).get("target") or ""
+    )
+    codes: list[str] = []
+    for name in _selected_required_names(pack):
         if name and not _contains_term(text.casefold(), name):
             codes.append("missing_required_name")
     if relation == "hero_between_two_fronts":
@@ -593,7 +671,8 @@ def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
             codes.append("reversed_rear_relation")
     if target and relation in {"hero_closing_on_target", "target_closing_on_hero"}:
         target_chases = re.search(
-            rf"\b{re.escape(target)}\s+(?:is\s+)?(?:clos\w*|chas\w*|hunts?|stahuje|dotahuje)",
+            rf"\b{re.escape(target)}(?:['’]s)?(?:\s+(?:is|are))?\s+"
+            rf"(?:clos\w*|chas\w*|hunts?|stahuje|dotahuje)",
             text,
             re.I,
         )
@@ -606,8 +685,29 @@ def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
             relation == "target_closing_on_hero" and hero_chases
         ):
             codes.append("reversed_relation")
+    if re.search(
+        r"target_closing_on_hero|hero_closing_on_target|hero_between_two_fronts",
+        text,
+    ):
+        codes.append("schema_leak")
+    if relation == "target_closing_on_hero" and re.search(r"\bTarget['’]s\b", text):
+        codes.append("role_as_name")
     # Never infer causal or future race events merely from a gap/position fact.
-    source = _selected_text(pack)
+    source = " ".join((_selected_text(pack), _live_data_text(pack) if _is_microplan(pack) else ""))
+    event = str(pack.get("beat", {}).get("event") or "").upper()
+    node_id = str(pack.get("beat", {}).get("node") or "")
+    typed_close = event in {
+        "FINAL_LAP",
+        "FINISH",
+        "SESSION_WRAP",
+        "SESSION_CHECKERED",
+    } or node_id in {
+        "final_lap",
+        "finish",
+        "session_wrap",
+        "session_checkered",
+        "session_flag_checkered",
+    }
     for concept in (
         r"\b(?:wins?|won|victory|vítězí)\b",
         r"\b(?:yellow|safety car|crash\w*|collision|contact|damage\w*|retir\w*|dnf|"
@@ -616,6 +716,10 @@ def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
         r"\b(?:final lap|last lap|poslední kolo)\b",
         r"\b(?:fastest|nejrychlejší)\b",
     ):
+        if typed_close and re.search(
+            r"final lap|last lap|poslední kolo|finishes?|finished", concept
+        ):
+            continue
         if re.search(concept, text, re.I) and not re.search(concept, source, re.I):
             codes.append("unsupported_event")
     if re.search(
@@ -676,14 +780,13 @@ def _system_prompt(
     fact_pack: dict[str, Any] | None = None,
 ) -> str:
     if _is_microplan(fact_pack):
-        language = "Czech" if locale.lower().startswith("cs") else "English"
         cap = _request_char_limit(skeleton, tts, fact_pack)
         return (
-            f"You are a live TV race commentator. Write ONE fresh call in {language} from DATA "
-            "only. STYLE is mood/energy only — never copy its words or sentence shape. Vivid "
-            "atmosphere is OK. Keep every name, number and position from DATA. Do not invent new "
-            "names, new numbers, damage, retirement, or future outcomes. "
-            f"Max {cap} characters, 1-2 sentences. Output only the call."
+            "You are a professional TV race commentator. Return a description of the "
+            "situation from the live DATA. "
+            f"Stay under {cap} characters, 1-2 sentences. Keep every name, number and "
+            "position from DATA. Color, energy and a bit of showmanship are OK. Do not "
+            "invent a pass. Never predict the future."
         )
     if _is_grounded(fact_pack):
         cap = _request_char_limit(skeleton, tts, fact_pack)
@@ -742,23 +845,7 @@ def _user_content(
     composition_path: Sequence[str] = (),
 ) -> str:
     if _is_microplan(fact_pack):
-        beat = fact_pack.get("beat") or {}
-        node_id = str(beat.get("node") or "")
-        parts = [
-            "DATA: "
-            + json.dumps(
-                _microplan_data(fact_pack, past=past),
-                ensure_ascii=False,
-                separators=(",", ":"),
-            ),
-            f"STYLE mood only (do not copy): {mood_for_node(node_id)}",
-        ]
-        if rejected:
-            parts.append(
-                "Correct only these factual validation failures: " + ", ".join(rejected) + "."
-            )
-        parts.append("Write a NEW broadcast line.")
-        return "\n".join(parts)
+        return _format_live_data(_microplan_data(fact_pack, past=past))
     if _is_grounded(fact_pack):
         required = fact_pack.get("required_facts", [])
         optional = fact_pack.get("optional_facts", [])
@@ -776,12 +863,6 @@ def _user_content(
             "ALLOWED_NUMBERS:\n"
             + json.dumps(allowed_numbers, ensure_ascii=False, separators=(",", ":")),
         ]
-        if rejected:
-            parts.append(
-                "PREVIOUS OUTPUT REJECTED: "
-                + ", ".join(rejected)
-                + ". Correct those violations; do not copy the rejected output."
-            )
         return "\n".join(parts)
     instruction = (
         "Rewrite this delayed call. Same facts, same length, richer wording only."
@@ -796,29 +877,463 @@ def _user_content(
         )
     if composition_path:
         parts.append("COMPOSITION_PATH: " + " -> ".join(str(item) for item in composition_path))
-    if rejected:
-        parts.append(
-            "PREVIOUS REWRITE REJECTED: "
-            + ", ".join(rejected)
-            + ". Do not repeat those mistakes. Output only the rewrite."
-        )
-        if previous:
-            parts.append(f"REJECTED TEXT:\n{previous}")
+    if previous:
+        parts.append("PREVIOUS TEXT:\n" + previous)
     return "\n".join(parts)
 
 
+def _format_live_data(data: dict[str, Any]) -> str:
+    """Emit the probed DATA line: JS-object keys, quoted strings, no JSON braces-as-keys."""
+    parts: list[str] = []
+    for key, value in data.items():
+        if isinstance(value, str):
+            parts.append(f'{key}: "{value}"')
+        else:
+            parts.append(f"{key}: {json.dumps(value, ensure_ascii=False)}")
+    return "DATA: {" + ", ".join(parts) + "}"
+
+
+def _live_data_text(fact_pack: dict[str, Any], *, past: bool = False) -> str:
+    return _format_live_data(_microplan_data(fact_pack, past=past))
+
+
+def _gap_label(value: object) -> str:
+    text = str(value).strip()
+    if not text:
+        return text
+    number = _NUMBER_LITERAL.search(text.replace(",", "."))
+    if number is not None:
+        raw = number.group(0)
+        frac = raw.split(".")[-1] if "." in raw else ""
+        if len(frac) > 2:
+            try:
+                rounded = f"{float(raw):.2f}"
+                text = text[: number.start()] + rounded + text[number.end() :]
+            except ValueError:
+                pass
+    if re.search(r"\b(s|sec|secs|second|seconds)\b", text, re.IGNORECASE):
+        return text
+    return f"{text} s"
+
+
+def _actor_roles(fact_pack: dict[str, Any]) -> dict[str, str]:
+    micro = fact_pack.get("microplan")
+    micro = micro if isinstance(micro, dict) else {}
+    roles_raw = micro.get("actor_roles")
+    if not isinstance(roles_raw, (list, tuple)):
+        return {}
+    return {
+        str(item[0]): str(item[1])
+        for item in roles_raw
+        if isinstance(item, (list, tuple)) and len(item) == 2 and str(item[1]).strip()
+    }
+
+
+def _selected_gap(fact_pack: dict[str, Any], *sources: str) -> str | None:
+    required_text = _selected_text(fact_pack)
+    for source in sources:
+        raw = fact_pack.get(source)
+        value = raw.get("gap") if isinstance(raw, dict) else None
+        if value is None:
+            continue
+        number = _NUMBER_LITERAL.search(str(value))
+        if number is None or not _value_occurs(required_text, number.group(0)):
+            continue
+        return _gap_label(value)
+    return None
+
+
 def _microplan_data(fact_pack: dict[str, Any], *, past: bool) -> dict[str, Any]:
-    """Flatten selected facts into labeled data without leaking a template sentence."""
+    """Role-labeled DATA. Tested 4B schemas first; other relations stay on legacy keys."""
+    tested = _tested_live_data(fact_pack)
+    data = tested if tested is not None else _legacy_microplan_data(fact_pack, past=past)
+    return _with_session_kind(data, fact_pack)
+
+
+def _session_kind(fact_pack: dict[str, Any]) -> str | None:
+    raw = fact_pack.get("session")
+    mode = str(raw.get("mode") or "").strip().upper() if isinstance(raw, dict) else ""
+    if mode == "PRACTICE":
+        return "practice"
+    if mode == "QUALIFYING":
+        return "qualifying"
+    return None
+
+
+def _with_session_kind(data: dict[str, Any], fact_pack: dict[str, Any]) -> dict[str, Any]:
+    kind = _session_kind(fact_pack)
+    if kind is None:
+        return data
+    tagged = dict(data)
+    tagged["session"] = kind
+    situation = str(tagged.get("situation") or "").strip()
+    if situation and kind not in situation.casefold():
+        tagged["situation"] = f"{situation} in {kind}"
+    elif not situation:
+        tagged["situation"] = f"in {kind}"
+    return tagged
+
+
+def _featured_driver(fact_pack: dict[str, Any], roles: dict[str, str]) -> str | None:
+    hero = roles.get("hero")
+    if hero:
+        return hero
+    raw = fact_pack.get("hero")
+    name = raw.get("name") if isinstance(raw, dict) else None
+    text = str(name or "").strip()
+    return text or None
+
+
+def _weather_live_data(fact_pack: dict[str, Any]) -> dict[str, Any] | None:
+    weather = fact_pack.get("weather")
+    weather = weather if isinstance(weather, dict) else {}
+    data = {
+        key: str(weather[key]).strip()
+        for key in ("skies", "air_temp", "track_temp", "wind_speed", "precipitation")
+        if str(weather.get(key) or "").strip()
+    }
+    if not data:
+        return None
+    data["situation"] = "current conditions"
+    return data
+
+
+def _tested_live_data(fact_pack: dict[str, Any]) -> dict[str, Any] | None:
+    """Only relations probed live against qwen3:4b-instruct-2507-q4_K_M."""
     micro = fact_pack.get("microplan")
     micro = micro if isinstance(micro, dict) else {}
     beat = fact_pack.get("beat")
     beat = beat if isinstance(beat, dict) else {}
-    roles_raw = micro.get("actor_roles")
-    roles = {
-        str(item[0]): str(item[1])
-        for item in roles_raw
-        if isinstance(item, (list, tuple)) and len(item) == 2 and str(item[1]).strip()
-    } if isinstance(roles_raw, (list, tuple)) else {}
+    roles = _actor_roles(fact_pack)
+    relation = str(micro.get("relation") or beat.get("relation") or "factual_beat")
+    node_id = str(beat.get("node") or "")
+    hero = roles.get("hero")
+    target = roles.get("target")
+    front = roles.get("front")
+    rear = roles.get("rear")
+
+    if relation == "target_closing_on_hero" and target:
+        featured = _featured_driver(fact_pack, roles)
+        data: dict[str, Any] = {
+            "chaser": target,
+            "situation": "applying pressure from behind",
+        }
+        if featured:
+            data["target"] = featured
+        if gap := _selected_gap(fact_pack, "target"):
+            data["gap"] = gap
+        return data
+
+    if relation == "hero_closing_on_target" and target:
+        chaser = _featured_driver(fact_pack, roles)
+        if not chaser:
+            return None
+        data = {
+            "chaser": chaser,
+            "target": target,
+            "relation": "hero_closing_on_target",
+            "situation": f"closing gap on {target}",
+        }
+        if gap := _selected_gap(fact_pack, "target"):
+            data["gap"] = gap
+        return data
+
+    if relation == "hero_passed_target" and target:
+        featured = _featured_driver(fact_pack, roles) or hero
+        if not featured:
+            return None
+        data = {
+            "hero": featured,
+            "passed": target,
+            "situation": "completed a pass",
+        }
+        position = (
+            fact_pack.get("hero", {}).get("class_position")
+            if isinstance(fact_pack.get("hero"), dict)
+            else None
+        )
+        if position is not None and _value_occurs(_selected_text(fact_pack), position):
+            data["new_position"] = f"P{position}"
+        return data
+
+    if relation == "hero_between_two_fronts" and front and rear:
+        featured = _featured_driver(fact_pack, roles) or hero
+        if not featured:
+            return None
+        data = {
+            "hero": featured,
+            "car_ahead": front,
+            "car_behind": rear,
+            "situation": f"attacking {front}, {rear} applying pressure behind",
+        }
+        if gap := _selected_gap(fact_pack, "front_target"):
+            data["gap_ahead"] = gap
+        if gap := _selected_gap(fact_pack, "rear_target"):
+            data["gap_behind"] = gap
+        return data
+
+    if relation == "hero_gained_position" and hero:
+        featured = _featured_driver(fact_pack, roles) or hero
+        data = {"hero": featured, "situation": "gained a position"}
+        _apply_place_swing(data, fact_pack, gained=True)
+        return data
+
+    if relation == "hero_lost_position" and hero:
+        featured = _featured_driver(fact_pack, roles) or hero
+        data = {"hero": featured, "situation": "lost a position"}
+        if target:
+            data["lost_to"] = target
+        _apply_place_swing(data, fact_pack, gained=False)
+        return data
+
+    if relation == "class_leader_changed" and target:
+        data = {"new_leader": target, "situation": "lead changed"}
+        if old := _other_name(fact_pack, target, hero):
+            data["old_leader"] = old
+        return data
+
+    if node_id == "rival_threat" and target:
+        data = {
+            "threat": target,
+            "situation": "distant rival, not yet applying pressure",
+        }
+        if gap := _selected_gap(fact_pack, "target"):
+            data["gap"] = gap
+        return data
+
+    if node_id in {
+        "incident_off_track",
+        "track_excursion",
+        "stopped_after_excursion",
+    } or (
+        str(beat.get("event") or "").upper() == "TRACK_EXCURSION"
+        and node_id not in {"motion_restored", "track_rejoined", "normal_running_resumed"}
+    ):
+        featured = _featured_driver(fact_pack, roles) or hero
+        data = {"situation": "ran off the track"}
+        if featured:
+            data["hero"] = featured
+        return data
+
+    if node_id in {"motion_restored", "track_rejoined"}:
+        featured = _featured_driver(fact_pack, roles) or hero
+        data = {"situation": "moving again after going off"}
+        if featured:
+            data["hero"] = featured
+        return data
+
+    if node_id in {"incident", "incident_unknown"} or (
+        str(beat.get("event") or "").upper() == "INCIDENT" and node_id not in {"incident_off_track"}
+    ):
+        featured = _featured_driver(fact_pack, roles) or hero
+        data = {"situation": "incident points"}
+        if featured:
+            data["hero"] = featured
+        points = _incident_points(fact_pack)
+        if points is not None:
+            data["incident_points"] = points
+        return data
+
+    if node_id == "quali_recap" and hero:
+        data = {"hero": hero, "situation": "qualified"}
+        if position := _selected_position(fact_pack):
+            data["position"] = position
+        return data
+
+    if node_id == "session_wrap" and hero:
+        data = {"hero": hero, "situation": "session finished"}
+        if position := _selected_position(fact_pack):
+            data["position"] = position
+        return data
+
+    if node_id == "finish" or str(beat.get("event") or "").upper() == "FINISH":
+        featured = _featured_driver(fact_pack, roles) or hero
+        data = {"situation": "hero placement"}
+        if featured:
+            data["hero"] = featured
+        raw = fact_pack.get("hero")
+        raw_pos = raw.get("class_position") if isinstance(raw, dict) else None
+        if raw_pos is not None:
+            data["position"] = f"P{raw_pos}"
+        elif position := _selected_position(fact_pack):
+            data["position"] = position
+        return data
+
+    if node_id in {"session_checkered", "session_flag_checkered"} or str(
+        beat.get("event") or ""
+    ).upper() in {"SESSION_CHECKERED", "SESSION_FLAG"}:
+        if "checkered" in node_id or str(beat.get("event") or "").upper() == "SESSION_CHECKERED":
+            return {"situation": "checkered flag"}
+        # SESSION_FLAG green/yellow still use the generic flag path below.
+
+    if node_id == "field_fact" and hero and target:
+        raw = fact_pack.get("target")
+        value = raw.get("gap") if isinstance(raw, dict) else None
+        if value is not None:
+            return {"chaser": hero, "target": target, "gap": _gap_label(value)}
+
+    if node_id == "field_fact" and hero:
+        if position := _selected_position(fact_pack):
+            return {
+                "chaser": hero,
+                "position": position,
+                "situation": f"holds {position}",
+            }
+
+    if node_id == "field_fact":
+        raw_leader = fact_pack.get("leader")
+        leader = raw_leader.get("name") if isinstance(raw_leader, dict) else None
+        name = str(leader or "").strip()
+        if name:
+            return {
+                "leader": name,
+                "situation": f"{name} sets the pace out front",
+            }
+
+    if node_id in {"weather_change", "weather_brief"}:
+        weather = _weather_live_data(fact_pack)
+        if weather is not None:
+            return weather
+
+    if node_id == "lap_complete" and hero:
+        data = {"hero": hero, "situation": "completed a lap"}
+        raw_session = fact_pack.get("session")
+        lap = raw_session.get("lap") if isinstance(raw_session, dict) else None
+        if lap is not None:
+            data["lap"] = str(lap)
+        raw_hero = fact_pack.get("hero")
+        lap_time = raw_hero.get("lap_time") if isinstance(raw_hero, dict) else None
+        if lap_time is not None:
+            data["lap_time"] = str(lap_time)
+        if "lap" in data and "lap_time" in data:
+            data["situation"] = f"completed lap {data['lap']} in {data['lap_time']}"
+        return data
+
+    if node_id == "personal_best":
+        featured = _featured_driver(fact_pack, roles)
+        if not featured:
+            return None
+        data = {"hero": featured, "situation": "set a personal best"}
+        raw_hero = fact_pack.get("hero")
+        raw_hero = raw_hero if isinstance(raw_hero, dict) else {}
+        raw_pos = raw_hero.get("class_position")
+        if raw_pos is not None:
+            data["position"] = f"P{raw_pos}"
+        raw_session = fact_pack.get("session")
+        lap = raw_session.get("lap") if isinstance(raw_session, dict) else None
+        if lap is not None:
+            data["lap"] = str(lap)
+        lap_time = raw_hero.get("lap_time")
+        if lap_time is not None:
+            data["lap_time"] = str(lap_time)
+        if delta := raw_hero.get("delta"):
+            data["delta"] = str(delta)
+        if "lap" in data and "lap_time" in data:
+            data["situation"] = f"set a personal best on lap {data['lap']} in {data['lap_time']}"
+        return data
+
+    if node_id == "final_lap" or str(beat.get("event") or "").upper() == "FINAL_LAP":
+        featured = _featured_driver(fact_pack, roles)
+        data = {"situation": "final lap"}
+        if featured:
+            data["hero"] = featured
+        if position := _selected_position(fact_pack):
+            data["position"] = position
+        return data
+
+    return None
+
+
+def _apply_place_swing(data: dict[str, Any], fact_pack: dict[str, Any], *, gained: bool) -> None:
+    raw = fact_pack.get("hero")
+    raw = raw if isinstance(raw, dict) else {}
+    try:
+        count = abs(int(raw["places"])) if raw.get("places") is not None else 0
+    except (TypeError, ValueError):
+        count = 0
+    old = raw.get("old_class_position")
+    new = _selected_position(fact_pack)
+    if new is None and raw.get("class_position") is not None:
+        new = f"P{raw['class_position']}"
+    if old is not None:
+        data["from"] = f"P{old}"
+    if new is not None:
+        data["to"] = new
+        data["new_position"] = new
+    if count >= 2:
+        verb = "gained" if gained else "lost"
+        situation = f"{verb} {count} positions"
+        if new:
+            situation = f"{situation} to {new}"
+        data["places"] = count
+        data["situation"] = situation
+    elif new and gained:
+        data["situation"] = f"gained a position to {new}"
+
+
+def _incident_points(fact_pack: dict[str, Any]) -> int | None:
+    raw = fact_pack.get("hero")
+    raw = raw if isinstance(raw, dict) else {}
+    for key in ("incident_points", "value"):
+        if raw.get(key) is None:
+            continue
+        try:
+            return abs(int(raw[key]))
+        except (TypeError, ValueError):
+            continue
+    for item in fact_pack.get("required_facts", []):
+        if not isinstance(item, dict):
+            continue
+        numbers = item.get("required_numbers") or []
+        if not numbers:
+            continue
+        try:
+            return abs(int(float(str(numbers[0]))))
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _selected_hero_value(fact_pack: dict[str, Any], field: str) -> object | None:
+    raw = fact_pack.get("hero")
+    value = raw.get(field) if isinstance(raw, dict) else None
+    if value is None or not _value_occurs(_selected_text(fact_pack), value):
+        return None
+    return value
+
+
+def _selected_session_value(fact_pack: dict[str, Any], field: str) -> object | None:
+    raw = fact_pack.get("session")
+    value = raw.get(field) if isinstance(raw, dict) else None
+    if value is None or not _value_occurs(_selected_text(fact_pack), value):
+        return None
+    return value
+
+
+def _selected_position(fact_pack: dict[str, Any]) -> str | None:
+    raw = fact_pack.get("hero")
+    value = raw.get("class_position") if isinstance(raw, dict) else None
+    if value is None or not _value_occurs(_selected_text(fact_pack), value):
+        return None
+    return f"P{value}"
+
+
+def _other_name(fact_pack: dict[str, Any], *exclude: str | None) -> str | None:
+    skipped = {str(item).casefold() for item in exclude if item}
+    for value in fact_pack.get("allowed_names", []):
+        name = str(value).strip()
+        if name and name.casefold() not in skipped:
+            return name
+    return None
+
+
+def _legacy_microplan_data(fact_pack: dict[str, Any], *, past: bool) -> dict[str, Any]:
+    """Untested live relations. Keep pre-probe keys until a 4B schema is approved."""
+    micro = fact_pack.get("microplan")
+    micro = micro if isinstance(micro, dict) else {}
+    beat = fact_pack.get("beat")
+    beat = beat if isinstance(beat, dict) else {}
+    roles = _actor_roles(fact_pack)
     relation = str(micro.get("relation") or beat.get("relation") or "factual_beat")
     node_id = str(beat.get("node") or "")
     data: dict[str, Any] = {}
@@ -829,7 +1344,7 @@ def _microplan_data(fact_pack: dict[str, Any], *, past: bool) -> dict[str, Any]:
     front = roles.get("front")
     rear = roles.get("rear")
     action = {
-        "hero_closing_on_target": "closing on the target",
+        "hero_closing_on_target": (f"closing gap on {target}" if target else "closing the gap"),
         "target_closing_on_hero": "applying pressure from behind",
         "hero_passed_target": "completed a pass",
         "hero_gained_position": "gained a position",
@@ -839,7 +1354,9 @@ def _microplan_data(fact_pack: dict[str, Any], *, past: bool) -> dict[str, Any]:
         "session_result": "session result confirmed",
     }.get(relation)
     if relation == "hero_closing_on_target" and target:
-        data["closing_on"] = target
+        if hero:
+            data["chaser"] = hero
+        data["target"] = target
     elif relation == "target_closing_on_hero" and target:
         data["pressure_from"] = target
     elif relation == "hero_passed_target" and target:
@@ -862,11 +1379,7 @@ def _microplan_data(fact_pack: dict[str, Any], *, past: bool) -> dict[str, Any]:
     data["action"] = action
     data["time_frame"] = "moments_ago" if past else str(micro.get("story_state") or "live")
 
-    required_text = " ".join(
-        str(item.get("text") or "")
-        for item in fact_pack.get("required_facts", [])
-        if isinstance(item, dict)
-    )
+    required_text = _selected_text(fact_pack)
     structured = (
         ("position", fact_pack.get("hero", {}).get("class_position")),
         ("lap", fact_pack.get("session", {}).get("lap")),
@@ -1198,7 +1711,7 @@ def polish_skeleton(
             last_response = {"error": "not an object"}
             entry.update(last_response)
             break
-        content = _extract_content(parsed)
+        content = strip_emoji(_extract_content(parsed))
         compact = _compact_response(parsed)
         if not content:
             last_response = {**compact, "validatorCodes": ["empty"]}
@@ -1218,7 +1731,7 @@ def polish_skeleton(
         codes = _reject_codes(text, content, node, driver_names, fact_pack)
         if _is_microplan(fact_pack):
             warnings.extend(code for code in codes if code in {"all_caps", "long_number"})
-            codes = [code for code in codes if code not in {"all_caps", "long_number"}]
+            codes = [code for code in codes if code not in {"all_caps", "long_number", "emoji"}]
         last_response = {**compact, "validatorCodes": codes}
         entry.update(
             response=compact,

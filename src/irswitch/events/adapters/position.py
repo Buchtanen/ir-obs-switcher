@@ -23,7 +23,7 @@ _OVERTAKE_EVENT = "overtake"
 _RIVAL_THREAT_EVENT = "rival_threat"
 _LEADER_CHANGE_EVENT = "leader_change"
 
-_POSITION_METRIC_KEYS = ("direction", "oldPosition", "newPosition", "delta")
+_POSITION_METRIC_KEYS = ("direction", "oldPosition", "newPosition", "delta", "places")
 _RIVAL_METRIC_KEYS = ("gap", "closingRate", "targetCarIdx", "rivalPosition", "targetName")
 _OVERTAKE_METRIC_KEYS = (
     "direction",
@@ -192,6 +192,10 @@ def position_race_event_to_envelope(
     new_position = event.data.get("newPosition")
     metric_keys = _OVERTAKE_METRIC_KEYS if event_type == "OVERTAKE" else _POSITION_METRIC_KEYS
     metrics = {key: event.data[key] for key in metric_keys if key in event.data}
+    if event_type in {"POSITION_GAINED", "POSITION_LOST"} and "places" not in metrics:
+        delta = metrics.get("delta")
+        if isinstance(delta, (int, float)) and not isinstance(delta, bool):
+            metrics["places"] = abs(int(delta))
     target = None
     if event_type == "OVERTAKE":
         target_idx = event.data.get("targetCarIdx")

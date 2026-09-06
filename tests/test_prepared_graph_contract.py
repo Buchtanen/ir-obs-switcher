@@ -11,6 +11,7 @@ from irswitch.commentary.graph import (
 )
 
 CORE_PREPARED_NODE_IDS = {
+    "stream_loading_color",
     "stream_intro_venue",
     "stream_intro_circuit_character",
     "stream_intro_conditions",
@@ -63,6 +64,12 @@ CORE_PREPARED_NODE_IDS = {
     "race_result_unclassified",
     "result_unconfirmed",
     "stream_chapter_bridge",
+    "live_session_late_intro",
+    "live_session_place",
+    "live_session_field",
+    "live_session_stint",
+    "named_field_observation",
+    "quali_named_observation",
     "prepared_filler_fatal_notice",
 }
 

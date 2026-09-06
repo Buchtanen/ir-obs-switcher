@@ -88,11 +88,13 @@ def test_waiting_incident_outranks_later_position_change() -> None:
     assert director.observe([_incident()], None, 10.1) is None
     assert director.decisions(1)[-1]["reason"] == "deferred"
     assert director.observe([_position()], None, 10.2) is None
-    assert director.decisions(1)[-1]["reason"] == "deferred_dropped"
+    assert director.decisions(1)[-1]["reason"] == "deferred"
+    assert len(director._scheduler) == 2
     flush_at = max(director._busy_until, director._global_ready_at) + 0.05
     spoken = director.tick(flush_at)
     assert spoken is not None
     assert spoken.event_type == "INCIDENT"
+    assert len(director._scheduler) == 0
 
 
 def test_observed_busy_defers_after_estimate_expires() -> None:
@@ -112,6 +114,39 @@ def test_observed_busy_defers_after_estimate_expires() -> None:
     assert spoken is not None
     assert director.decisions(1)[-1]["reason"] == "spoken_deferred"
     assert spoken.past_framing is True
+
+
+def test_live_hunting_does_not_drop_parked_incident() -> None:
+    director = _director(defer=True)
+    first = director.observe(
+        [
+            make_envelope(
+                event_type="HUNTING",
+                phase="ENTER",
+                mode="RACE",
+                priority=40,
+                monotonic_ms=10000,
+                metrics={"gap": 1.2, "targetName": "Hudson"},
+            )
+        ],
+        None,
+        10.0,
+    )
+    assert first is not None
+    assert director.observe([_incident(now_ms=10100)], None, 10.1) is None
+    assert director.decisions(1)[-1]["reason"] == "deferred"
+    flush_at = max(director._busy_until, director._global_ready_at) + 0.05
+    spoken = director.tick(flush_at)
+    assert spoken is not None
+    assert spoken.event_type == "INCIDENT"
+    assert director.decisions(1)[-1]["reason"] == "spoken_deferred"
+
+
+def test_director_fills_missing_hero_name() -> None:
+    director = _director(defer=True)
+    director._iracing_hero_names = ("Buchtanen",)
+    filled = director._with_hero_binding({"hero_name": None, "target_name": "Hudson"})
+    assert filled["hero_name"] == "Buchtanen"
 
 
 def test_deferred_flush_speaks_one_not_whole_queue() -> None:

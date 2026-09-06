@@ -383,7 +383,7 @@ beat a live race event.
 | YouTube identity | one existing authenticated channel; its public completed-stream history is enough; no multi-account feature |
 | timing/interruption | use §§15–16 values first and change them only from retained test evidence |
 | LLM ownership | asynchronous producer fills the bounded buffer; playback only selects a ready variant |
-| empty buffer failure | after exhausted attempts, announce the fixed fatal notice once, then filler silence until recovery |
+| empty buffer failure | after exhausted attempts, mark `health=FATAL` and stay silent; do not speak the fatal notice |
 | iRSDK validation | implement nullable active extraction now and validate with synthetic plus retained live tests; no guessed value |
 | story migration | new prepared story path is part of this change; legacy remains a selectable rollback |
 | shadow purpose | execute the full prepared pipeline silently and collect reconstructable comparison data while legacy is audible |
@@ -861,6 +861,7 @@ Normative transitions and side effects:
 | `OUT_LAP` | valid S/F wrap | `LIVE_SESSION` | expire unused out-lap plans |
 | `OUT_LAP` | pit return/tow/reset/run/session change | matching safe stage | expire the out-lap scope without claiming a lap |
 | `GRID_PREP` | ParadeLaps/rolling formation or standing-start preparation | `FORMATION_OR_LIGHTS` | keep only start-compatible plans |
+| `STREAM_LOBBY_INTRO` / `SESSION_EVENT_INTRO` | Race green or Race `session_state==4` | `LIVE_SESSION` + `holdover_stage` | keep the leftover intro sentence until it is spoken; live facts may speak first and the intro fills a later LIVE silence. Practice/Quali racing clock is not this edge. |
 | `FORMATION_OR_LIGHTS` | Race green or Race `session_state==4` | `LIVE_SESSION` | expire every unused pre-start plan. Practice/Quali racing clock is not this edge. |
 | P/Q active stage | checkered/end accepted | `SESSION_CONCLUSION` | result-specific plan waits for confirmed result; generic debrief may generate immediately |
 | Race active stage | `player_finished` accepted | `SESSION_CONCLUSION` | freeze confirmed finish and comparison inputs |
@@ -909,6 +910,11 @@ state.
    checked at commit; an already speaking unit keeps its normal narrative lease. Start/green and the
    existing hard-interrupt classes remain authoritative. Session tape records any stage boundary
    crossed while the unit was audible so the policy can be calibrated from tests rather than guessed.
+8. Race green / Race `session_state==4` still moves the producer to `LIVE_SESSION` so live events
+   can speak. The leftover intro sentence is a `holdover_stage` lease with no timeout: TTS commit
+   stays valid and the buffer keeps that plan for the whole live session until it is spoken.
+   Unspoken live plans rank first; if they are not ready or already had a turn, the intro fills
+   the silence. The first spoken holdover unit then clears the lease.
 
 For Practice, “assembled chain” is frozen on the accepted enter-car edge: it contains the eligible
 stream-intro plan ids already ready, queued or in flight for that `stage_epoch`. No later context
@@ -948,7 +954,12 @@ quiet-track colour second. A live battle/timing fact always outranks it.
 - Standing starts allow setup copy only before the start-ready edge; after ready/set, prefer a
   short beat or silence so `GREEN` is not delayed.
 - Green invalidates every unused grid/formation filler except a fact explicitly designed as a
-  post-start result.
+  post-start result. An in-flight or leftover intro sentence is the holdover exception above, not
+  a second intro chain. After a completed lobby/event intro, `LIVE_SESSION` may generate
+  `live_session_late_intro` (once), `live_session_place`, `live_session_field` and
+  `live_session_stint` from verified race facts. Race stint ignores the blind start S/F and waits
+  for two racing laps vs `green_lap_completed`. Missing facts skip the node. Full hunting /
+  measured-lap continuity stays in issue #220.
 
 The version-one rolling near-line guard requires `SessionState == ParadeLaps`, valid forward speed
 for two continuous monotonic seconds, parsed track length and a computed ETA to the next S/F wrap of
@@ -980,7 +991,7 @@ only within the prepared/context tier:
 | hero enters Race | finish current unit | quali recap/grid/start mode | cancel remaining stream-intro chain |
 | out lap | preparation | quiet-track/field context | after S/F wrap |
 | formation | grid/start | HR-coloured near-line tension | long copy near lights/line |
-| live race | real event/story | truthful silence filler | all pre-start plans |
+| live race | unspoken live place/field, then leftover intro on silence, then stint after first racing lap | real event/story | start S/F stint; unused intro chain after the spoken sentence |
 | session ending | confirmed result | debrief/next-session bridge | generic weather/field filler |
 
 The graph score still considers semantic fatigue, path fatigue, material change and silence. Stage
@@ -994,7 +1005,7 @@ The feature has one rollout switch, independent of `commentary.graph_runtime.mod
 | --- | --- | --- | --- |
 | `legacy` | existing session briefs/filler path | off; tasks and buffer absent | compact disabled status only |
 | `shadow` | existing legacy path | full plan build, LLM generation, validation, expiry and virtual selection | records both legacy exposure and the shadow winner; never enqueues prepared text or fatal notice |
-| `active` | prepared path for the families in §14; legacy filler nodes disabled | full | actual speaking lifecycle owns exposure; fatal notice enabled |
+| `active` | prepared path for the families in §14; legacy filler nodes disabled | full | actual speaking lifecycle owns exposure; fatal notice stays off-air |
 
 Live occurrence and story commentary remain on the existing accepted-event/Director/TTS path in all
 three modes. `active` replaces only overlapping intro/context/out-lap/start/conclusion filler

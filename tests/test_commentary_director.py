@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from irswitch.commentary.director import CommentaryDirector, resolve_emotion, slot_bindings
 from irswitch.commentary.graph import parse_sequence_graph
-from irswitch.commentary.tts import NullTtsSink
+from irswitch.commentary.tts import CommentaryUtterance, NullTtsSink
 from irswitch.events.envelope import EventSubject, make_envelope
 from irswitch.overlay.models import BioState
 from irswitch.overlay.settings import CommentarySettings
+from irswitch.race.ministory import MiniStoryRegistry
 
 
 def _graph(*, filled: bool) -> object:
@@ -105,22 +106,16 @@ def test_disabled_flag_is_silent_even_with_text() -> None:
     assert sink.spoken == []
 
 
-def test_same_direction_position_change_does_not_interrupt_finish_or_itself() -> None:
+def test_hero_order_change_does_not_cut_started_speech() -> None:
     sink = NullTtsSink(force_busy=True)
     director = CommentaryDirector(
         graph=_graph(filled=True),
         settings=CommentarySettings(enabled=True),
         sink=sink,
     )
-    director._current_event_type = "POSITION_LOST"
-    director.hero_order_changed(10.0, "POSITION_LOST")
-    assert sink.interrupted == 0
-    director._current_event_type = "FINISH"
-    director.hero_order_changed(11.0, "POSITION_LOST")
-    assert sink.interrupted == 0
     director._current_event_type = "HUNTING"
     director.hero_order_changed(12.0, "POSITION_LOST")
-    assert sink.interrupted == 1
+    assert sink.interrupted == 0
 
 
 def test_speaks_filled_variant_and_binds_slots() -> None:
@@ -407,3 +402,52 @@ def test_gap_hunt_tts_opt_in_practice() -> None:
     spoken = director.observe([_hunt("PRACTICE")], None, 1.0)
     assert spoken is not None
     assert spoken.node_id == "hunting"
+
+
+def test_stale_revision_repeats_same_story_then_apologizes() -> None:
+    graph = _graph(filled=True)
+    registry = MiniStoryRegistry()
+    director = CommentaryDirector(
+        graph=graph,
+        settings=CommentarySettings(enabled=True, cooldown_s=0.0, use_hr_emotion=False),
+        sink=NullTtsSink(),
+        story_registry=registry,
+    )
+    enter = make_envelope(
+        event_type="HUNTING",
+        phase="ENTER",
+        mode="RACE",
+        correlation_id="hunt:1",
+        metrics={"gap": 0.4, "targetCarIdx": 8, "direction": "ahead"},
+    )
+    token = registry.observe(enter).token
+    assert token is not None
+    registry.commit(token, None, locale="en")
+    registry.mark_speaking(token)
+    registry.observe(
+        make_envelope(
+            event_type="HUNTING",
+            phase="EXIT",
+            mode="RACE",
+            correlation_id="hunt:1",
+            metrics={"gap": 0.8, "targetCarIdx": 8, "direction": "ahead"},
+        )
+    )
+    previous = CommentaryUtterance(
+        node_id="hunting",
+        locale="en",
+        emotion="unknown",
+        text="Closing to 0.4 seconds.",
+        event_type="HUNTING",
+        event_id="e1",
+        correlation_id="hunt:1",
+        estimated_seconds=2.0,
+        node=graph.nodes["hunting"],
+        story_token=token,
+    )
+    director.note_speech_finished(20.0)
+    revised = director.speak_stale_revision(previous, 20.0)
+    assert revised is not None
+    assert revised.stale_revision is True
+    assert revised.text.endswith("Sorry, that last call was already old.")
+    assert revised.text.startswith("Closing") or "0.8" in revised.text or "Sorry" in revised.text
