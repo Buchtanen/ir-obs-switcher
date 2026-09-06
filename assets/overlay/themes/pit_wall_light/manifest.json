@@ -31,8 +31,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 1884,
-      "sha256": "f945cb51370d6c4ca001541119b538ac480607d5fc314e08baf9e7296b931d7e"
+      "bytes": 193,
+      "sha256": "28f9f91f461df3c99dc60187f400127a59ab55b3598d9b2533caf597117ff224"
     },
     {
       "path": "accents/common/accents/pl-state-rail-left-amber.svg",
@@ -303,11 +303,6 @@
       "path": "accents/event-visual-map.json",
       "bytes": 33170,
       "sha256": "d01984383c293cc24ee833a0a4bea034e28c8fc1ee92d2ee0136106e9c147937"
-    },
-    {
-      "path": "backgrounds/README.md",
-      "bytes": 230,
-      "sha256": "1c952c54235f9ed34ce3490998e2ca441c5bce6529b675505566f8d68ef20bf1"
     },
     {
       "path": "frames/common/borders/pl-transient-border.svg",
@@ -1500,11 +1495,6 @@
       "sha256": "654d512d65d32df1889552466f8eb4dcb5c6419aa49bade4b440c3031d878476"
     },
     {
-      "path": "motion/MOTION.md",
-      "bytes": 1371,
-      "sha256": "9cbbe87d9df3605a32e1b31e78d0594f8f197c5e1271645f45a6ea149e79bf5e"
-    },
-    {
       "path": "motion/active_pulse.webm",
       "bytes": 16455,
       "sha256": "aa31fbeb0b6b66a6393c92ed0e2f58efa353e60a04982262a0a2f6831f91c584"
@@ -1638,41 +1628,6 @@
       "path": "packages/archive-index.json",
       "bytes": 3957,
       "sha256": "973b5fb1e90276bd3f3a8caa9825e60201420ecf0360d941d200f07861203d54"
-    },
-    {
-      "path": "references/docs/IMPLEMENTATION.md",
-      "bytes": 3119,
-      "sha256": "490fe51c54674d1a55b10b9668499989b930e884f6024261ffb5167cfe00e666"
-    },
-    {
-      "path": "references/docs/LAYERING_AND_ANCHORS.md",
-      "bytes": 761,
-      "sha256": "61fbd55dd620d7c1c35a9366d074532c77817af2fdf30ffd5b188f6449b31a05"
-    },
-    {
-      "path": "references/docs/MOTION.md",
-      "bytes": 1371,
-      "sha256": "9cbbe87d9df3605a32e1b31e78d0594f8f197c5e1271645f45a6ea149e79bf5e"
-    },
-    {
-      "path": "references/docs/MOTION_QA.md",
-      "bytes": 2493,
-      "sha256": "efe73e9d4a8b54070f20b4eda00f6aeb59e243db0f192eef739e2e1b83f6536e"
-    },
-    {
-      "path": "references/docs/NAMING_CONVENTION.md",
-      "bytes": 973,
-      "sha256": "a2b46a47062b2d455620b2496e132e09de70e552b9a31578fc7efc8527c77ecc"
-    },
-    {
-      "path": "references/docs/OBS_BROWSER_SOURCE.md",
-      "bytes": 910,
-      "sha256": "eb1b334038226ae6f6c421c34d3d6fc8137a52331d3e6298b0df2b2a621fa5c6"
-    },
-    {
-      "path": "references/docs/STATE_VISUAL_MAP.md",
-      "bytes": 6077,
-      "sha256": "037cd33e528184e5369c9fa3d2abc77bf6e9ef8afdd4d02dd4f0e5d9c02f93d5"
     },
     {
       "path": "references/examples/compositions/pitwall-light-event-catalog-1920x1080.png",
