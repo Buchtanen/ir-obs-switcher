@@ -1,23 +1,18 @@
 # Integration plan — Track Excursion (#216) + prepared graph (#217)
 
 **Branch:** `feat/scenario-and-prepared-graph`  
-**Base:** `origin/master` @ `2fafdd2` (N12, stateful sequence graph, SuperTonic, sampling spec, INFO `llm_polish` tape)  
-**Issues:** [#216](https://github.com/Buchtanen/ir-obs-switcher/issues/216), [#217](https://github.com/Buchtanen/ir-obs-switcher/issues/217)  
-**Status:** plan only — no runtime work on this branch yet
+**Base:** `origin/master` @ `79a15d7` (#226 squash)  
+**Issues:** [#216](https://github.com/Buchtanen/ir-obs-switcher/issues/216) open; [#217](https://github.com/Buchtanen/ir-obs-switcher/issues/217) closed (on master)  
+**Status:** I0 + I1 done. I2 dropped (not a gate). I3 wired (engine is the sole publisher).
 
-This is the living index. Detailed contracts stay in the #216/#217 docs once I0 lands them from [#226](https://github.com/Buchtanen/ir-obs-switcher/pull/226).
+This is the living index. Detailed contracts stay in the #216 docs.
 
 ## 1. Why this branch exists
 
-#216 and #217 were implemented on `codex/fix-overlay-commentary-test-7`, now stacked in
-`feat/commentary-finish-episodes` (PR #226). **None of that runtime is on `master`.**
+#216 native subset + #217 prepared graph landed on master via #226 (`79a15d7`).
+This branch is only for #216 I3 (ScenarioEngine as the sole publisher).
 
-Starting 216/217 from bare master would rewrite a tested stack. This branch is the
-integration line: absorb #226 first, then finish the remaining slices.
-
-Do not implement #216 remainder or #217 leftover against current master.
-
-## 2. What is already done (on #226, not master)
+## 2. What is already on master (`79a15d7`)
 
 ### #216 — native Track Excursion subset
 
@@ -33,12 +28,9 @@ Not production: generic `ScenarioEngine` + JSON `track_excursion_story/v1` as th
 
 53-node core + graph v4 contracts, plan builder/scoring off the generic gateway, EN/CS
 anchors, relation/forbidden-claim validation, fatal node, current/next reservation.
-`prepared_filler.mode` default `active` on that branch.
+`prepared_filler.mode` default `active`. #217 closed.
 
-Remaining: audible stream-PC matrix (`docs/commentary_prepared_active_test.md`). Issue AC
-checkboxes were never closed.
-
-Canonical files (exist only on #226 until I0):
+Canonical files (on master):
 
 - `docs/track_excursion_story_spec.md`
 - `docs/track_excursion_implementation_plan.md`
@@ -57,64 +49,47 @@ drop `recordings/*.jsonl`; add `semver:minor`), then rebase this branch onto tha
 Fallback if #226 stays open: merge `feat/commentary-finish-episodes` into this branch
 and keep #226 as the review vehicle. Do not fork a third copy of overlay/commentary.
 
-I0 exit:
+I0 exit (done 2026-09-06):
 
-- [ ] This branch contains `prepared_filler.py`, `events/scenarios/track_excursion.py`, and the six docs above
-- [ ] Focused pytest green: excursion + prepared + n12 consumers
-- [ ] #215 / #218 close with #226 (lifecycle + live place) — they are dependencies, not this plan
-- [ ] Local `master` / this branch match the absorbed tip
-
-Until I0 is done, do not start I1–I3 code.
+- [x] #226 merged to master (`79a15d7`)
+- [x] #215 / #218 / #217 / #225 closed
+- [x] This branch rebased onto `79a15d7`
 
 ## 4. After I0 — remaining implementation
 
 Work is sequential on shared files (`observer.py`, `director.py`, `consumer.py`,
 `sequence_graph.json`, `ministory.py`). Do not parallelize 216 vs 217 on those paths.
 
-### I1 — #217 live acceptance (short)
+### I1 — #217 — done
 
-Code cut is claimed done. This is evidence, not a second graph.
+On master via #226. Issue closed. No second graph. No listen gate.
 
-- [ ] Run `docs/commentary_prepared_active_test.md` on the stream PC (`active`)
-- [ ] Tape shows concrete `preparedNodeId`, never generic `prepared_filler` for new plans
-- [ ] Missing facts shorten the chain; start-ready/set stays short; live/critical still outrank prepared
-- [ ] Close #217 AC or list the exact residual defects (no silent “almost”)
+### I2 — not a work item
 
-If the audible matrix finds a contract hole, fix it here before I2. Do not open #222/#223 on this branch.
+I2 was never new code. It meant: sit in iRacing, go off-track, keep tape + video, check the native subset already on master. Optional listen, not a merge gate.
 
-### I2 — #216 live acceptance of the native subset
+### I3 — #216 — plug ScenarioEngine in now
 
-- [ ] Evidence pack from `docs/track_excursion_live_test.md`: HEAD, `/health`, overlay `?v=`, `[race_scenarios] mode`, tape, video
-- [ ] Practice/Race off-track + rejoin + optional S7a; no generic incident prose; FINISH still wins
-- [ ] `motion_restored` ≠ control regained; no slide/spin/contact/damage nouns
+No cause-threshold defaults. Log observations/transitions; retune from tests and tapes.
 
-This is slice A from the 2026-09-05 #216 remainder comment. No new causes.
+**Publisher**
 
-### I3 — #216 remainder (only after I2)
+- [x] Production path: `ScenarioEngine` + named guards/actions for facts the native reducer already knows
+- [x] Native `TrackExcursionDetector` becomes a feature source or `legacy`; **one** speaking publisher
+- [x] `legacy|shadow|active` fail-soft; shadow publishes no new scenario facts
+- [x] Existing excursion unit/replay tests stay green for connected facts (off-track, stop, rejoin, motion, tow, pit, S7a pace)
 
-**Slice B — one publisher**
+**Causes — observe, do not invent**
 
-- [ ] Production path: composite `track_excursion_story/v1` through named guards/actions only
-- [ ] Native detector becomes a feature source or `legacy`; no dual speaking publishers
-- [ ] `legacy|shadow|active` fail-soft; shadow publishes no new scenario facts
-- [ ] Replay of the I2 tape is bit-stable vs the native subset for connected facts
+Do not ship yaw/sideslip/contact/brake defaults. Missing evidence stays `CAUSE_UNKNOWN` / omitted noun.
 
-**Slice C — taxonomy (blocked on data)**
-
-Do not speak these until each has an evidence contract (source, sentinel, abstention):
-
-| Runtime ID | Why it is missing |
+| Runtime ID | Now |
 | --- | --- |
-| `LOSS_OF_CONTROL` | No calibrated steering-vs-path detector |
-| `SLIDE` / `SPIN` | Yaw / sideslip thresholds not calibrated per car class |
-| `CONTACT_VEHICLE` / `CONTACT_BARRIER` | Nearby car + incident-count jump ≠ contact type |
-| `BRAKING_OVERSHOOT` | No trusted local braking reference |
-| `AVOIDANCE_MANEUVER` | Conflict + evasive pattern not proven |
-| `CONTROL_REGAINED` | Distinct from `MOTION_RESTORED` |
-| `DAMAGE_*` / `PIT_FOR_REPAIRS` | Pace loss ≠ damage |
-| `RESET_TO_PITS` | Practice/Qualify ESC/teleport not classified |
-
-Missing evidence stays `CAUSE_UNKNOWN` / omitted noun. No invented cause in graph, LLM, or TTS.
+| `LOSS_OF_CONTROL`, `SLIDE`, `SPIN` | log candidates only; no speak |
+| `CONTACT_*`, `BRAKING_OVERSHOOT`, `AVOIDANCE_MANEUVER` | log candidates only; no speak |
+| `CONTROL_REGAINED` | not `MOTION_RESTORED`; no speak |
+| `DAMAGE_*` / `PIT_FOR_REPAIRS` | pace loss ≠ damage; no speak |
+| `RESET_TO_PITS` | log until ESC/teleport is proven |
 
 ## 5. Out of scope on this branch
 
@@ -142,6 +117,5 @@ Config: `[race_scenarios].mode` and `[commentary.prepared_filler].*` already spe
 
 ## 7. Suggested next action
 
-1. Rebase and merge #226 onto current `master`.
-2. `git rebase origin/master` on this branch.
-3. I1 then I2 (listen), then I3 only with data.
+1. I3 code path is wired. Live listen is not a merge gate.
+2. Remaining to ship: PR to `master` (`semver:minor`) and restart the local service.

@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "status": "runtime",
+  "scenarioId": "track_excursion",
+  "scenarioVersion": 1,
+  "scope": {
+    "overlayModes": ["PRACTICE", "QUALIFYING", "RACE"],
+    "subject": "hero",
+    "requiresConnected": true
+  },
+  "identity": {
+    "fields": [
+      "subsession_id",
+      "session_num",
+      "run_epoch",
+      "player_car_idx",
+      "episode_sequence"
+    ],
+    "episodeIdTemplate": "scenario:{scenarioId}:session:{subsession_id}:{session_num}:run:{run_epoch}:hero:{player_car_idx}:episode:{episode_sequence}",
+    "parentStoryId": "episode_id",
+    "beatCorrelationTemplate": "{episode_id}:beat:{beat_id}"
+  },
+  "parameters": {
+    "disconnectGraceS": 1.0
+  },
+  "observations": {
+    "trackSurface": {
+      "field": "RaceState.player_track_surface",
+      "unit": "iracing_track_location",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    },
+    "speed": {
+      "field": "RaceState.speed_mps",
+      "unit": "meters_per_second",
+      "maxAgeS": 0.25,
+      "missingPolicy": "use_lap_distance_fallback"
+    },
+    "towTime": {
+      "field": "RaceState.player_tow_time",
+      "unit": "seconds",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    },
+    "lapDistance": {
+      "field": "RaceState.player_lap_dist_pct",
+      "unit": "lap_fraction",
+      "maxAgeS": 0.5,
+      "missingPolicy": "unknown"
+    }
+  },
+  "states": [
+    {
+      "id": "IDLE",
+      "initial": true,
+      "terminal": false,
+      "meaning": "No confirmed excursion episode."
+    },
+    {
+      "id": "OFF_TRACK",
+      "initial": false,
+      "terminal": false,
+      "meaning": "Confirmed off-track; wait for stop, rejoin, tow, or pit."
+    },
+    {
+      "id": "ON_TRACK",
+      "initial": false,
+      "terminal": false,
+      "meaning": "Back on track; wait for motion or a terminal close."
+    },
+    {
+      "id": "MOTION",
+      "initial": false,
+      "terminal": false,
+      "meaning": "Motion restored; optional local pace follow-up."
+    },
+    {
+      "id": "CLOSED",
+      "initial": false,
+      "terminal": true,
+      "meaning": "Episode closed by tow, pit, or normal running."
+    }
+  ],
+  "transitions": [
+    {
+      "id": "open_offtrack",
+      "order": 10,
+      "from": ["IDLE"],
+      "to": "OFF_TRACK",
+      "guard": "excursion_offtrack_ready",
+      "holdS": 0.0,
+      "actions": ["create_episode", "emit_excursion_offtrack"],
+      "reason": "surface_offtrack_held"
+    },
+    {
+      "id": "note_stopped_off_track",
+      "order": 20,
+      "from": ["OFF_TRACK"],
+      "to": "SAME",
+      "guard": "excursion_stopped_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_stopped"],
+      "reason": "speed_below_stop_held"
+    },
+    {
+      "id": "rejoin",
+      "order": 30,
+      "from": ["OFF_TRACK"],
+      "to": "ON_TRACK",
+      "guard": "excursion_rejoined_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_rejoined"],
+      "reason": "surface_ontrack_held"
+    },
+    {
+      "id": "note_stopped_on_track",
+      "order": 40,
+      "from": ["ON_TRACK"],
+      "to": "SAME",
+      "guard": "excursion_stopped_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_stopped"],
+      "reason": "speed_below_stop_held"
+    },
+    {
+      "id": "restore_motion",
+      "order": 50,
+      "from": ["ON_TRACK"],
+      "to": "MOTION",
+      "guard": "excursion_motion_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_motion"],
+      "reason": "ontrack_speed_moving_held"
+    },
+    {
+      "id": "pace_loss",
+      "order": 60,
+      "from": ["MOTION"],
+      "to": "SAME",
+      "guard": "excursion_pace_loss_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_pace_loss"],
+      "reason": "local_pace_loss_held"
+    },
+    {
+      "id": "pace_ok",
+      "order": 70,
+      "from": ["MOTION"],
+      "to": "CLOSED",
+      "guard": "excursion_pace_ok_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_pace_ok"],
+      "reason": "local_pace_normal_held"
+    },
+    {
+      "id": "tow_close",
+      "order": 80,
+      "from": ["OFF_TRACK", "ON_TRACK", "MOTION"],
+      "to": "CLOSED",
+      "guard": "excursion_tow_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_tow"],
+      "reason": "tow_timer_positive"
+    },
+    {
+      "id": "pit_close",
+      "order": 90,
+      "from": ["OFF_TRACK", "ON_TRACK", "MOTION"],
+      "to": "CLOSED",
+      "guard": "excursion_pit_ready",
+      "holdS": 0.0,
+      "actions": ["emit_excursion_pit"],
+      "reason": "pit_road_and_surface_held"
+    }
+  ],
+  "emissions": {
+    "offtrack": {
+      "beatId": "offtrack",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "stopped": {
+      "beatId": "stopped",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "track_rejoined": {
+      "beatId": "track_rejoined",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "motion_restored": {
+      "beatId": "motion_restored",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "tow_started_race": {
+      "beatId": "tow_started_race",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "pit_return_observed": {
+      "beatId": "pit_return_observed",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "pace_loss_sustained": {
+      "beatId": "pace_loss_sustained",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    },
+    "normal_running_resumed": {
+      "beatId": "normal_running_resumed",
+      "eventType": "TRACK_EXCURSION",
+      "phase": "RESULT",
+      "channel": "commentary_only",
+      "priority": 90,
+      "metrics": ["beatId", "parentStoryId", "cause", "damage"]
+    }
+  },
+  "terminalPolicy": {
+    "retainForS": 0.0,
+    "then": "release_episode_and_return_to_idle",
+    "lateFramesMayReopen": false
+  },
+  "resets": [
+    {"reason": "session_changed", "action": "invalidate_without_emission"},
+    {"reason": "run_epoch_changed", "action": "invalidate_without_emission"},
+    {"reason": "hero_changed", "action": "invalidate_without_emission"},
+    {"reason": "disconnect_grace_exceeded", "action": "invalidate_without_emission"}
+  ]
+}

@@ -5,14 +5,15 @@ samotná úprava pracovního stromu nerestartuje ani neaktualizuje běžící Wi
 
 ## Co skutečně běží
 
-`RaceState → TrackExcursionDetector → RaceObserver → RacePipeline → CommentaryConsumer
-→ graph v3 / Director → MiniStory commit → TTS`.
+`RaceState → TrackExcursionDetector → ScenarioEngine → RaceObserver → RacePipeline
+→ CommentaryConsumer → graph v3 / Director → MiniStory commit → TTS`.
 
-Detektor je nativní časový reducer v `events/scenarios/track_excursion.py`. Používá společný
-kontrakt `EpisodeScope` / `ScenarioBeat`, ale **nespouští návrhové JSON scénáře ani obecný
-`ScenarioEngine`**. Převod kompletního složeného scénáře do datové definice zůstává další práce.
-Změna JSON v `docs/scenarios/` tedy zatím nemění detekci. Naproti tomu texty, selektory a hrany
-se načítají ze skutečného `commentary/data/sequence_graph.json` (verze 3).
+Detektor je nativní časový reducer v `events/scenarios/track_excursion.py` (holds + evidence).
+V `active` i `shadow` tiká `ScenarioEngine` z `events/scenarios/data/track_excursion_v1.json`;
+**řeč** jde jen z enginu (`active`). Detektor není druhý speaker. Složený
+`docs/scenarios/track_excursion_story_v1.json` zůstává `design_reference` a nespouští se.
+Příčiny (slide/spin/contact/damage) se nelogují jako fakta — `cause`/`damage` zůstávají
+`unknown`. Texty a hrany dál z `commentary/data/sequence_graph.json` (verze 3).
 
 Jeden příběh má stabilní `parentStoryId` a `episodeId`; každá fáze má vlastní `correlationId`.
 Rozsah identity obsahuje session, run epoch a jezdce. Přijatá událost `TRACK_EXCURSION` je pouze

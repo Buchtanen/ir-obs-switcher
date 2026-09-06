@@ -9,6 +9,7 @@ from typing import Any
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.scenarios.track_excursion import TrackExcursionDetector
+from irswitch.events.scenarios.track_excursion_runtime import TrackExcursionEngine
 from irswitch.iracing.drivers import speakable_name_mix_for_car
 from irswitch.iracing.sdk_units import as_completed_lap_time, format_lap_time
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
@@ -55,6 +56,7 @@ class RaceObserver:
     history: StoryHistory = field(default_factory=StoryHistory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
     excursion: TrackExcursionDetector = field(default_factory=TrackExcursionDetector)
+    excursion_engine: TrackExcursionEngine = field(default_factory=TrackExcursionEngine)
     _scenario_pending: list[EventEnvelope] = field(default_factory=list)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
@@ -75,6 +77,7 @@ class RaceObserver:
     def apply_settings(self, settings: RaceObserverSettings) -> None:
         if settings.scenario_mode != self.settings.scenario_mode:
             self.excursion.reset(reason="scenario_mode_changed")
+            self.excursion_engine.reset()
             self.aftermath.reset()
             self._scenario_pending.clear()
         self.settings = settings
@@ -93,6 +96,7 @@ class RaceObserver:
         self.history.clear()
         self.aftermath.reset()
         self.excursion.reset(reason="session_reset")
+        self.excursion_engine.reset()
         self._scenario_pending.clear()
         self.narrative.reset_session()
         self.timing_hunt.reset()
@@ -257,21 +261,30 @@ class RaceObserver:
             if self.settings.scenario_mode != "active":
                 self.aftermath.tick(state, now, log=self.watches)
             if self.settings.scenario_mode != "legacy":
-                beats = self.excursion.tick(state, now)
+                detected = self.excursion.tick(state, now)
+                published = self.excursion_engine.publish(detected, state, now)
                 if self.settings.scenario_mode == "active":
-                    self._scenario_pending.extend(beats)
-                for beat in beats:
+                    self._scenario_pending.extend(published)
+                for row in self.excursion_engine.drain_traces():
+                    self.excursion.note_trace(row)
+                spoken = (
+                    {event.metrics.get("beatId") for event in published}
+                    if self.settings.scenario_mode == "active"
+                    else set()
+                )
+                for beat in detected:
                     note(
                         self.watches,
                         watch="track_excursion",
                         kind=str(beat.metrics["beatId"]),
-                        emitted=self.settings.scenario_mode == "active",
+                        emitted=beat.metrics.get("beatId") in spoken,
                         reason=str(beat.metrics["reason"]),
                         confidence=beat.confidence,
                         now=now,
                     )
         except Exception:
             self.excursion.reset(reason="detector_error", now=now)
+            self.excursion_engine.reset()
             logger.warning("Excursion/aftermath detector failed", exc_info=True)
         try:
             self.timing_hunt.tick(snap, state, now, log=self.watches)
