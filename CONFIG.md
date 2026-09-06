@@ -341,7 +341,7 @@ Procento průměrné doby loadingu, kdy se spustí broadcast (0-100).
 - `30-50` - spustí se brzy během loadingu
 - `70-90` - spustí se později, téměř na konci loadingu
 
-**Jak to funguje**: Pokud průměrný loading (proces → in-sim scéna) trvá 55 s a nastavíš `50`, broadcast se spustí po ~27.5 s. Průměr se bere z `data/loading_history.json` (posledních až 50 záznamů). Bez historie se použije `default_loading_time_seconds`.
+**Jak to funguje**: Pokud průměrný loading (proces → in-sim scéna) trvá 55 s a nastavíš `75`, broadcast se spustí po ~41 s. Průměr se bere z `data/loading_history.json` (posledních až 50 záznamů). Bez historie se `auto_start_at_percent` **nepoužije** — platí natvrdo `default_loading_time_seconds`.
 
 **Příklad**: 
 ```ini
@@ -354,7 +354,7 @@ Výchozí doba loadingu, pokud nemáš historii (použije se při prvním spušt
 
 **Kdy použít**: Nastav podle typické doby loadingu na tvém systému.
 
-**Jak to funguje**: Aplikace zapisuje dobu od naskočení procesu hry do první in-sim scény a z toho počítá průměr. Při prvním spuštění (prázdná historie) použije tuto hodnotu. QUIT / zmizení procesu bez vstupu do hry se nezapisuje.
+**Jak to funguje**: Aplikace zapisuje dobu od naskočení procesu hry do první in-sim scény a z toho počítá průměr. Při prázdné historii je to **tvrdý delay v sekundách** (bez násobení `auto_start_at_percent`). QUIT / zmizení procesu bez vstupu do hry se nezapisuje.
 
 **Příklad**: 
 ```ini

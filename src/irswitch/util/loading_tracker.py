@@ -27,6 +27,23 @@ IN_SIM_MODES = frozenset(
 )
 
 
+def auto_start_delay_seconds(
+    *,
+    average_s: float,
+    percent: int,
+    has_history: bool,
+    default_s: float,
+) -> float:
+    """Delay from process start to OBS broadcast.
+
+    With history, apply ``percent`` to the average. With no history, use
+    ``default_s`` as a hard delay — do not scale it by percent.
+    """
+    if not has_history:
+        return float(default_s)
+    return float(average_s) * percent / 100.0
+
+
 def should_start_process_loading_clock(
     *,
     process_running: bool,
