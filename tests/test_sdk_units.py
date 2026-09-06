@@ -95,7 +95,10 @@ def test_extract_telemetry_sanitizes_sdk_garbage() -> None:
             "CarIdxLastLapTime": [0, 93.1],
             "Speed": -1,
             "CarIdxLapCompleted": [-1, 3],
+            "CarIdxLap": [-1, 4],
             "CarIdxPosition": [0, 4],
+            "CarIdxF2Time": [-1.0, 0.0],
+            "CarIdxPaceLine": [-1, 1],
         },
         1.0,
     )
@@ -112,7 +115,10 @@ def test_extract_telemetry_sanitizes_sdk_garbage() -> None:
     assert snap.car_idx_last_lap_time == (None, 93.1)
     assert snap.speed_mps is None
     assert snap.car_idx_lap_completed == (None, 3)
+    assert snap.car_idx_lap == (None, 4)
     assert snap.car_idx_position == (None, 4)
+    assert snap.car_idx_f2_time == (None, 0.0)
+    assert snap.car_idx_pace_line == (None, 1)
 
 
 def test_overlay_js_shares_python_format_contract() -> None:

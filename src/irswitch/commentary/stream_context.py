@@ -11,6 +11,18 @@ from irswitch.overlay.http import get_overlay_runtime
 logger = logging.getLogger(__name__)
 
 
+def make_stream_end_envelope(now: float) -> EventEnvelope:
+    return make_envelope(
+        event_type="STREAM_END",
+        phase="RESULT",
+        mode="GENERIC",
+        priority=38,
+        monotonic_ms=int(now * 1000),
+        dedupe_key="STREAM_END",
+        correlation_id="stream_end",
+    )
+
+
 def make_stream_start_envelope(now: float) -> EventEnvelope:
     return make_envelope(
         event_type="STREAM_START",
@@ -35,3 +47,17 @@ def notify_overlay_stream_started(now: float | None = None) -> None:
         notify(now if now is not None else time.monotonic())
     except Exception:
         logger.warning("stream-start commentary bridge failed", exc_info=True)
+
+
+def notify_overlay_stream_stopped(now: float | None = None) -> None:
+    """Falling OBS stream edge. No-op when overlay/commentary is down."""
+    try:
+        runtime = get_overlay_runtime()
+        if runtime is None:
+            return
+        notify = getattr(runtime, "notify_obs_stream_stopped", None)
+        if not callable(notify):
+            return
+        notify(now if now is not None else time.monotonic())
+    except Exception:
+        logger.warning("stream-stop commentary bridge failed", exc_info=True)

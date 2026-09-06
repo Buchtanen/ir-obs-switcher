@@ -45,6 +45,12 @@ def set_app_config(config: AppConfig) -> None:
     """Set config in container and sync stream-chapters tracker settings."""
     _config_container[0] = config
     _sync_stream_chapters_settings(config.stream_chapters)
+    try:
+        from irswitch.util.diagnostic_voice import configure_diagnostic_voice
+
+        configure_diagnostic_voice(config.diagnostics)
+    except Exception:
+        logger.debug("diagnostic voice configure failed", exc_info=True)
 
 
 if TYPE_CHECKING:

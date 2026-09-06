@@ -191,6 +191,13 @@ def _get_engine() -> Any:
         return _engine
 
 
+def warm_engine() -> None:
+    """Load ONNX before the first speak. Safe to call repeatedly."""
+    if not available():
+        return
+    _get_engine()
+
+
 def reset_engine() -> None:
     """Test helper. Does not unload ONNX from the process."""
     global _engine

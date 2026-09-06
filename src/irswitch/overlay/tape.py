@@ -1,4 +1,4 @@
-"""Session-scoped overlay HUD tape (JSONL). Fail-soft; no telemetry ticks.
+"""Session-scoped overlay HUD tape (JSONL). Fail-soft; field rows are sampled, not 60 Hz.
 
 Clocks (seconds):
 - ``t_mono`` — from tape open (replay delay)
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_MODES = frozenset({"PRACTICE", "QUALIFYING", "RACE"})
 IRSDK_STATE_RACING = 4
-TAPE_SCHEMA = "1.0"
+TAPE_SCHEMA = "1.1"
 _SLUG = re.compile(r"[^A-Za-z0-9._-]+")
 CLOCK_KEYS = frozenset({"t", "t_mono", "t_stream", "t_session", "t_green"})
 
@@ -125,6 +125,7 @@ class OverlaySessionTape:
         self._scene_sig: tuple[str | None, str | None] | None = None
         self._noted_stream = False
         self._run_epoch = 0
+        self._field_enabled = True
 
     @property
     def path(self) -> Path | None:
@@ -156,6 +157,7 @@ class OverlaySessionTape:
 
     def observe(self, state: RaceState, now: float, settings: OverlaySettings) -> None:
         tape = settings.tape
+        self._field_enabled = bool(tape.field)
         if not tape.enabled:
             self.close()
             return
@@ -216,6 +218,11 @@ class OverlaySessionTape:
             return
         self._write(now, state, {"type": "stories", "activeStories": list(stories)})
 
+    def record_scenario(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """Sparse detection/invalidation evidence for development, also in shadow mode."""
+        if self._path is not None:
+            self._write(now, state, {**entry, "type": "race_scenario"})
+
     def record_commentary(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
         """Speak/skip row from CommentaryDirector (DEBUG tape only; caller gates)."""
         if self._path is None:
@@ -240,6 +247,9 @@ class OverlaySessionTape:
                 "graphMode": entry.get("graphMode"),
                 "decision": entry.get("decision"),
                 "eventId": entry.get("eventId"),
+                "parentStoryId": entry.get("parentStoryId"),
+                "correlationId": entry.get("correlationId"),
+                "beatId": entry.get("beatId"),
                 "semanticKey": entry.get("semanticKey"),
                 "score": entry.get("score"),
                 "threshold": entry.get("threshold"),
@@ -248,11 +258,53 @@ class OverlaySessionTape:
             },
         )
 
+    def record_prepared_filler(
+        self, entry: dict[str, Any], now: float, state: RaceState | None
+    ) -> None:
+        """Compact shadow/active evidence without prompts, tokens, or generated text."""
+        if self._path is None:
+            return
+        payload = {
+            "type": "prepared_filler",
+            "action": entry.get("action"),
+            "reason": entry.get("reason"),
+            "stage": entry.get("stage"),
+            "planId": entry.get("planId"),
+            "situationId": entry.get("situationId"),
+            "variantId": entry.get("variantId"),
+            "nodeId": entry.get("nodeId"),
+            "semanticKey": entry.get("semanticKey"),
+            "legacyNodeId": entry.get("legacyNodeId"),
+            "legacySemanticKey": entry.get("legacySemanticKey"),
+            "divergence": entry.get("divergence"),
+            "comparisonReason": entry.get("comparisonReason"),
+            "decision": entry.get("decision"),
+            "score": entry.get("score"),
+            "threshold": entry.get("threshold"),
+            "components": entry.get("components"),
+            "attempt": entry.get("attempt"),
+            "mergedCount": entry.get("mergedCount"),
+            "desiredCount": entry.get("desiredCount"),
+            "readyCount": entry.get("readyCount"),
+            "fatalEpisode": entry.get("fatalEpisode"),
+        }
+        if "acceptedTexts" in entry:
+            payload["acceptedTexts"] = entry["acceptedTexts"]
+        self._write(now, state, payload)
+
     def record_llm_polish(self, entry: dict[str, Any], now: float, state: RaceState | None) -> None:
         """One remote polish attempt (request/response for offline review)."""
         if self._path is None:
             return
         self._write(now, state, {"type": "llm_polish", **entry})
+
+    def record_field(self, payload: dict[str, Any], now: float, state: RaceState | None) -> None:
+        """Per-tick official vs live field dump for offline position audits."""
+        if self._path is None or not self._field_enabled:
+            return
+        body = dict(payload)
+        body["type"] = "field"
+        self._write(now, state, body)
 
     def _open(self, state: RaceState, now: float, settings: OverlaySettings, key: str) -> None:
         directory = Path(safe_tape_dir(settings.tape.directory))

@@ -7,8 +7,10 @@ import threading
 import time
 from typing import Any
 
+from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.duck import reset_shared_ducker
-from irswitch.commentary.graph import GraphNode, SlotSpec, TtsLimits
+from irswitch.commentary.graph import GraphNode, SlotSpec, TtsLimits, load_sequence_graph
+from irswitch.commentary.polish import PolishOutcome
 from irswitch.commentary.tts import (
     CommentaryUtterance,
     ProcessTtsSink,
@@ -260,6 +262,95 @@ def test_process_sink_depth_one_keeps_higher_priority(monkeypatch: Any) -> None:
     assert sink.pending_count() == 0
 
 
+def test_discard_queued_preserves_current_speech_but_drops_old_waiter(monkeypatch: Any) -> None:
+    gate = threading.Event()
+    first_started = threading.Event()
+    speak_order: list[str] = []
+
+    def blocked_speak(text: str, **_kwargs: Any) -> TtsResult:
+        speak_order.append(text)
+        first_started.set()
+        gate.wait(timeout=2.0)
+        return TtsResult(backend="null", spoken=True, error=None)
+
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", blocked_speak)
+    sink = ProcessTtsSink(CommentarySettings(tts_backend="null"))
+    sink.enqueue(_sample_utterance(text="current", event_id="current", priority=40))
+    assert first_started.wait(timeout=1.0)
+    sink.enqueue(_sample_utterance(text="old waiter", event_id="old", priority=40))
+
+    sink.discard_queued()
+    gate.set()
+
+    assert sink.wait_idle(timeout_s=2.0)
+    assert speak_order == ["current"]
+
+
+def test_failed_llm_polish_is_silent_and_next_waiter_speaks(monkeypatch: Any) -> None:
+    first_started = threading.Event()
+    release = threading.Event()
+    spoken: list[str] = []
+    story_debug: list[dict[str, Any]] = []
+
+    def polish(text: str, *_args: Any, **_kwargs: Any) -> PolishOutcome:
+        if text == "bad skeleton":
+            first_started.set()
+            release.wait(timeout=2.0)
+            return PolishOutcome(
+                text=text,
+                outcome="retry_exhausted",
+                latency_ms=1.0,
+                skeleton=text,
+                request={},
+                attempts=2,
+            )
+        return PolishOutcome(
+            text="accepted next line",
+            outcome="ok",
+            latency_ms=1.0,
+            skeleton=text,
+            request={},
+            attempts=1,
+        )
+
+    def speak(text: str, **_kwargs: Any) -> TtsResult:
+        spoken.append(text)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.polish_skeleton", polish)
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", speak)
+    sink = ProcessTtsSink(
+        CommentarySettings(llm_polish=True, tts_backend="null"),
+        on_story_debug=story_debug.append,
+    )
+    sink.enqueue(_sample_utterance(text="bad skeleton", event_id="bad", priority=80))
+    assert first_started.wait(timeout=1.0)
+    sink.enqueue(_sample_utterance(text="waiting story", event_id="next", priority=90))
+    release.set()
+
+    assert sink.wait_idle(timeout_s=2.0)
+    assert spoken == ["accepted next line"]
+    assert any(row.get("reason") == "llm_polish_rejected" for row in story_debug)
+
+
+def test_llm_rejection_releases_director_busy_state_on_next_tick() -> None:
+    sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
+    director = CommentaryDirector(
+        graph=load_sequence_graph(),
+        settings=CommentarySettings(enabled=True, llm_polish=True, tts_backend="null"),
+        sink=sink,
+    )
+    now = time.monotonic()
+    director._busy_until = now + 10.0
+    director._global_ready_at = now + 10.0
+    assert sink.on_candidate_rejected is not None
+    sink.on_candidate_rejected(_sample_utterance(), "retry_exhausted")
+    assert director._busy_until > now
+    director.tick(now + 0.1, allow_filler=False)
+    assert director._busy_until <= now + 0.1
+    assert director._global_ready_at <= now + 0.1
+
+
 def test_process_sink_queue_invariant_single_worker(monkeypatch: Any) -> None:
     workers_seen: set[int] = set()
     barrier = threading.Barrier(2)
@@ -289,6 +380,67 @@ def test_process_sink_queue_invariant_single_worker(monkeypatch: Any) -> None:
     assert sink._worker.ident in workers_seen
 
 
+def test_process_sink_warm_loads_supertonic_once(monkeypatch: Any) -> None:
+    calls: list[str] = []
+
+    monkeypatch.setattr("irswitch.commentary.tts.detect_backend", lambda _pref="auto": "supertonic")
+
+    def fake_warm() -> None:
+        calls.append("warm")
+
+    monkeypatch.setattr("irswitch.commentary.supertonic_backend.warm_engine", fake_warm)
+    sink = ProcessTtsSink(CommentarySettings(tts_backend="supertonic"))
+    sink.warm()
+    sink.warm()
+    deadline = time.monotonic() + 1.0
+    while not calls and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert calls == ["warm"]
+    sink.close()
+
+
+def test_parade_pad_skips_live_polish(monkeypatch: Any) -> None:
+    called: list[str] = []
+    spoken: list[str] = []
+
+    def polish(text: str, *_args: Any, **_kwargs: Any) -> PolishOutcome:
+        called.append(text)
+        return PolishOutcome(
+            text="parade should not be polished",
+            outcome="ok",
+            latency_ms=1.0,
+            skeleton=text,
+            request={},
+            attempts=1,
+        )
+
+    def speak(text: str, **_kwargs: Any) -> TtsResult:
+        spoken.append(text)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.polish_skeleton", polish)
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", speak)
+    node = load_sequence_graph().nodes["parade_pad"]
+    sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
+    sink.enqueue(
+        CommentaryUtterance(
+            node_id="parade_pad",
+            locale="en",
+            emotion="unknown",
+            text="The pace lap is still rolling.",
+            event_type="PARADE_PAD",
+            event_id="parade-1",
+            correlation_id="c-parade",
+            estimated_seconds=2.0,
+            node=node,
+            priority=20,
+        )
+    )
+    assert sink.wait_idle(timeout_s=2.0)
+    assert called == []
+    assert spoken == ["The pace lap is still rolling."]
+
+
 def test_speak_timeout_exempts_stream_start_from_global_cap() -> None:
     settings = CommentarySettings(max_utterance_s=6.0)
     overtake = _sample_utterance()
@@ -305,3 +457,15 @@ def test_speak_timeout_exempts_stream_start_from_global_cap() -> None:
         tts=TtsLimits(max_chars=220, max_seconds=16.0),
     )
     assert speak_timeout_s(settings, event_type="STREAM_START", node=stream_node) == 26.0
+    stream_end = GraphNode(
+        id="stream_end",
+        family="session",
+        event_types=("STREAM_END",),
+        phases=("RESULT",),
+        speak_priority=1,
+        cooldown_s=1.0,
+        slots=(),
+        hr_states=("unknown",),
+        tts=TtsLimits(max_chars=180, max_seconds=12.0),
+    )
+    assert speak_timeout_s(settings, event_type="STREAM_END", node=stream_end) == 22.0

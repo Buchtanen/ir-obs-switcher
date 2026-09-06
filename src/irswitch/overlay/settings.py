@@ -42,11 +42,18 @@ class OvertakeClassifierSettings:
     min_closing_rate: float = 0.08
 
 
+def default_hunted_settings() -> HuntingSettings:
+    """Hunted is proximity, not a required close. Matching pace at ~0.5 s still counts."""
+    return HuntingSettings(min_closing_rate=-0.15, activation_delay=1.0)
+
+
 @dataclass(frozen=True)
 class BattleSettings:
     hunting: HuntingSettings = field(default_factory=HuntingSettings)
-    hunted: HuntingSettings = field(default_factory=HuntingSettings)
+    hunted: HuntingSettings = field(default_factory=default_hunted_settings)
     position_stable_seconds: float = 1.0
+    position_swing_debounce_s: float = 2.5
+    position_incident_window_s: float = 8.0
     gap_history_seconds: float = 3.0
     overtake: OvertakeClassifierSettings = field(default_factory=OvertakeClassifierSettings)
 
@@ -138,6 +145,7 @@ class OverlayTapeSettings:
     directory: str = "recordings"
     # llm_polish rows while the tape file is open (independent of log level).
     llm_rows: bool = True
+    field: bool = True
 
 
 @dataclass(frozen=True)
@@ -151,6 +159,32 @@ class CommentarySchedulerSettings:
     incident_ttl_s: float = 45.0
     max_silence_s: float = 33.0
     llm_past_framing: bool = True
+
+
+@dataclass(frozen=True)
+class PreparedFillerSettings:
+    """Bounded pre-generated commentary rollout and capacity contract."""
+
+    # Low-level fail-safe default. AppConfig promotes missing INI rollout keys to active.
+    mode: str = "shadow"
+    max_ready_plans: int = 24
+    reserved_current_stage: int = 8
+    reserved_next_stage: int = 6
+    max_inflight: int = 2
+    variants_min: int = 3
+    variants_max: int = 5
+    generation_timeout_s: float = 75.0
+    generation_max_attempts: int = 2
+    # In-memory backoff after the attempt budget; not an INI key.
+    generation_retry_cooldown_s: float = 15.0
+    max_utterance_s: float = 28.0
+    youtube_history: bool = False
+    youtube_history_days: int = 90
+    youtube_history_max_items: int = 100
+    iracing_history: bool = False
+    system_filler: bool = False
+    # Never speak the on-air FATAL line. Health still goes FATAL for admin/tape.
+    speak_fatal_notice: bool = False
 
 
 @dataclass(frozen=True)
@@ -184,14 +218,20 @@ class CommentarySettings:
     llm_base_url: str = "http://127.0.0.1:11434/v1"
     llm_model: str = "qwen3:4b-instruct-2507-q4_K_M"
     llm_timeout_s: float = 12.0
-    llm_temperature: float = 0.45
+    llm_temperature: float = 0.4
+    llm_top_p: float = 0.85
+    llm_top_k: int = 30
+    llm_num_predict: int = 45
+    llm_num_ctx: int = 512
     llm_max_tokens: int = 360
     llm_max_attempts: int = 2
     # Spoken hero identity. Empty = iRacing UserName first/last tokens.
     driver_name: str = ""
     driver_nickname: str = ""
     scheduler: CommentarySchedulerSettings = field(default_factory=CommentarySchedulerSettings)
+    # Low-level fail-safe default. AppConfig promotes a missing INI key to active.
     graph_runtime_mode: str = "legacy"
+    prepared_filler: PreparedFillerSettings = field(default_factory=PreparedFillerSettings)
 
 
 @dataclass(frozen=True)
@@ -205,6 +245,8 @@ class RaceObserverSettings:
     flags: bool = False
     # Quali recap + ParadeLaps padding. Default off. Independent of session_briefs.
     grid_story: bool = False
+    # Development rollout: current-signal excursion replaces legacy aftermath.
+    scenario_mode: str = "active"  # [race_scenarios] mode = legacy | shadow | active
 
 
 @dataclass(frozen=True)

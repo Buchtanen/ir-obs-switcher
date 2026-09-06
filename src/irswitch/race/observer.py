@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from irswitch.events.envelope import EventEnvelope, make_envelope
+from irswitch.events.scenarios.track_excursion import TrackExcursionDetector
 from irswitch.iracing.drivers import speakable_name_mix_for_car
 from irswitch.iracing.sdk_units import as_completed_lap_time, format_lap_time
 from irswitch.iracing.weather import WeatherSnapshot, extract_weather, spoken_weather_bindings
@@ -25,6 +26,7 @@ from irswitch.race.opponents import (
     relevant_near_field,
     same_class,
 )
+from irswitch.race.order import order_from_state
 from irswitch.race.story import HeroSnapshot, StoryContext, StoryHistory, StreamMemory
 from irswitch.race.timing_hunt import TimingHuntFsm
 from irswitch.race.watcher_log import WatcherLog, note
@@ -52,6 +54,8 @@ class RaceObserver:
     stream: StreamMemory = field(default_factory=StreamMemory)
     history: StoryHistory = field(default_factory=StoryHistory)
     aftermath: IncidentAftermathFsm = field(default_factory=IncidentAftermathFsm)
+    excursion: TrackExcursionDetector = field(default_factory=TrackExcursionDetector)
+    _scenario_pending: list[EventEnvelope] = field(default_factory=list)
     narrative: StreamNarrativeFsm = field(default_factory=StreamNarrativeFsm)
     timing_hunt: TimingHuntFsm = field(default_factory=TimingHuntFsm)
     flags: SessionFlagFsm = field(default_factory=SessionFlagFsm)
@@ -69,6 +73,10 @@ class RaceObserver:
     _was_on_pit_road: bool = False
 
     def apply_settings(self, settings: RaceObserverSettings) -> None:
+        if settings.scenario_mode != self.settings.scenario_mode:
+            self.excursion.reset(reason="scenario_mode_changed")
+            self.aftermath.reset()
+            self._scenario_pending.clear()
         self.settings = settings
 
     def reset_session(self) -> None:
@@ -84,6 +92,8 @@ class RaceObserver:
         self._was_on_pit_road = False
         self.history.clear()
         self.aftermath.reset()
+        self.excursion.reset(reason="session_reset")
+        self._scenario_pending.clear()
         self.narrative.reset_session()
         self.timing_hunt.reset()
         self.flags.reset()
@@ -99,6 +109,8 @@ class RaceObserver:
         """Drain derived commentary envelopes (narrative, aftermath, flags, timing hunt)."""
         out = self.narrative.take_pending()
         out.extend(self.aftermath.take_pending())
+        out.extend(self._scenario_pending)
+        self._scenario_pending.clear()
         out.extend(self.flags.take_pending())
         out.extend(self.timing_hunt.take_pending())
         out.extend(self.grid_story.take_pending())
@@ -157,13 +169,19 @@ class RaceObserver:
             self.timing_hunt.reset()
             self.flags.reset()
             self.grid_story.reset()
+            self.stream.reset_race_grid()
             if key:
                 self.stream.note_session(key)
 
         ahead: list[NearFieldCar] = []
         behind: list[NearFieldCar] = []
         if snap.connected and snap.player_car_idx is not None:
-            ahead, behind = relevant_near_field(snap, ahead_n=self.ahead_n, behind_n=self.behind_n)
+            ahead, behind = relevant_near_field(
+                snap,
+                ahead_n=self.ahead_n,
+                behind_n=self.behind_n,
+                order=order_from_state(state),
+            )
             self.stream.note_rivals([*ahead, *behind])
 
         hero_name = None
@@ -179,7 +197,7 @@ class RaceObserver:
         if not hero_names and hero_name:
             hero_names = (hero_name,)
 
-        leader_name, leader_cp = _find_leader(snap)
+        leader_name, leader_cp = _find_leader(snap, state)
 
         weather = None
         if telemetry_data is not None:
@@ -191,6 +209,16 @@ class RaceObserver:
             self.stream.note_quali(
                 state.class_position or snap.class_position,
                 state.best_lap_time if state.best_lap_time is not None else snap.best_lap_time,
+                class_id=snap.player_car_class,
+                subsession_id=snap.subsession_id,
+            )
+        elif overlay_mode == "RACE" and not (
+            state.flag_green or state.session_state == 4 or state.player_finished
+        ):
+            self.stream.note_race_grid(
+                state.class_position or snap.class_position,
+                class_id=snap.player_car_class,
+                subsession_id=snap.subsession_id,
             )
         ctx = StoryContext(
             session_key=key,
@@ -211,6 +239,9 @@ class RaceObserver:
             stream_sessions=tuple(self.stream.sessions_seen),
             recent_beats=self.history.snapshot(),
             quali_bag=self.stream.quali_bag(),
+            race_grid_position=self.stream.race_grid_position,
+            race_grid_class_id=self.stream.race_grid_class_id,
+            race_grid_subsession_id=self.stream.race_grid_subsession_id,
             run_epoch=state.run_epoch,
         )
         self._context = ctx
@@ -223,9 +254,25 @@ class RaceObserver:
         except Exception:
             logger.warning("StreamNarrativeFsm.tick failed", exc_info=True)
         try:
-            self.aftermath.tick(state, now, log=self.watches)
+            if self.settings.scenario_mode != "active":
+                self.aftermath.tick(state, now, log=self.watches)
+            if self.settings.scenario_mode != "legacy":
+                beats = self.excursion.tick(state, now)
+                if self.settings.scenario_mode == "active":
+                    self._scenario_pending.extend(beats)
+                for beat in beats:
+                    note(
+                        self.watches,
+                        watch="track_excursion",
+                        kind=str(beat.metrics["beatId"]),
+                        emitted=self.settings.scenario_mode == "active",
+                        reason=str(beat.metrics["reason"]),
+                        confidence=beat.confidence,
+                        now=now,
+                    )
         except Exception:
-            logger.warning("IncidentAftermathFsm.tick failed", exc_info=True)
+            self.excursion.reset(reason="detector_error", now=now)
+            logger.warning("Excursion/aftermath detector failed", exc_info=True)
         try:
             self.timing_hunt.tick(snap, state, now, log=self.watches)
         except Exception:
@@ -623,11 +670,19 @@ def _delta(a: float | None, b: float | None, threshold: float) -> bool:
     return abs(float(b) - float(a)) >= threshold
 
 
-def _find_leader(snap: TelemetrySnapshot) -> tuple[str | None, int | None]:
+def _find_leader(
+    snap: TelemetrySnapshot, state: RaceState | None = None
+) -> tuple[str | None, int | None]:
     player_idx = snap.player_car_idx
     if player_idx is None:
         return None, None
-    n = max(len(snap.car_idx_class_position), len(snap.car_idx_driver_name), 0)
+    order = order_from_state(state) if state is not None else None
+    n = max(
+        len(snap.car_idx_class_position),
+        len(snap.car_idx_driver_name),
+        len(order.class_pos) if order is not None else 0,
+        0,
+    )
     best_idx: int | None = None
     best_cp = 10_000
     for car_idx in range(n):
@@ -636,7 +691,7 @@ def _find_leader(snap: TelemetrySnapshot) -> tuple[str | None, int | None]:
                 continue
             if not same_class(snap, car_idx, player_idx):
                 continue
-        cp = class_position_of(snap, car_idx)
+        cp = class_position_of(snap, car_idx, order)
         if cp is None or cp <= 0:
             continue
         if cp < best_cp:
@@ -646,4 +701,4 @@ def _find_leader(snap: TelemetrySnapshot) -> tuple[str | None, int | None]:
         return None, None
     names = snap.car_idx_driver_name
     name = names[best_idx] if 0 <= best_idx < len(names) else None
-    return (name if name else None), best_cp
+    return name if name else None, best_cp

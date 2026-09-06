@@ -16,10 +16,13 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
+from irswitch.commentary.composer import with_stale_apology
 from irswitch.commentary.duck import duck_for_speech
 from irswitch.commentary.graph import GraphNode
 from irswitch.commentary.graph_runtime import GraphCandidate
+from irswitch.commentary.llm_lane import LlmPriorityLane
 from irswitch.commentary.polish import PolishOutcome, polish_skeleton
+from irswitch.commentary.semantic_vocabulary import validate_node_vocabulary
 from irswitch.commentary.speech_hero import mix_hero_name
 from irswitch.commentary.speech_numbers import numbers_to_words
 from irswitch.overlay.settings import CommentarySettings
@@ -29,13 +32,26 @@ logger = logging.getLogger(__name__)
 
 BACKENDS = ("auto", "sapi", "espeak", "supertonic", "null")
 STREAM_START_EVENT = "STREAM_START"
+STREAM_END_EVENT = "STREAM_END"
+LONG_TTS_EVENTS = frozenset({STREAM_START_EVENT, STREAM_END_EVENT})
 SpeakRunner = Callable[[list[str], dict[str, str], float], subprocess.CompletedProcess[str]]
 CancelProbe = Callable[[], bool]
 PolishDebugHook = Callable[[dict[str, Any]], None]
 SpokenTextHook = Callable[[str], None]
 StoryDebugHook = Callable[[dict[str, Any]], None]
 GraphLifecycleHook = Callable[[str, GraphCandidate, float], None]
+PreparedLifecycleHook = Callable[[str, "CommentaryUtterance", float], None]
+PreparedCommitValidator = Callable[["CommentaryUtterance", float], bool]
+CandidateRejectedHook = Callable[["CommentaryUtterance", str], None]
 _SAPI_PS1 = Path(__file__).with_name("sapi_speak.ps1")
+_TIMEOUT_NOTICE_COOLDOWN_S = 15.0
+
+
+def llm_timeout_notice(locale: str) -> str:
+    """On-air line when live polish does not return in time."""
+    if str(locale or "").strip().lower().startswith("cs"):
+        return "LLM nestihl dodat komentáře."
+    return "LLM did not deliver the commentary in time."
 
 
 class _TtsInterrupted(Exception):
@@ -69,6 +85,16 @@ class CommentaryUtterance:
     story_token: MiniStoryToken | None = None
     graph_candidate: GraphCandidate | None = None
     editorial_score: float | None = None
+    prepared: bool = False
+    prepared_plan_id: str | None = None
+    prepared_variant_id: str | None = None
+    prepared_fatal_episode: int | None = None
+    prepared_stage: str | None = None
+    prepared_stage_epoch: int = 0
+    prepared_stream_epoch: int = 0
+    prepared_terminal: bool = False
+    apology_after: bool = False
+    stale_revision: bool = False
 
 
 @dataclass(frozen=True)
@@ -84,6 +110,9 @@ class TtsSink(Protocol):
 
     def interrupt(self) -> None:
         """Best-effort cancel queued/in-flight speech (hard interrupt)."""
+
+    def discard_queued(self) -> None:
+        """Drop only waiting speech; allow the currently speaking unit to finish."""
 
     def is_busy(self) -> bool:
         """True while a speak is in-flight or waiting (observed busy)."""
@@ -106,8 +135,20 @@ class NullTtsSink:
     dropped: list[CommentaryUtterance] = field(default_factory=list)
     story_registry: MiniStoryRegistry | None = None
     on_graph_lifecycle: GraphLifecycleHook | None = None
+    on_prepared_lifecycle: PreparedLifecycleHook | None = None
+    prepared_commit_validator: PreparedCommitValidator | None = None
+    on_candidate_rejected: CandidateRejectedHook | None = None
+
+    def warm(self) -> None:
+        """No-op. Tests may override to count lobby preload."""
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
+        validator = self.prepared_commit_validator
+        if utterance.prepared and validator is not None:
+            if not validator(utterance, time.monotonic()):
+                self.dropped.append(utterance)
+                self._emit_prepared_lifecycle("invalidated", utterance)
+                return
         token = utterance.story_token
         if self.story_registry is not None and token is not None:
             decision = self.story_registry.commit(
@@ -133,17 +174,27 @@ class NullTtsSink:
             self.dropped.append(prev)
             self.spoken[-1] = utterance
             return
+        if utterance.apology_after:
+            utterance = replace(
+                utterance, text=with_stale_apology(utterance.text, utterance.locale)
+            )
         self.spoken.append(utterance)
         self._emit_graph_lifecycle("speaking", utterance)
+        self._emit_prepared_lifecycle("speaking", utterance)
         if self.story_registry is not None and token is not None and not self.force_busy:
             self.story_registry.complete(token)
         if not self.force_busy:
             self._emit_graph_lifecycle("completed", utterance)
+            self._emit_prepared_lifecycle("completed", utterance)
 
     def interrupt(self) -> None:
         self.interrupted += 1
         self.spoken.clear()
         self.force_busy = False
+
+    def discard_queued(self) -> None:
+        # Null sink has no distinct waiter; keep the current speaking flag.
+        return
 
     def is_busy(self) -> bool:
         return bool(self.force_busy)
@@ -160,6 +211,15 @@ class NullTtsSink:
             hook(action, candidate, time.monotonic())
         except Exception:
             logger.debug("commentary graph lifecycle hook failed", exc_info=True)
+
+    def _emit_prepared_lifecycle(self, action: str, utterance: CommentaryUtterance) -> None:
+        hook = self.on_prepared_lifecycle
+        if hook is None or not utterance.prepared:
+            return
+        try:
+            hook(action, utterance, time.monotonic())
+        except Exception:
+            logger.debug("prepared filler lifecycle hook failed", exc_info=True)
 
 
 @dataclass
@@ -179,9 +239,16 @@ class ProcessTtsSink:
     runner: SpeakRunner | None = None
     on_polish_debug: PolishDebugHook | None = None
     on_spoken_text: SpokenTextHook | None = None
+    on_speech_diagnostic: Callable[[dict[str, Any]], None] | None = None
     on_story_debug: StoryDebugHook | None = None
     on_graph_lifecycle: GraphLifecycleHook | None = None
+    on_prepared_lifecycle: PreparedLifecycleHook | None = None
+    prepared_commit_validator: PreparedCommitValidator | None = None
+    on_candidate_rejected: CandidateRejectedHook | None = None
     story_registry: MiniStoryRegistry | None = None
+    llm_lane: LlmPriorityLane | None = None
+    _live_held: set[int] = field(default_factory=set, init=False, repr=False)
+    _timeout_notice_at: float = field(default=0.0, init=False, repr=False)
     _queue: queue.SimpleQueue[CommentaryUtterance | object] = field(
         default_factory=queue.SimpleQueue, repr=False
     )
@@ -193,6 +260,29 @@ class ProcessTtsSink:
     _interrupt_generation: int = field(default=0, init=False, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
     _sentinel: object = field(default_factory=object, init=False, repr=False)
+    _warm_started: bool = field(default=False, init=False, repr=False)
+
+    def warm(self) -> None:
+        """Preload the TTS backend on a side thread. Does not enqueue speech."""
+        if self._closed or self._warm_started:
+            return
+        self._warm_started = True
+        thread = threading.Thread(
+            target=self._warm_backend,
+            name="irswitch-tts-warm",
+            daemon=True,
+        )
+        thread.start()
+
+    def _warm_backend(self) -> None:
+        try:
+            if detect_backend(self.settings.tts_backend) != "supertonic":
+                return
+            from irswitch.commentary.supertonic_backend import warm_engine
+
+            warm_engine()
+        except Exception:
+            logger.debug("tts warm failed", exc_info=True)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop.
@@ -235,7 +325,9 @@ class ProcessTtsSink:
             return
 
         if replaced is not None:
+            self._release_live_llm(replaced)
             self._close_queued_story(replaced, "tts_queue_replaced")
+        self._hold_live_llm(utterance)
         if utterance.story_token is not None:
             self._emit_story_debug(utterance.story_token, "building", "tts_queued")
 
@@ -261,7 +353,27 @@ class ProcessTtsSink:
                 if self._pending == 0 and not self._speaking:
                     self._idle.notify_all()
         for utterance in dropped_utterances:
+            self._release_live_llm(utterance)
             self._close_queued_story(utterance, "tts_queue_interrupted")
+
+    def discard_queued(self) -> None:
+        """Discard the single waiter without changing the in-flight generation."""
+        dropped_utterances: list[CommentaryUtterance] = []
+        with self._idle:
+            while True:
+                try:
+                    queued = self._queue.get_nowait()
+                    if isinstance(queued, CommentaryUtterance):
+                        dropped_utterances.append(queued)
+                except queue.Empty:
+                    break
+            if dropped_utterances:
+                self._pending = max(0, self._pending - len(dropped_utterances))
+                if self._pending == 0 and not self._speaking:
+                    self._idle.notify_all()
+        for utterance in dropped_utterances:
+            self._release_live_llm(utterance)
+            self._close_queued_story(utterance, "tts_queue_scope_changed")
 
     def is_busy(self) -> bool:
         """True while speaking or a waiter is queued (#180 observed busy)."""
@@ -331,6 +443,36 @@ class ProcessTtsSink:
                         self._idle.notify_all()
 
     def _speak(self, utterance: CommentaryUtterance, generation: int | None = None) -> None:
+        try:
+            self._speak_body(utterance, generation)
+        finally:
+            self._release_live_llm(utterance)
+
+    def _uses_live_llm(self, utterance: CommentaryUtterance) -> bool:
+        if utterance.node_id == "parade_pad" or utterance.event_type == "PARADE_PAD":
+            return False
+        return bool(self.settings.llm_polish) and not utterance.prepared
+
+    def _hold_live_llm(self, utterance: CommentaryUtterance) -> None:
+        lane = self.llm_lane
+        if lane is None or not self._uses_live_llm(utterance):
+            return
+        key = id(utterance)
+        if key in self._live_held:
+            return
+        lane.request_live()
+        self._live_held.add(key)
+
+    def _release_live_llm(self, utterance: CommentaryUtterance) -> None:
+        key = id(utterance)
+        if key not in self._live_held:
+            return
+        self._live_held.discard(key)
+        lane = self.llm_lane
+        if lane is not None:
+            lane.release_live()
+
+    def _speak_body(self, utterance: CommentaryUtterance, generation: int | None = None) -> None:
         if generation is None:
             generation = self._interrupt_generation
 
@@ -339,19 +481,25 @@ class ProcessTtsSink:
 
         if cancelled():
             return
+        validator = self.prepared_commit_validator
+        if utterance.prepared and validator is not None:
+            if not validator(utterance, time.monotonic()):
+                self._emit_prepared_lifecycle("invalidated", utterance)
+                return
         # Digits + compact units → words; mix hero name via he/him/his only.
         spoken_text = numbers_to_words(utterance.text, utterance.locale)
-        spoken_text = mix_hero_name(
-            spoken_text,
-            utterance.hero_names,
-            utterance.locale,
-            name=utterance.hero_name,
-        )
+        if not utterance.prepared:
+            spoken_text = mix_hero_name(
+                spoken_text,
+                utterance.hero_names,
+                utterance.locale,
+                name=utterance.hero_name,
+            )
         past = bool(utterance.past_framing) and getattr(
             self.settings.scheduler, "llm_past_framing", True
         )
         outcome: PolishOutcome | None = None
-        if self.settings.llm_polish:
+        if self._uses_live_llm(utterance):
             polish_kwargs: dict[str, Any] = {
                 "past": past,
                 "driver_names": utterance.hero_names,
@@ -364,6 +512,14 @@ class ProcessTtsSink:
                 )
             outcome = polish_skeleton(spoken_text, utterance.node, self.settings, **polish_kwargs)
             self._emit_polish_debug(utterance, outcome)
+            if cancelled():
+                return
+            if outcome.outcome != "ok" or not (outcome.text or "").strip():
+                reason = outcome.outcome if outcome.outcome != "ok" else "empty_ok"
+                self._reject_polish(utterance, reason)
+                if not cancelled():
+                    self._maybe_speak_llm_timeout_notice(utterance, reason)
+                return
             polished = (outcome.text or "").strip()
             if polished:
                 spoken_text = numbers_to_words(polished, utterance.locale)
@@ -375,6 +531,9 @@ class ProcessTtsSink:
                 )
             if not spoken_text.strip():
                 return
+        if validate_node_vocabulary(spoken_text, utterance.node_id):
+            self._reject_polish(utterance, "semantic_vocabulary_rejected")
+            return
         token = utterance.story_token
         lifecycle_token = token
         registry = self.story_registry
@@ -409,7 +568,22 @@ class ProcessTtsSink:
                         composition_path=utterance.composition_path,
                     )
                     self._emit_polish_debug(utterance, resolved_outcome)
-                    spoken_text = resolved_outcome.text or decision.canonical
+                    if cancelled():
+                        return
+                    if (
+                        resolved_outcome.outcome != "ok"
+                        or not (resolved_outcome.text or "").strip()
+                    ):
+                        reason = (
+                            resolved_outcome.outcome
+                            if resolved_outcome.outcome != "ok"
+                            else "empty_ok"
+                        )
+                        self._reject_polish(utterance, reason)
+                        if not cancelled():
+                            self._maybe_speak_llm_timeout_notice(utterance, reason)
+                        return
+                    spoken_text = resolved_outcome.text
                 spoken_text = numbers_to_words(spoken_text, utterance.locale)
                 spoken_text = mix_hero_name(
                     spoken_text,
@@ -417,16 +591,29 @@ class ProcessTtsSink:
                     utterance.locale,
                     name=utterance.hero_name,
                 )
+            if validate_node_vocabulary(spoken_text, utterance.node_id):
+                self._reject_polish(utterance, "semantic_vocabulary_rejected")
+                return
             if not registry.mark_speaking(token):
                 self._emit_story_debug(token, "skipped", "ministory_invalidated")
                 return
             lifecycle_token = registry.current_token(token) or lifecycle_token
             self._emit_story_debug(lifecycle_token, "speaking", "tts_started")
         self._emit_graph_lifecycle("speaking", utterance)
+        self._emit_prepared_lifecycle("speaking", utterance)
+        self._scenario_diagnostic(utterance, "tts_requested", spoken_text)
         try:
             with duck_for_speech(self.settings) as ducker:
                 if cancelled():
                     return
+
+                def before_play() -> None:
+                    ducker.wait_faded(cancelled)
+                    if not cancelled():
+                        self._scenario_diagnostic(utterance, "playback_requested", spoken_text)
+
+                if utterance.apology_after:
+                    spoken_text = with_stale_apology(spoken_text, utterance.locale)
                 result = speak_text(
                     spoken_text,
                     locale=utterance.locale,
@@ -442,7 +629,7 @@ class ProcessTtsSink:
                     runner=self.runner,
                     cancelled=cancelled,
                     steps=self.settings.tts_steps,
-                    wait_before_play=lambda: ducker.wait_faded(cancelled),
+                    wait_before_play=before_play,
                 )
         finally:
             if registry is not None and token is not None:
@@ -462,8 +649,18 @@ class ProcessTtsSink:
                 "interrupted" if cancelled() else "completed",
                 utterance,
             )
+            self._emit_prepared_lifecycle(
+                "interrupted" if cancelled() else "completed",
+                utterance,
+            )
         self.last_result = result
         self.last_error = result.error
+        self._scenario_diagnostic(
+            utterance,
+            "tts_result",
+            spoken_text,
+            reason=result.error or ("played" if result.spoken else "not_played"),
+        )
         if result.error:
             logger.warning("tts speak failed backend=%s error=%s", result.backend, result.error)
         elif result.spoken and self.on_spoken_text is not None:
@@ -471,6 +668,35 @@ class ProcessTtsSink:
                 self.on_spoken_text(spoken_text)
             except Exception:
                 logger.debug("commentary final-spoken hook failed", exc_info=True)
+
+    def _scenario_diagnostic(
+        self,
+        utterance: CommentaryUtterance,
+        action: str,
+        text: str,
+        *,
+        reason: str = "tts_lifecycle",
+    ) -> None:
+        hook = self.on_speech_diagnostic
+        if hook is None or utterance.event_type != "TRACK_EXCURSION":
+            return
+        candidate = utterance.graph_candidate
+        try:
+            hook(
+                {
+                    "action": action,
+                    "reason": reason,
+                    "text": text,
+                    "eventType": utterance.event_type,
+                    "eventId": utterance.event_id,
+                    "nodeId": utterance.node_id,
+                    "correlationId": utterance.correlation_id,
+                    "parentStoryId": candidate.parent_story_id if candidate else "",
+                    "beatId": candidate.envelope.metrics.get("beatId") if candidate else None,
+                }
+            )
+        except Exception:
+            logger.debug("scenario TTS diagnostic hook failed", exc_info=True)
 
     def _emit_polish_debug(self, utterance: CommentaryUtterance, outcome: PolishOutcome) -> None:
         hook = self.on_polish_debug
@@ -516,6 +742,15 @@ class ProcessTtsSink:
         except Exception:
             logger.debug("commentary graph lifecycle hook failed", exc_info=True)
 
+    def _emit_prepared_lifecycle(self, action: str, utterance: CommentaryUtterance) -> None:
+        hook = self.on_prepared_lifecycle
+        if hook is None or not utterance.prepared:
+            return
+        try:
+            hook(action, utterance, time.monotonic())
+        except Exception:
+            logger.debug("prepared filler lifecycle hook failed", exc_info=True)
+
     def _close_queued_story(self, utterance: CommentaryUtterance, reason: str) -> None:
         token = utterance.story_token
         if token is None:
@@ -524,6 +759,79 @@ class ProcessTtsSink:
         if registry is not None:
             registry.invalidate(token)
         self._emit_story_debug(token, "invalidated", reason)
+
+    def _maybe_speak_llm_timeout_notice(self, utterance: CommentaryUtterance, outcome: str) -> None:
+        """Speak a short on-air notice when live polish times out or is unreachable."""
+        if outcome not in {"fallback_timeout", "fallback_error"}:
+            return
+        now = time.monotonic()
+        if self._timeout_notice_at and now - self._timeout_notice_at < _TIMEOUT_NOTICE_COOLDOWN_S:
+            return
+        self._timeout_notice_at = now
+        text = llm_timeout_notice(utterance.locale)
+        hook = self.on_story_debug
+        if hook is not None:
+            try:
+                hook(
+                    {
+                        "action": "spoken",
+                        "reason": "llm_timeout_notice",
+                        "outcome": outcome,
+                        "eventType": utterance.event_type,
+                        "text": text,
+                    }
+                )
+            except Exception:
+                logger.debug("commentary timeout notice hook failed", exc_info=True)
+        try:
+            with duck_for_speech(self.settings):
+                result = speak_text(
+                    text,
+                    locale=utterance.locale,
+                    voice=self.settings.tts_voice,
+                    rate=self.settings.tts_rate,
+                    backend=self.settings.tts_backend,
+                    device=self.settings.audio_device,
+                    timeout_s=speak_timeout_s(self.settings, event_type=utterance.event_type),
+                    runner=self.runner,
+                    steps=self.settings.tts_steps,
+                )
+        except Exception:
+            logger.debug("llm timeout notice speak failed", exc_info=True)
+            return
+        self.last_result = result
+        if result.spoken and self.on_spoken_text is not None:
+            try:
+                self.on_spoken_text(text)
+            except Exception:
+                logger.debug("commentary final-spoken hook failed", exc_info=True)
+
+    def _reject_polish(self, utterance: CommentaryUtterance, outcome: str) -> None:
+        """Release a rejected candidate without ever speaking its authored anchor."""
+        token = utterance.story_token
+        if token is not None:
+            self._close_queued_story(utterance, "llm_polish_rejected")
+        else:
+            hook = self.on_story_debug
+            if hook is not None:
+                try:
+                    hook(
+                        {
+                            "action": "skipped",
+                            "reason": "llm_polish_rejected",
+                            "outcome": outcome,
+                            "eventType": utterance.event_type,
+                            "correlationId": utterance.correlation_id,
+                        }
+                    )
+                except Exception:
+                    logger.debug("commentary polish rejection hook failed", exc_info=True)
+        rejected = self.on_candidate_rejected
+        if rejected is not None:
+            try:
+                rejected(utterance, outcome)
+            except Exception:
+                logger.debug("commentary rejection callback failed", exc_info=True)
 
 
 def detect_backend(preferred: str = "auto") -> str:
@@ -565,14 +873,14 @@ def speak_timeout_s(
     event_type: str = "",
     node: GraphNode | None = None,
 ) -> float:
-    """Subprocess TTS timeout. STREAM_START may exceed commentary.max_utterance_s."""
+    """Subprocess TTS timeout. Stream open/close may exceed commentary.max_utterance_s."""
     cap = float(settings.max_utterance_s)
     types = {str(event_type).strip().upper()}
     if node is not None:
         types.update(str(item).upper() for item in node.event_types)
-        if STREAM_START_EVENT in types:
+        if types & LONG_TTS_EVENTS:
             cap = max(cap, float(node.tts.max_seconds))
-    elif STREAM_START_EVENT in types:
+    elif types & LONG_TTS_EVENTS:
         cap = max(cap, 16.0)
     return max(cap + 10.0, 20.0)
 

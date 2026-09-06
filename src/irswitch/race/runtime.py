@@ -6,8 +6,9 @@ import asyncio
 import inspect
 import logging
 import time
+from collections import deque
 from collections.abc import Callable
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -33,7 +34,7 @@ from irswitch.events.stream import (
 )
 from irswitch.events.worker import WorkerSupervisor
 from irswitch.iracing.sectors import resolve_sector_points_from_pcts
-from irswitch.iracing.session_context import extract_session_context
+from irswitch.iracing.session_context import extract_session_context, track_display_name
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.consumer import OverlayConsumer
 from irswitch.overlay.mock import mock_bio_state, mock_race_state, mock_system_state
@@ -47,10 +48,17 @@ from irswitch.overlay.settings import OverlaySettings
 from irswitch.overlay.tape import OverlaySessionTape
 from irswitch.race.context import RaceContextAnalyzer
 from irswitch.race.driver_facts import DriverFactLedger
+from irswitch.race.editorial_stage import (
+    EditorialStageController,
+    EditorialStageFeedback,
+    EditorialStageInput,
+)
 from irswitch.race.grid_story import QUALI_RECAP
 from irswitch.race.ministory import MiniStoryRegistry
 from irswitch.race.observer import RaceObserver
+from irswitch.race.order import field_tape_payload
 from irswitch.race.pipeline import AcceptedRecord, RacePipeline, build_situation_payload
+from irswitch.race.prepared_facts import PreparedFactCollector
 from irswitch.race.run import RunClock
 from irswitch.race.timing import CrossingDetector, SegmentReferenceTracker, TimingStore
 from irswitch.race.timing.points import default_sectors
@@ -73,6 +81,7 @@ _SITUATION_SUPPRESS_TYPES = frozenset(
         "BATTLE_FOR_POSITION",
         "INCIDENT",
         "INCIDENT_AFTERMATH",
+        "TRACK_EXCURSION",
         "FINAL_LAP",
         "FINISH",
         "SESSION_CHECKERED",
@@ -81,6 +90,7 @@ _SITUATION_SUPPRESS_TYPES = frozenset(
         "SESSION_INTRO_RACE",
         "ENTER_CAR",
         "STREAM_START",
+        "STREAM_END",
         "PIT_ENTRY",
         "PIT_LANE",
         "PIT_STOPPED",
@@ -89,6 +99,13 @@ _SITUATION_SUPPRESS_TYPES = frozenset(
         "PIT_OUTCOME",
     }
 )
+
+
+def _editorial_in_car(state: RaceState) -> bool:
+    """Best available seat state from normalized telemetry; fail closed in the lobby."""
+    if state.player_track_surface is not None:
+        return state.player_track_surface >= 0
+    return bool(state.on_pit_road or state.speed_mps is not None)
 
 
 class RaceRuntime:
@@ -101,6 +118,7 @@ class RaceRuntime:
         mode: OverlayMode = "live",
         replay_path: str | None = None,
         registry: TaskRegistry | None = None,
+        youtube_oauth_manager: Any | None = None,
     ) -> None:
         self._get_config = get_config
         self._reader = reader
@@ -135,6 +153,9 @@ class RaceRuntime:
         self.analyzer = RaceContextAnalyzer(overlay.battle)
         self.session = SessionCoordinator()
         self.run_clock = RunClock()
+        self.editorial_stage = EditorialStageController()
+        self.prepared_facts = PreparedFactCollector()
+        self._editorial_feedback: deque[EditorialStageFeedback] = deque(maxlen=4)
         self.session.add_reset_hook(self.analyzer.reset)
         self.session.add_reset_hook(self._reset_event_pipeline)
         self.session.add_reset_hook(self._reset_timing)
@@ -172,11 +193,15 @@ class RaceRuntime:
             self._commentary_settings,
             decision_hook=self._record_commentary_decision,
             story_registry=self.story_registry,
+            prepared_stage_hook=self._prepared_stage_spoken,
+            youtube_oauth_manager=youtube_oauth_manager,
         )
         director.filler_formatter = lambda envelope: self.race_observer.format_filler_text(
             envelope, locale=self._overlay_settings().language
         )
         sink = director.sink
+        if hasattr(sink, "on_speech_diagnostic"):
+            sink.on_speech_diagnostic = self._ministory_tape_hook
         if hasattr(sink, "on_story_debug"):
             sink.on_story_debug = self._ministory_lifecycle_hook
         previous_spoken = getattr(sink, "on_spoken_text", None)
@@ -189,6 +214,7 @@ class RaceRuntime:
         if hasattr(sink, "on_spoken_text"):
             sink.on_spoken_text = _spoken
         self._stream_start_emitted = False
+        self._stream_end_emitted = False
         self._commentary_available = True
         self.overlay_consumer = OverlayConsumer(
             self._overlay_subscription,
@@ -206,6 +232,7 @@ class RaceRuntime:
         self.session.add_reset_hook(self.in_car.reset)
         self.session.add_reset_hook(self.session_briefs.reset)
         self.session.add_reset_hook(self.driver_facts.reset)
+        self.session.add_reset_hook(self.prepared_facts.reset)
         self.session.add_reset_hook(self._reset_situation_facts)
 
     def _init_managers(self, overlay: OverlaySettings) -> None:
@@ -223,6 +250,37 @@ class RaceRuntime:
         sid = state.subsession_id or "unknown"
         num = state.session_num if state.session_num is not None else 0
         return f"{sid}:{num}"
+
+    def _editorial_input(self, state: RaceState, now: float | None = None) -> EditorialStageInput:
+        return EditorialStageInput(
+            connected=state.connected,
+            context_ready=state.connected and self._session_id(state) != "unknown:0",
+            session_id=self._session_id(state),
+            overlay_mode=state.overlay_mode,
+            run_epoch=state.run_epoch,
+            in_car=_editorial_in_car(state),
+            on_pit_road=state.on_pit_road,
+            session_state=state.session_state,
+            lap_completed=state.lap_completed,
+            player_finished=state.player_finished,
+            session_checkered=state.session_checkered,
+            green=state.flag_green,
+            reset_or_tow=bool(state.player_tow_time and state.player_tow_time > 0),
+            observed_monotonic_ms=int((time.monotonic() if now is None else now) * 1000),
+            result_confirmed=bool(state.player_finished or state.session_finished),
+        )
+
+    def _prepared_stage_spoken(self, feedback: EditorialStageFeedback) -> None:
+        """Bounded replace-by-action feedback; producer applies it on its next tick."""
+        self._editorial_feedback = deque(
+            (item for item in self._editorial_feedback if item.action != feedback.action),
+            maxlen=4,
+        )
+        self._editorial_feedback.append(feedback)
+
+    def _drain_editorial_feedback(self) -> None:
+        while self._editorial_feedback:
+            self.editorial_stage.apply_feedback(self._editorial_feedback.popleft())
 
     @property
     def commentary(self) -> CommentaryDirector | None:
@@ -270,7 +328,15 @@ class RaceRuntime:
             self._tape.record_event(envelope, now, self._last_race)
 
     def _record_commentary_decision(self, entry: dict[str, Any], now: float) -> None:
-        if self._tape_debug_enabled() and self.mode != "replay":
+        if entry.get("eventType") == "PREPARED_FILLER" and self.mode != "replay":
+            prepared_entry = dict(entry)
+            if not self._tape_debug_enabled():
+                prepared_entry.pop("acceptedTexts", None)
+            self._tape.record_prepared_filler(prepared_entry, now, self._last_race)
+            return
+        if (
+            self._tape_debug_enabled() or entry.get("eventType") == "TRACK_EXCURSION"
+        ) and self.mode != "replay":
             self._tape.record_commentary(entry, now, self._last_race)
 
     def _reset_event_pipeline(self) -> None:
@@ -389,7 +455,9 @@ class RaceRuntime:
         )
 
     def _ministory_tape_hook(self, entry: dict[str, Any]) -> None:
-        if not self._tape_debug_enabled() or self.mode == "replay":
+        if (
+            not self._tape_debug_enabled() and entry.get("eventType") != "TRACK_EXCURSION"
+        ) or self.mode == "replay":
             return
         self._tape.record_commentary(entry, time.monotonic(), self._last_race)
 
@@ -460,6 +528,7 @@ class RaceRuntime:
 
     def notify_obs_stream_started(self, now: float) -> None:
         """OBS streaming rising edge → commentary-only STREAM_START. Fail-soft."""
+        self.editorial_stage.note_stream_started(int(now * 1000))
         if getattr(self, "_stream_start_emitted", False):
             return
         overlay = self._overlay_settings()
@@ -484,6 +553,45 @@ class RaceRuntime:
             self._stream_start_emitted = True
         except Exception:
             logger.warning("STREAM_START commentary failed", exc_info=True)
+
+    def notify_sim_quit(self, now: float) -> None:
+        """iRacing QUIT: stop leftover speech, then speak stream outro before OBS stop."""
+        overlay = self._overlay_settings()
+        if not overlay.commentary.enabled:
+            self.commentary_consumer.invalidate_prepared(interrupt_tts=False)
+            return
+        if getattr(self, "_stream_end_emitted", False):
+            return
+        try:
+            from irswitch.commentary.stream_context import make_stream_end_envelope
+
+            self.commentary_consumer.invalidate_prepared(interrupt_tts=False)
+            self.commentary_consumer.hold_current_tts()
+            envelope = make_stream_end_envelope(now)
+            self._ensure_context(now)
+            self.race_observer.note_accepted([envelope])
+            self.pipeline.publish_envelopes(
+                [envelope],
+                source="stream_end",
+                accepted_monotonic_ms=int(now * 1000),
+                poll_interval_ms=self._poll_interval_ms(),
+            )
+            self._stream_end_emitted = True
+        except Exception:
+            self.commentary_consumer.release_tts_hold()
+            logger.warning("STREAM_END commentary failed", exc_info=True)
+
+    def notify_obs_stream_stopped(self, now: float) -> None:
+        """OBS streaming falling edge invalidates prepared commentary state."""
+        self.editorial_stage.note_stream_stopped(int(now * 1000))
+        self.prepared_facts.reset()
+        self._editorial_feedback.clear()
+        self.commentary_consumer.release_tts_hold()
+        self.commentary_consumer.invalidate_prepared(interrupt_tts=True)
+        self.race_observer.reset_stream()
+        self._capture_context(self._last_race, now, hud=self._current_hud())
+        self._stream_start_emitted = False
+        self._stream_end_emitted = False
 
     def _reset_commentary(self) -> None:
         """Compatibility hook; N12 config/reset delivery uses typed stream items."""
@@ -590,6 +698,19 @@ class RaceRuntime:
             session_id=self._session_id(state),
             observed_monotonic_ms=int(now * 1000),
         )
+        editorial_snapshot = self.editorial_stage.snapshot
+        editorial = editorial_snapshot.to_dict()
+        weekend = telemetry_data.get("WeekendInfo") if telemetry_data else None
+        editorial["track_name"] = track_display_name(weekend)
+        prepared = self.prepared_facts.observe(
+            telemetry_data,
+            state,
+            self._last_bio,
+            stage=editorial_snapshot.stage.value,
+            stage_epoch=editorial_snapshot.stage_epoch,
+            now_ms=int(now * 1000),
+            in_car=_editorial_in_car(state),
+        )
         self.pipeline.capture_context(
             race=state,
             bio=self._last_bio,
@@ -603,6 +724,8 @@ class RaceRuntime:
             system=self._last_system,
             hud=self._empty_hud() if hud is None else hud,
             grid_story=bool(overlay.race_observer.grid_story),
+            editorial=editorial,
+            prepared=prepared,
         )
 
     def _reset_situation_facts(self) -> None:
@@ -738,6 +861,7 @@ class RaceRuntime:
             return False
         if self._hud_live:
             self._reset_event_pipeline()
+            self.commentary_consumer.invalidate_prepared(interrupt_tts=False)
             self._hud_live = False
         captured = now if now is not None else time.monotonic()
         self._last_race = state
@@ -881,10 +1005,32 @@ class RaceRuntime:
             self._observe_race_story(snap, state, now)
         self.pipeline.reset_session(self._session_id(state), reason="session_changed")
         self.pipeline.reset_run(state.run_epoch)
+        self._drain_editorial_feedback()
+        self.editorial_stage.observe(self._editorial_input(state, now))
         if self.manager_v2 is not None:
             self.manager_v2.set_run_epoch(state.run_epoch)
         self._last_race = state
-        self._sync_tape(state, now)
+        tape_active = state.connected and state.overlay_mode in {"RACE", "PRACTICE", "QUALIFYING"}
+        if tape_active:
+            self._sync_tape(state, now)
+        scenario_mode = self._overlay_settings().race_observer.scenario_mode
+        tape_open = self._tape.path is not None
+        for trace in self.race_observer.excursion.take_trace():
+            if not tape_open:
+                continue
+            trace["scenarioMode"] = scenario_mode
+            self._tape.record_scenario(trace, now, state)
+            logger.info(
+                "race_scenario mode=%s action=%s beat=%s parent=%s reason=%s",
+                scenario_mode,
+                trace.get("action"),
+                trace.get("beatId"),
+                trace.get("parentStoryId"),
+                trace.get("reason"),
+            )
+        if not tape_active:
+            # Keep the invalidation evidence before disconnect closes the tape.
+            self._sync_tape(state, now)
         if self._idle_when_disconnected(state, now):
             self._pending_derived_speech.clear()
             return
@@ -897,6 +1043,22 @@ class RaceRuntime:
         for envelope in self._pending_derived_speech:
             records.append(AcceptedRecord(envelope, _derived_source(envelope.event_type)))
         self._pending_derived_speech = []
+        if scenario_mode == "active":
+            # HUD keeps its original wire payload. Speech INCIDENT is a counter
+            # update only; excursion truth comes exclusively from the observer.
+            records = [
+                (
+                    record._replace(
+                        envelope=replace(
+                            record.envelope,
+                            metrics={**record.envelope.metrics, "branch": "points"},
+                        ),
+                    )
+                    if record.envelope.event_type == "INCIDENT"
+                    else record
+                )
+                for record in records
+            ]
         records.extend(filler_records)
         records.extend(self._collect_commentary_sidecars(state, now))
         if self._pending_stream_records:
@@ -998,7 +1160,11 @@ class RaceRuntime:
     def _sync_tape(self, state: RaceState, now: float) -> None:
         if self.mode == "replay":
             return
-        self._tape.observe(state, now, self._overlay_settings())
+        settings = self._overlay_settings()
+        self._tape.observe(state, now, settings)
+        snap = self._last_snapshot
+        if self._tape.path is not None and snap is not None and snap.connected:
+            self._tape.record_field(field_tape_payload(snap, state), now, state)
 
     def _drain_tape_side(self, now: float) -> None:
         if self.mode == "replay" or self.manager_v2 is None:
@@ -1177,6 +1343,7 @@ class RaceRuntime:
                 "supervisor": self._overlay_supervisor.status_snapshot(),
             },
             "commentary": self._commentary_status(overlay, now),
+            "raceScenarios": {"mode": overlay.race_observer.scenario_mode},
             "tape": self._tape_status(overlay),
             "bio": self._bio_status(overlay),
             "system": self._system_status(overlay),
@@ -1321,6 +1488,8 @@ def _envelope_from_wire(wire: dict[str, Any]) -> EventEnvelope:
 
 
 def _derived_source(event_type: str) -> str:
+    if event_type == "TRACK_EXCURSION":
+        return "race_scenario"
     if event_type in {"SESSION_PREVIEW", "SESSION_WRAP", "BACK_UNDER_WAY"}:
         return "narrative"
     if event_type == "INCIDENT_AFTERMATH":

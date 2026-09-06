@@ -1,5 +1,10 @@
 # YouTube API Setup
 
+The same single OAuth account can optionally provide public completed-stream titles to
+`[commentary.prepared_filler] youtube_history=true`. They are used only as wording-diversity
+memory for asynchronous prepared commentary. No second YouTube account or additional token file is
+created, and history failure never blocks scene switching or live event commentary.
+
 Navod pro nastaveni YouTube Data API v3 pro ziskavani nazvu a popisu streamu.
 
 ## Obsah

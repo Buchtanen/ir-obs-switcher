@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from irswitch.overlay.models import TelemetrySnapshot
+from irswitch.race.order import RaceOrder, race_progress
 
 # irsdk_TrkLoc: -1 NotInWorld, 0 OffTrack, 1 InPitStall, 2 AproachingPits, 3 OnTrack
 ON_TRACK = 3
@@ -25,12 +26,8 @@ def _as_float(value: object) -> float | None:
 
 
 def race_distance(snap: TelemetrySnapshot, car_idx: int) -> float | None:
-    """Fractional laps completed (lap + dist pct)."""
-    lap = _as_float(_get(snap.car_idx_lap_completed, car_idx))
-    pct = _as_float(_get(snap.car_idx_lap_dist_pct, car_idx))
-    if lap is None or pct is None:
-        return None
-    return lap + pct
+    """Fractional laps completed (lap + dist pct), including first-lap green."""
+    return race_progress(snap, car_idx)
 
 
 def is_active_racer(snap: TelemetrySnapshot, car_idx: int, player_idx: int) -> bool:
@@ -71,18 +68,35 @@ def estimated_gap_seconds(snap: TelemetrySnapshot, player_idx: int, other_idx: i
     return delta_laps * lap_time
 
 
-def class_position_of(snap: TelemetrySnapshot, car_idx: int) -> int | None:
-    value = _get(snap.car_idx_class_position, car_idx)
-    return int(value) if isinstance(value, (int, float)) else None
+def class_position_of(
+    snap: TelemetrySnapshot,
+    car_idx: int,
+    order: RaceOrder | None = None,
+) -> int | None:
+    if order is not None and car_idx < len(order.class_pos):
+        ordered = order.class_pos[car_idx]
+        if isinstance(ordered, int):
+            return ordered
+    raw = _get(snap.car_idx_class_position, car_idx)
+    return int(raw) if isinstance(raw, (int, float)) else None
 
 
-def overall_position_of(snap: TelemetrySnapshot, car_idx: int) -> int | None:
-    value = _get(snap.car_idx_position, car_idx)
-    return int(value) if isinstance(value, (int, float)) else None
+def overall_position_of(
+    snap: TelemetrySnapshot,
+    car_idx: int,
+    order: RaceOrder | None = None,
+) -> int | None:
+    if order is not None and car_idx < len(order.overall):
+        ordered = order.overall[car_idx]
+        if isinstance(ordered, int):
+            return ordered
+    raw = _get(snap.car_idx_position, car_idx)
+    return int(raw) if isinstance(raw, (int, float)) else None
 
 
 def relevant_ahead_behind(
     snap: TelemetrySnapshot,
+    order: RaceOrder | None = None,
 ) -> tuple[int | None, int | None]:
     """
     Return (ahead_idx, behind_idx) for the relevant same-class race opponents.
@@ -90,7 +104,7 @@ def relevant_ahead_behind(
     Ignores pit, not-in-world, and cars a lap down/up when a closer class
     neighbour exists.
     """
-    ahead, behind = relevant_near_field(snap, ahead_n=1, behind_n=1)
+    ahead, behind = relevant_near_field(snap, ahead_n=1, behind_n=1, order=order)
     return (
         ahead[0].car_idx if ahead else None,
         behind[0].car_idx if behind else None,
@@ -113,6 +127,7 @@ def relevant_near_field(
     *,
     ahead_n: int = 2,
     behind_n: int = 2,
+    order: RaceOrder | None = None,
 ) -> tuple[list[NearFieldCar], list[NearFieldCar]]:
     """Return up to ``ahead_n`` / ``behind_n`` same-class neighbours by gap.
 
@@ -131,9 +146,10 @@ def relevant_near_field(
         len(snap.car_idx_lap_dist_pct),
         len(snap.car_idx_class_position),
         len(snap.car_idx_position),
+        len(order.class_pos) if order is not None else 0,
         0,
     )
-    player_cp = snap.class_position or class_position_of(snap, player_idx)
+    player_cp = class_position_of(snap, player_idx, order)
     ahead_cand: list[NearFieldCar] = []
     behind_cand: list[NearFieldCar] = []
 
@@ -146,7 +162,7 @@ def relevant_near_field(
         gap = estimated_gap_seconds(snap, player_idx, car_idx)
         if gap is None:
             continue
-        other_cp = class_position_of(snap, car_idx)
+        other_cp = class_position_of(snap, car_idx, order)
         neighbour = (
             player_cp is not None and other_cp is not None and abs(other_cp - player_cp) == 1
         )
@@ -157,7 +173,7 @@ def relevant_near_field(
             car_idx=car_idx,
             gap_s=abs(float(gap)),
             class_position=other_cp,
-            overall_position=overall_position_of(snap, car_idx),
+            overall_position=overall_position_of(snap, car_idx, order),
             display_name=name if name else None,
         )
         if player_cp is not None and other_cp is not None:

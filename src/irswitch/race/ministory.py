@@ -92,6 +92,7 @@ class _MiniStory:
     metrics: dict[str, Any]
     state: MiniStoryState = MiniStoryState.READY
     resolved_after_commit: bool = False
+    stale_while_speaking: bool = False
 
 
 @dataclass
@@ -134,6 +135,7 @@ class MiniStoryRegistry:
         except ValueError:
             state = MiniStoryState.READY
         with self._lock:
+            self._supersede_excursion_beats(envelope)
             existing = self._story_for_token(token)
             if existing is not None:
                 existing.metrics.update(deepcopy(envelope.metrics))
@@ -188,6 +190,13 @@ class MiniStoryRegistry:
                 self.reset(session_id=session_id or self._session_id, run_epoch=run_epoch)
             else:
                 self._session_id = session_id or self._session_id
+            for story in self._stories.values():
+                if (
+                    story.event_type == "TRACK_EXCURSION"
+                    and story.state in {MiniStoryState.READY, MiniStoryState.RESOLVED}
+                    and not _excursion_fact_current(story.metrics, race)
+                ):
+                    story.state = MiniStoryState.INVALIDATED
             changed = (
                 position is not None
                 and self._hero_position is not None
@@ -206,6 +215,7 @@ class MiniStoryRegistry:
         run_epoch = _integer(envelope.metrics.get("runEpoch")) or self._run_epoch
         identity = _identity(envelope)
         with self._lock:
+            self._supersede_excursion_beats(envelope)
             if envelope.event_type in _POSITION_EVENTS and envelope.phase in {"ENTER", "RESULT"}:
                 new_position = _positive_integer(
                     envelope.metrics.get("classPosition") or envelope.metrics.get("position")
@@ -269,6 +279,26 @@ class MiniStoryRegistry:
 
             token = _token(story)
             return MiniStoryObservation(token, narrate=True, state=story.state)
+
+    def _supersede_excursion_beats(self, envelope: EventEnvelope) -> None:
+        """A newer fact replaces uncommitted speech, never the already audible beat."""
+        parent = envelope.metrics.get("parentStoryId")
+        if envelope.event_type != "TRACK_EXCURSION" or not parent:
+            return
+        at = envelope.metrics.get("observedAt")
+        if not isinstance(at, (int, float)):
+            return
+        for story in self._stories.values():
+            previous_at = story.metrics.get("observedAt")
+            if (
+                story.event_type == "TRACK_EXCURSION"
+                and story.metrics.get("parentStoryId") == parent
+                and story.correlation_id != envelope.correlation_id
+                and isinstance(previous_at, (int, float))
+                and previous_at <= at
+                and story.state in {MiniStoryState.READY, MiniStoryState.RESOLVED}
+            ):
+                story.state = MiniStoryState.INVALIDATED
 
     def token_for(self, envelope: EventEnvelope) -> MiniStoryToken | None:
         with self._lock:
@@ -362,19 +392,41 @@ class MiniStoryRegistry:
     def _story_for_token(self, token: MiniStoryToken) -> _MiniStory | None:
         return next((s for s in self._stories.values() if s.story_id == token.story_id), None)
 
+    def stale_after_speech(self, token: MiniStoryToken | None) -> bool:
+        """True when the audible line finished after its facts moved on."""
+        if token is None:
+            return False
+        with self._lock:
+            story = self._story_for_token(token)
+            if story is None:
+                return False
+            return bool(
+                story.stale_while_speaking
+                or story.resolved_after_commit
+                or story.revision > token.revision
+            )
+
+    def revision_snapshot(self, token: MiniStoryToken | None) -> tuple[str, dict[str, Any]] | None:
+        """Current event + metrics for the same story, if a revision is speakable."""
+        if token is None:
+            return None
+        with self._lock:
+            story = self._story_for_token(token)
+            if story is None:
+                return None
+            if not (story.resolved_after_commit or story.revision > token.revision):
+                return None
+            return story.event_type, deepcopy(story.metrics)
+
     def _invalidate_for_order_change(self) -> None:
         for story in self._stories.values():
-            if story.story_id == self._active_story_id and story.state in {
-                MiniStoryState.COMMITTED,
-                MiniStoryState.SPEAKING,
-            }:
-                story.state = MiniStoryState.INTERRUPTED
+            if story.state in {MiniStoryState.COMMITTED, MiniStoryState.SPEAKING}:
+                story.stale_while_speaking = True
             elif story.state not in {
                 MiniStoryState.COMPLETED,
                 MiniStoryState.INTERRUPTED,
             }:
                 story.state = MiniStoryState.INVALIDATED
-        self._active_story_id = None
 
 
 def _story_key(envelope: EventEnvelope) -> str:
@@ -424,6 +476,13 @@ def _resolved_fact_pack(
     relation = str(micro.get("relation") or "")
     target = roles.get("target") or roles.get("front") or ""
     cs = locale.lower().startswith("cs")
+    if story.event_type == "FINISH" or relation == "session_result":
+        canonical = str(
+            pack.get("canonical") or ("Jeho závod skončil." if cs else "His race is complete.")
+        )
+        micro.update(story_state="resolved", canonical=canonical, source_revision=story.revision)
+        pack.update(canonical=canonical, microplan=micro)
+        return pack
     if relation == "hero_under_pressure":
         canonical = (
             f"Tlak od jezdce {target} pro tuto chvíli polevil."
@@ -444,7 +503,7 @@ def _resolved_fact_pack(
             if cs
             else "That two-front battle has broken up for now."
         )
-    else:
+    elif relation in {"hero_attacks_target", "hero_closing_on_target"}:
         canonical = (
             f"Útočné okno na jezdce {target} se pro tuto chvíli zavřelo."
             if cs and target
@@ -456,6 +515,15 @@ def _resolved_fact_pack(
                     if target
                     else "The attacking window has closed for now."
                 )
+            )
+        )
+    else:
+        canonical = str(
+            pack.get("canonical")
+            or (
+                "Původní situace už není aktuální."
+                if cs
+                else "The earlier situation is no longer current."
             )
         )
     micro.update(story_state="resolved", canonical=canonical, source_revision=story.revision)
@@ -477,6 +545,30 @@ def _resolved_fact_pack(
         },
     )
     return pack
+
+
+def _excursion_fact_current(metrics: dict[str, Any], race: dict[str, Any]) -> bool:
+    # Missing fields in old/minimal contexts do not invent contrary evidence.
+    if race.get("connected") is False or race.get("data_quality", "ok") != "ok":
+        return False
+    if "player_car_idx" in race and race["player_car_idx"] != metrics.get("heroCarIdx"):
+        return False
+    beat = metrics.get("beatId")
+    surface, speed, tow = (
+        race.get("player_track_surface"),
+        race.get("speed_mps"),
+        race.get("player_tow_time"),
+    )
+    if beat in {"track_rejoined", "motion_restored"}:
+        if "player_track_surface" in race and surface != 3:
+            return False
+        if race.get("on_pit_road") or (isinstance(tow, (int, float)) and tow > 0):
+            return False
+    if beat == "motion_restored" and "speed_mps" in race:
+        return isinstance(speed, (int, float)) and speed >= 2.5
+    if beat == "stopped" and "speed_mps" in race:
+        return isinstance(speed, (int, float)) and speed <= 1.0
+    return True
 
 
 def _integer(value: object) -> int | None:

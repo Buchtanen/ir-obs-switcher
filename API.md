@@ -809,13 +809,13 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
 - **Mluvit na serveru** — `POST /api/commentary/speak` → SAPI / SuperTonic / espeak (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`; SuperTonic syntéza běží během fade-out, play až je duck dole)
 - **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
-- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`)
+- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`). Polish sampling pole zahrnují `commentary.llm_temperature`, `llm_top_p`, `llm_top_k`, `llm_num_predict` a `llm_num_ctx`; všechna jsou hot-reloadovatelná.
 
 **API**
 
 | Method | URL | Poznámka |
 | --- | --- | --- |
-| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
+| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení, `preparedFiller` health/buffer/source stav a sample řádek, `audioHint` (VAD) |
 | `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
@@ -838,8 +838,22 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | `no_variant` | prázdný emotion bucket |
 | `slot_unbound` | žádný řádek bez nevyplněných `{slot}` |
 | `validator_reject` | `validate_utterance` odmítl |
+| `graph_contract_missing` | prepared plán odkazuje na chybějící uzel nebo uzel bez prepared kontraktu; plán se bezpečně přeskočí |
 
 Config: `commentary.decision_log_size` (default 32). Live readiness matrix: [docs/commentary_live_node_matrix.md](docs/commentary_live_node_matrix.md).
+
+`runtime.preparedFiller` obsahuje `mode`, `health`, aktuální `stage`/`stageEpoch`, hash
+`contextRevision`, počty `readyPlans`/`queuedPlans`/`inflight`/`generated`/`rejected`/
+`staleDropped`, `readyCurrentStage`/`readyNextStage`, stav fatal epizody a `sources`. YouTube zdroj reportuje jen stav a počet položek;
+OAuth tokeny, celé prompty ani názvy historie se přes status nevracejí. iRacing zdroj je bez
+samostatného OAuth `not_configured`. Tape řádky `shadow_compared` nesou legacy node/semantic a
+klasifikaci divergence. Přijaté varianty jsou v `acceptedTexts` pouze při runtime DEBUG pro ruční
+faktický audit; při INFO je pole odstraněno a prompty/OAuth materiál se nezapisují nikdy.
+
+Prepared diagnostika používá konkrétní `nodeId`/`semanticKey` z připraveného grafu, nikoli obecný
+`prepared_filler`. Frozen N12 context může obsahovat sekci `prepared` s nullable normalizovanými
+fakty pro okruh, počasí, roster/AI, startovní proceduru a držené přechodové důkazy. Chybějící nebo
+neověřená položka se vynechá; raw SessionInfo ani OAuth materiál se do statusu nepřenáší.
 
 ### WS /ws/overlay
 
@@ -910,6 +924,19 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 
 Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniStory`:
 
+Vývojová cesta #216 navíc publikuje interní přijaté události `TRACK_EXCURSION` s audience
+`commentary` (bez nové HUD karty). Uvnitř `metrics` nesou `scenarioId`, `scenarioVersion`,
+`episodeId`, `parentStoryId`, `beatId`, `beatRole`, `primaryRelation`, `cause`, `outcome`,
+`evidenceLevel`, `runEpoch`, `heroCarIdx`, `reason` a čas/důkazy. Identita přijaté události
+zůstává standardní; correlation se liší pro každý beat, rodič zůstává společný.
+`cause` a `damage` jsou v současném subsetu `unknown`. Typy `motion_restored` a
+`pit_return_observed` nepotvrzují kontrolu, normální tempo, opravu ani ESC.
+V session tape mají sparse detekce typ `race_scenario`; související `commentary` řádky
+přidávají `parentStoryId`, `correlationId`, `beatId`. Nejde o nový HTTP endpoint.
+Podrobný [kontrakt a logování](docs/track_excursion_live_test.md).
+
+Příklad objektu `miniStory`:
+
 ```json
 {
   "storyId": "story:1:42",
@@ -924,7 +951,7 @@ Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniSt
 
 `state` je `ready`, `building`, `committed`, `speaking`, `resolved`, `completed`, `interrupted` nebo `invalidated`. Vyšší `storyRevision` je autoritativní; opožděný nižší stav se ignoruje.
 
-**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`, ale odstraní ji až TTS `completed`/`interrupted`/`invalidated` nebo reset. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
+**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`. Live lease platí jen pro `building` / `committed` / `speaking`; `resolved` už lease nedrží a RESULT drží jen `minHoldMs`. TTS `completed`/`interrupted`/`invalidated`, prázdný snapshot, hold timer nebo reset kartu odstraní. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
 
 ```json
 {
@@ -940,7 +967,7 @@ Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniSt
 }
 ```
 
-Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
+Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Autoritativní snapshot smí převzít už vykreslenou kartu se stejným `correlationId` a stejnou `sequence`; rovná sekvence proto není pro snapshot považována za stale. Převzatá karta se odstraní, jakmile v dalším snapshotu chybí. Leased `EXIT` se publikuje jako `RESULT` s identitou, sekvencí a časy právě přijatého EXIT eventu. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; po zániku lease neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
 
 ### Overlay session tape (JSONL)
 
@@ -958,14 +985,15 @@ Každý řádek má hodiny v sekundách:
 
 Každý řádek navíc nese `run_epoch`. Potvrzený restart závodu ve stejné session zachová soubor, `t_mono` i `t_stream`, zapíše řádek `run_reset` a vynuluje pouze původ `t_green` pro nový run.
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`/`run_reset`.
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `prepared_filler`, `llm_polish`, `field`. `--replay` skipne diagnostické řádky včetně `commentary`/`prepared_filler`/`llm_polish`/`field`.
 
-Řádky `commentary` (speak/skip) se zapisují **jen při runtime DEBUG**. Řádky `llm_polish` se zapisují při otevřeném tape a `overlay.session_tape_llm=true` (default) **i na INFO** — páry pro privátní dataset repo. `session_tape_llm=false` vrátí DEBUG-only. Replay je nezapisuje.
+Řádky `commentary` (speak/skip) se zapisují **jen při runtime DEBUG**. Řádky `llm_polish` se zapisují při otevřeném tape a `overlay.session_tape_llm=true` (default) **i na INFO** — páry pro privátní dataset repo. `session_tape_llm=false` vrátí DEBUG-only. Replay je nezapisuje. `field` se vypíná zvlášť `[overlay] session_tape_field = false`.
 
 | Typ | Obsah |
 |-----|--------|
 | `commentary` | enqueue/speak/skip a MiniStory lifecycle (`action`, `reason`, `eventType`, `nodeId`, `text`, `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision`, …) |
 | `llm_polish` | jeden polish pokus (`outcome`, `skeleton`, `spoken`, `request`, `response`, `latencyMs`, …) |
+| `field` | per-tick field dump: `positionSource` (`live`/`official`/`grid`), `officialPosition` / `livePosition` (a class varianty), `cars[]` s `lap`, `lapDone`, `pct`, `offP`/`offCP`, `liveP`/`liveCP`, `cls`, `pit`, `surf`, `est`, `f2`, `paceLine`, `paceRow`. V Race po green je HUD place live running order, ne F3 `CarIdxPosition`. |
 
 **Event catalog**
 

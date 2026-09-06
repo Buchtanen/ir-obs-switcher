@@ -12,6 +12,13 @@ _WRAP_PRIORITY = 58
 _PREVIEW_PRIORITY = 52
 
 
+def _driver_in_car(state: RaceState) -> bool:
+    """Same seat heuristic as editorial lobby detection; fail closed in the pits."""
+    if state.player_track_surface is not None:
+        return state.player_track_surface >= 0
+    return bool(state.on_pit_road or state.speed_mps is not None)
+
+
 def _mode_label(mode: str) -> str:
     return {
         "PRACTICE": "Practice",
@@ -37,7 +44,8 @@ class StreamNarrativeFsm:
     Sequencing intent (with ``session_briefs`` sidecars):
     * key change → ``SESSION_WRAP`` (previous) then ``SESSION_PREVIEW`` (new)
       when the stream already had a prior session
-    * ``player_finished`` / ``session_finished`` rising edge → ``SESSION_WRAP`` if not yet wrapped
+    * Race wrap waits until the driver leaves the car (sim lobby). Practice/quali
+      still wrap on the finished rising edge. Stream outro is ``STREAM_END``, not wrap.
     * first session of a stream gets neither wrap nor preview (intros own the opener)
     """
 
@@ -53,6 +61,7 @@ class StreamNarrativeFsm:
     _had_prior_session: bool = False
     _pending: list[EventEnvelope] = field(default_factory=list)
     _run_start: bool = False
+    _pending_lobby_wrap: bool = False
 
     def reset_session(self) -> None:
         """Drop active key tracking; keep wrap/preview history for the stream."""
@@ -63,6 +72,7 @@ class StreamNarrativeFsm:
         self._p2 = None
         self._p3 = None
         self._finished = False
+        self._pending_lobby_wrap = False
 
     def reset_stream(self) -> None:
         self.reset_session()
@@ -102,7 +112,9 @@ class StreamNarrativeFsm:
         finished = bool(state.player_finished or state.session_finished)
         classified = state.player_finished or (mode != "RACE" and finished)
         final_position = position if classified else None
-        podium_confirmed = finished and (mode != "RACE" or state.session_state == 6)
+        podium_confirmed = finished and (
+            mode != "RACE" or state.session_state == 6 or not _driver_in_car(state)
+        )
         p1 = state.p1_name if podium_confirmed else None
         p2 = state.p2_name if podium_confirmed else None
         p3 = state.p3_name if podium_confirmed else None
@@ -161,13 +173,37 @@ class StreamNarrativeFsm:
         self._p3 = p3
 
         if finished and not self._finished and session_key not in self._wrapped_keys:
+            if mode == "RACE" and _driver_in_car(state):
+                self._pending_lobby_wrap = True
+            else:
+                produced.append(
+                    self._wrap_envelope(
+                        now,
+                        key=session_key,
+                        mode=mode,
+                        position=final_position,
+                        reason="session_finished",
+                        p1=p1,
+                        p2=p2,
+                        p3=p3,
+                    )
+                )
+                self._wrapped_keys.add(session_key)
+                self._had_prior_session = True
+                self._pending_lobby_wrap = False
+        if (
+            self._pending_lobby_wrap
+            and finished
+            and session_key not in self._wrapped_keys
+            and not _driver_in_car(state)
+        ):
             produced.append(
                 self._wrap_envelope(
                     now,
                     key=session_key,
                     mode=mode,
                     position=final_position,
-                    reason="session_finished",
+                    reason="race_lobby",
                     p1=p1,
                     p2=p2,
                     p3=p3,
@@ -175,6 +211,7 @@ class StreamNarrativeFsm:
             )
             self._wrapped_keys.add(session_key)
             self._had_prior_session = True
+            self._pending_lobby_wrap = False
         self._finished = finished
 
         if produced:

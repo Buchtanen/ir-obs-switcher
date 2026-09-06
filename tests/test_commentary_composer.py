@@ -183,6 +183,52 @@ def test_composer_omits_unbound_target_and_builds_czech_parts() -> None:
     assert result.fact_pack["target"] == {}
 
 
+def test_position_loss_without_named_target_keeps_current_position() -> None:
+    graph = load_sequence_graph()
+    envelope = make_envelope(
+        event_type="POSITION_LOST",
+        phase="RESULT",
+        mode="RACE",
+        metrics={"position": 30},
+    )
+    node = graph.nodes_for("POSITION_LOST", "RESULT")[0]
+    result = build_skeleton(
+        envelope,
+        node,
+        graph=graph,
+        story={"race": {"class_position": 30}, "story": {"recent_beats": []}},
+        bindings=slot_bindings(envelope, "unknown"),
+        emotion="unknown",
+        language="en",
+    )
+    assert result is not None
+    assert "P30" in result.text
+
+
+def test_position_loss_cumulative_names_place_count() -> None:
+    graph = load_sequence_graph()
+    envelope = make_envelope(
+        event_type="POSITION_LOST",
+        phase="RESULT",
+        mode="RACE",
+        metrics={"oldPosition": 2, "newPosition": 8, "delta": -6, "places": 6},
+    )
+    node = graph.nodes_for("POSITION_LOST", "RESULT")[0]
+    result = build_skeleton(
+        envelope,
+        node,
+        graph=graph,
+        story={"race": {"class_position": 8}, "story": {"recent_beats": []}},
+        bindings=slot_bindings(envelope, "unknown"),
+        emotion="unknown",
+        language="en",
+    )
+    assert result is not None
+    assert "6" in result.text
+    assert "P8" in result.text
+    assert result.fact_pack["hero"]["places"] == 6
+
+
 def test_director_uses_composer_only_for_polish_path() -> None:
     graph = _graph()
     envelope = make_envelope(
@@ -322,6 +368,10 @@ def test_every_graph_node_composes_from_its_declared_slots_in_en_and_cs() -> Non
     assert declared_slots <= runtime_keys
     for language in ("en", "cs"):
         for node in graph.nodes.values():
+            if node.prepared is not None:
+                # Prepared-only nodes are rendered from validated LLM text,
+                # not from the legacy local-template composer.
+                continue
             metrics = {
                 metric_key[slot.name]: slot.example
                 for slot in node.slots
@@ -370,6 +420,10 @@ def test_every_sequence_edge_can_feed_a_composed_history_part() -> None:
     for edge in graph.edges:
         source = graph.nodes[edge.source]
         target = graph.nodes[edge.target]
+        if source.prepared is not None or target.prepared is not None:
+            # Prepared topology is exercised by the graph-contract/runtime tests;
+            # it has no local variants for history composition.
+            continue
         gap_s = edge.min_gap_s + min(0.1, max(0.0, edge.max_gap_s - edge.min_gap_s))
         current_ms = 1_000 + int(gap_s * 1_000)
         correlation = f"story:{edge.source}:{edge.target}"
@@ -402,6 +456,23 @@ def test_every_sequence_edge_can_feed_a_composed_history_part() -> None:
             target=EventSubject(car_id="8", display_name="Rossi"),
             metrics={"branch": target.branch} if target.branch else {},
         )
+        if source.match.scenario_ids:
+            prior = story["story"]["recent_beats"][0]
+            prior.update(
+                session_id="test",
+                hero_id="player",
+                run_epoch=0,
+                scenario_id="track_excursion",
+                parent_story_id=correlation,
+                beat_role=source.match.beat_roles[0].value,
+                primary_relation="track_excursion",
+                evidence_level="CONFIRMED",
+                outcome=source.match.outcomes[0].value,
+            )
+            envelope.session_id = "test"
+            envelope.metrics.update(
+                runEpoch=0, scenarioId="track_excursion", parentStoryId=correlation
+            )
         result = build_skeleton(
             envelope,
             target,

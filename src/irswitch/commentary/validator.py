@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
+from irswitch.commentary.semantic_vocabulary import validate_node_vocabulary
 
 _TERMINAL = re.compile(r"[.!?…][\"')\]]*$")
 _MULTI_PUNCT = re.compile(r"[!?]{2,}|\.{3,}|…{2,}")
@@ -62,6 +63,10 @@ def validate_utterance(
         issues.append(ValidationIssue("url", "URLs are not speakable"))
 
     spoken = _plain_text(stripped)
+    issues.extend(
+        ValidationIssue(item.code, item.message)
+        for item in validate_node_vocabulary(spoken, node.id)
+    )
     if _MULTI_PUNCT.search(spoken):
         issues.append(
             ValidationIssue(
@@ -182,12 +187,19 @@ def _is_ssml(text: str) -> bool:
     return "<" in text and ">" in text
 
 
+def _is_emoji_char(char: str) -> bool:
+    code = ord(char)
+    return 0x1F300 <= code <= 0x1FAFF or 0x2700 <= code <= 0x27BF or 0x1F000 <= code <= 0x1F0FF
+
+
 def _has_emoji(text: str) -> bool:
-    for char in text:
-        code = ord(char)
-        if 0x1F300 <= code <= 0x1FAFF or 0x2700 <= code <= 0x27BF or 0x1F000 <= code <= 0x1F0FF:
-            return True
-    return False
+    return any(_is_emoji_char(char) for char in text)
+
+
+def strip_emoji(text: str) -> str:
+    """Drop decorative emoji after the model; do not teach the word emoji in prompts."""
+    cleaned = "".join(char for char in text if not _is_emoji_char(char))
+    return re.sub(r" {2,}", " ", cleaned).strip()
 
 
 def _plain_text(text: str) -> str:

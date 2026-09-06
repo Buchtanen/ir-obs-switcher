@@ -32,6 +32,15 @@ _TERMINAL_STORY_ACTIONS = frozenset({"completed", "interrupted", "invalidated", 
 _ACTIVE_STORY_ACTIONS = frozenset({"building", "committed", "speaking", "resolved"})
 _MAX_PENDING_STORY_TRANSITIONS = 64
 _MAX_STORY_LIFECYCLES = 128
+_LIVE_BATTLE_EVENT_TYPES = frozenset(
+    {
+        "HUNTED",
+        "HUNTING",
+        "BATTLE_FOR_POSITION",
+        "POSITION_ATTACK",
+        "TARGET_LOCKED",
+    }
+)
 
 
 class OverlayConsumer:
@@ -232,6 +241,20 @@ class OverlayConsumer:
                     self._story_wires[story_id] = deepcopy(wire)
                     if story.get("state") == "resolved" and story_id in self._story_leases:
                         resolved = deepcopy(self._story_leases[story_id])
+                        for key in (
+                            "eventId",
+                            "sequence",
+                            "sessionId",
+                            "eventType",
+                            "mode",
+                            "priority",
+                            "dedupeKey",
+                            "correlationId",
+                            "occurredAt",
+                            "monotonicMs",
+                        ):
+                            if key in wire:
+                                resolved[key] = deepcopy(wire[key])
                         resolved["phase"] = "RESULT"
                         resolved["metrics"] = deepcopy(wire.get("metrics") or {})
                         resolved["miniStory"] = _story_meta(story, state="resolved")
@@ -261,7 +284,30 @@ class OverlayConsumer:
                                     continue
             if self._record_event is not None and not recorded:
                 self._record_event(wire, batch.accepted_monotonic_ms / 1000.0)
+            if _clears_live_battle_cards(wire):
+                self._drop_live_battle_leases()
             await self.bus.publish_event(wire)
+
+    def _drop_live_battle_leases(self) -> None:
+        drop_ids = [
+            story_id
+            for story_id, story in self._story_leases.items()
+            if str(story.get("eventType") or "").upper() in _LIVE_BATTLE_EVENT_TYPES
+        ]
+        if not drop_ids:
+            return
+        for story_id in drop_ids:
+            expired = self._story_lifecycle.pop(story_id, None) or {}
+            correlation_id = str(
+                expired.get("correlationId")
+                or (self._story_leases.get(story_id) or {}).get("correlationId")
+                or ""
+            )
+            if correlation_id:
+                self._closed_correlations.pop(correlation_id, None)
+            self._story_wires.pop(story_id, None)
+            self._story_leases.pop(story_id, None)
+        self._sync_story_snapshot()
 
     def _sync_story_snapshot(self) -> None:
         leased_correlations = {
@@ -293,6 +339,16 @@ class OverlayConsumer:
             **self.worker.status_snapshot(),
             "lastStreamSequence": self.last_stream_sequence,
         }
+
+
+def _clears_live_battle_cards(wire: dict[str, Any]) -> bool:
+    event = str(wire.get("eventType") or "").upper()
+    if event in {"FINISH", "SESSION_CHECKERED"}:
+        return True
+    if event != "SESSION_FLAG":
+        return False
+    branch = str(wire.get("branch") or (wire.get("metrics") or {}).get("flag") or "")
+    return "checkered" in branch.casefold()
 
 
 def _story_meta(payload: dict[str, Any], *, state: str) -> dict[str, Any]:

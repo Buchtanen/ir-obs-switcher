@@ -18,7 +18,20 @@ _system_from_dict = system_from_dict
 logger = logging.getLogger(__name__)
 
 _SKIP_TYPES = frozenset(
-    {"header", "decision", "commentary", "llm_polish", "green", "stream_origin", "scene", "footer"}
+    {
+        "header",
+        "decision",
+        "commentary",
+        "llm_polish",
+        "prepared_filler",
+        "green",
+        "stream_origin",
+        "scene",
+        "footer",
+        "field",
+        "race_scenario",
+        "run_reset",
+    }
 )
 
 

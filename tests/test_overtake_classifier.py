@@ -77,6 +77,28 @@ def test_real_overtake_emits_overtake_not_position_change() -> None:
     assert out[0].data["targetCarIdx"] == 17
 
 
+def test_multi_place_gain_is_position_change_not_overtake() -> None:
+    emitter = _emitter()
+    ahead = OpponentInfo(car_idx=17, position=6, gap=1.2, closing_rate=0.25)
+    emitter.tick(
+        _state(
+            class_position=8,
+            opponent_ahead=ahead,
+            gap_ahead=1.2,
+            closing_rate_ahead=0.25,
+        ),
+        0.0,
+    )
+    emitter.tick(_state(class_position=6), 0.2)
+    assert emitter.tick(_state(class_position=6), 1.2) == []
+    out = emitter.tick(_state(class_position=6), 2.8)
+    assert len(out) == 1
+    assert out[0].name == "position_change"
+    assert out[0].data["places"] == 2
+    assert out[0].data["oldPosition"] == 8
+    assert out[0].data["newPosition"] == 6
+
+
 def test_distant_gain_stays_position_change() -> None:
     emitter = _emitter()
     emitter.tick(_state(class_position=8), 0.0)

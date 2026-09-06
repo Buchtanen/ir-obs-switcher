@@ -64,6 +64,12 @@ def test_format_spoken_bindings_formats_known_slots() -> None:
     assert out["position"] == 5
 
 
+def test_format_spoken_bindings_rounds_battle_margins() -> None:
+    out = format_spoken_bindings({"front_gap": 0.16597, "rear_gap": 0.3333})
+    assert out["front_gap"] == "0.17 s"
+    assert out["rear_gap"] == "0.33 s"
+
+
 def test_format_spoken_bindings_sentinel_clears_slot() -> None:
     out = format_spoken_bindings({"lap_time": -1.0, "gap": -1, "delta": None})
     assert out["lap_time"] is None

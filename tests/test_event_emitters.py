@@ -14,6 +14,7 @@ from irswitch.overlay.settings import (
     EventSettings,
     HuntingSettings,
     RaceObserverSettings,
+    default_hunted_settings,
 )
 
 
@@ -103,6 +104,32 @@ def test_hunting_continues_when_checkered_but_player_not_finished() -> None:
     assert emitter.hunting.state != "NONE"
 
 
+def test_hunted_enters_on_matching_pace_half_second() -> None:
+    hunted = default_hunted_settings()
+    emitter = BattleEmitter(
+        HuntingSettings(activation_delay=0.0, min_intensity_hold_s=0.0),
+        HuntingSettings(
+            enter_gap=hunted.enter_gap,
+            exit_gap=hunted.exit_gap,
+            min_closing_rate=hunted.min_closing_rate,
+            activation_delay=0.0,
+            exit_delay=hunted.exit_delay,
+        ),
+    )
+    behind = OpponentInfo(car_idx=23, position=6, class_position=6, gap=0.5, closing_rate=0.0)
+    out = emitter.tick(
+        _state(
+            class_position=5,
+            position=5,
+            opponent_behind=behind,
+            gap_behind=0.5,
+            closing_rate_behind=0.0,
+        ),
+        1.0,
+    )
+    assert any(e.phase == "enter" and e.data["state"] == "hunted" for e in out)
+
+
 def test_hunting_and_hunted_both_independent() -> None:
     emitter = BattleEmitter(
         HuntingSettings(activation_delay=0.0, min_intensity_hold_s=0.0),
@@ -139,13 +166,76 @@ def test_lap_complete_waits_for_valid_sdk_time() -> None:
     assert out[0].data["lapTime"] == 94.2
 
 
+def _position_emitter() -> PositionEmitter:
+    return PositionEmitter(
+        BattleSettings(
+            position_stable_seconds=1.0,
+            position_swing_debounce_s=2.5,
+            position_incident_window_s=8.0,
+        ),
+        EventPrioritySettings(),
+    )
+
+
 def test_position_requires_stability() -> None:
-    emitter = PositionEmitter(BattleSettings(position_stable_seconds=1.0), EventPrioritySettings())
+    emitter = _position_emitter()
     emitter.tick(_state(class_position=8), 0.0)
     assert emitter.tick(_state(class_position=7), 0.2) == []
     out = emitter.tick(_state(class_position=7), 1.2)
     assert out[0].data["direction"] == "gain"
     assert out[0].data["delta"] == 1
+    assert out[0].data["places"] == 1
+
+
+def test_position_coalesces_same_direction_before_emit() -> None:
+    emitter = _position_emitter()
+    emitter.tick(_state(class_position=8), 0.0)
+    assert emitter.tick(_state(class_position=7), 0.2) == []
+    assert emitter.tick(_state(class_position=6), 0.5) == []
+    assert emitter.tick(_state(class_position=6), 1.4) == []
+    out = emitter.tick(_state(class_position=6), 3.1)
+    assert len(out) == 1
+    assert out[0].data["direction"] == "gain"
+    assert out[0].data["oldPosition"] == 8
+    assert out[0].data["newPosition"] == 6
+    assert out[0].data["places"] == 2
+
+
+def test_position_loss_waits_for_multi_place_swing_to_stop() -> None:
+    emitter = _position_emitter()
+    emitter.tick(_state(class_position=2), 0.0)
+    assert emitter.tick(_state(class_position=8), 0.1) == []
+    assert emitter.tick(_state(class_position=8), 1.2) == []
+    assert emitter.tick(_state(class_position=9), 1.5) == []
+    assert emitter.tick(_state(class_position=9), 3.0) == []
+    out = emitter.tick(_state(class_position=9), 4.1)
+    assert len(out) == 1
+    assert out[0].data["direction"] == "loss"
+    assert out[0].data["oldPosition"] == 2
+    assert out[0].data["newPosition"] == 9
+    assert out[0].data["places"] == 7
+
+
+def test_position_returns_to_start_before_emit_is_silent() -> None:
+    emitter = _position_emitter()
+    emitter.tick(_state(class_position=8), 0.0)
+    emitter.tick(_state(class_position=12), 0.2)
+    assert emitter.tick(_state(class_position=8), 0.8) == []
+    assert emitter.tick(_state(class_position=8), 4.0) == []
+
+
+def test_position_incident_uses_swing_debounce_for_single_place() -> None:
+    emitter = _position_emitter()
+    emitter.tick(_state(class_position=5, incidents=2), 0.0)
+    emitter.tick(_state(class_position=5, incidents=4), 0.1)
+    assert emitter.tick(_state(class_position=6), 0.2) == []
+    assert emitter.tick(_state(class_position=6), 1.3) == []
+    out = emitter.tick(_state(class_position=6), 2.8)
+    assert len(out) == 1
+    assert out[0].data["direction"] == "loss"
+    assert out[0].data["places"] == 1
+    assert out[0].data["oldPosition"] == 5
+    assert out[0].data["newPosition"] == 6
 
 
 def test_incident_respects_min_delta() -> None:

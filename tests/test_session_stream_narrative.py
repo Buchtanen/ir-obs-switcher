@@ -64,6 +64,48 @@ def test_session_change_emits_wrap_then_preview() -> None:
     assert out[1].metrics["mode"] == "QUALIFYING"
 
 
+def test_race_wrap_waits_for_lobby_after_in_car_finish() -> None:
+    fsm = StreamNarrativeFsm()
+    fsm.tick(
+        _state(mode="RACE", finished=False),
+        1.0,
+        session_key="100:2:t1",
+    )
+    still_in_car = RaceState(
+        connected=True,
+        overlay_mode="RACE",
+        session_finished=True,
+        player_finished=True,
+        class_position=20,
+        subsession_id="100",
+        session_num=2,
+        track_id="t1",
+        player_track_surface=3,
+    )
+    assert fsm.tick(still_in_car, 2.0, session_key="100:2:t1") == []
+    lobby = RaceState(
+        connected=True,
+        overlay_mode="RACE",
+        session_finished=True,
+        player_finished=True,
+        class_position=20,
+        subsession_id="100",
+        session_num=2,
+        track_id="t1",
+        player_track_surface=-1,
+        p1_name="Ada",
+        p2_name="Bea",
+        p3_name="Cid",
+    )
+    out = fsm.tick(lobby, 3.0, session_key="100:2:t1")
+    assert [e.event_type for e in out] == ["SESSION_WRAP"]
+    assert out[0].metrics["reason"] == "race_lobby"
+    assert out[0].metrics["position"] == 20
+    assert out[0].metrics["p1Name"] == "Ada"
+    assert out[0].metrics["p2Name"] == "Bea"
+    assert out[0].metrics["p3Name"] == "Cid"
+
+
 def test_session_finished_emits_wrap_once() -> None:
     fsm = StreamNarrativeFsm()
     fsm.tick(_state(mode="RACE", finished=False), 1.0, session_key="100:2:t1")

@@ -6,7 +6,7 @@ import re
 from collections.abc import Sequence
 from random import Random
 
-_EN_PRONOUN = re.compile(r"\b(He's|he's|He is|he is|Himself|himself|His|his|Him|him|He|he)\b")
+_EN_PRONOUN = re.compile(r"\b(He is|he is|Himself|himself|His|his|Him|him|He|he)\b(?!['’]s)")
 _CS_ON = re.compile(r"\b(On|on)\b")
 
 
@@ -88,7 +88,7 @@ def _pick_name(pool: Sequence[str], text: str, rng: Random | None) -> str:
 
 def _en_form(token: str, name: str) -> str:
     low = token.lower()
-    if low in {"he's", "he is"}:
+    if low == "he is":
         return f"{name} is"
     if low == "his":
         return f"{name}'s"

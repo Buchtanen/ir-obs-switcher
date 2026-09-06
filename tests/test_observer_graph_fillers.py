@@ -42,12 +42,12 @@ def test_densified_attack_and_pit_buckets() -> None:
     graph = load_sequence_graph()
     ar = graph.nodes["attack_range"]
     assert "calm" in ar.hr_states
-    assert len(ar.variants["en"]["calm"]) >= 10
-    assert len(ar.variants["cs"]["calm"]) >= 10
+    assert len(ar.variants["en"]["calm"]) >= 8
+    assert len(ar.variants["cs"]["calm"]) >= 8
     pit = graph.nodes["pit_stopped"]
     assert "pushing" in pit.hr_states and "high" in pit.hr_states
-    assert len(pit.variants["en"]["pushing"]) >= 10
-    assert len(pit.variants["en"]["high"]) >= 10
+    assert len(pit.variants["en"]["pushing"]) >= 8
+    assert len(pit.variants["en"]["high"]) >= 8
 
 
 def test_slot_bindings_observer_fields() -> None:

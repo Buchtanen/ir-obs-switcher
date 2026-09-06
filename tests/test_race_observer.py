@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from types import SimpleNamespace
 
 from irswitch.commentary.director import CommentaryDirector
@@ -95,6 +96,51 @@ def test_observe_builds_story_context_with_near_field() -> None:
     assert slots["position"] == 3
     assert slots["target_name"] == "B"
     assert slots["aheadCount"] == 2
+
+
+def test_observer_scopes_quali_and_race_grid_memory_for_result_comparison() -> None:
+    observer = RaceObserver()
+    base = _snap_field(names=["A", "B", "Hero", "D", "E"])
+    quali_snap = replace(
+        base,
+        session_num=1,
+        subsession_id="42",
+        session_type="Qualify",
+        player_car_class=7,
+        class_position=6,
+    )
+    quali = observer.observe(
+        quali_snap,
+        RaceState(connected=True, overlay_mode="QUALIFYING", class_position=6),
+        now=1.0,
+    )
+    assert quali.quali_bag is not None
+    assert quali.quali_bag.class_id == 7
+    assert quali.quali_bag.subsession_id == "42"
+
+    race_snap = replace(
+        base,
+        session_num=2,
+        subsession_id="42",
+        session_type="Race",
+        session_state=3,
+        player_car_class=7,
+        class_position=8,
+    )
+    race = observer.observe(
+        race_snap,
+        RaceState(
+            connected=True,
+            overlay_mode="RACE",
+            class_position=8,
+            session_state=3,
+        ),
+        now=2.0,
+    )
+    assert race.quali_bag is not None
+    assert race.race_grid_position == 8
+    assert race.race_grid_class_id == 7
+    assert race.race_grid_subsession_id == "42"
 
 
 def test_weather_change_queues_filler_envelope() -> None:
