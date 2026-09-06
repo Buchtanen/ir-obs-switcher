@@ -1,11 +1,11 @@
 # Track excursion story — scenario taxonomy and commentary contract
 
-**Status:** proposed product and detection contract; no runtime behavior changed by this document
+**Status:** living product/detection contract. Current-signal subset is on `master`; the broader
+taxonomy below is **not** a claim that all causes, pace, repairs or reset recognition are implemented.
 
-Current implementation: [active development subset](track_excursion_live_test.md). The broader
-taxonomy below is not a claim that all causes, pace, repairs or reset recognition are implemented.
+Current implementation: [live test contract](track_excursion_live_test.md).
 
-**Baseline:** `codex/fix-overlay-commentary-test-7` @ `4497040`
+**Baseline:** `master` (subset); remaining work #216
 
 **Scenario definition:**
 [`docs/scenarios/track_excursion_story_v1.json`](scenarios/track_excursion_story_v1.json)

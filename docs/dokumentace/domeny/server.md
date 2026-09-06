@@ -10,7 +10,8 @@ Glue: REST, WS `/ws`, dashboards. Handlery čtou stav a spouští override/reloa
 | `/admin`, `/api/admin/*` | Extensions / health / activity |
 | `/health` | Liveness + verze |
 | `/status` | JSON stav |
-| `/overlay`, `/ws/overlay` | HUD (implementace v `overlay/http.py`) |
+| `/overlay`, `/overlay/golden`, `/ws/overlay` | HUD (implementace v `overlay/http.py`) |
+| `/oauth/*` | Volitelný YouTube title (ne scene switch) |
 | `/commentary` | TTS test UI |
 
 **Není:** `/vr-status`, TUI.

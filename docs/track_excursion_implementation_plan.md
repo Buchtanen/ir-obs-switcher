@@ -2,7 +2,7 @@
 
 Status: implementation in progress; current-signal subset connected for active development tests
 
-Baseline: `codex/fix-overlay-commentary-test-7` at `4497040`
+Baseline: `master` (current-signal subset shipped; remaining work #216)
 
 Source specifications:
 

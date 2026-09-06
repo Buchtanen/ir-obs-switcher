@@ -1272,9 +1272,9 @@ For `[iracing_data]`, request timeout is clamped to 2–30 s, result limit to 1�
 failure. `commentary.prepared_filler.iracing_history=true` consumes facts only when the source is
 enabled, authorized and fresh.
 
-Migration: absent section means `shadow` on the implementation branch and does not alter audible
-output. The later default change to `active` is a separate reviewed config behavior change after
-§23. `legacy` restores the old filler path without deleting collected tapes or external caches.
+Migration: absent `[commentary.prepared_filler]` on `master` means `mode=active` (same as
+`config.example.ini`). `legacy` restores the old filler path without deleting collected tapes
+or external caches. `shadow` remains a diagnostic mode.
 
 ### 19.2 Status and tape contract
 
