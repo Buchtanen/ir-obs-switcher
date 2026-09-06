@@ -99,6 +99,8 @@ def _density_range(node_id: str) -> tuple[int, int]:
         return (8, 10)
     if node_id == "weather_change":
         return (8, 10)
+    if node_id == "stream_end":
+        return (3, 6)
     if node_id in WAVE_A_NODES:
         return (WAVE_A_DENSITY, WAVE_A_DENSITY)
     if node_id in WAVE_C_NODES:

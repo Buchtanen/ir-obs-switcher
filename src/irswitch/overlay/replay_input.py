@@ -118,6 +118,11 @@ class ReplayInputRunner:
             state = _race_from_dict(race_raw)
             if "overlay_mode" not in race_raw:
                 state = replace(state, overlay_mode=mode)
+            if "session_state" not in race_raw and mode == "RACE":
+                # RACE fixtures mean green racing unless they set SessionState.
+                # Pre-green seed in PositionSwingTracker would otherwise swallow
+                # POSITION_GAINED / OVERTAKE on every tick.
+                state = replace(state, session_state=4)
             bio = _bio_from_dict(bio_raw) if bio_raw else None
             self._ingest_timing_rows(tick.get("timing"))
 

@@ -74,6 +74,7 @@ def test_default_graph_critical_inventory_is_explicit() -> None:
         "leader_change": ("LEADER_CHANGE",),
         "session_checkered": ("SESSION_CHECKERED",),
         "session_flag_checkered": ("SESSION_FLAG",),
+        "stream_end": ("STREAM_END",),
     }
 
 
