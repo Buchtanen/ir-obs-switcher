@@ -6,7 +6,9 @@
 
 - iRacing → OBS scene switcher (`logic/` + `main_loop`)
 - Overlay HUD V4 + Event Engine + Pit Wall themes
-- Commentary TTS (graph + director + N12 peer consumers)
+- Commentary TTS (graph + director + N12 peer consumers; prepared graph default active)
+- Track Excursion current-signal subset (`events/scenarios/`)
+- Operator diagnostic SAPI (`[diagnostics] voice`)
 - Race observer (flags, aftermath, hunt, grid, stream start)
 - Admin `/admin` Slice 1.2
 - Operator UI: `/gr-status` + `/admin`. Overlay: `/overlay/`
