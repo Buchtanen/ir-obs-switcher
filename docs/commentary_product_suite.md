@@ -5,7 +5,7 @@
 **Audience:** stream viewers (broadcast voice).  
 **Composer:** grounded authored-anchor + `commentary-facts/2` planner in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md); the [skeleton PoC](commentary_llm_skeleton_poc.md) is historical. Live Windows/Ollama `qwen3:4b-instruct-2507-q4_K_M` listen pending.
 **Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
-**Active architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 plus implemented V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. Evidence: [N12 implementation report](tasks/n12_implementation_report.md).
+**Active architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 plus implemented V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. Evidence: [N12 implementation report](tasks/n12_implementation_report.md). Next target: [live data channels and adaptive sampling](live_data_channels_sampling_spec.md) (shared latest-state channels; not yet runtime).
 **Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
 
 ## 0. How we test (your order — source of truth)
