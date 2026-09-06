@@ -1,35 +1,30 @@
-# Stav: co je na `master` a co jen v PR
+# Stav: co je na `master`
 
-Tento index popisuje **`master`** (checkout, ze kterého dokumentace vznikla), plus **otevřené PR** jako in-flight. Datum snapshotu větví: 2026-08-31.
+Snapshot k dokumentačnímu úklidu. Runtime verze: `1.3.0` (`pyproject.toml`). Hosting: `Buchtanen/ir-obs-switcher`.
 
-## `master` (aktuální runtime)
+## Shipped na master
 
 - Scene switcher: `logic/` + `main_loop`
-- Overlay Event Engine + `EventManagerV2` (flag `event_engine.v2_payload`)
-- Commentary: `CommentaryDirector` napojený **uvnitř** `OverlayRuntime._observe_commentary` (ne peer fan-out)
-- Race: `RaceContextAnalyzer` (1 ahead + 1 behind pro HUD), timing store
-- **Není tu:** `events/fanout.py`, `commentary/scheduler.py`, `race/observer.py`, `race/aftermath.py`, `race/flags.py`
+- Overlay Event Engine + `EventManagerV2`
+- N12: `AsyncEventFanout`, `OverlayConsumer`, `CommentaryConsumer` (`race/runtime.py`)
+- Race observer + narrative landing (flags, aftermath, timing hunt, grid story, stream start)
+- Commentary: sequence graph, director, TTS (SAPI / SuperTonic), optional LLM polish
+- Finish episodes, stream outro, MiniStory stale-call revision (#226)
+- Admin Slice 1.2 (`/admin`)
+- V4 overlay renderer + Pit Wall themes + golden fixtures
+- **Není:** TUI, `/vr-status` / RaceLab widget
 
-Poslední merge na `master` v době zápisu: overlay raw copy tokens + ACTIVE hold (#165).
+## Otevřené (ne jako shipped runtime)
 
-## Otevřené PR (povinně zohlednit)
+Viz [inflight/README.md](inflight/README.md).
 
-Plný popis: [inflight/README.md](inflight/README.md).
+| Téma | Issue / PR | Docs |
+| --- | --- | --- |
+| Commentary architecture (graph continuity, excursion, multi-sentence, prompt profiles) | #220, #217, #216, #223, #222, #219, #224 | [commentary-architecture](inflight/commentary-architecture.md) |
+| Live data channels / adaptive sampling | #212 (spec #213) | [live_data_channels_sampling_spec.md](../live_data_channels_sampling_spec.md) |
+| Dependabot `upload-artifact` v7 | #162 | [pr-162](inflight/pr-162-dependabot.md) |
+| Admin Slice 2–3, LHM canonical bus, SoF overlay cards | specs v `docs/` | domain pages |
 
-| PR | Base | Větev | Stav | Dopad na dokumentaci |
-| --- | --- | --- | --- | --- |
-| [#179](https://github.com/Buchtanen/ir-obs-switcher/pull/179) | `master` | `feat/observers-decoupling-joint-test` | draft, **joint test blocker** | Nové moduly race observer, fan-out, SpeechScheduler. Po merge přepsat [events](domeny/events.md), [commentary](domeny/commentary.md), [race](domeny/race.md). |
-| [#181](https://github.com/Buchtanen/ir-obs-switcher/pull/181) | **#179 větev**, ne `master` | `cursor/narrative-observers-epic-4749` | draft stacked | Flags, opener mutex, incident classify, pace hunt. **Nemerguje se do master.** |
-| [#162](https://github.com/Buchtanen/ir-obs-switcher/pull/162) | `master` | Dependabot `actions/upload-artifact` 6→7 | open | Jen CI workflow; runtime kód beze změny |
+## Co sem nepatří
 
-Stacked PRs P0–P5 (#167, #169, #171, #174, #176, #178) jsou **zavřené** — kód žije v #179. Starší #173 nahrazené #181.
-
-## Jak psát kód, dokud #179 visí
-
-- Nová práce na scene switcher / overlay HUD na `master` je OK, pokud **nebojuje** o stejné soubory jako #179 (`overlay/runtime.py`, `commentary/director.py`, `race/opponents.py`, `config.py`).
-- Nová práce na race story / TTS frontě / fan-out: **stackuj na #179**, nebo počkej na merge. Nepiš druhý `RaceObserver` na `master`.
-- Dokumentace domén níže = **master**. Delta je vždy v `inflight/` a v sekci „In-flight“ na stránce domény.
-
-## Plány v `docs/` mimo tuto složku
-
-Soubory jako `docs/observers_decoupling_plan.md` a `docs/narrative_observers_epic.md` **na master nejsou** (jsou na větvích #179/#181). Až se mergnou, prolinkuj je sem. Do té doby je cituj jen z [inflight](inflight/README.md).
+Historické plány (`EVENT_ENGINE_V4_*_PLAN`, N-tasky, GPT briefy, cleanup/status z ledna 2026) jsou smazané. Pravda je tento index + kontrakty.

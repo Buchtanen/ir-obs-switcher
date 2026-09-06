@@ -39,7 +39,7 @@ Použij a vyplň podle aktuálních změn:
 - [ ] CONFIG.md + config/config.example.ini
 - [ ] API.md
 - [ ] BUILD_AND_DEPLOY.md
-- [ ] VR_SUPPORT.md / RACELAB_VR_SETUP.md
+- [ ] docs/dokumentace/ (domain page or Docs: no change)
 - [ ] .cursor/README.md (if rules/skills/commands change)
 - [ ] Other: ...
 

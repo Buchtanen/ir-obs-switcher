@@ -1,45 +1,19 @@
 # Logic / scene switcher (`src/irswitch/logic/`)
 
-**Účel:** jediná rozhodovací cesta **mód → OBS scéna**. Explicitní, testovatelné přechody.
+Jediná cesta OBS scene switch. Debounce, cooldown, override, grace 3 s po loadu. `Policy` mapuje `DrivingMode` → název scény.
 
-**Nepatří sem:** iRSDK parse, HUD eventy, TTS, HTTP.
+## Boundaries
 
-## `Policy` (`policy.py`)
+Žádné HUD widgety, TTS, Event Engine. Kapitoly streamu (`stream_chapters.py`) jsou OBS-clock, ne iRacing session.
 
-Mapa `DrivingMode → scene name` + `safe_scene`. Chybějící mód → safe scene. Hot-reload: `apply_scenes`.
+## Key files
 
-Názvy musí **přesně** sedět na OBS (case-sensitive). Validace při connect v `run_service`.
+`state_machine.py`, `policy.py`, `stream_chapters.py`, `youtube_chapters.py`, `broadcast_clock.py`.
 
-## `StateMachine` (`state_machine.py`)
+## Tests
 
-Vstup ticku: aktuální `SwitchState`, `iracing_mode`, `obs_current_scene`, `is_loading`.
+`tests/test_state_machine.py`, `tests/test_policy.py`, `tests/test_broadcast_clock.py`, `tests/test_stream_chapters.py`.
 
-Chování:
+## Related
 
-- **Debounce:** mód musí vydržet `switching.debounce_ms` (monotonic).
-- **Cooldown:** min. mezera `cooldown_ms` mezi přepnutími.
-- **Override:** dočasná scéna (`override_seconds` / API `POST /override`); po expiraci reset debounce.
-- **Autoswitch off:** nemění scénu (reason v state).
-- **Priorita módů:** CONNECTING > LOADING > RESTART > QUIT > LOBBY/GARAGE/RACE/REPLAY.
-- **Grace 3000 ms** po LOADING/CONNECTING: první LOBBY/GARAGE se nebere hned (false stall flicker). Stabilní GARAGE po celém okně → garage scéna. RACE/REPLAY jen debounce, bez extra delay.
-- Reason string (`grace_period_ignore:…`, `mode:RACE (debounced)`, `cooldown`, …) — loguj **proč**.
-
-Symptom regrese: po loadu nejdřív garage scéna (`Back`) a za ~3 s lobby (`VR`). Viz `iracing-sdk-semantics.mdc`.
-
-`apply_runtime_config` — hot-reload bez resetu debounce (volá config reload).
-
-## Stream chapters (`stream_chapters.py`, `youtube_chapters.py`)
-
-In-memory markery pro WS/status (`[stream_chapters]`). Zápis do YouTube VOD je v `obs/youtube_vod.py` z API vrstvy, ne ze state machine.
-
-## Config
-
-`[switching]`, `[scenes]`, `[hotkeys]`, `[stream_chapters]` — [CONFIG.md](../../../CONFIG.md).
-
-## Testy
-
-`tests/test_state_machine.py`, `tests/test_policy.py`, `tests/test_stream_chapters.py`, `tests/test_youtube_chapters.py`.
-
-## In-flight
-
-Observers PRs **nemění** scene switcher. Nesahej na `state_machine.py` kvůli TTS/flagům.
+[iracing](iracing.md), [obs](obs.md), [runtime](runtime.md).

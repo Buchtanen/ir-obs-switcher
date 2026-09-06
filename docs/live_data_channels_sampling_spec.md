@@ -4,9 +4,9 @@
 
 **Issue:** [#212](https://github.com/Buchtanen/ir-obs-switcher/issues/212)
 
-**Baseline:** current `master` already includes [N12](tasks/n12_async_consumers.md)
+**Baseline:** current `master` already includes N12
 (`RaceRuntime` / `RaceObserver` / `RacePipeline`, bounded async fan-out,
-independent overlay and commentary consumers). This document is docs-only and
+independent overlay and commentary consumers — [domeny/race](dokumentace/domeny/race.md), [domeny/events](dokumentace/domeny/events.md)). This document is docs-only and
 does not change runtime behavior.
 
 **Not a prerequisite:** N12 is already on `master`. Implementation of this

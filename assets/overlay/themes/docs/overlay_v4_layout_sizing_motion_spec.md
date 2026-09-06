@@ -2,12 +2,7 @@
 
 Implementační kontrakt pro V4 overlay renderer (OBS Browser Source) a art pack. **Sadu velikostí a rodin nedefinuje** — tu dodá grafik; tady jsou jen parametry, které se z ní zapisují do manifestu.
 
-Kritické review tohoto textu:
-
-- `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec_review.md` (měření CDP)
-- `assets/overlay/themes/docs/V4_RENDERER_SIZING_SPEC_REVIEW.md` (příčina: manifest canvas už existuje, JS ho nečte)
-
-Tato verze zapracovává shodu obou Opus reviewů (rozpory, fallbacky, routing zón, ikony, golden stage, CI gates).
+Toto je **kanonický V4 layout/sizing/motion kontrakt**. Historické review soubory jsou smazané; závěry (fallback, zóny, ikony, golden, CI) jsou zapracované tady. Domain page: [docs/dokumentace/domeny/overlay.md](../../../../docs/dokumentace/domeny/overlay.md).
 
 ### Cíle
 

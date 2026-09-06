@@ -17,7 +17,7 @@ alwaysApply: false
 | **`race/`** | `RaceState` + observer (all overlay modes) | assume Race-session-only |
 | **`server/`** | HTTP/WS glue | private `._tape`, `._busy_until`, driving logic |
 
-- **No TUI**: `irswitch_tui` / Textual was removed. Dashboards: `/gr-status`, `/vr-status`. Overlay HUD: `/overlay/`.
+- **No TUI**: `irswitch_tui` / Textual was removed. Operator UI: `/gr-status` + `/admin`. Overlay HUD: `/overlay/`. No `/vr-status`.
 - Scene switches: **one** pipeline in `logic/` (explainable `decision_inputs`).
 - Overlay and commentary are **peer consumers** of accepted events, not a chain through widget render.
 

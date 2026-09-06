@@ -12,7 +12,7 @@ Before merge:
   - added/updated for behavior changes, or
   - explicit `TDD-exception` + alternative verification (see `03-tdd-test-drive-policy.mdc`)
 - **Docs**:
-  - updated relevant docs (see `04-docs-policy.mdc`)
+  - updated relevant docs (see `04-docs-policy.mdc`) including `docs/dokumentace/` or `Docs: no change (reason …)`
   - PR includes Docs impact checklist
 - **Config**:
   - if config changed: `CONFIG.md` + `config/config.example.ini` updated

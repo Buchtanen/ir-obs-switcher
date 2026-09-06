@@ -24,7 +24,7 @@ Hot-fix bez PR → `/hotfix` (repro, test, restart). Tento command je na issue �
 1) **Issue**
    - Použij subagenta `/issue-steward`
 2) **Dev diary** — nezdvojovat dnešní záznam
-3) **Docs impact** — subagent `/docs-keeper`
+3) **Docs impact** — subagent `/docs-keeper` + skill `dokumentace` (index musí stačit na lookup)
 4) **QA** — `/verifier`; overlay JS: `?v=` lockstep (`/qa`)
 5) **PR popis** — přesně jeden `semver:*` label
 6) Po merge na master (když se má jet na tomhle stroji) — `/restart-service`

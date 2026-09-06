@@ -4,50 +4,43 @@
 
 | Vrstva | Kde | Kdy platí |
 | --- | --- | --- |
-| Runtime kód na `master` | `src/irswitch/` | Implementace, kterou služba teď dělá |
-| Tento index | `docs/dokumentace/` | Kam jít; hranice vrstev; odkazy |
-| Kontrakty | `CONFIG.md`, `API.md`, `config/config.example.ini` | Klíče, payloady, defaulty |
-| In-flight | [inflight/](inflight/README.md) + otevřené PR | Návrh / kód **mimo** `master` |
-| Spec / plán | `docs/*_spec.md`, `docs/*_plan.md`, `EVENT_ENGINE_V4_*.md` | Záměr; neříká, že to v binárce je |
+| Runtime kód na aktuální větvi | `src/irswitch/` | Implementace, kterou služba dělá |
+| Tento index | `docs/dokumentace/` | Kam jít; hranice; odkazy |
+| Kontrakty | `CONFIG.md`, `API.md`, `config.example.ini` | Klíče, payloady, defaulty |
+| In-flight | [inflight/](inflight/README.md) | Návrh / kód **mimo** `master` |
+| Living spec | `docs/*_spec.md` jen když domain page řekne, že platí | Záměr; neříká, že je v binárce |
 
-Konflikt: **kód na aktuální větvi vyhrává**. Když index a kód nesedí, oprav index (nebo označ in-flight). Nesnaž se „opravit“ kód podle starého plánu.
+Konflikt: **kód na aktuální větvi vyhrává**. Když index a kód nesedí, oprav index. Nesnaž se „opravit“ kód podle starého plánu.
 
 ## Co sem nepatří
 
-- Celý výpis INI klíčů (to je `CONFIG.md`)
-- Kompletní HTTP schémata (to je `API.md`)
-- Copy-paste celých funkcí
-- Aspirace bez statusu (`Status: not on master`)
+- Celý výpis INI (`CONFIG.md`)
+- Kompletní HTTP schémata (`API.md`)
+- Copy-paste funkcí
+- Historické plány, task deníky, GPT briefy
+- TUI, RaceLab `/vr-status`
 
 ## Pravidla pro agenty
 
-1. Otevři [README.md](README.md) → lookup tabulku.
-2. Přečti **jednu** doménu + [architektura.md](architektura.md), pokud saháš na tok dat.
-3. Pokud práce může kolidovat s observers / commentary / race story, přečti [inflight/README.md](inflight/README.md) **před** editací.
-4. Grep až když víš balík (`iracing/`, `logic/`, …). Hledej v tom balíku, ne v celém `src/` napoprvé.
-5. Scene switch a overlay jsou **dva pipeline**. Nemíchej je.
+1. [README.md](README.md) → lookup tabulka.
+2. Jedna doména + [architektura.md](architektura.md), pokud saháš na tok dat.
+3. Kolize s commentary / race story / sampling → [inflight](inflight/README.md) **před** editací.
+4. Grep až když víš balík. Hledej v tom balíku.
+5. Scene switch a overlay jsou **dva pipeline**.
+6. Po změně aktualizuj matching page (skill `dokumentace`, agent `docs-keeper`).
 
-## Údržba (každý task)
+## Údržba
 
-Index je živý kontrakt, ne jednorázový dump.
+Index je živý kontrakt. Po změně kódu: `domeny/*.md`, nový soubor → `mapa-souboru.md` + `architektura.md`. Jen otevřený PR → `inflight/`. Jinak `Docs: no change (reason …)`.
 
-Po změně kódu aktualizuj matching `domeny/*.md` (mapa v `.cursor/rules/docs-map.mdc`). Nový soubor / tok → `mapa-souboru.md` + `architektura.md`. Jen na otevřeném PR → [inflight/](inflight/README.md). Jinak v PR napiš `Docs: no change (reason …)`.
+Hlídá to skill `dokumentace` a `/docs-keeper` ve `/flow`. Cursor hooks na Windows jsou vypnuté.
 
-Tohle hlídá skill `dokumentace`, `/docs-keeper` ve `/flow`, PR checklist a (opt-in) Cursor stop hook. **Nespoléhej na hook** — na Windows jsou Cursor hooks často vypnuté.
+## Hranice vrstev
 
-## Hranice vrstev (neměnit bez explicitního zadání)
+Z `.cursor/rules/py-architecture-layers.mdc`:
 
-Převzato z `.cursor/rules/py-architecture-layers.mdc`:
-
-- `iracing/` — jen extraction (shared memory, parse). **Žádná business logika.**
-- `obs/` — tenký client. **Žádná policy, žádné rozhodování scén.**
-- `logic/` — state machine + mapování mód → scéna. **Jediná cesta scene switch.**
-- `server/` — HTTP/WS glue. **Nesmí sám hnát logiku přepínání.**
-- Overlay / events / commentary — druhý pipeline (HUD + hlas). **Nepřepíná OBS scény.**
-
-## Čas a selhání
-
-- Cooldown / debounce / override: **monotonic** (`util/clock.py`, `time.monotonic`).
-- iRacing disconnected = **normální stav**, ne výjimka.
-- OBS drop → retry; **main loop nesmí spadnout**.
-- Background tasky jen přes `TaskRegistry` (vlastnictví + cancel).
+- `iracing/` — extraction. Žádná business logika.
+- `obs/` — tenký client. Žádná policy scén.
+- `logic/` — jediná cesta scene switch.
+- `server/` — HTTP/WS glue.
+- `events/` / `overlay/` / `commentary/` / `race/` — peer consumery, nepřepínají OBS scény.
