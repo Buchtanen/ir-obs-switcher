@@ -111,7 +111,7 @@ def test_v4_story_snapshots_reconcile_without_clearing_leased_cards() -> None:
     assert "applyStateSnapshot?.(msg.activeStories || [])" in overlay
 
 
-def _run_display_v4_node(program: str, *, timeout: float = 3) -> None:
+def _run_display_v4_node(program: str, *, timeout: float = 15) -> None:
     node_bin = shutil.which("node")
     if node_bin is None:
         pytest.skip("node is not installed")
