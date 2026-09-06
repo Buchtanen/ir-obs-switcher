@@ -180,9 +180,7 @@ def extract_prepared_session_facts(
     if ctx is not None:
         if ctx.track:
             facts["track"] = ctx.track
-        bundle = compute_sof_bundle(
-            cast("Iterable[RosterRow]", ctx.roster), player_class_id
-        )
+        bundle = compute_sof_bundle(cast("Iterable[RosterRow]", ctx.roster), player_class_id)
         if bundle.field_size > 0:
             facts["field_size"] = bundle.field_size
         if bundle.overall is not None and bundle.overall > 0:

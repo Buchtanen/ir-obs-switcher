@@ -62,8 +62,7 @@ def load_node_moods() -> tuple[str, dict[str, str]]:
     if not isinstance(nodes, dict):
         raise ValueError("node mood catalog must contain an object named nodes")
     return default, {
-        str(node_id): _validated_mood(mood, key=str(node_id))
-        for node_id, mood in nodes.items()
+        str(node_id): _validated_mood(mood, key=str(node_id)) for node_id, mood in nodes.items()
     }
 
 

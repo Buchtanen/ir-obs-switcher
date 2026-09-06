@@ -724,9 +724,7 @@ def _validate_prepared_contract(
     for key in sorted(set(raw) - _PREPARED_FIELDS):
         errors.append(f"{path} unknown field: {key}")
     normalized_events = (
-        {str(item).upper() for item in event_types}
-        if isinstance(event_types, list)
-        else set()
+        {str(item).upper() for item in event_types} if isinstance(event_types, list) else set()
     )
     if normalized_events not in ({"PREPARED_FILLER"}, {"PREPARED_FATAL"}):
         errors.append(f"{path} requires exactly PREPARED_FILLER or PREPARED_FATAL")
