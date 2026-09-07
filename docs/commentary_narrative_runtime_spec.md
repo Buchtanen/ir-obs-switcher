@@ -1057,7 +1057,7 @@ score = base_priority
       - replacement_cost
 ~~~
 
-`base_priority`, `continuation_base` a `selection_threshold` jsou konečná čísla v rozsahu 0–100; koeficienty a bonusy musejí být konečné a schema odmítne NaN/∞. `urgency` má pevné pořadí `background < context < story < critical`. Nejprve se odstraní kandidáti pod `selection_threshold`, potom se vybírá lexikograficky podle vyšší urgency a vyššího score. Úplný stabilní tie-break je: nižší `candidate_order=(origin_reducer_sequence, source_ordinal)`, `episode_id`, `beat_id`. Event získá ordinal uvnitř redukovaného batch; filler/timer používá ordinal 0; successor a jiný episode beat přebírá order poslední material revision své epizody. Pod prahem se zvolí ticho. Urgency ani score nikdy neobcházejí hard gate.
+`base_priority`, `continuation_base` a `selection_threshold` jsou konečná čísla v rozsahu 0–100; koeficienty a bonusy musejí být konečné a schema odmítne NaN/∞. `urgency` má pevné pořadí `background < context < story < critical`. Nejprve se odstraní kandidáti pod `selection_threshold`. Uvnitř jedné pokračovací nebo otevřené kandidátní množiny se řadí podle vyšší urgency a vyššího score; přepnutí proti focused continuation však používá explicitní dvoustupňový test z § 23.3 a nesmí být následně vráceno obecným urgency sortem. Úplný stabilní tie-break je nižší `candidate_order=(origin_reducer_sequence, source_ordinal)`, `episode_id`, `beat_id`. Event získá ordinal uvnitř redukovaného batch; filler/timer používá ordinal 0; successor a jiný episode beat přebírá order poslední material revision své epizody. Pod prahem se zvolí ticho. Urgency ani score nikdy neobcházejí hard gate a filler vstupuje až tehdy, když neexistuje vybratelný event/episode/story beat.
 
 Počáteční koeficienty jsou přesné `estimated` defaults:
 
@@ -1092,13 +1092,15 @@ event_score(e, S) = score(candidate(e), S) - event_penalty(e, S)
 
 ### 9.3 Arbitráž po beatu: event versus pokračování příběhu
 
-Po narrative `SPEECH_COMPLETED`, narrative `SPEECH_INTERRUPTED` i po zahozeném automatickém pokusu v rámci povoleného planning cycle sestaví director jedinou kandidátní množinu. Manual terminal pouze uvolní lane a založí nový silence origin; director nespouští:
+Po narrative `SPEECH_COMPLETED`, narrative `SPEECH_INTERRUPTED` i po zahozeném automatickém pokusu v rámci povoleného planning cycle sestaví director jeden story tier a oddělený filler fallback. Manual terminal pouze uvolní lane a založí nový silence origin; director nespouští:
 
 ~~~text
-C = valid_event_opportunities
-  ∪ valid_natural_successors(last_spoken_beat, active_episode)
-  ∪ other_valid_episode_beats
-  ∪ valid_filler_opportunities
+C_story = valid_event_opportunities
+        ∪ valid_natural_successors(last_spoken_beat, active_episode)
+        ∪ other_valid_episode_beats
+
+C_fallback = valid_filler_opportunities, evaluated only when C_story
+             contains no selectable candidate
 ~~~
 
 Aktivní příběh proto není automatický zámek, ale má vlastní dynamickou `continuation_priority`. Ta vzniká z `continuation_base`, preference successor hrany, aktuální naléhavosti epizody, material revision, closure debt a continuity bonusu, po odečtení fatigue a staleness. Nový event může:
@@ -2265,42 +2267,51 @@ Kandidátní množina a výběr:
 ~~~text
 C_event(S) = {candidate(q) | q ∈ Q AND opportunity_valid(q, S)}
 C_successor(S, b_prev) = Succ(b_prev, S)
-C_other(S) = {b | Eligible(b, S)
-                  AND source_guard(b, S)
-                  AND b není successor ani event candidate}
+C_other_story(S) = {b | Eligible(b, S)
+                        AND source_guard(b, S)
+                        AND role(b) != filler
+                        AND b není successor ani event candidate}
+C_filler(S) = {b | Eligible(b, S)
+                   AND source_guard(b, S)
+                   AND role(b) = filler}
 
-C_raw(S, b_prev) = dedupe(C_event ∪ C_successor ∪ C_other,
-                          key=(beat_id, episode_id, episode_revision))
+C_story_raw(S, b_prev) = dedupe(C_event ∪ C_successor ∪ C_other_story,
+                                key=(beat_id, episode_id, episode_revision))
 
 EffectiveScore(b,S) = EventScore(source_opportunity(b),S)  for event-backed candidate
                     = ContinuationScore(b,S)              for successor candidate
                     = Score(b,S)                          otherwise
 
-C_threshold(S) = {b ∈ C_raw | EffectiveScore(b, S) >= selection_threshold}
+C_story(S) = {b ∈ C_story_raw | EffectiveScore(b, S) >= selection_threshold}
+C_fill(S) = {b ∈ C_filler | EffectiveScore(b, S) >= selection_threshold}
 
-P(S) = best candidate in C_threshold that continues the focused episode
-       through a successor edge or event relation updates/resolves;
-       NONE when no such candidate exists
+P(S) = best_by_urgency_then_score candidate in C_story that continues
+       the focused episode through a successor edge or event relation
+       updates/resolves; NONE when no such candidate exists
 
-Admit(b, P, S) = true                                      if P = NONE
-               = true                                      if b continues P's episode
-               = true                                      if urgency(b) > urgency(P)
-               = EffectiveScore(b,S) >= EffectiveScore(P,S)+director.switch_margin otherwise
+I(S) = C_story minus candidates that continue the focused episode
+H(S,P) = {b ∈ I | urgency(b) > urgency(P)}                 for P != NONE
+M(S,P) = {b ∈ I | urgency(b) <= urgency(P)                 for P != NONE
+                AND EffectiveScore(b,S) >= EffectiveScore(P,S)+director.switch_margin}
 
-C_ok(S) = {b ∈ C_threshold | Admit(b, P(S), S)}
+story_choice(S) = best_by_urgency_then_score(C_story)       if P = NONE
+                = best_by_urgency_then_score(H(S,P))        if H nonempty
+                = best_by_score_then_urgency(M(S,P))        if H empty AND M nonempty
+                = P                                         otherwise
 
-sort_key(b) = (-urgency_rank(b), -EffectiveScore(b,S),
-               candidate_order(b).reducer_sequence,
-               candidate_order(b).source_ordinal,
-               episode_id(b), beat_id(b))
+urgency_score_key(b) = (-urgency_rank(b), -EffectiveScore(b,S), stable_tail(b))
+score_urgency_key(b) = (-EffectiveScore(b,S), -urgency_rank(b), stable_tail(b))
+stable_tail(b) = (candidate_order.reducer_sequence,
+                  candidate_order.source_ordinal, episode_id, beat_id)
 
-b* = candidate with lexicographically minimum sort_key
-
-Select(S) = b*       pokud C_ok(S) není prázdná
-          = SILENCE  jinak
+Select(S) = story_choice(S)                    if story_choice exists
+          = best_by_urgency_then_score(C_fill) if no story choice AND C_fill nonempty
+          = SILENCE                            otherwise
 ~~~
 
-Focused episode je epizoda posledního playback-accepted narrative beatu, pokud stále existuje a je active/resolved se speakable closure; ostatní EpisodeRegistry položky nejsou implicitně „current story“. `source_guard` vyžaduje skutečný event/silence impulse, material revision nebo explicitně povolený active-episode beat; pouhá existence BeatDefinition nesmí sama vyrábět řeč. Při deduplikaci stejného beatu/revision se zachová nejstarší `candidate_order`, nejvyšší urgency/score a všechny source refs; nevzniknou dva attempts. Při shodě urgency a skóre platí pevný tie-break: nižší `candidate_order=(origin_reducer_sequence, source_ordinal)`, potom lexikograficky nižší `episode_id` a `beat_id`. Skóre z § 9.2 ovlivňuje pouze pořadí již způsobilých kandidátů; nemůže změnit `Eligible=false` na pravdu. `replacement_cost` se odečítá pouze od challenger kandidáta, který chce zrušit právě building precommit plan; nikdy nesnižuje focused continuation nebo už committed utterance.
+Focused episode je epizoda posledního playback-accepted narrative beatu, pokud stále existuje a je active/resolved se speakable closure; ostatní EpisodeRegistry položky nejsou implicitně „current story“. `source_guard` vyžaduje skutečný event/silence impulse, material revision nebo explicitně povolený active-episode beat; pouhá existence BeatDefinition nesmí sama vyrábět řeč. Při deduplikaci stejného beatu/revision se zachová nejstarší `candidate_order`, nejvyšší urgency/score a všechny source refs; nevzniknou dva attempts. Při shodě urgency a skóre platí pevný `stable_tail`. Vyšší-urgency challenger má proti focused continuation absolutní switch precedence; teprve pokud takový neexistuje, může stejně nebo méně naléhavý challenger přepnout přes inclusive `switch_margin`, a v této množině proto rozhoduje nejprve score. Skóre z § 9.2 ovlivňuje pouze pořadí již způsobilých kandidátů; nemůže změnit `Eligible=false` na pravdu. Filler nikdy nesoutěží proti vybratelnému story/event/episode kandidátu.
+
+Při event impulzu během `building` je současný platný BeatPlan incumbent. Napřed se normálně aplikuje context: material revision/pravdivost, která incumbent zneplatní, jej zruší bez switch testu. Jinak jej může nahradit pouze kandidát odvozený z nově accepted eventu v tomto commandu; po odečtení `replacement_cost` musí mít vyšší urgency než incumbent, nebo dosáhnout alespoň incumbentova plánovaného effective score plus `switch_margin`. Výběr mezi více challengery používá stejnou H-potom-M politiku. Successor, filler, pure fact ani timer nemůže sám nahradit building plan.
 
 Pro event opportunity `q` a successor `b_s`:
 

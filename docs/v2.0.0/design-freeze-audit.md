@@ -60,7 +60,9 @@ Master cross-checks that changed or sharpened the design:
 | Prepared speech | Event waiting could become a renamed sentence queue | Opportunity contains meaning/scheduling metadata only; BeatPlan/text is just-in-time and single-flight |
 | Opportunity consumption | Selection, commit and exposure had no precise boundary | Reserve at planning, consume at the software-observable `PLAYBACK_ACCEPTED` boundary (public lifecycle name `SPEECH_STARTED`); failure before backend acceptance releases reservation, later failure/interruption stays consumed |
 | Opportunity updates | Multiple revisions could all be narrated late | Same correlation update supersedes older revision unless catalog marks distinct outcomes |
-| Post-beat behavior | Continuation versus new event was underdefined | One candidate set; hard gates, urgency, score and `switch_margin`; otherwise successor or silence |
+| Post-beat behavior | Continuation versus new event was underdefined | One event/story/episode candidate tier with explicit focused-switch policy, then filler-only fallback or silence |
+| Switch ordering | Margin-qualified lower-urgency challenger was admitted but then lost again to the generic urgency-first final sort | Two-stage H/M arbitration makes higher urgency absolute first, otherwise score-margin winner final; stable tie-break applies only inside the selected pool |
+| Filler tier | Filler in the common score set could beat a valid race/story continuation | Filler is evaluated only after the selectable event/story/episode tier is empty |
 | Story relation | Relevance could drift into embeddings/LLM | Relation is deterministic catalog routing plus occurrence/correlation identity |
 | Scene membership | Raw OBS scene names would couple commentary to deployment | Beat uses normalized `broadcast_context` with `ignore/prefer/require`; logic owns raw scene mapping |
 | Session vocabulary | Internal `qualifying` differs from iRSDK `Qualify` and overlay mode | One adapter maps external values; internal enum is lower-case; unsupported stages remain explicit |
@@ -84,6 +86,7 @@ Master cross-checks that changed or sharpened the design:
 | Config reload | Mid-stream catalog/threshold changes could reinterpret state | Taxonomy/catalog/detectors/capacities freeze per stream; selected operational settings apply only at explicit generation boundaries |
 | Mixed-boundary config identity | One `configHash` could falsely claim that pending and effective values were the same | Cross-component atomic ConfigLedger separates desired generation/hash from full effective hash, serializes boundary groups by apply sequence and snapshots immutable objects/tape transitions |
 | Config ownership direction | Narrative actor cannot apply detector settings before upstream frames or totally order tape-writer boundaries | Stream/config coordinator, narrative actor and tape writer own only their named boundaries; one narrow ConfigLedger serializes compare/apply without any producer importing commentary |
+| Config replay payload | Hashes plus changed key names could detect a change but could not reconstruct tuned thresholds | Manifest carries a redacted typed effective projection and each transition carries the exact replay-safe typed patch; sensitive values remain marker-only while the full real config owns the hash |
 | Component config preflight | A newly requested model/backend could silently use the old generation while construction was pending or failed | Generation-tagged preflight gates only new Qwen/TTS work; after its boundary there is no fallback to an older component generation |
 | Invalid config | Breaking config could crash the whole service or partially replace valid state | Invalid input installs no generation, closes automatic narration, retains last valid effective state for manual TTS/diagnostics, and scene switching continues |
 | API impact | Spec called API optional despite required diagnostics | Commentary API payload becomes explicit `commentary-runtime/2`; API docs/tests are mandatory |
@@ -181,10 +184,12 @@ Manual HTTP admission is a bounded actor RPC over a process-local one-shot latch
 valid event opportunities
 ∪ valid successors of the last spoken beat
 ∪ other valid episode beats
-∪ valid filler opportunities
 → hard gate
-→ urgency + score + switch policy
-→ one BeatPlan or SILENCE
+→ focused continuation versus H/M challenger policy
+→ one story BeatPlan
+
+if none: valid filler opportunities → hard gate + score → one filler BeatPlan
+if still none: SILENCE
 ```
 
 The active story is not a lock. A related event can update or resolve it. An independent/conflicting event changes story only if its urgency is greater or its score exceeds continuation by `switch_margin`.
@@ -213,7 +218,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Thirty-six ordered expected scenarios covering lineage/session plans, scoring, no-queue behavior, invalid Qwen, prompt-profile clamps, silence, mailbox/tape/fact/episode overflow and detector-window replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage, offline actor bindings and mixed-boundary config replay live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Thirty-seven ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -235,7 +240,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the thirty-six expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the thirty-seven expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.

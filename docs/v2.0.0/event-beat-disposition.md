@@ -191,7 +191,7 @@ Values are initial, versioned estimates. Tuning may alter a value within its fro
 | `context` | 46 | `context` | 20 s | 1.00 | `tape_channel` / 45 s | field, weather, bio, session context |
 | `filler` | 24 | `background` | 12 s | 1.40 | silence impulse / `long_silence_s` | long-silence track-state beat |
 
-All numeric fields are finite. Priority range is 0–100, TTL range is 1–120 seconds, cadence range is 0–300 seconds and penalty coefficient range is 0–4. `selection_threshold=35`, `switch_margin=8` and global playback-acceptance interval 4 seconds are initial director estimates. Global cadence is start-to-start; profile cadence uses the scope shown and both must pass. A higher urgency always beats a lower urgency after hard gates; equal urgency needs score advantage of at least `switch_margin` to replace a preferred active-story successor.
+All numeric fields are finite. Priority range is 0–100, TTL range is 1–120 seconds, cadence range is 0–300 seconds and penalty coefficient range is 0–4. `selection_threshold=35`, `switch_margin=8` and global playback-acceptance interval 4 seconds are initial director estimates. Global cadence is start-to-start; profile cadence uses the scope shown and both must pass. Against a focused continuation, any higher-urgency challenger switches; only when none exists may an equal/lower-urgency challenger switch by reaching the inclusive score margin. Filler is considered only when no event/story/episode candidate is selectable.
 
 Beat channels are explicit catalog values. The complete compact mapping is:
 

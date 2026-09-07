@@ -361,11 +361,24 @@ Input: during an active race and while one BeatPlan from desired generation 6 is
 Expected:
 
 - generation 7 immediately becomes desired, while the existing BeatPlan and its worker token retain generation-6 values/hash; status exposes distinct desired/effective hashes and only bounded sorted pending keys, never values or a fake service-restart requirement;
-- `next_record`, `next_director_pass` and `next_beat_plan` each apply exactly their own sorted group and emit `config_applied` payloads with strictly increasing apply sequence, generation 7 and old/new effective hashes; no boundary drains another group;
+- `next_record`, `next_director_pass` and `next_beat_plan` each apply exactly their own sorted group and emit `config_applied` payloads with strictly increasing apply sequence, generation 7, old/new effective hashes and exact typed replay-safe patches; no boundary drains another group and sensitive local/name/device/path values use only the frozen redaction marker;
 - the first new TTS admission applies the generation-7 utterance group but returns component unavailable while its matching preflight is pending; it never dispatches through generation 6. A stale preflight completion is ignored, and a current successful completion only enables a later normal admission impulse;
 - the rotated file manifest snapshots the then-current desired/effective hashes and apply sequence; ConfigLedger's reserved recorder barrier places every transition after all old-snapshot records and before new-snapshot records, while detector parameter snapshots remain unchanged within the active run;
+- with the barrier deliberately saturated, the config/lifecycle boundary still completes without blocking, the loss accumulator retains the missing sequence and hashes as `config_transition_lost`, later records expose the apply-sequence gap and replay is explicitly incomplete rather than silently using an old config;
 - accepting generation 8 recomputes the entire pending set, so the reverted detector key disappears instead of applying generation 7 at the next stream; every remaining pending row is tagged 8;
 - invalid input creates no desired generation or hash; the config coordinator atomically orders its `CONFIG_UPDATE` immediately before the coherent disable batch, which closes automatic narration as `disabled_invalid_config` while preserving the last valid ready effective backend only for manual TTS/diagnostics. No unrelated command may interleave, and a later valid enabled update is required to start another incomplete run.
+
+## F37 — switch policy cannot be undone by urgency sort or filler
+
+Input: a valid focused story continuation P has story urgency and score 76. In separate passes add: independent story A score 84; independent context B score 90; critical C score 36; and filler F score 100. Then, while an independent story BeatPlan with planned score 70 is building, accept a new context event whose raw score 90 becomes 78 after replacement cost.
+
+Expected:
+
+- A reaches the inclusive `76+8` margin and switches; B has lower urgency but also clears the margin and switches when no higher-urgency challenger exists, proving that a later global urgency sort cannot silently restore P;
+- C switches by higher urgency despite its lower score, and if C and a margin-qualified challenger coexist the higher-urgency set is selected first;
+- F never competes while P or any other story/event/episode candidate is selectable; it may be selected only in the fallback tier after that tier is empty;
+- the building context challenger reaches exactly `70+8` after replacement cost and may replace as a new accepted-event planning cycle; the same candidate at 77 cannot replace, and no successor/filler/pure-fact/timer input can invoke this precommit replacement path;
+- every result records the compared incumbent/challenger scores, urgency ranks, relation, margin, replacement cost and stable-tail inputs.
 
 ## Required tape assertions per fixture
 
