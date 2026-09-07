@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #236 implementation — first primitives checkpoint pushed and GREEN; next slice pending
+**Phase:** #236 implementation — acceptance candidate GREEN, pending second checkpoint push
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), active [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -17,7 +17,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Last pushed handover SHA before #236: `d81b70a85b67a30273abfddbb39cd0b6ad513097`
 - First #236 implementation SHA: `be7c915a410fa9e9752e5259f2ad9a04ff3c037c` (`feat: add v2 contract primitives (#236)`)
 - Green CI: [run 34148330942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34148330942)
-- Expected working tree after this handover metadata update: clean and synchronized with upstream
+- First #236 [dev diary checkpoint](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5574070160)
+- Expected working tree before the second #236 commit: the second-slice files below are dirty; after push it must be clean and synchronized with upstream
 - Runtime behavior edits so far: new dependency-neutral v2 primitive contract layer only; it is not yet wired into live producers or commentary
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -33,22 +34,22 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: none for the pushed primitives checkpoint; next owner must re-verify HEAD/upstream before entering the next RED slice.
-- Dirty scope: this handover metadata only until its follow-up commit is pushed.
-- Completed scope in this checkpoint: validated broadcast/stream epochs, source sequence, correlation/occurrence/lineage IDs, process/stream/session monotonic clocks, scalar-unit/confidence/unknown/stale semantics, closed schema/hash values, canonical JSON hashing and packaged frozen registry/DTO schemas.
-- TDD phase: `GREEN` — the focused suite passes after an observed import-failure RED; next slice has not entered RED.
-- Verification: 60 focused tests pass; affected Ruff, Ruff format, Black and Mypy pass; all 11 freeze builders pass; full regression passes with 1,424 tests outside the socket-restricted sandbox.
+- Editing owner: current root agent until the second #236 checkpoint is pushed, green and recorded.
+- Dirty scope: `src/irswitch/contracts/{__init__,primitives,resources,session}.py`, `tests/test_contract_primitives.py`, `tests/test_session_plan_contract.py` and this handover record.
+- Completed #236 scope: the first primitive/schema checkpoint plus bounded serializable valid/conflict `SessionPlan`, exact unsupported-row overflow, safe packaged-schema resource loading, strict JSON-value hashing and the frozen deterministic planning seed.
+- TDD phase: `GREEN` — SessionPlan began with a missing-import RED; strict JSON-key validation began with an assertion RED; both are now green.
+- Verification: 74 focused tests pass; affected Ruff, Ruff format, Black and Mypy pass; all 11 freeze builders pass; full regression passes with 1,438 tests outside the socket-restricted sandbox.
+- Packaging evidence: a locally built wheel contains both JSON artifacts with frozen SHA-256 values `cab0aaf8...fd8db2b` and `9aaeeb4f...338145`.
 - Config impact: packaging metadata only; no commentary configuration key or example change.
 - API impact: none; no live/public endpoint is wired in this checkpoint.
 
 ## Exact next implementation slice
 
-After the first #236 primitives checkpoint is pushed:
+After the second #236 checkpoint is pushed:
 
-1. Verify local HEAD equals upstream. The issue #236 diary comment is pending explicit authorization after the connector rejected publication of the detailed implementation/evidence payload.
-2. Continue #236 with focused RED tests for the bounded serializable `SessionPlan` and shared DTO field adapters that consume these primitives; do not implement timeline ownership from #243/#244 early.
-3. Add a wheel-content verification proving both packaged JSON artifacts survive distribution packaging.
-4. Re-run focused pytest, affected Ruff/Black/Mypy, all 11 freeze builders and the full regression before deciding whether #236 acceptance is complete.
+1. Wait for CI and record its immutable SHA/run plus RED/GREEN and wheel evidence in issue #236.
+2. Audit every #236 checkbox against the two pushed implementation checkpoints; if CI is green and no gap remains, update the issue/index state and close #236.
+3. Re-verify a clean HEAD equal to upstream, then begin dependency-unblocked #237 with a fresh focused RED slice. Do not implement timeline ownership from #243/#244 early.
 
 ## Resume commands
 

@@ -13,10 +13,12 @@ from irswitch.contracts import (
     Confidence,
     ContractViolation,
     CorrelationId,
+    CycleAttemptOrdinal,
     FactQuality,
     LineageId,
     MonotonicMs,
     OccurrenceId,
+    PlanningSeedMaterial,
     ProcessMonotonicTime,
     ScalarType,
     SchemaVersion,
@@ -28,6 +30,7 @@ from irswitch.contracts import (
     ValidityWindow,
     canonical_json,
     canonical_sha256,
+    deterministic_planning_seed,
     validate_occurrence_lineage,
     validate_scalar,
 )
@@ -270,6 +273,50 @@ def test_canonical_json_and_hash_are_deterministic_and_finite() -> None:
     assert canonical_sha256(left).startswith("sha256:")
     with pytest.raises(ContractViolation):
         canonical_json({"bad": float("inf")})
+    with pytest.raises(ContractViolation):
+        canonical_json({1: "ambiguous key"})
+    with pytest.raises(ContractViolation):
+        canonical_json({"notJsonArray": (1, 2)})
+
+
+def test_deterministic_planning_seed_matches_the_frozen_golden() -> None:
+    material = PlanningSeedMaterial(
+        stream_epoch=StreamEpoch(3),
+        opportunity_id=CorrelationId("opp:401"),
+        episode_id=CorrelationId("battle-ahead:3:17:22:4"),
+        episode_revision=4,
+        beat_id=CorrelationId("battle.approach"),
+        cycle_attempt_ordinal=CycleAttemptOrdinal(1),
+    )
+
+    assert material.to_dict() == {
+        "streamEpoch": 3,
+        "opportunityId": "opp:401",
+        "episodeId": "battle-ahead:3:17:22:4",
+        "episodeRevision": 4,
+        "beatId": "battle.approach",
+        "cycleAttemptOrdinal": 1,
+    }
+    assert deterministic_planning_seed(material) == 16041955996680716084
+    assert PlanningSeedMaterial.from_dict(material.to_dict()) == material
+
+
+def test_planning_seed_material_preserves_null_and_attempt_bounds() -> None:
+    material = PlanningSeedMaterial(
+        stream_epoch=StreamEpoch(1),
+        opportunity_id=None,
+        episode_id=CorrelationId("episode:1"),
+        episode_revision=0,
+        beat_id=CorrelationId("session.open"),
+        cycle_attempt_ordinal=CycleAttemptOrdinal(2),
+    )
+
+    assert material.to_dict()["opportunityId"] is None
+    assert 0 <= deterministic_planning_seed(material) <= 2**64 - 1
+    with pytest.raises(ContractViolation):
+        CycleAttemptOrdinal(0)
+    with pytest.raises(ContractViolation):
+        CycleAttemptOrdinal(3)
 
 
 def test_v4_golden_hash_uses_the_shared_canonical_hash() -> None:

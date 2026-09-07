@@ -133,6 +133,14 @@ class SourceSequence(_BoundedInt):
     contract_name = "sourceSequence"
 
 
+class CycleAttemptOrdinal(_BoundedInt):
+    """One of the two bounded planning attempts allowed per director cycle."""
+
+    minimum = 1
+    maximum = 2
+    contract_name = "cycleAttemptOrdinal"
+
+
 class MonotonicMs(_BoundedInt):
     """Nonnegative process-local monotonic milliseconds."""
 
@@ -162,7 +170,11 @@ class _AsciiId(str):
         return str.__new__(cls, value)
 
 
-class CorrelationId(_AsciiId):
+class Identifier(_AsciiId):
+    """Generic frozen ASCII identifier used by versioned DTO fields."""
+
+
+class CorrelationId(Identifier):
     contract_name = "correlationId"
 
 
@@ -228,6 +240,81 @@ class Sha256Hash(str):
         if not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None:
             raise ContractViolation("hash must be 'sha256:' plus 64 lower-case hexadecimal digits")
         return str.__new__(cls, value)
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class PlanningSeedMaterial:
+    """Exact lower-camel identity object used for deterministic prompt seeds."""
+
+    stream_epoch: StreamEpoch
+    opportunity_id: Identifier | None
+    episode_id: Identifier
+    episode_revision: int
+    beat_id: Identifier
+    cycle_attempt_ordinal: CycleAttemptOrdinal
+
+    _FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "streamEpoch",
+            "opportunityId",
+            "episodeId",
+            "episodeRevision",
+            "beatId",
+            "cycleAttemptOrdinal",
+        }
+    )
+
+    def __init__(
+        self,
+        *,
+        stream_epoch: StreamEpoch | int,
+        opportunity_id: Identifier | str | None,
+        episode_id: Identifier | str,
+        episode_revision: int,
+        beat_id: Identifier | str,
+        cycle_attempt_ordinal: CycleAttemptOrdinal | int,
+    ) -> None:
+        if (
+            isinstance(episode_revision, bool)
+            or not isinstance(episode_revision, int)
+            or not 0 <= episode_revision <= MAX_SIGNED_INT64
+        ):
+            raise ContractViolation("episodeRevision must be a nonnegative signed 64-bit integer")
+        object.__setattr__(self, "stream_epoch", StreamEpoch(stream_epoch).require_active())
+        object.__setattr__(
+            self,
+            "opportunity_id",
+            None if opportunity_id is None else Identifier(opportunity_id),
+        )
+        object.__setattr__(self, "episode_id", Identifier(episode_id))
+        object.__setattr__(self, "episode_revision", episode_revision)
+        object.__setattr__(self, "beat_id", Identifier(beat_id))
+        object.__setattr__(
+            self, "cycle_attempt_ordinal", CycleAttemptOrdinal(cycle_attempt_ordinal)
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "streamEpoch": int(self.stream_epoch),
+            "opportunityId": (None if self.opportunity_id is None else str(self.opportunity_id)),
+            "episodeId": str(self.episode_id),
+            "episodeRevision": self.episode_revision,
+            "beatId": str(self.beat_id),
+            "cycleAttemptOrdinal": int(self.cycle_attempt_ordinal),
+        }
+
+    @classmethod
+    def from_dict(cls, value: object) -> Self:
+        if not isinstance(value, dict) or frozenset(value) != cls._FIELDS:
+            raise ContractViolation("planning seed material has invalid fields")
+        return cls(
+            stream_epoch=value["streamEpoch"],
+            opportunity_id=value["opportunityId"],
+            episode_id=value["episodeId"],
+            episode_revision=value["episodeRevision"],
+            beat_id=value["beatId"],
+            cycle_attempt_ordinal=value["cycleAttemptOrdinal"],
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -513,9 +600,30 @@ def validate_scalar(scalar_type: ScalarType | str, value: object) -> object:
     return _enum_value(enum_types[kind], value, kind.value)
 
 
+def _validate_json_value(value: object, path: str = "$") -> None:
+    if value is None or isinstance(value, (str, bool, int)):
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ContractViolation(f"{path} is not finite")
+        return
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            _validate_json_value(item, f"{path}[{index}]")
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ContractViolation(f"{path} contains a non-string object key")
+            _validate_json_value(item, f"{path}.{key}")
+        return
+    raise ContractViolation(f"{path} is not a JSON value")
+
+
 def canonical_json(value: Any) -> str:
     """Return canonical UTF-8 JSON text with recursively sorted object keys."""
 
+    _validate_json_value(value)
     try:
         return json.dumps(
             value,
@@ -533,3 +641,12 @@ def canonical_sha256(value: Any) -> Sha256Hash:
 
     digest = hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
     return Sha256Hash(f"sha256:{digest}")
+
+
+def deterministic_planning_seed(material: PlanningSeedMaterial) -> int:
+    """Return the frozen unsigned big-endian seed from the first eight SHA-256 bytes."""
+
+    if not isinstance(material, PlanningSeedMaterial):
+        raise ContractViolation("planning seed requires PlanningSeedMaterial")
+    digest = hashlib.sha256(canonical_json(material.to_dict()).encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], "big")
