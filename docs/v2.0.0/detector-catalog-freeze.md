@@ -6,7 +6,7 @@ This branch-only artifact freezes what the first temporal/composite detectors me
 
 ## Shared detector contract
 
-Every detector instance is keyed by `(detectorId, detectorVersion, streamEpoch, occurrenceId, orderedCorrelationKey)`. It consumes one immutable FeatureFrame at a time in `reducer_sequence` order and owns exactly one `inactive|candidate|active|clearing` FSM. Speech state, event priority, prompt freedom, fatigue and LLM output are forbidden inputs.
+Every detector instance is keyed by `(detectorId, detectorVersion, streamEpoch, occurrenceId, orderedCorrelationKey)`. It consumes one immutable FeatureFrame at a time in strictly increasing process-global `frameSequence` order and owns exactly one `inactive|candidate|active|clearing` FSM. Duplicate/older frames are audited no-ops. Narrative `reducerSequence`, speech state, event priority, prompt freedom, fatigue and LLM output are forbidden inputs.
 
 The v2 baseline uses:
 
@@ -32,7 +32,7 @@ vehicle.phase.current
 
 Gap is nonnegative seconds. `gap.trend.slope < 0` and `gap.trend.net_closing > 0` mean the ordered first actor is closing on the second. A missing, stale, ambiguous, wrong-occurrence or wrong-relation value evaluates to `unknown`; `unknown` never satisfies an enter, update or held-for predicate.
 
-Samples are partitioned into monotonic one-second buckets. Each bucket contributes the median valid gap and its midpoint. Over the trailing window, slope is ordinary least squares over bucket medians and net closing is first-third median minus last-third median. Coverage is valid bucket duration divided by requested window duration. A bucket cannot be carried across a relation epoch, occurrence, pit/tow/teleport invalidation or process instance.
+Samples are partitioned into monotonic one-second buckets. Sample coverage contributes only the elapsed interval until the next expected sample, capped at `sample_interval_s`; a lone sample never fills the rest of a bucket. A bucket contributes the median valid gap and its midpoint only when its covered duration is at least `bucket_s × min_coverage`. Over the trailing window, slope is ordinary least squares over at least three valid bucket medians and net closing is first-third median minus last-third median. Window coverage is the summed covered duration divided by requested window duration. Insufficient samples/buckets/coverage is `unknown`. A bucket cannot be carried across a relation epoch, occurrence, pit/tow/teleport invalidation or process instance.
 
 ## Frozen parameter schema
 

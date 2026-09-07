@@ -50,10 +50,13 @@ Master cross-checks that changed or sharpened the design:
 | Accepted-event ordering | Priority queue could mutate truth order | Reducer consumes FIFO/recorded sequence; priority is used only after state reduction |
 | Concurrent callbacks | Event and speech completion could race without replay order | Single NarrativeRuntime actor assigns and records total `reducer_sequence` |
 | Async ownership | Workers could mutate director state | Only the actor mutates narrative state; Qwen/TTS/tape return immutable commands |
+| Atomic-batch ownership | Combining timeline, facts and accepted envelopes could become a second truth owner or force peer-layer imports | Stateless commentary input adapter consumes three immutable projections from composition wiring, validates/looks up only, and posts one command; neutral DTO module imports no producer/consumer |
 | Queue count | Separate external and worker-result queues would make interleaving ambiguous | Evolve/replace commentary EventSubscription with one bounded NarrativeMailbox preserving its overflow/recovery semantics; fanout adapters and owned workers post to that same mailbox |
 | Mailbox capacity | Public 16–512 override contradicted the exact 56 ordinary + 7 protected + 1 emergency admission proof | Remove the public knob; v2 NarrativeMailbox is a fixed 64-cell actor safety invariant |
 | State ownership | NarrativeRuntime was described as owner of upstream timeline/fact/detector truth | StreamTimeline owns occurrence/lineage, FeatureEngine owns windows, DetectorBank owns detector FSM/current derived truth; the actor owns an immutable fact projection plus episodes/opportunities/exposure/speech orchestration |
+| Feature ordering | Detector contract depended on narrative reducer sequence before the narrative command existed | Upstream FeatureFrame has its own process-global monotonic frame sequence; duplicate/older frames are no-ops and DetectorObservation carries full lineage |
 | Sequence names | EventEnvelope sequence, fanout stream sequence and reducer order could be conflated | Preserve session-scoped overlay `EventEnvelope.sequence`; external narrative order is `(fanout_stream_sequence, source_ordinal)`; actor `reducer_sequence` is authoritative for decision replay |
+| Batch order/revision | One scalar external order and context revision could not describe a multi-event or fact-only batch | Context command carries fanout sequence plus nullable ordinal range and the exact `(timelineRevision,factViewRevision)` pair; event order remains per-event |
 | Prepared speech | Event waiting could become a renamed sentence queue | Opportunity contains meaning/scheduling metadata only; BeatPlan/text is just-in-time and single-flight |
 | Opportunity consumption | Selection, commit and exposure had no precise boundary | Reserve at planning, consume at the software-observable `PLAYBACK_ACCEPTED` boundary (public lifecycle name `SPEECH_STARTED`); failure before backend acceptance releases reservation, later failure/interruption stays consumed |
 | Opportunity updates | Multiple revisions could all be narrated late | Same correlation update supersedes older revision unless catalog marks distinct outcomes |
@@ -65,6 +68,7 @@ Master cross-checks that changed or sharpened the design:
 | OBS disconnect | Disconnect could create a false stream end | Disconnect is `unknown`; only confirmed not-streaming ends a stream |
 | Process restart | History restoration was unspecified | Without a verified checkpoint, create a new narrative epoch and forbid pre-restart historical claims |
 | OBS versus narrative epoch | Re-enable/process attach could create a new “stream epoch” while BroadcastClock still described the same output | `broadcastEpoch` identifies debounced OBS output; a distinct `streamEpoch` identifies one uninterrupted narrative run and is reallocated on re-enable/attach |
+| Stream start reason | Four legal start reasons had no exclusive precedence, making history completeness and replay ambiguous | Exact normal/attached-live/process-recovery/re-enable condition table; resume of an existing unknown OBS state allocates no epoch |
 | Tape across re-enable | A single optional manifest stream epoch could otherwise contain records from two narrative runs | Tape files are scoped to one process/run identity; disable/end finalizes a trailer and re-enable opens a new manifest |
 | Historical memory | “Remember everything” conflicted with bounded memory | Active ancestry is never evicted; old detail compacts to safe summaries and full audit remains on tape |
 | Graph safety | Analyzer was optional although malformed cycles are runtime risk | Loader referential/reachability/SCC barrier checks are blocking; rich analyzer/3D viewer remains optional |
@@ -80,9 +84,21 @@ Master cross-checks that changed or sharpened the design:
 | Kick-rate evidence | Commentary sees only events accepted by EventManager, so suppressed detector activity was invisible | Add a read-only pre-arbitration `DetectorObservation` tape tap; FactView carries world truth, while only accepted events may open/revise speakable episodes or opportunities |
 | Fact versus speech truth | “Only accepted events create AtomicFacts” contradicted FactLedger/DetectorBank ownership and could leave a suppressed battle active forever | Typed producers update FactView independently; context may close/invalidate narrative work, but only an accepted NarrativeEvent may open/revise speakable state or create an opportunity |
 | Tick-driven accidental speech | A new FactView could be interpreted as permission to run the director on every telemetry batch | Pure fact changes only close/invalidate; planning impulses are accepted/lifecycle/silence events or speech terminal commands, evaluated against the latest FactView |
+| Event/fact revision race | NarrativeEvent fact IDs did not identify the coherent FactView and context-batch coalescing could erase unrelated truth changes | One immutable TimelineSnapshot+FactView+accepted-events batch; exact `factViewRevision`, referential identity checks and no APPLY_CONTEXT_BATCH coalescing |
+| Protected admission | “Identity/lifecycle/result” did not define an executable mailbox class | Batch is protected iff timeline transitionReasons is nonempty or a derived protected event is present; protected event is exactly ended/result phase or one of five named stream/session lifecycle kinds |
+| Simultaneous timeline boundaries | Singular transition reason lost stream+session or old+new occurrence effects from one observation | Bounded unique `transitionReasons` list with canonical reducer-effect order and mutually-exclusive reason validation |
+| Oversized accepted batch | The 64-event DTO bound had no behavior for a larger upstream publication | Partition after acceptance into lossless consecutive source-order batches sharing the immutable projection; equal projection revisions are legal and each nonempty part is its own impulse |
+| Recovery order | Refreshing an in-place recovery barrier with a future snapshot could appear to violate mailbox order | Barrier payload explicitly jumps to the recorded latest projection; later older revisions/tokens are stale no-ops and replay preserves the same reducer sequence |
+| Manual admission timeout | Waiting for actor admission without a linearization rule could return 503 and still speak later | Fixed 1,000 ms one-shot latch; actor must claim before lane mutation, timeout atomically abandons, and no await occurs inside the claimed reducer transition |
+| Fatigue equation | One section used base-2 half-life while another used `exp(-age/half_life)` | Base-2 decay is canonical everywhere; only named semantic/pattern/lexical/channel terms affect score |
+| Candidate age order | Successors and filler had no defined `source_sequence` although it was a tie-break | Actor assigns `candidateOrder=(originReducerSequence,sourceOrdinal)`; successors inherit episode material order and filler uses its impulse |
+| Story beat cap | Public `max_consecutive_story_beats` had no exact counter or closure exception | Count playback-accepted beats per same episode; reset on other episode/filler/scope reset, gate only further non-closing successors |
+| TTL boundary | Expiry had no equality rule or owner while generation could outlive a beat | Half-open validity, upstream fact expiry and one actor-owned nearest deadline; expiry cancels stale preaccept work but is never a speech impulse |
 | TTS start | “First audio frame” is not observable uniformly for SAPI, eSpeak and SuperTonic | Each backend must acknowledge playback acceptance exactly once; physical speaker output is explicitly outside the contract |
+| TTS terminal liveness | Missing backend callback could leave the only lane permanently committed/stopping or permit overlapping audio | Tokenized start/playback/stop watchdogs; stop timeout quarantines TTS, invalidates callbacks and forbids more speech until backend recovery |
 | Mid-speech priority | Critical-event interruption policy had no closed rule | Normal race events never interrupt an utterance; stream/session/reset invalidation, explicit commentary disable or shutdown may cancel it, and the new event then competes from its still-live opportunity |
 | Required tuning | Default-off tape plus `tuning.required` could disable production commentary unexpectedly | Released production detectors use `none` or `optional`; `required` is allowed only for an explicitly enabled experimental detector with successful recorder preflight |
+| Tape overload order | “Drop background first” did not classify records or guarantee a report when the queue itself was full | Derived sample/normal/critical classes, exact eviction order and a bounded out-of-queue loss accumulator flushed to drop notice/trailer |
 
 ## Frozen ownership and dependency direction
 
@@ -94,7 +110,10 @@ race RaceState/observer
 events FeatureEngine + FactLedger + DetectorBank + event taxonomy
   → immutable FeatureFrame/FactView
   → unchanged immutable accepted V4 EventEnvelope
-  → narrative input adapter + catalog lookup → immutable NarrativeEvent command
+race runtime composition
+  → immutable TimelineSnapshot + FactView + accepted envelope batch
+commentary stateless input adapter + catalog lookup
+  → immutable APPLY_CONTEXT_BATCH command
 commentary NarrativeRuntime actor
   → immutable timeline/fact projections
   → episodes/opportunities/exposure/director/speech orchestration
@@ -114,7 +133,7 @@ Forbidden dependencies:
 - `server/` mutating component-private state;
 - overlay presentation catalog defining speech priority, TTL or story relationships.
 
-Neutral immutable DTOs may live in the producing layer or a narrow contracts module that imports no consumer.
+The v2 narrative DTOs live in one narrow neutral contracts module that imports no producer or consumer. The stateless commentary adapter may import those DTOs plus read-only registries; it cannot import concrete `RaceObserver`, OBS clients or mutable FactLedger/StreamTimeline owners.
 
 ## Frozen scheduling semantics
 
@@ -123,8 +142,10 @@ Neutral immutable DTOs may live in the producing layer or a narrow contracts mod
 - Truth events are reduced in accepted/recorded order, never priority order. External accepted order is `(fanout_stream_sequence, source_ordinal)`; all external and internal commands receive one total `reducer_sequence` on dequeue.
 - NarrativeMailbox is the sole actor inbox. Event fanout uses a narrow adapter into it; Qwen/TTS/timer completions self-post immutable commands to the same inbox. There is no second result queue to merge nondeterministically.
 - Protected reset/config/speech/shutdown commands cannot be silently dropped.
-- Only same-correlation ACTIVE/UPDATE revisions may coalesce.
+- Context batches never coalesce. Only same-generation silence deadlines and identical tape-health generation/status commands may coalesce; capacity loss uses the explicit recovery barrier.
 - Mailbox recovery cancels uncommitted work, reconstructs current truth from the latest immutable context and records lost history; it never invents missed opportunities.
+
+Manual HTTP admission is a bounded actor RPC over a process-local one-shot latch, not another queue. The actor must claim the latch before changing the lane; timeout/cancellation atomically abandons it, so a 503 can never be followed by delayed audio.
 
 ### EventOpportunityQueue
 
@@ -174,7 +195,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Seventeen ordered expected scenarios covering lineage, scoring, no-queue behavior, invalid Qwen, silence, overflow, callback/reset races, fact-only invalidation, re-enable identity and pre-session lobby live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Twenty-eight ordered expected scenarios covering lineage, scoring, no-queue behavior, invalid Qwen, silence, mailbox/tape overflow, callback/reset races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness and feature ordering/coverage live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -196,7 +217,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the seventeen expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the twenty-eight expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.

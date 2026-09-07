@@ -166,6 +166,116 @@ Expected:
 - no stage, current session progress, weather, gap or on-track action may be claimed;
 - without track identity, the same silence impulse records `source_guard_failed`, creates no BeatPlan and rearms the normal silence deadline.
 
+## F18 — context batch is a coherent fact/event cut
+
+Input: `APPLY_CONTEXT_BATCH` contains timeline revision 31 and FactView revision 88, but one accepted NarrativeEvent names `factViewRevision=87`; its fact ID exists only in the older view. A later batch contains revision 89 and an event correctly naming 89.
+
+Expected:
+
+- apply the coherent revision-88 timeline/FactView so it may close or invalidate old state, but reject/audit the mismatched event and create no episode/opportunity or planning impulse from it;
+- never resolve the event against a cached older view and never merge either context batch with another revision;
+- apply revision 89 independently; only its coherent event may open/revise speakable state and trigger one director pass.
+
+## F19 — refreshed recovery barrier jumps over stale queued context
+
+Input: mailbox pressure evicts context revisions 101–104 and creates a recovery barrier at mailbox sequence 20. Before dequeue, later pressure refreshes that same barrier with coherent timeline/FactView revision 110 and expanded loss range. Context commands with revisions 105–109 remain physically behind sequence 20; revision 111 arrives after it.
+
+Expected:
+
+- reducing the barrier cancels uncommitted work, applies revision 110, marks history incomplete and records the full loss range without inventing opportunities for revisions 101–110;
+- subsequently dequeued revisions 105–109 and their worker tokens are stale audited no-ops even though their mailbox sequence is later;
+- revision 111 applies normally; tape replay over the same reducer sequence and barrier payload produces the same state.
+
+## F20 — manual admission timeout cannot produce delayed audio
+
+Input: a valid manual request enters the mailbox while the actor is stalled. Exercise both one-shot latch orders around the fixed 1,000 ms deadline.
+
+Expected:
+
+1. adapter changes `pending → caller_abandoned` first: return `admission_timeout`/503; later actor dequeue treats the request as stale and does not mutate the lane or call TTS;
+2. actor changes `pending → actor_claimed` first: in the same synchronous turn it decides the lane and resolves the exact 202/409/503 result; the timeout callback cannot replace that result;
+3. neither order creates a narrative opportunity, exposure, second queue or prepared waiter, and tape contains only the request ID plus terminal admission decision.
+
+## F21 — oversized accepted publication is losslessly partitioned
+
+Input: one upstream publication contains 130 accepted events in known external order over one coherent TimelineSnapshot/FactView revision. Events 64 and 129 are `phase=result`; all others are ordinary updates.
+
+Expected:
+
+- adapter emits three nonempty context batches containing 64, 64 and 2 events with consecutive external orders, identical projection revision and no loss/reordering/coalescing;
+- the first two batches are protected because each contains a derived protected result; the last is ordinary;
+- equal timeline/FactView revisions apply idempotently, while every batch remains an independent planning impulse and event opportunities preserve original source order.
+
+## F22 — stream-run start reasons are exclusive
+
+Exercise four fresh allocations and one resume: a known inactive→active OBS edge; first same-process NarrativeRuntime attachment to an already known active epoch; fresh process startup finding OBS active; re-enable after a closed narrative run while its broadcast remains active; and unknown→active recovery of a run that was never closed.
+
+Expected:
+
+- allocate exactly one run with `normal/broadcast_started/complete`, `attached_live/attached_live/incomplete`, `process_recovery/process_recovery/incomplete`, and `enabled_mid_stream/narrative_enabled/incomplete` respectively;
+- the unknown→active resume retains both existing epochs, emits no `STREAM_STARTED`, and uses `broadcast_resumed` only as the timeline transition;
+- no allocation carries multiple start reasons or imports history from before an incomplete boundary.
+
+## F23 — scoring decay, order and story cap use one formula
+
+Input: one semantic exposure of weight 1 is exactly 90 seconds old, one pattern exposure is exactly 180 seconds old, and two otherwise equal story candidates have candidate orders `(40,3)` and `(40,4)`. Public consecutive limit is 3, the focused StoryDefinition limit is 2, and two beats of that episode have been playback-accepted consecutively.
+
+Expected:
+
+- semantic and pattern fatigue values are each exactly 0.5 before their named score coefficients; no `exp(-1)` alternative or hidden family/role penalty is applied;
+- `(40,3)` wins the stable age tie-break, independent of timestamps or V4 sequence;
+- effective consecutive limit is 2, so another non-closing successor is hard-ineligible, while a fact-supported closure/outcome or critical event remains eligible.
+
+## F24 — validity deadline expires a building beat without fallback
+
+Input: an event opportunity and its building BeatPlan both have `expiresMonoMs=50_000`. No race/lifecycle input arrives; the matching validity deadline is reduced at exactly 50,000. Also exercise a full ordinary mailbox where the timer admission is skipped but its already queued head command reduces at 50,001.
+
+Expected:
+
+- the half-open boundary makes both objects invalid at exactly 50,000; cancel the generation token, terminalize the opportunity `expired_ttl`, and ignore a later worker completion;
+- run no director pass and do not spend cycle attempt 2—the runtime waits for a later accepted/lifecycle/silence or speech-terminal impulse;
+- in the full-mailbox order, record `deadline_admission_skipped`; the next command's mandatory pre-reduction sweep produces the same terminal truth at 50,001 without a recovery barrier or invented opportunity.
+
+## F25 — simultaneous timeline boundaries retain every effect
+
+Input: first observe an enabled normal broadcast start with a coherent Race SessionRef in the same upstream observation. Separately, transition from active Qualifying Q0 to Race R0 in one observation.
+
+Expected:
+
+- the first snapshot carries ordered `transitionReasons=[broadcast_started,session_started]`, allocates the run before the occurrence and emits both matching lifecycle events exactly once;
+- the second carries `[session_ended,session_started]`, closes Q0 before opening R0 and builds lineage through Q0;
+- duplicate, reversed, over-eight or mutually exclusive transition reason lists fail schema validation rather than silently dropping a boundary.
+
+## F26 — unresponsive TTS cannot strand or overlap the lane
+
+Input: separately stall a TTS token before playback acceptance, after acceptance, and after a cancellation request. Let start/playback/stop watchdogs fire in token order; then deliver stale callbacks and finally a successful preflight for a higher backend generation.
+
+Expected:
+
+- start timeout releases the unconsumed reservation through bounded cancellation; playback watchdog keeps an already consumed opportunity/exposure and requests interruption;
+- stop timeout invalidates/quarantines the token, records the corresponding terminal reason, marks TTS unavailable and prevents all automatic/manual speech despite late acceptance/completion callbacks;
+- only `COMPONENT_HEALTH_CHANGED(ready)` for a strictly higher backend generation restores admission; no polling retry, second lane or main-loop exception occurs.
+
+## F27 — tape overload has deterministic loss accounting
+
+Input: fill the tape writer queue first with sample+normal records, then with only critical records. Submit a normal record, a critical speech terminal and a required-detector critical window while storage is stalled.
+
+Expected:
+
+- normal/critical arrivals evict oldest lower classes in exact sample-then-normal order; equal classes retain FIFO;
+- all-critical overflow never blocks the producer: the bounded loss accumulator records type/priority/reason and first/last time/reducer ranges, later emits `drop_notice`, and the trailer contains the same counters even if no queue slot opened;
+- losing the required window posts protected `capture_unavailable` and disables only its experimental detector; world/narrative truth and the main loop continue unchanged.
+
+## F28 — feature ordering and bucket coverage are upstream-owned
+
+Input: deliver relation FeatureFrames with sequences 10, 12, then duplicate/older 12 and 11. In a 1-second bucket provide one valid sample at its start but no following coverage; separately provide regularly spaced samples covering at least 80% of six or more buckets.
+
+Expected:
+
+- detector reduces only frames 10 then 12; duplicate/older frames are audited no-ops and narrative reducer order is never consulted;
+- the lone sample contributes at most `sample_interval_s` coverage and cannot make its bucket/window valid;
+- the covered window can compute median buckets, OLS slope and net closing only with at least three valid buckets and matching stream/occurrence/lineage/relation identity.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:

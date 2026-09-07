@@ -12,7 +12,7 @@ Only `NarrativeRuntime.run()` mutates:
 - EpisodeRegistry, EventOpportunityQueue and attempt suppressions;
 - ExposureStore and bounded decision records;
 - automatic/manual speech-lane state and worker tokens;
-- silence deadline generation and commentary component health.
+- silence/validity deadline generations and commentary component health.
 - current planning-cycle ID, dispatched-plan count (`0..2`) and source impulse.
 
 StreamTimeline, FeatureEngine, FactLedger and DetectorBank remain upstream owners. Qwen, TTS and tape workers perform I/O but cannot mutate actor state. Server handlers post commands and read immutable status snapshots.
@@ -43,29 +43,32 @@ command_id: stable unique ID
 kind: registry enum
 enqueued_monotonic_ms: nonnegative integer
 mailbox_sequence: nonnegative admission ordinal assigned atomically by the mailbox
-external_order: (fanout_stream_sequence, source_ordinal) or null
-context_revision: upstream coherent projection revision or null
+external_order: {fanout_stream_sequence, first_source_ordinal?, last_source_ordinal?} or null
+context_revision: {timeline_revision, fact_view_revision} or null
 token: worker/deadline/manual token or null
 payload: kind-specific bounded object
 ```
 
-External adapter items carry `external_order`; worker/timer/API commands do not. `mailbox_sequence` totally orders successful concurrent admissions and is preserved when protected/ordinary capacity partitions are used. On dequeue the actor assigns the next `reducer_sequence` in mailbox-sequence order. That recorded reducer sequence—not wall-clock equality or task scheduling—is replay authority.
+Every context batch carries `external_order`; worker/timer/API commands do not. Its fanout sequence is positive. A batch with events carries the inclusive first/last per-publication ordinals represented by that part; a pure timeline/fact batch has both ordinals null. Split parts share their publication fanout sequence and have increasing disjoint ordinal ranges. `context_revision` exists only for context/recovery commands and always names both projections; neither scalar substitutes for the other. `mailbox_sequence` totally orders successful concurrent admissions and is preserved when protected/ordinary capacity partitions are used. On dequeue the actor assigns the next `reducer_sequence` in mailbox-sequence order. That recorded reducer sequence—not wall-clock equality or task scheduling—is replay authority.
 
 ## Complete command inventory
 
 | Kind | Producer | Protected | Coalescing | Actor effect |
 | --- | --- | --- | --- | --- |
-| `APPLY_CONTEXT_BATCH` | narrative fanout adapter | when batch contains identity/lifecycle/result; otherwise no | only same-correlation ACTIVE/UPDATE revisions before dequeue | atomically apply one coherent timeline/FactView plus ordered NarrativeEvents; pure FactView change only invalidates/closes, while at least one accepted/lifecycle NarrativeEvent may trigger one director pass |
+| `APPLY_CONTEXT_BATCH` | narrative fanout adapter | exactly when timeline transitionReasons is nonempty or a contained event has derived `deliveryClass=protected` | never | atomically apply one coherent TimelineSnapshot/FactView plus 0..64 ordered NarrativeEvents; pure FactView change only invalidates/closes, while at least one accepted/lifecycle NarrativeEvent may trigger one director pass |
 | `CONFIG_UPDATE` | config owner | yes | never | validate/apply each generation in order; defer fields whose declared boundary is not yet legal |
 | `LONG_SILENCE_ELAPSED` | owned one-shot deadline | no | same deadline generation only | clear fired token, evaluate one filler impulse, then rearm by frozen rule |
+| `VALIDITY_DEADLINE_ELAPSED` | owned nearest-expiry one-shot deadline | no | same deadline generation only | sweep facts already expired in the applied view plus opportunity/BeatPlan revision deadlines; cancel invalid building/committed work, never run director, then rearm |
 | `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, verify synchronously, freshness-check and dispatch TTS or reject |
 | `REALIZATION_FAILED` | authored/Qwen worker | yes | never | token-check, suppress beat/revision and release reservation |
 | `PLAYBACK_ACCEPTED` | TTS worker | yes | duplicate token is ignored and audited | consume narrative opportunity, create exposure and enter `speaking` |
 | `SPEECH_COMPLETED` | TTS worker | yes | duplicate token is ignored and audited | terminalize exposure, free lane and run one director pass |
 | `SPEECH_INTERRUPTED` | TTS worker | yes | duplicate token is ignored and audited | terminalize exposure/manual request, free lane and replan when enabled |
 | `SPEECH_FAILED` | TTS worker | yes | duplicate token is ignored and audited | before acceptance release+suppress; after acceptance keep consumed exposure; free lane |
-| `MANUAL_SPEAK_REQUEST` | localhost API adapter | no | never | admit only when lane is idle and TTS available; never create episode/opportunity/exposure |
+| `SPEECH_DEADLINE_ELAPSED` | actor-owned one-shot watchdog | yes | duplicate/stale token ignored | `start|playback|stop` stage applies the bounded timeout transition below; never creates a second utterance |
+| `MANUAL_SPEAK_REQUEST` | localhost API adapter | no | never | atomically claim its one-shot admission latch, then admit only when lane is idle and TTS available; never create episode/opportunity/exposure |
 | `TAPE_HEALTH_CHANGED` | tape writer | required-capture loss is protected | same recorder generation/status | update health; disable only affected required experimental detectors |
+| `COMPONENT_HEALTH_CHANGED` | owned Qwen/TTS preflight worker | yes when unavailable, otherwise no | same component/generation/status | accept only current generation; update readiness without starting planning or speech |
 | `MAILBOX_RECOVERY` | mailbox | yes | one pending barrier absorbs later loss metadata/snapshot revisions | cancel uncommitted work, reconstruct current projections and mark history incomplete |
 | `SHUTDOWN` | application owner | yes | idempotent singleton | stop ingress and execute ordered bounded shutdown |
 
@@ -79,13 +82,17 @@ Initial total capacity is 64 items: 56 ordinary cells, 7 protected cells and one
 
 Admission is nonblocking:
 
-1. Coalesce an eligible ordinary revision in place while preserving the earliest external order and recording every absorbed source ref.
-2. If an ordinary item still cannot fit, evict the oldest coalescible ordinary ACTIVE/UPDATE or silence command and record `mailbox_evicted_update`; never evict a result or lifecycle boundary as an ordinary item.
-3. A protected item may evict the oldest ordinary item and records the gap.
-4. If protected capacity is exhausted, atomically place/refresh `MAILBOX_RECOVERY` in the emergency cell. It carries the latest coherent projections, upstream loss range, current worker snapshots and the incoming protected command's safety effect. Exact intermediate narrative history is marked incomplete; no lost event opportunity is invented.
-5. `SHUTDOWN` owns the emergency cell when requested. Existing recovery metadata is attached to shutdown rather than silently erased.
+1. Coalesce only `LONG_SILENCE_ELAPSED` or `VALIDITY_DEADLINE_ELAPSED` with the same kind/generation, or `TAPE_HEALTH_CHANGED` with the same recorder generation/status. APPLY_CONTEXT_BATCH never coalesces.
+2. An ordinary command uses an ordinary cell when one exists. A manual request is rejected as `mailbox_overloaded` rather than evicting admitted work.
+3. If an ordinary context batch cannot fit, evict the oldest ordinary silence command first. If none exists, evict the oldest ordinary context batch, record its full source/revision range and atomically place/refresh `MAILBOX_RECOVERY` in the emergency cell with the latest coherent projections. Lost accepted events become auditable lost history and never opportunities.
+4. A protected item may evict the oldest ordinary silence/context item and must place/refresh the same recovery barrier whenever a context batch was lost.
+5. If protected capacity is exhausted, place/refresh `MAILBOX_RECOVERY` in the emergency cell. It carries the latest coherent projections, upstream loss range, current worker snapshots and every incoming protected command's idempotent safety effect. Exact intermediate narrative history is marked incomplete; no lost event opportunity is invented.
+6. Refreshing a pending recovery keeps its original mailbox position but replaces its projection with the newest revision and expands the loss range. On reduction, the barrier jumps to that recorded projection and all subsequently dequeued older context revisions/tokens are stale no-ops; replay uses the same payload/reducer order.
+7. `SHUTDOWN` owns the emergency cell when requested. Existing recovery metadata and safety effects are attached to shutdown rather than silently erased; ingress is already closed, so it cannot be refreshed by later normal work.
 
 This policy guarantees a bounded nonblocking producer and safe latest truth, not lossless narration under overload. Every loss increments health/tape counters. After recovery, historical/recap claims requiring the lost interval are hard-gated by `history_complete=false`.
+
+Every reducer command first performs the same logical validity sweep at its captured reduction time. Therefore, if a validity timer cannot enter a full ordinary partition, it records `deadline_admission_skipped` and the already queued command at the head of the actor's future work performs the sweep; no truth/event history is lost and no recovery barrier is needed. When the mailbox becomes empty, the armed timer is guaranteed an ordinary cell. Deadline commands never create a planning impulse.
 
 ## Automatic pipeline transitions
 
@@ -111,13 +118,24 @@ This policy guarantees a bounded nonblocking producer and safe latest truth, not
 
 Allowed automatic cancellation is limited to confirmed stream end, occurrence/run reset, explicit commentary disable, shutdown, or fact/identity supersession that makes the utterance's committed claims false. A newer or more urgent racing event never cancels accepted or dispatched playback.
 
+Each TTS token owns at most one current watchdog. In `committed`, `start_timeout_s` bounds dispatch-to-`PLAYBACK_ACCEPTED|SPEECH_FAILED`. In `speaking`, the selected BeatPlan `maxSeconds` (manual uses global `max_utterance_s`) bounds accepted playback. Either deadline moves the lane to `stopping`, requests cancellation and arms `stop_timeout_s`. A matching terminal callback before the stop deadline follows the normal table. On stop timeout the actor invalidates/quarantines the worker token, terminalizes any accepted exposure conservatively, marks TTS `component_unavailable`, and frees narrative state; no later callback for that token may mutate state and no automatic/manual speech is admitted until a `COMPONENT_HEALTH_CHANGED(backendGeneration>quarantinedGeneration,status=ready)` from a successful explicit config-rebuild preflight. There is no periodic retry or spontaneous recovery from a stale callback. Backend wrappers must make best effort to terminate their process/audio handle, but inability to prove physical silence never blocks or crashes the main loop.
+
 Attempt suppression occurs only for realization/verification/commit/TTS-before-acceptance failure. Replacement by a new candidate does not suppress a still-valid old beat. Suppression clears only on material episode revision, opportunity/episode terminal state, occurrence reset or stream reset.
 
 One planning impulse owns one `planningCycleId` and may dispatch at most two distinct BeatPlans: the initial choice and one alternative. Precommit replacement or failure consumes the next ordinal; a second failure/replacement ends the cycle with `planning_cycle_exhausted`. It does not consume the underlying opportunity, shorten TTL or unlock a suppressed beat. A later accepted/lifecycle/silence event, material accepted event revision, or speech-terminal command starts a new cycle; a pure FactView batch does not. This fixed bound is not public config and prevents an LLM/validator failure cascade.
 
 ## Manual speech
 
-Manual speech is an explicit operator audio test and is available even when automatic commentary is disabled. Admission is serialized through the actor; the API returns 202 only after `MANUAL_SPEAK_REQUEST` moves an idle lane to `building`. Busy or unavailable TTS returns the frozen 409/503 without a waiter.
+Manual speech is an explicit operator audio test and is available even when automatic commentary is disabled. Admission is serialized through the actor; the API returns 202 only after `MANUAL_SPEAK_REQUEST` moves an idle lane to `building`. Busy or unavailable TTS returns the frozen 409/503.
+
+The request carries a process-local one-shot `ManualAdmissionLatch` with states `pending | actor_claimed | caller_abandoned`. This latch is only a command/reply rendezvous; it is not a speech waiter, prepared-text queue, actor input or replayed DTO. The API adapter validates the request, allocates the latch, performs nonblocking mailbox admission, then awaits the result for a fixed 1,000 ms:
+
+1. mailbox rejection returns `mailbox_overloaded`/503 and atomically abandons the latch;
+2. on dequeue, the actor must atomically change `pending → actor_claimed` before mutating the lane; an already abandoned request is a stale no-op;
+3. in the same synchronous reducer turn, the actor either moves `idle → building` and resolves 202, or leaves the lane unchanged and resolves 409/503;
+4. on timeout or client cancellation, the adapter atomically changes `pending → caller_abandoned`; if it wins, it returns `admission_timeout`/503 and later actor reduction cannot speak; if the actor already claimed, its result is immediately authoritative and is returned instead.
+
+No `await` is permitted between actor claim, lane decision and latch resolution. Thus every response has one linearization point, and no request reported as rejected can later produce audio. Tape stores request ID and final admission decision, never the latch object.
 
 Manual text passes length/control-character and EN-tag validation, then goes directly to TTS. It creates no NarrativeEvent, EventOpportunity, BeatPlan, Episode transition, ExposureStore row, fatigue or story successor. Race events do not interrupt it. Commentary disable does not cancel it; stream/session resets cancel only narrative speech, while application shutdown cancels both.
 
@@ -143,11 +161,19 @@ Manual text passes length/control-character and EN-tag validation, then goes dir
 - On `LONG_SILENCE_ELAPSED`, evaluate exactly once. If no speech starts, rearm from command reduction time; never use a shorter retry.
 - Race/event director passes do not move the silence origin unless playback is accepted.
 
+## Validity deadline transitions
+
+- Eligibility intervals are half-open: a fact is current at `validFromMonoMs <= now < validUntilMonoMs` (or no upper bound); opportunity/BeatPlan is valid at `created|plannedMonoMs <= now < expiresMonoMs`. At exact upper bound it is invalid.
+- The actor arms one nearest-expiry generation for the minimum current opportunity, successor-revision and BeatPlan deadline. FactLedger owns fact-time expiration and publishes a fact-only coherent context batch; the actor also refuses any applied fact whose upper bound is already reached.
+- Any command reduction sweeps all deadlines `<= reductionNow` before handling that command. A matching `VALIDITY_DEADLINE_ELAPSED` does only this sweep and rearm.
+- Expiring a reserved opportunity or building plan cancels its generation token, terminalizes it as `expired_ttl`, and does not consume planning attempt 2. Expiring a committed pre-acceptance utterance requests cancellation and leaves the opportunity unconsumed/expired. Speaking playback is not interrupted merely because its source opportunity later expires.
+- Expiry never starts the director. After plan/opportunity validity expires, runtime waits for a later accepted/lifecycle/silence event or speech-terminal impulse, exactly as for any other fact-invalid continuation.
+
 ## Ordered shutdown
 
 1. Set runtime `stopping` and reject new external/manual ingress.
 2. Cancel silence and generation tasks; invalidate their tokens.
-3. Request cancellation of committed/speaking TTS and wait only to the configured bounded backend timeout.
+3. Request cancellation of committed/speaking TTS and wait only to `commentary.tts.stop_timeout_s`; quarantine an unresponsive backend token.
 4. Enqueue no new director work; reduce the matching terminal callback if it arrives.
 5. Ask the tape writer to flush/close and wait at most `shutdown_flush_timeout_s`.
 6. Record timeout/drop state through the best available log/manifest path, publish final immutable status and set `stopped`.

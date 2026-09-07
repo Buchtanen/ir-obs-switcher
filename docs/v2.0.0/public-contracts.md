@@ -31,6 +31,8 @@ INI booleans are exactly `true|false`; integers/floats use finite base-10 notati
 
 Enabling commentary during an already active OBS stream creates a new narrative epoch with `start_reason=enabled_mid_stream` and `history_complete=false`; it does not claim pre-enable history. Disabling cancels unaccepted generation and future automatic planning immediately. Already accepted narrative playback receives a bounded stop request and records its actual terminal state; an explicitly requested manual audio test is independent and continues.
 
+The effective consecutive-beat limit is the minimum of the public director value and the selected StoryDefinition limit. Story cadence uses the maximum of global, policy-profile and StoryDefinition minima. These combinations only tighten catalog safety; config cannot make a story looser than its frozen catalog bound.
+
 NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64 = 56 ordinary + 7 protected + 1 emergency` admission invariant is part of the actor safety contract; changing it requires an actor-contract/schema review rather than live tuning.
 
 ### LLM and TTS
@@ -48,6 +50,8 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 | `commentary.tts.voice` | string | empty | 0–128 chars/backend-valid | — | next utterance |
 | `commentary.tts.rate` | int | `0` | -10–10 | SAPI-style steps | next utterance |
 | `commentary.tts.steps` | int | `6` | 5–12 | inference steps | next SuperTonic utterance |
+| `commentary.tts.start_timeout_s` | float | `5.0` | 0.5–30 | seconds wall clock | next utterance |
+| `commentary.tts.stop_timeout_s` | float | `1.0` | 0.1–5 | seconds wall clock | next cancellation |
 | `commentary.tts.audio_device` | string | empty | 0–256 chars | — | next utterance |
 | `commentary.tts.duck_input` | string | empty | 0–256 chars | — | next utterance |
 | `commentary.tts.duck_ratio` | float | `0.25` | 0–1 | original-volume fraction | next utterance |
@@ -300,7 +304,7 @@ Validation is available while automatic commentary is disabled, provided the v2 
 
 This is a manual EN audio-device test, not a narrative injection endpoint. It uses the same single speech lane, never preempts live speech and never creates EventOpportunity, episode transition or ExposureStore entry.
 
-It remains available while automatic commentary is disabled. Admission is decided by NarrativeRuntime, so a 202 response means the request actually owns the lane; the HTTP handler never maintains its own busy flag or waiter.
+It remains available while automatic commentary is disabled. Admission is decided by NarrativeRuntime, so a 202 response means the request actually owns the lane; the HTTP handler never maintains its own busy flag or speech waiter. It uses only the bounded one-shot admission latch frozen in `actor-transition-contract.md`.
 
 ~~~json
 {
@@ -324,7 +328,7 @@ On immediate lane admission it returns 202:
 }
 ~~~
 
-Busy returns `speech_busy`/409; invalid text returns `validation_failed`/422; unavailable selected backend returns `component_unavailable`/503. `force`, arbitrary locale and live fact/event injection are not supported.
+Busy returns `speech_busy`/409; invalid text returns `validation_failed`/422; unavailable selected backend returns `component_unavailable`/503; failure to admit the command to the fixed mailbox returns `mailbox_overloaded`/503. If the actor has not claimed the one-shot admission latch within the fixed 1,000 ms bound, the adapter atomically abandons it and returns `admission_timeout`/503; an abandoned request can never later produce audio. `force`, arbitrary locale and live fact/event injection are not supported.
 
 `schemaVersion`, `text` and fixed `language="en"` are required. `text` is 1–400 normalized Unicode characters with no control characters. `backend`, `voice` and `rate` are optional and default to the effective TTS config; when present they use the same enums/ranges. `admittedState` records the atomic admission transition, not a promise that the worker has not progressed before the HTTP response arrives; the current matching `utteranceId` is visible in status while active. No language classifier is claimed—the explicit EN tag and EN-only operator contract are authoritative.
 
