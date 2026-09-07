@@ -1,0 +1,501 @@
+{
+  "$id": "https://irswitch.local/schema/v2/beat-catalog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "beats": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "claims": {
+            "additionalProperties": false,
+            "properties": {
+              "forbiddenAddition": {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              "globalForbiddenClaimTypes": {
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 10,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "normativeSignature": {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              "referenceRequirements": {
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "maxItems": 4,
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "required": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "actorFrame": {
+                      "maxLength": 512,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "attributeEquals": {
+                      "additionalProperties": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                        "type": "string"
+                      },
+                      "maxProperties": 16,
+                      "propertyNames": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "id": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": [
+                        "predicate",
+                        "allowlist"
+                      ]
+                    },
+                    "maxClaims": {
+                      "maximum": 3,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "minClaims": {
+                      "maximum": 3,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "optionalAttributes": {
+                      "items": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                        "type": "string"
+                      },
+                      "maxItems": 16,
+                      "minItems": 0,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "requiredAttributes": {
+                      "items": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                        "type": "string"
+                      },
+                      "maxItems": 16,
+                      "minItems": 0,
+                      "type": "array",
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id",
+                    "actorFrame",
+                    "requiredAttributes",
+                    "optionalAttributes",
+                    "attributeEquals",
+                    "minClaims",
+                    "maxClaims"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 4,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "normativeSignature",
+              "required",
+              "referenceRequirements",
+              "globalForbiddenClaimTypes",
+              "forbiddenAddition"
+            ],
+            "type": "object"
+          },
+          "group": {
+            "enum": [
+              "timing",
+              "battle",
+              "position",
+              "incident",
+              "pit",
+              "stream",
+              "session",
+              "bio",
+              "filler"
+            ]
+          },
+          "hardContext": {
+            "additionalProperties": false,
+            "properties": {
+              "broadcastContext": {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "ignore",
+                      "prefer",
+                      "require"
+                    ]
+                  },
+                  "values": {
+                    "items": {
+                      "enum": [
+                        "on_track",
+                        "garage",
+                        "lobby",
+                        "replay",
+                        "transition"
+                      ]
+                    },
+                    "maxItems": 5,
+                    "minItems": 0,
+                    "type": "array",
+                    "uniqueItems": true
+                  }
+                },
+                "required": [
+                  "mode",
+                  "values"
+                ],
+                "type": "object"
+              },
+              "normativeText": {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              "scopeModes": {
+                "items": {
+                  "enum": [
+                    "occurrence",
+                    "stream"
+                  ]
+                },
+                "maxItems": 2,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "stageAnyOf": {
+                "items": {
+                  "enum": [
+                    "practice",
+                    "qualifying",
+                    "race"
+                  ]
+                },
+                "maxItems": 3,
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "vehiclePhaseAnyOf": {
+                "items": {
+                  "enum": [
+                    "garage",
+                    "pit_lane",
+                    "out_lap",
+                    "timed_lap",
+                    "in_lap",
+                    "parade_lap",
+                    "racing"
+                  ]
+                },
+                "maxItems": 7,
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "normativeText",
+              "scopeModes",
+              "stageAnyOf",
+              "broadcastContext",
+              "vehiclePhaseAnyOf"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "lifecycleText": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "policyId": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "realization": {
+            "additionalProperties": false,
+            "properties": {
+              "backend": {
+                "enum": [
+                  "authored",
+                  "qwen_compiled"
+                ]
+              },
+              "family": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                "type": "string"
+              },
+              "maxFreedom": {
+                "const": "tight"
+              },
+              "requiredPatternCardCount": {
+                "const": 4
+              }
+            },
+            "required": [
+              "family",
+              "backend",
+              "maxFreedom",
+              "requiredPatternCardCount"
+            ],
+            "type": "object"
+          },
+          "role": {
+            "enum": [
+              "opening",
+              "update",
+              "result",
+              "context",
+              "escalation",
+              "climax",
+              "composite",
+              "outcome",
+              "closure",
+              "bridge",
+              "control",
+              "vehicle",
+              "single"
+            ]
+          },
+          "storyRoutes": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "tapeChannel": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "triggers": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "accepted_event",
+                    "lifecycle_event",
+                    "silence"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ],
+              "type": "object"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "group",
+          "role",
+          "storyRoutes",
+          "policyId",
+          "tapeChannel",
+          "triggers",
+          "hardContext",
+          "lifecycleText",
+          "claims",
+          "realization"
+        ],
+        "type": "object"
+      },
+      "maxItems": 64,
+      "minItems": 64,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "catalogProjectionVersion": {
+      "const": "beat-catalog-freeze/1"
+    },
+    "globalForbiddenClaimTypes": {
+      "items": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 10,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "language": {
+      "const": "en"
+    },
+    "policies": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "basePriority": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "cadenceMinimumMs": {
+            "maximum": 300000,
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cadenceRule": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "penaltyCoefficient": {
+            "maximum": 4,
+            "minimum": 0,
+            "type": "number"
+          },
+          "ttlMs": {
+            "maximum": 120000,
+            "minimum": 1000,
+            "type": "integer"
+          },
+          "urgency": {
+            "enum": [
+              "background",
+              "context",
+              "story",
+              "critical"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "basePriority",
+          "urgency",
+          "ttlMs",
+          "penaltyCoefficient",
+          "cadenceRule",
+          "cadenceMinimumMs"
+        ],
+        "type": "object"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "realizationFamilies": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "additionalHardRejects": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "preferredFreedom": {
+            "const": "tight"
+          },
+          "promotedMaxFreedom": {
+            "const": "tight"
+          },
+          "requiredParseFrame": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "requiredParseFrame",
+          "additionalHardRejects",
+          "promotedMaxFreedom",
+          "preferredFreedom"
+        ],
+        "type": "object"
+      },
+      "maxItems": 37,
+      "minItems": 37,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "schemaVersion": {
+      "const": "narrative-catalog/2"
+    },
+    "sourceBaseline": {
+      "const": "master@0ce75d4"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "catalogProjectionVersion",
+    "sourceBaseline",
+    "language",
+    "globalForbiddenClaimTypes",
+    "policies",
+    "realizationFamilies",
+    "beats"
+  ],
+  "title": "iRSwitch v2 frozen BeatDefinition catalog projection",
+  "type": "object",
+  "x-irswitch-invariants": [
+    "unique_ids_and_exact_group_counts",
+    "claims_resolve_fact_registry",
+    "families_policies_channels_resolve",
+    "speakable_dispositions_resolve_beats",
+    "nonspeakable_dispositions_have_no_beats",
+    "trigger_and_context_axes_are_coherent",
+    "baseline_realization_routing"
+  ]
+}

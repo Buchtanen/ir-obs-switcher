@@ -2,7 +2,7 @@
 
 **Status:** design-freeze candidate owned by issues #236, #245, #247 and #256
 
-This branch-only artifact removes placeholder claims such as “one selected fact”. It is the human-readable source for the machine registries that must exist before runtime edits.
+This branch-only artifact removes placeholder claims such as “one selected fact”. It is the human-readable source for the generated machine registries and 64-beat claim projection under `machine/`.
 
 ## Scalar and enum types
 
@@ -214,6 +214,8 @@ system.thermal
 An optional unavailable source only suppresses dependent facts/beats. It never blocks the main loop or falls back to generic invented commentary.
 
 ## Closure checks
+
+`machine/build_beat_catalog.py` now proves every required beat predicate, attribute, literal enum constraint, repeated-claim cardinality and allowlist reference resolves through this registry. It deliberately does not implement runtime predicate evaluation or successor-graph safety; those remain catalog-loader/graph gates.
 
 Issue #236/#245/#247 cannot close until generated machine registries prove:
 
