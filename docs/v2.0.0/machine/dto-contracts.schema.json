@@ -1,0 +1,5586 @@
+{
+  "$defs": {
+    "ApplyContextBatch": {
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "items": {
+            "$ref": "#/$defs/NarrativeEvent"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "factView": {
+          "$ref": "#/$defs/FactView"
+        },
+        "timeline": {
+          "$ref": "#/$defs/TimelineSnapshot"
+        }
+      },
+      "required": [
+        "timeline",
+        "factView",
+        "events"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "projection_revisions_coherent",
+        "event_source_order_partition"
+      ]
+    },
+    "AtomicFact": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "lineageId": {
+              "type": "null"
+            },
+            "occurrenceId": {
+              "type": "null"
+            },
+            "scope": {
+              "const": "stream"
+            }
+          }
+        },
+        {
+          "properties": {
+            "lineageId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "occurrenceId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "scope": {
+              "enum": [
+                "occurrence",
+                "downstream",
+                "revalidate",
+                "historical_only"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "attributes": {
+          "maxProperties": 32,
+          "type": "object"
+        },
+        "broadcastEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "evidenceRefs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "factId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "objectId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedAtMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "polarity": {
+          "enum": [
+            "positive",
+            "negative"
+          ]
+        },
+        "predicate": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": "atomic-fact/2"
+        },
+        "scope": {
+          "enum": [
+            "occurrence",
+            "downstream",
+            "stream",
+            "revalidate",
+            "historical_only"
+          ]
+        },
+        "status": {
+          "enum": [
+            "provisional",
+            "active",
+            "expired",
+            "superseded",
+            "historical",
+            "rejected",
+            "unknown"
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "subjectId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validFromMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "validUntilMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "factId",
+        "predicate",
+        "subjectId",
+        "objectId",
+        "attributes",
+        "polarity",
+        "validFromMonoMs",
+        "validUntilMonoMs",
+        "observedAtMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "occurrenceId",
+        "lineageId",
+        "evidenceRefs",
+        "confidence",
+        "scope",
+        "status",
+        "revision"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "valid_until_gte_valid_from",
+        "registered_predicate_attributes_scope"
+      ]
+    },
+    "BeatPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "beatId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "beatRole": {
+          "enum": [
+            "opening",
+            "update",
+            "outcome",
+            "recap",
+            "transition",
+            "filler"
+          ]
+        },
+        "candidateOrder": {
+          "additionalProperties": false,
+          "properties": {
+            "reducerSequence": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "sourceOrdinal": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "reducerSequence",
+            "sourceOrdinal"
+          ],
+          "type": "object"
+        },
+        "candidateSource": {
+          "enum": [
+            "event_opportunity",
+            "story_successor",
+            "episode_beat",
+            "filler"
+          ]
+        },
+        "catalogHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "cycleAttemptOrdinal": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "episodeId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "episodeRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "expiresMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "factViewRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "forbiddenClaimTypes": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "funnel": {
+          "additionalProperties": false,
+          "properties": {
+            "candidateId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "detectorObservationId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "eventId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "materialRevision": {
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "opportunityId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "planId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sourceClass": {
+              "enum": [
+                "detector",
+                "direct",
+                "lifecycle",
+                "silence",
+                "successor"
+              ]
+            },
+            "tapeChannel": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "utteranceId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "sourceClass",
+            "candidateId",
+            "detectorObservationId",
+            "eventId",
+            "materialRevision",
+            "opportunityId",
+            "planId",
+            "utteranceId",
+            "tapeChannel"
+          ],
+          "type": "object"
+        },
+        "language": {
+          "const": "en"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxChars": {
+          "maximum": 512,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "maxSeconds": {
+          "type": "number"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "opportunityId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "optionalClaims": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 2,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "planId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "plannedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "planningCycleId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "promptOptions": {
+          "$ref": "#/$defs/PromptOptions"
+        },
+        "realizationBackend": {
+          "enum": [
+            "authored",
+            "qwen_compiled"
+          ]
+        },
+        "realizationFamily": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "realizationPattern": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "requiredClaims": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "schemaVersion": {
+          "const": "beat-plan/2"
+        },
+        "selectedFactIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "sourceRefs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "streamEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "styleCardId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "planId",
+        "planningCycleId",
+        "cycleAttemptOrdinal",
+        "beatId",
+        "episodeId",
+        "opportunityId",
+        "candidateSource",
+        "funnel",
+        "candidateOrder",
+        "beatRole",
+        "streamEpoch",
+        "occurrenceId",
+        "lineageId",
+        "episodeRevision",
+        "requiredClaims",
+        "optionalClaims",
+        "forbiddenClaimTypes",
+        "selectedFactIds",
+        "realizationFamily",
+        "realizationPattern",
+        "realizationBackend",
+        "promptOptions",
+        "language",
+        "styleCardId",
+        "maxChars",
+        "maxSeconds",
+        "plannedMonoMs",
+        "expiresMonoMs",
+        "sourceRefs",
+        "catalogHash",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "factViewRevision"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "expires_gt_planned",
+        "selected_facts_equal_claim_union",
+        "funnel_identity_monotonic"
+      ]
+    },
+    "CompiledPrompt": {
+      "additionalProperties": false,
+      "properties": {
+        "bundleHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "bundleId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "freedom": {
+          "enum": [
+            "tight",
+            "balanced",
+            "loose"
+          ]
+        },
+        "promptContractVersion": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "promptHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "promptId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "realizationFamily": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "realizationPattern": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "compiled-prompt/2"
+        },
+        "systemBytes": {
+          "maximum": 12288,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "systemHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "systemText": {
+          "maxLength": 12288,
+          "type": "string"
+        },
+        "userBytes": {
+          "maximum": 20480,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "userHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "userText": {
+          "maxLength": 20480,
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "promptId",
+        "promptContractVersion",
+        "bundleId",
+        "bundleHash",
+        "realizationFamily",
+        "realizationPattern",
+        "freedom",
+        "systemText",
+        "userText",
+        "systemHash",
+        "userHash",
+        "promptHash",
+        "systemBytes",
+        "userBytes"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "utf8_byte_counts_match",
+        "combined_bytes_lte_32768",
+        "canonical_hashes_match"
+      ]
+    },
+    "ConfigLedger": {
+      "additionalProperties": false,
+      "properties": {
+        "acceptedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "applySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "desiredGeneration": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "desiredHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "desiredValues": {
+          "type": "object"
+        },
+        "effectiveHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "effectiveValues": {
+          "type": "object"
+        },
+        "pendingChanges": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 128,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "schemaVersion": {
+          "const": "commentary-config/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "desiredGeneration",
+        "desiredHash",
+        "effectiveHash",
+        "applySequence",
+        "desiredValues",
+        "effectiveValues",
+        "pendingChanges",
+        "acceptedMonoMs"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "pending_sorted_and_matches_diff",
+        "hashes_match_full_values"
+      ]
+    },
+    "DetectorObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "candidateState": {
+          "enum": [
+            "inactive",
+            "candidate",
+            "active",
+            "clearing"
+          ]
+        },
+        "correlationKey": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "coverage": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 16,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "detectorConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "detectorId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "detectorVersion": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "featureValues": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observationId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "observedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameterSnapshotId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "predicateResults": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "previousState": {
+          "enum": [
+            "inactive",
+            "candidate",
+            "active",
+            "clearing"
+          ]
+        },
+        "schemaVersion": {
+          "const": "detector-observation/2"
+        },
+        "sessionRef": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "sessionNum": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subSessionId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subSessionId",
+                "sessionNum"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tapeChannel": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "transitionReason": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "windowFrameRange": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "wouldEmitEventKind": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "observationId",
+        "detectorId",
+        "detectorVersion",
+        "detectorConfigHash",
+        "parameterSnapshotId",
+        "observedMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "sessionRef",
+        "occurrenceId",
+        "lineageId",
+        "correlationKey",
+        "windowFrameRange",
+        "previousState",
+        "candidateState",
+        "transitionReason",
+        "featureValues",
+        "predicateResults",
+        "coverage",
+        "wouldEmitEventKind",
+        "tapeChannel"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "inclusive_frame_range_ordered",
+        "registered_feature_units"
+      ]
+    },
+    "Episode": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "resolutionReason": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "resolvedMonoMs": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "state": {
+              "enum": [
+                "resolved",
+                "invalidated"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "resolutionReason": {
+              "type": "null"
+            },
+            "resolvedMonoMs": {
+              "type": "null"
+            },
+            "state": {
+              "enum": [
+                "candidate",
+                "active",
+                "suspended"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "continuationPriority": {
+          "type": "number"
+        },
+        "correlationIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "definitionId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "episodeId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "factIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "historyComplete": {
+          "type": "boolean"
+        },
+        "lastSpokenBeatId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "materialOrder": {
+          "additionalProperties": false,
+          "properties": {
+            "reducerSequence": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "sourceOrdinal": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "reducerSequence",
+            "sourceOrdinal"
+          ],
+          "type": "object"
+        },
+        "materialRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "nextEligibleMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "openedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "resolutionReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolvedMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "schemaVersion": {
+          "const": "episode/2"
+        },
+        "scope": {
+          "enum": [
+            "stream",
+            "occurrence"
+          ]
+        },
+        "semanticIdentity": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "spokenBeatIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "state": {
+          "enum": [
+            "candidate",
+            "active",
+            "suspended",
+            "resolved",
+            "invalidated"
+          ]
+        },
+        "updatedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "episodeId",
+        "definitionId",
+        "scope",
+        "occurrenceId",
+        "lineageId",
+        "semanticIdentity",
+        "correlationIds",
+        "state",
+        "openedMonoMs",
+        "updatedMonoMs",
+        "resolvedMonoMs",
+        "resolutionReason",
+        "factIds",
+        "materialRevision",
+        "spokenBeatIds",
+        "materialOrder",
+        "nextEligibleMonoMs",
+        "lastSpokenBeatId",
+        "continuationPriority",
+        "historyComplete"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "opened_lte_updated_lte_resolved",
+        "scope_identity_contract"
+      ]
+    },
+    "EventCandidateTap": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "acceptedEventId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "arbitrationOutcome": {
+              "const": "accepted"
+            },
+            "arbitrationReason": {
+              "const": "accepted"
+            }
+          }
+        },
+        {
+          "properties": {
+            "acceptedEventId": {
+              "type": "null"
+            },
+            "arbitrationOutcome": {
+              "const": "rejected"
+            },
+            "arbitrationReason": {
+              "enum": [
+                "pit_cycle",
+                "cooldown",
+                "lower_priority",
+                "unmatched_exit",
+                "unmatched_update",
+                "overlay_disabled",
+                "invalid_candidate"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "acceptedEventId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "arbitrationOutcome": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ]
+        },
+        "arbitrationReason": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "candidateId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "correlationKey": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "detectorObservationId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "materialRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurredMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phase": {
+          "enum": [
+            "started",
+            "updated",
+            "ended",
+            "result",
+            "impulse"
+          ]
+        },
+        "schemaVersion": {
+          "const": "event-candidate-tap/2"
+        },
+        "sessionRef": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "sessionNum": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subSessionId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subSessionId",
+                "sessionNum"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceClass": {
+          "enum": [
+            "detector",
+            "direct",
+            "lifecycle"
+          ]
+        },
+        "sourceEnvelope": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tapeChannel": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "taxonomyHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "candidateId",
+        "sourceClass",
+        "detectorObservationId",
+        "sourceEnvelope",
+        "kind",
+        "phase",
+        "occurredMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "sessionRef",
+        "occurrenceId",
+        "lineageId",
+        "correlationKey",
+        "materialRevision",
+        "tapeChannel",
+        "taxonomyHash",
+        "arbitrationOutcome",
+        "arbitrationReason",
+        "acceptedEventId"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "source_provenance_union",
+        "candidate_id_canonical_content"
+      ]
+    },
+    "EventOpportunity": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "eventId": {
+                  "type": "null"
+                },
+                "funnel": {
+                  "properties": {
+                    "sourceClass": {
+                      "const": "silence"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "not": {
+                "properties": {
+                  "funnel": {
+                    "properties": {
+                      "sourceClass": {
+                        "const": "silence"
+                      }
+                    }
+                  }
+                }
+              },
+              "properties": {
+                "eventId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "reservationToken": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "state": {
+                  "const": "reserved"
+                },
+                "terminalReason": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "properties": {
+                "reservationToken": {
+                  "type": "null"
+                },
+                "state": {
+                  "enum": [
+                    "consumed",
+                    "expired",
+                    "superseded",
+                    "invalidated",
+                    "evicted"
+                  ]
+                },
+                "terminalReason": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "properties": {
+                "reservationToken": {
+                  "type": "null"
+                },
+                "state": {
+                  "const": "pending"
+                },
+                "terminalReason": {
+                  "type": "null"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "basePriority": {
+          "maximum": 100,
+          "minimum": 0,
+          "type": "number"
+        },
+        "candidateOrder": {
+          "additionalProperties": false,
+          "properties": {
+            "reducerSequence": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "sourceOrdinal": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "reducerSequence",
+            "sourceOrdinal"
+          ],
+          "type": "object"
+        },
+        "correlationKey": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "createdMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "episodeId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "eventId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eventKind": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "expiresMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "funnel": {
+          "additionalProperties": false,
+          "properties": {
+            "candidateId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "detectorObservationId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "eventId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "materialRevision": {
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "opportunityId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "planId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sourceClass": {
+              "enum": [
+                "detector",
+                "direct",
+                "lifecycle",
+                "silence",
+                "successor"
+              ]
+            },
+            "tapeChannel": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "utteranceId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "sourceClass",
+            "candidateId",
+            "detectorObservationId",
+            "eventId",
+            "materialRevision",
+            "opportunityId",
+            "planId",
+            "utteranceId",
+            "tapeChannel"
+          ],
+          "type": "object"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "materialRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "opportunityId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "penaltyCoefficient": {
+          "maximum": 4,
+          "minimum": 0,
+          "type": "number"
+        },
+        "policyHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "reservationToken": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "event-opportunity/2"
+        },
+        "sourceFactIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "sourceOrder": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "reserved",
+            "consumed",
+            "expired",
+            "superseded",
+            "invalidated",
+            "evicted"
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "tapeChannel": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "terminalReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "urgency": {
+          "enum": [
+            "background",
+            "context",
+            "story",
+            "critical"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "opportunityId",
+        "eventId",
+        "eventKind",
+        "sourceOrder",
+        "funnel",
+        "candidateOrder",
+        "streamEpoch",
+        "occurrenceId",
+        "lineageId",
+        "episodeId",
+        "correlationKey",
+        "tapeChannel",
+        "createdMonoMs",
+        "expiresMonoMs",
+        "basePriority",
+        "urgency",
+        "penaltyCoefficient",
+        "materialRevision",
+        "state",
+        "reservationToken",
+        "terminalReason",
+        "policyHash",
+        "sourceFactIds"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "expires_gt_created",
+        "funnel_identity_monotonic"
+      ]
+    },
+    "FactView": {
+      "additionalProperties": false,
+      "properties": {
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "compactedSummaryRefs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "createdMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "facts": {
+          "items": {
+            "$ref": "#/$defs/AtomicFact"
+          },
+          "maxItems": 1024,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "historyComplete": {
+          "type": "boolean"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "fact-view/2"
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "viewRevision": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "viewRevision",
+        "createdMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "occurrenceId",
+        "lineageId",
+        "historyComplete",
+        "facts",
+        "compactedSummaryRefs"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "facts_sorted_unique",
+        "fact_observed_lte_view_created"
+      ]
+    },
+    "FeatureFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "correlationKey": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "frameSequence": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "feature-frame/2"
+        },
+        "sessionRef": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "sessionNum": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subSessionId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subSessionId",
+                "sessionNum"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceSnapshotId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "values": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "frameSequence",
+        "observedMonoMs",
+        "sourceSnapshotId",
+        "broadcastEpoch",
+        "streamEpoch",
+        "sessionRef",
+        "occurrenceId",
+        "lineageId",
+        "correlationKey",
+        "values"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "values_sorted_by_feature_id",
+        "identity_all_or_none"
+      ]
+    },
+    "LlmAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "attemptId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "backend": {
+          "enum": [
+            "authored",
+            "qwen_compiled"
+          ]
+        },
+        "bundleHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "bundleId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "capturedCompletion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capturedPrompt": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commitVerdict": {
+          "enum": [
+            "current",
+            "freshness_stale",
+            "not_reached"
+          ]
+        },
+        "componentGeneration": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "configGeneration": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "configuredModel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "latencyMetrics": {
+          "type": "object"
+        },
+        "planId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "promptHash": {
+          "oneOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "promptId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requestHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "requestId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "residencyEvidence": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resultHash": {
+          "oneOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "llm-attempt/2"
+        },
+        "terminalReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "terminalSource": {
+          "enum": [
+            "worker",
+            "actor_deadline",
+            "actor_cancellation"
+          ]
+        },
+        "textHash": {
+          "oneOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tokenUsage": {
+          "type": "object"
+        },
+        "transportOutcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled",
+            "timed_out",
+            "stale"
+          ]
+        },
+        "transportTimes": {
+          "type": "object"
+        },
+        "verifierVerdict": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "attemptId",
+        "requestId",
+        "planId",
+        "bundleId",
+        "bundleHash",
+        "promptId",
+        "promptHash",
+        "requestHash",
+        "backend",
+        "configuredModel",
+        "componentGeneration",
+        "configGeneration",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "residencyEvidence",
+        "transportOutcome",
+        "terminalSource",
+        "terminalReason",
+        "textHash",
+        "capturedPrompt",
+        "capturedCompletion",
+        "transportTimes",
+        "latencyMetrics",
+        "tokenUsage",
+        "verifierVerdict",
+        "commitVerdict",
+        "resultHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "latency_equations_match_milestones",
+        "capture_policy_projection"
+      ]
+    },
+    "NarrativeCommand": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "contextRevision": {
+              "additionalProperties": false,
+              "properties": {
+                "factViewRevision": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "timelineRevision": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "timelineRevision",
+                "factViewRevision"
+              ],
+              "type": "object"
+            },
+            "externalOrder": {
+              "additionalProperties": false,
+              "properties": {
+                "fanoutStreamSequence": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "firstSourceOrdinal": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "lastSourceOrdinal": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "fanoutStreamSequence",
+                "firstSourceOrdinal",
+                "lastSourceOrdinal"
+              ],
+              "type": "object"
+            },
+            "kind": {
+              "const": "APPLY_CONTEXT_BATCH"
+            },
+            "payload": {
+              "$ref": "#/$defs/ApplyContextBatch"
+            },
+            "token": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "CONFIG_UPDATE"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "diagnostics": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 32,
+                  "minItems": 0,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "ledger": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/ConfigLedger"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "valid",
+                "ledger",
+                "diagnostics"
+              ],
+              "type": "object"
+            },
+            "token": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "LONG_SILENCE_ELAPSED"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {},
+              "required": [],
+              "type": "object"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "deadlineMonoMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "generation": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "generation",
+                "deadlineMonoMs"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "VALIDITY_DEADLINE_ELAPSED"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {},
+              "required": [],
+              "type": "object"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "deadlineMonoMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "generation": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "generation",
+                "deadlineMonoMs"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "REALIZATION_SUCCEEDED"
+            },
+            "payload": {
+              "$ref": "#/$defs/RealizationResult"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "requestOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "requestId",
+                "requestOrdinal",
+                "dispatchGeneration"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "REALIZATION_FAILED"
+            },
+            "payload": {
+              "$ref": "#/$defs/RealizationResult"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "requestOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "requestId",
+                "requestOrdinal",
+                "dispatchGeneration"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "REALIZATION_DEADLINE_ELAPSED"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {},
+              "required": [],
+              "type": "object"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "deadlineMonoMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "requestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "requestOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "requestId",
+                "requestOrdinal",
+                "dispatchGeneration",
+                "deadlineMonoMs"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "PLAYBACK_ACCEPTED"
+            },
+            "payload": {
+              "$ref": "#/$defs/TtsCallback"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "backendGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "utteranceId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "utteranceId",
+                "utteranceOrdinal",
+                "backendGeneration",
+                "dispatchGeneration"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "SPEECH_COMPLETED"
+            },
+            "payload": {
+              "$ref": "#/$defs/TtsCallback"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "backendGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "utteranceId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "utteranceId",
+                "utteranceOrdinal",
+                "backendGeneration",
+                "dispatchGeneration"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "SPEECH_INTERRUPTED"
+            },
+            "payload": {
+              "$ref": "#/$defs/TtsCallback"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "backendGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "utteranceId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "utteranceId",
+                "utteranceOrdinal",
+                "backendGeneration",
+                "dispatchGeneration"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "SPEECH_FAILED"
+            },
+            "payload": {
+              "$ref": "#/$defs/TtsCallback"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "backendGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "utteranceId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "utteranceId",
+                "utteranceOrdinal",
+                "backendGeneration",
+                "dispatchGeneration"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "SPEECH_DEADLINE_ELAPSED"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {},
+              "required": [],
+              "type": "object"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "backendGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "deadlineMonoMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "dispatchGeneration": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "stage": {
+                  "enum": [
+                    "start",
+                    "playback",
+                    "stop"
+                  ]
+                },
+                "utteranceId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "utteranceId",
+                "utteranceOrdinal",
+                "backendGeneration",
+                "dispatchGeneration",
+                "stage",
+                "deadlineMonoMs"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "MANUAL_SPEAK_REQUEST"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "language": {
+                  "const": "en"
+                },
+                "text": {
+                  "maxLength": 400,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "text",
+                "language"
+              ],
+              "type": "object"
+            },
+            "token": {
+              "additionalProperties": false,
+              "properties": {
+                "admissionOrdinal": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "manualRequestId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "manualRequestId",
+                "admissionOrdinal"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "TAPE_HEALTH_CHANGED"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "affectedDetectorIds": {
+                  "items": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  },
+                  "maxItems": 128,
+                  "minItems": 0,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "firstLostSequence": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "lastLostSequence": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "recorderGeneration": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "status": {
+                  "enum": [
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "recorderGeneration",
+                "status",
+                "affectedDetectorIds",
+                "firstLostSequence",
+                "lastLostSequence"
+              ],
+              "type": "object"
+            },
+            "token": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "COMPONENT_HEALTH_CHANGED"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "component": {
+                  "enum": [
+                    "llm",
+                    "tts"
+                  ]
+                },
+                "generation": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "component",
+                "generation",
+                "status",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "token": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "additionalProperties": false,
+              "properties": {
+                "factViewRevision": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "timelineRevision": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "timelineRevision",
+                "factViewRevision"
+              ],
+              "type": "object"
+            },
+            "externalOrder": {
+              "additionalProperties": false,
+              "properties": {
+                "fanoutStreamSequence": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "firstSourceOrdinal": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "lastSourceOrdinal": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "fanoutStreamSequence",
+                "firstSourceOrdinal",
+                "lastSourceOrdinal"
+              ],
+              "type": "object"
+            },
+            "kind": {
+              "const": "MAILBOX_RECOVERY"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "historyComplete": {
+                  "const": false
+                },
+                "latestFactView": {
+                  "$ref": "#/$defs/FactView"
+                },
+                "latestTimeline": {
+                  "$ref": "#/$defs/TimelineSnapshot"
+                },
+                "lossFirstMailboxSequence": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "lossLastMailboxSequence": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "safetyEffects": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 64,
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "latestTimeline",
+                "latestFactView",
+                "lossFirstMailboxSequence",
+                "lossLastMailboxSequence",
+                "historyComplete",
+                "safetyEffects"
+              ],
+              "type": "object"
+            },
+            "token": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "contextRevision": {
+              "type": "null"
+            },
+            "externalOrder": {
+              "type": "null"
+            },
+            "kind": {
+              "const": "SHUTDOWN"
+            },
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "reason": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "requestedMonoMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "reason",
+                "requestedMonoMs"
+              ],
+              "type": "object"
+            },
+            "token": {
+              "type": "null"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "commandId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "contextRevision": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enqueuedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "externalOrder": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "enum": [
+            "APPLY_CONTEXT_BATCH",
+            "CONFIG_UPDATE",
+            "LONG_SILENCE_ELAPSED",
+            "VALIDITY_DEADLINE_ELAPSED",
+            "REALIZATION_SUCCEEDED",
+            "REALIZATION_FAILED",
+            "REALIZATION_DEADLINE_ELAPSED",
+            "PLAYBACK_ACCEPTED",
+            "SPEECH_COMPLETED",
+            "SPEECH_INTERRUPTED",
+            "SPEECH_FAILED",
+            "SPEECH_DEADLINE_ELAPSED",
+            "MANUAL_SPEAK_REQUEST",
+            "TAPE_HEALTH_CHANGED",
+            "COMPONENT_HEALTH_CHANGED",
+            "MAILBOX_RECOVERY",
+            "SHUTDOWN"
+          ]
+        },
+        "mailboxSequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "payload": {
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": "narrative-command/2"
+        },
+        "token": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "commandId",
+        "kind",
+        "enqueuedMonoMs",
+        "mailboxSequence",
+        "externalOrder",
+        "contextRevision",
+        "token",
+        "payload"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "context_fields_match_payload",
+        "mailbox_sequence_total_order"
+      ]
+    },
+    "NarrativeEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "correlationKey": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "deliveryClass": {
+          "enum": [
+            "ordinary",
+            "protected"
+          ]
+        },
+        "eventId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "factIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "factViewRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "funnel": {
+          "additionalProperties": false,
+          "properties": {
+            "candidateId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "detectorObservationId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "eventId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "materialRevision": {
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "opportunityId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "planId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sourceClass": {
+              "enum": [
+                "detector",
+                "direct",
+                "lifecycle",
+                "silence",
+                "successor"
+              ]
+            },
+            "tapeChannel": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "utteranceId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "sourceClass",
+            "candidateId",
+            "detectorObservationId",
+            "eventId",
+            "materialRevision",
+            "opportunityId",
+            "planId",
+            "utteranceId",
+            "tapeChannel"
+          ],
+          "type": "object"
+        },
+        "kind": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "materialRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurredMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payload": {
+          "maxProperties": 32,
+          "type": "object"
+        },
+        "phase": {
+          "enum": [
+            "started",
+            "updated",
+            "ended",
+            "result",
+            "impulse"
+          ]
+        },
+        "schemaVersion": {
+          "const": "narrative-event/2"
+        },
+        "sessionRef": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "sessionNum": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subSessionId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subSessionId",
+                "sessionNum"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceEnvelope": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceOrder": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tapeChannel": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "taxonomyHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "eventId",
+        "kind",
+        "phase",
+        "deliveryClass",
+        "sourceEnvelope",
+        "sourceOrder",
+        "occurredMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "sessionRef",
+        "occurrenceId",
+        "lineageId",
+        "correlationKey",
+        "factIds",
+        "factViewRevision",
+        "materialRevision",
+        "confidence",
+        "tapeChannel",
+        "funnel",
+        "taxonomyHash",
+        "payload"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "delivery_class_derived",
+        "facts_resolve_same_view_identity"
+      ]
+    },
+    "PromptOptions": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "allowClauseReorder": {
+              "const": false
+            },
+            "freedom": {
+              "const": "tight"
+            },
+            "maxSentences": {
+              "const": 1
+            },
+            "optionalClaimLimit": {
+              "const": 0
+            },
+            "patternChoice": {
+              "const": "fixed"
+            },
+            "temperature": {
+              "const": 0.15
+            },
+            "topP": {
+              "const": 0.75
+            }
+          }
+        },
+        {
+          "properties": {
+            "freedom": {
+              "const": "balanced"
+            },
+            "maxSentences": {
+              "const": 1
+            },
+            "optionalClaimLimit": {
+              "maximum": 1
+            },
+            "patternChoice": {
+              "const": "family_pool"
+            },
+            "temperature": {
+              "const": 0.35
+            },
+            "topP": {
+              "const": 0.85
+            }
+          }
+        },
+        {
+          "properties": {
+            "freedom": {
+              "const": "loose"
+            },
+            "maxSentences": {
+              "const": 2
+            },
+            "patternChoice": {
+              "const": "family_pool"
+            },
+            "temperature": {
+              "const": 0.55
+            },
+            "topP": {
+              "const": 0.9
+            }
+          }
+        }
+      ],
+      "properties": {
+        "allowClauseReorder": {
+          "type": "boolean"
+        },
+        "freedom": {
+          "enum": [
+            "tight",
+            "balanced",
+            "loose"
+          ]
+        },
+        "maxSentences": {
+          "maximum": 2,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "optionalClaimLimit": {
+          "maximum": 2,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "patternChoice": {
+          "enum": [
+            "fixed",
+            "family_pool"
+          ]
+        },
+        "schemaVersion": {
+          "const": "prompt-options/2"
+        },
+        "seed": {
+          "maximum": 18446744073709551615,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "temperature": {
+          "maximum": 2,
+          "minimum": 0,
+          "type": "number"
+        },
+        "topP": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "type": "number"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "freedom",
+        "patternChoice",
+        "optionalClaimLimit",
+        "allowClauseReorder",
+        "maxSentences",
+        "temperature",
+        "topP",
+        "seed"
+      ],
+      "type": "object"
+    },
+    "RealizationBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "actorBindings": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 16,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "beatPlan": {
+          "$ref": "#/$defs/BeatPlan"
+        },
+        "bundleHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "bundleId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "factBindingHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "factBindings": {
+          "items": {
+            "$ref": "#/$defs/AtomicFact"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "schemaVersion": {
+          "const": "realization-bundle/2"
+        },
+        "surfaceLexicon": {
+          "type": "object"
+        },
+        "surfaceLexiconHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "bundleId",
+        "beatPlan",
+        "factBindings",
+        "actorBindings",
+        "surfaceLexicon",
+        "factBindingHash",
+        "surfaceLexiconHash",
+        "bundleHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "binding_ids_equal_selected_facts",
+        "canonical_hashes_match"
+      ]
+    },
+    "RealizationRequest": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "backend": {
+              "const": "authored"
+            },
+            "compiledPrompt": {
+              "type": "null"
+            },
+            "componentGeneration": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "backend": {
+              "const": "qwen_compiled"
+            },
+            "compiledPrompt": {
+              "$ref": "#/$defs/CompiledPrompt"
+            },
+            "componentGeneration": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "backend": {
+          "enum": [
+            "authored",
+            "qwen_compiled"
+          ]
+        },
+        "backendRequest": {
+          "type": "object"
+        },
+        "bundleHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "bundleId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "capturePolicy": {
+          "type": "object"
+        },
+        "compiledPrompt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CompiledPrompt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "componentGeneration": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "configGeneration": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "cycleAttemptOrdinal": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "deadlineMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dispatchGeneration": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "dispatchedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "planId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "planningCycleId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "requestHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "requestId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "requestOrdinal": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": "realization-request/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "requestOrdinal",
+        "dispatchGeneration",
+        "backend",
+        "planId",
+        "planningCycleId",
+        "cycleAttemptOrdinal",
+        "bundleId",
+        "bundleHash",
+        "compiledPrompt",
+        "componentGeneration",
+        "configGeneration",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "backendRequest",
+        "capturePolicy",
+        "dispatchedMonoMs",
+        "deadlineMonoMs",
+        "requestHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "deadline_gt_dispatched",
+        "backend_request_discriminated",
+        "canonical_hash_matches"
+      ]
+    },
+    "RealizationResult": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "failureReason": {
+              "type": "null"
+            },
+            "outcome": {
+              "const": "succeeded"
+            },
+            "text": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "textHash": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "properties": {
+            "failureReason": {
+              "enum": [
+                "realization_timeout",
+                "realization_transport",
+                "realization_invalid_response",
+                "realization_output_oversize"
+              ]
+            },
+            "outcome": {
+              "const": "failed"
+            },
+            "text": {
+              "type": "null"
+            },
+            "textHash": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "failureReason": {
+              "const": "realization_cancelled"
+            },
+            "outcome": {
+              "const": "cancelled"
+            },
+            "text": {
+              "type": "null"
+            },
+            "textHash": {
+              "type": "null"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "backend": {
+          "enum": [
+            "authored",
+            "qwen_compiled"
+          ]
+        },
+        "completedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "completionTokens": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "dispatchGeneration": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "failureReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "finishReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "firstContentMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "modelReported": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "promptTokens": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "requestId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "requestOrdinal": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "responseStartedMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "resultHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "resultId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "realization-result/2"
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "textHash": {
+          "oneOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "totalTokens": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "transportStartedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "usageSource": {
+          "enum": [
+            "server",
+            "unavailable"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "resultId",
+        "requestId",
+        "requestOrdinal",
+        "dispatchGeneration",
+        "backend",
+        "outcome",
+        "text",
+        "textHash",
+        "failureReason",
+        "modelReported",
+        "transportStartedMonoMs",
+        "responseStartedMonoMs",
+        "firstContentMonoMs",
+        "completedMonoMs",
+        "promptTokens",
+        "completionTokens",
+        "totalTokens",
+        "usageSource",
+        "finishReason",
+        "resultHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "monotonic_time_order",
+        "server_usage_all_or_none_and_sums",
+        "canonical_hash_matches"
+      ]
+    },
+    "SessionPlan": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "entries": {
+              "minItems": 1
+            },
+            "reason": {
+              "type": "null"
+            },
+            "valid": {
+              "const": true
+            }
+          }
+        },
+        {
+          "properties": {
+            "entries": {
+              "maxItems": 0
+            },
+            "reason": {
+              "const": "session_plan_conflict"
+            },
+            "valid": {
+              "const": false
+            }
+          }
+        }
+      ],
+      "properties": {
+        "capturedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "entries": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "sessionRef": {
+                "additionalProperties": false,
+                "properties": {
+                  "sessionNum": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "subSessionId": {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "subSessionId",
+                  "sessionNum"
+                ],
+                "type": "object"
+              },
+              "stage": {
+                "enum": [
+                  "practice",
+                  "qualifying",
+                  "race"
+                ]
+              }
+            },
+            "required": [
+              "sessionRef",
+              "stage"
+            ],
+            "type": "object"
+          },
+          "maxItems": 3,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "planRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schemaVersion": {
+          "const": "session-plan/2"
+        },
+        "subSessionId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unsupportedEntries": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "externalType": {
+                "type": "string"
+              },
+              "sessionNum": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "sessionNum",
+              "externalType"
+            ],
+            "type": "object"
+          },
+          "maxItems": 16,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "unsupportedOverflowCount": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "valid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "planRevision",
+        "capturedMonoMs",
+        "subSessionId",
+        "valid",
+        "reason",
+        "entries",
+        "unsupportedEntries",
+        "unsupportedOverflowCount"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "valid_shape",
+        "canonical_stage_order",
+        "immutable_prefix_per_run"
+      ]
+    },
+    "SpeechExposure": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "episodeId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "funnel": {
+              "additionalProperties": false,
+              "properties": {
+                "candidateId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "detectorObservationId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "eventId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "materialRevision": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "opportunityId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "planId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sourceClass": {
+                  "enum": [
+                    "detector",
+                    "direct",
+                    "lifecycle",
+                    "silence",
+                    "successor"
+                  ]
+                },
+                "tapeChannel": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "sourceClass",
+                "candidateId",
+                "detectorObservationId",
+                "eventId",
+                "materialRevision",
+                "opportunityId",
+                "planId",
+                "utteranceId",
+                "tapeChannel"
+              ],
+              "type": "object"
+            },
+            "planId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "sourceKind": {
+              "const": "narrative"
+            }
+          }
+        },
+        {
+          "properties": {
+            "episodeId": {
+              "type": "null"
+            },
+            "exposureWeight": {
+              "const": 0
+            },
+            "funnel": {
+              "type": "null"
+            },
+            "manualRequestId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "opportunityConsumed": {
+              "const": false
+            },
+            "opportunityId": {
+              "type": "null"
+            },
+            "planId": {
+              "type": "null"
+            },
+            "sourceKind": {
+              "const": "manual"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "acceptedMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "backend": {
+          "enum": [
+            "sapi",
+            "espeak",
+            "supertonic"
+          ]
+        },
+        "backendGeneration": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "callbackIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dispatchedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "duckStatus": {
+          "enum": [
+            "not_configured",
+            "applied",
+            "unavailable",
+            "restore_unconfirmed"
+          ]
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "episodeId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exposureWeight": {
+          "enum": [
+            0,
+            1
+          ]
+        },
+        "funnel": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "candidateId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "detectorObservationId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "eventId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "materialRevision": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "opportunityId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "planId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sourceClass": {
+                  "enum": [
+                    "detector",
+                    "direct",
+                    "lifecycle",
+                    "silence",
+                    "successor"
+                  ]
+                },
+                "tapeChannel": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "sourceClass",
+                "candidateId",
+                "detectorObservationId",
+                "eventId",
+                "materialRevision",
+                "opportunityId",
+                "planId",
+                "utteranceId",
+                "tapeChannel"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "manualRequestId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "opportunityConsumed": {
+          "type": "boolean"
+        },
+        "opportunityId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "planId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requestHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "speech-exposure/2"
+        },
+        "sourceKind": {
+          "enum": [
+            "narrative",
+            "manual"
+          ]
+        },
+        "terminalMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "terminalReason": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "textHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "utteranceId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "utteranceId",
+        "sourceKind",
+        "planId",
+        "opportunityId",
+        "episodeId",
+        "manualRequestId",
+        "funnel",
+        "requestHash",
+        "textHash",
+        "backend",
+        "backendGeneration",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "dispatchedMonoMs",
+        "acceptedMonoMs",
+        "terminalMonoMs",
+        "terminalReason",
+        "opportunityConsumed",
+        "exposureWeight",
+        "duckStatus",
+        "callbackIds"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "accepted_consumption_weight_contract",
+        "terminal_gte_dispatch",
+        "callback_ids_ordered"
+      ]
+    },
+    "TapeManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "appVersion": {
+          "type": "string"
+        },
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "catalogHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "catalogVersion": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "desiredConfigGeneration": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "desiredConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "detectorParameterSnapshots": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 128,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "effectiveConfigProjection": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "enabledPurposeChannels": {
+          "items": {
+            "enum": [
+              "flow",
+              "llm_eval",
+              "detector_tuning"
+            ]
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "fileOrdinal": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "gitRevision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "historyComplete": {
+          "type": "boolean"
+        },
+        "openedAtUtc": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "previousFileHash": {
+          "oneOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "processInstanceId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "processMonotonicOriginMs": {
+          "const": 0
+        },
+        "processStartedAtUtc": {
+          "type": "string"
+        },
+        "recordType": {
+          "const": "manifest"
+        },
+        "redactionPolicy": {
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": "narrative-tape-manifest/2"
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "recordType",
+        "processInstanceId",
+        "processStartedAtUtc",
+        "processMonotonicOriginMs",
+        "appVersion",
+        "gitRevision",
+        "platform",
+        "broadcastEpoch",
+        "streamEpoch",
+        "fileOrdinal",
+        "openedAtUtc",
+        "catalogVersion",
+        "catalogHash",
+        "desiredConfigGeneration",
+        "desiredConfigHash",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "effectiveConfigProjection",
+        "enabledPurposeChannels",
+        "redactionPolicy",
+        "historyComplete",
+        "detectorParameterSnapshots",
+        "previousFileHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "file_scope_single_stream",
+        "parameter_snapshots_sorted"
+      ]
+    },
+    "TapeRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "correlationIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "payload": {
+          "type": "object"
+        },
+        "payloadSchemaVersion": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "processInstanceId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "purposeChannel": {
+          "enum": [
+            "flow",
+            "llm_eval",
+            "detector_tuning"
+          ]
+        },
+        "recordId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "recordPriority": {
+          "enum": [
+            "sample",
+            "normal",
+            "critical"
+          ]
+        },
+        "recordType": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "recordedAtUtc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recordedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reducerSequence": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "schemaVersion": {
+          "const": "narrative-tape-record/2"
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "tapeChannel": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "recordId",
+        "recordType",
+        "processInstanceId",
+        "broadcastEpoch",
+        "streamEpoch",
+        "reducerSequence",
+        "recordedMonoMs",
+        "recordedAtUtc",
+        "purposeChannel",
+        "recordPriority",
+        "tapeChannel",
+        "correlationIds",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "payloadSchemaVersion",
+        "payload"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "priority_derived",
+        "payload_matches_record_type",
+        "config_pair_coherent"
+      ]
+    },
+    "TimelineSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "broadcastEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "historyComplete": {
+          "type": "boolean"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "narrativeRunActive": {
+          "type": "boolean"
+        },
+        "obsState": {
+          "enum": [
+            "inactive",
+            "active",
+            "unknown"
+          ]
+        },
+        "observedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "timeline-snapshot/2"
+        },
+        "sessionPlanRevision": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "sessionRef": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "sessionNum": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "subSessionId": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subSessionId",
+                "sessionNum"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stage": {
+          "oneOf": [
+            {
+              "enum": [
+                "practice",
+                "qualifying",
+                "race"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "timelineRevision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "transitionReasons": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 8,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "timelineRevision",
+        "observedMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "narrativeRunActive",
+        "obsState",
+        "sessionRef",
+        "stage",
+        "sessionPlanRevision",
+        "occurrenceId",
+        "lineageId",
+        "historyComplete",
+        "transitionReasons"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "session_identity_all_or_none",
+        "transition_reason_canonical_order"
+      ]
+    },
+    "TtsCallback": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "detailCode": {
+              "type": "null"
+            },
+            "kind": {
+              "enum": [
+                "playback_accepted",
+                "completed"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "detailCode": {
+              "const": "backend_cancelled"
+            },
+            "kind": {
+              "const": "interrupted"
+            }
+          }
+        },
+        {
+          "properties": {
+            "detailCode": {
+              "enum": [
+                "backend_rejected",
+                "backend_process_exit",
+                "backend_audio_error",
+                "backend_unavailable"
+              ]
+            },
+            "kind": {
+              "const": "failed"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "backend": {
+          "enum": [
+            "sapi",
+            "espeak",
+            "supertonic"
+          ]
+        },
+        "backendGeneration": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "callbackId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "detailCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dispatchGeneration": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "playback_accepted",
+            "completed",
+            "interrupted",
+            "failed"
+          ]
+        },
+        "observedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": "tts-callback/2"
+        },
+        "utteranceId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "utteranceOrdinal": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "workerSequence": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "callbackId",
+        "kind",
+        "utteranceId",
+        "utteranceOrdinal",
+        "backend",
+        "backendGeneration",
+        "dispatchGeneration",
+        "workerSequence",
+        "observedMonoMs",
+        "detailCode"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "callback_id_matches_sequence",
+        "worker_sequence_protocol"
+      ]
+    },
+    "TtsUtterance": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "episodeId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "funnel": {
+              "additionalProperties": false,
+              "properties": {
+                "candidateId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "detectorObservationId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "eventId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "materialRevision": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "opportunityId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "planId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sourceClass": {
+                  "enum": [
+                    "detector",
+                    "direct",
+                    "lifecycle",
+                    "silence",
+                    "successor"
+                  ]
+                },
+                "tapeChannel": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "sourceClass",
+                "candidateId",
+                "detectorObservationId",
+                "eventId",
+                "materialRevision",
+                "opportunityId",
+                "planId",
+                "utteranceId",
+                "tapeChannel"
+              ],
+              "type": "object"
+            },
+            "manualRequestId": {
+              "type": "null"
+            },
+            "planId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "sourceKind": {
+              "const": "narrative"
+            }
+          }
+        },
+        {
+          "properties": {
+            "episodeId": {
+              "type": "null"
+            },
+            "funnel": {
+              "type": "null"
+            },
+            "manualRequestId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "opportunityId": {
+              "type": "null"
+            },
+            "planId": {
+              "type": "null"
+            },
+            "sourceKind": {
+              "const": "manual"
+            },
+            "text": {
+              "maxLength": 400
+            }
+          }
+        }
+      ],
+      "properties": {
+        "audioDevice": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "backend": {
+          "enum": [
+            "sapi",
+            "espeak",
+            "supertonic"
+          ]
+        },
+        "backendGeneration": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "configApplySequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "configGeneration": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dispatchedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "duckFadeMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "duckInput": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duckRatio": {
+          "type": "number"
+        },
+        "effectiveConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "episodeId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "funnel": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "candidateId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "detectorObservationId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "eventId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "materialRevision": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "opportunityId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "planId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sourceClass": {
+                  "enum": [
+                    "detector",
+                    "direct",
+                    "lifecycle",
+                    "silence",
+                    "successor"
+                  ]
+                },
+                "tapeChannel": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                "utteranceId": {
+                  "oneOf": [
+                    {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "sourceClass",
+                "candidateId",
+                "detectorObservationId",
+                "eventId",
+                "materialRevision",
+                "opportunityId",
+                "planId",
+                "utteranceId",
+                "tapeChannel"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "language": {
+          "const": "en"
+        },
+        "manualRequestId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxSeconds": {
+          "type": "number"
+        },
+        "opportunityId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "planId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rate": {
+          "type": "number"
+        },
+        "requestHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "tts-utterance/2"
+        },
+        "sourceKind": {
+          "enum": [
+            "narrative",
+            "manual"
+          ]
+        },
+        "steps": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "text": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "textHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "utteranceId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "utteranceOrdinal": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "voice": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "utteranceId",
+        "utteranceOrdinal",
+        "sourceKind",
+        "funnel",
+        "planId",
+        "opportunityId",
+        "episodeId",
+        "manualRequestId",
+        "text",
+        "textHash",
+        "language",
+        "backend",
+        "backendGeneration",
+        "configGeneration",
+        "effectiveConfigHash",
+        "configApplySequence",
+        "voice",
+        "rate",
+        "steps",
+        "audioDevice",
+        "duckInput",
+        "duckRatio",
+        "duckFadeMs",
+        "maxSeconds",
+        "dispatchedMonoMs",
+        "requestHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "backend_steps_contract",
+        "funnel_identity_monotonic",
+        "canonical_hashes_match"
+      ]
+    }
+  },
+  "$id": "https://irswitch.local/schema/v2/dto-contracts.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SessionPlan"
+    },
+    {
+      "$ref": "#/$defs/TimelineSnapshot"
+    },
+    {
+      "$ref": "#/$defs/FeatureFrame"
+    },
+    {
+      "$ref": "#/$defs/DetectorObservation"
+    },
+    {
+      "$ref": "#/$defs/EventCandidateTap"
+    },
+    {
+      "$ref": "#/$defs/NarrativeEvent"
+    },
+    {
+      "$ref": "#/$defs/AtomicFact"
+    },
+    {
+      "$ref": "#/$defs/FactView"
+    },
+    {
+      "$ref": "#/$defs/Episode"
+    },
+    {
+      "$ref": "#/$defs/EventOpportunity"
+    },
+    {
+      "$ref": "#/$defs/PromptOptions"
+    },
+    {
+      "$ref": "#/$defs/BeatPlan"
+    },
+    {
+      "$ref": "#/$defs/RealizationBundle"
+    },
+    {
+      "$ref": "#/$defs/CompiledPrompt"
+    },
+    {
+      "$ref": "#/$defs/RealizationRequest"
+    },
+    {
+      "$ref": "#/$defs/RealizationResult"
+    },
+    {
+      "$ref": "#/$defs/LlmAttempt"
+    },
+    {
+      "$ref": "#/$defs/TtsUtterance"
+    },
+    {
+      "$ref": "#/$defs/TtsCallback"
+    },
+    {
+      "$ref": "#/$defs/SpeechExposure"
+    },
+    {
+      "$ref": "#/$defs/ConfigLedger"
+    },
+    {
+      "$ref": "#/$defs/TapeManifest"
+    },
+    {
+      "$ref": "#/$defs/TapeRecord"
+    },
+    {
+      "$ref": "#/$defs/ApplyContextBatch"
+    },
+    {
+      "$ref": "#/$defs/NarrativeCommand"
+    }
+  ],
+  "title": "iRSwitch v2 frozen narrative DTO contracts"
+}

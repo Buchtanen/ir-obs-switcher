@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "dto-schema-goldens/1",
+  "valid": [
+    {
+      "id": "prompt-tight",
+      "value": {"schemaVersion":"prompt-options/2","freedom":"tight","patternChoice":"fixed","optionalClaimLimit":0,"allowClauseReorder":false,"maxSentences":1,"temperature":0.15,"topP":0.75,"seed":0}
+    },
+    {
+      "id": "prompt-balanced",
+      "value": {"schemaVersion":"prompt-options/2","freedom":"balanced","patternChoice":"family_pool","optionalClaimLimit":1,"allowClauseReorder":true,"maxSentences":1,"temperature":0.35,"topP":0.85,"seed":18446744073709551615}
+    },
+    {
+      "id": "tts-accepted",
+      "value": {"schemaVersion":"tts-callback/2","callbackId":"ttscb:utt:1:1","kind":"playback_accepted","utteranceId":"utt:1","utteranceOrdinal":1,"backend":"supertonic","backendGeneration":4,"dispatchGeneration":7,"workerSequence":1,"observedMonoMs":1000,"detailCode":null}
+    },
+    {
+      "id": "shutdown-command",
+      "value": {"schemaVersion":"narrative-command/2","commandId":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000}}
+    }
+  ],
+  "invalid": [
+    {
+      "id": "prompt-tight-widened",
+      "value": {"schemaVersion":"prompt-options/2","freedom":"tight","patternChoice":"family_pool","optionalClaimLimit":1,"allowClauseReorder":true,"maxSentences":2,"temperature":0.55,"topP":0.9,"seed":0}
+    },
+    {
+      "id": "tts-accepted-with-error-detail",
+      "value": {"schemaVersion":"tts-callback/2","callbackId":"ttscb:utt:1:1","kind":"playback_accepted","utteranceId":"utt:1","utteranceOrdinal":1,"backend":"supertonic","backendGeneration":4,"dispatchGeneration":7,"workerSequence":1,"observedMonoMs":1000,"detailCode":"backend_audio_error"}
+    },
+    {
+      "id": "snake-case-command",
+      "value": {"schemaVersion":"narrative-command/2","command_id":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000}}
+    },
+    {
+      "id": "unknown-command-payload-field",
+      "value": {"schemaVersion":"narrative-command/2","commandId":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000,"retry":true}}
+    }
+  ]
+}

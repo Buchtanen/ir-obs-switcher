@@ -39,16 +39,37 @@ The single speech lane has exactly these states:
 Every mailbox item is immutable and contains:
 
 ```text
-schema_version = narrative-command/2
-command_id: stable unique ID
+schemaVersion = narrative-command/2
+commandId: stable unique ID
 kind: registry enum
-enqueued_monotonic_ms: nonnegative integer
-mailbox_sequence: nonnegative admission ordinal assigned atomically by the mailbox
-external_order: {fanout_stream_sequence, first_source_ordinal?, last_source_ordinal?} or null
-context_revision: {timeline_revision, fact_view_revision} or null
+enqueuedMonoMs: nonnegative integer
+mailboxSequence: nonnegative admission ordinal assigned atomically by the mailbox
+externalOrder: {fanoutStreamSequence, firstSourceOrdinal?, lastSourceOrdinal?} or null
+contextRevision: {timelineRevision, factViewRevision} or null
 token: worker/deadline/manual token or null
 payload: kind-specific bounded object
 ```
+
+These are the exact JSON/tape names. Python may map them to snake_case internally under the global lossless mapping rule; snake_case is never accepted on the wire or replay input.
+
+The command discriminator fixes `token`, `payload`, `externalOrder` and `contextRevision` exactly:
+
+| Kind(s) | `token` | `payload` | Context/order fields |
+| --- | --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | null | `{timeline,factView,events[0..64]}` | both required non-null and must name the payload revisions/publication range |
+| `CONFIG_UPDATE` | null | `{valid,ledger?,diagnostics[0..32]}`; ledger required iff valid | both null |
+| `LONG_SILENCE_ELAPSED`, `VALIDITY_DEADLINE_ELAPSED` | `{generation,deadlineMonoMs}` | `{}` | both null |
+| `REALIZATION_SUCCEEDED`, `REALIZATION_FAILED` | `{requestId,requestOrdinal,dispatchGeneration}` | exact `realization-result/2` | both null |
+| `REALIZATION_DEADLINE_ELAPSED` | `{requestId,requestOrdinal,dispatchGeneration,deadlineMonoMs}` | `{}` | both null |
+| `PLAYBACK_ACCEPTED`, `SPEECH_COMPLETED`, `SPEECH_INTERRUPTED`, `SPEECH_FAILED` | `{utteranceId,utteranceOrdinal,backendGeneration,dispatchGeneration}` | exact `tts-callback/2` | both null |
+| `SPEECH_DEADLINE_ELAPSED` | prior TTS token plus `{stage,deadlineMonoMs}`, stage `start|playback|stop` | `{}` | both null |
+| `MANUAL_SPEAK_REQUEST` | `{manualRequestId,admissionOrdinal}` | `{text,language="en"}`; text 1..400 normalized/control-free | both null |
+| `TAPE_HEALTH_CHANGED` | null | `{recorderGeneration,status,affectedDetectorIds[0..128],firstLostSequence?,lastLostSequence?}` | both null; loss endpoints both present or both null |
+| `COMPONENT_HEALTH_CHANGED` | null | `{component,generation,status,reason?}` | both null |
+| `MAILBOX_RECOVERY` | null | `{latestTimeline,latestFactView,lossFirstMailboxSequence,lossLastMailboxSequence,historyComplete=false,safetyEffects[1..64]}` | both required non-null and name the latest projections plus covered loss range |
+| `SHUTDOWN` | null | `{reason,requestedMonoMs}` | both null |
+
+Diagnostics are exact bounded `{code,key?,messageHash?}` objects; they contain no exception/config value. Tape status is `ready|degraded|unavailable`; component is `llm|tts`, component status is `ready|degraded|unavailable`. A health loss range is inclusive and ordered. `safetyEffects` are closed `{kind,identity,payloadHash}` records whose kind is one of the protected command kinds absorbed by the recovery barrier; they are replay evidence, not nested commands. Unknown payload/token fields are rejected. The JSON Schema owns the same discriminator matrix; adding a command or changing a payload requires `narrative-command/3`.
 
 Every context batch carries `external_order`; worker/timer/API commands do not. Its fanout sequence is positive. A batch with events carries the inclusive first/last per-publication ordinals represented by that part; a pure timeline/fact batch has both ordinals null. Split parts share their publication fanout sequence and have increasing disjoint ordinal ranges. `context_revision` exists only for context/recovery commands and always names both projections; neither scalar substitutes for the other. `mailbox_sequence` totally orders successful concurrent admissions and is preserved when protected/ordinary capacity partitions are used. On dequeue the actor assigns the next `reducer_sequence` in mailbox-sequence order. That recorded reducer sequence—not wall-clock equality or task scheduling—is replay authority.
 
