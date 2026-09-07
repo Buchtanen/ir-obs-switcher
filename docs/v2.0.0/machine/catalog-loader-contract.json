@@ -1,0 +1,58 @@
+{
+  "artifacts": [
+    {
+      "file": "freeze-registry.json",
+      "id": "freeze_registry",
+      "sha256": "sha256:7420930a571471ea89b409418bfdb6678522af648d251619fa4802b5dced7d52"
+    },
+    {
+      "file": "beat-catalog.json",
+      "id": "beat_catalog",
+      "sha256": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0"
+    },
+    {
+      "file": "successor-graph.json",
+      "id": "successor_graph",
+      "sha256": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+    },
+    {
+      "file": "detector-catalog.json",
+      "id": "detector_catalog",
+      "sha256": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd"
+    }
+  ],
+  "bundleSchemaVersion": "narrative-catalog/2",
+  "counts": {
+    "beats": 64,
+    "detectors": 3,
+    "events": 60,
+    "lifecycleEvents": 5,
+    "realizationFamilies": 37,
+    "storyDefinitions": 11,
+    "successorEdges": 50
+  },
+  "failure": {
+    "commentaryEnabled": false,
+    "mainLoopRaises": false,
+    "partialCatalogPublished": false,
+    "reason": "catalog_invalid",
+    "runtimeStatus": "disabled"
+  },
+  "mandatoryChecks": [
+    "closed_schema_and_bounds",
+    "unique_casefolded_ids",
+    "registry_referential_integrity",
+    "event_to_beat_to_story_to_family_coverage",
+    "all_beats_reachable_from_declared_triggers",
+    "no_unintended_dead_end",
+    "scc_has_exit_and_progress_barrier",
+    "finite_guard_domain_is_satisfiable",
+    "detector_ranges_and_cross_fields",
+    "artifact_hashes_match",
+    "no_executable_code_or_factual_prose",
+    "no_sequence_graph_v1_fallback"
+  ],
+  "registryVersion": "v2-freeze-registry/1",
+  "schemaVersion": "catalog-loader-contract/2",
+  "sourceBaseline": "master@0ce75d4"
+}

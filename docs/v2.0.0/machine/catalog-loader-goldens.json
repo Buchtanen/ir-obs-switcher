@@ -1,0 +1,108 @@
+{
+  "invalid": [
+    {
+      "errorContains": "duplicate/case-colliding beat ID",
+      "expectedOutcome": "commentary_disabled",
+      "id": "duplicate_beat_id",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "duplicate/case-colliding realization family ID",
+      "expectedOutcome": "commentary_disabled",
+      "id": "case_colliding_family_id",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "unknown beat policy",
+      "expectedOutcome": "commentary_disabled",
+      "id": "unknown_policy",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "unknown realization family",
+      "expectedOutcome": "commentary_disabled",
+      "id": "unknown_family",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "unknown tape channel",
+      "expectedOutcome": "commentary_disabled",
+      "id": "unknown_channel",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "unknown fact predicate",
+      "expectedOutcome": "commentary_disabled",
+      "id": "unknown_predicate",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "beat schema rejected",
+      "expectedOutcome": "commentary_disabled",
+      "id": "unreachable_beat",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "unknown edge beat",
+      "expectedOutcome": "commentary_disabled",
+      "id": "dangling_edge",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "cyclic component without bounded exit proof",
+      "expectedOutcome": "commentary_disabled",
+      "id": "self_loop_without_barrier",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "beat catalog hash differs",
+      "expectedOutcome": "commentary_disabled",
+      "id": "stale_beat_hash",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "detector definition invalid",
+      "expectedOutcome": "commentary_disabled",
+      "id": "invalid_detector_range",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "detector definition invalid",
+      "expectedOutcome": "commentary_disabled",
+      "id": "unknown_detector_feature",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "beat schema rejected",
+      "expectedOutcome": "commentary_disabled",
+      "id": "arbitrary_catalog_code",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "beat schema rejected",
+      "expectedOutcome": "commentary_disabled",
+      "id": "extra_style_beat",
+      "reason": "catalog_invalid"
+    },
+    {
+      "errorContains": "detector config templates missing",
+      "expectedOutcome": "commentary_disabled",
+      "id": "missing_detector_config_template",
+      "reason": "catalog_invalid"
+    }
+  ],
+  "schemaVersion": "catalog-loader-goldens/2",
+  "valid": {
+    "expectedCounts": {
+      "beats": 64,
+      "detectors": 3,
+      "events": 60,
+      "lifecycleEvents": 5,
+      "realizationFamilies": 37,
+      "storyDefinitions": 11,
+      "successorEdges": 50
+    },
+    "expectedOutcome": "loaded",
+    "id": "frozen_bundle"
+  }
+}

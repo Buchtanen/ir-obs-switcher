@@ -1,6 +1,6 @@
 # v2.0.0 event and beat disposition freeze
 
-**Status:** 64-beat inventory and closed successor DAG reviewed and machine-frozen; implementation loader remains owned by issue #257
+**Status:** 64-beat inventory, closed successor DAG and loader contract reviewed and machine-frozen; runtime implementation remains owned by issue #257
 
 This branch-only artifact closes the inventory gap between the current V4 event surface, the legacy commentary graph and the target narrative catalog. It is not shipped to `master`; the final v2 behavior documentation is generated from the implemented catalogs.
 
@@ -473,7 +473,7 @@ During branch calibration, a changed temporal/composite detector may be marked `
 
 The exact beat projection is generated as `machine/beat-catalog.json` with its Draft 2020-12 schema, invalid-mutation fixtures and standard-library checker. It cross-validates all 64 beat IDs against the 57-predicate/five-allowlist fact registry, all 37 realization families, six policies and 36 `tape_channel` values. Required predicates retain actor direction, exact claim cardinality, required/optional attributes and literal enum constraints; per-beat forbidden additions remain exact catalog strings under the closed global forbidden-claim list. Replaced `STREAM_START`, `SESSION_INTRO_*` and `SESSION_WRAP` identifiers are disposition/migration evidence only and cannot appear as v2 beat triggers; the canonical lifecycle kinds are used instead.
 
-This checkpoint reserves four audited EN cards per beat but does not claim those 256 cards or verifier corpora already exist. Their materialization remains the controlled-English gate. The 50 natural successor edges and SCC/dead-end proof are materialized in `machine/successor-graph.json`; executing the named invariants in the production catalog loader remains a separate implementation gate.
+This checkpoint reserves four audited EN cards per beat but does not claim those 256 cards or verifier corpora already exist. Their materialization remains the controlled-English gate. The 50 natural successor edges and SCC/dead-end proof are materialized in `machine/successor-graph.json`; `machine/catalog-loader-contract.json` and its mutation goldens freeze the checks that the later production loader must reproduce.
 
 Issue #256 cannot close until CI or a catalog audit script proves:
 

@@ -2315,6 +2315,7 @@
       "ids": [
         "disabled_by_config",
         "disabled_invalid_config",
+        "catalog_invalid",
         "legacy_key",
         "starting",
         "ready",

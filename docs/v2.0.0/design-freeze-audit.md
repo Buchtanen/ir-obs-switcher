@@ -11,7 +11,7 @@ This is a planning artifact for the v2 branch. It must not be included in the fi
 
 ## Current gate verdict
 
-**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. The exact 64-beat and three-detector catalogs, closed successor DAG, public config/migration and HTTP contracts, core DTO JSON Schemas, actor transition model and structural goldens are materialized. Catalog-loader, controlled-English and end-to-end executable fixtures remain open. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
+**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. The exact 64-beat and three-detector catalogs, closed successor DAG, integrated loader contract, public config/migration and HTTP contracts, core DTO JSON Schemas, actor transition model and structural goldens are materialized. Controlled-English and end-to-end executable fixtures remain open. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -224,7 +224,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Exact single-mailbox admission/recovery, command inventory, speech-lane transitions, reset matrix and shutdown order live in `actor-transition-contract.md`; the machine model covers all 85 lane/command pairs plus race, ordering, overflow and mutation fixtures.
 - DTO fields, schema versions, stream-scope nullability, canonical hashes, tape envelopes and reason IDs live in `schema-contracts.md`; 25 closed DTO definitions, positive/negative structural goldens and the unchanged V4 wire golden are materialized in `machine/`. Implementation must promote byte-equivalent registry/schema outputs to packaged `src/irswitch/contracts/schemas/v2/` artifacts while keeping typed parsing and explicit invariant checks authoritative at runtime; no new schema-validation dependency is implied.
 - The generated branch-only machine registry and V4 master golden live in `machine/`; its checker enforces 60 current events, five internal lifecycle events, 57 predicates, 21 features, 36 tape channels, six director relations, 27 schema versions, typed attributes/features, scoped reasons/states and unchanged V4 freeze/thaw.
-- Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; their generated machine registry is complete, while catalog-level referential checks remain part of the open catalog-loader gate.
+- Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; their generated machine registry and integrated catalog-loader reference checks are complete.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; the machine catalog covers FSM, sign, hysteresis, unknown, correlation and registry-reference fixtures.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
 - The exact Qwen prompt projection, request/result schemas, SSE subset, one-worker deadline/cancellation and monotonic latency equations live in `qwen-transport-contract.md`; wire/parser/model evidence remains blocking.
@@ -248,7 +248,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [x] Pre-arbitration detector-observation/candidate tap and kick→accepted→queued→selected→started funnel definitions.
 - [x] Released-versus-experimental detector tuning-policy matrix and recorder-failure transition behavior.
 - [x] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
-- [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
+- [x] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`, plus the literal/compiler/wire/deadline contract in `qwen-transport-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
 - [ ] Review the forty-four expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
