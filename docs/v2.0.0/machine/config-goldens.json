@@ -1,0 +1,264 @@
+{
+  "invalid": [
+    {
+      "errorContains": "unknown config key",
+      "id": "unknown_key",
+      "values": {
+        "commentary.magic": true
+      }
+    },
+    {
+      "errorContains": "out of range",
+      "id": "selection_out_of_range",
+      "values": {
+        "commentary.director.selection_threshold": 101.0
+      }
+    },
+    {
+      "errorContains": "active episode capacity",
+      "id": "episode_capacity_inverted",
+      "values": {
+        "commentary.director.active_episode_capacity": 200,
+        "commentary.director.resolved_episode_capacity": 100
+      }
+    },
+    {
+      "errorContains": "tape channels empty",
+      "id": "empty_tape_channels",
+      "values": {
+        "commentary.tape.channels": [],
+        "commentary.tape.enabled": true
+      }
+    },
+    {
+      "errorContains": "full prompt requires",
+      "id": "full_prompt_without_channel",
+      "values": {
+        "commentary.tape.llm_eval.capture_prompt": "full"
+      }
+    },
+    {
+      "errorContains": "URL outside local/LAN",
+      "id": "public_llm_host",
+      "values": {
+        "commentary.llm.base_url": "https://api.example.com/v1"
+      }
+    },
+    {
+      "errorContains": "unsafe root path",
+      "id": "unsafe_output_root",
+      "values": {
+        "commentary.tape.output_dir": "/"
+      }
+    },
+    {
+      "errorContains": "duplicate set member",
+      "id": "duplicate_set_member",
+      "values": {
+        "commentary.tape.channels": [
+          "flow",
+          "flow"
+        ]
+      }
+    }
+  ],
+  "ledgerScenario": {
+    "acceptedDesiredGeneration": 7,
+    "appliedTransitions": [
+      {
+        "applySequence": 21,
+        "boundary": "next_record",
+        "changedKeys": [
+          "commentary.tape.detail"
+        ],
+        "desiredGeneration": 7,
+        "effectivePatch": [
+          {
+            "key": "commentary.tape.detail",
+            "value": "full"
+          }
+        ],
+        "newEffectiveHash": "sha256:9dbad427e1ff2210891cab61b7e712dc5d58965723fb55b1355c8fecf4214688",
+        "oldEffectiveHash": "sha256:cd87e11bce41ec9641bef063ccf6944c471940766f595dae3dcd92e776aa7f3b"
+      },
+      {
+        "applySequence": 22,
+        "boundary": "next_director_pass",
+        "changedKeys": [
+          "commentary.director.selection_threshold"
+        ],
+        "desiredGeneration": 7,
+        "effectivePatch": [
+          {
+            "key": "commentary.director.selection_threshold",
+            "value": 42.0
+          }
+        ],
+        "newEffectiveHash": "sha256:292f8e27c4527c487aa924e18c6e34fbe53c0737321701322fcd11dcda51bc70",
+        "oldEffectiveHash": "sha256:9dbad427e1ff2210891cab61b7e712dc5d58965723fb55b1355c8fecf4214688"
+      },
+      {
+        "applySequence": 23,
+        "boundary": "next_plan_or_manual",
+        "changedKeys": [
+          "commentary.max_utterance_s"
+        ],
+        "desiredGeneration": 7,
+        "effectivePatch": [
+          {
+            "key": "commentary.max_utterance_s",
+            "value": 12.0
+          }
+        ],
+        "newEffectiveHash": "sha256:0ab248f4f102c58cee72ff80dd9723af4560f93895aaf12433fe0ee0d115ceeb",
+        "oldEffectiveHash": "sha256:292f8e27c4527c487aa924e18c6e34fbe53c0737321701322fcd11dcda51bc70"
+      },
+      {
+        "applySequence": 24,
+        "boundary": "next_utterance",
+        "changedKeys": [
+          "commentary.tts.backend",
+          "commentary.tts.voice"
+        ],
+        "desiredGeneration": 7,
+        "effectivePatch": [
+          {
+            "key": "commentary.tts.backend",
+            "value": "supertonic"
+          },
+          {
+            "key": "commentary.tts.voice",
+            "redacted": true
+          }
+        ],
+        "newEffectiveHash": "sha256:6d3fb4c0c7fc707a948660ad2847cfad1269631c20f497694af4e4ef7b1684a9",
+        "oldEffectiveHash": "sha256:0ab248f4f102c58cee72ff80dd9723af4560f93895aaf12433fe0ee0d115ceeb"
+      }
+    ],
+    "changedKeys": [
+      "commentary.detector.battle_ahead_v1.max_closing_slope",
+      "commentary.director.selection_threshold",
+      "commentary.max_utterance_s",
+      "commentary.tape.detail",
+      "commentary.tts.backend",
+      "commentary.tts.voice"
+    ],
+    "currentPreflightSuccessEffect": "later_normal_admission_only",
+    "effectiveAfterAvailableBoundariesHash": "sha256:6d3fb4c0c7fc707a948660ad2847cfad1269631c20f497694af4e4ef7b1684a9",
+    "firstGeneration7TtsAdmission": "component_unavailable_no_old_generation_fallback",
+    "generation7DesiredHash": "sha256:f0a726fe5324f3f29b43b299616688268cae411d12f2071953c06070361a77a5",
+    "generation8DesiredHash": "sha256:6d3fb4c0c7fc707a948660ad2847cfad1269631c20f497694af4e4ef7b1684a9",
+    "id": "mixed_boundary_preflight_and_revert",
+    "initialDesiredGeneration": 6,
+    "initialEffectiveHash": "sha256:cd87e11bce41ec9641bef063ccf6944c471940766f595dae3dcd92e776aa7f3b",
+    "invalidReloadEffect": "no_generation_disable_automatic_preserve_last_valid_manual_backend",
+    "pendingAfterAvailableBoundaries": [
+      {
+        "boundary": "next_stream",
+        "desiredGeneration": 7,
+        "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+      }
+    ],
+    "pendingAfterGeneration8Revert": [],
+    "preflightsStarted": [
+      {
+        "component": "tts",
+        "generation": 7,
+        "status": "pending"
+      }
+    ]
+  },
+  "legacy": [
+    {
+      "generationInstalled": false,
+      "id": "renamed_legacy_key",
+      "reason": "legacy_key",
+      "replacementKeys": [
+        "commentary.director.decision_capacity"
+      ],
+      "sourceKey": "commentary.decision_log_size"
+    },
+    {
+      "generationInstalled": false,
+      "id": "removed_legacy_section",
+      "reason": "legacy_key",
+      "replacementKeys": [],
+      "sourceKey": "[commentary.graph_runtime]"
+    }
+  ],
+  "schemaVersion": "commentary-config-goldens/2",
+  "valid": [
+    {
+      "id": "all_defaults",
+      "values": {
+        "commentary.detectors.profile": "production",
+        "commentary.director.active_episode_capacity": 64,
+        "commentary.director.decision_capacity": 128,
+        "commentary.director.global_min_interval_s": 4.0,
+        "commentary.director.long_silence_s": 33.0,
+        "commentary.director.max_consecutive_story_beats": 3,
+        "commentary.director.opportunity_capacity": 128,
+        "commentary.director.resolved_episode_capacity": 256,
+        "commentary.director.selection_threshold": 35.0,
+        "commentary.director.switch_margin": 8.0,
+        "commentary.driver_name": "",
+        "commentary.driver_nickname": "",
+        "commentary.enabled": false,
+        "commentary.llm.base_url": "http://127.0.0.1:11434/v1",
+        "commentary.llm.enabled": false,
+        "commentary.llm.max_profile": "tight",
+        "commentary.llm.max_tokens": 96,
+        "commentary.llm.model": "qwen3:4b-instruct-2507-q4_K_M",
+        "commentary.llm.timeout_s": 1.5,
+        "commentary.llm.warmup": true,
+        "commentary.max_utterance_s": 14.0,
+        "commentary.tape.channels": [
+          "flow"
+        ],
+        "commentary.tape.compress_rotated": true,
+        "commentary.tape.detail": "normal",
+        "commentary.tape.detector_tuning.capture_input_windows": true,
+        "commentary.tape.detector_tuning.near_threshold_margin": 0.15,
+        "commentary.tape.detector_tuning.negative_sample_interval_s": 5.0,
+        "commentary.tape.detector_tuning.trigger_allowlist": [],
+        "commentary.tape.enabled": false,
+        "commentary.tape.flow.candidate_detail": "selected_and_rejected",
+        "commentary.tape.flow.tape_channel_allowlist": [
+          "*"
+        ],
+        "commentary.tape.flush_interval_ms": 500,
+        "commentary.tape.keep_files": 8,
+        "commentary.tape.llm_eval.capture_completion": true,
+        "commentary.tape.llm_eval.capture_prompt": "hash",
+        "commentary.tape.output_dir": "recordings/commentary",
+        "commentary.tape.rotate_mb": 64,
+        "commentary.tape.shutdown_flush_timeout_s": 2.0,
+        "commentary.tape.writer_capacity": 4096,
+        "commentary.tone_source": "none",
+        "commentary.tts.audio_device": "",
+        "commentary.tts.backend": "auto",
+        "commentary.tts.duck_fade_ms": 750,
+        "commentary.tts.duck_input": "",
+        "commentary.tts.duck_ratio": 0.25,
+        "commentary.tts.rate": 0,
+        "commentary.tts.start_timeout_s": 5.0,
+        "commentary.tts.steps": 6,
+        "commentary.tts.stop_timeout_s": 1.0,
+        "commentary.tts.voice": ""
+      }
+    },
+    {
+      "id": "enabled_private_llm_full_capture",
+      "values": {
+        "commentary.enabled": true,
+        "commentary.llm.base_url": "http://192.168.1.20:11434/v1",
+        "commentary.tape.channels": [
+          "flow",
+          "llm_eval"
+        ],
+        "commentary.tape.enabled": true,
+        "commentary.tape.llm_eval.capture_prompt": "full"
+      }
+    }
+  ]
+}

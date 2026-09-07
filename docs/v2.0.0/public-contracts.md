@@ -1,6 +1,6 @@
 # v2.0.0 commentary public contract freeze
 
-**Status:** design-freeze candidate owned by issues #238 and #273
+**Status:** configuration contract machine-frozen; HTTP contract remains a separate design-freeze candidate owned by issues #238 and #273
 
 This branch-only artifact freezes the public configuration and HTTP shape before parser or handler implementation. Initial numeric values are estimates permitted by the design; their types, units, ranges and reload boundaries are contract, while later value tuning inside those ranges is not an architecture change.
 
@@ -118,7 +118,7 @@ String values are trimmed, reject control characters and are measured after Unic
 
 | v1 key | v2 result |
 | --- | --- |
-| `commentary.use_hr_emotion=true|false` | `commentary.tone_source=heart_rate|none` |
+| `commentary.use_hr_emotion` | removed; diagnostic names `commentary.tone_source` and the former boolean-to-enum mapping (`true` → `heart_rate`, `false` → `none`) for operator guidance only |
 | `commentary.cooldown_s` | removed; use director interval plus catalog cadence/fatigue |
 | `commentary.decision_log_size` | `commentary.director.decision_capacity` |
 | `commentary.sector_speak*` | removed; sector beat/catalog policy |
@@ -135,6 +135,8 @@ String values are trimmed, reject control characters and are measured after Unic
 Migration warnings identify the exact old key and replacement/removal. They never silently reinterpret a value.
 
 The table is an operator migration map, not a compatibility loader. A recognized v1 key emits a `legacy_key` diagnostic naming its replacement/removal and disables commentary for that config generation until the file is changed; it is never applied in memory. An absent `[commentary]` section is valid and equivalent to `commentary.enabled=false`.
+
+The machine projection in `machine/config-contract.json` contains exactly 50 static keys, two detector catalog templates, 14 apply boundaries and 13 migration rows. `machine/config-goldens.json` pins the fully defaulted map, valid local/LAN URL and tape combinations, eight invalid configurations, two legacy diagnostics and the mixed-boundary generation/preflight/revert sequence from F36. The planning schema and checker do not become a compatibility loader; implementation must reproduce these outcomes through typed parsing and ConfigLedger invariant checks.
 
 ## HTTP API
 

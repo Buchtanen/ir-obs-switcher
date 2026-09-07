@@ -11,6 +11,8 @@ These files make the human design registries mechanically reviewable before runt
 - `beat-catalog.schema.json`, `beat-catalog-mutations.json` and `build_beat_catalog.py` enforce the closed Draft 2020-12 shape, all fact/family/policy/channel references, exact group counts and canonical lifecycle routing. Nine mutations prove representative invalid catalogs fail closed.
 - `successor-graph.json` is the closed 64-node/50-edge natural-successor projection with typed correlation/condition tokens, exact preference bonuses, StoryDefinition caps/cadence, terminal node policies and computed SCC evidence.
 - `successor-graph.schema.json`, `successor-graph-mutations.json` and `build_successor_graph.py` reject undeclared edges, dangling references, preference/closure drift, loosened story bounds, stale catalog hashes, false degree/SCC claims and cycles without a bounded-exit proof.
+- `config-contract.json` and `config-contract.schema.json` freeze the 50 static keys, two detector templates, defaults, types/ranges/units, boundary owners, sensitive/preflight sets and 13 reject-only v1 migration dispositions.
+- `config-goldens.json` and `build_config_contract.py` validate defaults, local/LAN URL and cross-field rules, invalid and legacy inputs, and the F36 generation-7 mixed-boundary/preflight plus generation-8 pending-revert replay.
 
 Run from the repository root:
 
@@ -19,6 +21,7 @@ python3 docs/v2.0.0/machine/build_freeze_registry.py
 python3 docs/v2.0.0/machine/build_dto_schemas.py
 python3 docs/v2.0.0/machine/build_beat_catalog.py
 python3 docs/v2.0.0/machine/build_successor_graph.py
+python3 docs/v2.0.0/machine/build_config_contract.py
 ```
 
 Expected baseline summary:
@@ -28,8 +31,9 @@ freeze registry OK: 60 events + 5 lifecycle, 57 predicates, 21 features, 36 tape
 DTO schemas OK: 25 definitions, 4 valid + 4 invalid goldens
 Beat catalog OK: 64 beats, 37 families, 9 rejected mutations
 Successor graph OK: 64 nodes, 50 edges, 36 no-continuation nodes, DAG, 10 rejected mutations
+Config contract OK: 50 static + 2 template keys, 14 boundaries, 13 migrations, 2 valid + 8 invalid + 2 legacy goldens, mixed-boundary replay
 ```
 
 Reason identity is the pair `(reasonDomain, reasonId)`. Repeated strings across domains are intentional only when their plain-language meaning is identical; uniqueness is enforced inside each domain.
 
-The JSON Schema bundles close field names, types, bounds, nullability, enums, unions and unknown-field rejection. Cross-object/order/hash constraints that Draft 2020-12 cannot compare directly are mandatory named `x-irswitch-invariants`; implementation validators and the structured F01–F44 fixtures must execute those IDs rather than ignore them. The packaged schemas are replay/tooling/API contracts, while typed runtime parsing remains the hot-path authority. Public HTTP/config goldens and the implementation catalog loader remain separate audit blockers.
+The JSON Schema bundles close field names, types, bounds, nullability, enums, unions and unknown-field rejection. Cross-object/order/hash constraints that Draft 2020-12 cannot compare directly are mandatory named `x-irswitch-invariants`; implementation validators and the structured F01–F44 fixtures must execute those IDs rather than ignore them. The packaged schemas are replay/tooling/API contracts, while typed runtime parsing remains the hot-path authority. Public HTTP goldens and the implementation catalog loader remain separate audit blockers.

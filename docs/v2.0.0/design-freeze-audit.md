@@ -11,7 +11,7 @@ This is a planning artifact for the v2 branch. It must not be included in the fi
 
 ## Current gate verdict
 
-**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. The exact 64-beat catalog, closed successor DAG, core DTO JSON Schemas and structural goldens are materialized. Config/API, detector, actor-model, catalog-loader, controlled-English and end-to-end executable fixtures remain open. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
+**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. The exact 64-beat catalog, closed successor DAG, public config/migration contract, core DTO JSON Schemas and structural goldens are materialized. API, detector, actor-model, catalog-loader, controlled-English and end-to-end executable fixtures remain open. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -240,7 +240,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [x] Final review and machine validation of the exact 64 BeatDefinitions, including required/forbidden claims and realization family for every beat.
 - [x] Complete successor graph with deterministic relation, guard, preference and terminal/dead-end policy.
 - [x] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan, RealizationBundle, CompiledPrompt, RealizationRequest/Result, LlmAttempt, TtsUtterance, TtsCallback, SpeechExposure, ConfigLedger and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
-- [ ] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
+- [x] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
 - [ ] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
 - [ ] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
 - [x] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.

@@ -1,0 +1,296 @@
+{
+  "$id": "https://irswitch.local/contracts/v2/config-contract.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "boundaries": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "enum": [
+              "command",
+              "next_stream",
+              "next_plan_or_manual",
+              "next_beat_plan",
+              "next_director_pass",
+              "next_silence_deadline",
+              "next_request",
+              "next_utterance",
+              "next_cancellation",
+              "next_record",
+              "next_rotated_file",
+              "next_rotation",
+              "next_writer_deadline",
+              "next_shutdown"
+            ]
+          },
+          "owner": {
+            "type": "string"
+          },
+          "registryOrdinal": {
+            "maximum": 14,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "owner",
+          "registryOrdinal"
+        ],
+        "type": "object"
+      },
+      "maxItems": 14,
+      "minItems": 14,
+      "type": "array"
+    },
+    "contractProjectionVersion": {
+      "const": 1
+    },
+    "crossFieldInvariants": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 6,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "defaultConfig": {
+      "maxProperties": 50,
+      "minProperties": 50,
+      "type": "object"
+    },
+    "keyDefinitions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "applyBoundary": {
+            "enum": [
+              "command",
+              "next_stream",
+              "next_plan_or_manual",
+              "next_beat_plan",
+              "next_director_pass",
+              "next_silence_deadline",
+              "next_request",
+              "next_utterance",
+              "next_cancellation",
+              "next_record",
+              "next_rotated_file",
+              "next_rotation",
+              "next_writer_deadline",
+              "next_shutdown"
+            ]
+          },
+          "boundaryNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "boundaryOwner": {
+            "enum": [
+              "composition_root",
+              "narrative_actor",
+              "stream_config_coordinator",
+              "tape_writer"
+            ]
+          },
+          "constraints": {
+            "type": "object"
+          },
+          "default": {
+            "type": [
+              "null",
+              "boolean",
+              "integer",
+              "number",
+              "string",
+              "array",
+              "object"
+            ]
+          },
+          "defaultSource": {
+            "enum": [
+              "literal",
+              "catalog"
+            ]
+          },
+          "key": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "keyClass": {
+            "enum": [
+              "static",
+              "template"
+            ]
+          },
+          "preflightComponent": {
+            "enum": [
+              "llm",
+              "tts",
+              null
+            ]
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valueType": {
+            "enum": [
+              "boolean",
+              "number",
+              "integer",
+              "string",
+              "enum",
+              "url",
+              "path",
+              "enum_set",
+              "string_set",
+              "catalog_typed"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "keyClass",
+          "valueType",
+          "default",
+          "defaultSource",
+          "constraints",
+          "unit",
+          "applyBoundary",
+          "boundaryOwner",
+          "sensitive",
+          "preflightComponent",
+          "boundaryNote"
+        ],
+        "type": "object"
+      },
+      "maxItems": 52,
+      "minItems": 52,
+      "type": "array"
+    },
+    "ledgerContract": {
+      "type": "object"
+    },
+    "migrationContract": {
+      "additionalProperties": false,
+      "properties": {
+        "absentCommentarySectionEquivalent": {
+          "const": {
+            "commentary.enabled": false
+          }
+        },
+        "compatibilityLoader": {
+          "const": false
+        },
+        "entries": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "diagnosticReason": {
+                "const": "legacy_key"
+              },
+              "matchKind": {
+                "enum": [
+                  "exact",
+                  "prefix",
+                  "group",
+                  "section"
+                ]
+              },
+              "replacementKeys": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "result": {
+                "type": "string"
+              },
+              "runtimeAction": {
+                "const": "reject_generation_with_legacy_key"
+              },
+              "source": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source",
+              "matchKind",
+              "result",
+              "replacementKeys",
+              "runtimeAction",
+              "diagnosticReason"
+            ],
+            "type": "object"
+          },
+          "maxItems": 13,
+          "minItems": 13,
+          "type": "array"
+        }
+      },
+      "required": [
+        "compatibilityLoader",
+        "absentCommentarySectionEquivalent",
+        "entries"
+      ],
+      "type": "object"
+    },
+    "schemaVersion": {
+      "const": "commentary-config-contract/2"
+    },
+    "sourceBaseline": {
+      "additionalProperties": false,
+      "properties": {
+        "configurationHeadings": {
+          "const": [
+            "### Root and director",
+            "### LLM and TTS",
+            "### Detectors and tape"
+          ]
+        },
+        "document": {
+          "const": "docs/v2.0.0/public-contracts.md"
+        }
+      },
+      "required": [
+        "document",
+        "configurationHeadings"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "contractProjectionVersion",
+    "sourceBaseline",
+    "keyDefinitions",
+    "defaultConfig",
+    "boundaries",
+    "ledgerContract",
+    "crossFieldInvariants",
+    "migrationContract"
+  ],
+  "title": "irswitch v2 public commentary configuration contract",
+  "type": "object",
+  "x-irswitch-invariants": [
+    "config_rows_match_human_tables_exactly",
+    "static_defaults_match_key_definitions",
+    "config_key_ids_unique",
+    "boundary_owner_mapping_complete",
+    "sensitive_and_preflight_sets_exact",
+    "migration_rows_match_human_table_exactly",
+    "golden_config_values_and_cross_fields_validate",
+    "mixed_boundary_ledger_replay_matches"
+  ]
+}
