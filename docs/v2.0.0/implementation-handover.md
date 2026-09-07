@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** design freeze accepted; control-plane checkpoint in progress
+**Phase:** design freeze accepted; control-plane checkpoint green, pending #235 closure
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), next [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -13,7 +13,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Branch: `codex/commentary-story-flow-spec`
 - Upstream: `origin/codex/commentary-story-flow-spec`
 - Last pushed design-freeze SHA: `b0cab18cba23c3acc96aecad7ac527793d22d4b0`
-- Working tree at handover creation: clean before the control-plane edits described in this checkpoint
+- Control-plane evidence SHA: `2d2f014592d5728f0eebe49afae73424ff44c35d` (`ci: enforce v2 checkpoints and agent handover (#235)`)
+- Expected working tree after this handover metadata commit: clean and synchronized with upstream
 - Runtime behavior edits so far: none
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -27,9 +28,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: the active parent agent only.
-- Files in scope: CI trigger/freeze gate, Codex verifier, handover rule/command/skill and this record.
-- Other agents: read-only verification only until this checkpoint is committed and pushed.
+- Editing owner: none after this checkpoint is pushed.
+- Completed scope: CI trigger/freeze gate, Codex verifier, handover rule/command/skill and this record.
+- Other agents: read-only verification until local HEAD equals upstream and #235 is closed.
 - TDD phase: `N/A` — process/CI/docs-only change.
 - TDD exception: no product behavior changes; verification is workflow syntax, all 11 builders and scoped static checks.
 
