@@ -1,6 +1,6 @@
 # v2.0.0 detector catalog and parameter freeze
 
-**Status:** design-freeze candidate owned by issues #241, #247–#255 and #256
+**Status:** detector catalog machine-frozen for issues #241, #247–#255 and #256
 
 This branch-only artifact freezes what the first temporal/composite detectors mean and which values may be tuned after replay testing. Defaults are conservative estimates, not measured truth. Tuning may change a default inside its frozen range without changing architecture; changing an algorithm, unit, predicate, correlation key, lifecycle or range requires a new detector version and a return to the design gate.
 
@@ -165,3 +165,5 @@ Issues #247–#255 cannot close until replay/model fixtures prove:
 - two-front opens only for two distinct stable targets and closes on either relation replacement;
 - identical frames, parameter hash and reducer order yield identical facts/events;
 - all emitted predicates, features, event kinds and tape channels resolve through the frozen registries.
+
+The branch-only evidence is `machine/detector-catalog.json` with its closed schema, goldens, mutation set and checker. It freezes three definitions, the shared 23-parameter directional algorithm, two composite parameters, registry references and release/capture policy. Seven executable FSM traces plus fourteen band/composite boundary fixtures cover sign, confirmation, unknown/stale clearing, immediate target replacement, material-update rate limiting, hysteresis and distinct two-front correlation; twelve mutations prove representative drift fails closed.

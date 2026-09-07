@@ -1,0 +1,62 @@
+[
+  {
+    "id": "positive_closing_slope",
+    "target": "battle_ahead_v1.max_closing_slope",
+    "value": "0.04"
+  },
+  {
+    "id": "reversed_ahead_actors",
+    "target": "battle_ahead_v1.orderedActors",
+    "value": "targetAhead,hero"
+  },
+  {
+    "id": "reversed_behind_actors",
+    "target": "battle_behind_v1.orderedActors",
+    "value": "hero,challengerBehind"
+  },
+  {
+    "id": "gap_hysteresis_inverted",
+    "target": "battle_ahead_v1.exit_gap_min_s",
+    "value": "2.0"
+  },
+  {
+    "id": "band_hysteresis_inverted",
+    "target": "battle_ahead_v1.attack_exit_s",
+    "value": "0.7"
+  },
+  {
+    "id": "sample_window_impossible",
+    "target": "battle_ahead_v1.min_samples",
+    "value": "60"
+  },
+  {
+    "id": "unknown_enters",
+    "target": "battle_ahead_v1.entry.unknownSatisfies",
+    "value": "true"
+  },
+  {
+    "id": "unregistered_feature",
+    "target": "battle_ahead_v1.features[0]",
+    "value": "gap.magic"
+  },
+  {
+    "id": "unregistered_fact",
+    "target": "battle_ahead_v1.output.factPredicate",
+    "value": "battle.magic"
+  },
+  {
+    "id": "same_two_front_epoch",
+    "target": "battle_two_front_v1.correlationKey",
+    "value": "one_relation_epoch"
+  },
+  {
+    "id": "released_required_capture",
+    "target": "battle_ahead_v1.experimental",
+    "value": "false"
+  },
+  {
+    "id": "invented_end_event",
+    "target": "battle_ahead_v1.output.endedEvent",
+    "value": "HUNTING_ENDED"
+  }
+]

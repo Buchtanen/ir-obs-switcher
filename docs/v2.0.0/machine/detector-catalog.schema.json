@@ -1,0 +1,585 @@
+{
+  "$id": "https://irswitch.local/contracts/detector-catalog-v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capturePlan": {
+      "additionalProperties": false,
+      "properties": {
+        "postWindowSeconds": {
+          "type": "number"
+        },
+        "preWindow": {
+          "type": "string"
+        },
+        "requiredCaptureLossDisablesDetectorForRun": {
+          "type": "boolean"
+        },
+        "requiredFields": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "preWindow",
+        "postWindowSeconds",
+        "requiredFields",
+        "requiredCaptureLossDisablesDetectorForRun"
+      ],
+      "type": "object"
+    },
+    "catalogProjectionVersion": {
+      "type": "integer"
+    },
+    "definitions": {
+      "items": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "bands": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "enterGapParameter": {
+                          "type": "null"
+                        },
+                        "event": {
+                          "type": "null"
+                        },
+                        "exitGapParameter": {
+                          "type": "string"
+                        },
+                        "factPredicate": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "factPredicate",
+                        "enterGapParameter",
+                        "exitGapParameter",
+                        "event"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "enterGapParameter": {
+                          "type": "string"
+                        },
+                        "event": {
+                          "type": "string"
+                        },
+                        "exitGapParameter": {
+                          "type": "string"
+                        },
+                        "factPredicate": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "factPredicate",
+                        "enterGapParameter",
+                        "exitGapParameter",
+                        "event"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "clear": {
+                "additionalProperties": false,
+                "properties": {
+                  "anyPredicates": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "holdParameter": {
+                    "type": "string"
+                  },
+                  "immediateInvalidators": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "holdParameter",
+                  "anyPredicates",
+                  "immediateInvalidators"
+                ],
+                "type": "object"
+              },
+              "correlationKey": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "crossFieldInvariants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "entry": {
+                "additionalProperties": false,
+                "properties": {
+                  "allPredicates": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "holdParameter": {
+                    "type": "string"
+                  },
+                  "unknownSatisfies": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "holdParameter",
+                  "allPredicates",
+                  "unknownSatisfies"
+                ],
+                "type": "object"
+              },
+              "experimental": {
+                "type": "boolean"
+              },
+              "features": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "fsmStates": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "materialUpdate": {
+                "additionalProperties": false,
+                "properties": {
+                  "conditions": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "maximumCandidatesPerFrame": {
+                    "type": "integer"
+                  },
+                  "minimumIntervalParameter": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "conditions",
+                  "minimumIntervalParameter",
+                  "maximumCandidatesPerFrame"
+                ],
+                "type": "object"
+              },
+              "orderedActors": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "output": {
+                "additionalProperties": false,
+                "properties": {
+                  "endedEvent": {
+                    "type": "null"
+                  },
+                  "factPredicate": {
+                    "type": "string"
+                  },
+                  "internalKind": {
+                    "type": "string"
+                  },
+                  "startEvent": {
+                    "type": "string"
+                  },
+                  "tapeChannel": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "startEvent",
+                  "internalKind",
+                  "factPredicate",
+                  "tapeChannel",
+                  "endedEvent"
+                ],
+                "type": "object"
+              },
+              "parameters": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "default": {
+                          "type": "number"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "maximum": {
+                          "type": "number"
+                        },
+                        "minimum": {
+                          "type": "number"
+                        },
+                        "provenance": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "unit",
+                        "default",
+                        "minimum",
+                        "maximum",
+                        "provenance"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "default": {
+                          "type": "integer"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "maximum": {
+                          "type": "integer"
+                        },
+                        "minimum": {
+                          "type": "integer"
+                        },
+                        "provenance": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "unit",
+                        "default",
+                        "minimum",
+                        "maximum",
+                        "provenance"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "tuningPolicy": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "algorithm",
+              "kind",
+              "orderedActors",
+              "correlationKey",
+              "fsmStates",
+              "features",
+              "parameters",
+              "crossFieldInvariants",
+              "entry",
+              "clear",
+              "output",
+              "materialUpdate",
+              "bands",
+              "experimental",
+              "tuningPolicy"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "bands": {
+                "items": {},
+                "type": "array"
+              },
+              "clear": {
+                "additionalProperties": false,
+                "properties": {
+                  "anyPredicates": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "holdParameter": {
+                    "type": "string"
+                  },
+                  "immediateInvalidators": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "holdParameter",
+                  "anyPredicates",
+                  "immediateInvalidators"
+                ],
+                "type": "object"
+              },
+              "correlationKey": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "crossFieldInvariants": {
+                "items": {},
+                "type": "array"
+              },
+              "entry": {
+                "additionalProperties": false,
+                "properties": {
+                  "allPredicates": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "holdParameter": {
+                    "type": "string"
+                  },
+                  "unknownSatisfies": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "holdParameter",
+                  "allPredicates",
+                  "unknownSatisfies"
+                ],
+                "type": "object"
+              },
+              "experimental": {
+                "type": "boolean"
+              },
+              "features": {
+                "items": {},
+                "type": "array"
+              },
+              "fsmStates": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "materialUpdate": {
+                "type": "null"
+              },
+              "orderedActors": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "output": {
+                "additionalProperties": false,
+                "properties": {
+                  "endedEvent": {
+                    "type": "null"
+                  },
+                  "factPredicate": {
+                    "type": "null"
+                  },
+                  "featureId": {
+                    "type": "string"
+                  },
+                  "internalKind": {
+                    "type": "string"
+                  },
+                  "startEvent": {
+                    "type": "string"
+                  },
+                  "tapeChannel": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "startEvent",
+                  "internalKind",
+                  "factPredicate",
+                  "featureId",
+                  "tapeChannel",
+                  "endedEvent"
+                ],
+                "type": "object"
+              },
+              "parameters": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "default": {
+                      "type": "number"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "maximum": {
+                      "type": "number"
+                    },
+                    "minimum": {
+                      "type": "number"
+                    },
+                    "provenance": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type",
+                    "unit",
+                    "default",
+                    "minimum",
+                    "maximum",
+                    "provenance"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "tuningPolicy": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "algorithm",
+              "kind",
+              "orderedActors",
+              "correlationKey",
+              "fsmStates",
+              "features",
+              "parameters",
+              "crossFieldInvariants",
+              "entry",
+              "clear",
+              "output",
+              "materialUpdate",
+              "bands",
+              "experimental",
+              "tuningPolicy"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "duplicateOrOlderFrame": {
+      "type": "string"
+    },
+    "frameOrder": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "sourceBaseline": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "catalogProjectionVersion",
+    "sourceBaseline",
+    "frameOrder",
+    "duplicateOrOlderFrame",
+    "definitions",
+    "capturePlan"
+  ],
+  "type": "object",
+  "x-irswitch-invariants": [
+    "exact_three_detector_ids",
+    "parameter_ranges_and_cross_fields",
+    "directional_algorithms_are_identical",
+    "registry_references_resolve",
+    "actor_direction_is_ordered",
+    "unknown_never_enters_or_updates"
+  ]
+}

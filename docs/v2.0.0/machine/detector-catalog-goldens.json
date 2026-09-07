@@ -1,0 +1,463 @@
+{
+  "bandBoundaries": [
+    {
+      "from": "closing",
+      "gap": 1.5,
+      "id": "approach_enter",
+      "to": "approach"
+    },
+    {
+      "from": "approach",
+      "gap": 1.79,
+      "id": "approach_hold_inside_hysteresis",
+      "to": "approach"
+    },
+    {
+      "from": "approach",
+      "gap": 1.8,
+      "id": "approach_exit",
+      "to": "closing"
+    },
+    {
+      "from": "approach",
+      "gap": 0.8,
+      "id": "attack_enter",
+      "to": "attack"
+    },
+    {
+      "from": "attack",
+      "gap": 1.1,
+      "id": "attack_exit",
+      "to": "approach"
+    },
+    {
+      "from": "attack",
+      "gap": 0.35,
+      "id": "overlap_enter_requires_hold",
+      "overlapHeld": 0.5,
+      "to": "overlap"
+    },
+    {
+      "from": "overlap",
+      "gap": 0.55,
+      "id": "overlap_exit",
+      "overlapKnown": true,
+      "to": "attack"
+    },
+    {
+      "from": "closing",
+      "gap": 0.3,
+      "id": "skip_inward_bands",
+      "overlapHeld": 0.5,
+      "to": "overlap"
+    }
+  ],
+  "compositeScenarios": [
+    {
+      "distinctTargets": true,
+      "heldSeconds": 1.0,
+      "id": "distinct_relations_open",
+      "result": "started",
+      "sameHero": true
+    },
+    {
+      "distinctTargets": false,
+      "heldSeconds": 1.0,
+      "id": "same_target_rejected",
+      "result": "inactive",
+      "sameHero": true
+    },
+    {
+      "distinctTargets": true,
+      "heldSeconds": 1.0,
+      "id": "one_relation_unknown",
+      "relationKnown": false,
+      "result": "inactive",
+      "sameHero": true
+    },
+    {
+      "distinctTargets": true,
+      "id": "relation_replacement_closes",
+      "replacement": true,
+      "result": "ended",
+      "sameHero": true
+    },
+    {
+      "distinctTargets": true,
+      "id": "temporary_loss_restored",
+      "lossSeconds": 0.99,
+      "result": "active",
+      "sameHero": true
+    },
+    {
+      "distinctTargets": true,
+      "id": "loss_at_boundary_closes",
+      "lossSeconds": 1.0,
+      "result": "ended",
+      "sameHero": true
+    }
+  ],
+  "determinism": {
+    "authorityOrder": "frameSequence",
+    "expected": "byte_identical_facts_events_and_transition_reasons",
+    "identicalInputs": [
+      "frameSequence",
+      "featureValues",
+      "quality",
+      "parameterHash",
+      "correlationKey"
+    ]
+  },
+  "directionalTraces": [
+    {
+      "assertions": [
+        "one_started",
+        "sign_slope_negative_net_closing_positive"
+      ],
+      "id": "sustained_closing_enters_once",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 2.99,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 3.0,
+          "emission": "started",
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "active"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "no_started",
+        "insufficient_net_closing_false"
+      ],
+      "id": "braking_oscillation_does_not_enter",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 1.0,
+          "emission": null,
+          "enter": false,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "inactive",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 1.0,
+          "emission": null,
+          "enter": false,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "inactive",
+          "stateBefore": "candidate"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "unknown_never_satisfies_enter"
+      ],
+      "id": "unknown_breaks_confirmation",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": null,
+          "elapsedInStateSeconds": 1.0,
+          "emission": null,
+          "enter": null,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "inactive",
+          "stateBefore": "candidate"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "one_started",
+        "one_ended",
+        "unknown_clear_hold"
+      ],
+      "id": "active_stale_clears_after_hold",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 3.0,
+          "emission": "started",
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": null,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": null,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "clearing",
+          "stateBefore": "active"
+        },
+        {
+          "clear": null,
+          "elapsedInStateSeconds": 1.99,
+          "emission": null,
+          "enter": null,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "clearing",
+          "stateBefore": "clearing"
+        },
+        {
+          "clear": null,
+          "elapsedInStateSeconds": 2.0,
+          "emission": "ended",
+          "enter": null,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "inactive",
+          "stateBefore": "clearing"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "relation_epoch_immutable",
+        "one_ended"
+      ],
+      "id": "target_swap_closes_immediately",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 3.0,
+          "emission": "started",
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": "ended",
+          "enter": null,
+          "immediateInvalidator": true,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "inactive",
+          "stateBefore": "active"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "one_updated",
+        "latest_candidate_only"
+      ],
+      "id": "material_update_rate_limited",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 3.0,
+          "emission": "started",
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": true,
+          "secondsSinceUpdate": 5.99,
+          "stateAfter": "active",
+          "stateBefore": "active"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": "updated",
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": true,
+          "secondsSinceUpdate": 6.0,
+          "stateAfter": "active",
+          "stateBefore": "active"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "no_second_started",
+        "same_relation_restored"
+      ],
+      "id": "clear_cancelled_by_full_enter",
+      "steps": [
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "candidate",
+          "stateBefore": "inactive"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 3.0,
+          "emission": "started",
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "candidate"
+        },
+        {
+          "clear": true,
+          "elapsedInStateSeconds": 0.0,
+          "emission": null,
+          "enter": false,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "clearing",
+          "stateBefore": "active"
+        },
+        {
+          "clear": false,
+          "elapsedInStateSeconds": 1.0,
+          "emission": null,
+          "enter": true,
+          "immediateInvalidator": false,
+          "materialChange": false,
+          "secondsSinceUpdate": 0.0,
+          "stateAfter": "active",
+          "stateBefore": "clearing"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": "detector-catalog-goldens/2"
+}

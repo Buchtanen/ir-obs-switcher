@@ -17,6 +17,8 @@ These files make the human design registries mechanically reviewable before runt
 - `api-goldens.json` and `build_api_contracts.py` validate ready/degraded status, decision nullability/order, offline validation bindings, manual speech admission, all public errors, transport/limit guards and registry-backed cross-field invariants.
 - `actor-transition-model.json` and its schema enumerate the exact five speech-lane states × 17 NarrativeCommand kinds, single-mailbox partitions, admission/coalescing rules and planning-cycle bounds.
 - `actor-transition-goldens.json`, `actor-transition-mutations.json` and `build_actor_transition_model.py` execute token/reset/deadline/manual/quarantine/shutdown races, overflow recovery and same-time reducer ordering while rejecting structural policy drift.
+- `detector-catalog.json` and its schema freeze the two directional battle detectors' identical 23-parameter algorithm and the two-parameter two-front composite, including ordered actor/correlation identity and registry-backed outputs.
+- `detector-catalog-goldens.json`, `detector-catalog-mutations.json` and `build_detector_catalog.py` execute FSM/sign/unknown/rate-limit, band-hysteresis and composite-correlation fixtures and reject unsafe parameter, identity, reference and release-policy drift.
 
 Run from the repository root:
 
@@ -28,6 +30,7 @@ python3 docs/v2.0.0/machine/build_successor_graph.py
 python3 docs/v2.0.0/machine/build_config_contract.py
 python3 docs/v2.0.0/machine/build_api_contracts.py
 python3 docs/v2.0.0/machine/build_actor_transition_model.py
+python3 docs/v2.0.0/machine/build_detector_catalog.py
 ```
 
 Expected baseline summary:
@@ -40,6 +43,7 @@ Successor graph OK: 64 nodes, 50 edges, 36 no-continuation nodes, DAG, 10 reject
 Config contract OK: 50 static + 2 template keys, 14 boundaries, 13 migrations, 2 valid + 8 invalid + 2 legacy goldens, mixed-boundary replay
 API contracts OK: 4 routes, 8 public schemas, 18 valid + 10 invalid payload goldens, 6 transport/query guards, 1 removed route
 Actor transition model OK: 5 lanes × 17 commands = 85 pairs, 13 race traces, 10 overflow scenarios, 10 rejected mutations
+Detector catalog OK: 3 definitions, 23 directional + 2 composite parameters, 7 FSM traces + 14 boundary/composite fixtures, 12 rejected mutations
 ```
 
 Reason identity is the pair `(reasonDomain, reasonId)`. Repeated strings across domains are intentional only when their plain-language meaning is identical; uniqueness is enforced inside each domain.

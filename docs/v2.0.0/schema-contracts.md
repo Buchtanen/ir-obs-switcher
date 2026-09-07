@@ -2,7 +2,7 @@
 
 **Status:** design-freeze candidate owned by issues #235–#239, #245 and #261
 
-This branch-only artifact freezes the semantic DTO boundary. Field names below are the canonical lower-camel-case JSON/tape representation; Python may use snake_case internally but round-trips must be lossless. Core DTO, 64-beat, successor-graph, public-config and public-API JSON Schema projections are materialized under `machine/`; detector and executable scenario fixtures remain separate design-freeze gates.
+This branch-only artifact freezes the semantic DTO boundary. Field names below are the canonical lower-camel-case JSON/tape representation; Python may use snake_case internally but round-trips must be lossless. Core DTO, beat, detector, successor-graph, public-config and public-API JSON Schema projections are materialized under `machine/`; catalog-loader and executable scenario fixtures remain separate design-freeze gates.
 
 Implementation placement is one neutral `src/irswitch/contracts/narrative.py` module (or package with the same dependency role) containing DTO/schema primitives only, plus packaged canonical schemas under `src/irswitch/contracts/schemas/v2/`. It imports no `logic`, `events`, `race`, `commentary`, `overlay`, `obs` or `server` implementation. Producers, replay/offline tooling and the commentary consumer may import/read it; cross-layer behavior remains in their owning modules. Runtime parsing uses the typed contract layer and explicit invariant checks, so shipping JSON Schema does not add a new validation dependency.
 
