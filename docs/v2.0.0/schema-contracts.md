@@ -47,7 +47,8 @@ The narrative adapter may read the immutable frozen envelope plus upstream proje
 | ID | Construction | Scope |
 | --- | --- | --- |
 | `processInstanceId` | random UUID at process start | one process |
-| `streamEpoch` | positive BroadcastClock/narrative epoch integer; 0 means none yet | process-local stream occurrence |
+| `broadcastEpoch` | positive debounced BroadcastClock output epoch; 0 means no observed output yet | one observed OBS output run in this process |
+| `streamEpoch` | positive StreamTimeline narrative-run epoch, allocated on commentary admission to an active `broadcastEpoch`; 0 means none has yet been allocated in this process | one uninterrupted automatic-commentary run |
 | `sessionRef` | exact `{subSessionId: string, sessionNum: int}` | iRacing session row |
 | `occurrenceId` | stable encoded stream epoch + stage + occurrence ordinal | one run of one session ref |
 | `lineageId` | ordered active ancestor occurrence IDs joined/encoded losslessly | active session branch |
@@ -72,12 +73,13 @@ Exactly these fields are required unless marked nullable:
 | `sourceEnvelope` | `{sessionId,eventId,sequence,eventType}` or null | unchanged V4 provenance |
 | `sourceOrder` | `{fanoutStreamSequence,sourceOrdinal}` or null | external accepted order |
 | `occurredMonoMs` | int | observation time |
+| `broadcastEpoch` | int | parent OBS output identity |
 | `streamEpoch` | int | stream identity |
 | `sessionRef` | SessionRef or null | exact current ref |
 | `occurrenceId` | ID or null | occurrence at event time |
 | `lineageId` | ID or null | active lineage at event time |
 | `correlationKey` | 0–8 IDs | ordered semantic identity |
-| `factIds` | 0–32 unique IDs | facts proving event claims |
+| `factIds` | 1–32 unique IDs | facts proving event claims; context-only visual identifiers never enter this DTO |
 | `materialRevision` | int | correlation revision |
 | `confidence` | float 0..1 | evidence confidence |
 | `tapeChannel` | registered channel ID | taxonomy dimension |
@@ -92,12 +94,12 @@ This is a read-only pre-arbitration/tuning record and never enters episode truth
 
 ```text
 schemaVersion, observationId, detectorId, detectorVersion, detectorConfigHash,
-observedMonoMs, streamEpoch, sessionRef?, occurrenceId?, correlationKey[0..8],
+observedMonoMs, broadcastEpoch, streamEpoch, sessionRef?, occurrenceId?, correlationKey[0..8],
 previousState, candidateState, transitionReason, featureValues{0..64},
 predicateResults[0..64], coverage[0..16], wouldEmitEventKind?, tapeChannel
 ```
 
-Detector states are `inactive|candidate|active|clearing`. Predicate results are `true|false|unknown`; each value names its registered feature/predicate ID and typed value/unit. `wouldEmitEventKind` is nullable. Only the accepted event adapter can create NarrativeEvent/AtomicFact state.
+Detector states are `inactive|candidate|active|clearing`. Predicate results are `true|false|unknown`; each value names its registered feature/predicate ID and typed value/unit. `wouldEmitEventKind` is nullable. FactLedger and the typed detector/timeline producers create AtomicFact truth independently of editorial acceptance. Only the accepted-event adapter creates a NarrativeEvent, opens or materially revises a speakable episode, or creates an EventOpportunity. A newer FactView may close/invalidate an episode or plan whose claims became false; it cannot open an episode, increment a speakable material revision or trigger a director pass by itself.
 
 ## AtomicFact and FactView
 
@@ -106,18 +108,18 @@ AtomicFact fields:
 ```text
 schemaVersion, factId, predicate, subjectId?, objectId?, attributes{0..32},
 polarity, validFromMonoMs, validUntilMonoMs?, observedAtMonoMs,
-occurrenceId?, lineageId?, evidenceRefs[1..16], confidence,
+broadcastEpoch, streamEpoch, occurrenceId?, lineageId?, evidenceRefs[1..16], confidence,
 scope, status, revision
 ```
 
 - `polarity`: `positive|negative`.
 - `scope`: `occurrence|downstream|stream|revalidate|historical_only`.
 - `status`: `provisional|active|expired|superseded|historical|rejected|unknown`.
-- Occurrence/lineage are nullable only for `scope=stream`; occurrence/downstream/historical facts require both. Revalidate facts follow the scope declared by their predicate registry.
+- Broadcast/stream epochs are positive for every fact admitted to a narrative run. Occurrence/lineage are nullable only for `scope=stream`; occurrence, downstream, revalidate and historical-only facts require both in the v2 registry. On a session transition a revalidate producer may publish a newly evidenced fact under the new occurrence, but the old fact never changes identity/scope in place.
 - Predicate/attribute registries define scalar type, unit, null/unknown policy, actor ordering and legal scopes. Missing is unknown; zero/false are values.
 - `validUntilMonoMs`, when present, is greater than or equal to valid-from. `observedAtMonoMs` cannot be later than the FactView creation instant.
 
-FactView is `{schemaVersion, viewRevision, createdMonoMs, streamEpoch, occurrenceId?, lineageId?, historyComplete, facts[0..1024], compactedSummaryRefs[0..64]}`. Facts sort by fact ID for hashing; semantic recency comes from revisions/times, not array order. The live caps remain 512 active plus 512 historical summaries.
+FactView is `{schemaVersion, viewRevision, createdMonoMs, broadcastEpoch, streamEpoch, occurrenceId?, lineageId?, historyComplete, facts[0..1024], compactedSummaryRefs[0..64]}`. Facts sort by fact ID for hashing; semantic recency comes from revisions/times, not array order. The live caps remain 512 active plus 512 historical summaries.
 
 ## Episode
 
@@ -132,7 +134,7 @@ nextEligibleMonoMs, lastSpokenBeatId?, continuationPriority,
 historyComplete
 ```
 
-Scope is `stream|occurrence`. Only the `stream_lifecycle` definition may omit occurrence/lineage; occurrence scope requires both. State is `candidate|active|suspended|resolved|invalidated`. Dormant is absence, not a serialized instance. Resolved/invalidated requires terminal time and registered resolution reason; other states require both null. A compacted summary uses the same identity/state contract but may replace `factIds` with summary fact refs explicitly marked historical.
+Scope is `stream|occurrence`. `stream_lifecycle` and the explicitly stream-routed `filler_single` lobby episode may omit occurrence/lineage; occurrence scope requires both. The lobby stream form may reference only stream-scope facts and resolves after its silence impulse, context change or narrative-run end. State is `candidate|active|suspended|resolved|invalidated`. Dormant is absence, not a serialized instance. Resolved/invalidated requires terminal time and registered resolution reason; other states require both null. A compacted summary uses the same identity/state contract but may replace `factIds` with summary fact refs explicitly marked historical.
 
 ## EventOpportunity
 
@@ -140,13 +142,13 @@ Required fields:
 
 ```text
 schemaVersion, opportunityId, eventId, eventKind, sourceOrder?,
-streamEpoch, occurrenceId?, lineageId?, episodeId?, correlationKey[0..8],
+streamEpoch, occurrenceId?, lineageId?, episodeId, correlationKey[0..8],
 tapeChannel, createdMonoMs, expiresMonoMs, basePriority, urgency,
 penaltyCoefficient, materialRevision, state, reservationToken?,
-terminalReason?, policyHash, sourceFactIds[0..32]
+terminalReason?, policyHash, sourceFactIds[1..32]
 ```
 
-Urgency is `background|context|story|critical`; state is `pending|reserved|consumed|expired|superseded|invalidated|evicted`. Only reserved has a reservation token. Only terminal states have terminal reason. Expiry is strictly after creation; priority is finite 0..100 and penalty is finite 0..4. The opportunity contains no prompt, BeatPlan or text.
+Urgency is `background|context|story|critical`; state is `pending|reserved|consumed|expired|superseded|invalidated|evicted`. Only reserved has a reservation token. Only terminal states have terminal reason. Expiry is strictly after creation; priority is finite 0..100 and penalty is finite 0..4. Routing creates/locates the episode before queue admission, so `episodeId` is never null. `occurrenceId` and `lineageId` may both be null only for `stream.started` routed to `stream_lifecycle` or a `filler.lobby` silence opportunity routed to the stream form of `filler_single`; all other opportunities require both. The opportunity contains no prompt, BeatPlan or text.
 
 ## PromptOptions and BeatPlan
 
@@ -162,7 +164,7 @@ Freedom is `tight|balanced|loose`; pattern choice is `fixed|family_pool`; option
 BeatPlan is exactly:
 
 ```text
-schemaVersion, planId, beatId, episodeId, opportunityId?, candidateSource,
+schemaVersion, planId, planningCycleId, cycleAttemptOrdinal, beatId, episodeId, opportunityId?, candidateSource,
 beatRole, streamEpoch, occurrenceId?, lineageId?, episodeRevision,
 requiredClaims[1..16], optionalClaims[0..2], forbiddenClaimTypes[0..32],
 requiredFactIds[1..32], realizationFamily, realizationPattern,
@@ -171,18 +173,18 @@ maxSeconds, plannedMonoMs, expiresMonoMs, sourceRefs[1..32],
 catalogHash, factViewRevision
 ```
 
-Candidate source is `event_opportunity|story_successor|episode_beat|filler`; role is `opening|update|outcome|recap|transition|filler`; backend is `authored|qwen_compiled`; language is constant `en`. Only `stream.started` may omit occurrence/lineage. Claims are typed predicate/actor/attribute objects referencing required fact IDs, not natural-language assertions. `maxChars` is 1..512 and cannot exceed endpoint/catalog limits. A BeatPlan is immutable and exists only for the current lane attempt.
+Candidate source is `event_opportunity|story_successor|episode_beat|filler`; role is `opening|update|outcome|recap|transition|filler`; backend is `authored|qwen_compiled`; language is constant `en`. `planningCycleId` identifies one director impulse and `cycleAttemptOrdinal` is exactly `1|2`; at most two different BeatPlans may be dispatched in that cycle. Only `stream.started` and the stream-scope form of `filler.lobby` may omit occurrence/lineage; the latter may bind only `broadcast.context(context=lobby)` plus a current stream-scope `context.track_identity`. Claims are typed predicate/actor/attribute objects referencing required fact IDs, not natural-language assertions. `maxChars` is 1..512 and cannot exceed endpoint/catalog limits. A BeatPlan is immutable and exists only for the current lane attempt.
 
 ## Tape envelope
 
-One NDJSON file begins with one manifest record and then tape records. Rotated continuations repeat the manifest with the same stream/process identity and a new file ordinal.
+One NDJSON file begins with one manifest record and then tape records. A file is scoped to one `(processInstanceId, streamEpoch-or-null)`; records from two narrative runs never share a file. Rotated continuations repeat the manifest with the same process/broadcast/stream identity and a new file ordinal. Pre-run process/health records may use a separate `streamEpoch=null` file. Narrative-run close (confirmed OBS end, commentary disable or shutdown) writes a trailer and closes the current file; re-enable opens a new manifest with the new stream epoch.
 
 Manifest fields:
 
 ```text
 schemaVersion, recordType="manifest", processInstanceId, processStartedAtUtc,
 processMonotonicOriginMs=0, appVersion, gitRevision?, platform,
-streamEpoch?, fileOrdinal, openedAtUtc, catalogVersion, catalogHash,
+broadcastEpoch?, streamEpoch?, fileOrdinal, openedAtUtc, catalogVersion, catalogHash,
 configGeneration, configHash, enabledPurposeChannels,
 redactionPolicy, historyComplete, previousFileHash?
 ```
@@ -190,7 +192,7 @@ redactionPolicy, historyComplete, previousFileHash?
 Record fields:
 
 ```text
-schemaVersion, recordId, recordType, processInstanceId, streamEpoch?,
+schemaVersion, recordId, recordType, processInstanceId, broadcastEpoch?, streamEpoch?,
 reducerSequence?, recordedMonoMs, recordedAtUtc?, purposeChannel,
 tapeChannel?, correlationIds[0..8], payloadSchemaVersion, payload
 ```
@@ -206,11 +208,12 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | Domain | IDs |
 | --- | --- |
 | director selection | `highest_valid_candidate`, `active_story_continuation`, `related_event_update`, `higher_urgency_switch`, `switch_margin_met` |
-| director silence/reject | `no_candidate`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
-| opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `evicted_capacity` |
-| episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `evidence_invalidated` |
+| director silence/reject | `no_candidate`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `planning_cycle_exhausted`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
+| opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `commentary_disabled`, `evicted_capacity` |
+| episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated` |
 | attempt terminal | `realization_timeout`, `realization_transport`, `realization_invalid_response`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
 | verifier rejection | `empty`, `too_long`, `sentence_count`, `token_count`, `non_en_contract`, `meta_output`, `unknown_fragment`, `unknown_entity`, `actor_reversed`, `actor_ambiguous`, `number_unbound`, `number_mismatch`, `unit_mismatch`, `polarity_mismatch`, `tense_mismatch`, `required_missing`, `forbidden_claim`, `extra_claim`, `causal_inference`, `intent_inference`, `emotion_inference`, `medical_inference`, `prediction_as_result`, `result_as_prediction`, `unsupported_certainty`, `unsafe_negation` |
+| detector transition | `enter_started`, `enter_confirmed`, `enter_lost`, `material_band_changed`, `material_delta_met`, `update_rate_limited`, `clear_started`, `clear_cancelled`, `clear_confirmed`, `target_changed`, `occurrence_reset`, `stream_reset`, `unsupported_stage`, `identity_conflict`, `feature_unknown`, `required_capture_lost` |
 | speech terminal | `completed`, `interrupted_stream_end`, `interrupted_occurrence_reset`, `interrupted_commentary_disabled`, `interrupted_truth_invalidated`, `interrupted_shutdown`, `tts_failed_after_acceptance` |
 | mailbox/tape health | `mailbox_evicted_update`, `mailbox_recovery`, `mailbox_history_incomplete`, `tape_queue_drop`, `tape_write_failed`, `tape_flush_timeout`, `capture_unavailable` |
 | config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_unavailable`, `session_identity_conflict`, `obs_state_unknown`, `history_incomplete` |
@@ -226,6 +229,8 @@ Before schemas can be implemented, issue #236 must materialize machine-readable 
 - feature IDs/units/sample quality;
 - story, beat, realization-family, relation and `tapeChannel` IDs;
 - reason IDs above and detector transition reasons.
+
+The exact human-review candidate for fact predicates, scalar/unit types, claim allowlists, feature IDs and `tapeChannel` taxonomy is [the fact/feature registry](fact-feature-registry.md). Machine schemas may encode it, but may not silently add a predicate, attribute, enum literal, feature or channel.
 
 The loader rejects duplicate/case-colliding IDs, unknown references, unit mismatch, undeclared attributes, unsafe array/object bounds and catalog hashes built with a different registry version.
 

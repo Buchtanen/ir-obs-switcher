@@ -23,7 +23,6 @@ INI booleans are exactly `true|false`; integers/floats use finite base-10 notati
 | `commentary.director.switch_margin` | float | `8.0` | 0–50 | score | next director pass |
 | `commentary.director.global_min_interval_s` | float | `4.0` | 0–30 | seconds | next director pass |
 | `commentary.director.long_silence_s` | float | `33.0` | 10–300 | seconds | rearm next silence deadline |
-| `commentary.director.mailbox_capacity` | int | `64` | 16–512, power of two | commands | next stream epoch |
 | `commentary.director.opportunity_capacity` | int | `128` | 16–512 | opportunities | next stream epoch |
 | `commentary.director.active_episode_capacity` | int | `64` | 8–256 | episodes | next stream epoch |
 | `commentary.director.resolved_episode_capacity` | int | `256` | 32–2048 | summaries | next stream epoch |
@@ -31,6 +30,8 @@ INI booleans are exactly `true|false`; integers/floats use finite base-10 notati
 | `commentary.director.max_consecutive_story_beats` | int | `3` | 1–8 | beats | next director pass |
 
 Enabling commentary during an already active OBS stream creates a new narrative epoch with `start_reason=enabled_mid_stream` and `history_complete=false`; it does not claim pre-enable history. Disabling cancels unaccepted generation and future automatic planning immediately. Already accepted narrative playback receives a bounded stop request and records its actual terminal state; an explicitly requested manual audio test is independent and continues.
+
+NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64 = 56 ordinary + 7 protected + 1 emergency` admission invariant is part of the actor safety contract; changing it requires an actor-contract/schema review rather than live tuning.
 
 ### LLM and TTS
 
@@ -149,7 +150,9 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
   "reason": null,
   "language": "en",
   "timeline": {
+    "broadcastEpoch": 2,
     "streamEpoch": 3,
+    "narrativeRunActive": true,
     "streamActive": true,
     "streamState": "active",
     "sessionRef": {"subSessionId": "123", "sessionNum": 2},
@@ -205,7 +208,7 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
 }
 ~~~
 
-Enums: status is `disabled|starting|ready|degraded|stopping`; streamState is `inactive|active|unknown`; `streamActive` is its lossless projection `false|true|null`. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first known stream, `streamEpoch=0`; whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
+Enums: status is `disabled|starting|ready|degraded|stopping`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
 
 Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
 
@@ -248,21 +251,23 @@ The endpoint is offline with respect to live state: it validates supplied EN tex
 ~~~json
 {
   "schemaVersion": "commentary-runtime/2",
-  "text": "He is closing on Morgan, the gap down to eight tenths.",
+  "text": "He is closing on Morgan, the gap at one point four seconds.",
   "beatId": "battle.approach",
   "evaluationAtMonoMs": 90231,
   "factBindings": [
     {
       "schemaVersion": "atomic-fact/2",
       "factId": "fact:88",
-      "predicate": "approaching",
+      "predicate": "battle.approaching",
       "subjectId": "hero",
       "objectId": "car:22",
-      "attributes": {"gap_s": 0.8},
+      "attributes": {"materialBand": "material", "gap": 1.4, "targetEpoch": "relation:4"},
       "polarity": "positive",
       "validFromMonoMs": 89000,
       "validUntilMonoMs": 94000,
       "observedAtMonoMs": 90180,
+      "broadcastEpoch": 2,
+      "streamEpoch": 3,
       "occurrenceId": "3:race:2",
       "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
       "evidenceRefs": ["event:401", "feature:gap-ahead:77"],
@@ -282,12 +287,12 @@ The endpoint is offline with respect to live state: it validates supplied EN tex
   "beatId": "battle.approach",
   "issues": [],
   "claims": [
-    {"predicate": "approaching", "subjectId": "hero", "objectId": "car:22", "verdict": "supported"}
+    {"predicate": "battle.approaching", "subjectId": "hero", "objectId": "car:22", "verdict": "supported"}
   ]
 }
 ~~~
 
-Syntactically valid requests return 200 even when `valid=false`. Unknown beat or malformed binding schema is 400. `text` is 1–512 normalized Unicode characters, `beatId` is 1–128 ASCII ID characters, `factBindings` contains 1–32 unique fact IDs, every attributes object has at most 32 registry keys and every evidenceRefs array has at most 16 unique IDs. Every binding contains exactly the fields shown; nullable fields are `subjectId`, `objectId` and `validUntilMonoMs`. Predicate/attribute IDs, scalar types and implied units come from the frozen fact registry. `polarity` is `positive|negative`, confidence is finite `0..1`, scope is `occurrence|downstream|stream|revalidate|historical_only`, status is `active|expired|superseded|historical|provisional|rejected|unknown`, revisions and millisecond times are nonnegative integers and all strings reject control characters. Only the EN catalog/tokenizer is used. Issues contain stable `code`, `severity` (`error|warning`) and a message capped at 256 characters.
+Syntactically valid requests return 200 even when `valid=false`. Unknown beat or malformed binding schema is 400. `text` is 1–512 normalized Unicode characters, `beatId` is 1–128 ASCII ID characters, `factBindings` contains 1–32 unique fact IDs, every attributes object has at most 32 registry keys and every evidenceRefs array has 1–16 unique IDs. Every binding contains exactly the AtomicFact fields shown; `subjectId`, `objectId` and `validUntilMonoMs` are generally nullable. `occurrenceId` and `lineageId` are nullable only together and only for stream-scope bindings admitted by the selected beat: `stream.started`, or `broadcast.context`/`context.track_identity` in the stream form of `filler.lobby`. All other beat bindings require both. Predicate/attribute IDs, scalar types and implied units come from the frozen fact registry. `polarity` is `positive|negative`, confidence is finite `0..1`, scope is `occurrence|downstream|stream|revalidate|historical_only`, status is `active|expired|superseded|historical|provisional|rejected|unknown`, revisions and millisecond times are nonnegative integers and all strings reject control characters. Only the EN catalog/tokenizer is used. Issues contain stable `code`, `severity` (`error|warning`) and a message capped at 256 characters.
 
 Validation is available while automatic commentary is disabled, provided the v2 catalog/registries loaded successfully. Otherwise it returns `component_unavailable`/503; it never calls Qwen or reads live runtime facts.
 

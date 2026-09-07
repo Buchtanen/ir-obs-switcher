@@ -221,10 +221,10 @@ The lifecycle command that caused a filler evaluation remains on `filler.lifecyc
 | `pit_cycle` | occurrence + pit-cycle ordinal | entry | lane, stopped, released, exit | outcome, reset | entry → lane → stopped? → released? → exit → outcome |
 | `incident` | occurrence + incident ordinal | classified incident | aftermath | recovered, session/reset | incident → aftermath/invalid-lap → recovery |
 | `session_occurrence` | occurrence ID | session started/restarted | context, flags, final lap | session ended/superseded | intro/restart → context → checkered/finish → wrap → preview |
-| `stream_lifecycle` | narrative stream epoch | stream started | none | stream ended/process shutdown | stream opening only |
+| `stream_lifecycle` | narrative `streamEpoch` under one `broadcastEpoch` | narrative run started | none | OBS stream end/commentary disable/process shutdown | stream opening only |
 | `bio_pressure` | occurrence + hero + sensor epoch | pressure enter | material band revision | clear/stale/reset | pressure context or silence |
 | `single_result` | occurrence + accepted event ID | self-contained accepted result/context event | never | consumed, superseded, invalid or TTL | none; may also close a correlated story |
-| `filler_single` | silence impulse ID | long silence + one valid fact set | never | selected, invalid or TTL | none |
+| `filler_single` | silence impulse ID + scope; occurrence normally, stream only for pre-session lobby | long silence + one valid fact set | never | selected, invalid or TTL | none |
 
 Question marks mean an optional lifecycle state, not a non-deterministic edge. Every edge additionally requires matching occurrence/lineage and its listed correlation identity. A terminal event may produce a self-contained result beat even if its opening beat was never spoken.
 
@@ -338,7 +338,7 @@ The table is the authoritative 64-beat design baseline. `on_track` means normali
 | `pit.released` | pit/update | `live_story` | same pit cycle; moving evidence | release / exit/reset |
 | `pit.exit` | pit/closure | `result` | same pit cycle; pit-exit edge | exit / outcome or terminal |
 | `pit.outcome` | pit/outcome | `result` | same pit cycle; entry/exit comparison | outcome result / terminal |
-| `stream.started` | stream/opening | `critical` | confirmed active BroadcastClock epoch | STREAM_STARTED / stream end |
+| `stream.started` | stream/opening | `critical` | new narrative `streamEpoch` bound to confirmed active `broadcastEpoch` | STREAM_STARTED / OBS end, commentary disable or shutdown |
 | `session.intro.practice` | session/opening | `context` | practice occurrence | SESSION_STARTED / occurrence end |
 | `session.intro.qualifying` | session/opening | `context` | qualifying occurrence | SESSION_STARTED / occurrence end |
 | `session.intro.race` | session/opening | `context` | race occurrence | SESSION_STARTED / occurrence end |
@@ -365,79 +365,79 @@ The table is the authoritative 64-beat design baseline. `on_track` means normali
 | `filler.in_lap` | filler/single | `filler` | long silence + in-lap + fresh facts | silence impulse / selected or invalid |
 | `filler.parade_lap` | filler/single | `filler` | long silence/parade impulse + parade fact | impulse / selected or invalid |
 | `filler.garage` | filler/single | `filler` | long silence + garage context + fresh fact | silence impulse / selected or invalid |
-| `filler.lobby` | filler/single | `filler` | long silence + lobby context + fresh fact | silence impulse / selected or invalid |
+| `filler.lobby` | filler/single | `filler` | long silence + lobby context + fresh fact; stream form only with track identity | silence impulse / selected or invalid |
 | `filler.quiet_track` | filler/single | `filler` | long silence + on-track + no live race opportunity | silence impulse / selected or invalid |
 
 ## Claim and realization mapping
 
-Every row inherits global contract `G0`: only bound EN names/numbers/units may be emitted; unbound cause, intent, emotion, certainty, future outcome, weather and medical interpretation are forbidden. “Forbidden addition” below extends `G0`. Optional claims must be selected into BeatPlan before generation.
+Every row inherits global contract `G0`: only bound EN names/numbers/units may be emitted; unbound cause, intent, emotion, certainty, future outcome, weather and medical interpretation are forbidden. “Forbidden addition” below extends `G0`. Optional claims must be selected into BeatPlan before generation. Predicate IDs and allowed attributes below are canonical and resolve through [the fact/feature registry](fact-feature-registry.md); `W_weather`, `W_field`, `W_filler_phase`, `W_filler_off_track` and `W_quiet_track` mean exactly the closed allowlists defined there, not free text selection.
 
 | BeatDefinition | Required claims | Forbidden addition | Realization family |
 | --- | --- | --- | --- |
-| `timing.lap.completed` | `lap_completed(hero, lap)` | PB or pace judgement without comparison fact | `timing.lap_result` |
-| `timing.lap.personal_best` | `personal_best(hero, lap_time, reference)` | session/field best unless explicitly bound | `timing.lap_result` |
-| `timing.pace.gain` | `delta_improved(hero, delta, reference)` | completed result or guaranteed target | `timing.delta` |
-| `timing.pace.loss` | `delta_worsened(hero, delta, reference)` | cause of loss | `timing.delta` |
-| `timing.sector.split` | `sector_completed(hero, sector, delta?)` | sector-best claim | `timing.sector` |
-| `timing.sector.best` | `sector_best(hero, sector, reference)` | lap/PB claim | `timing.sector` |
-| `timing.target.locked` | `target_locked(hero, target_position, gap)` | achievement or prediction certainty | `timing.target` |
-| `timing.lap.projected` | `projection(hero, projected_time, estimate_version)` | completed result; certainty wording | `timing.projection` |
-| `timing.lap.hot` | `active_attempt(hero, evidence)` | eventual result | `timing.attempt` |
-| `timing.position.attack` | `projected_position_attack(hero, target_position)` | actual position gained | `timing.projection` |
-| `timing.clean_streak` | `clean_lap_streak(hero, count)` | whole-session incident-free claim | `timing.consistency` |
-| `timing.pace.hunt` | `pace_target(hero, target_position, gap)` | pass/position outcome | `timing.target` |
-| `battle.pursuit` | `closing(hero, target, trend, gap)` | side-by-side/pass certainty | `battle.closing` |
-| `battle.approach` | `approaching(hero, target, material_band)` | contact/pass/outcome | `battle.closing` |
-| `battle.attack_range` | `attack_range(hero, target, gap_band)` | pass completed | `battle.attack` |
-| `battle.side_by_side` | `side_by_side(hero, target)` | winner/outcome before result | `battle.overlap` |
-| `battle.pressure_behind` | `closing(target, hero, trend, gap)` | reverse actor roles; inevitable loss | `battle.pressure` |
-| `battle.rival_threat` | `position_threat(target, hero, target_position)` | overtake already completed | `battle.pressure` |
-| `battle.two_front` | `closing(hero, front)` + `closing(rear, hero)` | collapsing actors into one target | `battle.two_front` |
-| `battle.won` | `battle_outcome(hero, target, won)` | pass mechanism unless evidenced | `battle.outcome` |
-| `position.pass` | `passed(hero, target, old_order, new_order)` | contact/cause; leader claim unless bound | `position.pass` |
-| `position.gained` | `position_changed(hero, old, new, gained)` | named passed target unless evidenced | `position.change` |
-| `position.lost` | `position_changed(hero, old, new, lost)` | named overtaker/cause unless evidenced | `position.change` |
-| `position.leader_change` | `leader_changed(old_leader, new_leader)` | hero involvement unless bound | `position.leader` |
-| `incident.off_track` | `incident(hero)` + `off_track(hero)` | cause, damage or blame | `incident.event` |
-| `incident.unclassified` | `incident(hero)` | off-track/contact/damage classification | `incident.event` |
-| `incident.invalid_lap` | `lap_invalid(hero, lap)` | incident cause unless bound | `incident.invalid_lap` |
-| `incident.aftermath` | `incident_state(hero, state)` | recovery or damage outcome | `incident.aftermath` |
-| `incident.recovery` | `recovered_motion(hero)` + `on_track_or_known_surface` | “no damage” or full recovery claim | `incident.recovery` |
-| `pit.entry` | `pit_phase(hero, entry, cycle)` | strategy reason | `pit.lifecycle` |
-| `pit.lane` | `pit_phase(hero, lane, cycle)` | stop/release outcome | `pit.lifecycle` |
-| `pit.stopped` | `pit_phase(hero, stopped, cycle)` | service performed unless bound | `pit.lifecycle` |
-| `pit.released` | `pit_phase(hero, released, cycle)` | pit exit completed | `pit.lifecycle` |
-| `pit.exit` | `pit_phase(hero, exit, cycle)` | position gain/loss without comparison | `pit.lifecycle` |
-| `pit.outcome` | `pit_outcome(hero, entry_position, exit_position, delta)` | strategy/cause judgement | `pit.outcome` |
-| `stream.started` | `stream_started(epoch, start_reason)` | prior stream/session history when incomplete | `stream.lifecycle` |
-| `session.intro.practice` | `session_started(practice, occurrence)` | qualifying/race facts as current | `session.intro` |
-| `session.intro.qualifying` | `session_started(qualifying, occurrence)` | practice/race facts as current | `session.intro` |
-| `session.intro.race` | `session_started(race, occurrence)` | practice/quali facts unless inherited and marked past | `session.intro` |
-| `session.restart` | `session_restarted(stage, occurrence, predecessor)` | claim that stream restarted | `session.restart` |
-| `session.wrap.practice` | `session_ended(practice, occurrence, reason)` | unsupported result facts | `session.wrap` |
-| `session.wrap.qualifying` | `session_ended(qualifying, occurrence, reason)` | race outcome; unbound grid position | `session.wrap` |
-| `session.wrap.race` | `session_ended(race, occurrence, reason)` | hero finish if not observed | `session.wrap` |
-| `session.preview.next` | `next_present_stage(stage)` | absent/skipped stage; scheduled certainty | `session.preview` |
-| `session.checkered` | `checkered_active(occurrence)` | hero finished or final position | `session.flag` |
-| `session.final_lap` | `final_lap(hero, lap)` | finish result | `session.final_lap` |
-| `session.hero_finish` | `hero_finished(position, class_position?)` | official classification unless final | `session.finish` |
-| `session.qualifying_recap` | `qualifying_result(hero, position, lap_time?)` | race/grid certainty not evidenced | `session.recap` |
-| `session.sof_brief` | `field_strength(value, scope, source)` | quality judgement or result prediction | `session.context` |
-| `session.weather_brief` | explicit current weather fact set | forecast/cause; dry→sunny inference | `session.weather` |
-| `session.weather_change` | `weather_changed(old, new, material_revision)` | unobserved track effect | `session.weather` |
-| `session.field_fact` | one selected typed field fact | extrapolation beyond selected fact | `session.context` |
-| `session.flag.yellow` | `flag_changed(yellow, scope)` | cause/incident identity unless bound | `session.flag` |
-| `session.flag.green` | `flag_changed(green, scope)` | “race start” unless start transition bound | `session.flag` |
-| `session.enter_car.practice` | `entered_car(practice, occurrence)` | lap/pace outcome | `session.vehicle` |
-| `session.enter_car.qualifying` | `entered_car(qualifying, occurrence)` | valid attempt/result before observed | `session.vehicle` |
-| `session.enter_car.race` | `entered_car(race, occurrence)` | green/start state unless bound | `session.vehicle` |
-| `bio.pressure` | `hr_state(hero, band, freshness)` | medical, emotion, cause or performance claim | `bio.context` |
-| `filler.out_lap` | `vehicle_phase(out_lap)` + one selected fresh fact | hot-lap/result prediction | `filler.track_state` |
-| `filler.in_lap` | `vehicle_phase(in_lap)` + one selected fresh fact | pit intent unless bound | `filler.track_state` |
-| `filler.parade_lap` | `vehicle_phase(parade_lap)` + one selected fact | green/race-start timing prediction | `filler.track_state` |
-| `filler.garage` | `broadcast_context(garage)` + one selected fact | on-track action | `filler.off_track` |
-| `filler.lobby` | `broadcast_context(lobby)` + one selected fact | active session action | `filler.off_track` |
-| `filler.quiet_track` | `broadcast_context(on_track)` + one selected stable fact | fabricated race event or urgency | `filler.track_state` |
+| `timing.lap.completed` | `timing.lap_completed(hero; lap[, lapTime])` | PB or pace judgement without comparison fact | `timing.lap_result` |
+| `timing.lap.personal_best` | `timing.personal_best(hero; lapTime, referenceTime, improvement)` | session/field best unless explicitly bound | `timing.lap_result` |
+| `timing.pace.gain` | `timing.delta_improved(hero; delta, referenceId, segmentId)` | completed result or guaranteed target | `timing.delta` |
+| `timing.pace.loss` | `timing.delta_worsened(hero; delta, referenceId, segmentId)` | cause of loss | `timing.delta` |
+| `timing.sector.split` | `timing.sector_completed(hero; sectorId, segmentTime[, delta])` | sector-best claim | `timing.sector` |
+| `timing.sector.best` | `timing.sector_best(hero; sectorId, segmentTime, referenceTime, improvement)` | lap/PB claim | `timing.sector` |
+| `timing.target.locked` | `timing.target_locked(hero; targetPosition, gap, referenceId)` | achievement or prediction certainty | `timing.target` |
+| `timing.lap.projected` | `timing.lap_projection(hero; projectedTime, estimatorVersion, quality)` | completed result; certainty wording | `timing.projection` |
+| `timing.lap.hot` | `timing.active_attempt(hero; attemptId)` | eventual result | `timing.attempt` |
+| `timing.position.attack` | `timing.position_projection(hero; targetPosition, projectedTime, referenceTime)` | actual position gained | `timing.projection` |
+| `timing.clean_streak` | `timing.clean_lap_streak(hero; count)` | whole-session incident-free claim | `timing.consistency` |
+| `timing.pace.hunt` | `timing.pace_target(hero; targetPosition, gap, referenceId)` | pass/position outcome | `timing.target` |
+| `battle.pursuit` | `battle.closing(hero→target; gap, netClosing, slope, targetEpoch)` | side-by-side/pass certainty | `battle.closing` |
+| `battle.approach` | `battle.approaching(hero→target; materialBand, gap, targetEpoch)` | contact/pass/outcome | `battle.closing` |
+| `battle.attack_range` | `battle.attack_range(hero→target; gapBand, gap, targetEpoch)` | pass completed | `battle.attack` |
+| `battle.side_by_side` | `battle.side_by_side(hero→target; relationEpoch)` | winner/outcome before result | `battle.overlap` |
+| `battle.pressure_behind` | `battle.closing(target→hero; gap, netClosing, slope, targetEpoch)` | reverse actor roles; inevitable loss | `battle.pressure` |
+| `battle.rival_threat` | `battle.position_threat(target→hero; positionAtRisk, relationEpoch)` | overtake already completed | `battle.pressure` |
+| `battle.two_front` | `battle.closing(hero→front; …)` + `battle.closing(rear→hero; …)` | collapsing actors into one target | `battle.two_front` |
+| `battle.won` | `battle.outcome(hero→target; outcome=won, relationEpoch)` | pass mechanism unless evidenced | `battle.outcome` |
+| `position.pass` | `position.passed(hero→target; oldPasserPosition, newPasserPosition, oldTargetPosition, newTargetPosition)` | contact/cause; leader claim unless bound | `position.pass` |
+| `position.gained` | `position.changed(hero; oldPosition, newPosition, direction=gained)` | named passed target unless evidenced | `position.change` |
+| `position.lost` | `position.changed(hero; oldPosition, newPosition, direction=lost)` | named overtaker/cause unless evidenced | `position.change` |
+| `position.leader_change` | `position.leader_changed(oldLeader→newLeader; oldCarId, newCarId)` | hero involvement unless bound | `position.leader` |
+| `incident.off_track` | `incident.occurred(hero; incidentOrdinal, incidentDelta)` + `incident.off_track(hero; incidentOrdinal, surface)` | cause, damage or blame | `incident.event` |
+| `incident.unclassified` | `incident.occurred(hero; incidentOrdinal, incidentDelta)` | off-track/contact/damage classification | `incident.event` |
+| `incident.invalid_lap` | `incident.lap_invalid(hero; lap, attemptId)` | incident cause unless bound | `incident.invalid_lap` |
+| `incident.aftermath` | `incident.state(hero; incidentOrdinal, state)` | recovery or damage outcome | `incident.aftermath` |
+| `incident.recovery` | `incident.recovered_motion(hero; incidentOrdinal, heldFor)` + `vehicle.surface(hero; surface=on_track)` | “no damage” or full recovery claim | `incident.recovery` |
+| `pit.entry` | `pit.phase(hero; phase=entry, cycleOrdinal)` | strategy reason | `pit.lifecycle` |
+| `pit.lane` | `pit.phase(hero; phase=lane, cycleOrdinal)` | stop/release outcome | `pit.lifecycle` |
+| `pit.stopped` | `pit.phase(hero; phase=stopped, cycleOrdinal)` | service performed unless bound | `pit.lifecycle` |
+| `pit.released` | `pit.phase(hero; phase=released, cycleOrdinal)` | pit exit completed | `pit.lifecycle` |
+| `pit.exit` | `pit.phase(hero; phase=exit, cycleOrdinal)` | position gain/loss without comparison | `pit.lifecycle` |
+| `pit.outcome` | `pit.outcome(hero; cycleOrdinal, entryPosition, exitPosition, positionDelta, direction)` | strategy/cause judgement | `pit.outcome` |
+| `stream.started` | `stream.started(startReason)` with common `broadcastEpoch`/`streamEpoch` | prior stream/session history when incomplete | `stream.lifecycle` |
+| `session.intro.practice` | `session.started(stage=practice, startReason)` | qualifying/race facts as current | `session.intro` |
+| `session.intro.qualifying` | `session.started(stage=qualifying, startReason)` | practice/race facts as current | `session.intro` |
+| `session.intro.race` | `session.started(stage=race, startReason)` | practice/quali facts unless inherited and marked past | `session.intro` |
+| `session.restart` | `session.restarted(stage, predecessorOccurrenceId)` | claim that stream restarted | `session.restart` |
+| `session.wrap.practice` | `session.ended(stage=practice, reason)` | unsupported result facts | `session.wrap` |
+| `session.wrap.qualifying` | `session.ended(stage=qualifying, reason)` | race outcome; unbound grid position | `session.wrap` |
+| `session.wrap.race` | `session.ended(stage=race, reason)` | hero finish if not observed | `session.wrap` |
+| `session.preview.next` | `session.next_present_stage(stage, sourceSubSessionId, sourceSessionNum)` | absent/skipped stage; scheduled certainty | `session.preview` |
+| `session.checkered` | `race.checkered_active()` | hero finished or final position | `session.flag` |
+| `session.final_lap` | `race.final_lap(hero; lap)` | finish result | `session.final_lap` |
+| `session.hero_finish` | `race.hero_finished(hero; position[, classPosition, classificationStatus])` | official classification | `session.finish` |
+| `session.qualifying_recap` | `session.qualifying_result(hero; position[, bestLapTime])` | race/grid certainty not evidenced | `session.recap` |
+| `session.sof_brief` | `field.strength(value, fieldScope, sampleCount, official)` | quality judgement or result prediction | `session.context` |
+| `session.weather_brief` | `W_weather` | forecast/cause; dry→sunny inference | `session.weather` |
+| `session.weather_change` | `weather.changed(metric, oldFactId, newFactId, materialRevision)` + referenced new weather fact | unobserved track effect | `session.weather` |
+| `session.field_fact` | `W_field` | extrapolation beyond selected fact | `session.context` |
+| `session.flag.yellow` | `race.flag_changed(flag=yellow, scope)` | cause/incident identity unless bound | `session.flag` |
+| `session.flag.green` | `race.flag_changed(flag=green, scope)` | “race start” unless start transition bound | `session.flag` |
+| `session.enter_car.practice` | `vehicle.entered_car(hero; stage=practice)` | lap/pace outcome | `session.vehicle` |
+| `session.enter_car.qualifying` | `vehicle.entered_car(hero; stage=qualifying)` | valid attempt/result before observed | `session.vehicle` |
+| `session.enter_car.race` | `vehicle.entered_car(hero; stage=race)` | green/start state unless bound | `session.vehicle` |
+| `bio.pressure` | `bio.hr_state(hero; band, bpm, sampleAge, sensorEpoch)` | medical, emotion, cause or performance claim | `bio.context` |
+| `filler.out_lap` | `vehicle.phase(hero; phase=out_lap)` + `W_filler_phase` | hot-lap/result prediction | `filler.track_state` |
+| `filler.in_lap` | `vehicle.phase(hero; phase=in_lap)` + `W_filler_phase` | pit intent unless bound | `filler.track_state` |
+| `filler.parade_lap` | `vehicle.phase(hero; phase=parade_lap)` + `W_filler_phase` | green/race-start timing prediction | `filler.track_state` |
+| `filler.garage` | `broadcast.context(context=garage)` + `W_filler_off_track` | on-track action | `filler.off_track` |
+| `filler.lobby` | `broadcast.context(context=lobby)` + `W_filler_off_track` | active session action | `filler.off_track` |
+| `filler.quiet_track` | `broadcast.context(context=on_track)` + `W_quiet_track` | fabricated race event or urgency | `filler.track_state` |
 
 ## Trigger and tuning ownership
 

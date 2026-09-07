@@ -9,8 +9,10 @@
 **Public contracts:** [Exact v2 config, migration and HTTP shapes](public-contracts.md)
 **Actor transitions:** [Single mailbox, lane, overflow, reset and shutdown contract](actor-transition-contract.md)
 **Schemas and IDs:** [DTO fields, versions, identity/nullability and reason registry](schema-contracts.md)
+**Facts/features/channels:** [Closed predicates, units, allowlists, feature IDs and tape taxonomy](fact-feature-registry.md)
+**Detector catalog:** [Temporal math, estimated parameter ranges, hysteresis and two-front contract](detector-catalog-freeze.md)
 **Realization/verifier:** [Controlled EN, all 37 families, rejects and promotion gates](realization-verifier-contract.md)
-**Frozen slice fixtures:** [Fourteen expected reducer/director/speech scenarios](vertical-slice-fixtures.md)
+**Frozen slice fixtures:** [Seventeen expected reducer/director/speech scenarios](vertical-slice-fixtures.md)
 **Final-PR exclusions:** [Planning and temporary mechanism removal gate](final-pr-exclusion-manifest.md)
 **Baseline:** `master@0ce75d4`
 
@@ -27,7 +29,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - The runtime holds at most one in-flight utterance and no prepared speech waiter.
 - Speakable event meaning may wait only as bounded metadata with TTL, priority, penalty and a mandatory `tape_channel`.
 - Existing V4 EventEnvelope/overlay wire remains unchanged; commentary uses an internal NarrativeEvent adapter and catalog lookup.
-- Detector kick-rate is measured at a read-only pre-arbitration tape tap; only accepted events may affect narrative state.
+- Detector kick-rate is measured at a read-only pre-arbitration tape tap. Typed facts remain authoritative world truth, but only accepted events may open/revise speakable episodes or create opportunities; fact updates may only invalidate/close them.
 - After every beat, event opportunities compete with natural story successors in one deterministic director pass.
 - Opportunity consumption occurs at backend playback acceptance (`SPEECH_STARTED`), not at selection or an unverifiable physical audio-frame boundary.
 - `tight` is the only prompt profile allowed in the first production slice.

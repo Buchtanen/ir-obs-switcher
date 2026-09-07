@@ -13,6 +13,7 @@ Only `NarrativeRuntime.run()` mutates:
 - ExposureStore and bounded decision records;
 - automatic/manual speech-lane state and worker tokens;
 - silence deadline generation and commentary component health.
+- current planning-cycle ID, dispatched-plan count (`0..2`) and source impulse.
 
 StreamTimeline, FeatureEngine, FactLedger and DetectorBank remain upstream owners. Qwen, TTS and tape workers perform I/O but cannot mutate actor state. Server handlers post commands and read immutable status snapshots.
 
@@ -54,7 +55,7 @@ External adapter items carry `external_order`; worker/timer/API commands do not.
 
 | Kind | Producer | Protected | Coalescing | Actor effect |
 | --- | --- | --- | --- | --- |
-| `APPLY_CONTEXT_BATCH` | narrative fanout adapter | when batch contains identity/lifecycle/result; otherwise no | only same-correlation ACTIVE/UPDATE revisions before dequeue | atomically apply one coherent timeline/FactView plus ordered NarrativeEvents |
+| `APPLY_CONTEXT_BATCH` | narrative fanout adapter | when batch contains identity/lifecycle/result; otherwise no | only same-correlation ACTIVE/UPDATE revisions before dequeue | atomically apply one coherent timeline/FactView plus ordered NarrativeEvents; pure FactView change only invalidates/closes, while at least one accepted/lifecycle NarrativeEvent may trigger one director pass |
 | `CONFIG_UPDATE` | config owner | yes | never | validate/apply each generation in order; defer fields whose declared boundary is not yet legal |
 | `LONG_SILENCE_ELAPSED` | owned one-shot deadline | no | same deadline generation only | clear fired token, evaluate one filler impulse, then rearm by frozen rule |
 | `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, verify synchronously, freshness-check and dispatch TTS or reject |
@@ -69,6 +70,8 @@ External adapter items carry `external_order`; worker/timer/API commands do not.
 | `SHUTDOWN` | application owner | yes | idempotent singleton | stop ingress and execute ordered bounded shutdown |
 
 Stream/session/vehicle lifecycle names in the event disposition are items inside an `APPLY_CONTEXT_BATCH`, not separately scheduled queues. `STREAM_ENDED`, occurrence change/restart and truth-invalidating supersession are applied before other events later in the same batch. A rewind to an older/different SessionRef is represented by ordered old-occurrence end/supersede followed by new-occurrence start; `SESSION_REWOUND` is not a command kind.
+
+A batch containing no NarrativeEvent never starts a director pass merely because a fact changed. It may cancel a stale building/committed plan, invalidate an opportunity or close/suspend an episode. Accepted/lifecycle/silence input or a speech terminal command is the planning impulse; that later pass evaluates the newest FactView and any now-valid natural successor. This prevents raw tick cadence from becoming an implicit speech trigger while preserving fact-safe continuation.
 
 ## Mailbox capacity and overflow
 
@@ -93,14 +96,14 @@ This policy guarantees a bounded nonblocking producer and safe latest truth, not
 | `building` | context makes plan hard-invalid | `idle` | cancel token, release reservation, terminal `invalidated`; replan once |
 | `building` | newly admitted candidate outranks plan by frozen arbitration | `building` or `idle` | cancel old token as `replaced` without suppressing it; replan once |
 | `building` | stale/mismatched worker token | unchanged | discard callback and record `stale_worker_token` |
-| `building` | realization failure/timeout | `idle` | suppress `(beat_id, episode_revision)`, release reservation, replan a different beat once |
-| `building` | realization succeeds but verifier rejects | `idle` | same suppression/release; no repair, retry or same-beat authored fallback |
-| `building` | verifier passes but freshness commit fails | `idle` | suppress stale revision, release reservation and replan once |
+| `building` | realization failure/timeout | `idle` | suppress `(beat_id, episode_revision)`, release reservation; dispatch one different beat only if this was cycle attempt 1, otherwise record `planning_cycle_exhausted` and wait |
+| `building` | realization succeeds but verifier rejects | `idle` | same suppression/release and cycle bound; no repair, retry or same-beat authored fallback |
+| `building` | verifier passes but freshness commit fails | `idle` | suppress stale revision, release reservation and apply the same one-alternative cycle bound |
 | `building` | verifier and freshness pass | `committed` | dispatch exactly one TTS request/token |
 | `committed` | truth/reset/disable/shutdown invalidates request before ack | `stopping` | request cancellation; opportunity remains unconsumed |
 | `committed` | ordinary/critical race event | `committed` | reduce truth only; do not replace dispatched utterance |
 | `committed` | `PLAYBACK_ACCEPTED` matching token | `speaking` | consume opportunity exactly once; add exposure with full repetition weight |
-| `committed` | `SPEECH_FAILED` before ack | `idle` | release and suppress beat/revision; mark TTS degraded when applicable; replan only if TTS remains available |
+| `committed` | `SPEECH_FAILED` before ack | `idle` | release and suppress beat/revision; mark TTS degraded when applicable; dispatch the one alternative only if TTS remains available and this was cycle attempt 1 |
 | `speaking` | ordinary/critical race event | `speaking` | reduce state/opportunities only; no interruption and no prepared text |
 | `speaking` | allowed cancellation | `stopping` | request one backend cancellation; consumption is never rolled back |
 | `speaking` | completion/failure | `idle` | terminalize exposure, clear token and run one director pass over latest state |
@@ -109,6 +112,8 @@ This policy guarantees a bounded nonblocking producer and safe latest truth, not
 Allowed automatic cancellation is limited to confirmed stream end, occurrence/run reset, explicit commentary disable, shutdown, or fact/identity supersession that makes the utterance's committed claims false. A newer or more urgent racing event never cancels accepted or dispatched playback.
 
 Attempt suppression occurs only for realization/verification/commit/TTS-before-acceptance failure. Replacement by a new candidate does not suppress a still-valid old beat. Suppression clears only on material episode revision, opportunity/episode terminal state, occurrence reset or stream reset.
+
+One planning impulse owns one `planningCycleId` and may dispatch at most two distinct BeatPlans: the initial choice and one alternative. Precommit replacement or failure consumes the next ordinal; a second failure/replacement ends the cycle with `planning_cycle_exhausted`. It does not consume the underlying opportunity, shorten TTL or unlock a suppressed beat. A later accepted/lifecycle/silence event, material accepted event revision, or speech-terminal command starts a new cycle; a pure FactView batch does not. This fixed bound is not public config and prevents an LLM/validator failure cascade.
 
 ## Manual speech
 
@@ -126,12 +131,12 @@ Manual text passes length/control-character and EN-tag validation, then goes dir
 | different/new SessionRef | end/supersede old occurrence; activate lineage-selected new one | cancel old occurrence | cancel old occurrence | preserve active ancestors and bounded summaries |
 | OBS output unknown | pause OBS-dependent planning/silence timer | cancel only if hard OBS guard required | continue | preserve stream epoch |
 | confirmed stream end | close/invalidate all stream state | cancel | cancel | finalize exposure and tape trailer |
-| commentary disable | keep upstream projections, stop automatic planning | cancel narrative request | cancel narrative speech; manual continues | preserve exposure until next stream reset/retention |
+| commentary disable | keep raw upstream projections; close the current narrative run and all episodes/opportunities with `commentary_disabled` | cancel narrative request | cancel narrative speech; manual continues | finalize its tape trailer, retain audit only and clear live exposure before any later run |
 | process shutdown | no new ingress | cancel | bounded cancel/wait | flush then discard in-memory state |
 
 ## Silence deadline transitions
 
-- At confirmed stream start or re-enable during an active stream, arm generation `g+1` for `now + long_silence_s` if OBS state is active and no speech is accepted.
+- At confirmed broadcast start, allocate a new `streamEpoch`; at re-enable during the same active `broadcastEpoch`, allocate another new `streamEpoch` with `historyComplete=false`. Then arm generation `g+1` for `now + long_silence_s` if OBS state is active and no speech is accepted.
 - On `PLAYBACK_ACCEPTED`, cancel the armed deadline. A stale timer token cannot fire.
 - On any speech terminal callback, rearm from that callback time when the audience window is active.
 - On OBS unknown, cancel while retaining no elapsed credit. On return to active, rearm from return time.

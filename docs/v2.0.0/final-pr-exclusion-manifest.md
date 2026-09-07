@@ -13,6 +13,8 @@ The v2 branch intentionally contains planning evidence and may temporarily conta
 - `docs/v2.0.0/public-contracts.md`
 - `docs/v2.0.0/actor-transition-contract.md`
 - `docs/v2.0.0/schema-contracts.md`
+- `docs/v2.0.0/fact-feature-registry.md`
+- `docs/v2.0.0/detector-catalog-freeze.md`
 - `docs/v2.0.0/realization-verifier-contract.md`
 - `docs/v2.0.0/vertical-slice-fixtures.md`
 - `docs/v2.0.0/final-pr-exclusion-manifest.md`

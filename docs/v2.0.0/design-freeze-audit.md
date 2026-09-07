@@ -11,7 +11,7 @@ This is a planning artifact for the v2 branch. It must not be included in the fi
 
 ## Current gate verdict
 
-**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. Complete disposition, public config/API, actor-transition and semantic-schema contracts now exist as review candidates. Machine-readable schemas/golden/model-based fixtures and automated cross-document validation do not. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
+**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. Complete disposition, public config/API, actor-transition, semantic-schema and fact/feature/tape registries now exist as human-review candidates. Machine-readable schemas/golden/model-based fixtures and automated cross-document validation do not. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -51,6 +51,7 @@ Master cross-checks that changed or sharpened the design:
 | Concurrent callbacks | Event and speech completion could race without replay order | Single NarrativeRuntime actor assigns and records total `reducer_sequence` |
 | Async ownership | Workers could mutate director state | Only the actor mutates narrative state; Qwen/TTS/tape return immutable commands |
 | Queue count | Separate external and worker-result queues would make interleaving ambiguous | Evolve/replace commentary EventSubscription with one bounded NarrativeMailbox preserving its overflow/recovery semantics; fanout adapters and owned workers post to that same mailbox |
+| Mailbox capacity | Public 16–512 override contradicted the exact 56 ordinary + 7 protected + 1 emergency admission proof | Remove the public knob; v2 NarrativeMailbox is a fixed 64-cell actor safety invariant |
 | State ownership | NarrativeRuntime was described as owner of upstream timeline/fact/detector truth | StreamTimeline owns occurrence/lineage, FeatureEngine owns windows, DetectorBank owns detector FSM/current derived truth; the actor owns an immutable fact projection plus episodes/opportunities/exposure/speech orchestration |
 | Sequence names | EventEnvelope sequence, fanout stream sequence and reducer order could be conflated | Preserve session-scoped overlay `EventEnvelope.sequence`; external narrative order is `(fanout_stream_sequence, source_ordinal)`; actor `reducer_sequence` is authoritative for decision replay |
 | Prepared speech | Event waiting could become a renamed sentence queue | Opportunity contains meaning/scheduling metadata only; BeatPlan/text is just-in-time and single-flight |
@@ -63,6 +64,8 @@ Master cross-checks that changed or sharpened the design:
 | Stream authority | iRacing and OBS could both own stream lifecycle | OBS output owns stream edges; iRSDK owns session identity/stage |
 | OBS disconnect | Disconnect could create a false stream end | Disconnect is `unknown`; only confirmed not-streaming ends a stream |
 | Process restart | History restoration was unspecified | Without a verified checkpoint, create a new narrative epoch and forbid pre-restart historical claims |
+| OBS versus narrative epoch | Re-enable/process attach could create a new “stream epoch” while BroadcastClock still described the same output | `broadcastEpoch` identifies debounced OBS output; a distinct `streamEpoch` identifies one uninterrupted narrative run and is reallocated on re-enable/attach |
+| Tape across re-enable | A single optional manifest stream epoch could otherwise contain records from two narrative runs | Tape files are scoped to one process/run identity; disable/end finalizes a trailer and re-enable opens a new manifest |
 | Historical memory | “Remember everything” conflicted with bounded memory | Active ancestry is never evicted; old detail compacts to safe summaries and full audit remains on tape |
 | Graph safety | Analyzer was optional although malformed cycles are runtime risk | Loader referential/reachability/SCC barrier checks are blocking; rich analyzer/3D viewer remains optional |
 | Random replay | Qwen and global RNG could violate determinism claims | Deterministic authored seed; decision replay uses recorded Qwen completion, model eval compares semantics/distribution |
@@ -71,9 +74,12 @@ Master cross-checks that changed or sharpened the design:
 | API impact | Spec called API optional despite required diagnostics | Commentary API payload becomes explicit `commentary-runtime/2`; API docs/tests are mandatory |
 | Language | Overlay locale could silently drive speech | v2 speech/validation is fixed EN and independent of overlay locale |
 | LLM fallback | Failure policy could retry or repeat a topic | One attempt per beat/revision; discard and re-arbitrate; no repair or same-beat fallback |
+| Failure cascade | “Replan once” on every failure could recursively try the whole catalog for one event | One planning cycle dispatches at most two distinct BeatPlans (initial + one alternative), then waits for a new explicit impulse |
 | Detector tuning | Recorder failure conflicted with fail-soft main loop | Disable only a required experimental detector; never block or crash the race loop |
 | Overlay compatibility | A proposed EventEnvelope v2 would make a commentary refactor break the overlay wire | Keep the accepted V4 EventEnvelope/wire unchanged; a narrative adapter creates an internal versioned `NarrativeEvent` command and resolves policy from catalogs |
-| Kick-rate evidence | Commentary sees only events accepted by EventManager, so suppressed detector activity was invisible | Add a read-only pre-arbitration `DetectorObservation` tape tap; only accepted events enter the narrative reducer |
+| Kick-rate evidence | Commentary sees only events accepted by EventManager, so suppressed detector activity was invisible | Add a read-only pre-arbitration `DetectorObservation` tape tap; FactView carries world truth, while only accepted events may open/revise speakable episodes or opportunities |
+| Fact versus speech truth | “Only accepted events create AtomicFacts” contradicted FactLedger/DetectorBank ownership and could leave a suppressed battle active forever | Typed producers update FactView independently; context may close/invalidate narrative work, but only an accepted NarrativeEvent may open/revise speakable state or create an opportunity |
+| Tick-driven accidental speech | A new FactView could be interpreted as permission to run the director on every telemetry batch | Pure fact changes only close/invalidate; planning impulses are accepted/lifecycle/silence events or speech terminal commands, evaluated against the latest FactView |
 | TTS start | “First audio frame” is not observable uniformly for SAPI, eSpeak and SuperTonic | Each backend must acknowledge playback acceptance exactly once; physical speaker output is explicitly outside the contract |
 | Mid-speech priority | Critical-event interruption policy had no closed rule | Normal race events never interrupt an utterance; stream/session/reset invalidation, explicit commentary disable or shutdown may cancel it, and the new event then competes from its still-live opportunity |
 | Required tuning | Default-off tape plus `tuning.required` could disable production commentary unexpectedly | Released production detectors use `none` or `optional`; `required` is allowed only for an explicitly enabled experimental detector with successful recorder preflight |
@@ -165,15 +171,17 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Exact v2 config/API review candidates, including apply boundaries, migration, nullability, request bounds and local/LAN Ollama URL policy, live in `public-contracts.md`; implementation fixtures must be byte-for-structure equivalents.
 - Exact single-mailbox admission/recovery, command inventory, speech-lane transitions, reset matrix and shutdown order live in `actor-transition-contract.md`; model-based transition fixtures remain blocking.
 - DTO fields, schema versions, stream-scope nullability, canonical hashes, tape envelopes and reason IDs live in `schema-contracts.md`; machine-readable schemas/goldens remain blocking.
+- Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
+- Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Fourteen ordered expected scenarios covering lineage, scoring, no-queue behavior, invalid Qwen, silence, overflow and callback/reset races live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Seventeen ordered expected scenarios covering lineage, scoring, no-queue behavior, invalid Qwen, silence, overflow, callback/reset races, fact-only invalidation, re-enable identity and pre-session lobby live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
 
 All boxes below must be complete in branch planning commits and issue #235 before behavior code changes:
 
-- [ ] Canonical registry of event, feature, fact, reason, terminal-state and `tape_channel` IDs, including units and unknown semantics.
+- [ ] Review the human canonical registries in `schema-contracts.md`, `event-beat-disposition.md` and `fact-feature-registry.md`, then materialize and cross-check the event, feature, fact, reason, terminal-state and `tape_channel` machine registries including units and unknown semantics.
 - [x] Complete identifier disposition matrix for all 60 known master identifiers and all 54 legacy nodes drafted in `event-beat-disposition.md`.
 - [ ] Final review and machine validation of the exact 64 BeatDefinitions, including required/forbidden claims and realization family for every beat.
 - [ ] Complete successor graph with deterministic relation, guard, preference and terminal/dead-end policy.
@@ -185,9 +193,10 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Long-silence origin, pause/rearm rules and first-stream behavior table.
 - [ ] Pre-arbitration detector-observation tap and kick→accepted→queued→selected→started funnel definitions.
 - [ ] Released-versus-experimental detector tuning-policy matrix and recorder-failure transition behavior.
+- [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the fourteen expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the seventeen expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.

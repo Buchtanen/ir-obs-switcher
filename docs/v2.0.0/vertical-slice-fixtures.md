@@ -91,8 +91,8 @@ Qwen output for `battle.pursuit` reverses actors. Verifier returns `actor_revers
 Expected:
 
 - suppress `(battle.pursuit, revision)`; release its opportunity reservation; no repair/retry/authored fallback/exposure;
-- re-arbitrate once and select the distinct context beat if all hard/source guards pass;
-- without a distinct candidate, choose SILENCE and wait for a material revision, new event or silence impulse.
+- in the same `planningCycleId`, dispatch the distinct context beat as `cycleAttemptOrdinal=2` if all hard/source guards pass;
+- if that alternative also fails, record `planning_cycle_exhausted`; without a distinct candidate, choose SILENCE and wait for a material accepted revision, new accepted/lifecycle event or silence impulse.
 
 ## F10 — long silence filler threshold
 
@@ -134,6 +134,37 @@ TTS is dispatched for old occurrence. Test both recorded orders:
 2. `PLAYBACK_ACCEPTED` precedes reset: opportunity is consumed/exposed, then reset requests interruption and terminal reason is `interrupted_occurrence_reset`.
 
 Replay must reproduce each outcome from reducer sequence; equal OS timestamps do not collapse the cases.
+
+## F15 — fact-only invalidation is not a speech trigger
+
+Input: a `battle_ahead` episode is focused and an ordinary coherent context batch contains no NarrativeEvent, but its newer FactView expires `battle.closing(hero→target)`.
+
+Expected:
+
+- atomically apply the FactView, close/invalidate the episode and cancel a building or committed plan whose claim is now false;
+- create no episode, opportunity or material speakable revision and run no director pass from this batch alone;
+- the next accepted/lifecycle/silence event or speech terminal pass sees the episode already closed and cannot continue it.
+
+## F16 — disable and re-enable within one OBS broadcast
+
+Input: automatic commentary run `streamEpoch=3` is active under `broadcastEpoch=2`; commentary is disabled and later re-enabled while OBS remains confirmed active.
+
+Expected:
+
+- disable closes all run-3 episodes/opportunities with `commentary_disabled`, cancels narrative speech according to the lane table, writes a complete run-3 tape trailer and leaves `broadcastEpoch=2` unchanged;
+- manual speech remains independent while disabled and creates no narrative state;
+- re-enable allocates `streamEpoch=4`, creates a new occurrence projection for the still-current SessionRef with `historyComplete=false`, opens a new tape manifest and emits exactly one `STREAM_STARTED(startReason=enabled_mid_stream)`;
+- no run-3 opportunity, exposure, attempt suppression, episode or historical claim becomes live in run 4; stale run-3 worker tokens are ignored.
+
+## F17 — pre-session lobby filler uses stream facts only
+
+Input: active narrative run and normalized `broadcast.context(lobby)`, but no coherent SessionRef/occurrence. After `long_silence_s`, a fresh stream-scope `context.track_identity` exists.
+
+Expected:
+
+- route `filler.lobby` to a stream-scope `filler_single` episode/opportunity with null occurrence/lineage and bind exactly lobby context plus track identity;
+- no stage, current session progress, weather, gap or on-track action may be claimed;
+- without track identity, the same silence impulse records `source_guard_failed`, creates no BeatPlan and rearms the normal silence deadline.
 
 ## Required tape assertions per fixture
 

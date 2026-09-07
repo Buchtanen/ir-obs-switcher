@@ -153,17 +153,18 @@ Navržený kontrakt:
 ~~~python
 @dataclass(frozen=True)
 class SessionOccurrenceId:
+    broadcast_epoch: int
     stream_epoch: int
     stage: Literal["practice", "qualifying", "race"]
     occurrence: int
-    sdk_session_key: str
-    run_epoch: int
+    session_ref: tuple[str, int]
 ~~~
 
-- `stream_epoch` se mění jen s novým streamem;
+- `broadcast_epoch` je debounced OBS output identita vlastněná `BroadcastClock`;
+- `stream_epoch` je identita jednoho nepřerušeného narrative runu pod daným broadcastem; mění se při novém OBS streamu, process attach/recovery a po disable→enable automatic commentary;
 - `occurrence` monotonicky roste pro danou stage v rámci streamu;
-- `sdk_session_key` zachová dnešní subsession/session/track identitu;
-- `run_epoch` lze v první migraci mapovat z dnešního `RunClock`, ale cílově je součástí occurrence identity, ne globální náhradou lineage.
+- `session_ref` je přesně `(SubSessionID, SessionNum)`; TrackID zůstává pouze metadata;
+- nový `stream_epoch` vždy vytvoří novou occurrence projection i tehdy, když upstream iRSDK session pokračuje. Staré narrative identity se nesmějí znovu aktivovat.
 
 ### 5.3 Normální průchod
 
@@ -251,17 +252,18 @@ Cílový `StreamTimeline` sjednotí dnešní `SessionCoordinator`, `RunClock` a 
 
 ### 5.8 Autorita streamu, reconnect a restart procesu
 
-- OBS output state je autorita `STREAM_STARTED/STREAM_ENDED`; iRSDK připojení samo stream nezačíná ani nekončí.
+- OBS output state je autorita `broadcast_epoch` a skutečných output hran; iRSDK připojení samo stream nezačíná ani nekončí.
 - `STREAM_STARTED` vznikne na potvrzené hraně `not_streaming/unknown → streaming`; `STREAM_ENDED` pouze na potvrzené hraně `streaming → not_streaming`.
-- OBS websocket disconnect znamená `unknown`, nikoliv `STREAM_ENDED`. Pokud se stejný proces znovu připojí a OBS stále streamuje, zachová stejný stream epoch.
+- OBS websocket disconnect znamená `unknown`, nikoliv `STREAM_ENDED`. Pokud se stejný proces znovu připojí a OBS stále streamuje, zachová stejný `broadcast_epoch` i současný `stream_epoch`.
 - Start streamu uprostřed již běžící iRacing session vytvoří occurrence s `start_reason=attached_mid_session` a `history_complete=false`. Runtime nesmí domýšlet předchozí Practice/Qualifying ani jejich fakta.
 - iRacing disconnect suspenduje current facts/detectors a invaliduje necommitnuté beaty; sám o sobě neukončí OBS stream. Reconnect bez session-key změny nebo potvrzeného rewind zachová occurrence.
-- Restart služby/procesu není session restart. Pokud se proces spustí do již živého OBS streamu a nemá ověřený persisted checkpoint, založí nový narrative `stream_epoch` s `start_reason=process_recovery` a `history_complete=false`. Historické claims před restartem jsou zakázané; tape z předchozího procesu se automaticky nerehydruje ve v2.0.0.
+- Restart služby/procesu není session restart. Pokud se proces spustí do již živého OBS streamu a nemá ověřený persisted checkpoint, nový proces založí nový lokální `broadcast_epoch` pro attached output a nový narrative `stream_epoch` s `start_reason=process_recovery` a `history_complete=false`. Historické claims před restartem jsou zakázané; tape z předchozího procesu se automaticky nerehydruje ve v2.0.0.
+- Disable automatic commentary ukončí současný narrative `stream_epoch`, ale nikoli `broadcast_epoch`. Pozdější enable při stále aktivním outputu založí nový `stream_epoch` s `start_reason=enabled_mid_stream`, novou occurrence projection a `history_complete=false`; staré episodes/opportunities/exposure zůstávají jen v tape/auditu.
 - Ukončení streamu uzavře všechny current episodes/opportunities, zapíše manifest trailer a poté uvolní in-memory stream state.
 
 Interní stage enum je `practice | qualifying | race`; adapter je jediný, kdo mapuje iRSDK `Practice | Qualify | Race`. `Warmup`, `Test` a neznámé typy se mapují na explicitní `unsupported`, ne na Practice. V unsupported stage je race/story commentary tiché; povolen je pouze explicitní stream/service lifecycle beat, jehož claims nepojmenovávají session jako Practice/Qualifying/Race.
 
-Všechny speakable beaty mají hard gate `stream_active=true`. Potvrzený stream start používá již existující debounced `BroadcastClock` epoch; krátký OBS output flicker nevytváří nový stream. Pokud proces poprvé uvidí již aktivní output, emituje právě jeden `STREAM_STARTED(start_reason=process_recovery|attached_live)` pro nový narrative epoch. Stav `unknown` pouze pozastaví rozhodnutí závislá na OBS kontextu a nikdy sám neemituje end.
+Všechny speakable beaty mají hard gate `stream_active=true`. Potvrzený output start používá již existující debounced `BroadcastClock.broadcast_epoch`; krátký OBS output flicker nevytváří nový broadcast ani narrative run. `StreamTimeline` nad ním alokuje `stream_epoch`. Pokud proces poprvé uvidí již aktivní output, emituje právě jeden `STREAM_STARTED(start_reason=process_recovery|attached_live)` pro nový narrative run. Stav `unknown` pouze pozastaví rozhodnutí závislá na OBS kontextu a nikdy sám neemituje end.
 
 ## 6. Faktická paměť
 
@@ -290,7 +292,7 @@ class AtomicFact:
 
 Predikát s aktéry je uspořádaný. `closing(Richard, Page)` není stejný fakt jako `closing(Page, Richard)`.
 
-`occurrence_id` a `lineage_id` smějí být `None` pouze pro skutečný `stream` scope fakt, který může existovat před první coherent iRacing session. Occurrence/downstream/historical fakta vždy nesou původní occurrence; runtime nevytváří syntetickou session kvůli stream lifecycle tvrzení.
+`occurrence_id` a `lineage_id` smějí být `None` pouze pro skutečný `stream` scope fakt, který může existovat před první coherent iRacing session, například `stream.started`, `broadcast.context` nebo `context.track_identity`. Occurrence/downstream/historical fakta vždy nesou původní occurrence; runtime nevytváří syntetickou session kvůli stream lifecycle či pre-session lobby tvrzení.
 
 ### 6.2 Scope faktů
 
@@ -364,7 +366,7 @@ Rozlišují se čtyři třídy spouštěčů:
 | --- | --- | --- |
 | Přímý edge event | průjezd S/F, průjezd sektorem | změna lap/sector identity s deduplikací |
 | Lifecycle event | stream start, session start/end/restart | `StreamTimeline` a OBS/iRSDK stav |
-| Temporal detector | `UNDER_PRESSURE_STARTED` | trend, okno, coverage, potvrzení a hystereze |
+| Temporal detector | `HUNTED` / `battle.pressure_behind` | trend, okno, coverage, potvrzení a hystereze |
 | Composite event | two-front battle | kombinace více současně platných fact/event stavů |
 
 Všechny jsou deterministické: stejné vstupní samples, stejné effective parameters a stejné pořadí vytvoří stejné facts a eventy.
@@ -543,13 +545,14 @@ close_when:
             - feature.slope_s_per_s >= ${under_pressure.clear_slope}
 
 emits:
-  started: UNDER_PRESSURE_STARTED
-  updated: UNDER_PRESSURE_UPDATED
-  ended: UNDER_PRESSURE_ENDED
-publishes_fact: under_pressure(hero_id, car_behind_id)
+  started: HUNTED
+  updated: HUNTED
+  ended: null                  # fact expiry/context closes narrative state
+narrative_kind: battle.pressure_behind
+publishes_fact: battle.closing(car_behind_id, hero_id)
 ~~~
 
-`enter_gap_max_s < exit_gap_min_s` je schema invariant. `under_pressure=true` tedy není vstupní nastavení; je to výsledek potvrzeného detector state, s target identity, valid intervalem, confidence a evidence refs.
+`enter_gap_max_s < exit_gap_min_s` je schema invariant. Doménový stav „under pressure“ tedy není vstupní boolean; je to aktivní potvrzený detector stav publikující `battle.closing(challengerBehind, hero)` s target identity, valid intervalem, confidence a evidence refs.
 
 ### 6.11 Vystavené tuning parametry
 
@@ -566,7 +569,7 @@ under_pressure:
     effect: delší okno snižuje šum, ale zvyšuje detekční zpoždění
   min_closing_change_s:
     type: float
-    unit: seconds_per_window
+    unit: seconds
     default: 0.6
     min: 0.2
     max: 2.0
@@ -634,40 +637,40 @@ Detekční pravda nesmí záviset na speech busy stavu, fatigue, prompt freedom 
 StoryDefinition je deklarace možného typu epizody, nikoliv hotová věta.
 
 ~~~yaml
-id: pursuit
+id: battle_ahead
 kind: race
 tape_channel: race.battle.closing
 
 opens_when:
-  event: closing_confirmed
+  accepted_event_kind: battle.pursuit
 
 valid_while:
   all:
-    - fact: relation(hero, target) == closing
-    - fact: confidence >= 0.90
+    - fact: battle.closing(hero, target) is current
+    - fact: relation_epoch == episode.relation_epoch
     - vehicle.phase in [racing]
 
 closes_when:
   any:
-    - event: pass_confirmed
-    - event: target_changed
-    - event: trend_reversed
-    - event: pit_cycle_started
+    - accepted_event_kind: position.pass_completed with same relation
+    - accepted_event_kind: battle.won with same relation
+    - fact: battle.closing(hero, target) is not current
     - occurrence_changed: true
 
 preferred_successors:
-  - side_by_side
-  - pass_result
-  - attack_faded
+  - battle.approach
+  - battle.attack_range
+  - battle.side_by_side
+  - position.pass
+  - battle.won
 
 exclusive_with:
-  - pressure_from_same_target
+  - same_relation_in_another_battle_ahead_episode
 
 priority:
-  base: 65
-  event_ttl_s: 8
-  penalty_coefficient: 1.0
   continuation_base: 58
+  max_consecutive_beats: 3
+  min_interval_s: 8
 
 fatigue:
   semantic_half_life_s: 90
@@ -677,7 +680,7 @@ allowed:
   vehicle_phase: [racing]
 
 beat_roles: [opening, update, outcome]
-realization_family: pursuit
+beat_definitions: [battle.pursuit, battle.approach, battle.attack_range, battle.side_by_side, battle.won]
 ~~~
 
 ### 7.2 Více hodnot a podmínkové výrazy
@@ -742,7 +745,7 @@ dormant → candidate → active → suspended → active
 
 Episode lifecycle je nezávislý na tom, zda se něco odvysílalo.
 
-Pouze `stream_lifecycle` epizoda má `scope=stream` a nullable occurrence/lineage. Všechny ostatní story templates jsou occurrence-scoped a obě identity vyžadují.
+`stream_lifecycle` a výslovně stream-routed pre-session `filler_single` pro `filler.lobby` mohou mít `scope=stream` a nullable occurrence/lineage. Lobby varianta smí použít jen stream-scope `broadcast.context(lobby)` a čerstvý `context.track_identity`; bez něj zůstane ticho. Všechny ostatní story templates jsou occurrence-scoped a obě identity vyžadují.
 
 ### 7.5 Typy beatů
 
@@ -787,20 +790,20 @@ Parametry se nesmějí nahromadit do jednoho univerzálního beatu. Každá vrst
 Navržený katalogový tvar:
 
 ~~~yaml
-event_type: CLOSING_CONFIRMED
+event_type: HUNTING
 tape_channel: race.battle.closing
 opportunity:
-  ttl_s: 8                    # estimated default
-  base_priority: 65
+  ttl_s: 10                   # estimated live_story profile
+  base_priority: 64
   urgency: story             # background | context | story | critical
-  penalty_coefficient: 1.0
+  penalty_coefficient: 0.8
 routes:
-  - story: pursuit
+  - story: battle_ahead
     relation: opens           # opens | updates | resolves | conflicts | independent
     correlate_by: [occurrence_id, hero_id, target_id]
 
 story:
-  id: pursuit
+  id: battle_ahead
   valid_while:
     all: [same_target, closing_or_attack_state, current_occurrence]
   allowed:
@@ -811,21 +814,21 @@ story:
   continuation:
     base_priority: 58
     max_consecutive_beats: 3
-    min_interval_s: 6
+    min_interval_s: 8
 
 beats:
-  - id: pursuit.opening
+  - id: battle.pursuit
     role: opening
     source:
-      event: CLOSING_CONFIRMED
+      event: HUNTING
     eligible_when:
       all: [episode_active, opening_not_spoken, required_facts_current]
     timing:
       earliest_after_open_s: 0
-      expires_after_revision_s: 8
+      expires_after_revision_s: 10
     claims:
-      required: [hero, target, relation_closing]
-      optional: [gap]
+      required: [battle.closing(hero, target)]
+      optional: [battle.closing.gap]
       forbidden: [pass_completed, predicted_pass]
     realization_family: pursuit_opening
     successors:
@@ -1127,17 +1130,18 @@ generation timeout/error
 OR semantic verification failed
 OR freshness commit failed
 → discard beat attempt
-→ označit beat/revision jako neeligible pro aktuální director pass
-→ znovu vybrat jiný způsobilý beat
+→ označit beat/revision jako neeligible do material revision/terminal/reset
+→ pokud šlo o první dispatch planning cyklu, jednou vybrat jiný způsobilý beat
+→ po druhém neúspěšném dispatchi ukončit cyklus tichem
 ~~~
 
 - neposílá se repair prompt;
 - negeneruje se jiná formulace stejného beatu;
 - neprovádí se automatický deterministic fallback téhož beatu;
-- failure nevytváří exposure ani fatigue, ale má krátký attempt-suppression zámek, aby director netočil stejný kandidát;
+- failure nevytváří exposure ani fatigue, ale vytvoří revision-scoped attempt suppression, aby director netočil stejný kandidát;
 - jiný beat musí sám projít hard gate; pořadí `preferred_successors` je preference, ne obcházení validity.
 
-Attempt suppression není časový retry cooldown. Klíč `(beat_id, episode_revision)` zůstává blokovaný do material revision změny, terminal state opportunity/epizody nebo occurrence/stream resetu. Samotný nový director pass ani silence trigger jej neodemkne. Pokud byly vyčerpány všechny odlišné způsobilé beaty pro stále stejnou revision, výsledkem je ticho.
+Attempt suppression není časový retry cooldown. Klíč `(beat_id, episode_revision)` zůstává blokovaný do material revision změny, terminal state opportunity/epizody nebo occurrence/stream resetu. Samotný nový director pass ani silence trigger jej neodemkne. Jeden explicitní planning impulse dostane `planning_cycle_id` a smí dispatchnout nejvýše dva různé BeatPlany: první volbu a jeden alternativní beat. Druhé selhání/replacement zapisuje `planning_cycle_exhausted` a výsledkem je ticho. Další accepted/lifecycle/silence event, accepted material revision nebo speech-terminal command může založit nový cyklus; pure FactView update nikoli. Limit je pevný interní invariant, ne další config knob.
 
 Po úspěšném `speaking/completed` director provede arbitráž podle § 9.3. Pokud platnost epizody nebo jejích rozhodných faktů vypršela a není doložený outcome, nepokouší se příběh uměle uzavřít. Pokud zároveň není platná event opportunity ani jiný successor, čeká na nový závodní event nebo na nový silence trigger, který může vytvořit nezávislou filler opportunity.
 
@@ -1145,34 +1149,21 @@ Po úspěšném `speaking/completed` director provede arbitráž podle § 9.3. P
 
 ### 10.1 BeatPlan
 
-~~~python
-@dataclass(frozen=True)
-class BeatPlan:
-    beat_id: str
-    episode_id: str
-    beat_role: str
-    occurrence_id: SessionOccurrenceId | None
-    lineage_id: str | None
-    episode_revision: int
-    required_claims: tuple[AtomicClaim, ...]
-    optional_claims: tuple[AtomicClaim, ...]
-    forbidden_claim_types: tuple[str, ...]
-    realization_family: str
-    realization_pattern: str
-    realization_backend: Literal["authored", "qwen_compiled"]
-    prompt_options: PromptOptions
-    locale: Literal["en"]
-    style: str
-    max_chars: int
-    max_seconds: float
-    planned_monotonic_ms: int
-    expires_monotonic_ms: int
-    source_refs: tuple[str, ...]
+~~~text
+schemaVersion, planId, planningCycleId, cycleAttemptOrdinal,
+beatId, episodeId, opportunityId?, candidateSource, beatRole,
+streamEpoch, occurrenceId?, lineageId?, episodeRevision,
+requiredClaims, optionalClaims, forbiddenClaimTypes, requiredFactIds,
+realizationFamily, realizationPattern, realizationBackend, promptOptions,
+language="en", styleCardId?, maxChars, maxSeconds,
+plannedMonoMs, expiresMonoMs, sourceRefs, catalogHash, factViewRevision
 ~~~
+
+Přesné typy, bounds a nullability jsou jedině v `docs/v2.0.0/schema-contracts.md`; tento seznam je záměrně stejný a nesmí se vyvíjet jako druhé schema.
 
 BeatPlan neobsahuje mutable observer ani globální telemetry dump. Vzniká just-in-time pouze pro aktuální director pass; další beaty mini-příběhu se předem neplánují ani negenerují.
 
-Nullable occurrence/lineage je dovolena pouze pro `stream.started`; všechny session, race, bio a filler beaty musí být připnuty ke coherent occurrence.
+Nullable occurrence/lineage je dovolena pouze pro `stream.started` a přísnou stream-scope variantu `filler.lobby`, která váže pouze lobby context a track identity. Všechny ostatní session, race, bio a filler beaty musí být připnuty ke coherent occurrence.
 
 ### 10.2 Lifecycle jedné utterance
 
@@ -1658,6 +1649,7 @@ Exit: vertical slice funguje bez Ollama a nevytváří nepodložený claim.
 - uložit prompt version/family/pattern/options do tape;
 - Qwen failure zahodí beat attempt a vrátí řízení directoru pro výběr jiného beatu;
 - stejný beat/revision má nejvýše jeden pokus, bez repair a fallback smyčky.
+- jeden planning cyklus smí dispatchnout nejvýše první beat a jednu významově odlišnou alternativu; další failure čeká na nový explicitní impuls.
 
 Exit: replay corpus splní fact safety, coverage a latency gates.
 
@@ -1807,7 +1799,7 @@ Povinné minimal pairs:
 
 - [ ] Přímé a lifecycle eventy jsou deterministické, deduplikované a auditovatelné.
 - [ ] Komplexní event může kombinovat více typed state, feature a temporal predicates.
-- [ ] `under_pressure` vzniká jen přes potvrzený detector lifecycle, nikdy přímým commentary assignmentem.
+- [ ] Doménový stav under-pressure vzniká jen přes potvrzený `battle_behind_v1` lifecycle a fakt `battle.closing(challengerBehind, hero)`, nikdy přímým commentary assignmentem.
 - [ ] Každý derived fact/event nese correlation identity, occurrence, confidence, coverage a evidence refs.
 - [ ] Enter/exit hystereze, confirmation a material update interval brání flappingu a event stormu.
 - [ ] Effective parameters mají schema, units, ranges, config version/hash a jsou reprodukovatelné replayem.
@@ -1959,7 +1951,7 @@ Pravidla:
 
 Plný parameter snapshot se zapisuje jednou do manifestu a dostane `parameter_snapshot_id`. Jednotlivý detector record nese tento odkaz a relevantní použité hodnoty/prahy. Tím je tape úplný, ale neopakuje celý config v každém ticku.
 
-Kick-rate funnel má pevné hranice. `kick` je pouze detector FSM přechod do `active` (`*_STARTED`) před EventManager arbitráží; candidate tick ani near-threshold sample se jako kick nepočítá. `accepted` je publikace EventManagerem, `queued` vznik EventOpportunity, `selected` rezervace BeatPlanu a `started` playback acknowledgement. Read-only `DetectorObservation` tape tap se proto nachází mezi DetectorBank/EventEmitterem a EventManagerem. Do NarrativeRuntime vstupují jen accepted eventy; potlačený kandidát nikdy neotevře epizodu.
+Kick-rate funnel má pevné hranice. `kick` je pouze detector FSM přechod do `active` před EventManager arbitráží; jde o transition, ne o požadavek zavést nový `*_STARTED` V4 event identifier. Candidate tick ani near-threshold sample se jako kick nepočítá. `accepted` je publikace EventManagerem, `queued` vznik EventOpportunity, `selected` rezervace BeatPlanu a `started` playback acknowledgement. Read-only `DetectorObservation` tape tap se proto nachází mezi DetectorBank/EventEmitterem a EventManagerem. Do NarrativeRuntime vstupují jen accepted NarrativeEventy; potlačený kandidát nikdy neotevře ani nereviduje speakable epizodu, ale nezastaví nezávislou FactView aktualizaci, která smí existující stav zavřít či invalidovat.
 
 ### 19.4 Co se ukládá a kdy
 
@@ -1997,26 +1989,26 @@ Každé director rozhodnutí musí být vysvětlitelné minimálně těmito poli
   "streamEpoch": 3,
   "occurrenceId": "race:2",
   "lineageId": "P1/Q2/R2",
-  "episodeId": "pursuit:hero:page:7",
+  "episodeId": "battle_ahead:hero:page:7",
   "episodeRevision": 4,
-  "triggerEvent": "GAP_CLOSING_CONFIRMED",
+  "triggerEvent": "HUNTING",
   "tapeChannel": "race.battle.closing",
   "candidateOrigin": "event_opportunity",
   "relationToPreviousEpisode": "updates",
   "beatRole": "update",
   "eligible": true,
   "score": {
-    "base": 65,
-    "continuity": 8,
+    "base": 64,
+    "continuity": 6,
     "material": 10,
     "eventPenalty": -3,
-    "switchMargin": 8,
     "fatigue": -6,
     "staleness": 0,
-    "final": 77
+    "final": 71
   },
+  "requiredSwitchMargin": 8,
   "requiredFactIds": ["relation:17", "gap:91"],
-  "realizationFamily": "pursuit",
+  "realizationFamily": "battle.closing",
   "realizationPattern": "reels_in",
   "realizationBackend": "qwen_compiled",
   "promptOptions": {
@@ -2065,7 +2057,7 @@ Přesné typy, defaults, ranges, jednotky, apply boundaries, migrační tabulka 
 | Sekce | Keys |
 | --- | --- |
 | `[commentary]` | `enabled`, `max_utterance_s`, `driver_name`, `driver_nickname`, `tone_source` (`none | heart_rate`) |
-| `[commentary.director]` | `selection_threshold`, `switch_margin`, `global_min_interval_s`, `long_silence_s`, `mailbox_capacity`, `opportunity_capacity`, `active_episode_capacity`, `resolved_episode_capacity`, `decision_capacity`, `max_consecutive_story_beats` |
+| `[commentary.director]` | `selection_threshold`, `switch_margin`, `global_min_interval_s`, `long_silence_s`, `opportunity_capacity`, `active_episode_capacity`, `resolved_episode_capacity`, `decision_capacity`, `max_consecutive_story_beats`; NarrativeMailbox zůstává pevný invariant 64/56+7+1 |
 | `[commentary.llm]` | `enabled`, `base_url`, `model`, `timeout_s`, `max_tokens`, `warmup`, `max_profile` |
 | `[commentary.tts]` | `backend`, `voice`, `rate`, `steps`, `audio_device`, `duck_input`, `duck_ratio`, `duck_fade_ms` |
 | `[commentary.detectors]` | `profile`; pouze catalogem exportované overrides používají `[commentary.detector.<id>]` |
@@ -2105,8 +2097,10 @@ Stávající route names mohou zůstat, jejich payload je breaking a vždy nese 
 - `docs/v2.0.0/public-contracts.md` — přesné branch-only config defaults/ranges, migrace a HTTP golden payloads;
 - `docs/v2.0.0/actor-transition-contract.md` — přesný branch-only actor/mailbox/speech/reset/shutdown přechodový kontrakt;
 - `docs/v2.0.0/schema-contracts.md` — přesné branch-only DTO/version/identity/tape/reason kontrakty;
+- `docs/v2.0.0/fact-feature-registry.md` — uzavřený branch-only registr faktových predikátů, skalárů/jednotek, feature IDs, claim allowlistů a `tape_channel` taxonomie;
+- `docs/v2.0.0/detector-catalog-freeze.md` — přesný branch-only katalog temporal/composite matematiky, odhadnutých rozsahů, hystereze a two-front identity;
 - `docs/v2.0.0/realization-verifier-contract.md` — přesný branch-only controlled-EN/verifier kontrakt pro všech 37 realizačních rodin;
-- `docs/v2.0.0/vertical-slice-fixtures.md` — čtrnáct branch-only očekávaných decision/reducer/speech scénářů;
+- `docs/v2.0.0/vertical-slice-fixtures.md` — sedmnáct branch-only očekávaných decision/reducer/speech scénářů;
 - `docs/v2.0.0/final-pr-exclusion-manifest.md` — povinný seznam planning/temporary položek odstraněných před PR do masteru;
 - `README.md` — odkaz na v2.0.0 implementační index;
 - `COMMENTARY_ENGINE.md` — odkaz na návrh, současný engine zůstává current-behavior autoritou.
@@ -2409,7 +2403,7 @@ První implementaci neblokuje chybějící měřicí corpus. Odhadnuté konzerva
 | --- | --- | --- |
 | Session/stream vlastnictví | rozdělené mezi `logic/`, overlay SessionCoordinator, RunClock a narrative FSM | jeden `logic/StreamTimeline`, definovaná precedence OBS/iRSDK a transition reasons |
 | Session plan/order | raw `SessionInfo.Sessions[]` je dostupný, ale `SessionContext` drží jen current track/roster | typovaný seznam přítomných supported stages pro preview/lineage; neodvozovat chybějící stage |
-| Stream-before-session | OBS může být active dřív než vznikne coherent SessionRef | explicitní stream-scope fact/episode/BeatPlan s nullable occurrence; žádná syntetická session |
+| Stream-before-session | OBS může být active dřív než vznikne coherent SessionRef | explicitní stream-scope stream-lifecycle nebo přísný lobby filler s nullable occurrence; žádná syntetická session ani obecný filler bez faktů |
 | Vehicle phase | `on_pit_road`, track surface, speed a parade SessionState existují; in/out-lap je dnes lokální heuristic v RaceObserver | jeden versioned VehiclePhase classifier s unknown/hysteresis a immutable projection |
 | Broadcast context | `SwitchState.mode` rozlišuje lobby/garage/race/replay/loading | čistý mapovací DTO z `logic/`; žádná raw OBS scene name ani mutable state read v commentary |
 | Gap feature | přibližný fractional-distance × hero lap-time odhad; 3s regrese | versioned estimator, quality/invalidation kontrakt; první odhad může zůstat `estimated_v1` |
