@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from irswitch.contracts import (
+    ApplyContextBatch,
+    ContextBatchPart,
+    ContractViolation,
+    ExternalOrder,
     FunnelIdentity,
     LineageId,
     NarrativeEvent,
@@ -31,6 +35,74 @@ _PHASES = {
     "EXIT": "ended",
     "RESULT": "result",
 }
+
+
+def deduplicate_narrative_events(
+    events: tuple[NarrativeEvent, ...],
+) -> tuple[NarrativeEvent, ...]:
+    """Drop byte-equivalent redelivery and reject changed content under one identity."""
+
+    retained: list[NarrativeEvent] = []
+    seen: dict[tuple[str, int], NarrativeEvent] = {}
+    for event in events:
+        key = (str(event.event_id), event.material_revision)
+        previous = seen.get(key)
+        if previous is None:
+            seen[key] = event
+            retained.append(event)
+        elif previous != event:
+            raise ContractViolation(f"duplicate event identity {key!r} carries conflicting content")
+    return tuple(retained)
+
+
+def partition_context_batches(
+    *,
+    timeline: dict[str, Any],
+    fact_view: dict[str, Any],
+    events: tuple[NarrativeEvent, ...],
+    fanout_stream_sequence: int,
+) -> tuple[ContextBatchPart, ...]:
+    """Losslessly partition one accepted publication without reordering events."""
+
+    if not events:
+        batch = ApplyContextBatch(timeline=timeline, fact_view=fact_view, events=())
+        return (
+            ContextBatchPart(
+                batch=batch,
+                external_order=ExternalOrder(fanout_stream_sequence, None, None),
+            ),
+        )
+    previous_ordinal: int | None = None
+    for event in events:
+        order = event.source_order
+        if order is None:
+            raise ContractViolation("accepted NarrativeEvent requires source order")
+        if int(order.fanout_stream_sequence) != fanout_stream_sequence:
+            raise ContractViolation("NarrativeEvent fanout sequence differs from publication")
+        if previous_ordinal is not None and order.source_ordinal <= previous_ordinal:
+            raise ContractViolation("NarrativeEvent source order must be strictly increasing")
+        previous_ordinal = order.source_ordinal
+    parts: list[ContextBatchPart] = []
+    for offset in range(0, len(events), 64):
+        chunk = events[offset : offset + 64]
+        first_order = chunk[0].source_order
+        last_order = chunk[-1].source_order
+        assert first_order is not None and last_order is not None
+        parts.append(
+            ContextBatchPart(
+                batch=ApplyContextBatch(
+                    timeline=timeline,
+                    fact_view=fact_view,
+                    events=chunk,
+                ),
+                external_order=ExternalOrder(
+                    fanout_stream_sequence,
+                    first_order.source_ordinal,
+                    last_order.source_ordinal,
+                ),
+            )
+        )
+    return tuple(parts)
 
 
 def adapt_accepted_event(
@@ -102,4 +174,9 @@ def adapt_accepted_event(
     )
 
 
-__all__ = ["NarrativeAdmissionError", "adapt_accepted_event"]
+__all__ = [
+    "NarrativeAdmissionError",
+    "adapt_accepted_event",
+    "deduplicate_narrative_events",
+    "partition_context_batches",
+]

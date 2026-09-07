@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #237 implementation — first NarrativeEvent/admission checkpoint accepted; next is coherent batch/mailbox ordering
+**Phase:** #237 implementation — coherent batch/order checkpoint GREEN, pending push; next is bounded mailbox admission
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), active [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -25,8 +25,9 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - CI run [34151258760](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34151258760) correctly failed the first cross-platform acceptance attempt: raw packaged JSON bytes hash differently after Windows CRLF checkout materialization.
 - Portability-fix SHA: `7fdfb832a64add97f062e3998912ee91a80a87e0` (`fix: canonicalize narrative taxonomy hash (#237)`); corrective [CI run 34151680014](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34151680014) is green.
 - First #237 [dated dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/237#issuecomment-5566224531).
-- Expected working tree after this acceptance-metadata push: clean and synchronized with upstream.
-- Runtime behavior edits so far: dependency-neutral v2 primitives plus a stateless accepted-V4-to-NarrativeEvent adapter; no live producer or actor wiring yet.
+- First #237 acceptance-metadata SHA: `eca280b` (`docs: record narrative admission checkpoint (#237)`).
+- Expected working tree before the coherent-batch push: only the files listed in the ownership section are dirty.
+- Runtime behavior edits so far: dependency-neutral v2 primitives, a stateless accepted-V4-to-NarrativeEvent adapter and immutable coherent context batching; no live producer or actor wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
 
@@ -41,11 +42,11 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: none after this acceptance-metadata push; claim the coherent batch/mailbox slice before editing.
-- Dirty scope: this handover acceptance metadata only.
-- Completed #237 scope: immutable exact NarrativeEvent/source-order/funnel DTOs, derived delivery class, package-registry-backed event policy/tape-channel lookup and a stateless adapter from frozen accepted V4 events.
-- TDD phase: `GREEN` locally after two RED signals — the initial import-collection failure for missing contracts, then the Windows CI raw-byte taxonomy-hash mismatch.
-- Verification: 10 new focused tests and 84 combined contract tests pass; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,448 tests outside the socket-restricted sandbox.
+- Editing owner: current root agent until the coherent-batch checkpoint is pushed, green in CI and recorded.
+- Dirty scope: `src/irswitch/contracts/{__init__,context}.py`, `src/irswitch/events/narrative.py`, `tests/test_narrative_context_batch.py` and this handover record.
+- Completed #237 scope: the accepted-event admission scope above plus immutable coherent ApplyContextBatch snapshots, fact/view identity checks, lossless 64-event partitioning, exact external ordinal ranges and deterministic event/revision dedupe.
+- TDD phase: `GREEN` — the batch slice began with an import-collection RED for missing ApplyContextBatch.
+- Verification: 16 new focused tests and 90 combined contract tests pass; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,454 tests outside the socket-restricted sandbox.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: none.
@@ -53,11 +54,11 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-After this acceptance-metadata push:
+After the coherent-batch checkpoint is pushed and CI is green:
 
-1. Add the coherent `APPLY_CONTEXT_BATCH` partition/order contract and deterministic duplicate identity tests before implementation.
-2. Implement the bounded single NarrativeMailbox admission/overflow/recovery behavior without creating a second worker-result queue.
-3. Preserve V4 overlay wire and defer timeline ownership to #243/#244.
+1. Record the checkpoint SHA/CI evidence in the existing dated #237 diary.
+2. Add a focused RED for the 56/7/1 single NarrativeMailbox admission, coalescing, eviction, recovery and shutdown ordering rules.
+3. Implement that mailbox without creating a second worker-result queue; preserve V4 overlay wire and defer timeline ownership to #243/#244.
 
 ## Resume commands
 
