@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -15,6 +16,8 @@ from irswitch.contracts import (
     NarrativeEvent,
 )
 from irswitch.events.narrative import (
+    NarrativeEventDeduplicator,
+    adapt_lifecycle_event,
     deduplicate_narrative_events,
     partition_context_batches,
 )
@@ -818,3 +821,208 @@ def test_precontext_protected_saturation_fails_soft_with_explicit_reason() -> No
     assert not overflow.accepted
     assert overflow.reason == "recovery_context_unavailable"
     assert len(mailbox) == 7
+
+
+def test_lifecycle_event_is_internal_protected_and_stays_inside_context_batch() -> None:
+    lifecycle = adapt_lifecycle_event(
+        "SESSION_RESTARTED",
+        event_id="lifecycle:session:restart:1",
+        occurred_mono_ms=1001,
+        broadcast_epoch=4,
+        stream_epoch=1,
+        session_ref=_event(0).session_ref,
+        occurrence_id=_event(0).occurrence_id,
+        lineage_id=_event(0).lineage_id,
+        fact_ids=("fact:battle:0",),
+        fact_view_revision=9,
+        material_revision=1,
+        correlation_key=("session:42",),
+        payload={"reason": "confirmed_rewind"},
+    )
+
+    assert lifecycle.phase == "impulse"
+    assert lifecycle.delivery_class == "protected"
+    assert lifecycle.source_envelope is None
+    assert lifecycle.source_order is None
+    assert lifecycle.funnel.source_class == "lifecycle"
+    assert lifecycle.tape_channel == "session.lifecycle"
+    part = partition_context_batches(
+        timeline=_timeline(transition_reasons=["session_restarted"]),
+        fact_view=_fact_view(1),
+        events=(lifecycle,),
+        fanout_stream_sequence=11,
+    )[0]
+    assert part.external_order == ExternalOrder(11, None, None)
+    assert part.batch.events == (lifecycle,)
+    assert "SESSION_RESTARTED" not in COMMAND_KINDS
+
+
+def test_mixed_lifecycle_and_accepted_events_preserve_input_and_external_range() -> None:
+    lifecycle = adapt_lifecycle_event(
+        "SESSION_ENDED",
+        event_id="lifecycle:session:end:1",
+        occurred_mono_ms=999,
+        broadcast_epoch=4,
+        stream_epoch=1,
+        session_ref=_event(0).session_ref,
+        occurrence_id=_event(0).occurrence_id,
+        lineage_id=_event(0).lineage_id,
+        fact_ids=("fact:battle:0",),
+        fact_view_revision=9,
+        material_revision=0,
+        correlation_key=("session:42",),
+        payload={"reason": "superseded"},
+    )
+    accepted = _event(0)
+
+    part = partition_context_batches(
+        timeline=_timeline(transition_reasons=["session_ended"]),
+        fact_view=_fact_view(1),
+        events=(lifecycle, accepted),
+        fanout_stream_sequence=11,
+    )[0]
+
+    assert part.batch.events == (lifecycle, accepted)
+    assert part.external_order == ExternalOrder(11, 0, 0)
+
+
+def test_lifecycle_adapter_rejects_non_lifecycle_kind() -> None:
+    with pytest.raises(ContractViolation, match="lifecycle kind"):
+        adapt_lifecycle_event(
+            "LONG_SILENCE_ELAPSED",
+            event_id="timer:1",
+            occurred_mono_ms=1001,
+            broadcast_epoch=4,
+            stream_epoch=1,
+            session_ref=_event(0).session_ref,
+            occurrence_id=_event(0).occurrence_id,
+            lineage_id=_event(0).lineage_id,
+            fact_ids=("fact:battle:0",),
+            fact_view_revision=9,
+            material_revision=0,
+            correlation_key=(),
+            payload={},
+        )
+
+
+def test_lifecycle_event_contract_rejects_v4_provenance() -> None:
+    malformed = _event(0).to_dict()
+    malformed["kind"] = "SESSION_STARTED"
+    malformed["deliveryClass"] = "protected"
+    malformed["tapeChannel"] = "session.lifecycle"
+    malformed["funnel"]["tapeChannel"] = "session.lifecycle"
+
+    with pytest.raises(ContractViolation, match="null V4 provenance"):
+        NarrativeEvent.from_dict(malformed)
+
+
+def test_event_deduplicator_records_equal_arrivals_across_batches() -> None:
+    deduplicator = NarrativeEventDeduplicator(stream_epoch=1)
+    event = _event(0)
+
+    first = deduplicator.admit((event,))
+    duplicate = deduplicator.admit((event,))
+
+    assert first.events == (event,)
+    assert first.equal_arrivals == ()
+    assert duplicate.events == ()
+    assert duplicate.equal_arrivals == (("event:hunting:0", 0),)
+
+    changed = event.to_dict()
+    changed["payload"] = {"gapSeconds": 0.3}
+    with pytest.raises(ContractViolation, match="duplicate event identity"):
+        deduplicator.admit((NarrativeEvent.from_dict(changed),))
+
+
+@pytest.mark.parametrize(
+    ("kind", "phase", "channel"),
+    (
+        ("STREAM_STARTED", "started", "stream.lifecycle"),
+        ("STREAM_ENDED", "ended", "stream.lifecycle"),
+        ("SESSION_STARTED", "started", "session.lifecycle"),
+        ("SESSION_ENDED", "ended", "session.lifecycle"),
+        ("SESSION_RESTARTED", "impulse", "session.lifecycle"),
+    ),
+)
+def test_all_five_lifecycle_kinds_have_fixed_phase_and_channel(
+    kind: str, phase: str, channel: str
+) -> None:
+    event = adapt_lifecycle_event(
+        kind,
+        event_id=f"lifecycle:{kind.lower()}",
+        occurred_mono_ms=1001,
+        broadcast_epoch=4,
+        stream_epoch=1,
+        session_ref=_event(0).session_ref,
+        occurrence_id=_event(0).occurrence_id,
+        lineage_id=_event(0).lineage_id,
+        fact_ids=("fact:battle:0",),
+        fact_view_revision=9,
+        material_revision=0,
+        correlation_key=(),
+        payload={},
+    )
+
+    assert event.phase == phase
+    assert event.tape_channel == channel
+    assert event.delivery_class == "protected"
+
+
+def test_cross_batch_deduplication_is_atomic_on_protocol_conflict() -> None:
+    deduplicator = NarrativeEventDeduplicator(stream_epoch=1)
+    original = _event(0)
+    deduplicator.admit((original,))
+    changed = original.to_dict()
+    changed["payload"] = {"gapSeconds": 0.3}
+    new_event = _event(1)
+
+    with pytest.raises(ContractViolation, match="duplicate event identity"):
+        deduplicator.admit((new_event, NarrativeEvent.from_dict(changed)))
+
+    assert deduplicator.admit((new_event,)).events == (new_event,)
+
+
+def test_lifecycle_closure_cannot_follow_external_event_in_same_publication() -> None:
+    lifecycle = adapt_lifecycle_event(
+        "SESSION_ENDED",
+        event_id="lifecycle:session:end:late",
+        occurred_mono_ms=1001,
+        broadcast_epoch=4,
+        stream_epoch=1,
+        session_ref=_event(0).session_ref,
+        occurrence_id=_event(0).occurrence_id,
+        lineage_id=_event(0).lineage_id,
+        fact_ids=("fact:battle:0",),
+        fact_view_revision=9,
+        material_revision=0,
+        correlation_key=(),
+        payload={},
+    )
+
+    with pytest.raises(ContractViolation, match="lifecycle precedence"):
+        partition_context_batches(
+            timeline=_timeline(transition_reasons=["session_ended"]),
+            fact_view=_fact_view(1),
+            events=(_event(0), lifecycle),
+            fanout_stream_sequence=11,
+        )
+
+
+def test_event_deduplicator_is_exactly_once_under_concurrent_equal_arrival() -> None:
+    deduplicator = NarrativeEventDeduplicator(stream_epoch=1)
+    event = _event(0)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = tuple(executor.map(deduplicator.admit, ((event,), (event,))))
+
+    assert sum(len(outcome.events) for outcome in outcomes) == 1
+    assert sum(len(outcome.equal_arrivals) for outcome in outcomes) == 1
+
+
+def test_event_deduplicator_rejects_wrong_run_epoch_until_reset() -> None:
+    deduplicator = NarrativeEventDeduplicator(stream_epoch=2)
+
+    with pytest.raises(ContractViolation, match="stream epoch"):
+        deduplicator.admit((_event(0),))
+
+    deduplicator.reset(stream_epoch=1)
+    assert deduplicator.admit((_event(0),)).events == (_event(0),)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from threading import Lock
 from typing import Any
 
 from irswitch.contracts import (
@@ -16,6 +18,7 @@ from irswitch.contracts import (
     NarrativeSourceOrder,
     OccurrenceId,
     SessionRef,
+    StreamEpoch,
     derived_delivery_class,
 )
 from irswitch.events.stream import FrozenAcceptedEvent, thaw_envelope
@@ -35,6 +38,62 @@ _PHASES = {
     "EXIT": "ended",
     "RESULT": "result",
 }
+_LIFECYCLE_POLICY = {
+    "STREAM_STARTED": ("started", "stream.lifecycle"),
+    "STREAM_ENDED": ("ended", "stream.lifecycle"),
+    "SESSION_STARTED": ("started", "session.lifecycle"),
+    "SESSION_ENDED": ("ended", "session.lifecycle"),
+    "SESSION_RESTARTED": ("impulse", "session.lifecycle"),
+}
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeDedupeResult:
+    events: tuple[NarrativeEvent, ...]
+    equal_arrivals: tuple[tuple[str, int], ...]
+
+
+class NarrativeEventDeduplicator:
+    """Run-scoped exactly-once admission with explicit equal-arrival evidence."""
+
+    def __init__(self, *, stream_epoch: int) -> None:
+        self._stream_epoch = StreamEpoch(stream_epoch)
+        self._seen: dict[tuple[str, int], NarrativeEvent] = {}
+        self._lock = Lock()
+
+    def admit(self, events: tuple[NarrativeEvent, ...]) -> NarrativeDedupeResult:
+        with self._lock:
+            return self._admit_locked(events)
+
+    def _admit_locked(self, events: tuple[NarrativeEvent, ...]) -> NarrativeDedupeResult:
+        retained: list[NarrativeEvent] = []
+        equal_arrivals: list[tuple[str, int]] = []
+        next_seen = dict(self._seen)
+        for event in events:
+            if not isinstance(event, NarrativeEvent):
+                raise ContractViolation("narrative deduplicator requires NarrativeEvent values")
+            if event.stream_epoch != self._stream_epoch:
+                raise ContractViolation("NarrativeEvent stream epoch differs from deduplicator run")
+            key = (str(event.event_id), event.material_revision)
+            previous = next_seen.get(key)
+            if previous is None:
+                next_seen[key] = event
+                retained.append(event)
+            elif previous == event:
+                equal_arrivals.append(key)
+            else:
+                raise ContractViolation(
+                    f"duplicate event identity {key!r} carries conflicting content"
+                )
+        self._seen = next_seen
+        return NarrativeDedupeResult(tuple(retained), tuple(equal_arrivals))
+
+    def reset(self, *, stream_epoch: int) -> None:
+        """Begin a new narrative run after the owner records its boundary."""
+
+        with self._lock:
+            self._stream_epoch = StreamEpoch(stream_epoch)
+            self._seen.clear()
 
 
 def deduplicate_narrative_events(
@@ -73,10 +132,20 @@ def partition_context_batches(
             ),
         )
     previous_ordinal: int | None = None
+    saw_external_event = False
     for event in events:
         order = event.source_order
         if order is None:
-            raise ContractViolation("accepted NarrativeEvent requires source order")
+            if str(event.kind) not in _LIFECYCLE_POLICY or event.source_envelope is not None:
+                raise ContractViolation(
+                    "only internal lifecycle NarrativeEvents may omit source order"
+                )
+            if saw_external_event:
+                raise ContractViolation(
+                    "lifecycle precedence requires lifecycle events before external events"
+                )
+            continue
+        saw_external_event = True
         if int(order.fanout_stream_sequence) != fanout_stream_sequence:
             raise ContractViolation("NarrativeEvent fanout sequence differs from publication")
         if previous_ordinal is not None and order.source_ordinal <= previous_ordinal:
@@ -85,9 +154,7 @@ def partition_context_batches(
     parts: list[ContextBatchPart] = []
     for offset in range(0, len(events), 64):
         chunk = events[offset : offset + 64]
-        first_order = chunk[0].source_order
-        last_order = chunk[-1].source_order
-        assert first_order is not None and last_order is not None
+        source_orders = [event.source_order for event in chunk if event.source_order is not None]
         parts.append(
             ContextBatchPart(
                 batch=ApplyContextBatch(
@@ -97,12 +164,70 @@ def partition_context_batches(
                 ),
                 external_order=ExternalOrder(
                     fanout_stream_sequence,
-                    first_order.source_ordinal,
-                    last_order.source_ordinal,
+                    None if not source_orders else source_orders[0].source_ordinal,
+                    None if not source_orders else source_orders[-1].source_ordinal,
                 ),
             )
         )
     return tuple(parts)
+
+
+def adapt_lifecycle_event(
+    kind: str,
+    *,
+    event_id: str,
+    occurred_mono_ms: int,
+    broadcast_epoch: int,
+    stream_epoch: int,
+    session_ref: SessionRef | None,
+    occurrence_id: OccurrenceId | None,
+    lineage_id: LineageId | None,
+    fact_ids: tuple[str, ...],
+    fact_view_revision: int,
+    material_revision: int,
+    correlation_key: tuple[str, ...],
+    payload: dict[str, Any],
+) -> NarrativeEvent:
+    """Create one of the five internal lifecycle events without a V4 envelope."""
+
+    try:
+        phase, tape_channel = _LIFECYCLE_POLICY[kind]
+    except KeyError as exc:
+        raise ContractViolation(f"unknown lifecycle kind: {kind!r}") from exc
+    funnel = FunnelIdentity(
+        source_class="lifecycle",
+        candidate_id=None,
+        detector_observation_id=None,
+        event_id=event_id,
+        material_revision=material_revision,
+        opportunity_id=None,
+        plan_id=None,
+        utterance_id=None,
+        tape_channel=tape_channel,
+    )
+    return NarrativeEvent(
+        event_id=event_id,
+        kind=kind,
+        phase=phase,
+        delivery_class=derived_delivery_class(kind, phase),
+        source_envelope=None,
+        source_order=None,
+        occurred_mono_ms=occurred_mono_ms,
+        broadcast_epoch=broadcast_epoch,
+        stream_epoch=stream_epoch,
+        session_ref=session_ref,
+        occurrence_id=occurrence_id,
+        lineage_id=lineage_id,
+        correlation_key=correlation_key,
+        fact_ids=fact_ids,
+        fact_view_revision=fact_view_revision,
+        material_revision=material_revision,
+        confidence=1.0,
+        tape_channel=tape_channel,
+        funnel=funnel,
+        taxonomy_hash=narrative_taxonomy_hash(),
+        payload=payload,
+    )
 
 
 def adapt_accepted_event(
@@ -176,7 +301,10 @@ def adapt_accepted_event(
 
 __all__ = [
     "NarrativeAdmissionError",
+    "NarrativeDedupeResult",
+    "NarrativeEventDeduplicator",
     "adapt_accepted_event",
+    "adapt_lifecycle_event",
     "deduplicate_narrative_events",
     "partition_context_batches",
 ]

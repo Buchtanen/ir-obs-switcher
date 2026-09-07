@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #237 implementation — bounded command/mailbox foundation GREEN, pending push; remaining acceptance reconciliation follows
+**Phase:** #237 implementation — lifecycle/cross-batch idempotency checkpoint GREEN, pending push
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), active [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -27,7 +27,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - First #237 [dated dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/237#issuecomment-5566224531).
 - First #237 acceptance-metadata SHA: `eca280b` (`docs: record narrative admission checkpoint (#237)`).
 - Coherent-batch SHA: `2a6d57e03419a7e8cadfd2153184df6e01403da3` (`feat: add coherent narrative context batches (#237)`); [CI run 34152629347](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34152629347) is green on Python 3.11–3.13.
-- Expected working tree before the bounded-mailbox push: only the files listed in the ownership section are dirty.
+- Bounded command/mailbox foundation SHA: `325e2020dff3768e70a16137905769f710ae7ff5` (`feat: add bounded narrative mailbox foundation (#237)`); [CI run 34155593258](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34155593258) is green on Python 3.11–3.13.
+- Expected working tree before the lifecycle/idempotency push: only the files listed in the ownership section are dirty.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -43,11 +44,12 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent until the bounded-mailbox checkpoint is pushed, green in CI and recorded.
-- Dirty scope: `src/irswitch/contracts/{__init__,command}.py`, `src/irswitch/commentary/mailbox.py`, `tests/test_narrative_context_batch.py` and this handover record.
+- Editing owner: current root agent until the lifecycle/idempotency checkpoint is pushed, green in CI and recorded.
+- Dirty scope: `src/irswitch/contracts/narrative.py`, `src/irswitch/events/narrative.py`, `tests/test_narrative_context_batch.py` and this handover record.
 - Completed #237 scope: the accepted-event and coherent-batch scope above plus factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; and idempotent shutdown ownership of the emergency cell.
-- TDD phase: `GREEN` — the mailbox slice began with an import-collection RED for missing `NarrativeCommand`; independent audit then drove five focused RED failures for exact command factories, atomic pairs, accepted-context ownership and idempotent/deeply isolated shutdown recovery.
-- Verification: 23 focused context-batch/command/mailbox tests pass (17 command/mailbox tests); affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,471 tests outside the socket-restricted sandbox.
+- Current #237 scope: `adapt_lifecycle_event` emits all five immutable protected lifecycle NarrativeEvents with null V4 provenance and fixed lifecycle tape channels; context partitioning enforces lifecycle-before-external precedence, preserves mixed input order and derives external ordinal bounds only from externally accepted events; the stream-epoch-scoped `NarrativeEventDeduplicator` provides locked atomic cross-batch duplicate admission and returns explicit equal-arrival evidence.
+- TDD phase: `GREEN` — the lifecycle/idempotency slice began with an import-collection RED for missing `NarrativeEventDeduplicator`; independent audit added REDs for invalid accepted-before-lifecycle order, unenforced run epoch and concurrent equal arrival.
+- Verification: 37 focused context-batch/command/mailbox/lifecycle/idempotency tests pass; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,485 tests outside the socket-restricted sandbox.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: none.
@@ -56,11 +58,11 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-After the bounded-mailbox checkpoint is pushed and CI is green:
+After the lifecycle/idempotency checkpoint is pushed and CI is green:
 
 1. Record the checkpoint SHA/CI evidence in the existing dated #237 diary.
-2. Reconcile the remaining #237 checklist against the accepted event, coherent-batch and mailbox evidence; update only items that are actually proven.
-3. Add the next focused RED for any remaining lifecycle-command/adaptor or replay-determinism gap; preserve the V4 overlay wire and defer timeline truth ownership to #243/#244.
+2. Reconcile #237's implementation-boundary checklist with #284: live EventSubscription replacement, reducer sequence/state replay and integrated actor-loop liveness belong to the dependent NarrativeRuntime actor and cannot be activated before #238/#240/#243/#245/#258/#262/#264/#265/#269.
+3. Resolve the remaining recovery compaction/lost-range evidence mismatch or document a reviewed contract clarification before #237 acceptance.
 
 ## Resume commands
 

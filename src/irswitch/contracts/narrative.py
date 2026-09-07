@@ -318,6 +318,13 @@ class NarrativeEvent:
             )
         if not isinstance(funnel, FunnelIdentity):
             raise ContractViolation("funnel must be FunnelIdentity")
+        if event_kind in _PROTECTED_KINDS:
+            if source_envelope is not None or source_order is not None:
+                raise ContractViolation("lifecycle NarrativeEvent must have null V4 provenance")
+            if funnel.source_class != "lifecycle":
+                raise ContractViolation("lifecycle NarrativeEvent requires lifecycle funnel")
+        elif funnel.source_class == "lifecycle":
+            raise ContractViolation("non-lifecycle NarrativeEvent cannot use lifecycle funnel")
         channel = Identifier(tape_channel)
         material = _bounded_int(material_revision, "materialRevision")
         if funnel.event_id != event or funnel.material_revision != material:
