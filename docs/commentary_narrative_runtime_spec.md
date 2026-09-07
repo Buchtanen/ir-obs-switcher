@@ -247,7 +247,7 @@ Canonical `SessionRef` je dvojice `(SubSessionID, SessionNum)`. Obě hodnoty mus
 
 Stage se čte výhradně z řádku `SessionInfo.Sessions[SessionNum]`. `unsupported/unknown → supported` při stejném ref je jednorázové doplnění dosud neznámé klasifikace. Změna jednoho supported stage na jiný supported stage při stejném ref je `session_identity_conflict`: runtime suspenduje nové session-scoped opportunities, zachová poslední potvrzenou stage a čeká na změnu ref nebo návrat konzistentních dat. Nikdy z toho nevytvoří fiktivní přechod.
 
-`SessionPlan` filtruje podporované řádky podle úplné identity a připouští libovolnou neprázdnou podmnožinu `{practice, qualifying, race}`, vždy nejvýše jednou a ve vzestupném ranku Practice→Qualifying→Race. Tím jsou korektní i P, Q, R, P→Q, P→R, Q→R a P→Q→R; chybějící stage se nikdy nedoplňuje. Duplicitní supported stage, klesající pořadí nebo neúplná identita vytvoří `session_plan_conflict`, prázdný supported plan a suspend nového session-scoped stavu, nikoli odhad. První coherent plan narrative runu je neměnný prefix. Další plán musí obsahovat všechny jeho položky beze změny a smí pouze appendnout dosud neznámou stage s vyšším `SessionNum` i rankem. Insertion, odebrání, reorder, retype či změna identity konflikt latchne do nového broadcast/runu; historie posledního přijatého prefixu zůstane interně zachována, ale nesmí založit current speech.
+`SessionPlan` filtruje podporované řádky podle úplné identity a připouští libovolnou neprázdnou podmnožinu `{practice, qualifying, race}`, vždy nejvýše jednou a ve vzestupném ranku Practice→Qualifying→Race. Tím jsou korektní i P, Q, R, P→Q, P→R, Q→R a P→Q→R; chybějící stage se nikdy nedoplňuje. Coherent complete plán bez supported stage, s duplicitní stage, klesajícím pořadím nebo neúplnou identitou vytvoří `session_plan_conflict`, prázdný supported plan a suspend nového session-scoped stavu, nikoli odhad. Nedostupný, odpojený či částečně parsovaný SessionInfo není konfliktní plán a pouze použije běžný connection suspend. Prvních 16 unsupported řádků zůstane v source order jako audit a přesný overflow count zachytí zbytek. První coherent plan narrative runu je neměnný prefix. Další plán musí obsahovat všechny jeho položky beze změny a smí pouze appendnout dosud neznámou stage s vyšším `SessionNum` i rankem. Insertion, odebrání, reorder, retype či změna identity konflikt latchne do nového broadcast/runu; historie posledního přijatého prefixu zůstane interně zachována, ale nesmí založit current speech.
 
 Při návratu na starší ref/stage vzniká vždy nový occurrence. Parent je poslední aktivní occurrence nejbližší dřívější přítomné stage; pozdější active occurrences se stanou `superseded`. Tím `Race → Qualifying` zachová Practice ancestor, pokud existoval, a další Race dědí z nové Qualifying occurrence.
 
@@ -352,6 +352,8 @@ Navržené počáteční stropy, které je nutné replayem kalibrovat:
 Po evikci detailu musí zůstat self-contained summary a celo-streamové agregáty. Odhadovaná Python metadata jsou řádově jednotky MB; dominantní paměťovou položkou zůstává jazykový/TTS model, nikoliv narrative ledger.
 
 Aktivní lineage se nikdy neeviktuje. Po překročení 64 neaktivních occurrence headers se nejstarší detail sloučí do per-stage `CompactedHistorySummary` s počtem restartů, best/result facts povolenými pro historical řeč a tape range reference; individuální staré occurrence už není speakable. Úplný audit zůstává v NarrativeTape. Požadavek „pamatovat historii“ tedy znamená: vždy zachovat aktivní ancestors a bezpečné deklarované souhrny, nikoliv držet neomezeně všechny raw samples a epizody v RAM.
+
+Fact overflow nikdy nesmí znamenat „false“. Ledger nejprve superseduje starou revision stejného semantic key a komprimuje neaktivní detail. Pinuje pouze upstream-známá newest stream/downstream fakta aktivní lineage; nikdy nesmí číst BeatPlan, Episode ani speech state. Potom odstraní nejstarší unpinned occurrence/revalidate fakta ve stabilním pořadí. Výsledek je `unknown`, `history_complete=false`, tape reason `fact_capacity_evicted` a downstream actor z nové FactView invaliduje závislou pre-accept práci. Pokud se nevejde samotný upstream pinned set, nevydá se částečný FactView, commentary zastaví nové plánování s `fact_capacity_exhausted`, ale producer/main loop pokračuje. Přesná episode overflow politika uvnitř commentary naopak smí chránit instance s reserved/in-flight speech, jinak eviktuje suspended→candidate→nejnižší active continuation a při all-pinned novou epizodu pouze auditovaně odmítne; fact truth tím nemění.
 
 ### 6.6 Od telemetrie k odvozenému stavu a eventu
 
@@ -789,7 +791,7 @@ Parametry se nesmějí nahromadit do jednoho univerzálního beatu. Každá vrst
 | Detector/EventDefinition | zda se událost fakticky stala | feature predicates, thresholdy, hystereze, confirmation, correlation |
 | Event speech policy | jak dlouho a s jakou naléhavostí může event soutěžit o řeč | `tape_channel`, TTL, base priority, urgency, penalty coefficient |
 | StoryDefinition | zda epizoda existuje a zůstává relevantní | open/update/resolve routing, semantic identity, `valid_while`, conflicts, continuation policy |
-| BeatDefinition | jaký významový krok lze právě vyslovit | role, source, hard guards, claims, timing, allowed contexts, realization family |
+| BeatDefinition | jaký významový krok lze právě vyslovit | role, source, hard guards, claims, timing, allowed contexts, realization family a maximum freedom |
 | SuccessorEdge | jak lze pokračovat po odvysílaném beatu | target, relation, guard, preference bonus, expiry/material-revision barrier |
 
 Navržený katalogový tvar:
@@ -835,7 +837,10 @@ beats:
       required: [battle.closing(hero, target)]
       optional: [battle.closing.gap]
       forbidden: [pass_completed, predicted_pass]
-    realization_family: pursuit_opening
+    realization:
+      family: battle.closing
+      backend: qwen_compiled
+      max_freedom: tight
     successors:
       - beat: pursuit.update
         relation: preferred
@@ -1229,7 +1234,9 @@ Profily:
 - `balanced`: malý family pool, nejvýše jeden optional claim a omezená změna pořadí klauzí; běžný race commentary;
 - `loose`: širší auditovaný lexikon, nejvýše dva optional claims a volnější cadence; pouze pro nekritický filler nebo recap s bohatými stabilními fakty.
 
-Director vybírá profil deterministicky podle event family, priority, confidence, množství faktů, dostupného časového rozpočtu a repetition pressure. Konfigurace může profily po rodinách utáhnout nebo omezit, ale nesmí zvýšit volnost nad auditované maximum katalogu. `freedom` nikdy nepovoluje nové identity, čísla, vztahy, příčiny, výsledky ani predikce. Všechny profily procházejí stejným SemanticVerifierem a volba options se zapisuje do tape.
+Kombinace options nejsou volné: tight je přesně fixed/0 optional/no reorder/1 sentence/temperature 0.15/top-p 0.75; balanced je family pool/nejvýše 1 optional/1 sentence/0.35/0.85; loose je family pool/nejvýše 2 optional/2 sentences/0.55/0.90. Reorder u balanced/loose povoluje jen explicitní promotion flag rodiny a family pool musí mít alespoň dvě enabled auditované cards. Seed vzniká z canonical JSON objektu `{streamEpoch,opportunityId,episodeId,episodeRevision,beatId,cycleAttemptOrdinal}` jako unsigned big-endian prvních osm bytů SHA-256, nikdy z globálního RNG.
+
+Director vezme nejnižší maximum z operator configu, BeatDefinition a promotion registru rodiny a nepřekročí její preferred profile. Critical policy, outcome/transition role, incomplete history nebo minimum confidence vybraných facts pod 0,90 vždy stáhne profil na tight. Repetition, latency ani selhání pokusu nesmějí profil rozvolnit. První production katalog má všechny rodiny nejvýše tight; balanced/loose se objeví pouze jako verzovaná corpus-backed promotion. `freedom` nikdy nepovoluje nové identity, čísla, vztahy, příčiny, výsledky ani predikce. Všechny profily procházejí stejným SemanticVerifierem a volba options se zapisuje do tape.
 
 Krizová podmínka finální produkční aktivace: všechny rodiny povolí nejvýše `tight`; `balanced` se aktivuje jen pro rodinu se schváleným verifier corpus. `loose` zůstává vypnutý, dokud verifier prokáže přijatelný false-accept limit na samostatném holdoutu. Regexová kontrola jmen/čísel sama o sobě pro `loose` nestačí.
 
@@ -1986,9 +1993,9 @@ Základní typy records:
 - `stream_manifest`: schema/build/catalog/model/config versions a hashes;
 - `input_sample` nebo `input_window_ref`: pouze fields potřebné daným features;
 - `feature_frame`: hodnoty, units, quality, coverage a evidence refs;
-- `detector_decision`: predicate tree s true/false/unknown, prahy, transition a reason;
+- `detector_observation`: predicate tree s true/false/unknown, prahy, transition a reason;
 - `event_opportunity`: event ref, `tape_channel`, TTL, priority, urgency, penalty coefficient, queue/terminal state a reason;
-- `narrative_decision`: facts, episodes, event/successor kandidáti, jejich relace, hard-gate reasons a score breakdown;
+- `director_decision`: facts, episodes, event/successor kandidáti, jejich relace, hard-gate reasons a score breakdown;
 - `llm_attempt`: BeatPlan, prompt metadata/obsah dle configu, completion, latency, tokens a verifier;
 - `speech_exposure`: committed text, backend playback acceptance (`SPEECH_STARTED`), completion/interruption/failure;
 - `drop_notice`: počet a typ záznamů zahozených při writer overload nebo I/O chybě.
@@ -2132,7 +2139,7 @@ Stávající route names mohou zůstat, jejich payload je breaking a vždy nese 
 - `docs/v2.0.0/fact-feature-registry.md` — uzavřený branch-only registr faktových predikátů, skalárů/jednotek, feature IDs, claim allowlistů a `tape_channel` taxonomie;
 - `docs/v2.0.0/detector-catalog-freeze.md` — přesný branch-only katalog temporal/composite matematiky, odhadnutých rozsahů, hystereze a two-front identity;
 - `docs/v2.0.0/realization-verifier-contract.md` — přesný branch-only controlled-EN/verifier kontrakt pro všech 37 realizačních rodin;
-- `docs/v2.0.0/vertical-slice-fixtures.md` — třicet jedna branch-only očekávaných decision/reducer/speech scénářů;
+- `docs/v2.0.0/vertical-slice-fixtures.md` — třicet tři branch-only očekávaných decision/reducer/speech scénářů;
 - `docs/v2.0.0/final-pr-exclusion-manifest.md` — povinný seznam planning/temporary položek odstraněných před PR do masteru;
 - `README.md` — odkaz na v2.0.0 implementační index;
 - `COMMENTARY_ENGINE.md` — odkaz na návrh, současný engine zůstává current-behavior autoritou.
@@ -2361,7 +2368,7 @@ repeat_penalty(text, H) =
 
 Tato hodnota se smí odečíst od skóre nebo použít pro výběr patternu. Nesmí rozhodovat o fakticitě, směru vztahu ani validitě successor hrany.
 
-Deterministický replay se dělí na dvě úrovně. Reducer/director/authored pattern selection musí ze stejného tape a catalog/config hash vybrat stejný beat i pattern; pseudonáhodná volba používá seed odvozený ze `stream_epoch + opportunity_id + beat_id + episode_revision`, ne process-global RNG. Qwen text se pro decision replay neregeneruje: použije se zaznamenaná completion. Samostatný model eval může request zopakovat, ale kvůli backend/hardware nondeterminismu porovnává claim verdict a latency distribuci, nikoliv byte-identický text. Tape proto vždy nese model identifier/digest, prompt hash/content policy, sampling options, případný seed a skutečnou completion.
+Deterministický replay se dělí na dvě úrovně. Reducer/director/authored pattern selection musí ze stejného tape a catalog/config hash vybrat stejný beat i pattern; pseudonáhodná volba používá přesný PromptOptions seed algoritmus ze schema contractu, ne process-global RNG. Qwen text se pro decision replay neregeneruje: použije se zaznamenaná completion. Samostatný model eval může request zopakovat, ale kvůli backend/hardware nondeterminismu porovnává claim verdict a latency distribuci, nikoliv byte-identický text. Tape proto vždy nese model identifier/digest, prompt hash/content policy, sampling options, případný seed a skutečnou completion.
 
 ### 23.6 Statická matematická validace grafu
 

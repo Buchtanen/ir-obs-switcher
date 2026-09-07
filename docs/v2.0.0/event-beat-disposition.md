@@ -372,6 +372,8 @@ The table is the authoritative 64-beat design baseline. `on_track` means normali
 
 Every row inherits global contract `G0`: only bound EN names/numbers/units may be emitted; unbound cause, intent, emotion, certainty, future outcome, weather and medical interpretation are forbidden. “Forbidden addition” below extends `G0`. Optional claims must be selected into BeatPlan before generation. Predicate IDs and allowed attributes below are canonical and resolve through [the fact/feature registry](fact-feature-registry.md); `W_weather`, `W_field`, `W_filler_phase`, `W_filler_off_track` and `W_quiet_track` mean exactly the closed allowlists defined there, not free text selection.
 
+Each BeatDefinition realization block is exactly `{family,backend,maxFreedom}` where backend is `authored|qwen_compiled` and freedom order is `tight < balanced < loose`. Each realization-family registry row is exactly `{family,promotedMaxFreedom,preferredFreedom,balancedAllowClauseReorder,looseAllowClauseReorder,enabledPatternCardIds}` in addition to its verifier grammar reference. Preferred cannot exceed promoted; a non-tight profile needs at least two enabled audited cards. The release baseline has `promotedMaxFreedom=tight` for every family. These fields are mandatory even for authored beats so audit/selection has one shape; authored rendering ignores sampling but its card still validates against the tight semantic contract.
+
 | BeatDefinition | Required claims | Forbidden addition | Realization family |
 | --- | --- | --- | --- |
 | `timing.lap.completed` | `timing.lap_completed(hero; lap[, lapTime])` | PB or pace judgement without comparison fact | `timing.lap_result` |
@@ -461,6 +463,7 @@ Issue #256 cannot close until CI or a catalog audit script proves:
 - every identifier is one of speakable, visual/operator-only or compatibility alias;
 - every speakable row resolves to at least one of exactly 64 BeatDefinitions;
 - every BeatDefinition resolves to at least one ordered story route, one realization family, one policy profile and one valid `tape_channel`;
+- every BeatDefinition/family resolves the closed realization block, valid freedom ordering and sufficient enabled pattern-card pool;
 - aliases and visual-only events can never create EventOpportunity;
 - every successor reference exists and every nonterminal SCC has an exit, TTL/cadence barrier and material-revision guard;
 - every stage-specific beat uses the normalized stage/context enums and no raw OBS scene name.

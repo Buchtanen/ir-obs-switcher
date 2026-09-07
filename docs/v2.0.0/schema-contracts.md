@@ -104,11 +104,14 @@ Metrics copied from a V4 envelope enter `payload` only through a kind-specific a
 SessionPlan is exactly:
 
 ```text
-schemaVersion, planRevision, capturedMonoMs, subSessionId,
-valid, reason?, entries[0..3], unsupportedEntries[0..16]
+schemaVersion, planRevision, capturedMonoMs, subSessionId?,
+valid, reason?, entries[0..3], unsupportedEntries[0..16],
+unsupportedOverflowCount
 ```
 
-Each supported entry is exactly `{sessionRef,stage}`. A valid plan has null reason, one to three unique supported stages and strictly increasing `sessionNum` and stage rank `practice < qualifying < race`; therefore every nonempty subset is legal and canonical. Unsupported SessionInfo rows are retained only as `{sessionNum,externalType}` audit metadata and never aliased to a supported stage. Missing/invalid identity on a supported row, duplicate supported stage or decreasing rank produces `valid=false`, reason `session_plan_conflict`, and empty supported entries.
+Each supported entry is exactly `{sessionRef,stage}`. A valid plan has a nonempty `subSessionId`, null reason, one to three unique supported stages and strictly increasing `sessionNum` and stage rank `practice < qualifying < race`; therefore every nonempty subset is legal and canonical. Unsupported SessionInfo rows are retained only as `{sessionNum,externalType}` audit metadata and never aliased to a supported stage. They preserve source row order; only the first 16 are retained and `unsupportedOverflowCount` is the exact nonnegative omitted count. Truncating unsupported audit rows does not invalidate an otherwise valid plan.
+
+A coherent complete SessionInfo snapshot with missing/invalid SubSessionID or supported-row identity, no supported stage, duplicate supported stage or decreasing rank produces `valid=false`, reason `session_plan_conflict`, nullable `subSessionId`, and empty supported entries. A missing, partially parsed or disconnected SessionInfo source is not a conflicting candidate and publishes no new SessionPlan: before the first plan its revision remains absent, and afterward the last publication is retained while current session identity is suspended by the normal connection contract.
 
 The first coherent plan in a narrative run becomes an immutable accepted prefix. An unchanged observation retains `planRevision`. A later plan is accepted only when all existing entries are an exact prefix and every appended entry has a greater `sessionNum` and stage rank; acceptance increments `planRevision`. Insertion, removal, reorder, retype or identity replacement latches `session_plan_conflict` for the rest of that narrative run, publishes an invalid empty plan at a new revision, clears current session identity from snapshots and suspends new session-scoped state. The last accepted prefix remains internal historical evidence but cannot be used to admit current speech. A new broadcast/run clears the latch and may establish a different initial plan.
 
@@ -193,6 +196,10 @@ scope, status, revision
 
 FactView is `{schemaVersion, viewRevision, createdMonoMs, broadcastEpoch, streamEpoch, occurrenceId?, lineageId?, historyComplete, facts[0..1024], compactedSummaryRefs[0..64]}`. Facts sort by fact ID for hashing; semantic recency comes from revisions/times, not array order. The live caps remain 512 active plus 512 historical summaries.
 
+FactLedger capacity behavior is deterministic and loss-safe. Before admitting a new active revision it supersedes the older revision of the same semantic key and compacts/removes expired, superseded and rejected detail. It pins only upstream-knowable truth: the newest active stream-scope and active-ancestor downstream fact for each semantic key. It never reads BeatPlan, Episode or speech state. If active storage still exceeds 512, it evicts unpinned occurrence/revalidate facts in ascending `(observedAtMonoMs, revision, factId)` order, records `fact_capacity_evicted`, latches `historyComplete=false` for the run and makes the missing predicate unknown—not false. The downstream actor invalidates any dependent pre-accept work from the new FactView; capacity loss never interrupts already accepted playback by itself. If the upstream pinned set alone cannot fit, FactLedger publishes no partial current view, reports `fact_capacity_exhausted`, and commentary admits no new planning until a later coherent view fits; producers and the main loop continue. That later full view clears exhaustion but remains history-incomplete/degraded because prior loss cannot be reconstructed. Only a new narrative run can restore complete/ready state.
+
+Historical storage first replaces detailed inactive facts with the registry-approved self-contained summary facts. Above 512, the oldest non-lineage individual summaries merge into per-stage aggregate summary records; these aggregates retain counts/extrema and tape ranges but are not actor-specific speakable evidence. Active-lineage downstream summaries are pinned. `compactedSummaryRefs` names at most the newest 64 aggregate/tape ranges in canonical `(stage,predicate,rangeStart)` order and omission is counted inside the aggregate metadata, never mistaken for complete history.
+
 ## Episode
 
 Episode instance/summary fields:
@@ -207,6 +214,8 @@ historyComplete
 ```
 
 Scope is `stream|occurrence`. `stream_lifecycle` and the explicitly stream-routed `filler_single` lobby episode may omit occurrence/lineage; occurrence scope requires both. The lobby stream form may reference only stream-scope facts and resolves after its silence impulse, context change or narrative-run end. State is `candidate|active|suspended|resolved|invalidated`. Dormant is absence, not a serialized instance. Resolved/invalidated requires terminal time and registered resolution reason; other states require both null. `materialOrder` is the candidate-order pair of the event/reducer impulse that created the current material revision. A compacted summary uses the same identity/state contract but may replace `factIds` with summary fact refs explicitly marked historical.
+
+The configured current-episode capacity covers candidate+active+suspended instances. Before opening a new instance, EpisodeRegistry closes invalid/stale instances, then evicts the oldest unpinned suspended instance, then candidate, then lowest-continuation-priority active instance; ties use `materialOrder` and `episodeId`. An instance is pinned while it owns a reserved opportunity or the current building/committed/speaking token. Eviction terminalizes it as invalidated with `capacity_evicted`, invalidates its pending opportunities and writes a summary/tape record. If every retained instance is pinned, the accepted event/facts remain recorded but no new episode/opportunity is created; the decision records `episode_capacity_rejected`. Resolved summaries evict oldest by `(resolvedMonoMs,episodeId)` after their safe fact summaries/tape references are retained. No episode eviction changes FactLedger truth.
 
 ## EventOpportunity
 
@@ -231,7 +240,15 @@ schemaVersion, freedom, patternChoice, optionalClaimLimit,
 allowClauseReorder, maxSentences, temperature, topP, seed
 ```
 
-Freedom is `tight|balanced|loose`; pattern choice is `fixed|family_pool`; optional claim limit is 0..2; max sentences is 1..2; temperature is 0..2; topP is greater than 0 and at most 1; seed is unsigned 64-bit. Catalog maxima may tighten but never expand these ranges.
+Freedom is `tight|balanced|loose`; pattern choice is `fixed|family_pool`; optional claim limit is 0..2; max sentences is 1..2; temperature is 0..2; topP is greater than 0 and at most 1; seed is unsigned 64-bit. The baseline profile tuples are closed rather than freely combinable:
+
+| freedom | patternChoice | optionalClaimLimit | allowClauseReorder | maxSentences | temperature | topP |
+| --- | --- | ---: | --- | ---: | ---: | ---: |
+| `tight` | `fixed` | 0 | false | 1 | 0.15 | 0.75 |
+| `balanced` | `family_pool` | 0..1 selected claims | family promotion flag | 1 | 0.35 | 0.85 |
+| `loose` | `family_pool` | 0..2 selected claims | family promotion flag | 2 | 0.55 | 0.90 |
+
+The seed is never process-global. Its material is the exact lower-camel object `{streamEpoch,opportunityId,episodeId,episodeRevision,beatId,cycleAttemptOrdinal}`, including JSON null for a missing opportunity, serialized by the global canonical JSON rule. Seed is the first eight SHA-256 digest bytes interpreted as one unsigned big-endian integer. A family-pool profile requires at least two enabled audited cards; otherwise that profile is schema-ineligible, not silently converted to fixed. Each realization family registry row carries `promotedMaxFreedom`, `preferredFreedom` and the two profile-specific clause-reorder booleans. Effective freedom is the least permissive of operator `llm.max_profile`, BeatDefinition maximum, family promoted maximum and family preferred profile. Policy `critical`, beat role `outcome|transition`, incomplete history, or minimum selected-fact confidence below 0.90 further caps it at tight. No runtime condition widens freedom to address repetition, latency or a failed attempt. The first production catalog sets every promoted maximum to tight; widening is a versioned corpus-backed catalog change.
 
 BeatPlan is exactly:
 
@@ -284,16 +301,16 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | Domain | IDs |
 | --- | --- |
 | director selection | `highest_valid_candidate`, `active_story_continuation`, `related_event_update`, `higher_urgency_switch`, `switch_margin_met` |
-| director silence/reject | `no_candidate`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `planning_cycle_exhausted`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
+| director silence/reject | `no_candidate`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `planning_cycle_exhausted`, `episode_capacity_rejected`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
 | timeline transition | `broadcast_started`, `broadcast_ended`, `broadcast_unknown`, `broadcast_resumed`, `narrative_enabled`, `narrative_disabled`, `attached_live`, `process_recovery`, `session_started`, `session_ended`, `session_restarted`, `session_superseded`, `session_suspended`, `session_resumed` |
 | opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `commentary_disabled`, `evicted_capacity` |
-| episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated` |
+| episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated`, `capacity_evicted` |
 | attempt terminal | `realization_timeout`, `realization_transport`, `realization_invalid_response`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
 | verifier rejection | `empty`, `too_long`, `sentence_count`, `token_count`, `non_en_contract`, `meta_output`, `unknown_fragment`, `unknown_entity`, `actor_reversed`, `actor_ambiguous`, `number_unbound`, `number_mismatch`, `unit_mismatch`, `polarity_mismatch`, `tense_mismatch`, `required_missing`, `forbidden_claim`, `extra_claim`, `causal_inference`, `intent_inference`, `emotion_inference`, `medical_inference`, `prediction_as_result`, `result_as_prediction`, `unsupported_certainty`, `unsafe_negation` |
 | detector transition | `enter_started`, `enter_confirmed`, `enter_lost`, `material_band_changed`, `material_delta_met`, `update_rate_limited`, `clear_started`, `clear_cancelled`, `clear_confirmed`, `target_changed`, `occurrence_reset`, `stream_reset`, `unsupported_stage`, `identity_conflict`, `feature_unknown`, `required_capture_lost` |
 | speech terminal | `completed`, `interrupted_stream_end`, `interrupted_occurrence_reset`, `interrupted_commentary_disabled`, `interrupted_truth_invalidated`, `interrupted_shutdown`, `tts_failed_after_acceptance`, `tts_start_timeout`, `tts_playback_watchdog`, `tts_stop_timeout` |
 | mailbox/tape health | `mailbox_overloaded`, `mailbox_evicted_update`, `mailbox_recovery`, `mailbox_history_incomplete`, `deadline_admission_skipped`, `tape_queue_drop`, `tape_write_failed`, `tape_flush_timeout`, `capture_unavailable` |
-| config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_unavailable`, `admission_timeout`, `session_identity_conflict`, `session_plan_conflict`, `obs_state_unknown`, `history_incomplete` |
+| config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_unavailable`, `admission_timeout`, `session_identity_conflict`, `session_plan_conflict`, `fact_capacity_evicted`, `fact_capacity_exhausted`, `obs_state_unknown`, `history_incomplete` |
 
 Adding a diagnostic reason is additive only inside the same version when no consumer exhaustively switches on it; implementation code must still use a registry constant. Removing, renaming or changing terminal meaning requires a schema version change.
 

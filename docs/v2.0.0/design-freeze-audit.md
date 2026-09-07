@@ -65,6 +65,7 @@ Master cross-checks that changed or sharpened the design:
 | Scene membership | Raw OBS scene names would couple commentary to deployment | Beat uses normalized `broadcast_context` with `ignore/prefer/require`; logic owns raw scene mapping |
 | Session vocabulary | Internal `qualifying` differs from iRSDK `Qualify` and overlay mode | One adapter maps external values; internal enum is lower-case; unsupported stages remain explicit |
 | Weekend plan | “Present stages in P→Q→R order” had no schema or invalid-plan/update behavior | Versioned SessionPlan accepts every nonempty unique subset in increasing rank; later observations may only append to the exact accepted prefix, while malformed or incompatible plans latch a session-scoped suspend without inference |
+| Session plan absence/bounds | Invalid missing identity could not satisfy the plan schema, and unsupported-row overflow had no outcome | Invalid plans permit null SubSessionID, unavailable/partial input emits no candidate, and unsupported audit rows truncate in source order with an exact overflow count |
 | Narrative identity encoding | Examples used incompatible abbreviated occurrence/lineage strings | One canonical ASCII stream-epoch/stage/ordinal grammar is shared by schema, API, tape and replay |
 | Stream authority | iRacing and OBS could both own stream lifecycle | OBS output owns stream edges; iRSDK owns session identity/stage |
 | OBS disconnect | Disconnect could create a false stream end | Disconnect is `unknown`; only confirmed not-streaming ends a stream |
@@ -73,14 +74,19 @@ Master cross-checks that changed or sharpened the design:
 | Stream start reason | Four legal start reasons had no exclusive precedence, making history completeness and replay ambiguous | Exact normal/attached-live/process-recovery/re-enable condition table; resume of an existing unknown OBS state allocates no epoch |
 | Tape across re-enable | A single optional manifest stream epoch could otherwise contain records from two narrative runs | Tape files are scoped to one process/run identity; disable/end finalizes a trailer and re-enable opens a new manifest |
 | Historical memory | “Remember everything” conflicted with bounded memory | Active ancestry is never evicted; old detail compacts to safe summaries and full audit remains on tape |
+| Fact/episode capacity | Numeric caps had no overflow order and could silently turn missing truth into false or evict in-flight work | Facts fail to unknown with pinned sets and explicit degradation; episodes use stable class/priority eviction and reject only the new narrative route when every instance is pinned |
+| Fact retention ownership | Pinning current BeatPlan facts would require an upstream FactLedger dependency on commentary | Ledger pins only timeline/scope-derived facts; actor observes a missing planned fact as unknown and cancels pre-accept work |
+| Fact capacity visibility | Exhaustion could silence planning without an operator-visible owner or recovery rule | Public fact health exposes revision/count/completeness; bounded recovery resumes degraded and only a fresh lossless run restores ready |
 | Graph safety | Analyzer was optional although malformed cycles are runtime risk | Loader referential/reachability/SCC barrier checks are blocking; rich analyzer/3D viewer remains optional |
 | Random replay | Qwen and global RNG could violate determinism claims | Deterministic authored seed; decision replay uses recorded Qwen completion, model eval compares semantics/distribution |
+| Tape record naming | Main prose used detector/narrative decision names absent from the frozen record enum | Producers, schema and replay use only `detector_observation` and `director_decision` |
 | Config reload | Mid-stream catalog/threshold changes could reinterpret state | Taxonomy/catalog/detectors/capacities freeze per stream; selected operational settings apply only at explicit generation boundaries |
 | Invalid config | Breaking config could crash the whole service | Disable commentary with explicit health reason; scene switching continues |
 | API impact | Spec called API optional despite required diagnostics | Commentary API payload becomes explicit `commentary-runtime/2`; API docs/tests are mandatory |
 | Offline verifier actors | Validate example used a display name but supplied only opaque actor IDs and forbade live-state reads | Request carries a bounded collision-free actor alias binding for exactly the referenced actors; numeric surfaces remain deterministic from facts |
 | Language | Overlay locale could silently drive speech | v2 speech/validation is fixed EN and independent of overlay locale |
 | LLM fallback | Failure policy could retry or repeat a topic | One attempt per beat/revision; discard and re-arbitrate; no repair or same-beat fallback |
+| Prompt profile meaning | Independent option ranges allowed unsafe hybrids such as tight with reordered optional claims | Closed profile tuples plus operator/beat/family/runtime minimum clamp; repetition and failure can never widen freedom |
 | Failure cascade | “Replan once” on every failure could recursively try the whole catalog for one event | One planning cycle dispatches at most two distinct BeatPlans (initial + one alternative), then waits for a new explicit impulse |
 | Detector tuning | Recorder failure conflicted with fail-soft main loop | Disable only a required experimental detector; never block or crash the race loop |
 | Overlay compatibility | A proposed EventEnvelope v2 would make a commentary refactor break the overlay wire | Keep the accepted V4 EventEnvelope/wire unchanged; a narrative adapter creates an internal versioned `NarrativeEvent` command and resolves policy from catalogs |
@@ -199,7 +205,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Thirty-one ordered expected scenarios covering lineage/session plans, scoring, no-queue behavior, invalid Qwen, silence, mailbox/tape overflow, callback/reset races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Thirty-three ordered expected scenarios covering lineage/session plans, scoring, no-queue behavior, invalid Qwen, prompt-profile clamps, silence, mailbox/tape/fact/episode overflow, callback/reset races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -221,7 +227,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the thirty-one expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the thirty-three expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.

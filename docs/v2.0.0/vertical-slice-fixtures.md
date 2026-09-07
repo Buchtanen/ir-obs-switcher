@@ -298,14 +298,38 @@ Expected:
 
 ## F31 — session plan is explicit, ordered and stable
 
-Input: build coherent SessionInfo plans for each nonempty supported subset P, Q, R, P→Q, P→R, Q→R and P→Q→R. Separately provide duplicate, decreasing-rank and incomplete-identity supported rows. Finally freeze P→Q while Q is current, then test adding future R versus removing/retyping P or Q.
+Input: build coherent SessionInfo plans for each nonempty supported subset P, Q, R, P→Q, P→R, Q→R and P→Q→R. Separately provide no supported stage, duplicate, decreasing-rank and incomplete SubSessionID/supported-row identity, then a temporarily unavailable partial snapshot. Include 18 unsupported rows. Finally freeze P→Q while Q is current, then test adding future R versus removing/retyping P or Q.
 
 Expected:
 
 - all seven subsets produce valid plans in exact increasing `sessionNum`/stage-rank order without inventing a missing stage, and every later TimelineSnapshot carries the matching `sessionPlanRevision` even before a supported session becomes current;
-- duplicate, decreasing or incomplete supported input produces an invalid empty plan with `session_plan_conflict`, no occurrence/lineage allocation and no session-scoped speech;
+- coherent empty-supported, duplicate, decreasing or incomplete-identity input produces a serializable invalid empty plan with `session_plan_conflict`, no occurrence/lineage allocation and no session-scoped speech; unavailable/partial input publishes no plan and follows connection suspend instead of latching conflict;
 - exact repetition keeps the revision; appending previously unseen future R advances it without changing P/Q identity, while insertion, removal, reordering, retyping or identity replacement latches the conflict and suspends new session-scoped state until a new broadcast/run;
-- unsupported rows remain bounded audit metadata and never become a supported stage or lineage node.
+- the first 16 unsupported rows remain source-ordered audit metadata, overflow count is 2, and none becomes a supported stage or lineage node.
+
+## F32 — bounded facts and episodes fail unknown, never false
+
+Input: fill active facts to 512 and current episodes to their configured capacity. Admit an updated semantic-key fact, then a new unpinned occurrence fact, then force a pinned-only fact set. Separately fill episodes with evictable suspended/candidate/active instances and finally with only instances owning reserved or in-flight speech.
+
+Expected:
+
+- an updated semantic key supersedes its old revision without growing storage; ordinary overflow evicts the oldest unpinned eligible fact deterministically, records `fact_capacity_evicted`, marks history incomplete and treats the missing claim as unknown;
+- newest stream/downstream active-lineage keys are the only upstream-pinned facts; FactLedger never reads BeatPlan/Episode/speech state, and eviction of a BeatPlan-required occurrence fact makes the downstream actor cancel that pre-accept work as unknown;
+- upstream-pinned-only overflow publishes no partial FactView, reports `fact_capacity_exhausted` and pauses new planning without blocking producers or the main loop;
+- a later complete bounded view resumes planning but remains `fact_capacity_evicted`/history-incomplete for that run; only a fresh lossless run reports facts ready/complete;
+- episode pressure evicts in suspended→candidate→lowest-priority-active order with stable ties, terminal reason `capacity_evicted`, opportunity invalidation and retained summary/tape evidence;
+- when all episodes are pinned, the accepted event and fact truth remain recorded but no episode/opportunity is created, with `episode_capacity_rejected`; no second speech lane, false fact or silent overwrite appears.
+
+## F33 — prompt freedom is a deterministic safety clamp
+
+Input: enumerate every PromptOptions field combination around tight/balanced/loose. Then request loose globally for: a family promoted only to tight, a critical/outcome beat, incomplete history, confidence 0.89, and a promoted noncritical context family with two enabled audited cards. Exercise repetition pressure and a failed realization.
+
+Expected:
+
+- only the closed profile tuples validate; tight cannot carry optional claims, reorder or two sentences, and a family pool with fewer than two enabled cards is ineligible;
+- config, beat maximum, family promotion/preference and runtime safety caps combine only by taking the least permissive result; the first production catalog therefore always compiles tight;
+- a later fully promoted, complete-history, confidence-at-least-0.90 noncritical context beat may compile its catalog-preferred wider tuple; the canonical material `{"beatId":"battle.approach","cycleAttemptOrdinal":1,"episodeId":"battle-ahead:3:17:22:4","episodeRevision":4,"opportunityId":"opp:401","streamEpoch":3}` hashes to seed `16041955996680716084`;
+- repetition pressure chooses among eligible cards or leaves the candidate fatigued, while failure discards that beat revision; neither widens or mutates PromptOptions.
 
 ## Required tape assertions per fixture
 
