@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #236 implementation — acceptance candidate GREEN, pending second checkpoint push
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), active [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236)
+**Phase:** #236 implementation complete — acceptance evidence GREEN; next implementation package is #237
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), acceptance-ready [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), next [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -16,9 +16,10 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Control-plane evidence SHA: `2d2f014592d5728f0eebe49afae73424ff44c35d` (`ci: enforce v2 checkpoints and agent handover (#235)`)
 - Last pushed handover SHA before #236: `d81b70a85b67a30273abfddbb39cd0b6ad513097`
 - First #236 implementation SHA: `be7c915a410fa9e9752e5259f2ad9a04ff3c037c` (`feat: add v2 contract primitives (#236)`)
-- Green CI: [run 34148330942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34148330942)
+- Final #236 implementation SHA: `4493615cce6b92842f7e5a0741c5bb8df71e5435` (`feat: complete v2 primitive contracts (#236)`)
+- Green CI: [first checkpoint run 34148330942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34148330942), [final acceptance run 34149625428](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34149625428)
 - First #236 [dev diary checkpoint](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5574070160)
-- Expected working tree before the second #236 commit: the second-slice files below are dirty; after push it must be clean and synchronized with upstream
+- Expected working tree after this closing metadata commit: clean and synchronized with upstream
 - Runtime behavior edits so far: new dependency-neutral v2 primitive contract layer only; it is not yet wired into live producers or commentary
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -34,8 +35,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent until the second #236 checkpoint is pushed, green and recorded.
-- Dirty scope: `src/irswitch/contracts/{__init__,primitives,resources,session}.py`, `tests/test_contract_primitives.py`, `tests/test_session_plan_contract.py` and this handover record.
+- Editing owner: none after this closing metadata is pushed; claim #237 before its first edit.
+- Dirty scope: this handover/index closing metadata only; implementation commit `4493615` is already pushed and clean.
 - Completed #236 scope: the first primitive/schema checkpoint plus bounded serializable valid/conflict `SessionPlan`, exact unsupported-row overflow, safe packaged-schema resource loading, strict JSON-value hashing and the frozen deterministic planning seed.
 - TDD phase: `GREEN` — SessionPlan began with a missing-import RED; strict JSON-key validation began with an assertion RED; both are now green.
 - Verification: 74 focused tests pass; affected Ruff, Ruff format, Black and Mypy pass; all 11 freeze builders pass; full regression passes with 1,438 tests outside the socket-restricted sandbox.
@@ -45,11 +46,11 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-After the second #236 checkpoint is pushed:
+After the #236 closing diary and issue state are published:
 
-1. Wait for CI and record its immutable SHA/run plus RED/GREEN and wheel evidence in issue #236.
-2. Audit every #236 checkbox against the two pushed implementation checkpoints; if CI is green and no gap remains, update the issue/index state and close #236.
-3. Re-verify a clean HEAD equal to upstream, then begin dependency-unblocked #237 with a fresh focused RED slice. Do not implement timeline ownership from #243/#244 early.
+1. Re-verify a clean HEAD equal to upstream and confirm #236 is closed.
+2. Read the exact #237 issue contract and frozen schema before editing.
+3. Begin #237 with a focused failing test for the smallest ordered-event-stream slice. Preserve the V4 overlay wire and do not implement timeline ownership from #243/#244 early.
 
 ## Resume commands
 
@@ -61,7 +62,7 @@ git rev-parse HEAD
 git rev-parse @{upstream}
 ```
 
-Expected before implementation: correct worktree and branch, clean tree, local HEAD equal to upstream, #235 closed, and #236 open. Any mismatch is a blocker until its ownership is understood.
+Expected before #237 implementation: correct worktree and branch, clean tree, local HEAD equal to upstream, and #235/#236 closed. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 
