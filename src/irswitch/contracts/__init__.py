@@ -5,6 +5,7 @@ commentary, replay and tape code may depend on it; it must not depend on those
 owning domains.
 """
 
+from .command import COMMAND_KINDS, NarrativeCommand
 from .context import ApplyContextBatch, ContextBatchPart, ContextRevision, ExternalOrder
 from .narrative import (
     FunnelIdentity,
@@ -52,6 +53,7 @@ __all__ = [
     "MAX_SIGNED_INT64",
     "BroadcastContext",
     "BroadcastEpoch",
+    "COMMAND_KINDS",
     "ApplyContextBatch",
     "Confidence",
     "ContractViolation",
@@ -65,6 +67,7 @@ __all__ = [
     "Identifier",
     "LineageId",
     "MonotonicMs",
+    "NarrativeCommand",
     "NarrativeEvent",
     "NarrativeSourceEnvelope",
     "NarrativeSourceOrder",
