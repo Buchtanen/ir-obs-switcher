@@ -156,6 +156,102 @@ def test_exported_detector_override_uses_catalog_type_and_range() -> None:
     assert "unknown config key" in unknown.diagnostics[0].message
 
 
+def test_local_url_without_explicit_port_and_ipv6_literal_are_valid() -> None:
+    no_port = parse_commentary_mapping(
+        {"commentary.llm.base_url": "http://127.0.0.1/v1"}, repository_root=ROOT
+    )
+    ipv6 = parse_commentary_mapping(
+        {"commentary.llm.base_url": "http://[fd00::7]:11434//v1"}, repository_root=ROOT
+    )
+
+    assert no_port.valid is True
+    assert ipv6.valid is True
+    assert ipv6.snapshot is not None
+    assert ipv6.snapshot.values["commentary.llm.base_url"] == "http://[fd00::7]:11434/v1"
+
+
+@pytest.mark.parametrize("host", ["192.0.2.1", "203.0.113.9", "0.0.0.0", "2001:db8::1"])
+def test_non_rfc1918_or_non_unique_local_literals_are_rejected(host: str) -> None:
+    authority = f"[{host}]" if ":" in host else host
+
+    candidate = parse_commentary_mapping(
+        {"commentary.llm.base_url": f"http://{authority}:11434/v1"},
+        repository_root=ROOT,
+    )
+
+    assert candidate.valid is False
+    assert "URL outside local/LAN" in candidate.diagnostics[0].message
+
+
+def test_relative_output_path_rejects_existing_symlink_escape(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    working = tmp_path / "working"
+    working.mkdir()
+    (working / "escape").symlink_to(outside, target_is_directory=True)
+
+    candidate = parse_commentary_mapping(
+        {"commentary.tape.output_dir": "escape/records"},
+        repository_root=ROOT,
+        working_directory=working,
+        home_directory=tmp_path / "home",
+    )
+
+    assert candidate.valid is False
+    assert "symlink outside output parent" in candidate.diagnostics[0].message
+
+
+def test_default_output_path_is_also_checked_against_symlink_escape(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    working = tmp_path / "working"
+    working.mkdir()
+    (working / "recordings").symlink_to(outside, target_is_directory=True)
+
+    candidate = parse_commentary_mapping(
+        {},
+        repository_root=ROOT,
+        working_directory=working,
+        home_directory=tmp_path / "home",
+    )
+
+    assert candidate.valid is False
+    assert "symlink outside output parent" in candidate.diagnostics[0].message
+
+
+def test_directional_detector_cross_field_invariants_are_exact() -> None:
+    invalid = parse_commentary_mapping(
+        {
+            "commentary.detector.battle_ahead_v1.sample_interval_s": 0.75,
+            "commentary.detector.battle_ahead_v1.bucket_s": 0.5,
+        },
+        repository_root=ROOT,
+    )
+
+    assert invalid.valid is False
+    assert "sample_interval_s < bucket_s <= trend_window_s" in invalid.diagnostics[0].message
+
+
+def test_required_tuning_detector_needs_calibration_capture_preflight() -> None:
+    values = {
+        "commentary.detector.battle_ahead_v1.enabled": True,
+        "commentary.detectors.profile": "calibration",
+        "commentary.tape.enabled": True,
+        "commentary.tape.channels": ["flow", "detector_tuning"],
+        "commentary.tape.detector_tuning.trigger_allowlist": ["battle_ahead_v1"],
+        "commentary.tape.detector_tuning.capture_input_windows": True,
+    }
+
+    missing_preflight = parse_commentary_mapping(values, repository_root=ROOT)
+    ready = parse_commentary_mapping(
+        values, repository_root=ROOT, detector_capture_preflight_ready=True
+    )
+
+    assert missing_preflight.valid is False
+    assert "writable recorder preflight" in missing_preflight.diagnostics[0].message
+    assert ready.valid is True
+
+
 def _candidate(**values: object):
     candidate = parse_commentary_mapping(values, repository_root=ROOT)
     assert candidate.valid is True

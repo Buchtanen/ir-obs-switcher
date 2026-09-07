@@ -11,6 +11,7 @@ import configparser
 import ipaddress
 import json
 import math
+import os
 import re
 import threading
 import unicodedata
@@ -34,6 +35,10 @@ _LLM_GROUP = frozenset(
         "commentary.llm_max_tokens",
     }
 )
+_RFC1918_NETWORKS = tuple(
+    ipaddress.ip_network(value) for value in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+)
+_IPV6_UNIQUE_LOCAL = ipaddress.ip_network("fc00::/7")
 
 
 @dataclass(frozen=True, slots=True)
@@ -432,6 +437,8 @@ def _scalar(value: object, definition: dict[str, Any], *, from_ini: bool) -> obj
         if len(set(items)) != len(items):
             raise ValueError(f"{key} has a duplicate set member")
         allowed = constraints.get("values")
+        if constraints.get("reference") == "exported_detector_ids":
+            allowed = [item["id"] for item in _detector_catalog()["definitions"]]
         if allowed is not None and any(item not in allowed for item in items):
             raise ValueError(f"{key} contains an unknown set member")
         parsed = tuple(sorted(items))
@@ -456,9 +463,10 @@ def _validate_url(value: str, key: str) -> str:
         parsed = urlsplit(value)
         if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password:
             raise ValueError
-        if parsed.query or parsed.fragment or parsed.port is None:
+        if parsed.query or parsed.fragment:
             raise ValueError
-        if not 1 <= parsed.port <= 65535:
+        port = parsed.port
+        if port is not None and not 1 <= port <= 65535:
             raise ValueError
         host = parsed.hostname
         if host is None:
@@ -468,9 +476,12 @@ def _validate_url(value: str, key: str) -> str:
             address = ipaddress.ip_address(host)
             local = (
                 address.is_loopback
-                or address.is_private
                 or address.is_link_local
-                or (address.version == 6 and address in ipaddress.ip_network("fc00::/7"))
+                or (
+                    address.version == 4
+                    and any(address in network for network in _RFC1918_NETWORKS)
+                )
+                or (address.version == 6 and address in _IPV6_UNIQUE_LOCAL)
             )
         path = "/" + "/".join(part for part in parsed.path.split("/") if part)
         if path == "/":
@@ -480,7 +491,8 @@ def _validate_url(value: str, key: str) -> str:
         if not local:
             raise ValueError
         netloc = f"[{host}]" if ":" in host else host
-        netloc = f"{netloc}:{parsed.port}"
+        if port is not None:
+            netloc = f"{netloc}:{port}"
         return urlunsplit((parsed.scheme, netloc, path, "", ""))
     except (ValueError, ipaddress.AddressValueError) as error:
         raise ValueError(f"{key} URL outside local/LAN policy") from error
@@ -495,7 +507,8 @@ def _validate_path(
     home_directory: Path,
 ) -> str:
     path = Path(value).expanduser()
-    resolved = (working_directory / path if not path.is_absolute() else path).resolve(strict=False)
+    lexical = working_directory / path if not path.is_absolute() else path
+    resolved = lexical.resolve(strict=False)
     forbidden = {
         Path(resolved.anchor).resolve(strict=False),
         home_directory.resolve(strict=False),
@@ -503,10 +516,117 @@ def _validate_path(
     }
     if resolved in forbidden:
         raise ValueError(f"{key} is an unsafe root path")
+    if not path.is_absolute():
+        base = working_directory.resolve(strict=False)
+        cursor = base
+        for part in path.parts:
+            cursor /= part
+            if cursor.is_symlink() and not cursor.resolve(strict=False).is_relative_to(base):
+                raise ValueError(f"{key} follows an existing symlink outside output parent")
+    existing = lexical
+    while not existing.exists() and existing != existing.parent:
+        existing = existing.parent
+    if not existing.is_dir() or not os.access(existing, os.W_OK):
+        raise ValueError(f"{key} destination parent is not writable")
     return value
 
 
-def _cross_field_errors(values: dict[str, object]) -> list[str]:
+def _directional_detector_errors(values: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    for detector in _detector_catalog()["definitions"]:
+        if detector["kind"] != "directional":
+            continue
+        detector_id = detector["id"]
+        parameters = {item["id"]: item["default"] for item in detector["parameters"]}
+        prefix = f"commentary.detector.{detector_id}."
+        for key, value in values.items():
+            if key.startswith(prefix) and key != f"{prefix}enabled":
+                parameters[key.removeprefix(prefix)] = value
+
+        checks = (
+            (
+                parameters["sample_interval_s"]
+                < parameters["bucket_s"]
+                <= parameters["trend_window_s"],
+                "sample_interval_s < bucket_s <= trend_window_s",
+            ),
+            (
+                parameters["min_samples"] * parameters["sample_interval_s"]
+                <= parameters["trend_window_s"],
+                "min_samples * sample_interval_s <= trend_window_s",
+            ),
+            (
+                parameters["confirm_s"] <= parameters["trend_window_s"],
+                "confirm_s <= trend_window_s",
+            ),
+            (
+                parameters["enter_gap_max_s"] < parameters["exit_gap_min_s"],
+                "enter_gap_max_s < exit_gap_min_s",
+            ),
+            (
+                parameters["overlap_enter_s"]
+                < parameters["overlap_exit_s"]
+                <= parameters["attack_enter_s"]
+                < parameters["attack_exit_s"],
+                "overlap_enter_s < overlap_exit_s <= attack_enter_s < attack_exit_s",
+            ),
+            (
+                parameters["attack_exit_s"]
+                <= parameters["approach_enter_s"]
+                < parameters["approach_exit_s"]
+                <= parameters["enter_gap_max_s"],
+                "attack_exit_s <= approach_enter_s < approach_exit_s <= enter_gap_max_s",
+            ),
+            (
+                parameters["update_min_interval_s"] >= parameters["clear_s"],
+                "update_min_interval_s >= clear_s",
+            ),
+            (
+                parameters["stale_after_s"] <= parameters["trend_window_s"],
+                "stale_after_s <= trend_window_s",
+            ),
+        )
+        errors.extend(
+            f"detector {detector_id} violates {message}" for passed, message in checks if not passed
+        )
+    return errors
+
+
+def _tuning_errors(values: dict[str, object], *, capture_preflight_ready: bool) -> list[str]:
+    errors: list[str] = []
+    profile = values["commentary.detectors.profile"]
+    tape_enabled = values["commentary.tape.enabled"]
+    channels = cast(tuple[str, ...] | list[str], values["commentary.tape.channels"])
+    allowlist = cast(
+        tuple[str, ...] | list[str],
+        values["commentary.tape.detector_tuning.trigger_allowlist"],
+    )
+    captures = values["commentary.tape.detector_tuning.capture_input_windows"]
+    for detector in _detector_catalog()["definitions"]:
+        detector_id = detector["id"]
+        enabled = values.get(f"commentary.detector.{detector_id}.enabled", False)
+        if not enabled or detector["tuningPolicy"] != "required":
+            continue
+        if not detector["experimental"]:
+            errors.append(f"required tuning detector {detector_id} cannot be enabled")
+        elif profile != "calibration":
+            errors.append(f"required tuning detector {detector_id} requires calibration profile")
+        elif not tape_enabled or "detector_tuning" not in channels:
+            errors.append(f"required tuning detector {detector_id} requires detector_tuning tape")
+        elif detector_id not in allowlist:
+            errors.append(f"required tuning detector {detector_id} must be allowlisted")
+        elif not captures:
+            errors.append(f"required tuning detector {detector_id} requires input-window capture")
+        elif not capture_preflight_ready:
+            errors.append(
+                f"required tuning detector {detector_id} requires writable recorder preflight"
+            )
+    return errors
+
+
+def _cross_field_errors(
+    values: dict[str, object], *, detector_capture_preflight_ready: bool
+) -> list[str]:
     errors: list[str] = []
     active_capacity = cast(int, values["commentary.director.active_episode_capacity"])
     resolved_capacity = cast(int, values["commentary.director.resolved_episode_capacity"])
@@ -520,6 +640,8 @@ def _cross_field_errors(values: dict[str, object]) -> list[str]:
         and "llm_eval" not in tape_channels
     ):
         errors.append("full prompt requires the llm_eval tape channel")
+    errors.extend(_directional_detector_errors(values))
+    errors.extend(_tuning_errors(values, capture_preflight_ready=detector_capture_preflight_ready))
     return errors
 
 
@@ -529,6 +651,7 @@ def parse_commentary_mapping(
     repository_root: Path,
     working_directory: Path | None = None,
     home_directory: Path | None = None,
+    detector_capture_preflight_ready: bool = False,
     _from_ini: bool = False,
 ) -> CommentaryConfigCandidate:
     """Validate a complete candidate from dotted v2 keys without partial install."""
@@ -579,9 +702,31 @@ def parse_commentary_mapping(
             diagnostics.append(ConfigDiagnostic("invalid_config", key, (), str(error)))
 
     if not diagnostics:
+        for definition in _contract()["keyDefinitions"]:
+            if definition["keyClass"] != "static":
+                continue
+            key = definition["key"]
+            try:
+                if definition["valueType"] == "url":
+                    values[key] = _validate_url(cast(str, values[key]), key)
+                elif definition["valueType"] == "path":
+                    values[key] = _validate_path(
+                        cast(str, values[key]),
+                        key,
+                        repository_root=repository_root,
+                        working_directory=workdir,
+                        home_directory=home,
+                    )
+            except ValueError as error:
+                diagnostics.append(ConfigDiagnostic("invalid_config", key, (), str(error)))
+
+    if not diagnostics:
         diagnostics.extend(
             ConfigDiagnostic("invalid_config", "commentary", (), message)
-            for message in _cross_field_errors(values)
+            for message in _cross_field_errors(
+                values,
+                detector_capture_preflight_ready=detector_capture_preflight_ready,
+            )
         )
     if diagnostics:
         return CommentaryConfigCandidate(False, None, tuple(diagnostics))
@@ -594,6 +739,7 @@ def parse_commentary_ini(
     repository_root: Path,
     working_directory: Path | None = None,
     home_directory: Path | None = None,
+    detector_capture_preflight_ready: bool = False,
 ) -> CommentaryConfigCandidate:
     """Flatten commentary INI sections and enforce the v2 scalar grammar."""
 
@@ -611,5 +757,6 @@ def parse_commentary_ini(
         repository_root=repository_root,
         working_directory=working_directory,
         home_directory=home_directory,
+        detector_capture_preflight_ready=detector_capture_preflight_ready,
         _from_ini=True,
     )
