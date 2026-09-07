@@ -919,7 +919,7 @@
         },
         "featureValues": {
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/FeatureValue"
           },
           "maxItems": 64,
           "minItems": 0,
@@ -963,7 +963,7 @@
         },
         "predicateResults": {
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/PredicateResult"
           },
           "maxItems": 64,
           "minItems": 0,
@@ -1021,7 +1021,7 @@
         "windowFrameRange": {
           "oneOf": [
             {
-              "type": "object"
+              "$ref": "#/$defs/WindowFrameRange"
             },
             {
               "type": "null"
@@ -2513,7 +2513,7 @@
         },
         "values": {
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/FeatureValue"
           },
           "maxItems": 64,
           "minItems": 0,
@@ -2539,6 +2539,91 @@
         "values_sorted_by_feature_id",
         "identity_all_or_none"
       ]
+    },
+    "FeatureValue": {
+      "additionalProperties": false,
+      "properties": {
+        "evidenceRefs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "featureId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "observedMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "quality": {
+          "enum": [
+            "measured",
+            "derived",
+            "estimated",
+            "degraded",
+            "unknown"
+          ]
+        },
+        "unit": {
+          "enum": [
+            "boolean",
+            "id",
+            "text",
+            "seconds",
+            "seconds_per_second",
+            "fraction",
+            "count",
+            "signed_count",
+            "ordinal",
+            "lap_number",
+            "celsius",
+            "meters_per_second",
+            "beats_per_minute",
+            "stage",
+            "vehicle_phase",
+            "broadcast_context",
+            "fact_quality"
+          ]
+        },
+        "validUntilMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "featureId",
+        "value",
+        "unit",
+        "quality",
+        "observedMonoMs",
+        "validUntilMonoMs",
+        "evidenceRefs"
+      ],
+      "type": "object"
     },
     "HealthChange": {
       "additionalProperties": false,
@@ -4307,6 +4392,27 @@
       "required": [
         "schemaVersion",
         "opportunity"
+      ],
+      "type": "object"
+    },
+    "PredicateResult": {
+      "additionalProperties": false,
+      "properties": {
+        "predicateId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "result": {
+          "enum": [
+            true,
+            false,
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "predicateId",
+        "result"
       ],
       "type": "object"
     },
@@ -6971,6 +7077,28 @@
         "funnel_identity_monotonic",
         "canonical_hashes_match"
       ]
+    },
+    "WindowFrameRange": {
+      "additionalProperties": false,
+      "properties": {
+        "firstFrameSequence": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "lastFrameSequence": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "postWindowComplete": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "firstFrameSequence",
+        "lastFrameSequence",
+        "postWindowComplete"
+      ],
+      "type": "object"
     }
   },
   "$id": "https://irswitch.local/schema/v2/dto-contracts.schema.json",
@@ -6984,6 +7112,15 @@
     },
     {
       "$ref": "#/$defs/FeatureFrame"
+    },
+    {
+      "$ref": "#/$defs/FeatureValue"
+    },
+    {
+      "$ref": "#/$defs/WindowFrameRange"
+    },
+    {
+      "$ref": "#/$defs/PredicateResult"
     },
     {
       "$ref": "#/$defs/DetectorObservation"

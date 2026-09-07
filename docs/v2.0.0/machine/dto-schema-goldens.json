@@ -740,6 +740,94 @@
           }
         ]
       }
+    },
+    {
+      "id": "feature-frame-measured-gap",
+      "value": {
+        "schemaVersion": "feature-frame/2",
+        "frameSequence": 200,
+        "observedMonoMs": 1000,
+        "sourceSnapshotId": "snap:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "sessionRef": {
+          "subSessionId": "sub:1",
+          "sessionNum": 2
+        },
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "correlationKey": [
+          "hero",
+          "car:22"
+        ],
+        "values": [
+          {
+            "featureId": "gap.relation.seconds.estimated_v1",
+            "value": 1.4,
+            "unit": "seconds",
+            "quality": "measured",
+            "observedMonoMs": 1000,
+            "validUntilMonoMs": null,
+            "evidenceRefs": [
+              "frame:200"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "detector-observation-windowed",
+      "value": {
+        "schemaVersion": "detector-observation/2",
+        "observationId": "obs:200",
+        "detectorId": "battle_ahead_v1",
+        "detectorVersion": "1",
+        "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "parameterSnapshotId": "params:battle-ahead:1",
+        "observedMonoMs": 1000,
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "sessionRef": {
+          "subSessionId": "sub:1",
+          "sessionNum": 2
+        },
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "correlationKey": [
+          "hero",
+          "car:22"
+        ],
+        "windowFrameRange": {
+          "firstFrameSequence": 200,
+          "lastFrameSequence": 214,
+          "postWindowComplete": true
+        },
+        "previousState": "candidate",
+        "candidateState": "active",
+        "transitionReason": "confirm_elapsed",
+        "featureValues": [
+          {
+            "featureId": "gap.relation.seconds.estimated_v1",
+            "value": 1.4,
+            "unit": "seconds",
+            "quality": "measured",
+            "observedMonoMs": 1000,
+            "validUntilMonoMs": null,
+            "evidenceRefs": [
+              "frame:200"
+            ]
+          }
+        ],
+        "predicateResults": [
+          {
+            "predicateId": "battle.approaching",
+            "result": true
+          }
+        ],
+        "coverage": [],
+        "wouldEmitEventKind": "HUNTING",
+        "tapeChannel": "race.battle.closing"
+      }
     }
   ],
   "invalid": [
@@ -1235,6 +1323,146 @@
         "verification": "accepted",
         "commit": "current",
         "speech": "completed"
+      }
+    },
+    {
+      "id": "feature-frame-value-without-evidence",
+      "value": {
+        "schemaVersion": "feature-frame/2",
+        "frameSequence": 200,
+        "observedMonoMs": 1000,
+        "sourceSnapshotId": "snap:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "sessionRef": {
+          "subSessionId": "sub:1",
+          "sessionNum": 2
+        },
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "correlationKey": [
+          "hero",
+          "car:22"
+        ],
+        "values": [
+          {
+            "featureId": "gap.relation.seconds.estimated_v1",
+            "value": 1.4,
+            "unit": "seconds",
+            "quality": "measured",
+            "observedMonoMs": 1000,
+            "validUntilMonoMs": null,
+            "evidenceRefs": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "detector-window-zero-sequence",
+      "value": {
+        "schemaVersion": "detector-observation/2",
+        "observationId": "obs:200",
+        "detectorId": "battle_ahead_v1",
+        "detectorVersion": "1",
+        "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "parameterSnapshotId": "params:battle-ahead:1",
+        "observedMonoMs": 1000,
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "sessionRef": {
+          "subSessionId": "sub:1",
+          "sessionNum": 2
+        },
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "correlationKey": [
+          "hero",
+          "car:22"
+        ],
+        "windowFrameRange": {
+          "firstFrameSequence": 0,
+          "lastFrameSequence": 214,
+          "postWindowComplete": true
+        },
+        "previousState": "candidate",
+        "candidateState": "active",
+        "transitionReason": "confirm_elapsed",
+        "featureValues": [
+          {
+            "featureId": "gap.relation.seconds.estimated_v1",
+            "value": 1.4,
+            "unit": "seconds",
+            "quality": "measured",
+            "observedMonoMs": 1000,
+            "validUntilMonoMs": null,
+            "evidenceRefs": [
+              "frame:200"
+            ]
+          }
+        ],
+        "predicateResults": [
+          {
+            "predicateId": "battle.approaching",
+            "result": true
+          }
+        ],
+        "coverage": [],
+        "wouldEmitEventKind": "HUNTING",
+        "tapeChannel": "race.battle.closing"
+      }
+    },
+    {
+      "id": "predicate-result-unknown-token",
+      "value": {
+        "schemaVersion": "detector-observation/2",
+        "observationId": "obs:200",
+        "detectorId": "battle_ahead_v1",
+        "detectorVersion": "1",
+        "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "parameterSnapshotId": "params:battle-ahead:1",
+        "observedMonoMs": 1000,
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "sessionRef": {
+          "subSessionId": "sub:1",
+          "sessionNum": 2
+        },
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "correlationKey": [
+          "hero",
+          "car:22"
+        ],
+        "windowFrameRange": {
+          "firstFrameSequence": 200,
+          "lastFrameSequence": 214,
+          "postWindowComplete": true
+        },
+        "previousState": "candidate",
+        "candidateState": "active",
+        "transitionReason": "confirm_elapsed",
+        "featureValues": [
+          {
+            "featureId": "gap.relation.seconds.estimated_v1",
+            "value": 1.4,
+            "unit": "seconds",
+            "quality": "measured",
+            "observedMonoMs": 1000,
+            "validUntilMonoMs": null,
+            "evidenceRefs": [
+              "frame:200"
+            ]
+          }
+        ],
+        "predicateResults": [
+          {
+            "predicateId": "battle.approaching",
+            "result": "maybe"
+          }
+        ],
+        "coverage": [],
+        "wouldEmitEventKind": "HUNTING",
+        "tapeChannel": "race.battle.closing"
       }
     }
   ]

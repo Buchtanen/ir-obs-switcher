@@ -314,3 +314,58 @@ def test_remaining_tape_payload_goldens_wrap_existing_truth_dtos() -> None:
     )
     for fixture_id in invalid_ids:
         assert _errors(_golden(fixture_id, "invalid")), fixture_id
+
+
+def test_feature_frame_and_observation_rows_are_exact() -> None:
+    definitions = SCHEMA["$defs"]
+    assert definitions["FeatureFrame"]["properties"]["values"]["items"] == {
+        "$ref": "#/$defs/FeatureValue"
+    }
+    assert definitions["DetectorObservation"]["properties"]["windowFrameRange"] == {
+        "oneOf": [{"$ref": "#/$defs/WindowFrameRange"}, {"type": "null"}]
+    }
+    assert definitions["DetectorObservation"]["properties"]["featureValues"]["items"] == {
+        "$ref": "#/$defs/FeatureValue"
+    }
+    assert definitions["DetectorObservation"]["properties"]["predicateResults"]["items"] == {
+        "$ref": "#/$defs/PredicateResult"
+    }
+    assert definitions["FeatureValue"]["required"] == [
+        "featureId",
+        "value",
+        "unit",
+        "quality",
+        "observedMonoMs",
+        "validUntilMonoMs",
+        "evidenceRefs",
+    ]
+    assert definitions["WindowFrameRange"]["required"] == [
+        "firstFrameSequence",
+        "lastFrameSequence",
+        "postWindowComplete",
+    ]
+    assert definitions["PredicateResult"]["properties"]["result"]["enum"] == [
+        True,
+        False,
+        "unknown",
+    ]
+
+    for fixture_id in (
+        "feature-frame-measured-gap",
+        "detector-observation-windowed",
+    ):
+        assert _errors(_golden(fixture_id, "valid")) == [], fixture_id
+
+    frame = _golden("feature-frame-measured-gap", "valid")
+    assert frame["values"][0]["featureId"] == "gap.relation.seconds.estimated_v1"
+    window = _golden("detector-observation-windowed", "valid")["windowFrameRange"]
+    assert window["firstFrameSequence"] == 200
+    assert window["lastFrameSequence"] == 214
+    assert window["postWindowComplete"] is True
+
+    for fixture_id in (
+        "feature-frame-value-without-evidence",
+        "detector-window-zero-sequence",
+        "predicate-result-unknown-token",
+    ):
+        assert _errors(_golden(fixture_id, "invalid")), fixture_id

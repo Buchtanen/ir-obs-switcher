@@ -87,6 +87,55 @@ def obj(fields: dict[str, dict[str, Any]], optional: set[str] | None = None) -> 
 
 SESSION_REF = obj({"subSessionId": ID, "sessionNum": N0})
 ORDER = obj({"reducerSequence": N0, "sourceOrdinal": N0})
+SCALAR_UNITS = (
+    "boolean",
+    "id",
+    "text",
+    "seconds",
+    "seconds_per_second",
+    "fraction",
+    "count",
+    "signed_count",
+    "ordinal",
+    "lap_number",
+    "celsius",
+    "meters_per_second",
+    "beats_per_minute",
+    "stage",
+    "vehicle_phase",
+    "broadcast_context",
+    "fact_quality",
+)
+FEATURE_VALUE = obj(
+    {
+        "featureId": ID,
+        "value": {
+            "oneOf": [
+                {"type": "boolean"},
+                {"type": "number"},
+                {"type": "string", "minLength": 1, "maxLength": 160},
+            ]
+        },
+        "unit": enum(*SCALAR_UNITS),
+        "quality": enum("measured", "derived", "estimated", "degraded", "unknown"),
+        "observedMonoMs": N0,
+        "validUntilMonoMs": NULLABLE_N0,
+        "evidenceRefs": arr(ID, 1, 16),
+    }
+)
+WINDOW_FRAME_RANGE = obj(
+    {
+        "firstFrameSequence": P1,
+        "lastFrameSequence": P1,
+        "postWindowComplete": BOOL,
+    }
+)
+PREDICATE_RESULT = obj(
+    {
+        "predicateId": ID,
+        "result": {"enum": [True, False, "unknown"]},
+    }
+)
 FUNNEL = obj(
     {
         "sourceClass": enum("detector", "direct", "lifecycle", "silence", "successor"),
@@ -173,9 +222,12 @@ def build_schema() -> dict[str, Any]:
             "occurrenceId": NULLABLE_ID,
             "lineageId": NULLABLE_LINEAGE_ID,
             "correlationKey": id_list(1, 8),
-            "values": arr(any_obj, 0, 64),
+            "values": arr({"$ref": "#/$defs/FeatureValue"}, 0, 64),
         },
     )
+    defs["FeatureValue"] = FEATURE_VALUE
+    defs["WindowFrameRange"] = WINDOW_FRAME_RANGE
+    defs["PredicateResult"] = PREDICATE_RESULT
     defs["DetectorObservation"] = closed(
         "detector-observation/2",
         {
@@ -191,12 +243,12 @@ def build_schema() -> dict[str, Any]:
             "occurrenceId": NULLABLE_ID,
             "lineageId": NULLABLE_LINEAGE_ID,
             "correlationKey": id_list(0, 8),
-            "windowFrameRange": nullable(any_obj),
+            "windowFrameRange": nullable({"$ref": "#/$defs/WindowFrameRange"}),
             "previousState": enum("inactive", "candidate", "active", "clearing"),
             "candidateState": enum("inactive", "candidate", "active", "clearing"),
             "transitionReason": ID,
-            "featureValues": arr(any_obj, 0, 64),
-            "predicateResults": arr(any_obj, 0, 64),
+            "featureValues": arr({"$ref": "#/$defs/FeatureValue"}, 0, 64),
+            "predicateResults": arr({"$ref": "#/$defs/PredicateResult"}, 0, 64),
             "coverage": arr(any_obj, 0, 16),
             "wouldEmitEventKind": NULLABLE_ID,
             "tapeChannel": ID,
