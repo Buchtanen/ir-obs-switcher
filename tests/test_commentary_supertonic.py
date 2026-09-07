@@ -192,16 +192,21 @@ RACE = Race
 REPLAY = Replay
 [commentary]
 enabled = true
-tts_backend = supertonic
-tts_voice = M1
-tts_steps = 5
-tts_rate = -1
+[commentary.tts]
+backend = supertonic
+voice = M1
+steps = 5
+rate = -1
 audio_device = CABLE Input
 """,
         encoding="utf-8",
     )
     cfg = AppConfig.from_file(path)
-    assert cfg.overlay.commentary.tts_backend == "supertonic"
-    assert cfg.overlay.commentary.tts_voice == "M1"
-    assert cfg.overlay.commentary.tts_steps == 5
-    assert overlay_values(cfg.overlay)["commentary.tts_steps"] == 5
+    assert cfg.commentary_v2 is not None
+    assert cfg.commentary_v2.valid is True
+    assert cfg.commentary_v2.snapshot is not None
+    assert cfg.commentary_v2.snapshot.values["commentary.tts.backend"] == "supertonic"
+    assert cfg.commentary_v2.snapshot.values["commentary.tts.voice"] == "M1"
+    assert cfg.commentary_v2.snapshot.values["commentary.tts.steps"] == 5
+    assert cfg.overlay.commentary.enabled is False
+    assert overlay_values(cfg.overlay)["commentary.enabled"] is False

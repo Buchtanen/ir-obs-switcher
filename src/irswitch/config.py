@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from irswitch.contracts.config import CommentaryConfigCandidate, parse_commentary_ini
 from irswitch.logic.stream_chapters import StreamChaptersSettings, load_stream_chapters_settings
 from irswitch.models import DrivingMode
 from irswitch.overlay.i18n import normalize_language as normalize_overlay_language
@@ -97,6 +98,10 @@ class AppConfig:
 
     # Overlay / race pipeline (optional INI sections, defaults apply)
     overlay: OverlaySettings = field(default_factory=OverlaySettings)
+
+    # Strict v2 commentary desired candidate. Runtime ownership is introduced in #284;
+    # the legacy overlay commentary settings remain disabled until then.
+    commentary_v2: CommentaryConfigCandidate | None = None
 
     @classmethod
     def from_file(cls, path: Path | str) -> AppConfig:
@@ -251,7 +256,26 @@ class AppConfig:
                     oauth_client_secret = None
 
         stream_chapters = load_stream_chapters_settings(parser)
-        overlay = _load_overlay_settings(parser)
+        application_root = Path.cwd().resolve(strict=False)
+        commentary_v2 = parse_commentary_ini(
+            parser,
+            repository_root=application_root,
+            working_directory=application_root,
+            detector_capture_preflight_ready=True,
+        )
+        if not commentary_v2.valid:
+            for diagnostic in commentary_v2.diagnostics:
+                logger.warning(
+                    "v2 commentary config rejected (%s, %s): %s",
+                    diagnostic.reason,
+                    diagnostic.source_key,
+                    diagnostic.message,
+                )
+
+        # The v2 config must never select the removed legacy/shadow/public-family
+        # execution routes. Keep all non-commentary overlay domains loadable while
+        # the v2 runtime composition owner is added in #284.
+        overlay = _load_overlay_settings(_without_commentary_sections(parser))
 
         result = cls(
             http_host=http_host,
@@ -291,8 +315,24 @@ class AppConfig:
             oauth_client_secret=oauth_client_secret,
             stream_chapters=stream_chapters,
             overlay=overlay,
+            commentary_v2=commentary_v2,
         )
         return result
+
+
+def _without_commentary_sections(
+    parser: configparser.ConfigParser,
+) -> configparser.ConfigParser:
+    """Copy app config while excluding every legacy/v2 commentary section."""
+
+    filtered = configparser.ConfigParser(defaults=dict(parser.defaults()))
+    for section in parser.sections():
+        if section == "commentary" or section.startswith("commentary."):
+            continue
+        filtered.add_section(section)
+        for option, value in parser.items(section, raw=True):
+            filtered.set(section, option, value)
+    return filtered
 
 
 def _optional_float(parser: configparser.ConfigParser, section: str, key: str) -> float | None:

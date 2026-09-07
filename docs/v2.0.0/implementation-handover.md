@@ -35,6 +35,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #237 closing-metadata SHA: `a174c82d631aafb0009950b34e98fdfae8a0ce61` (`docs: close narrative admission checkpoint (#237)`); final [CI run 34157790048](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157790048) is green and #237 is closed as completed.
 - First #238 parser SHA: `ccd88f707c7641c8845161e2991911e0fcd750d9` (`feat: add strict v2 config candidate parser (#238)`); [CI run 34158763067](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34158763067) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - #238 ConfigLedger SHA: `f06f38392bd8af68afec5cb37a7978711a2f1291` (`feat: add immutable v2 config ledger (#238)`); [CI run 34159447155](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34159447155) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 detector/tuning/path SHA: `d35e0d65c72e9f9492bfe26ed783fd9289a55b57` (`feat: enforce v2 detector config safety (#238)`); [CI run 34160114565](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34160114565) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -50,27 +51,28 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent through the #238 detector/tuning/path validation checkpoint.
-- Dirty scope: v2 config candidate validation, focused tests and this handover.
+- Editing owner: current root agent through the #238 fail-soft application load checkpoint.
+- Dirty scope: `AppConfig` v2 candidate integration, legacy-runtime isolation, config docs/examples, focused tests and this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
 - Completed #238 ledger scope: lock-owned `ConfigLedger` preserves complete immutable desired/effective snapshots, installs only whole valid candidates, monotonically assigns desired generations and apply sequence, recomputes sorted pending changes from the whole desired/effective maps, applies only exact named-boundary patches and emits no no-op record. Component preflights are generation-tagged; stale completions cannot make an old backend available. Invalid input installs no generation, disables automatic narration in its outcome and preserves the last valid manual component readiness.
-- Current #238 scope: all directional detector parameter overrides are composed over catalog defaults and checked against the eight frozen cross-field relations. Required-tuning detectors can be enabled only in calibration with detector-tuning tape, explicit allowlist, input windows and successful writable-recorder preflight. URL validation uses exact loopback/RFC1918/link-local/IPv6-ULA networks rather than Python's broader `is_private`; default and explicit output paths reject root, unwritable parents and existing relative symlinks escaping the working parent.
-- TDD phase: `GREEN` — four initial detector/path/URL tests failed as expected; an additional audit RED proved the frozen default output path also needs current-filesystem validation.
-- Verification: 35 focused v2 config/ledger/detector/path tests pass. Full regression, lint/type and frozen-builder gates remain before push.
+- Completed #238 detector safety scope: all directional detector parameter overrides are composed over catalog defaults and checked against the eight frozen cross-field relations. Required-tuning detectors can be enabled only in calibration with detector-tuning tape, explicit allowlist, input windows and successful writable-recorder preflight. URL validation uses exact loopback/RFC1918/link-local/IPv6-ULA networks rather than Python's broader `is_private`; default and explicit output paths reject root, unwritable parents and existing relative symlinks escaping the working parent.
+- Current #238 load scope: every `AppConfig.from_file` call, including `POST /config/reload`, produces a strict immutable v2 commentary candidate. Invalid or legacy commentary sections emit value-free diagnostics, do not abort other application-domain loading and leave the legacy commentary runtime disabled. Valid v2 values remain isolated from `OverlaySettings.commentary`, so this checkpoint cannot activate the future `NarrativeRuntime` or reinterpret a v1 key.
+- TDD phase: `GREEN` — focused tests first proved the missing candidate field, legacy graph selection, invalid-number crash and legacy commentary activation; the implementation then made all four fail-soft/isolation paths pass.
+- Verification: 60 focused config/overlay/v2 tests pass; 1,522 full pytest tests pass; Ruff and Black pass the CI `src tests` scope; Mypy passes 187 source files; all 11 frozen builders pass. The updated example commentary block parses as a valid v2 candidate with hash `sha256:4a59110781f68fc1086f023da7f92859ea05d417a281d7e6114ed93218bb4d45`.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
-- Config impact: none.
+- Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
 - API impact: none; the existing V4 envelope/overlay wire remains unchanged and the adapter is not live-wired yet.
 - Docs impact: the frozen actor-transition contract and its generated machine model now define complete evicted-command evidence and bounded chained safety-effect commitment. No V4/API/config surface changes and the foundation is not live-wired.
 
 ## Exact next implementation slice
 
-1. Run full regression, lint/type and all 11 frozen builders, then commit/push the detector/tuning/path checkpoint and require green CI.
+1. Commit/push the fail-soft application load checkpoint and require green CI.
 2. Append that SHA/CI to the existing dated #238 dev diary; do not create a second dated comment.
-3. Integrate the v2 candidate/ledger boundary with reload/composition fail-soft behavior without activating the future NarrativeRuntime early.
-4. Update `CONFIG.md` and `config/config.example.ini` when the actual v2 load path is active; do not silently reinterpret any v1 key.
+3. Add the persistent ConfigLedger reload/composition owner and generation/preflight reporting without activating the future NarrativeRuntime early.
+4. Remove the remaining legacy commentary keys and graph-runtime selector from live-reload/API schema surfaces; retain diagnostics only through the frozen migration table.
 
 ## Resume commands
 

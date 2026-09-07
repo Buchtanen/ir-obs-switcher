@@ -105,7 +105,7 @@ pit_story = true
     assert cfg.overlay.commentary.enabled is False
 
 
-def test_commentary_section_loads_from_ini(tmp_path: Path) -> None:
+def test_legacy_commentary_section_disables_only_commentary(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
     with path.open("a", encoding="utf-8") as handle:
         handle.write("""
@@ -129,29 +129,20 @@ flags = true
 grid_story = true
 """)
     cfg = AppConfig.from_file(path)
-    assert cfg.overlay.commentary.enabled is True
-    assert cfg.overlay.commentary.use_hr_emotion is False
-    assert cfg.overlay.commentary.cooldown_s == 2.5
-    assert cfg.overlay.commentary.max_utterance_s == 5.0
-    assert cfg.overlay.commentary.tts_backend == "espeak"
-    assert cfg.overlay.commentary.tts_steps == 6
-    assert cfg.overlay.commentary.llm_max_attempts == 2
-    assert cfg.overlay.commentary.tts_rate == -3
-    assert cfg.overlay.commentary.audio_device == "CABLE Input"
-    assert cfg.overlay.commentary.duck_input == "Zvuk plochy"
-    assert cfg.overlay.commentary.duck_ratio == 0.25
-    assert cfg.overlay.commentary.duck_fade_ms == 400
-    assert cfg.overlay.commentary.gap_hunt_tts_in_practice is True
+    assert cfg.overlay.commentary.enabled is False
+    assert cfg.commentary_v2 is not None
+    assert cfg.commentary_v2.valid is False
+    assert cfg.commentary_v2.snapshot is None
+    assert "legacy_key" in {item.reason for item in cfg.commentary_v2.diagnostics}
+    assert all(
+        item.reason in {"legacy_key", "invalid_config"} for item in cfg.commentary_v2.diagnostics
+    )
     assert cfg.overlay.race_observer.leader_pace_cooldown_s == 120.0
     assert cfg.overlay.race_observer.incident_classify is True
     assert cfg.overlay.race_observer.flags is True
     assert cfg.overlay.race_observer.grid_story is True
     values = overlay_values(cfg.overlay)
-    assert values["commentary.enabled"] is True
-    assert values["commentary.audio_device"] == "CABLE Input"
-    assert values["commentary.duck_input"] == "Zvuk plochy"
-    assert values["commentary.duck_ratio"] == 0.25
-    assert values["commentary.duck_fade_ms"] == 400
+    assert values["commentary.enabled"] is False
     assert values["race_observer.incident_classify"] is True
     assert values["race_observer.flags"] is True
     assert values["race_observer.grid_story"] is True
@@ -194,15 +185,19 @@ def test_feature_flag_put_roundtrip(tmp_path: Path) -> None:
     assert values["event_engine.overtake_classifier"] is True
 
 
-def test_commentary_graph_runtime_mode_put_roundtrip(tmp_path: Path) -> None:
+def test_legacy_commentary_graph_runtime_write_cannot_select_runtime(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
 
     applied = apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
 
     assert applied == ["commentary.graph_runtime.mode"]
     cfg = AppConfig.from_file(path)
-    assert cfg.overlay.commentary.graph_runtime_mode == "shadow"
-    assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "shadow"
+    assert cfg.overlay.commentary.enabled is False
+    assert cfg.overlay.commentary.graph_runtime_mode == "legacy"
+    assert cfg.commentary_v2 is not None
+    assert cfg.commentary_v2.valid is False
+    assert cfg.commentary_v2.diagnostics[0].reason == "legacy_key"
+    assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "legacy"
     spec = field_by_key("commentary.graph_runtime.mode")
     assert spec is not None
     assert spec.choices == ("legacy", "shadow", "active")
