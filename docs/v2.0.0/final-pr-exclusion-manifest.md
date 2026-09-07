@@ -24,6 +24,8 @@ The v2 branch intentionally contains planning evidence and may temporarily conta
 
 Their decisions survive only in implementation, tests/fixtures, migration/release notes and updated current-behavior docs.
 
+The exclusion of `docs/v2.0.0/machine/**` removes only planning copies/generators. Byte-equivalent canonical registry and JSON Schema artifacts promoted to `src/irswitch/contracts/schemas/v2/` are required packaged implementation files, not exclusions. Their checked release hashes must be regenerated from the implemented typed contracts and compared with the frozen branch inputs.
+
 ## Temporary branch mechanisms absent from final build
 
 - legacy-vs-v2 shadow/comparison adapters, duplicate fanout subscriptions and temporary replay translators;

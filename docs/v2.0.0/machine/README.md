@@ -1,6 +1,6 @@
 # v2.0.0 branch-only machine freeze artifacts
 
-These files make the human design registries mechanically reviewable before runtime implementation. They are planning evidence and must be removed by the final-PR exclusion gate.
+These files make the human design registries mechanically reviewable before runtime implementation. These documentation-path copies and generators are planning evidence and must be removed by the final-PR exclusion gate. Implementation promotes byte-equivalent canonical registry/schema outputs into `src/irswitch/contracts/schemas/v2/`; those packaged runtime artifacts are retained in the final PR.
 
 - `freeze-registry.json` is the canonical generated projection of the event, lifecycle-event, fact, feature, scalar/enum, reason-domain, terminal-state, schema-version and `tape_channel` tables.
 - `v4-event-envelope.golden.json` pins the complete master `EventEnvelope.to_dict()` surface and canonical SHA-256 at baseline `0ce75d4`.
@@ -24,4 +24,4 @@ DTO schemas OK: 25 definitions, 4 valid + 4 invalid goldens
 
 Reason identity is the pair `(reasonDomain, reasonId)`. Repeated strings across domains are intentional only when their plain-language meaning is identical; uniqueness is enforced inside each domain.
 
-The JSON Schema bundle closes field names, types, bounds, nullability, enums, unions and unknown-field rejection. Cross-object/order/hash constraints that Draft 2020-12 cannot compare directly are mandatory named `x-irswitch-invariants`; implementation validators and the structured F01–F44 fixtures must execute those IDs rather than ignore them. Public HTTP/config goldens and catalog schemas remain separate audit blockers.
+The JSON Schema bundle closes field names, types, bounds, nullability, enums, unions and unknown-field rejection. Cross-object/order/hash constraints that Draft 2020-12 cannot compare directly are mandatory named `x-irswitch-invariants`; implementation validators and the structured F01–F44 fixtures must execute those IDs rather than ignore them. The packaged schema is a replay/tooling/API contract, while typed runtime parsing remains the hot-path authority. Public HTTP/config goldens and catalog schemas remain separate audit blockers.
