@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #239 implementation — remaining tape payload DTOs GREEN, pending push
+**Phase:** #239 implementation — remaining tape payloads CI green; nested FeatureFrame/DetectorObservation fields still open
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237) and [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), active [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -55,8 +55,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent until the remaining-payload checkpoint is pushed, green in CI and recorded.
-- Dirty scope: remaining exact TapeRecord payload DTOs plus freeze-registry schema-version rows, catalog-loader hash refresh, packaged schema copies, focused tape/taxonomy tests and this handover.
+- Editing owner: current cloud agent after green remaining-payload CI; next owner types the still-open FeatureFrame/DetectorObservation nested fields.
+- Dirty scope: this handover only, until the next schema slice starts.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -70,9 +70,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #239 ordered/config SHA: `111c4a6ff6cb4b2a3a87c94a4e228bec9dd486ea` (`feat: enforce narrative tape ordering (#239)`); [CI run 34164288062](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34164288062) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs. Only actor-produced record families may carry non-null reducer order; detector/event/narrative/opportunity/director records require `tapeChannel`; `config_applied` has an exact replay-safe payload whose redacted entries cannot retain a value.
 - #239 loss/trailer DTO SHA: `7b98840653c01c8d79a844c9fcd6d3214c1049bd` (`feat: define narrative tape loss framing (#239)`); [CI run 34167346863](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167346863) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - #239 loss/trailer golden SHA: `bfb4187637cb81d50113ce321f94e6b50ac6cc0d` (`feat: add narrative tape loss goldens (#239)`); [CI run 34167795931](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167795931) is green across 14/14 checks.
-- #239 remaining-payload slice in progress: `context_applied`, `fact_change`, `episode_change`, `opportunity_change`, `director_decision`, `health_change` and `mailbox_gap` now wrap existing frozen DTOs instead of `any_obj`. Health is a closed tape|component oneOf; mailbox gap requires `historyComplete=false` and 1–64 safety effects. Freeze registry now lists 37 schema versions including previously missing `config-applied/2`, `drop-notice/2` and `manifest-trailer/2`. Runtime `taxonomyHash` is the new canonical-JSON identity `sha256:720769b0...baa26b`.
-- TDD phase: `GREEN` — focused tests first failed the stale taxonomy hash and missing payload `$ref`s; they now validate 8 valid + 3 invalid remaining-payload goldens and the 16 typed TapeRecord branches.
-- Verification for current dirty slice: DTO builder reports 45 definitions with 22 valid and 18 invalid goldens; all 11 machine builders pass; focused tape/event/primitive tests **92** passed; packaged `dto-contracts.schema.json` and `freeze-registry.json` remain byte-equivalent to the machine copies. Full suite pending this commit.
+- #239 remaining-payload SHA: `7484487afa3c0da1fa87a9828dcbac8f5069fcde` (`feat: close remaining narrative tape payloads (#239)`); [CI run 34168334293](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34168334293) is green across 14/14 checks (frozen contracts, Python 3.11–3.13, lint, format, type, security). Runtime `taxonomyHash` is `sha256:720769b0a1dfb234c69529eab9e1818e37944eead1de6e41499e6cbb56baa26b`.
+- TDD phase: `GREEN` for the 16 typed TapeRecord payload branches. #239 stays open: `FeatureFrame.values`, `DetectorObservation.windowFrameRange` / `featureValues` / `predicateResults` / `coverage` and manifest `redactionPolicy` are still `any_obj` against an already-written exact prose contract.
+- Verification for the remaining-payload checkpoint: DTO builder 45 definitions, 22 valid + 18 invalid goldens; pytest **1535** passed; ruff/black/mypy passed; packaged schemas byte-equivalent to machine copies.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` remains canonical-JSON identity of the packaged freeze registry, not raw checkout bytes. The hash moved because the schema-version table grew; Windows CRLF lesson from #237 still applies.
 - Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
@@ -81,9 +81,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Push this remaining-payload checkpoint, require green CI, and append the immutable SHA/CI evidence to the #239 diary.
-2. Reconcile the #239 checklist against schema/golden evidence. Close #239 on this branch only when remaining AC/checkboxes are actually proven.
-3. Start #240 TapeWriter only after #239 is closed. Do not activate TapeWriter or NarrativeRuntime in #239.
+1. Append the immutable CI URL for `7484487` to the #239 diary and tick only the schema items the goldens actually prove.
+2. Materialize the still-open nested FeatureFrame/DetectorObservation fields from `schema-contracts.md` (`values` rows, inclusive `windowFrameRange`, typed predicate/coverage rows). Do not invent a redactionPolicy object beyond the written contract.
+3. Close #239 on this branch only after those remaining schema gaps have goldens. Executable funnel-counter replay stays #242. Start #240 TapeWriter only after #239 is closed. Do not activate TapeWriter or NarrativeRuntime in #239.
 
 ## Resume commands
 
