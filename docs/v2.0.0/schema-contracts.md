@@ -26,6 +26,7 @@ Implementation placement is one neutral `irswitch/contracts/narrative.py` module
 | internal narrative event | `narrative-event/2` |
 | feature frame | `feature-frame/2` |
 | detector observation | `detector-observation/2` |
+| pre-arbitration event candidate | `event-candidate-tap/2` |
 | timeline snapshot | `timeline-snapshot/2` |
 | session plan | `session-plan/2` |
 | atomic fact | `atomic-fact/2` |
@@ -101,6 +102,7 @@ Exactly these fields are required unless marked nullable:
 | `materialRevision` | int | correlation revision |
 | `confidence` | float 0..1 | evidence confidence |
 | `tapeChannel` | registered channel ID | taxonomy dimension |
+| `funnel` | FunnelIdentity | immutable candidate/event link with downstream IDs still null |
 | `taxonomyHash` | sha256 | policy lookup provenance |
 | `payload` | kind-specific registered object, max 32 fields | typed semantic data only |
 
@@ -184,7 +186,42 @@ previousState, candidateState, transitionReason, featureValues{0..64},
 predicateResults[0..64], coverage[0..16], wouldEmitEventKind?, tapeChannel
 ```
 
-Detector states are `inactive|candidate|active|clearing`. Predicate results are `true|false|unknown`; each value names its registered feature/predicate ID and typed value/unit. `wouldEmitEventKind` is nullable. `parameterSnapshotId` resolves exactly one manifest snapshot for this detector/config hash. `windowFrameRange`, when captured, is exactly `{firstFrameSequence,lastFrameSequence,postWindowComplete}` with positive inclusive ordered endpoints. Every retained frame in that range is a separate `feature_frame` tape record with matching stream/occurrence/lineage/correlation identity. Optional capture may have gaps reported by drop accounting; required capture requires the entire declared range and disables its experimental detector on any loss. FactLedger and the typed detector/timeline producers create AtomicFact truth independently of editorial acceptance. Only the accepted-event adapter creates a NarrativeEvent, opens or materially revises a speakable episode, or creates an EventOpportunity. A newer FactView may close/invalidate an episode or plan whose claims became false; it cannot open an episode, increment a speakable material revision or trigger a director pass by itself.
+Detector states are `inactive|candidate|active|clearing`. Predicate results are `true|false|unknown`; each value names its registered feature/predicate ID and typed value/unit. `wouldEmitEventKind` is nullable. `parameterSnapshotId` resolves exactly one manifest snapshot for this detector/config hash. `windowFrameRange`, when captured, is exactly `{firstFrameSequence,lastFrameSequence,postWindowComplete}` with positive inclusive ordered endpoints. Every retained frame in that range is a separate `feature_frame` tape record with matching stream/occurrence/lineage/correlation identity. Optional capture may have gaps reported by drop accounting; required capture requires the entire declared range and any loss invokes the composition-owned disable path frozen in the actor contract. FactLedger and the typed detector/timeline producers create AtomicFact truth independently of editorial acceptance. Only the accepted-event adapter creates a NarrativeEvent, opens or materially revises a speakable episode, or creates an EventOpportunity. A newer FactView may close/invalidate an episode or plan whose claims became false; it cannot open an episode, increment a speakable material revision or trigger a director pass by itself.
+
+## Pre-arbitration event tap and funnel identity
+
+Every candidate submitted to EventManager is copied once to the read-only tape tap before arbitration. The tap never blocks, changes acceptance, retries a candidate or enters NarrativeMailbox. Its exact payload is:
+
+```text
+schemaVersion, candidateId, sourceClass, detectorObservationId?, sourceEnvelope?,
+kind, phase, occurredMonoMs, broadcastEpoch, streamEpoch, sessionRef?, occurrenceId?,
+lineageId?, correlationKey[0..8], materialRevision, tapeChannel, taxonomyHash,
+arbitrationOutcome, arbitrationReason, acceptedEventId?
+```
+
+`sourceClass` is `detector|direct|lifecycle`. A detector candidate requires exactly one `detectorObservationId` and null `sourceEnvelope`; a direct candidate has null detector observation and may carry the unchanged bounded V4 source tuple; a lifecycle candidate has both null and uses its deterministic internal identity. `candidateId` is deterministic for the source identity, event kind, phase and material revision. The tap freezes the candidate before submission; after the synchronous EventManager return it appends exactly one outcome and submits the immutable record to TapeWriter. `arbitrationOutcome` is `accepted|rejected`; reason is respectively `accepted` or one of `pit_cycle|cooldown|lower_priority|unmatched_exit|unmatched_update|overlay_disabled|invalid_candidate`, and `acceptedEventId` is non-null exactly on acceptance. Re-observing the same canonical candidate/outcome is a duplicate tap no-op; changed content under the same ID is `event_candidate_protocol_violation`. Tape failure cannot reject or accept the candidate.
+
+Every applicable downstream payload carries the same exact bounded `funnel` projection, named FunnelIdentity:
+
+```text
+sourceClass, candidateId?, detectorObservationId?, eventId?, materialRevision?,
+opportunityId?, planId?, utteranceId?, tapeChannel
+```
+
+Each newly created downstream object copies the prior projection and fills only the ID it owns; already created objects remain immutable. Fields become non-null only when that object exists; an ID, revision or channel can never change later in the chain. The stages and counter increments are exact:
+
+| Stage | Authoritative transition | Increment rule |
+| --- | --- | --- |
+| `kick` | one valid EventCandidateTap is offered to EventManager | once per unique `candidateId`, before acceptance |
+| `accepted` | EventManager accepts the candidate and returns its stamped accepted identity | once per unique `(acceptedEventId,materialRevision)`; a speakable route then publishes the linked NarrativeEvent without a second increment |
+| `queued` | actor creates or materially revises one EventOpportunity | once per unique `(opportunityId,materialRevision)`; in-place observation refresh is not a new queue count |
+| `selected` | director reserves one immutable BeatPlan | once per unique `planId`, including a distinct alternative attempt |
+| `started` | actor reduces valid `PLAYBACK_ACCEPTED` | once per unique `utteranceId`; dispatch/commit is not started |
+| `expired` | opportunity reaches terminal `expired_ttl` | once per unique opportunity revision that was queued and expires |
+
+Silence is not an EventManager candidate. Its actor evaluation creates a short-lived filler EventOpportunity with `sourceClass=silence`, null candidate/event IDs and begins its funnel at `queued`; a selected filler BeatPlan advances that same link. Natural story successors use `sourceClass=successor`, begin at `selected` without an EventOpportunity, and retain the episode revision through the BeatPlan even though it is outside this compact funnel projection. This adds `silence|successor` only to the downstream funnel source enum, not to EventCandidateTap.
+
+Counters are monotonic within one `streamEpoch`, reset for a new narrative run and are keyed by the immutable `tapeChannel`. Status exposes their bounded live values even if tape recording is disabled; tape replay derives them only from records actually present and marks a cohort incomplete across a recorded gap. Funnel ratios may compare only compatible cohorts: `kick→accepted` for candidate sources, `accepted→queued` only for speakable accepted revisions, and `selected→started` for plans. Missing/non-applicable upstream stages are not zero-valued failures. A candidate rejected by EventManager ends after `kick` with its arbitration reason in the tap decision record; an accepted visual-only event ends after `accepted` and never fabricates an opportunity.
 
 ## AtomicFact and FactView
 
@@ -232,14 +269,14 @@ The configured current-episode capacity covers candidate+active+suspended instan
 Required fields:
 
 ```text
-schemaVersion, opportunityId, eventId, eventKind, sourceOrder?,
+schemaVersion, opportunityId, eventId?, eventKind, sourceOrder?, funnel,
 candidateOrder, streamEpoch, occurrenceId?, lineageId?, episodeId, correlationKey[0..8],
 tapeChannel, createdMonoMs, expiresMonoMs, basePriority, urgency,
 penaltyCoefficient, materialRevision, state, reservationToken?,
 terminalReason?, policyHash, sourceFactIds[1..32]
 ```
 
-Urgency is `background|context|story|critical`; state is `pending|reserved|consumed|expired|superseded|invalidated|evicted`. Only reserved has a reservation token. Only terminal states have terminal reason. Expiry is strictly after creation and eligibility is half-open `createdMonoMs <= now < expiresMonoMs`; priority is finite 0..100 and penalty is finite 0..4. Routing creates/locates the episode before queue admission, so `episodeId` is never null. `occurrenceId` and `lineageId` may both be null only for `stream.started` routed to `stream_lifecycle` or a `filler.lobby` silence opportunity routed to the stream form of `filler_single`; all other opportunities require both. The opportunity contains no prompt, BeatPlan or text.
+Urgency is `background|context|story|critical`; state is `pending|reserved|consumed|expired|superseded|invalidated|evicted`. Only reserved has a reservation token. Only terminal states have terminal reason. Expiry is strictly after creation and eligibility is half-open `createdMonoMs <= now < expiresMonoMs`; priority is finite 0..100 and penalty is finite 0..4. Event-derived opportunities require `eventId`; only an actor-created silence opportunity has null event ID and `funnel.sourceClass=silence`. Routing creates/locates the episode before queue admission, so `episodeId` is never null. `occurrenceId` and `lineageId` may both be null only for `stream.started` routed to `stream_lifecycle` or a `filler.lobby` silence opportunity routed to the stream form of `filler_single`; all other opportunities require both. The opportunity contains no prompt, BeatPlan or text.
 
 ## PromptOptions and BeatPlan
 
@@ -263,7 +300,7 @@ The seed is never process-global. Its material is the exact lower-camel object `
 BeatPlan is exactly:
 
 ```text
-schemaVersion, planId, planningCycleId, cycleAttemptOrdinal, beatId, episodeId, opportunityId?, candidateSource,
+schemaVersion, planId, planningCycleId, cycleAttemptOrdinal, beatId, episodeId, opportunityId?, candidateSource, funnel,
 candidateOrder, beatRole, streamEpoch, occurrenceId?, lineageId?, episodeRevision,
 requiredClaims[1..16], optionalClaims[0..2], forbiddenClaimTypes[0..32],
 selectedFactIds[1..32], realizationFamily, realizationPattern,
@@ -304,7 +341,7 @@ The exact compiled prompt, common request/result schemas, OpenAI-compatible SSE 
 The actor creates one immutable backend request only after a narrative realization has passed token, freshness, semantic and technical validation, or after a manual request has won its admission latch. `TtsUtterance` is exactly:
 
 ```text
-schemaVersion, utteranceId, utteranceOrdinal, sourceKind,
+schemaVersion, utteranceId, utteranceOrdinal, sourceKind, funnel?,
 planId?, opportunityId?, episodeId?, manualRequestId?, text, textHash,
 language, backend, backendGeneration, configGeneration,
 effectiveConfigHash, configApplySequence, voice?, rate, steps?,
@@ -312,7 +349,7 @@ audioDevice?, duckInput?, duckRatio, duckFadeMs, maxSeconds,
 dispatchedMonoMs, requestHash
 ```
 
-`utteranceOrdinal` is positive and process-monotonic; `utteranceId` is the canonical ASCII `utt:<processInstanceId>:<utteranceOrdinal>`. `sourceKind` is `narrative|manual`. Narrative requests require `planId` and `episodeId`, carry the BeatPlan's nullable `opportunityId`, and require null `manualRequestId`; manual requests require `manualRequestId` and null narrative IDs. Text is normalized EN with no control characters: 1..512 characters for narrative and 1..400 for manual. `textHash` hashes the exact normalized text. Language is constant `en`.
+`utteranceOrdinal` is positive and process-monotonic; `utteranceId` is the canonical ASCII `utt:<processInstanceId>:<utteranceOrdinal>`. `sourceKind` is `narrative|manual`. Narrative requests require `planId`, `episodeId` and the BeatPlan funnel advanced with this utterance ID, carry the BeatPlan's nullable `opportunityId`, and require null `manualRequestId`; manual requests require `manualRequestId` and null narrative IDs/funnel. Text is normalized EN with no control characters: 1..512 characters for narrative and 1..400 for manual. `textHash` hashes the exact normalized text. Language is constant `en`.
 
 `backend` is the already resolved concrete `sapi|espeak|supertonic`, never `auto`; `backendGeneration` is positive and names the successful preflight used by this dispatch. `configGeneration`, `effectiveConfigHash` and `configApplySequence` are the matching ConfigLedger snapshot after `next_utterance`. Voice/device/duck strings are normalized nullable values whose empty config form becomes null. `rate` is always present; `steps` is present only for SuperTonic. `duckRatio` and `duckFadeMs` are always snapshotted even when `duckInput` is null. Narrative `maxSeconds` equals the BeatPlan value; manual uses the `next_plan_or_manual` global value. `requestHash` is the canonical hash of every preceding field, including actual sensitive values; ordinary status/tape projection applies the frozen redaction policy and never substitutes a redacted hash input.
 
@@ -333,7 +370,7 @@ The TTS worker owns ducking as part of the same dispatch token. When `duckInput`
 Every utterance produces one final `speech-exposure/2` payload, even when it never reached playback acceptance:
 
 ```text
-utteranceId, sourceKind, planId?, opportunityId?, episodeId?, manualRequestId?,
+utteranceId, sourceKind, planId?, opportunityId?, episodeId?, manualRequestId?, funnel?,
 requestHash, textHash, backend, backendGeneration, effectiveConfigHash,
 configApplySequence, dispatchedMonoMs, acceptedMonoMs?, terminalMonoMs,
 terminalReason, opportunityConsumed, exposureWeight, duckStatus,
@@ -393,13 +430,13 @@ recordPriority, tapeChannel?, correlationIds[0..8], effectiveConfigHash,
 configApplySequence, payloadSchemaVersion, payload
 ```
 
-Purpose channel is `flow|llm_eval|detector_tuning`; priority is `sample|normal|critical`. Record type is one of `context_applied|feature_frame|detector_observation|narrative_event|fact_change|episode_change|opportunity_change|director_decision|llm_attempt|speech_exposure|config_applied|health_change|mailbox_gap|drop_notice|manifest_trailer`. `payload` must validate against its named schema; `feature_frame` payload is exactly FeatureFrame. The writer records ordered actor facts/decisions with reducer sequence and unordered upstream feature/detector observations without one. Prompt/completion contents obey capture policy and redaction; hashes and latency metadata remain.
+Purpose channel is `flow|llm_eval|detector_tuning`; priority is `sample|normal|critical`. Record type is one of `context_applied|feature_frame|detector_observation|event_candidate|narrative_event|fact_change|episode_change|opportunity_change|director_decision|llm_attempt|speech_exposure|config_applied|health_change|mailbox_gap|drop_notice|manifest_trailer`. `payload` must validate against its named schema; `feature_frame` payload is exactly FeatureFrame and `event_candidate` payload is exactly EventCandidateTap. The writer records ordered actor facts/decisions with reducer sequence and unordered upstream feature/detector/candidate observations without one. Prompt/completion contents obey capture policy and redaction; hashes and latency metadata remain.
 
 Every record snapshots one ConfigLedger `effectiveConfigHash/configApplySequence` pair in its envelope; a `config_applied` record names its proposed new pair. Within one open file, `config_applied` is the only forward transition between effective snapshots; while recording is disabled, the next manifest is authoritative for otherwise unrecorded transitions. Upstream feature/detector payloads additionally carry their detector config hash and parameter snapshot reference. A rotated continuation may therefore have different desired/effective manifest hashes from the prior file, but keeps the same run identity and detector parameter snapshot array; replay starts from each manifest snapshot and reduces later `config_applied` records in file/apply-sequence order.
 
 Priority is derived, never caller-selected: periodic negatives/background samples are `sample`; normal context/fact/event/opportunity/decision and nonterminal LLM records are `normal`; lifecycle/reset/mailbox gaps, config applications, health failures, speech terminals, verifier rejections and every record required by an enabled `tuning.required` detector are `critical`. Manifest/trailer are file framing and bypass the record queue. `drop_notice` is synthesized from the writer's bounded out-of-queue loss accumulator and is critical.
 
-At capacity, an incoming sample is dropped; normal first evicts oldest sample else is dropped; critical first evicts oldest sample, then oldest normal. If all queued records are critical, the incoming critical record is represented in the loss accumulator and writer health becomes degraded. Loss of any required-detector record additionally posts protected `TAPE_HEALTH_CHANGED(capture_unavailable)` so only that experimental detector is disabled. The accumulator stores only counts by record type/priority/reason plus first/last monotonic/reducer sequence, capped by the closed registries; it is flushed as the next possible `drop_notice` and always copied into the trailer/operational error path. Tape loss never blocks or mutates world/narrative truth.
+At capacity, an incoming sample is dropped; normal first evicts oldest sample else is dropped; critical first evicts oldest sample, then oldest normal. If all queued records are critical, the incoming critical record is represented in the loss accumulator and writer health becomes degraded. Loss of any required-detector record additionally emits the out-of-queue CaptureHealthNotice frozen in the actor contract; the composition coordinator, never TapeWriter or NarrativeRuntime, disables only the affected experimental detector and atomically publishes its health/context bundle. The accumulator stores only counts by record type/priority/reason plus first/last monotonic/reducer sequence, capped by the closed registries; it is flushed as the next possible `drop_notice` and always copied into the trailer/operational error path. Tape loss never blocks or mutates world/narrative truth directly.
 
 Trailer payload contains final record/file hash, counts by record/purpose/tape channel, drops by reason, last reducer sequence, shutdown/rotation reason and `complete`. A missing/invalid trailer makes that file incomplete but does not make prior valid NDJSON records unreadable.
 
@@ -411,6 +448,7 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | --- | --- |
 | director selection | `highest_valid_candidate`, `active_story_continuation`, `related_event_update`, `higher_urgency_switch`, `switch_margin_met` |
 | director silence/reject | `no_candidate`, `no_episode_route`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `planning_cycle_exhausted`, `episode_capacity_rejected`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
+| event arbitration | `accepted`, `pit_cycle`, `cooldown`, `lower_priority`, `unmatched_exit`, `unmatched_update`, `overlay_disabled`, `invalid_candidate`, `event_candidate_protocol_violation` |
 | timeline transition | `broadcast_started`, `broadcast_ended`, `broadcast_unknown`, `broadcast_resumed`, `narrative_enabled`, `narrative_disabled`, `attached_live`, `process_recovery`, `session_started`, `session_ended`, `session_restarted`, `session_superseded`, `session_suspended`, `session_resumed` |
 | opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `commentary_disabled`, `evicted_capacity` |
 | episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated`, `capacity_evicted` |

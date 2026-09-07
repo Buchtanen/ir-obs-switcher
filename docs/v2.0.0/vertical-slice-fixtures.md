@@ -421,6 +421,50 @@ Expected:
 - warm-up records `warmup_succeeded|not_requested`; failed warm-up makes only Qwen-backed beats unavailable. No periodic retry or old-generation fallback occurs;
 - tape/status derive admission, TTFB, TTFT, generation, total, reducer lag and plan-to-result from exact monotonic milestones. Missing milestones remain null, server token usage is never guessed, and warm/not-proven samples are reported separately.
 
+## F41 — every TTS backend acknowledges one auditable software boundary
+
+Input: run the same immutable utterance separately through SAPI default, SAPI selected waveOut, eSpeak and SuperTonic adapters. For each, exercise success, failure immediately before its frozen acceptance boundary, cancellation crossing that boundary, duplicate adapter frames and zero-exit without acceptance. Make the actor start watchdog race the valid acknowledgement in both mailbox orders.
+
+Expected:
+
+- SAPI default accepts only after asynchronous `Speak` returns its positive stream number; selected waveOut only after successful `waveOutWrite`; eSpeak only after owned spawn plus immediate non-failing probe; SuperTonic only after `sounddevice.play` returns;
+- synthesis, duck completion, worker entry and dispatch admission never consume the opportunity; one valid acceptance does so exactly once and precedes at most one terminal callback;
+- a pre-boundary error emits the sole `failed` callback, while confirmed post-boundary completion/cancellation emits sequence 2 `completed|interrupted`; physical speaker output is never claimed;
+- duplicate/conflicting/missing framed protocol quarantines only that backend generation; timeout-first makes a later acknowledgement stale, acknowledgement-first cancels the start watchdog, and no path dispatches the text through another backend.
+
+## F42 — silence has one origin across opening, busy and inactive states
+
+Input: begin an active broadcast with no session and arm 33 seconds while `stream.started` is building. Exercise playback acceptance at 20 seconds; build still pending at 33; committed without acknowledgement at 33; no eligible filler; OBS unknown then active; commentary disable with manual speech terminal; re-enable mid-stream; a simultaneous terminal and elapsed token; and a config change from 33 to 45 seconds while armed.
+
+Expected:
+
+- the initial origin is the narrative-run admission reduction after lifecycle candidates, not session arrival or planning; only valid narrative/manual playback acceptance cancels it;
+- firing while any speech lane is non-idle selects no filler and rearms once from reduction time; no eligible filler behaves identically, without a short retry;
+- OBS unknown/inactive, disable, stream end and shutdown cancel with no elapsed credit. Resume/re-enable starts a full new interval only when the exact audience-window predicate becomes true; a manual terminal outside it cannot arm automatic silence;
+- token generations make the later half of a simultaneous terminal/elapsed race stale, and the 45-second config applies only on the next arm rather than moving the existing deadline.
+
+## F43 — tape-channel funnel preserves identity and valid denominators
+
+Input: submit one detector candidate accepted into a speakable opportunity and started utterance; one detector candidate rejected by cooldown; one direct visual-only candidate accepted; one materially revised opportunity that expires; one alternative BeatPlan; one natural successor; and one long-silence filler. Repeat one canonical candidate and inject a changed payload under its candidate ID. Disable tape while retaining live status counters, then replay a tape with a declared gap.
+
+Expected:
+
+- the pre-arbitration tap records each unique candidate and its exact EventManager outcome without changing arbitration; canonical duplicate is a no-op and changed identity content is `event_candidate_protocol_violation`;
+- immutable funnel links preserve tape channel and the available candidate, observation, event, opportunity, plan and utterance IDs; increments occur once at their frozen authoritative transitions;
+- visual-only ends at accepted, rejected ends at kick, successor begins at selected, filler begins at queued, alternative plans each count selected, and started occurs only on valid playback acceptance;
+- live per-channel counters work with recording disabled; replay across loss is incomplete, and ratios never count a non-applicable upstream stage as a zero-valued failure.
+
+## F44 — required capture loss disables upstream truth coherently
+
+Input: enumerate every production/calibration and none/optional/required policy row. In calibration start an allowlisted experimental required detector after successful preflight, then lose separately a required frame, queue record, write, rotation and flush. Saturate both the tape record queue and NarrativeMailbox, send duplicate/stale health notices, repair the recorder mid-run and begin a later stream.
+
+Expected:
+
+- production rejects enabled required policy and released nonexperimental required is invalid everywhere; none/optional remain operational on tape loss, with optional evidence explicitly incomplete;
+- every required loss reaches the out-of-queue composition health latch, disables only named experimental detectors through DetectorBank and closes their FSM/facts/candidates as `required_capture_lost`;
+- `TAPE_HEALTH_CHANGED` and its coherent context batch are adjacent or represented together by mailbox recovery, so the actor cannot plan once from stale detector truth; TapeWriter and NarrativeRuntime never call each other or mutate DetectorBank;
+- duplicate/older notices are idempotent, recorder repair cannot re-enable in the same run, and only successful preflight plus the next-stream boundary admits the detector again.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:

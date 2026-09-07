@@ -13,7 +13,7 @@
 **Detector catalog:** [Temporal math, estimated parameter ranges, hysteresis and two-front contract](detector-catalog-freeze.md)
 **Realization/verifier:** [Controlled EN, all 37 families, rejects and promotion gates](realization-verifier-contract.md)
 **Qwen transport:** [Exact prompt, request/result, SSE, timeout and latency contract](qwen-transport-contract.md)
-**Frozen slice fixtures:** [Forty expected reducer/director/speech/config/realization/TTS scenarios](vertical-slice-fixtures.md)
+**Frozen slice fixtures:** [Forty-four expected reducer/director/speech/config/realization/TTS scenarios](vertical-slice-fixtures.md)
 **Final-PR exclusions:** [Planning and temporary mechanism removal gate](final-pr-exclusion-manifest.md)
 **Baseline:** `master@0ce75d4`
 
@@ -30,7 +30,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - The runtime holds at most one in-flight utterance and no prepared speech waiter.
 - Speakable event meaning may wait only as bounded metadata with TTL, priority, penalty and a mandatory `tape_channel`.
 - Existing V4 EventEnvelope/overlay wire remains unchanged; commentary uses an internal NarrativeEvent adapter and catalog lookup.
-- Detector kick-rate is measured at a read-only pre-arbitration tape tap. Typed facts remain authoritative world truth, but only accepted events may open/revise speakable episodes or create opportunities; fact updates may only invalidate/close them.
+- Event kick-rate is measured at a read-only pre-arbitration candidate tap linked to DetectorObservation where applicable. Typed facts remain authoritative world truth, but only accepted events or the explicit silence lifecycle may open/revise speakable episodes or create opportunities; fact updates may only invalidate/close them.
 - After every beat, event opportunities compete with natural story successors in one deterministic director pass.
 - Opportunity consumption occurs at backend playback acceptance (`SPEECH_STARTED`), not at selection or an unverifiable physical audio-frame boundary.
 - `tight` is the only prompt profile allowed in the first production slice.
@@ -44,7 +44,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [ ] [#236 — v2: versioned IDs, clocks, units and schema primitives](https://github.com/Buchtanen/ir-obs-switcher/issues/236) — depends on #235.
 - [ ] [#237 — v2: single ordered narrative event stream](https://github.com/Buchtanen/ir-obs-switcher/issues/237) — depends on #236; preserves V4 overlay wire and introduces the internal NarrativeEvent/command boundary.
 - [ ] [#238 — v2: configuration and migration contract](https://github.com/Buchtanen/ir-obs-switcher/issues/238) — frozen breaking config/migration contract; no public legacy runtime flag.
-- [ ] [#239 — v2: NarrativeTape schema and stream manifest](https://github.com/Buchtanen/ir-obs-switcher/issues/239) — depends on #236, #237; includes pre-arbitration DetectorObservation and fixed funnel boundaries.
+- [ ] [#239 — v2: NarrativeTape schema and stream manifest](https://github.com/Buchtanen/ir-obs-switcher/issues/239) — depends on #236, #237; includes pre-arbitration DetectorObservation/EventCandidateTap and fixed funnel identities/boundaries.
 - [ ] [#240 — v2: bounded asynchronous NarrativeTape writer](https://github.com/Buchtanen/ir-obs-switcher/issues/240) — depends on #239.
 - [ ] [#241 — v2: trigger-driven CapturePlan compiler](https://github.com/Buchtanen/ir-obs-switcher/issues/241) — depends on #238–#240.
 - [ ] [#242 — v2: replay reader, label sidecars and evaluation reports](https://github.com/Buchtanen/ir-obs-switcher/issues/242) — depends on #239, #240.

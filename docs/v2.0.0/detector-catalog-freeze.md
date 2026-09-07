@@ -138,6 +138,8 @@ Target replacement or occurrence/reset invalidation closes immediately. Either d
 
 The three detectors are `experimental=true,tuning.policy=required` only during branch replay calibration. Their CapturePlan records the complete pre-window, five-second post-window, effective parameters, feature quality/coverage, predicate trace, transition reason and near-threshold negatives. Recorder preflight failure disables only these experimental detectors.
 
+The complete `production|calibration` by `none|optional|required` legality and failure matrix is normative in `public-contracts.md`. Required-capture loss follows the composition-owned health/context bundle in `actor-transition-contract.md`; neither NarrativeRuntime nor TapeWriter owns DetectorBank mutation. This catalog may declare policy and capture requirements but cannot invent a third runtime profile or a private recovery path.
+
 Before final cutover each detector must either:
 
 1. pass its precision/recall/delay/flapping acceptance and be promoted to `experimental=false,tuning.policy=optional`; or

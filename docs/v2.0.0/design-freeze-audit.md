@@ -17,7 +17,7 @@ Master cross-checks that changed or sharpened the design:
 
 - `events/envelope.py` is already the shared V4 overlay wire, so a commentary-specific envelope revision would create an unnecessary cross-product break.
 - `events/async_fanout.py` already supplies the bounded commentary mailbox and recovery slot; adding a second reducer transport would duplicate ordering and overflow semantics.
-- `EventManagerV2` publishes only accepted events, so tuning kick-rate requires a separate pre-arbitration observation tap.
+- `EventManagerV2` publishes only accepted events, so tuning kick-rate requires a separate pre-arbitration candidate tap linked to DetectorObservation where applicable.
 - `overlay/session.py` currently permits partial keys and TrackID fallback while `iracing/session_context.py` requires `(SubSessionID, SessionNum)`; v2 must use the stricter single identity.
 - `RunClock` already implements the useful `>5 s` and `>=100 ms` rewind guard; its behavior moves under StreamTimeline rather than being independently reimplemented.
 - `BroadcastClock` already owns a two-second output-flicker debounce and epoch; StreamTimeline consumes it instead of inventing a second stream clock.
@@ -103,7 +103,7 @@ Master cross-checks that changed or sharpened the design:
 | Replacement cycle ownership | A new accepted event was both a new impulse and attempt 2 of the old cycle | Legitimate event replacement closes the old cycle and starts ordinal 1 of a new one; ordinal 2 is only the alternative after internal failure |
 | Detector tuning | Recorder failure conflicted with fail-soft main loop | Disable only a required experimental detector; never block or crash the race loop |
 | Overlay compatibility | A proposed EventEnvelope v2 would make a commentary refactor break the overlay wire | Keep the accepted V4 EventEnvelope/wire unchanged; a narrative adapter creates an internal versioned `NarrativeEvent` command and resolves policy from catalogs |
-| Kick-rate evidence | Commentary sees only events accepted by EventManager, so suppressed detector activity was invisible | Add a read-only pre-arbitration `DetectorObservation` tape tap; FactView carries world truth, while only accepted events may open/revise speakable episodes or opportunities |
+| Kick-rate evidence | Commentary sees only events accepted by EventManager, so suppressed candidate activity was invisible | Add a read-only pre-arbitration `EventCandidateTap` linked to `DetectorObservation` where applicable; FactView carries world truth, while only accepted events or explicit silence evaluation may open/revise speakable episodes or opportunities |
 | Fact versus speech truth | “Only accepted events create AtomicFacts” contradicted FactLedger/DetectorBank ownership and could leave a suppressed battle active forever | Typed producers update FactView independently; context may close/invalidate narrative work, but only an accepted NarrativeEvent may open/revise speakable state or create an opportunity |
 | Tick-driven accidental speech | A new FactView could be interpreted as permission to run the director on every telemetry batch | Pure fact changes only close/invalidate; planning impulses are accepted/lifecycle/silence events or speech terminal commands, evaluated against the latest FactView |
 | Event/fact revision race | NarrativeEvent fact IDs did not identify the coherent FactView and context-batch coalescing could erase unrelated truth changes | One immutable TimelineSnapshot+FactView+accepted-events batch; exact `factViewRevision`, referential identity checks and no APPLY_CONTEXT_BATCH coalescing |
@@ -227,7 +227,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
 - The exact Qwen prompt projection, request/result schemas, SSE subset, one-worker deadline/cancellation and monotonic latency equations live in `qwen-transport-contract.md`; wire/parser/model evidence remains blocking.
-- Forty ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, immutable realization input/freshness, Qwen streaming/deadlines/latency, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS request/callback identity and liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Forty-four ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, immutable realization input/freshness, Qwen streaming/deadlines/latency, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, backend acknowledgement, tape-channel funnel/counters, required-capture safety, TTS request/callback identity and liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -242,14 +242,14 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
 - [ ] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
 - [ ] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
-- [ ] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.
-- [ ] Long-silence origin, pause/rearm rules and first-stream behavior table.
-- [ ] Pre-arbitration detector-observation tap and kick→accepted→queued→selected→started funnel definitions.
-- [ ] Released-versus-experimental detector tuning-policy matrix and recorder-failure transition behavior.
+- [x] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.
+- [x] Long-silence origin, pause/rearm rules and first-stream behavior table.
+- [x] Pre-arbitration detector-observation/candidate tap and kick→accepted→queued→selected→started funnel definitions.
+- [x] Released-versus-experimental detector tuning-policy matrix and recorder-failure transition behavior.
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`, plus the literal/compiler/wire/deadline contract in `qwen-transport-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the forty expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the forty-four expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.
