@@ -114,7 +114,7 @@ Expected:
 
 Input: valid localhost/CSRF/versioned manual request, idle lane, TTS available, `commentary.enabled=false`.
 
-Expected: API returns 202 after lane admission. No event, fact, BeatPlan, opportunity, exposure, fatigue or successor is created. A second manual/live request receives busy; race events update truth but do not interrupt the test.
+Expected: API returns 202 with `admittedState=committed` only after nonblocking dispatch to the effective preflighted TTS generation. No event, fact, BeatPlan, opportunity, exposure, fatigue or successor is created. A second manual request receives busy; race events update truth but do not interrupt the test or create a prepared waiter.
 
 ## F13 — protected mailbox overflow
 
@@ -193,8 +193,9 @@ Input: a valid manual request enters the mailbox while the actor is stalled. Exe
 Expected:
 
 1. adapter changes `pending → caller_abandoned` first: return `admission_timeout`/503; later actor dequeue treats the request as stale and does not mutate the lane or call TTS;
-2. actor changes `pending → actor_claimed` first: in the same synchronous turn it decides the lane and resolves the exact 202/409/503 result; the timeout callback cannot replace that result;
+2. actor changes `pending → actor_claimed` first: in the same synchronous turn it either dispatches the current preflighted TTS generation, enters `committed` and resolves 202, or keeps idle and resolves 409/503; the timeout callback cannot replace that result;
 3. neither order creates a narrative opportunity, exposure, second queue or prepared waiter, and tape contains only the request ID plus terminal admission decision.
+4. manual acceptance pauses the audience silence deadline and terminal rearms it, but neither starts a director pass; backend/voice/rate override fields are rejected as unknown.
 
 ## F21 — oversized accepted publication is losslessly partitioned
 
@@ -330,6 +331,28 @@ Expected:
 - config, beat maximum, family promotion/preference and runtime safety caps combine only by taking the least permissive result; the first production catalog therefore always compiles tight;
 - a later fully promoted, complete-history, confidence-at-least-0.90 noncritical context beat may compile its catalog-preferred wider tuple; the canonical material `{"beatId":"battle.approach","cycleAttemptOrdinal":1,"episodeId":"battle-ahead:3:17:22:4","episodeRevision":4,"opportunityId":"opp:401","streamEpoch":3}` hashes to seed `16041955996680716084`;
 - repetition pressure chooses among eligible cards or leaves the candidate fatigued, while failure discards that beat revision; neither widens or mutates PromptOptions.
+
+## F34 — detector tuning windows are fully replay-addressable
+
+Input: record one required detector transition whose inclusive pre/post window is FeatureFrame sequence 200–214 and whose manifest parameter snapshot is `params:battle_ahead_v1:7`. Rotate the tape during the range, then separately lose frame 209. Repeat with optional capture.
+
+Expected:
+
+- both files repeat the identical bounded parameter-snapshot array and chained manifest identity; each frame is a typed `feature_frame` record and the observation resolves the exact detector/config hash, inclusive range and completed post-window;
+- rotation does not create a new parameter snapshot or break the logical frame range, and replay reconstructs frames 200–214 in sequence without consulting current config;
+- loss of required frame 209 is represented by drop accounting, makes the range incomplete and emits protected capture-unavailable behavior for only that experimental detector;
+- optional loss remains explicitly incomplete/degraded but does not disable the production detector or fabricate/interpolate the frame; no unversioned input-sample side schema exists.
+
+## F35 — a real new event replaces into a new planning cycle
+
+Input: while cycle 70 attempt 1 is building a context beat, accept a new critical pass event whose candidate clears replacement cost and hard gates. Separately deliver a lower-scoring event. Fail the replacement candidate's verifier once.
+
+Expected:
+
+- the critical event cancels/releases the old token as `replaced_precommit` without suppression and closes cycle 70; its pass BeatPlan is attempt 1 of a new cycle 71, not attempt 2 of cycle 70;
+- verifier failure may select one distinct still-valid beat as cycle 71 attempt 2; a second failure exhausts only cycle 71 and never retries either failed beat revision;
+- the lower-scoring event is retained only through its opportunity TTL, does not cancel the current build and does not change that build's cycle/ordinal;
+- every replacement is attributable to a recorded accepted-event impulse; pure facts, manual terminal and timer expiry can never reset the attempt budget or create a replacement loop.
 
 ## Required tape assertions per fixture
 

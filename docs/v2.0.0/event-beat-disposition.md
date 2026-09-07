@@ -103,22 +103,19 @@ The increase above the earlier 46–60 estimate is explained by three missing ma
 
 All 60 rows are terminally classified. Compatibility aliases have no v2 BeatDefinition. Visual/operator-only events may be recorded in their channel but cannot enter EventOpportunityQueue.
 
-### New internal lifecycle commands
+### New internal lifecycle event kinds
 
-These are NarrativeCommands, not additions to the V4 overlay EventEnvelope wire and therefore are not part of the 60-current-identifier count.
+These are derived NarrativeEvents carried in the same immutable `APPLY_CONTEXT_BATCH` as its TimelineSnapshot and FactView. They are not standalone NarrativeCommands, additions to the V4 overlay EventEnvelope wire, or part of the 60-current-identifier count.
 
-| Command kind | Produced by | Speech routing | `tape_channel` |
+| NarrativeEvent kind | Produced by | Speech routing | `tape_channel` |
 | --- | --- | --- | --- |
 | `STREAM_STARTED` | debounced BroadcastClock edge/process attach | `stream.started` | `stream.lifecycle` |
 | `STREAM_ENDED` | confirmed BroadcastClock inactive edge | no beat; invalidate/close/flush | `stream.lifecycle` |
 | `SESSION_STARTED` | new coherent SessionRef occurrence | stage-specific intro | `session.lifecycle` |
 | `SESSION_ENDED` | completed/superseded occurrence | stage-specific wrap, qualifying recap, preview when valid | `session.lifecycle` |
 | `SESSION_RESTARTED` | same-ref confirmed rewind | `session.restart` plus new occurrence | `session.lifecycle` |
-| `LONG_SILENCE_ELAPSED` | owned monotonic deadline | one of six filler beats or silence | `filler.lifecycle` |
-| `PLAYBACK_ACCEPTED` | TTS backend acknowledgement | consumes opportunity; public state `SPEECH_STARTED` | source beat channel |
-| `SPEECH_COMPLETED` | TTS worker | terminal exposure and re-arbitration | source beat channel |
-| `SPEECH_INTERRUPTED` | TTS worker after allowed cancellation | terminal exposure and re-arbitration | source beat channel |
-| `SPEECH_FAILED` | TTS worker | release before acceptance, consume after acceptance | source beat channel |
+
+`LONG_SILENCE_ELAPSED`, playback callbacks and other worker/timer inputs remain actor-only NarrativeCommands defined exactly once in `actor-transition-contract.md`. They never enter event taxonomy or EventOpportunity routing directly; any filler opportunity is created by the actor's silence evaluation and uses its selected beat channel.
 
 ## Legacy node disposition
 

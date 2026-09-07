@@ -912,7 +912,7 @@ Commentary `EventSubscription` se zobecní nebo nahradí jedním bounded `Narrat
 
 Overlay `EventEnvelope.sequence` zůstává session-scoped wire identita. Jednotlivý accepted NarrativeEvent má pořadí `(fanout_stream_sequence, source_ordinal)`; context command nese fanout sequence a inclusive ordinal range, u pure fact/timeline batch null range. Actor při dequeue přidělí každému external/internal commandu monotonní `reducer_sequence`. Jeho `context_revision` je vždy dvojice `(timeline_revision,fact_view_revision)`, nikdy jeden zaměnitelný scalar. Reducer nepřerovnává pravdivostní eventy podle priority. Současné event/completion arrivals mají jako autoritativní pořadí právě zaznamenaný `reducer_sequence`. Replay reprodukuje toto pořadí; neslibuje bitově stejné live pořadí dvou skutečně souběžných OS callbacků, které ještě žádné pořadí neměly.
 
-Protected lifecycle/reset/config/shutdown commands se nesmějí tiše zahodit. `APPLY_CONTEXT_BATCH` se nikdy nekoalescuje; coalescing je povolen jen pro stejnou generaci silence deadline a totožný recorder generation/status tape-health command. Pokud bounded mailbox ztratí context batch, explicitní recovery barrier:
+Protected lifecycle/reset/config/shutdown commands se nesmějí tiše zahodit. `APPLY_CONTEXT_BATCH` se nikdy nekoalescuje; coalescing je povolen jen pro stejný kind/generation silence či validity deadline a totožný recorder/component generation/status health command. Pokud bounded mailbox ztratí context batch, explicitní recovery barrier:
 
 1. zruší necommitnutý BeatPlan a generation task;
 2. označí narrative state `degraded_recovery`;
@@ -1092,7 +1092,7 @@ event_score(e, S) = score(candidate(e), S) - event_penalty(e, S)
 
 ### 9.3 Arbitráž po beatu: event versus pokračování příběhu
 
-Po `SPEECH_COMPLETED`, `SPEECH_INTERRUPTED` i po zahozeném pokusu sestaví director jedinou kandidátní množinu:
+Po narrative `SPEECH_COMPLETED`, narrative `SPEECH_INTERRUPTED` i po zahozeném automatickém pokusu v rámci povoleného planning cycle sestaví director jedinou kandidátní množinu. Manual terminal pouze uvolní lane a založí nový silence origin; director nespouští:
 
 ~~~text
 C = valid_event_opportunities
@@ -1159,7 +1159,7 @@ OR freshness commit failed
 - failure nevytváří exposure ani fatigue, ale vytvoří revision-scoped attempt suppression, aby director netočil stejný kandidát;
 - jiný beat musí sám projít hard gate; pořadí `preferred_successors` je preference, ne obcházení validity.
 
-Attempt suppression není časový retry cooldown. Klíč `(beat_id, episode_revision)` zůstává blokovaný do material revision změny, terminal state opportunity/epizody nebo occurrence/stream resetu. Samotný nový director pass ani silence trigger jej neodemkne. Jeden explicitní planning impulse dostane `planning_cycle_id` a smí dispatchnout nejvýše dva různé BeatPlany: první volbu a jeden alternativní beat. Druhé selhání/replacement zapisuje `planning_cycle_exhausted` a výsledkem je ticho. Další accepted/lifecycle/silence event, accepted material revision nebo speech-terminal command může založit nový cyklus; pure FactView update nikoli. Limit je pevný interní invariant, ne další config knob.
+Attempt suppression není časový retry cooldown. Klíč `(beat_id, episode_revision)` zůstává blokovaný do material revision změny, terminal state opportunity/epizody nebo occurrence/stream resetu. Samotný nový director pass ani silence trigger jej neodemkne. Jeden explicitní planning impulse dostane `planning_cycle_id` a smí dispatchnout nejvýše dva různé BeatPlany: první volbu a jeden alternativní beat po interním realization/verifier/freshness/TTS-before-acceptance selhání. Druhé takové selhání zapisuje `planning_cycle_exhausted` a výsledkem je ticho. Pozdější accepted/lifecycle/silence event, accepted material revision nebo narrative speech-terminal command založí nový cyklus. Pokud nový accepted event oprávněně nahradí building plan, starý cycle uzavře jako `replaced_precommit` a challenger začíná attempt 1 nového cycle; nejde o fallback attempt 2. Pure FactView update ani manual terminal nový cycle nezakládá. Limit je pevný interní invariant, ne další config knob.
 
 Po úspěšném `speaking/completed` director provede arbitráž podle § 9.3. Pokud platnost epizody nebo jejích rozhodných faktů vypršela a není doložený outcome, nepokouší se příběh uměle uzavřít. Pokud zároveň není platná event opportunity ani jiný successor, čeká na nový závodní event nebo na nový silence trigger, který může vytvořit nezávislou filler opportunity.
 
@@ -1988,17 +1988,21 @@ Kick-rate funnel má pevné hranice. `kick` je pouze detector FSM přechod do `a
 
 `detector_tuning` používá malý bounded pre-trigger ring pro tunable feature samples. Ring se flushne při candidate/active/clearing transition, near-threshold negative sample nebo explicitní marker události. `post_window_s` se doplní následnými samples. Nemá se ukládat celý raw tick stream, pokud jej konkrétní trigger nepotřebuje.
 
-Základní typy records:
+Základní typy records odpovídají jedinému frozen enumu:
 
-- `stream_manifest`: schema/build/catalog/model/config versions a hashes;
-- `input_sample` nebo `input_window_ref`: pouze fields potřebné daným features;
-- `feature_frame`: hodnoty, units, quality, coverage a evidence refs;
-- `detector_observation`: predicate tree s true/false/unknown, prahy, transition a reason;
-- `event_opportunity`: event ref, `tape_channel`, TTL, priority, urgency, penalty coefficient, queue/terminal state a reason;
+- framing `manifest`: schema/build/catalog/model/config versions, hashes a bounded effective detector parameter snapshots;
+- `context_applied`: coherent timeline/FactView/event batch revision;
+- `feature_frame`: pouze registry-typed hodnoty, units, quality, coverage a evidence refs potřebné daným detectorům;
+- `detector_observation`: predicate tree s true/false/unknown, transition/reason a inclusive frame-window reference;
+- `narrative_event`, `fact_change`, `episode_change` a `opportunity_change`: přesné stavové změny; opportunity payload nese event ref, `tape_channel`, TTL, priority, urgency, penalty coefficient, queue/terminal state a reason;
 - `director_decision`: facts, episodes, event/successor kandidáti, jejich relace, hard-gate reasons a score breakdown;
 - `llm_attempt`: BeatPlan, prompt metadata/obsah dle configu, completion, latency, tokens a verifier;
 - `speech_exposure`: committed text, backend playback acceptance (`SPEECH_STARTED`), completion/interruption/failure;
+- `config_applied`, `health_change` a `mailbox_gap`: replay/operational boundaries;
 - `drop_notice`: počet a typ záznamů zahozených při writer overload nebo I/O chybě.
+- framing `manifest_trailer`: final hashes, counts, loss a completeness.
+
+Každý captured FeatureFrame je samostatný `feature_frame` record. `detector_observation.windowFrameRange` odkazuje inclusive sekvenci a manifest `parameterSnapshotId`; required tuning dovolí pouze úplný range včetně post-window, optional capture smí mít jen explicitně vykázané gaps. Neexistuje druhé volné `input_sample` nebo `input_window_ref` schema.
 
 Tape writer je samostatná vlastněná async task s bounded record queue. Tato technická fronta neobsahuje připravené věty a není commentary queue. Nikdy neblokuje race loop. Record priority je odvozená `sample|normal|critical`: periodic negatives/background; běžný flow/LLM detail; lifecycle/reset/gap/health/speech terminal/verifier reject a všechna required-tuning evidence. Incoming sample se při plné frontě zahodí; normal nejdřív eviktuje nejstarší sample, jinak se zahodí; critical eviktuje nejstarší sample, potom normal. All-critical overflow se zapíše do bounded `TapeLossAccumulator` mimo queue a degraduje recorder. Accumulator drží pouze registry-bounded counts a first/last time/reducer ranges, při první možnosti vytvoří critical `drop_notice` a vždy vstoupí do traileru/operational error path. Ztráta required evidence navíc fail-soft deaktivuje pouze příslušný experimental detector.
 
@@ -2098,7 +2102,7 @@ Přesné typy, defaults, ranges, jednotky, apply boundaries, migrační tabulka 
 | `[commentary]` | `enabled`, `max_utterance_s`, `driver_name`, `driver_nickname`, `tone_source` (`none | heart_rate`) |
 | `[commentary.director]` | `selection_threshold`, `switch_margin`, `global_min_interval_s`, `long_silence_s`, `opportunity_capacity`, `active_episode_capacity`, `resolved_episode_capacity`, `decision_capacity`, `max_consecutive_story_beats`; NarrativeMailbox zůstává pevný invariant 64/56+7+1 |
 | `[commentary.llm]` | `enabled`, `base_url`, `model`, `timeout_s`, `max_tokens`, `warmup`, `max_profile` |
-| `[commentary.tts]` | `backend`, `voice`, `rate`, `steps`, `audio_device`, `duck_input`, `duck_ratio`, `duck_fade_ms` |
+| `[commentary.tts]` | `backend`, `voice`, `rate`, `steps`, `start_timeout_s`, `stop_timeout_s`, `audio_device`, `duck_input`, `duck_ratio`, `duck_fade_ms` |
 | `[commentary.detectors]` | `profile`; pouze catalogem exportované overrides používají `[commentary.detector.<id>]` |
 | `[commentary.tape]` a podsekce | keys přesně podle § 19.2 včetně `tape_channel_allowlist` |
 
@@ -2139,7 +2143,7 @@ Stávající route names mohou zůstat, jejich payload je breaking a vždy nese 
 - `docs/v2.0.0/fact-feature-registry.md` — uzavřený branch-only registr faktových predikátů, skalárů/jednotek, feature IDs, claim allowlistů a `tape_channel` taxonomie;
 - `docs/v2.0.0/detector-catalog-freeze.md` — přesný branch-only katalog temporal/composite matematiky, odhadnutých rozsahů, hystereze a two-front identity;
 - `docs/v2.0.0/realization-verifier-contract.md` — přesný branch-only controlled-EN/verifier kontrakt pro všech 37 realizačních rodin;
-- `docs/v2.0.0/vertical-slice-fixtures.md` — třicet tři branch-only očekávaných decision/reducer/speech scénářů;
+- `docs/v2.0.0/vertical-slice-fixtures.md` — třicet pět branch-only očekávaných decision/reducer/speech scénářů;
 - `docs/v2.0.0/final-pr-exclusion-manifest.md` — povinný seznam planning/temporary položek odstraněných před PR do masteru;
 - `README.md` — odkaz na v2.0.0 implementační index;
 - `COMMENTARY_ENGINE.md` — odkaz na návrh, současný engine zůstává current-behavior autoritou.

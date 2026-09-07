@@ -169,12 +169,13 @@ This is a read-only pre-arbitration/tuning record and never enters episode truth
 
 ```text
 schemaVersion, observationId, detectorId, detectorVersion, detectorConfigHash,
-observedMonoMs, broadcastEpoch, streamEpoch, sessionRef?, occurrenceId?, lineageId?, correlationKey[0..8],
+parameterSnapshotId, observedMonoMs, broadcastEpoch, streamEpoch,
+sessionRef?, occurrenceId?, lineageId?, correlationKey[0..8], windowFrameRange?,
 previousState, candidateState, transitionReason, featureValues{0..64},
 predicateResults[0..64], coverage[0..16], wouldEmitEventKind?, tapeChannel
 ```
 
-Detector states are `inactive|candidate|active|clearing`. Predicate results are `true|false|unknown`; each value names its registered feature/predicate ID and typed value/unit. `wouldEmitEventKind` is nullable. FactLedger and the typed detector/timeline producers create AtomicFact truth independently of editorial acceptance. Only the accepted-event adapter creates a NarrativeEvent, opens or materially revises a speakable episode, or creates an EventOpportunity. A newer FactView may close/invalidate an episode or plan whose claims became false; it cannot open an episode, increment a speakable material revision or trigger a director pass by itself.
+Detector states are `inactive|candidate|active|clearing`. Predicate results are `true|false|unknown`; each value names its registered feature/predicate ID and typed value/unit. `wouldEmitEventKind` is nullable. `parameterSnapshotId` resolves exactly one manifest snapshot for this detector/config hash. `windowFrameRange`, when captured, is exactly `{firstFrameSequence,lastFrameSequence,postWindowComplete}` with positive inclusive ordered endpoints. Every retained frame in that range is a separate `feature_frame` tape record with matching stream/occurrence/lineage/correlation identity. Optional capture may have gaps reported by drop accounting; required capture requires the entire declared range and disables its experimental detector on any loss. FactLedger and the typed detector/timeline producers create AtomicFact truth independently of editorial acceptance. Only the accepted-event adapter creates a NarrativeEvent, opens or materially revises a speakable episode, or creates an EventOpportunity. A newer FactView may close/invalidate an episode or plan whose claims became false; it cannot open an episode, increment a speakable material revision or trigger a director pass by itself.
 
 ## AtomicFact and FactView
 
@@ -275,8 +276,10 @@ schemaVersion, recordType="manifest", processInstanceId, processStartedAtUtc,
 processMonotonicOriginMs=0, appVersion, gitRevision?, platform,
 broadcastEpoch?, streamEpoch?, fileOrdinal, openedAtUtc, catalogVersion, catalogHash,
 configGeneration, configHash, enabledPurposeChannels,
-redactionPolicy, historyComplete, previousFileHash?
+redactionPolicy, historyComplete, detectorParameterSnapshots[0..128], previousFileHash?
 ```
+
+Each detector parameter snapshot is exactly `{parameterSnapshotId,detectorId,detectorVersion,detectorConfigHash,parameters}`. IDs/hashes resolve registries, parameters contain only that detector's exported typed values in sorted parameter-ID order, and snapshots sort by detector ID. A rotated continuation repeats the identical array; config requiring a new snapshot is deferred to its declared next-stream boundary rather than changing a file/run in place.
 
 Record fields:
 
@@ -286,7 +289,7 @@ reducerSequence?, recordedMonoMs, recordedAtUtc?, purposeChannel,
 recordPriority, tapeChannel?, correlationIds[0..8], payloadSchemaVersion, payload
 ```
 
-Purpose channel is `flow|llm_eval|detector_tuning`; priority is `sample|normal|critical`. Record type is one of `context_applied|detector_observation|narrative_event|fact_change|episode_change|opportunity_change|director_decision|llm_attempt|speech_exposure|config_applied|health_change|mailbox_gap|drop_notice|manifest_trailer`. `payload` must validate against its named schema. The writer records ordered actor facts/decisions with reducer sequence and unordered pre-arbitration observations without one. Prompt/completion contents obey capture policy and redaction; hashes and latency metadata remain.
+Purpose channel is `flow|llm_eval|detector_tuning`; priority is `sample|normal|critical`. Record type is one of `context_applied|feature_frame|detector_observation|narrative_event|fact_change|episode_change|opportunity_change|director_decision|llm_attempt|speech_exposure|config_applied|health_change|mailbox_gap|drop_notice|manifest_trailer`. `payload` must validate against its named schema; `feature_frame` payload is exactly FeatureFrame. The writer records ordered actor facts/decisions with reducer sequence and unordered upstream feature/detector observations without one. Prompt/completion contents obey capture policy and redaction; hashes and latency metadata remain.
 
 Priority is derived, never caller-selected: periodic negatives/background samples are `sample`; normal context/fact/event/opportunity/decision and nonterminal LLM records are `normal`; lifecycle/reset/mailbox gaps, health failures, speech terminals, verifier rejections and every record required by an enabled `tuning.required` detector are `critical`. Manifest/trailer are file framing and bypass the record queue. `drop_notice` is synthesized from the writer's bounded out-of-queue loss accumulator and is critical.
 
@@ -301,7 +304,7 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | Domain | IDs |
 | --- | --- |
 | director selection | `highest_valid_candidate`, `active_story_continuation`, `related_event_update`, `higher_urgency_switch`, `switch_margin_met` |
-| director silence/reject | `no_candidate`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `planning_cycle_exhausted`, `episode_capacity_rejected`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
+| director silence/reject | `no_candidate`, `no_episode_route`, `below_threshold`, `hard_guard_failed`, `source_guard_failed`, `cadence_blocked`, `fatigue_blocked`, `attempt_suppressed`, `planning_cycle_exhausted`, `episode_capacity_rejected`, `tts_unavailable`, `stream_inactive`, `context_unknown` |
 | timeline transition | `broadcast_started`, `broadcast_ended`, `broadcast_unknown`, `broadcast_resumed`, `narrative_enabled`, `narrative_disabled`, `attached_live`, `process_recovery`, `session_started`, `session_ended`, `session_restarted`, `session_superseded`, `session_suspended`, `session_resumed` |
 | opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `commentary_disabled`, `evicted_capacity` |
 | episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated`, `capacity_evicted` |

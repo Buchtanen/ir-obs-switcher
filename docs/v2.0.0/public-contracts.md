@@ -118,7 +118,7 @@ String values are trimmed, reject control characters and are measured after Unic
 | `commentary.llm_polish` | `commentary.llm.enabled`; behavior is generation, not polish |
 | `commentary.llm_base_url/model/timeout_s/max_tokens` | move to same names under `[commentary.llm]` |
 | `commentary.llm_temperature` | removed; PromptOptions/catalog owns profile sampling |
-| `commentary.llm_max_attempts` | removed with no replacement; exactly one attempt |
+| `commentary.llm_max_attempts` | removed; one transport attempt per beat/revision and a fixed maximum of two distinct beats per planning cycle |
 | `[commentary.scheduler]` | removed; director/opportunity/speech contracts replace it |
 | `[commentary.graph_runtime]` | removed; final v2 has one runtime |
 
@@ -321,10 +321,7 @@ It remains available while automatic commentary is disabled. Admission is decide
 {
   "schemaVersion": "commentary-runtime/2",
   "text": "Commentary audio test.",
-  "language": "en",
-  "backend": "supertonic",
-  "voice": "M1",
-  "rate": 0
+  "language": "en"
 }
 ~~~
 
@@ -335,13 +332,13 @@ On immediate lane admission it returns 202:
   "schemaVersion": "commentary-runtime/2",
   "accepted": true,
   "requestId": "manual:7f5b",
-  "admittedState": "building"
+  "admittedState": "committed"
 }
 ~~~
 
 Busy returns `speech_busy`/409; invalid text returns `validation_failed`/422; unavailable selected backend returns `component_unavailable`/503; failure to admit the command to the fixed mailbox returns `mailbox_overloaded`/503. If the actor has not claimed the one-shot admission latch within the fixed 1,000 ms bound, the adapter atomically abandons it and returns `admission_timeout`/503; an abandoned request can never later produce audio. `force`, arbitrary locale and live fact/event injection are not supported.
 
-`schemaVersion`, `text` and fixed `language="en"` are required. `text` is 1–400 normalized Unicode characters with no control characters. `backend`, `voice` and `rate` are optional and default to the effective TTS config; when present they use the same enums/ranges. `admittedState` records the atomic admission transition, not a promise that the worker has not progressed before the HTTP response arrives; the current matching `utteranceId` is visible in status while active. No language classifier is claimed—the explicit EN tag and EN-only operator contract are authoritative.
+`schemaVersion`, `text` and fixed `language="en"` are the only request fields. `text` is 1–400 normalized Unicode characters with no control characters. Manual speech always snapshots the current effective preflighted TTS backend/voice/rate/generation; per-request backend construction or override is forbidden. `admittedState` is exactly `committed` and records the atomic dispatch transition, not a promise that the worker has not progressed before the HTTP response arrives; the current matching `utteranceId` is visible in status while active. No language classifier is claimed—the explicit EN tag and EN-only operator contract are authoritative.
 
 ### Removed endpoint
 
