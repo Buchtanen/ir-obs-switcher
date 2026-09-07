@@ -28,6 +28,10 @@
     {
       "id": "tape-health-record",
       "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:1","recordType":"health_change","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":9,"recordedMonoMs":1200,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+    },
+    {
+      "id": "config-applied-redacted-patch",
+      "value": {"schemaVersion":"config-applied/2","applySequence":9,"desiredGeneration":4,"boundary":"next_utterance","changedKeys":["commentary.tts.voice"],"effectivePatch":[{"key":"commentary.tts.voice","redacted":true}],"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
     }
   ],
   "invalid": [
@@ -62,6 +66,14 @@
     {
       "id": "tape-record-known-kind-wrong-payload-version",
       "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:2","recordType":"event_candidate","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":10,"recordedMonoMs":1300,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"normal","tapeChannel":"battle","correlationIds":["candidate:1"],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+    },
+    {
+      "id": "tape-actor-record-without-reducer-order",
+      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:3","recordType":"health_change","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":1400,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+    },
+    {
+      "id": "config-applied-redacted-value-leak",
+      "value": {"schemaVersion":"config-applied/2","applySequence":9,"desiredGeneration":4,"boundary":"next_utterance","changedKeys":["commentary.tts.voice"],"effectivePatch":[{"key":"commentary.tts.voice","value":"secret voice","redacted":true}],"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
     }
   ]
 }

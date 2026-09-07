@@ -22,11 +22,12 @@ def test_tape_manifest_uses_exact_projection_and_detector_snapshot_shapes() -> N
     assert definitions["EffectiveConfigProjectionEntry"]["oneOf"] == [
         {
             "required": ["key", "value"],
-            "properties": {"redacted": {"type": "null"}},
+            "not": {"required": ["redacted"]},
         },
         {
             "required": ["key", "redacted"],
             "properties": {"redacted": {"const": True}},
+            "not": {"required": ["value"]},
         },
     ]
     assert definitions["DetectorParameterSnapshot"]["required"] == [
@@ -70,3 +71,85 @@ def test_tape_record_type_is_closed_and_known_payloads_are_discriminated() -> No
     assert branches["narrative_event"]["payload"] == {"$ref": "#/$defs/NarrativeEvent"}
     assert branches["llm_attempt"]["payload"] == {"$ref": "#/$defs/LlmAttempt"}
     assert branches["speech_exposure"]["payload"] == {"$ref": "#/$defs/SpeechExposure"}
+
+
+def test_tape_record_enforces_reducer_order_and_tape_channel_boundaries() -> None:
+    record = SCHEMA["$defs"]["TapeRecord"]
+
+    reducer_order = record["allOf"][0]["oneOf"]
+    assert reducer_order == [
+        {
+            "properties": {
+                "recordType": {
+                    "enum": [
+                        "feature_frame",
+                        "detector_observation",
+                        "event_candidate",
+                        "config_applied",
+                        "drop_notice",
+                        "manifest_trailer",
+                    ]
+                },
+                "reducerSequence": {"type": "null"},
+            }
+        },
+        {
+            "properties": {
+                "recordType": {
+                    "enum": [
+                        "context_applied",
+                        "narrative_event",
+                        "fact_change",
+                        "episode_change",
+                        "opportunity_change",
+                        "director_decision",
+                        "llm_attempt",
+                        "speech_exposure",
+                        "health_change",
+                        "mailbox_gap",
+                    ]
+                },
+                "reducerSequence": {"type": "integer", "minimum": 0},
+            }
+        },
+    ]
+    tape_channel = record["allOf"][1]["oneOf"]
+    assert tape_channel[0]["properties"]["recordType"]["enum"] == [
+        "detector_observation",
+        "event_candidate",
+        "narrative_event",
+        "opportunity_change",
+        "director_decision",
+    ]
+    assert tape_channel[0]["properties"]["tapeChannel"] == {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+    }
+    assert "tapeChannel" not in tape_channel[1]["properties"]
+
+
+def test_config_applied_payload_is_exact_and_replay_safe() -> None:
+    definitions = SCHEMA["$defs"]
+    payload = definitions["ConfigApplied"]
+
+    assert payload["required"] == [
+        "schemaVersion",
+        "applySequence",
+        "desiredGeneration",
+        "boundary",
+        "changedKeys",
+        "effectivePatch",
+        "oldEffectiveHash",
+        "newEffectiveHash",
+    ]
+    assert payload["additionalProperties"] is False
+    assert payload["properties"]["effectivePatch"]["items"] == {
+        "$ref": "#/$defs/EffectiveConfigProjectionEntry"
+    }
+    config_branch = next(
+        branch
+        for branch in definitions["TapeRecord"]["oneOf"]
+        if branch["properties"]["recordType"].get("const") == "config_applied"
+    )
+    assert config_branch["properties"]["payloadSchemaVersion"] == {"const": "config-applied/2"}
+    assert config_branch["properties"]["payload"] == {"$ref": "#/$defs/ConfigApplied"}

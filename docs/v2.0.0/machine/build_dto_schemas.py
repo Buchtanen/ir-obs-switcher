@@ -875,11 +875,12 @@ def build_schema() -> dict[str, Any]:
     defs["EffectiveConfigProjectionEntry"]["oneOf"] = [
         {
             "required": ["key", "value"],
-            "properties": {"redacted": {"type": "null"}},
+            "not": {"required": ["redacted"]},
         },
         {
             "required": ["key", "redacted"],
             "properties": {"redacted": {"const": True}},
+            "not": {"required": ["value"]},
         },
     ]
     defs["DetectorParameterSnapshot"] = obj(
@@ -891,6 +892,42 @@ def build_schema() -> dict[str, Any]:
             "parameters": any_obj,
         }
     )
+    defs["ConfigApplied"] = closed(
+        "config-applied/2",
+        {
+            "applySequence": P1,
+            "desiredGeneration": N0,
+            "boundary": enum(
+                "process_start",
+                "command",
+                "next_stream",
+                "next_director_pass",
+                "next_silence_deadline",
+                "next_beat_plan",
+                "next_plan_or_manual",
+                "next_request",
+                "next_utterance",
+                "next_cancellation",
+                "next_record",
+                "next_rotated_file",
+                "next_rotation",
+                "next_writer_deadline",
+                "next_shutdown",
+            ),
+            "changedKeys": arr(ID, 1, 128),
+            "effectivePatch": arr(
+                {"$ref": "#/$defs/EffectiveConfigProjectionEntry"}, 1, 128
+            ),
+            "oldEffectiveHash": HASH,
+            "newEffectiveHash": HASH,
+        },
+    )
+    defs["ConfigApplied"]["x-irswitch-invariants"] = [
+        "changed_keys_sorted",
+        "effective_patch_sorted",
+        "changed_keys_equal_patch_keys",
+        "hash_transition_matches_envelope",
+    ]
     defs["TapeManifest"] = closed(
         "narrative-tape-manifest/2",
         {
@@ -968,6 +1005,7 @@ def build_schema() -> dict[str, Any]:
         "narrative_event": ("narrative-event/2", "NarrativeEvent"),
         "llm_attempt": ("llm-attempt/2", "LlmAttempt"),
         "speech_exposure": ("speech-exposure/2", "SpeechExposure"),
+        "config_applied": ("config-applied/2", "ConfigApplied"),
     }
     untyped_tape_records = [
         "context_applied",
@@ -975,7 +1013,6 @@ def build_schema() -> dict[str, Any]:
         "episode_change",
         "opportunity_change",
         "director_decision",
-        "config_applied",
         "health_change",
         "mailbox_gap",
         "drop_notice",
@@ -998,6 +1035,67 @@ def build_schema() -> dict[str, Any]:
                 "payload": any_obj,
             }
         }
+    ]
+    unordered_tape_records = [
+        "feature_frame",
+        "detector_observation",
+        "event_candidate",
+        "config_applied",
+        "drop_notice",
+        "manifest_trailer",
+    ]
+    actor_ordered_tape_records = [
+        "context_applied",
+        "narrative_event",
+        "fact_change",
+        "episode_change",
+        "opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "speech_exposure",
+        "health_change",
+        "mailbox_gap",
+    ]
+    channel_required_tape_records = [
+        "detector_observation",
+        "event_candidate",
+        "narrative_event",
+        "opportunity_change",
+        "director_decision",
+    ]
+    channel_optional_tape_records = [
+        record_type
+        for record_type in untyped_tape_records + list(typed_tape_payloads)
+        if record_type not in channel_required_tape_records
+    ]
+    defs["TapeRecord"]["allOf"] = [
+        {
+            "oneOf": [
+                {
+                    "properties": {
+                        "recordType": {"enum": unordered_tape_records},
+                        "reducerSequence": {"type": "null"},
+                    }
+                },
+                {
+                    "properties": {
+                        "recordType": {"enum": actor_ordered_tape_records},
+                        "reducerSequence": N0,
+                    }
+                },
+            ]
+        },
+        {
+            "oneOf": [
+                {
+                    "properties": {
+                        "recordType": {"enum": channel_required_tape_records},
+                        "tapeChannel": ID,
+                    }
+                },
+                {"properties": {"recordType": {"enum": channel_optional_tape_records}}},
+            ]
+        },
     ]
     defs["ApplyContextBatch"] = obj(
         {

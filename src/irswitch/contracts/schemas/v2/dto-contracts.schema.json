@@ -680,6 +680,85 @@
         "canonical_hashes_match"
       ]
     },
+    "ConfigApplied": {
+      "additionalProperties": false,
+      "properties": {
+        "applySequence": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "boundary": {
+          "enum": [
+            "process_start",
+            "command",
+            "next_stream",
+            "next_director_pass",
+            "next_silence_deadline",
+            "next_beat_plan",
+            "next_plan_or_manual",
+            "next_request",
+            "next_utterance",
+            "next_cancellation",
+            "next_record",
+            "next_rotated_file",
+            "next_rotation",
+            "next_writer_deadline",
+            "next_shutdown"
+          ]
+        },
+        "changedKeys": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "desiredGeneration": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "effectivePatch": {
+          "items": {
+            "$ref": "#/$defs/EffectiveConfigProjectionEntry"
+          },
+          "maxItems": 128,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "newEffectiveHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "oldEffectiveHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "config-applied/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "applySequence",
+        "desiredGeneration",
+        "boundary",
+        "changedKeys",
+        "effectivePatch",
+        "oldEffectiveHash",
+        "newEffectiveHash"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "changed_keys_sorted",
+        "effective_patch_sorted",
+        "changed_keys_equal_patch_keys",
+        "hash_transition_matches_envelope"
+      ]
+    },
     "ConfigLedger": {
       "additionalProperties": false,
       "properties": {
@@ -974,10 +1053,10 @@
       "additionalProperties": false,
       "oneOf": [
         {
-          "properties": {
-            "redacted": {
-              "type": "null"
-            }
+          "not": {
+            "required": [
+              "redacted"
+            ]
           },
           "required": [
             "key",
@@ -985,6 +1064,11 @@
           ]
         },
         {
+          "not": {
+            "required": [
+              "value"
+            ]
+          },
           "properties": {
             "redacted": {
               "const": true
@@ -4798,6 +4882,91 @@
     },
     "TapeRecord": {
       "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "recordType": {
+                  "enum": [
+                    "feature_frame",
+                    "detector_observation",
+                    "event_candidate",
+                    "config_applied",
+                    "drop_notice",
+                    "manifest_trailer"
+                  ]
+                },
+                "reducerSequence": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "properties": {
+                "recordType": {
+                  "enum": [
+                    "context_applied",
+                    "narrative_event",
+                    "fact_change",
+                    "episode_change",
+                    "opportunity_change",
+                    "director_decision",
+                    "llm_attempt",
+                    "speech_exposure",
+                    "health_change",
+                    "mailbox_gap"
+                  ]
+                },
+                "reducerSequence": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "recordType": {
+                  "enum": [
+                    "detector_observation",
+                    "event_candidate",
+                    "narrative_event",
+                    "opportunity_change",
+                    "director_decision"
+                  ]
+                },
+                "tapeChannel": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "properties": {
+                "recordType": {
+                  "enum": [
+                    "context_applied",
+                    "fact_change",
+                    "episode_change",
+                    "health_change",
+                    "mailbox_gap",
+                    "drop_notice",
+                    "manifest_trailer",
+                    "feature_frame",
+                    "llm_attempt",
+                    "speech_exposure",
+                    "config_applied"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
       "oneOf": [
         {
           "properties": {
@@ -4880,6 +5049,19 @@
         {
           "properties": {
             "payload": {
+              "$ref": "#/$defs/ConfigApplied"
+            },
+            "payloadSchemaVersion": {
+              "const": "config-applied/2"
+            },
+            "recordType": {
+              "const": "config_applied"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
               "type": "object"
             },
             "payloadSchemaVersion": {
@@ -4893,7 +5075,6 @@
                 "episode_change",
                 "opportunity_change",
                 "director_decision",
-                "config_applied",
                 "health_change",
                 "mailbox_gap",
                 "drop_notice",
@@ -5808,6 +5989,9 @@
     },
     {
       "$ref": "#/$defs/DetectorParameterSnapshot"
+    },
+    {
+      "$ref": "#/$defs/ConfigApplied"
     },
     {
       "$ref": "#/$defs/TapeManifest"
