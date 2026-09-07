@@ -60,7 +60,12 @@ build-backend = "setuptools.build_meta"
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-irswitch = ["web/**/*", "commentary/data/**/*", "commentary/*.ps1"]
+irswitch = [
+  "web/**/*",
+  "commentary/data/**/*",
+  "commentary/*.ps1",
+  "contracts/schemas/**/*.json",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
