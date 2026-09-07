@@ -2,11 +2,35 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
+from pathlib import Path
 
 from irswitch.contracts.resources import packaged_schema_bytes
 
+ROOT = Path(__file__).resolve().parents[1]
+FROZEN_MACHINE = ROOT / "docs" / "v2.0.0" / "machine"
 SCHEMA = json.loads(packaged_schema_bytes("dto-contracts.schema.json"))
+GOLDENS = json.loads((FROZEN_MACHINE / "dto-schema-goldens.json").read_text(encoding="utf-8"))
+FILE_HASH = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+_BUILDER = importlib.util.spec_from_file_location(
+    "v2_build_dto_schemas", FROZEN_MACHINE / "build_dto_schemas.py"
+)
+assert _BUILDER is not None and _BUILDER.loader is not None
+_dto_builder = importlib.util.module_from_spec(_BUILDER)
+_BUILDER.loader.exec_module(_dto_builder)
+
+
+def _golden(fixture_id: str, group: str) -> dict:
+    for row in GOLDENS[group]:
+        if row["id"] == fixture_id:
+            return row["value"]
+    raise AssertionError(f"missing {group} golden {fixture_id}")
+
+
+def _errors(value: object) -> list[str]:
+    return _dto_builder.schema_errors(value, SCHEMA, SCHEMA)
 
 
 def test_tape_manifest_uses_exact_projection_and_detector_snapshot_shapes() -> None:
@@ -187,3 +211,49 @@ def test_loss_notice_and_manifest_trailer_are_bounded_exact_payloads() -> None:
     }
     assert record_branches["drop_notice"]["payload"] == {"$ref": "#/$defs/DropNotice"}
     assert record_branches["manifest_trailer"]["payload"] == {"$ref": "#/$defs/ManifestTrailer"}
+
+
+def test_loss_trailer_goldens_cover_clean_loss_range_and_hash_chain() -> None:
+    unordered = _golden("drop-notice-unordered-loss", "valid")
+    actor = _golden("drop-notice-actor-loss", "valid")
+    clean = _golden("manifest-trailer-clean", "valid")
+    lost = _golden("manifest-trailer-with-loss", "valid")
+    drop_record = _golden("tape-drop-notice-record", "valid")
+    trailer_record = _golden("tape-trailer-record", "valid")
+    continuation = _golden("tape-continuation-manifest", "valid")
+
+    for value in (unordered, actor, clean, lost, drop_record, trailer_record, continuation):
+        assert _errors(value) == []
+
+    assert unordered["loss"]["firstLostReducerSequence"] is None
+    assert unordered["loss"]["lastLostReducerSequence"] is None
+    assert actor["loss"]["firstLostReducerSequence"] == 10
+    assert actor["loss"]["lastLostReducerSequence"] == 12
+    assert clean["complete"] is True
+    assert clean["lossAccumulator"] is None
+    assert clean["fileHash"] == FILE_HASH
+    assert lost["complete"] is False
+    assert lost["lossAccumulator"]["buckets"]
+    assert drop_record["recordType"] == "drop_notice"
+    assert drop_record["reducerSequence"] is None
+    assert drop_record["recordPriority"] == "critical"
+    assert trailer_record["recordType"] == "manifest_trailer"
+    assert trailer_record["payload"]["fileHash"] == FILE_HASH
+    assert continuation["previousFileHash"] == FILE_HASH
+    assert continuation["previousFileHash"] == clean["fileHash"]
+
+
+def test_loss_trailer_invalid_goldens_reject_pairing_completeness_and_order() -> None:
+    invalid_ids = (
+        "drop-notice-one-sided-reducer-range",
+        "manifest-trailer-complete-with-loss",
+        "manifest-trailer-complete-write-failed",
+        "tape-drop-notice-with-reducer-order",
+        "tape-drop-notice-normal-priority",
+    )
+    for fixture_id in invalid_ids:
+        assert _errors(_golden(fixture_id, "invalid")), fixture_id
+
+    reversed_range = _golden("drop-notice-actor-loss", "valid")["loss"]
+    assert reversed_range["firstLostReducerSequence"] <= reversed_range["lastLostReducerSequence"]
+    assert reversed_range["firstLostMonoMs"] <= reversed_range["lastLostMonoMs"]

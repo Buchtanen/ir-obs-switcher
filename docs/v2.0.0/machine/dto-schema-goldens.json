@@ -32,6 +32,34 @@
     {
       "id": "config-applied-redacted-patch",
       "value": {"schemaVersion":"config-applied/2","applySequence":9,"desiredGeneration":4,"boundary":"next_utterance","changedKeys":["commentary.tts.voice"],"effectivePatch":[{"key":"commentary.tts.voice","redacted":true}],"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+    },
+    {
+      "id": "drop-notice-unordered-loss",
+      "value": {"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":3}],"firstLostMonoMs":1000,"lastLostMonoMs":1400,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}
+    },
+    {
+      "id": "drop-notice-actor-loss",
+      "value": {"schemaVersion":"drop-notice/2","noticeId":"notice:2","loss":{"buckets":[{"recordType":"health_change","recordPriority":"critical","reason":"tape_write_failed","count":1},{"recordType":"config_applied","recordPriority":"critical","reason":"config_transition_lost","count":1}],"firstLostMonoMs":1500,"lastLostMonoMs":1800,"firstLostReducerSequence":10,"lastLostReducerSequence":12,"configTransitions":[{"applySequence":9,"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}]}}
+    },
+    {
+      "id": "manifest-trailer-clean",
+      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[{"recordType":"health_change","count":1}],"purposeCounts":[{"purposeChannel":"flow","count":1}],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":null,"lastReducerSequence":9,"closeReason":"shutdown","complete":true}
+    },
+    {
+      "id": "manifest-trailer-with-loss",
+      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[{"recordType":"drop_notice","count":1}],"purposeCounts":[{"purposeChannel":"flow","count":1}],"tapeChannelCounts":[],"dropCounts":[{"reason":"tape_write_failed","count":1}],"lossAccumulator":{"buckets":[{"recordType":"health_change","recordPriority":"critical","reason":"tape_write_failed","count":1}],"firstLostMonoMs":1500,"lastLostMonoMs":1800,"firstLostReducerSequence":10,"lastLostReducerSequence":12,"configTransitions":[]},"lastReducerSequence":12,"closeReason":"write_failed","complete":false}
+    },
+    {
+      "id": "tape-drop-notice-record",
+      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:drop:1","recordType":"drop_notice","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":1900,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"drop-notice/2","payload":{"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":3}],"firstLostMonoMs":1000,"lastLostMonoMs":1400,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}}
+    },
+    {
+      "id": "tape-trailer-record",
+      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:trailer:1","recordType":"manifest_trailer","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":2000,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"manifest-trailer/2","payload":{"schemaVersion":"manifest-trailer/2","finalRecordHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[{"recordType":"health_change","count":1}],"purposeCounts":[{"purposeChannel":"flow","count":1}],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":null,"lastReducerSequence":9,"closeReason":"shutdown","complete":true}}
+    },
+    {
+      "id": "tape-continuation-manifest",
+      "value": {"schemaVersion":"narrative-tape-manifest/2","recordType":"manifest","processInstanceId":"process:1","processStartedAtUtc":"2026-09-07T20:00:00Z","processMonotonicOriginMs":0,"appVersion":"2.0.0","gitRevision":"abc1234","platform":"windows","broadcastEpoch":4,"streamEpoch":7,"fileOrdinal":1,"openedAtUtc":"2026-09-07T20:05:00Z","catalogVersion":"narrative-catalog:2","catalogHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","desiredConfigGeneration":3,"desiredConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"effectiveConfigProjection":[{"key":"commentary.enabled","value":true},{"key":"commentary.tts.voice","redacted":true}],"enabledPurposeChannels":["flow"],"redactionPolicy":{"sensitiveValues":"marker_only"},"historyComplete":true,"detectorParameterSnapshots":[{"parameterSnapshotId":"params:battle-ahead:1","detectorId":"battle_ahead_v1","detectorVersion":"1","detectorConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","parameters":{"confirm_s":1.5,"window_s":5.0}}],"previousFileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
     }
   ],
   "invalid": [
@@ -74,6 +102,26 @@
     {
       "id": "config-applied-redacted-value-leak",
       "value": {"schemaVersion":"config-applied/2","applySequence":9,"desiredGeneration":4,"boundary":"next_utterance","changedKeys":["commentary.tts.voice"],"effectivePatch":[{"key":"commentary.tts.voice","value":"secret voice","redacted":true}],"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+    },
+    {
+      "id": "drop-notice-one-sided-reducer-range",
+      "value": {"schemaVersion":"drop-notice/2","noticeId":"notice:bad","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":10,"lastLostReducerSequence":null,"configTransitions":[]}}
+    },
+    {
+      "id": "manifest-trailer-complete-with-loss",
+      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":null,"fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[],"purposeCounts":[],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]},"lastReducerSequence":null,"closeReason":"shutdown","complete":true}
+    },
+    {
+      "id": "manifest-trailer-complete-write-failed",
+      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":null,"fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[],"purposeCounts":[],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":null,"lastReducerSequence":null,"closeReason":"write_failed","complete":true}
+    },
+    {
+      "id": "tape-drop-notice-with-reducer-order",
+      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:drop:bad","recordType":"drop_notice","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":5,"recordedMonoMs":1900,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"drop-notice/2","payload":{"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}}
+    },
+    {
+      "id": "tape-drop-notice-normal-priority",
+      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:drop:pri","recordType":"drop_notice","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":1900,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"normal","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"drop-notice/2","payload":{"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}}
     }
   ]
 }

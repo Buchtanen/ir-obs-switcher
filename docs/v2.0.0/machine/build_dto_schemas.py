@@ -21,6 +21,11 @@ HASH_PATTERN = r"^sha256:[0-9a-f]{64}$"
 
 S = {"type": "string"}
 ID = {"type": "string", "pattern": ID_PATTERN}
+SCHEMA_VERSION = {
+    "type": "string",
+    "pattern": r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}(/[1-9][0-9]*)?$",
+    "maxLength": 128,
+}
 LINEAGE_ID = {"type": "string", "pattern": LINEAGE_PATTERN, "maxLength": 512}
 HASH = {"type": "string", "pattern": HASH_PATTERN}
 N0 = {"type": "integer", "minimum": 0}
@@ -1118,7 +1123,7 @@ def build_schema() -> dict[str, Any]:
             "correlationIds": id_list(0, 8),
             "effectiveConfigHash": HASH,
             "configApplySequence": N0,
-            "payloadSchemaVersion": ID,
+            "payloadSchemaVersion": SCHEMA_VERSION,
             "payload": any_obj,
         },
     )
@@ -1155,7 +1160,7 @@ def build_schema() -> dict[str, Any]:
         {
             "properties": {
                 "recordType": {"enum": untyped_tape_records},
-                "payloadSchemaVersion": ID,
+                "payloadSchemaVersion": SCHEMA_VERSION,
                 "payload": any_obj,
             }
         }

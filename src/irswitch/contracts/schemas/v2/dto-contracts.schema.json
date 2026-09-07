@@ -5480,7 +5480,8 @@
               "type": "object"
             },
             "payloadSchemaVersion": {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}(/[1-9][0-9]*)?$",
               "type": "string"
             },
             "recordType": {
@@ -5527,7 +5528,8 @@
           "type": "object"
         },
         "payloadSchemaVersion": {
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}(/[1-9][0-9]*)?$",
           "type": "string"
         },
         "processInstanceId": {
