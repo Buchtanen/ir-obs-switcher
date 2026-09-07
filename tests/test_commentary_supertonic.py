@@ -209,4 +209,4 @@ audio_device = CABLE Input
     assert cfg.commentary_v2.snapshot.values["commentary.tts.voice"] == "M1"
     assert cfg.commentary_v2.snapshot.values["commentary.tts.steps"] == 5
     assert cfg.overlay.commentary.enabled is False
-    assert overlay_values(cfg.overlay)["commentary.enabled"] is False
+    assert all(not key.startswith("commentary.") for key in overlay_values(cfg.overlay))

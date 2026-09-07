@@ -126,6 +126,46 @@ def test_legacy_keys_diagnose_but_never_install_a_candidate(
     assert replacement in candidate.diagnostics[0].replacement_keys if replacement else True
 
 
+def test_every_frozen_v1_migration_row_has_runtime_diagnostic_coverage() -> None:
+    contract = json.loads(packaged_schema_bytes("config-contract.json"))
+    entries = contract["migrationContract"]["entries"]
+
+    assert len(entries) == 13
+    exercised_sources: list[str] = []
+    for entry in entries:
+        match_kind = entry["matchKind"]
+        source = entry["source"]
+        if match_kind == "group":
+            keys = [
+                key.replace("commentary.llm.", "commentary.llm_")
+                for key in entry["replacementKeys"]
+            ]
+        elif match_kind == "prefix":
+            keys = [source.removesuffix("*") + "representative"]
+        else:
+            keys = [source]
+
+        for key in keys:
+            if match_kind == "section":
+                parser = configparser.ConfigParser()
+                parser.read_dict({key.removeprefix("[").removesuffix("]"): {"legacy": "1"}})
+                candidate = parse_commentary_ini(parser, repository_root=ROOT)
+            else:
+                candidate = parse_commentary_mapping({key: "legacy"}, repository_root=ROOT)
+
+            assert candidate.valid is False
+            assert candidate.snapshot is None
+            assert candidate.diagnostics == (candidate.diagnostics[0],)
+            diagnostic = candidate.diagnostics[0]
+            assert diagnostic.reason == entry["diagnosticReason"]
+            assert diagnostic.source_key == key
+            assert diagnostic.replacement_keys == tuple(entry["replacementKeys"])
+            assert entry["result"] in diagnostic.message
+            exercised_sources.append(key)
+
+    assert len(exercised_sources) == 16
+
+
 def test_real_normalized_sensitive_values_participate_in_hash() -> None:
     first = parse_commentary_mapping({"commentary.driver_name": "Alice"}, repository_root=ROOT)
     second = parse_commentary_mapping({"commentary.driver_name": "Bob"}, repository_root=ROOT)

@@ -142,7 +142,7 @@ grid_story = true
     assert cfg.overlay.race_observer.flags is True
     assert cfg.overlay.race_observer.grid_story is True
     values = overlay_values(cfg.overlay)
-    assert values["commentary.enabled"] is False
+    assert all(not key.startswith("commentary.") for key in values)
     assert values["race_observer.incident_classify"] is True
     assert values["race_observer.flags"] is True
     assert values["race_observer.grid_story"] is True
@@ -185,24 +185,20 @@ def test_feature_flag_put_roundtrip(tmp_path: Path) -> None:
     assert values["event_engine.overtake_classifier"] is True
 
 
-def test_legacy_commentary_graph_runtime_write_cannot_select_runtime(tmp_path: Path) -> None:
+def test_legacy_commentary_controls_are_absent_from_public_config_api(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
 
-    applied = apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
+    with pytest.raises(ValueError, match="Unknown config keys"):
+        apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
 
-    assert applied == ["commentary.graph_runtime.mode"]
-    cfg = AppConfig.from_file(path)
-    assert cfg.overlay.commentary.enabled is False
-    assert cfg.overlay.commentary.graph_runtime_mode == "legacy"
-    assert cfg.commentary_v2 is not None
-    assert cfg.commentary_v2.valid is False
-    assert cfg.commentary_v2.diagnostics[0].reason == "legacy_key"
-    assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "legacy"
-    spec = field_by_key("commentary.graph_runtime.mode")
-    assert spec is not None
-    assert spec.choices == ("legacy", "shadow", "active")
-    with pytest.raises(ValueError):
-        coerce_value(spec, "experimental")
+    assert field_by_key("commentary.graph_runtime.mode") is None
+    assert field_by_key("commentary.enabled") is None
+    assert all(not spec.key.startswith("commentary.") for spec in OVERLAY_FIELDS)
+    assert all(
+        not key.startswith("commentary.")
+        for key in overlay_values(AppConfig.from_file(path).overlay)
+    )
+    assert all(not key.startswith("commentary.") for key in LIVE_CONFIG_KEYS)
 
 
 def test_live_overlay_fields_are_hot_reloadable() -> None:

@@ -830,7 +830,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
 - **Mluvit na serveru** — `POST /api/commentary/speak` → SAPI / SuperTonic / espeak (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`; SuperTonic syntéza běží během fade-out, play až je duck dole)
 - **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
-- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`)
+- V2 commentary konfigurace se na této legacy testovací stránce neukládá. Upravuje se v `config.ini` a načítá přes `POST /config/reload`; legacy `commentary.*` ani `commentary.graph_runtime.mode` nejsou v `PUT /api/config` schématu.
 
 **API**
 
@@ -1016,5 +1016,7 @@ Vrací `schema`, `overlay` hodnoty a redacted `switcher` (OBS password je `***`)
 ### PUT /api/config
 
 Body: `{ "values": { "sampling.default_hz": 6 } }`. Atomický zápis INI + `.bak`. Response: `applied`, `applied_live`, `needs_restart`.
+
+Legacy `commentary.*` klíče nejsou součástí tohoto schema-driven endpointu a vrací chybu neznámého klíče. V2 commentary se zapisuje do přesných INI sekcí z `CONFIG.md` a aktivuje přes `POST /config/reload`, který vlastní ConfigLedger generace.
 
 Security: localhost + CSRF header. Neznámé klíče a path traversal se odmítnou.

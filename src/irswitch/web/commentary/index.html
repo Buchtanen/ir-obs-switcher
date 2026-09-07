@@ -63,9 +63,9 @@
     </section>
     <section>
       <fieldset>
-        <legend>Nastavení</legend>
-        <label><input type="checkbox" id="enabled"> commentary.enabled (živý race feed)</label>
-        <label><input type="checkbox" id="useHr" checked> use_hr_emotion</label>
+        <legend>Manuální legacy test (neukládá v2 konfiguraci)</legend>
+        <label><input type="checkbox" id="enabled" disabled> legacy runtime enabled (read-only)</label>
+        <label><input type="checkbox" id="useHr" checked disabled> legacy HR emotion (read-only)</label>
         <label>Jazyk overlay
           <select id="language">
             <option value="cs">cs</option>
@@ -104,8 +104,7 @@
         <label>Cooldown s
           <input id="cooldown" type="number" min="0.5" max="30" step="0.5" value="4">
         </label>
-        <button type="button" id="btnSave">Uložit nastavení</button>
-        <span id="saveStatus" class="muted"></span>
+        <p class="muted">V2 konfiguraci uprav v config.ini podle CONFIG.md a načti přes POST /config/reload.</p>
       </fieldset>
       <fieldset>
         <legend>Proč ticho (decision log)</legend>
@@ -289,41 +288,10 @@
       else log("Server (" + (body.backend || "?") + "): " + (body.error || res.status), "bad");
     }
 
-    async function save() {
-      $("saveStatus").textContent = "ukládám…";
-      const res = await fetch("/api/config", {
-        method: "PUT",
-        headers: CSRF,
-        body: JSON.stringify({
-          values: {
-            "overlay.language": $("language").value,
-            "commentary.enabled": $("enabled").checked,
-            "commentary.use_hr_emotion": $("useHr").checked,
-            "commentary.tts_backend": $("backend").value,
-            "commentary.tts_voice": $("voice").value,
-            "commentary.tts_rate": Number($("rate").value || 0),
-            "commentary.audio_device": $("audioDevice").value,
-            "commentary.duck_input": $("duckInput").value,
-            "commentary.duck_ratio": Number($("duckRatio").value || 0.25),
-            "commentary.duck_fade_ms": Number($("duckFadeMs").value || 750),
-            "commentary.cooldown_s": Number($("cooldown").value || 4),
-          },
-        }),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        $("saveStatus").textContent = body.error || "chyba";
-        return;
-      }
-      $("saveStatus").textContent = "uloženo (" + (body.applied || []).length + " klíčů)";
-      await loadStatus();
-    }
-
     $("btnBrowser").onclick = browserSpeak;
     $("btnServer").onclick = serverSpeak;
     $("btnValidate").onclick = validate;
     $("btnStop").onclick = () => { if (window.speechSynthesis) speechSynthesis.cancel(); };
-    $("btnSave").onclick = save;
     $("btnDecisions").onclick = loadDecisions;
     if (window.speechSynthesis) {
       fillVoices();
