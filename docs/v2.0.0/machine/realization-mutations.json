@@ -1,0 +1,62 @@
+[
+  {
+    "errorContains": "grammar family coverage differs",
+    "id": "missing_family"
+  },
+  {
+    "errorContains": "only tight may be enabled",
+    "id": "balanced_enabled"
+  },
+  {
+    "errorContains": "hard fact authority differs",
+    "id": "embedding_fact_gate"
+  },
+  {
+    "errorContains": "repair/fallback policy differs",
+    "id": "repair_attempt"
+  },
+  {
+    "errorContains": "pattern card coverage differs",
+    "id": "three_cards"
+  },
+  {
+    "errorContains": "pattern card family differs",
+    "id": "card_family_mismatch"
+  },
+  {
+    "errorContains": "unknown pattern placeholder",
+    "id": "unknown_placeholder"
+  },
+  {
+    "errorContains": "family corpus coverage differs",
+    "id": "missing_positive"
+  },
+  {
+    "errorContains": "counterexample accepted",
+    "id": "accepted_forbidden"
+  },
+  {
+    "errorContains": "surface alternatives differ",
+    "id": "surface_open_tolerance"
+  },
+  {
+    "errorContains": "compiled prompt differs",
+    "id": "prompt_literal_changed"
+  },
+  {
+    "errorContains": "Qwen request differs",
+    "id": "request_stream_false"
+  },
+  {
+    "errorContains": "invalid SSE accepted",
+    "id": "sse_missing_done_accepted"
+  },
+  {
+    "errorContains": "deadline race terminal count differs",
+    "id": "deadline_two_terminals"
+  },
+  {
+    "errorContains": "warmup contract differs",
+    "id": "warmup_retry_added"
+  }
+]

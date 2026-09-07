@@ -1,6 +1,6 @@
 # v2.0.0 Qwen prompt, transport and latency freeze
 
-**Status:** design-freeze candidate owned by issues #235, #239, #268–#271 and #284
+**Status:** prompt/wire/deadline contract machine-frozen for issues #235, #239, #268–#271 and #284
 
 This branch-only artifact freezes the boundary from an immutable RealizationBundle to one terminal realizer result. It covers authored and Qwen realization, but only Qwen performs I/O. No runtime behavior may be implemented until the DTOs and F40 are executable fixtures.
 
@@ -205,3 +205,5 @@ Terminal source is `worker|actor_deadline|actor_cancellation`; transport outcome
 - A no-proxy/no-redirect integration test against a local fake endpoint.
 - Warm-up enabled/disabled/failure and generation-staleness fixtures.
 - Qwen target-machine corpus report with warm/cold separated TTFT/total/token distributions and no hidden retries.
+
+The pre-implementation prompt, request, SSE, warm-up and deadline-race goldens are materialized in `machine/qwen-transport-goldens.json` and checked with the controlled-English bundle. The repeatable target probe is `machine/run_qwen_latency.py`; it labels residency explicitly, disables proxies/redirects, performs no retries and emits raw plus median/P90/P95/max timing evidence.

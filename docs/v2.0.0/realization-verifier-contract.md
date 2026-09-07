@@ -1,6 +1,6 @@
 # v2.0.0 EN realization and semantic-verifier freeze
 
-**Status:** design-freeze candidate owned by issues #266–#271
+**Status:** controlled-English grammar and corpus machine-frozen for issues #266–#271
 
 This branch-only artifact closes what “factually valid generated text” can mean for a small local model. It covers all 37 realization families used by the exact 64-beat baseline.
 
@@ -141,3 +141,5 @@ The design gate remains closed until branch-only fixtures provide:
 4. family positive/counterexample corpus and expected reason codes;
 5. the exact Qwen prompt/profile/version, request/SSE goldens and repeatable latency runner from `qwen-transport-contract.md`;
 6. proof that no verifier path calls an embedding or another LLM as a hard fact gate.
+
+The branch-only evidence is `machine/realization-contract.json`, `machine/realization-pattern-cards.json`, `machine/realization-corpus.json`, `machine/qwen-transport-goldens.json` and their checker/mutation set. It materializes all 37 tight grammars, four enabled audited cards for each of 64 beats, 148 family corpus cases, six closed surface-value sets, canonical prompt/request bytes, nine SSE fixtures and four deadline races. `machine/run_qwen_latency.py` is the no-proxy/no-redirect, no-retry warm/cold measurement runner; target-machine results remain a post-implementation release gate rather than a reason to widen this grammar.

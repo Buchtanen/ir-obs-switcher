@@ -1,0 +1,1200 @@
+{
+  "acceptanceConjunction": [
+    "shape_en",
+    "unknown_fragments_empty",
+    "required_subset_of_parsed",
+    "parsed_subset_of_selected_closure",
+    "forbidden_predicates_absent",
+    "actors_match",
+    "surface_values_match",
+    "temporal_frame_match"
+  ],
+  "authority": {
+    "embeddingUse": "repeat_penalty_only",
+    "hardFactGate": "deterministic_family_parser",
+    "repairAttempts": 0,
+    "sameBeatFallback": false,
+    "secondLlmUse": "forbidden_as_fact_gate"
+  },
+  "disabledFreedom": [
+    "balanced",
+    "loose"
+  ],
+  "enabledFreedom": [
+    "tight"
+  ],
+  "grammars": [
+    {
+      "additionalHardRejects": "session/field best, invented improvement",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.lap_result",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + completed/PB result; bound lap/time/reference only when selected",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "cause, reversed gain/loss, finished result",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.delta",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + improved/worsened polarity + bound delta/reference",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "lap/PB substitution, wrong sector",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.sector",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + sector identity + split/best polarity",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "achieved result, named race pass",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.target",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero pursuing timing/position target with bound gap",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "completed-result grammar, certainty",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.projection",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + explicit projected modality + projected time/position",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "predicted or completed result",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.attempt",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + current active attempt",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "whole-session cleanliness, psychological judgement",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "timing.consistency",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + exact clean-lap count",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "pass/contact/outcome, reversed actors",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "battle.closing",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "ordered closer→target + trend/material band; gap if selected",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "completed pass or inevitability",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "battle.attack",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "ordered hero→target + current attack-range band",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "winner, contact or result",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "battle.overlap",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "ordered hero/target pair + simultaneous side-by-side state",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "hero as hunter, inevitable loss",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "battle.pressure",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "ordered rear target→hero + threat/closing relation",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "actor collapse, one-sided claim presented as both",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "battle.two_front",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero→front and rear→hero as two distinct relations",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "pass mechanism unless selected",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "battle.outcome",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero/target + won outcome",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "contact/cause, leader claim unless selected",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "position.pass",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "ordered passer→passed + old/new order",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "named opponent or mechanism unless selected",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "position.change",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + old/new ordinal + gained/lost polarity",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "hero involvement unless one bound actor is hero",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "position.leader",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "old leader→new leader",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "contact, damage, blame or cause",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "incident.event",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero incident; optional off-track only for classified branch",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "incident cause or penalty consequence",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "incident.invalid_lap",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + invalid current lap",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "recovery/damage conclusion",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "incident.aftermath",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + exact current aftermath state",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "no-damage/full-recovery claim",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "incident.recovery",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + resumed motion + known surface state",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "skipped future phase, service/strategy inference",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "pit.lifecycle",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + exact phase + pit-cycle identity",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "strategy/cause judgement",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "pit.outcome",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + entry/exit comparison and polarity",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "invented prior history/session stage",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "stream.lifecycle",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "stream epoch + started reason",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "other stage as current; inherited fact without past marker",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.intro",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "current occurrence + exact stage",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "stream restart, cause",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.restart",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "stage + old/new occurrence relation",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "unsupported result or future-stage certainty",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.wrap",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "ended occurrence + exact stage/reason",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "absent/skipped stage, schedule certainty",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.preview",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "next actually present stage",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "incident cause, start/finish result unless selected",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.flag",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "exact flag transition/scope or checkered state",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "finish position/result",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.final_lap",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + exact final-lap identity",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "official/final classification without final fact",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.finish",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + observed finish position; class position only if selected",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "race/grid certainty",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.recap",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "past qualifying occurrence + selected result/time",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "quality/result prediction",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.context",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "exactly one selected field/SoF fact and scope",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "forecast, cause, unobserved track effect",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.weather",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "selected current/change weather predicates with temporal polarity",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "lap/pace/start result",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "session.vehicle",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero entered car + exact current stage/occurrence",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "emotion, stress, health, cause or performance effect",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "bio.context",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "hero + measured HR band/freshness only",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "invented event, urgency, prediction",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "filler.track_state",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "exact vehicle/broadcast phase + one selected stable fact",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    },
+    {
+      "additionalHardRejects": "on-track action or active-session claim",
+      "freedom": "tight",
+      "hardFactGate": "deterministic_parser_only",
+      "id": "filler.off_track",
+      "language": "en",
+      "negationPolicy": "typed_claim_operator_only",
+      "passiveVoice": "disabled",
+      "requiredParseFrame": "exact lobby/garage context + one selected stable fact",
+      "semanticSlots": {
+        "now": "approved_nonsemantic_temporal_connective",
+        "requiredClaimSurface": "exact_compiler_selected_family_claim_surface",
+        "subjectSurface": "exact_actor_or_scope_surface"
+      },
+      "sentence": {
+        "maximumCharacters": 240,
+        "maximumLexicalTokens": 32,
+        "maximumSentences": 1,
+        "minimumCharacters": 2
+      },
+      "syntax": [
+        "subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface NOW requiredClaimSurface PERIOD",
+        "NOW subjectSurface requiredClaimSurface PERIOD",
+        "subjectSurface requiredClaimSurface NOW PERIOD"
+      ],
+      "unknownFragmentPolicy": "reject",
+      "version": 1
+    }
+  ],
+  "language": "en",
+  "rejectionCodes": [
+    "empty",
+    "too_long",
+    "sentence_count",
+    "token_count",
+    "non_en_contract",
+    "meta_output",
+    "unknown_fragment",
+    "unknown_entity",
+    "actor_reversed",
+    "actor_ambiguous",
+    "number_unbound",
+    "number_mismatch",
+    "unit_mismatch",
+    "polarity_mismatch",
+    "tense_mismatch",
+    "required_missing",
+    "forbidden_claim",
+    "extra_claim",
+    "causal_inference",
+    "intent_inference",
+    "emotion_inference",
+    "medical_inference",
+    "prediction_as_result",
+    "result_as_prediction",
+    "unsupported_certainty",
+    "unsafe_negation"
+  ],
+  "schemaVersion": "realization-contract/2",
+  "sourceBaseline": "master@0ce75d4",
+  "surfaceValueCases": [
+    {
+      "allowed": [
+        "1:32.400",
+        "one minute thirty-two point four seconds"
+      ],
+      "canonical": 92.4,
+      "kind": "time",
+      "rejected": [
+        "about a minute and a half"
+      ]
+    },
+    {
+      "allowed": [
+        "0.8 seconds",
+        "eight tenths"
+      ],
+      "canonical": 0.8,
+      "kind": "gap",
+      "rejected": [
+        "nearly a second"
+      ]
+    },
+    {
+      "allowed": [
+        "three and a half tenths faster",
+        "0.35 seconds faster"
+      ],
+      "canonical": -0.35,
+      "kind": "delta",
+      "rejected": [
+        "roughly four tenths faster"
+      ]
+    },
+    {
+      "allowed": [
+        "P3",
+        "third"
+      ],
+      "canonical": 3,
+      "kind": "position",
+      "rejected": [
+        "on the podium"
+      ]
+    },
+    {
+      "allowed": [
+        "lap 12",
+        "lap twelve"
+      ],
+      "canonical": 12,
+      "kind": "lap",
+      "rejected": [
+        "the latest lap"
+      ]
+    },
+    {
+      "allowed": [
+        "Morgan",
+        "the car ahead"
+      ],
+      "canonical": "driver:22",
+      "kind": "name",
+      "rejected": [
+        "Taylor"
+      ]
+    }
+  ]
+}

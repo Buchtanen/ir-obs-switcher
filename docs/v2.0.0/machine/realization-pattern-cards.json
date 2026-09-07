@@ -1,0 +1,3336 @@
+{
+  "cards": [
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.completed",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.completed:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.completed",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.completed:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.completed",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.completed:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.completed",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.completed:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.personal_best",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.personal_best:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.personal_best",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.personal_best:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.personal_best",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.personal_best:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.personal_best",
+      "enabled": true,
+      "family": "timing.lap_result",
+      "freedom": "tight",
+      "id": "timing.lap.personal_best:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.gain",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.gain:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.gain",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.gain:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.gain",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.gain:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.gain",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.gain:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.loss",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.loss:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.loss",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.loss:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.loss",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.loss:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.loss",
+      "enabled": true,
+      "family": "timing.delta",
+      "freedom": "tight",
+      "id": "timing.pace.loss:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.split",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.split:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.split",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.split:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.split",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.split:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.split",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.split:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.best",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.best:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.best",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.best:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.best",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.best:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.sector.best",
+      "enabled": true,
+      "family": "timing.sector",
+      "freedom": "tight",
+      "id": "timing.sector.best:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.target.locked",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.target.locked:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.target.locked",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.target.locked:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.target.locked",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.target.locked:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.target.locked",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.target.locked:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.projected",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.lap.projected:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.projected",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.lap.projected:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.projected",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.lap.projected:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.projected",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.lap.projected:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.hot",
+      "enabled": true,
+      "family": "timing.attempt",
+      "freedom": "tight",
+      "id": "timing.lap.hot:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.hot",
+      "enabled": true,
+      "family": "timing.attempt",
+      "freedom": "tight",
+      "id": "timing.lap.hot:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.hot",
+      "enabled": true,
+      "family": "timing.attempt",
+      "freedom": "tight",
+      "id": "timing.lap.hot:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.lap.hot",
+      "enabled": true,
+      "family": "timing.attempt",
+      "freedom": "tight",
+      "id": "timing.lap.hot:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.position.attack",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.position.attack:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.position.attack",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.position.attack:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.position.attack",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.position.attack:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.position.attack",
+      "enabled": true,
+      "family": "timing.projection",
+      "freedom": "tight",
+      "id": "timing.position.attack:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.clean_streak",
+      "enabled": true,
+      "family": "timing.consistency",
+      "freedom": "tight",
+      "id": "timing.clean_streak:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.clean_streak",
+      "enabled": true,
+      "family": "timing.consistency",
+      "freedom": "tight",
+      "id": "timing.clean_streak:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.clean_streak",
+      "enabled": true,
+      "family": "timing.consistency",
+      "freedom": "tight",
+      "id": "timing.clean_streak:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.clean_streak",
+      "enabled": true,
+      "family": "timing.consistency",
+      "freedom": "tight",
+      "id": "timing.clean_streak:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.hunt",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.pace.hunt:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.hunt",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.pace.hunt:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.hunt",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.pace.hunt:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "timing.pace.hunt",
+      "enabled": true,
+      "family": "timing.target",
+      "freedom": "tight",
+      "id": "timing.pace.hunt:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pursuit",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.pursuit:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pursuit",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.pursuit:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pursuit",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.pursuit:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pursuit",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.pursuit:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.approach",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.approach:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.approach",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.approach:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.approach",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.approach:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.approach",
+      "enabled": true,
+      "family": "battle.closing",
+      "freedom": "tight",
+      "id": "battle.approach:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.attack_range",
+      "enabled": true,
+      "family": "battle.attack",
+      "freedom": "tight",
+      "id": "battle.attack_range:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.attack_range",
+      "enabled": true,
+      "family": "battle.attack",
+      "freedom": "tight",
+      "id": "battle.attack_range:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.attack_range",
+      "enabled": true,
+      "family": "battle.attack",
+      "freedom": "tight",
+      "id": "battle.attack_range:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.attack_range",
+      "enabled": true,
+      "family": "battle.attack",
+      "freedom": "tight",
+      "id": "battle.attack_range:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.side_by_side",
+      "enabled": true,
+      "family": "battle.overlap",
+      "freedom": "tight",
+      "id": "battle.side_by_side:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.side_by_side",
+      "enabled": true,
+      "family": "battle.overlap",
+      "freedom": "tight",
+      "id": "battle.side_by_side:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.side_by_side",
+      "enabled": true,
+      "family": "battle.overlap",
+      "freedom": "tight",
+      "id": "battle.side_by_side:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.side_by_side",
+      "enabled": true,
+      "family": "battle.overlap",
+      "freedom": "tight",
+      "id": "battle.side_by_side:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pressure_behind",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.pressure_behind:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pressure_behind",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.pressure_behind:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pressure_behind",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.pressure_behind:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.pressure_behind",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.pressure_behind:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.rival_threat",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.rival_threat:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.rival_threat",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.rival_threat:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.rival_threat",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.rival_threat:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.rival_threat",
+      "enabled": true,
+      "family": "battle.pressure",
+      "freedom": "tight",
+      "id": "battle.rival_threat:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.two_front",
+      "enabled": true,
+      "family": "battle.two_front",
+      "freedom": "tight",
+      "id": "battle.two_front:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.two_front",
+      "enabled": true,
+      "family": "battle.two_front",
+      "freedom": "tight",
+      "id": "battle.two_front:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.two_front",
+      "enabled": true,
+      "family": "battle.two_front",
+      "freedom": "tight",
+      "id": "battle.two_front:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.two_front",
+      "enabled": true,
+      "family": "battle.two_front",
+      "freedom": "tight",
+      "id": "battle.two_front:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.won",
+      "enabled": true,
+      "family": "battle.outcome",
+      "freedom": "tight",
+      "id": "battle.won:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.won",
+      "enabled": true,
+      "family": "battle.outcome",
+      "freedom": "tight",
+      "id": "battle.won:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.won",
+      "enabled": true,
+      "family": "battle.outcome",
+      "freedom": "tight",
+      "id": "battle.won:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "battle.won",
+      "enabled": true,
+      "family": "battle.outcome",
+      "freedom": "tight",
+      "id": "battle.won:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.pass",
+      "enabled": true,
+      "family": "position.pass",
+      "freedom": "tight",
+      "id": "position.pass:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.pass",
+      "enabled": true,
+      "family": "position.pass",
+      "freedom": "tight",
+      "id": "position.pass:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.pass",
+      "enabled": true,
+      "family": "position.pass",
+      "freedom": "tight",
+      "id": "position.pass:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.pass",
+      "enabled": true,
+      "family": "position.pass",
+      "freedom": "tight",
+      "id": "position.pass:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.gained",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.gained:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.gained",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.gained:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.gained",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.gained:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.gained",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.gained:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.lost",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.lost:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.lost",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.lost:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.lost",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.lost:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.lost",
+      "enabled": true,
+      "family": "position.change",
+      "freedom": "tight",
+      "id": "position.lost:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.leader_change",
+      "enabled": true,
+      "family": "position.leader",
+      "freedom": "tight",
+      "id": "position.leader_change:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.leader_change",
+      "enabled": true,
+      "family": "position.leader",
+      "freedom": "tight",
+      "id": "position.leader_change:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.leader_change",
+      "enabled": true,
+      "family": "position.leader",
+      "freedom": "tight",
+      "id": "position.leader_change:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "position.leader_change",
+      "enabled": true,
+      "family": "position.leader",
+      "freedom": "tight",
+      "id": "position.leader_change:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.off_track",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.off_track:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.off_track",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.off_track:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.off_track",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.off_track:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.off_track",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.off_track:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.unclassified",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.unclassified:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.unclassified",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.unclassified:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.unclassified",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.unclassified:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.unclassified",
+      "enabled": true,
+      "family": "incident.event",
+      "freedom": "tight",
+      "id": "incident.unclassified:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.invalid_lap",
+      "enabled": true,
+      "family": "incident.invalid_lap",
+      "freedom": "tight",
+      "id": "incident.invalid_lap:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.invalid_lap",
+      "enabled": true,
+      "family": "incident.invalid_lap",
+      "freedom": "tight",
+      "id": "incident.invalid_lap:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.invalid_lap",
+      "enabled": true,
+      "family": "incident.invalid_lap",
+      "freedom": "tight",
+      "id": "incident.invalid_lap:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.invalid_lap",
+      "enabled": true,
+      "family": "incident.invalid_lap",
+      "freedom": "tight",
+      "id": "incident.invalid_lap:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.aftermath",
+      "enabled": true,
+      "family": "incident.aftermath",
+      "freedom": "tight",
+      "id": "incident.aftermath:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.aftermath",
+      "enabled": true,
+      "family": "incident.aftermath",
+      "freedom": "tight",
+      "id": "incident.aftermath:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.aftermath",
+      "enabled": true,
+      "family": "incident.aftermath",
+      "freedom": "tight",
+      "id": "incident.aftermath:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.aftermath",
+      "enabled": true,
+      "family": "incident.aftermath",
+      "freedom": "tight",
+      "id": "incident.aftermath:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.recovery",
+      "enabled": true,
+      "family": "incident.recovery",
+      "freedom": "tight",
+      "id": "incident.recovery:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.recovery",
+      "enabled": true,
+      "family": "incident.recovery",
+      "freedom": "tight",
+      "id": "incident.recovery:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.recovery",
+      "enabled": true,
+      "family": "incident.recovery",
+      "freedom": "tight",
+      "id": "incident.recovery:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "incident.recovery",
+      "enabled": true,
+      "family": "incident.recovery",
+      "freedom": "tight",
+      "id": "incident.recovery:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.entry",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.entry:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.entry",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.entry:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.entry",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.entry:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.entry",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.entry:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.lane",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.lane:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.lane",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.lane:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.lane",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.lane:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.lane",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.lane:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.stopped",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.stopped:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.stopped",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.stopped:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.stopped",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.stopped:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.stopped",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.stopped:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.released",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.released:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.released",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.released:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.released",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.released:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.released",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.released:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.exit",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.exit:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.exit",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.exit:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.exit",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.exit:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.exit",
+      "enabled": true,
+      "family": "pit.lifecycle",
+      "freedom": "tight",
+      "id": "pit.exit:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.outcome",
+      "enabled": true,
+      "family": "pit.outcome",
+      "freedom": "tight",
+      "id": "pit.outcome:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.outcome",
+      "enabled": true,
+      "family": "pit.outcome",
+      "freedom": "tight",
+      "id": "pit.outcome:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.outcome",
+      "enabled": true,
+      "family": "pit.outcome",
+      "freedom": "tight",
+      "id": "pit.outcome:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "pit.outcome",
+      "enabled": true,
+      "family": "pit.outcome",
+      "freedom": "tight",
+      "id": "pit.outcome:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "stream.started",
+      "enabled": true,
+      "family": "stream.lifecycle",
+      "freedom": "tight",
+      "id": "stream.started:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "stream.started",
+      "enabled": true,
+      "family": "stream.lifecycle",
+      "freedom": "tight",
+      "id": "stream.started:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "stream.started",
+      "enabled": true,
+      "family": "stream.lifecycle",
+      "freedom": "tight",
+      "id": "stream.started:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "stream.started",
+      "enabled": true,
+      "family": "stream.lifecycle",
+      "freedom": "tight",
+      "id": "stream.started:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.practice",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.practice:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.practice",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.practice:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.practice",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.practice:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.practice",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.practice:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.qualifying",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.qualifying:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.qualifying",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.qualifying:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.qualifying",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.qualifying:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.qualifying",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.qualifying:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.race",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.race:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.race",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.race:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.race",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.race:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.intro.race",
+      "enabled": true,
+      "family": "session.intro",
+      "freedom": "tight",
+      "id": "session.intro.race:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.restart",
+      "enabled": true,
+      "family": "session.restart",
+      "freedom": "tight",
+      "id": "session.restart:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.restart",
+      "enabled": true,
+      "family": "session.restart",
+      "freedom": "tight",
+      "id": "session.restart:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.restart",
+      "enabled": true,
+      "family": "session.restart",
+      "freedom": "tight",
+      "id": "session.restart:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.restart",
+      "enabled": true,
+      "family": "session.restart",
+      "freedom": "tight",
+      "id": "session.restart:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.practice",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.practice:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.practice",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.practice:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.practice",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.practice:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.practice",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.practice:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.qualifying",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.qualifying:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.qualifying",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.qualifying:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.qualifying",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.qualifying:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.qualifying",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.qualifying:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.race",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.race:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.race",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.race:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.race",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.race:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.wrap.race",
+      "enabled": true,
+      "family": "session.wrap",
+      "freedom": "tight",
+      "id": "session.wrap.race:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.preview.next",
+      "enabled": true,
+      "family": "session.preview",
+      "freedom": "tight",
+      "id": "session.preview.next:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.preview.next",
+      "enabled": true,
+      "family": "session.preview",
+      "freedom": "tight",
+      "id": "session.preview.next:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.preview.next",
+      "enabled": true,
+      "family": "session.preview",
+      "freedom": "tight",
+      "id": "session.preview.next:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.preview.next",
+      "enabled": true,
+      "family": "session.preview",
+      "freedom": "tight",
+      "id": "session.preview.next:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.checkered",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.checkered:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.checkered",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.checkered:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.checkered",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.checkered:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.checkered",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.checkered:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.final_lap",
+      "enabled": true,
+      "family": "session.final_lap",
+      "freedom": "tight",
+      "id": "session.final_lap:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.final_lap",
+      "enabled": true,
+      "family": "session.final_lap",
+      "freedom": "tight",
+      "id": "session.final_lap:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.final_lap",
+      "enabled": true,
+      "family": "session.final_lap",
+      "freedom": "tight",
+      "id": "session.final_lap:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.final_lap",
+      "enabled": true,
+      "family": "session.final_lap",
+      "freedom": "tight",
+      "id": "session.final_lap:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.hero_finish",
+      "enabled": true,
+      "family": "session.finish",
+      "freedom": "tight",
+      "id": "session.hero_finish:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.hero_finish",
+      "enabled": true,
+      "family": "session.finish",
+      "freedom": "tight",
+      "id": "session.hero_finish:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.hero_finish",
+      "enabled": true,
+      "family": "session.finish",
+      "freedom": "tight",
+      "id": "session.hero_finish:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.hero_finish",
+      "enabled": true,
+      "family": "session.finish",
+      "freedom": "tight",
+      "id": "session.hero_finish:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.qualifying_recap",
+      "enabled": true,
+      "family": "session.recap",
+      "freedom": "tight",
+      "id": "session.qualifying_recap:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.qualifying_recap",
+      "enabled": true,
+      "family": "session.recap",
+      "freedom": "tight",
+      "id": "session.qualifying_recap:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.qualifying_recap",
+      "enabled": true,
+      "family": "session.recap",
+      "freedom": "tight",
+      "id": "session.qualifying_recap:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.qualifying_recap",
+      "enabled": true,
+      "family": "session.recap",
+      "freedom": "tight",
+      "id": "session.qualifying_recap:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.sof_brief",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.sof_brief:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.sof_brief",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.sof_brief:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.sof_brief",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.sof_brief:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.sof_brief",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.sof_brief:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_brief",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_brief:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_brief",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_brief:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_brief",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_brief:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_brief",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_brief:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_change",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_change:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_change",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_change:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_change",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_change:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.weather_change",
+      "enabled": true,
+      "family": "session.weather",
+      "freedom": "tight",
+      "id": "session.weather_change:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.field_fact",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.field_fact:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.field_fact",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.field_fact:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.field_fact",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.field_fact:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.field_fact",
+      "enabled": true,
+      "family": "session.context",
+      "freedom": "tight",
+      "id": "session.field_fact:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.yellow",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.yellow:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.yellow",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.yellow:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.yellow",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.yellow:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.yellow",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.yellow:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.green",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.green:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.green",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.green:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.green",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.green:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.flag.green",
+      "enabled": true,
+      "family": "session.flag",
+      "freedom": "tight",
+      "id": "session.flag.green:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.practice",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.practice:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.practice",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.practice:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.practice",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.practice:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.practice",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.practice:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.qualifying",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.qualifying:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.qualifying",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.qualifying:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.qualifying",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.qualifying:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.qualifying",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.qualifying:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.race",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.race:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.race",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.race:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.race",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.race:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "session.enter_car.race",
+      "enabled": true,
+      "family": "session.vehicle",
+      "freedom": "tight",
+      "id": "session.enter_car.race:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "bio.pressure",
+      "enabled": true,
+      "family": "bio.context",
+      "freedom": "tight",
+      "id": "bio.pressure:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "bio.pressure",
+      "enabled": true,
+      "family": "bio.context",
+      "freedom": "tight",
+      "id": "bio.pressure:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "bio.pressure",
+      "enabled": true,
+      "family": "bio.context",
+      "freedom": "tight",
+      "id": "bio.pressure:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "bio.pressure",
+      "enabled": true,
+      "family": "bio.context",
+      "freedom": "tight",
+      "id": "bio.pressure:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.out_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.out_lap:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.out_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.out_lap:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.out_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.out_lap:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.out_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.out_lap:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.in_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.in_lap:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.in_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.in_lap:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.in_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.in_lap:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.in_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.in_lap:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.parade_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.parade_lap:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.parade_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.parade_lap:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.parade_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.parade_lap:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.parade_lap",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.parade_lap:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.garage",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.garage:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.garage",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.garage:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.garage",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.garage:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.garage",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.garage:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.lobby",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.lobby:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.lobby",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.lobby:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.lobby",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.lobby:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.lobby",
+      "enabled": true,
+      "family": "filler.off_track",
+      "freedom": "tight",
+      "id": "filler.lobby:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.quiet_track",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.quiet_track:tight:1",
+      "pattern": "{subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.quiet_track",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.quiet_track:tight:2",
+      "pattern": "{subjectSurface} now {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.quiet_track",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.quiet_track:tight:3",
+      "pattern": "Now {subjectSurface} {requiredClaimSurface}.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    },
+    {
+      "auditedLanguage": "en",
+      "beatId": "filler.quiet_track",
+      "enabled": true,
+      "family": "filler.track_state",
+      "freedom": "tight",
+      "id": "filler.quiet_track:tight:4",
+      "pattern": "{subjectSurface} {requiredClaimSurface} now.",
+      "placeholders": [
+        "subjectSurface",
+        "requiredClaimSurface"
+      ]
+    }
+  ],
+  "cardsPerBeat": 4,
+  "catalogSha256": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+  "legacyDisposition": "reject_unreviewed_not_migrate",
+  "schemaVersion": "realization-pattern-cards/2"
+}

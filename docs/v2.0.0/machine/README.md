@@ -20,6 +20,8 @@ These files make the human design registries mechanically reviewable before runt
 - `detector-catalog.json` and its schema freeze the two directional battle detectors' identical 23-parameter algorithm and the two-parameter two-front composite, including ordered actor/correlation identity and registry-backed outputs.
 - `detector-catalog-goldens.json`, `detector-catalog-mutations.json` and `build_detector_catalog.py` execute FSM/sign/unknown/rate-limit, band-hysteresis and composite-correlation fixtures and reject unsafe parameter, identity, reference and release-policy drift.
 - `catalog-loader-contract.json`, `catalog-loader-goldens.json` and `build_catalog_loader_contract.py` bind registry, beat, graph and detector hashes and exercise mandatory closed-schema, ID/reference, trigger reachability, dead-end/SCC, guard, range, config-template and fail-safe loading checks.
+- `realization-contract.json`, `realization-pattern-cards.json` and `realization-corpus.json` freeze 37 tight family grammars, 256 enabled audited beat cards, exact surface alternatives and 148 positive/polarity/forbidden/unknown cases.
+- `qwen-transport-goldens.json`, `realization-mutations.json` and `build_realization_contract.py` freeze literal prompt/hash/request bytes, fail-closed SSE parsing, warm-up/deadline races and deterministic-only fact authority; `run_qwen_latency.py` emits repeatable no-retry warm/cold target evidence.
 
 Run from the repository root:
 
@@ -33,6 +35,7 @@ python3 docs/v2.0.0/machine/build_api_contracts.py
 python3 docs/v2.0.0/machine/build_actor_transition_model.py
 python3 docs/v2.0.0/machine/build_detector_catalog.py
 python3 docs/v2.0.0/machine/build_catalog_loader_contract.py
+python3 docs/v2.0.0/machine/build_realization_contract.py
 ```
 
 Expected baseline summary:
@@ -47,6 +50,7 @@ API contracts OK: 4 routes, 8 public schemas, 18 valid + 10 invalid payload gold
 Actor transition model OK: 5 lanes × 17 commands = 85 pairs, 13 race traces, 10 overflow scenarios, 10 rejected mutations
 Detector catalog OK: 3 definitions, 23 directional + 2 composite parameters, 7 FSM traces + 14 boundary/composite fixtures, 12 rejected mutations
 Catalog loader contract OK: 4 hashed inputs, 12 mandatory checks, 64 beats reachable, 15 rejected integration mutations
+Realization contract OK: 37 grammars, 256 pattern cards, 148 corpus cases, 6 surface sets, 9 SSE fixtures, 4 deadline races, 15 rejected mutations
 ```
 
 Reason identity is the pair `(reasonDomain, reasonId)`. Repeated strings across domains are intentional only when their plain-language meaning is identical; uniqueness is enforced inside each domain.

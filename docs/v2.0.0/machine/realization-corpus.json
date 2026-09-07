@@ -1,0 +1,2524 @@
+{
+  "cases": [
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.lap_result"
+      ],
+      "expectedReasons": [],
+      "family": "timing.lap_result",
+      "id": "timing.lap_result:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + completed PB result; bound lap time reference only when selected."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.lap_result"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.lap_result",
+      "id": "timing.lap_result:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + completed PB result; bound lap time reference only when selected."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.lap_result"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.lap_result",
+      "id": "timing.lap_result:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + completed PB result; bound lap time reference only when selected because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.lap_result"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.lap_result",
+      "id": "timing.lap_result:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + completed PB result; bound lap time reference only when selected beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.delta"
+      ],
+      "expectedReasons": [],
+      "family": "timing.delta",
+      "id": "timing.delta:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + improved worsened polarity + bound delta reference."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.delta"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.delta",
+      "id": "timing.delta:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + improved worsened polarity + bound delta reference."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.delta"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.delta",
+      "id": "timing.delta:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + improved worsened polarity + bound delta reference because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.delta"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.delta",
+      "id": "timing.delta:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + improved worsened polarity + bound delta reference beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.sector"
+      ],
+      "expectedReasons": [],
+      "family": "timing.sector",
+      "id": "timing.sector:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + sector identity + split best polarity."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.sector"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.sector",
+      "id": "timing.sector:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + sector identity + split best polarity."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.sector"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.sector",
+      "id": "timing.sector:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + sector identity + split best polarity because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.sector"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.sector",
+      "id": "timing.sector:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + sector identity + split best polarity beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.target"
+      ],
+      "expectedReasons": [],
+      "family": "timing.target",
+      "id": "timing.target:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero pursuing timing position target with bound gap."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.target"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.target",
+      "id": "timing.target:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero pursuing timing position target with bound gap."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.target"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.target",
+      "id": "timing.target:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero pursuing timing position target with bound gap because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.target"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.target",
+      "id": "timing.target:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero pursuing timing position target with bound gap beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.projection"
+      ],
+      "expectedReasons": [],
+      "family": "timing.projection",
+      "id": "timing.projection:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + explicit projected modality + projected time position."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.projection"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.projection",
+      "id": "timing.projection:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + explicit projected modality + projected time position."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.projection"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.projection",
+      "id": "timing.projection:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + explicit projected modality + projected time position because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.projection"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.projection",
+      "id": "timing.projection:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + explicit projected modality + projected time position beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.attempt"
+      ],
+      "expectedReasons": [],
+      "family": "timing.attempt",
+      "id": "timing.attempt:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + current active attempt."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.attempt"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.attempt",
+      "id": "timing.attempt:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + current active attempt."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.attempt"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.attempt",
+      "id": "timing.attempt:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + current active attempt because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.attempt"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.attempt",
+      "id": "timing.attempt:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + current active attempt beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:timing.consistency"
+      ],
+      "expectedReasons": [],
+      "family": "timing.consistency",
+      "id": "timing.consistency:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact clean-lap count."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.consistency"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "timing.consistency",
+      "id": "timing.consistency:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + exact clean-lap count."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.consistency"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "timing.consistency",
+      "id": "timing.consistency:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact clean-lap count because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.consistency"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "timing.consistency",
+      "id": "timing.consistency:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact clean-lap count beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:battle.closing"
+      ],
+      "expectedReasons": [],
+      "family": "battle.closing",
+      "id": "battle.closing:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered closer to target + trend material band; gap if selected."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.closing"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "battle.closing",
+      "id": "battle.closing:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound ordered closer to target + trend material band; gap if selected."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.closing"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "battle.closing",
+      "id": "battle.closing:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered closer to target + trend material band; gap if selected because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.closing"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "battle.closing",
+      "id": "battle.closing:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered closer to target + trend material band; gap if selected beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:battle.attack"
+      ],
+      "expectedReasons": [],
+      "family": "battle.attack",
+      "id": "battle.attack:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered hero to target + current attack-range band."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.attack"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "battle.attack",
+      "id": "battle.attack:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound ordered hero to target + current attack-range band."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.attack"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "battle.attack",
+      "id": "battle.attack:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered hero to target + current attack-range band because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.attack"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "battle.attack",
+      "id": "battle.attack:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered hero to target + current attack-range band beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:battle.overlap"
+      ],
+      "expectedReasons": [],
+      "family": "battle.overlap",
+      "id": "battle.overlap:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered hero target pair + simultaneous side-by-side state."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.overlap"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "battle.overlap",
+      "id": "battle.overlap:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound ordered hero target pair + simultaneous side-by-side state."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.overlap"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "battle.overlap",
+      "id": "battle.overlap:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered hero target pair + simultaneous side-by-side state because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.overlap"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "battle.overlap",
+      "id": "battle.overlap:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered hero target pair + simultaneous side-by-side state beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:battle.pressure"
+      ],
+      "expectedReasons": [],
+      "family": "battle.pressure",
+      "id": "battle.pressure:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered rear target to hero + threat closing relation."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.pressure"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "battle.pressure",
+      "id": "battle.pressure:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound ordered rear target to hero + threat closing relation."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.pressure"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "battle.pressure",
+      "id": "battle.pressure:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered rear target to hero + threat closing relation because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.pressure"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "battle.pressure",
+      "id": "battle.pressure:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered rear target to hero + threat closing relation beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:battle.two_front"
+      ],
+      "expectedReasons": [],
+      "family": "battle.two_front",
+      "id": "battle.two_front:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero to front and rear to hero as two distinct relations."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.two_front"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "battle.two_front",
+      "id": "battle.two_front:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero to front and rear to hero as two distinct relations."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.two_front"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "battle.two_front",
+      "id": "battle.two_front:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero to front and rear to hero as two distinct relations because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.two_front"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "battle.two_front",
+      "id": "battle.two_front:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero to front and rear to hero as two distinct relations beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:battle.outcome"
+      ],
+      "expectedReasons": [],
+      "family": "battle.outcome",
+      "id": "battle.outcome:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero target + won outcome."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.outcome"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "battle.outcome",
+      "id": "battle.outcome:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero target + won outcome."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.outcome"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "battle.outcome",
+      "id": "battle.outcome:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero target + won outcome because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.outcome"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "battle.outcome",
+      "id": "battle.outcome:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero target + won outcome beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:position.pass"
+      ],
+      "expectedReasons": [],
+      "family": "position.pass",
+      "id": "position.pass:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered passer to passed + old new order."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.pass"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "position.pass",
+      "id": "position.pass:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound ordered passer to passed + old new order."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.pass"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "position.pass",
+      "id": "position.pass:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered passer to passed + old new order because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.pass"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "position.pass",
+      "id": "position.pass:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ordered passer to passed + old new order beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:position.change"
+      ],
+      "expectedReasons": [],
+      "family": "position.change",
+      "id": "position.change:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + old new ordinal + gained lost polarity."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.change"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "position.change",
+      "id": "position.change:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + old new ordinal + gained lost polarity."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.change"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "position.change",
+      "id": "position.change:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + old new ordinal + gained lost polarity because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.change"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "position.change",
+      "id": "position.change:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + old new ordinal + gained lost polarity beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:position.leader"
+      ],
+      "expectedReasons": [],
+      "family": "position.leader",
+      "id": "position.leader:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound old leader to new leader."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.leader"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "position.leader",
+      "id": "position.leader:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound old leader to new leader."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.leader"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "position.leader",
+      "id": "position.leader:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound old leader to new leader because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.leader"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "position.leader",
+      "id": "position.leader:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound old leader to new leader beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:incident.event"
+      ],
+      "expectedReasons": [],
+      "family": "incident.event",
+      "id": "incident.event:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero incident; optional off-track only for classified branch."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.event"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "incident.event",
+      "id": "incident.event:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero incident; optional off-track only for classified branch."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.event"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "incident.event",
+      "id": "incident.event:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero incident; optional off-track only for classified branch because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.event"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "incident.event",
+      "id": "incident.event:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero incident; optional off-track only for classified branch beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:incident.invalid_lap"
+      ],
+      "expectedReasons": [],
+      "family": "incident.invalid_lap",
+      "id": "incident.invalid_lap:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + invalid current lap."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.invalid_lap"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "incident.invalid_lap",
+      "id": "incident.invalid_lap:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + invalid current lap."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.invalid_lap"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "incident.invalid_lap",
+      "id": "incident.invalid_lap:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + invalid current lap because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.invalid_lap"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "incident.invalid_lap",
+      "id": "incident.invalid_lap:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + invalid current lap beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:incident.aftermath"
+      ],
+      "expectedReasons": [],
+      "family": "incident.aftermath",
+      "id": "incident.aftermath:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact current aftermath state."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.aftermath"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "incident.aftermath",
+      "id": "incident.aftermath:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + exact current aftermath state."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.aftermath"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "incident.aftermath",
+      "id": "incident.aftermath:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact current aftermath state because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.aftermath"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "incident.aftermath",
+      "id": "incident.aftermath:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact current aftermath state beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:incident.recovery"
+      ],
+      "expectedReasons": [],
+      "family": "incident.recovery",
+      "id": "incident.recovery:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + resumed motion + known surface state."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.recovery"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "incident.recovery",
+      "id": "incident.recovery:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + resumed motion + known surface state."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.recovery"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "incident.recovery",
+      "id": "incident.recovery:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + resumed motion + known surface state because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.recovery"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "incident.recovery",
+      "id": "incident.recovery:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + resumed motion + known surface state beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:pit.lifecycle"
+      ],
+      "expectedReasons": [],
+      "family": "pit.lifecycle",
+      "id": "pit.lifecycle:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact phase + pit-cycle identity."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.lifecycle"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "pit.lifecycle",
+      "id": "pit.lifecycle:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + exact phase + pit-cycle identity."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.lifecycle"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "pit.lifecycle",
+      "id": "pit.lifecycle:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact phase + pit-cycle identity because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.lifecycle"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "pit.lifecycle",
+      "id": "pit.lifecycle:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact phase + pit-cycle identity beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:pit.outcome"
+      ],
+      "expectedReasons": [],
+      "family": "pit.outcome",
+      "id": "pit.outcome:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + entry exit comparison and polarity."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.outcome"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "pit.outcome",
+      "id": "pit.outcome:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + entry exit comparison and polarity."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.outcome"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "pit.outcome",
+      "id": "pit.outcome:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + entry exit comparison and polarity because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.outcome"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "pit.outcome",
+      "id": "pit.outcome:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + entry exit comparison and polarity beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:stream.lifecycle"
+      ],
+      "expectedReasons": [],
+      "family": "stream.lifecycle",
+      "id": "stream.lifecycle:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stream epoch + started reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound stream epoch + started reason."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:stream.lifecycle"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "stream.lifecycle",
+      "id": "stream.lifecycle:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stream epoch + started reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound stream epoch + started reason."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:stream.lifecycle"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "stream.lifecycle",
+      "id": "stream.lifecycle:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stream epoch + started reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound stream epoch + started reason because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:stream.lifecycle"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "stream.lifecycle",
+      "id": "stream.lifecycle:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stream epoch + started reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound stream epoch + started reason beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.intro"
+      ],
+      "expectedReasons": [],
+      "family": "session.intro",
+      "id": "session.intro:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound current occurrence + exact stage."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.intro"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.intro",
+      "id": "session.intro:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound current occurrence + exact stage."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.intro"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.intro",
+      "id": "session.intro:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound current occurrence + exact stage because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.intro"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.intro",
+      "id": "session.intro:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound current occurrence + exact stage beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.restart"
+      ],
+      "expectedReasons": [],
+      "family": "session.restart",
+      "id": "session.restart:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound stage + old new occurrence relation."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.restart"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.restart",
+      "id": "session.restart:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound stage + old new occurrence relation."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.restart"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.restart",
+      "id": "session.restart:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound stage + old new occurrence relation because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.restart"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.restart",
+      "id": "session.restart:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound stage + old new occurrence relation beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.wrap"
+      ],
+      "expectedReasons": [],
+      "family": "session.wrap",
+      "id": "session.wrap:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ended occurrence + exact stage reason."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.wrap"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.wrap",
+      "id": "session.wrap:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound ended occurrence + exact stage reason."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.wrap"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.wrap",
+      "id": "session.wrap:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ended occurrence + exact stage reason because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.wrap"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.wrap",
+      "id": "session.wrap:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound ended occurrence + exact stage reason beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.preview"
+      ],
+      "expectedReasons": [],
+      "family": "session.preview",
+      "id": "session.preview:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound next actually present stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound next actually present stage."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.preview"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.preview",
+      "id": "session.preview:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound next actually present stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound next actually present stage."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.preview"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.preview",
+      "id": "session.preview:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound next actually present stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound next actually present stage because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.preview"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.preview",
+      "id": "session.preview:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound next actually present stage",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound next actually present stage beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.flag"
+      ],
+      "expectedReasons": [],
+      "family": "session.flag",
+      "id": "session.flag:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact flag transition scope or checkered state."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.flag"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.flag",
+      "id": "session.flag:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound exact flag transition scope or checkered state."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.flag"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.flag",
+      "id": "session.flag:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact flag transition scope or checkered state because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.flag"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.flag",
+      "id": "session.flag:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact flag transition scope or checkered state beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.final_lap"
+      ],
+      "expectedReasons": [],
+      "family": "session.final_lap",
+      "id": "session.final_lap:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact final-lap identity."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.final_lap"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.final_lap",
+      "id": "session.final_lap:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + exact final-lap identity."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.final_lap"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.final_lap",
+      "id": "session.final_lap:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact final-lap identity because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.final_lap"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.final_lap",
+      "id": "session.final_lap:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + exact final-lap identity beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.finish"
+      ],
+      "expectedReasons": [],
+      "family": "session.finish",
+      "id": "session.finish:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + observed finish position; class position only if selected."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.finish"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.finish",
+      "id": "session.finish:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + observed finish position; class position only if selected."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.finish"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.finish",
+      "id": "session.finish:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + observed finish position; class position only if selected because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.finish"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.finish",
+      "id": "session.finish:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + observed finish position; class position only if selected beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.recap"
+      ],
+      "expectedReasons": [],
+      "family": "session.recap",
+      "id": "session.recap:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound past qualifying occurrence + selected result time."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.recap"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.recap",
+      "id": "session.recap:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound past qualifying occurrence + selected result time."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.recap"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.recap",
+      "id": "session.recap:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound past qualifying occurrence + selected result time because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.recap"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.recap",
+      "id": "session.recap:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound past qualifying occurrence + selected result time beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.context"
+      ],
+      "expectedReasons": [],
+      "family": "session.context",
+      "id": "session.context:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exactly one selected field SoF fact and scope."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.context"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.context",
+      "id": "session.context:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound exactly one selected field SoF fact and scope."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.context"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.context",
+      "id": "session.context:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exactly one selected field SoF fact and scope because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.context"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.context",
+      "id": "session.context:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exactly one selected field SoF fact and scope beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.weather"
+      ],
+      "expectedReasons": [],
+      "family": "session.weather",
+      "id": "session.weather:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound selected current change weather predicates with temporal polarity."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.weather"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.weather",
+      "id": "session.weather:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound selected current change weather predicates with temporal polarity."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.weather"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.weather",
+      "id": "session.weather:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound selected current change weather predicates with temporal polarity because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.weather"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.weather",
+      "id": "session.weather:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound selected current change weather predicates with temporal polarity beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:session.vehicle"
+      ],
+      "expectedReasons": [],
+      "family": "session.vehicle",
+      "id": "session.vehicle:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero entered car + exact current stage occurrence."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.vehicle"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "session.vehicle",
+      "id": "session.vehicle:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero entered car + exact current stage occurrence."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.vehicle"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "session.vehicle",
+      "id": "session.vehicle:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero entered car + exact current stage occurrence because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.vehicle"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "session.vehicle",
+      "id": "session.vehicle:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero entered car + exact current stage occurrence beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:bio.context"
+      ],
+      "expectedReasons": [],
+      "family": "bio.context",
+      "id": "bio.context:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + measured HR band freshness only."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:bio.context"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "bio.context",
+      "id": "bio.context:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound hero + measured HR band freshness only."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:bio.context"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "bio.context",
+      "id": "bio.context:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + measured HR band freshness only because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:bio.context"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "bio.context",
+      "id": "bio.context:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound hero + measured HR band freshness only beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:filler.track_state"
+      ],
+      "expectedReasons": [],
+      "family": "filler.track_state",
+      "id": "filler.track_state:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact vehicle broadcast phase + one selected stable fact."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.track_state"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "filler.track_state",
+      "id": "filler.track_state:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound exact vehicle broadcast phase + one selected stable fact."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.track_state"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "filler.track_state",
+      "id": "filler.track_state:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact vehicle broadcast phase + one selected stable fact because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.track_state"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "filler.track_state",
+      "id": "filler.track_state:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact vehicle broadcast phase + one selected stable fact beneath a purple moon."
+    },
+    {
+      "category": "positive",
+      "expectedAccepted": true,
+      "expectedClaims": [
+        "required-frame:filler.off_track"
+      ],
+      "expectedReasons": [],
+      "family": "filler.off_track",
+      "id": "filler.off_track:positive",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact lobby garage context + one selected stable fact."
+    },
+    {
+      "category": "actor_or_polarity_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.off_track"
+      ],
+      "expectedReasons": [
+        "unsafe_negation",
+        "polarity_mismatch"
+      ],
+      "family": "filler.off_track",
+      "id": "filler.off_track:polarity",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Not Alex reports the bound exact lobby garage context + one selected stable fact."
+    },
+    {
+      "category": "forbidden_addition",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.off_track"
+      ],
+      "expectedReasons": [
+        "causal_inference",
+        "intent_inference"
+      ],
+      "family": "filler.off_track",
+      "id": "filler.off_track:forbidden",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact lobby garage context + one selected stable fact because the driver wanted it."
+    },
+    {
+      "category": "unknown_fragment",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.off_track"
+      ],
+      "expectedReasons": [
+        "unknown_fragment"
+      ],
+      "family": "filler.off_track",
+      "id": "filler.off_track:unknown",
+      "surfaceBindings": {
+        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex reports the bound exact lobby garage context + one selected stable fact beneath a purple moon."
+    }
+  ],
+  "maximumReportedReasons": 16,
+  "profile": "tight",
+  "reasonOrder": "first_text_offset_then_code",
+  "schemaVersion": "realization-corpus/2"
+}
