@@ -892,6 +892,32 @@ def build_schema() -> dict[str, Any]:
             "parameters": any_obj,
         }
     )
+    tape_record_types = [
+        "context_applied",
+        "feature_frame",
+        "detector_observation",
+        "event_candidate",
+        "narrative_event",
+        "fact_change",
+        "episode_change",
+        "opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "speech_exposure",
+        "config_applied",
+        "health_change",
+        "mailbox_gap",
+        "drop_notice",
+        "manifest_trailer",
+    ]
+    purpose_channels = ["flow", "llm_eval", "detector_tuning"]
+    record_priorities = ["sample", "normal", "critical"]
+    tape_loss_reasons = [
+        "tape_queue_drop",
+        "tape_write_failed",
+        "tape_flush_timeout",
+        "config_transition_lost",
+    ]
     defs["ConfigApplied"] = closed(
         "config-applied/2",
         {
@@ -928,6 +954,121 @@ def build_schema() -> dict[str, Any]:
         "changed_keys_equal_patch_keys",
         "hash_transition_matches_envelope",
     ]
+    defs["TapeLossBucket"] = obj(
+        {
+            "recordType": enum(*tape_record_types),
+            "recordPriority": enum(*record_priorities),
+            "reason": enum(*tape_loss_reasons),
+            "count": P1,
+        }
+    )
+    defs["ConfigTransitionLoss"] = obj(
+        {
+            "applySequence": P1,
+            "oldEffectiveHash": HASH,
+            "newEffectiveHash": HASH,
+        }
+    )
+    defs["TapeLossAccumulator"] = obj(
+        {
+            "buckets": arr({"$ref": "#/$defs/TapeLossBucket"}, 1, 192),
+            "firstLostMonoMs": N0,
+            "lastLostMonoMs": N0,
+            "firstLostReducerSequence": NULLABLE_N0,
+            "lastLostReducerSequence": NULLABLE_N0,
+            "configTransitions": arr(
+                {"$ref": "#/$defs/ConfigTransitionLoss"}, 0, 128
+            ),
+        }
+    )
+    defs["TapeLossAccumulator"]["x-irswitch-invariants"] = [
+        "buckets_sorted_unique_by_type_priority_reason",
+        "loss_time_range_ordered",
+        "loss_reducer_range_both_or_neither_ordered",
+        "config_transitions_sorted_unique",
+    ]
+    defs["TapeLossAccumulator"]["oneOf"] = [
+        {
+            "properties": {
+                "firstLostReducerSequence": {"type": "null"},
+                "lastLostReducerSequence": {"type": "null"},
+            }
+        },
+        {
+            "properties": {
+                "firstLostReducerSequence": N0,
+                "lastLostReducerSequence": N0,
+            }
+        },
+    ]
+    defs["DropNotice"] = closed(
+        "drop-notice/2",
+        {
+            "noticeId": ID,
+            "loss": {"$ref": "#/$defs/TapeLossAccumulator"},
+        },
+    )
+    defs["TapeRecordCount"] = obj(
+        {"recordType": enum(*tape_record_types), "count": P1}
+    )
+    defs["TapePurposeCount"] = obj(
+        {"purposeChannel": enum(*purpose_channels), "count": P1}
+    )
+    defs["TapeChannelCount"] = obj({"tapeChannel": ID, "count": P1})
+    defs["TapeDropCount"] = obj(
+        {"reason": enum(*tape_loss_reasons), "count": P1}
+    )
+    defs["ManifestTrailer"] = closed(
+        "manifest-trailer/2",
+        {
+            "finalRecordHash": nullable(HASH),
+            "fileHash": HASH,
+            "recordCounts": arr({"$ref": "#/$defs/TapeRecordCount"}, 0, 16),
+            "purposeCounts": arr({"$ref": "#/$defs/TapePurposeCount"}, 0, 3),
+            "tapeChannelCounts": arr({"$ref": "#/$defs/TapeChannelCount"}, 0, 36),
+            "dropCounts": arr({"$ref": "#/$defs/TapeDropCount"}, 0, 4),
+            "lossAccumulator": nullable(
+                {"$ref": "#/$defs/TapeLossAccumulator"}
+            ),
+            "lastReducerSequence": NULLABLE_N0,
+            "closeReason": enum(
+                "rotation_size",
+                "rotation_duration",
+                "broadcast_ended",
+                "commentary_disabled",
+                "recording_disabled",
+                "shutdown",
+                "write_failed",
+                "flush_timeout",
+            ),
+            "complete": BOOL,
+        },
+    )
+    defs["ManifestTrailer"]["x-irswitch-invariants"] = [
+        "counts_sorted_unique_and_match_file",
+        "hashes_match_pre_trailer_bytes",
+        "loss_requires_incomplete",
+        "previous_file_hash_chains_file_hash",
+    ]
+    defs["ManifestTrailer"]["oneOf"] = [
+        {
+            "properties": {
+                "complete": {"const": True},
+                "lossAccumulator": {"type": "null"},
+                "closeReason": {
+                    "enum": [
+                        "rotation_size",
+                        "rotation_duration",
+                        "broadcast_ended",
+                        "commentary_disabled",
+                        "recording_disabled",
+                        "shutdown",
+                    ]
+                },
+            }
+        },
+        {"properties": {"complete": {"const": False}}},
+    ]
     defs["TapeManifest"] = closed(
         "narrative-tape-manifest/2",
         {
@@ -951,7 +1092,7 @@ def build_schema() -> dict[str, Any]:
             "effectiveConfigProjection": arr(
                 {"$ref": "#/$defs/EffectiveConfigProjectionEntry"}, 1, 128
             ),
-            "enabledPurposeChannels": arr(enum("flow", "llm_eval", "detector_tuning"), 1, 3),
+            "enabledPurposeChannels": arr(enum(*purpose_channels), 1, 3),
             "redactionPolicy": any_obj,
             "historyComplete": BOOL,
             "detectorParameterSnapshots": arr(
@@ -964,32 +1105,15 @@ def build_schema() -> dict[str, Any]:
         "narrative-tape-record/2",
         {
             "recordId": ID,
-            "recordType": enum(
-                "context_applied",
-                "feature_frame",
-                "detector_observation",
-                "event_candidate",
-                "narrative_event",
-                "fact_change",
-                "episode_change",
-                "opportunity_change",
-                "director_decision",
-                "llm_attempt",
-                "speech_exposure",
-                "config_applied",
-                "health_change",
-                "mailbox_gap",
-                "drop_notice",
-                "manifest_trailer",
-            ),
+            "recordType": enum(*tape_record_types),
             "processInstanceId": ID,
             "broadcastEpoch": NULLABLE_N0,
             "streamEpoch": NULLABLE_N0,
             "reducerSequence": NULLABLE_N0,
             "recordedMonoMs": N0,
             "recordedAtUtc": NULLABLE_S,
-            "purposeChannel": enum("flow", "llm_eval", "detector_tuning"),
-            "recordPriority": enum("sample", "normal", "critical"),
+            "purposeChannel": enum(*purpose_channels),
+            "recordPriority": enum(*record_priorities),
             "tapeChannel": NULLABLE_ID,
             "correlationIds": id_list(0, 8),
             "effectiveConfigHash": HASH,
@@ -1006,6 +1130,8 @@ def build_schema() -> dict[str, Any]:
         "llm_attempt": ("llm-attempt/2", "LlmAttempt"),
         "speech_exposure": ("speech-exposure/2", "SpeechExposure"),
         "config_applied": ("config-applied/2", "ConfigApplied"),
+        "drop_notice": ("drop-notice/2", "DropNotice"),
+        "manifest_trailer": ("manifest-trailer/2", "ManifestTrailer"),
     }
     untyped_tape_records = [
         "context_applied",
@@ -1015,8 +1141,6 @@ def build_schema() -> dict[str, Any]:
         "director_decision",
         "health_change",
         "mailbox_gap",
-        "drop_notice",
-        "manifest_trailer",
     ]
     defs["TapeRecord"]["oneOf"] = [
         {
@@ -1036,6 +1160,13 @@ def build_schema() -> dict[str, Any]:
             }
         }
     ]
+    for branch in defs["TapeRecord"]["oneOf"]:
+        if branch["properties"]["recordType"].get("const") in {
+            "config_applied",
+            "drop_notice",
+            "manifest_trailer",
+        }:
+            branch["properties"]["recordPriority"] = {"const": "critical"}
     unordered_tape_records = [
         "feature_frame",
         "detector_observation",

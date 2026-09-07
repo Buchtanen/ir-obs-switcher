@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
-**Updated:** 2026-09-07
-**Phase:** #239 implementation — exact NarrativeTape framing schema checkpoint
+**Updated:** 2026-09-08
+**Phase:** #239 implementation — bounded loss/trailer schema handover checkpoint
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237) and [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), active [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -55,8 +55,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent through the first #239 schema checkpoint.
-- Dirty scope: DTO schema generator, generated documentation and packaged schemas, DTO golden fixtures, focused NarrativeTape schema test and this handover.
+- Editing owner: released at the pushed #239 loss/trailer handover checkpoint; the next agent must claim ownership in the issue diary before editing.
+- Dirty scope after the handover commit: none expected. The committed slice covers the DTO schema generator, generated documentation and packaged schemas, schema-contract prose, focused NarrativeTape schema test and this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -67,9 +67,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - Completed #238 public-control scope: the schema-driven GET/PUT config surface, flattened overlay value projection and generic live-key whitelist contain no `commentary.*` key. Attempts to write legacy commentary or graph-runtime keys fail as unknown rather than persisting an unusable selector. The legacy manual-test page no longer offers a config save action; direct INI reload remains the sole current v2 entry and preserves frozen migration diagnostics. A runtime test derives all 13 migration rows from the packaged contract and exercises 16 exact/prefix/group/section representatives.
 - #239 schema scope in progress: the manifest now uses exact redaction-safe effective-config projection entries and bounded exact detector parameter snapshots. The record-kind discriminator is closed to the frozen 16 kinds; the six already-materialized DTO payloads are tied to their exact schema versions while the ten payload DTOs not yet materialized remain explicitly grouped and open only within their record kind.
 - First #239 framing SHA: `ca02e8937f14ce6aad8e01960fff489421adaed4` (`feat: close narrative tape framing schemas (#239)`); [CI run 34163837729](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34163837729) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs. Its evidence is appended to the existing dated #239 dev diary.
-- #239 ordered/config slice in progress: only actor-produced record families may carry non-null reducer order; upstream observations, config barriers and writer framing/loss records are explicitly unordered. Detector/event/narrative/opportunity/director records require `tapeChannel`. `config_applied` now has an exact closed payload, all 15 frozen boundary values, replay-safe effective patch entries and semantic equality/hash-transition invariants. Redacted entries structurally forbid retaining a value.
-- TDD phase: `GREEN` for the current slice — focused tests first failed because no ordering/channel constraints or ConfigApplied definition existed. They now prove the two record-envelope partitions, exact config payload and payload discriminator. Goldens reject an actor record without reducer order and a redacted patch that leaks its value.
-- Verification for current dirty slice: DTO builder reports 28 definitions with 8 valid and 10 invalid goldens; 66 focused schema/primitive tests pass. Full repository gates and CI remain pending until this checkpoint is committed.
+- #239 ordered/config SHA: `111c4a6ff6cb4b2a3a87c94a4e228bec9dd486ea` (`feat: enforce narrative tape ordering (#239)`); [CI run 34164288062](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34164288062) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs. Only actor-produced record families may carry non-null reducer order; detector/event/narrative/opportunity/director records require `tapeChannel`; `config_applied` has an exact replay-safe payload whose redacted entries cannot retain a value.
+- #239 loss/trailer slice ready to hand over: exact closed DTOs now cover bounded loss buckets, lost config transitions, `drop-notice/2`, sorted bounded record/purpose/tape-channel/drop counters and `manifest-trailer/2`. The prose freezes pre-trailer byte hashing, continuation hash chaining, clean-close reasons and incomplete-file semantics. Complete trailers cannot carry loss or failure close reasons; config/drop/trailer records are critical.
+- TDD phase: `GREEN` for the current slice — the focused test first failed because no `TapeLossAccumulator` definition existed. It now proves bounded exact loss/trailer shapes and their record payload discriminators. Structural branches enforce both-or-neither reducer loss ranges and loss-free complete trailers.
+- Verification for current dirty slice: DTO builder reports 37 definitions with 8 valid and 10 invalid goldens; 67 focused schema/primitive tests pass; focused Ruff and Black pass. Full repository gates and CI remain for the receiving agent after this handover commit.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
@@ -78,9 +79,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Commit/push the #239 reducer-order/channel/config-barrier schema checkpoint and require green CI.
-2. Append its immutable SHA/CI evidence to the existing 2026-09-07 #239 dev diary comment.
-3. Continue TDD by materializing exact bounded loss/drop/trailer payload DTOs; do not activate the writer or actor early.
+1. Require green CI for the loss/trailer handover commit and append its immutable SHA/CI evidence to the #239 dev diary for 2026-09-08.
+2. Add valid and invalid loss/trailer golden envelopes that exercise clean completion, accumulated loss, reducer-range pairing and hash-chain shape.
+3. Continue materializing the remaining exact payload DTOs (`context_applied`, fact/episode/opportunity changes, director decision, health and mailbox gap), then reconcile #239 acceptance before #240. Do not activate TapeWriter or NarrativeRuntime in #239.
 
 ## Resume commands
 

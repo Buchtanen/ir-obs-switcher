@@ -153,3 +153,37 @@ def test_config_applied_payload_is_exact_and_replay_safe() -> None:
     )
     assert config_branch["properties"]["payloadSchemaVersion"] == {"const": "config-applied/2"}
     assert config_branch["properties"]["payload"] == {"$ref": "#/$defs/ConfigApplied"}
+
+
+def test_loss_notice_and_manifest_trailer_are_bounded_exact_payloads() -> None:
+    definitions = SCHEMA["$defs"]
+
+    loss = definitions["TapeLossAccumulator"]
+    assert loss["additionalProperties"] is False
+    assert loss["properties"]["buckets"]["maxItems"] == 192
+    assert loss["properties"]["configTransitions"]["maxItems"] == 128
+    assert loss["x-irswitch-invariants"] == [
+        "buckets_sorted_unique_by_type_priority_reason",
+        "loss_time_range_ordered",
+        "loss_reducer_range_both_or_neither_ordered",
+        "config_transitions_sorted_unique",
+    ]
+
+    trailer = definitions["ManifestTrailer"]
+    assert trailer["additionalProperties"] is False
+    assert trailer["properties"]["recordCounts"]["maxItems"] == 16
+    assert trailer["properties"]["purposeCounts"]["maxItems"] == 3
+    assert trailer["properties"]["tapeChannelCounts"]["maxItems"] == 36
+    assert trailer["properties"]["lossAccumulator"] == {
+        "oneOf": [
+            {"$ref": "#/$defs/TapeLossAccumulator"},
+            {"type": "null"},
+        ]
+    }
+
+    record_branches = {
+        branch["properties"]["recordType"].get("const"): branch["properties"]
+        for branch in definitions["TapeRecord"]["oneOf"]
+    }
+    assert record_branches["drop_notice"]["payload"] == {"$ref": "#/$defs/DropNotice"}
+    assert record_branches["manifest_trailer"]["payload"] == {"$ref": "#/$defs/ManifestTrailer"}

@@ -818,6 +818,29 @@
         "hashes_match_full_values"
       ]
     },
+    "ConfigTransitionLoss": {
+      "additionalProperties": false,
+      "properties": {
+        "applySequence": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "newEffectiveHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "oldEffectiveHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "applySequence",
+        "oldEffectiveHash",
+        "newEffectiveHash"
+      ],
+      "type": "object"
+    },
     "DetectorObservation": {
       "additionalProperties": false,
       "properties": {
@@ -1046,6 +1069,27 @@
         "detectorVersion",
         "detectorConfigHash",
         "parameters"
+      ],
+      "type": "object"
+    },
+    "DropNotice": {
+      "additionalProperties": false,
+      "properties": {
+        "loss": {
+          "$ref": "#/$defs/TapeLossAccumulator"
+        },
+        "noticeId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "drop-notice/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "noticeId",
+        "loss"
       ],
       "type": "object"
     },
@@ -2373,6 +2417,146 @@
       "x-irswitch-invariants": [
         "latency_equations_match_milestones",
         "capture_policy_projection"
+      ]
+    },
+    "ManifestTrailer": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "closeReason": {
+              "enum": [
+                "rotation_size",
+                "rotation_duration",
+                "broadcast_ended",
+                "commentary_disabled",
+                "recording_disabled",
+                "shutdown"
+              ]
+            },
+            "complete": {
+              "const": true
+            },
+            "lossAccumulator": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "complete": {
+              "const": false
+            }
+          }
+        }
+      ],
+      "properties": {
+        "closeReason": {
+          "enum": [
+            "rotation_size",
+            "rotation_duration",
+            "broadcast_ended",
+            "commentary_disabled",
+            "recording_disabled",
+            "shutdown",
+            "write_failed",
+            "flush_timeout"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "dropCounts": {
+          "items": {
+            "$ref": "#/$defs/TapeDropCount"
+          },
+          "maxItems": 4,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "fileHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "finalRecordHash": {
+          "oneOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastReducerSequence": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lossAccumulator": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TapeLossAccumulator"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purposeCounts": {
+          "items": {
+            "$ref": "#/$defs/TapePurposeCount"
+          },
+          "maxItems": 3,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "recordCounts": {
+          "items": {
+            "$ref": "#/$defs/TapeRecordCount"
+          },
+          "maxItems": 16,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "schemaVersion": {
+          "const": "manifest-trailer/2"
+        },
+        "tapeChannelCounts": {
+          "items": {
+            "$ref": "#/$defs/TapeChannelCount"
+          },
+          "maxItems": 36,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "finalRecordHash",
+        "fileHash",
+        "recordCounts",
+        "purposeCounts",
+        "tapeChannelCounts",
+        "dropCounts",
+        "lossAccumulator",
+        "lastReducerSequence",
+        "closeReason",
+        "complete"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "counts_sorted_unique_and_match_file",
+        "hashes_match_pre_trailer_bytes",
+        "loss_requires_incomplete",
+        "previous_file_hash_chains_file_hash"
       ]
     },
     "NarrativeCommand": {
@@ -4723,6 +4907,181 @@
         "callback_ids_ordered"
       ]
     },
+    "TapeChannelCount": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "tapeChannel": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tapeChannel",
+        "count"
+      ],
+      "type": "object"
+    },
+    "TapeDropCount": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "reason": {
+          "enum": [
+            "tape_queue_drop",
+            "tape_write_failed",
+            "tape_flush_timeout",
+            "config_transition_lost"
+          ]
+        }
+      },
+      "required": [
+        "reason",
+        "count"
+      ],
+      "type": "object"
+    },
+    "TapeLossAccumulator": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "firstLostReducerSequence": {
+              "type": "null"
+            },
+            "lastLostReducerSequence": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "firstLostReducerSequence": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "lastLostReducerSequence": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "buckets": {
+          "items": {
+            "$ref": "#/$defs/TapeLossBucket"
+          },
+          "maxItems": 192,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "configTransitions": {
+          "items": {
+            "$ref": "#/$defs/ConfigTransitionLoss"
+          },
+          "maxItems": 128,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "firstLostMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "firstLostReducerSequence": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lastLostMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lastLostReducerSequence": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "buckets",
+        "firstLostMonoMs",
+        "lastLostMonoMs",
+        "firstLostReducerSequence",
+        "lastLostReducerSequence",
+        "configTransitions"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "buckets_sorted_unique_by_type_priority_reason",
+        "loss_time_range_ordered",
+        "loss_reducer_range_both_or_neither_ordered",
+        "config_transitions_sorted_unique"
+      ]
+    },
+    "TapeLossBucket": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "reason": {
+          "enum": [
+            "tape_queue_drop",
+            "tape_write_failed",
+            "tape_flush_timeout",
+            "config_transition_lost"
+          ]
+        },
+        "recordPriority": {
+          "enum": [
+            "sample",
+            "normal",
+            "critical"
+          ]
+        },
+        "recordType": {
+          "enum": [
+            "context_applied",
+            "feature_frame",
+            "detector_observation",
+            "event_candidate",
+            "narrative_event",
+            "fact_change",
+            "episode_change",
+            "opportunity_change",
+            "director_decision",
+            "llm_attempt",
+            "speech_exposure",
+            "config_applied",
+            "health_change",
+            "mailbox_gap",
+            "drop_notice",
+            "manifest_trailer"
+          ]
+        }
+      },
+      "required": [
+        "recordType",
+        "recordPriority",
+        "reason",
+        "count"
+      ],
+      "type": "object"
+    },
     "TapeManifest": {
       "additionalProperties": false,
       "properties": {
@@ -4880,6 +5239,27 @@
         "parameter_snapshots_sorted"
       ]
     },
+    "TapePurposeCount": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "purposeChannel": {
+          "enum": [
+            "flow",
+            "llm_eval",
+            "detector_tuning"
+          ]
+        }
+      },
+      "required": [
+        "purposeChannel",
+        "count"
+      ],
+      "type": "object"
+    },
     "TapeRecord": {
       "additionalProperties": false,
       "allOf": [
@@ -4954,12 +5334,12 @@
                     "episode_change",
                     "health_change",
                     "mailbox_gap",
-                    "drop_notice",
-                    "manifest_trailer",
                     "feature_frame",
                     "llm_attempt",
                     "speech_exposure",
-                    "config_applied"
+                    "config_applied",
+                    "drop_notice",
+                    "manifest_trailer"
                   ]
                 }
               }
@@ -5054,8 +5434,43 @@
             "payloadSchemaVersion": {
               "const": "config-applied/2"
             },
+            "recordPriority": {
+              "const": "critical"
+            },
             "recordType": {
               "const": "config_applied"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/DropNotice"
+            },
+            "payloadSchemaVersion": {
+              "const": "drop-notice/2"
+            },
+            "recordPriority": {
+              "const": "critical"
+            },
+            "recordType": {
+              "const": "drop_notice"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/ManifestTrailer"
+            },
+            "payloadSchemaVersion": {
+              "const": "manifest-trailer/2"
+            },
+            "recordPriority": {
+              "const": "critical"
+            },
+            "recordType": {
+              "const": "manifest_trailer"
             }
           }
         },
@@ -5076,9 +5491,7 @@
                 "opportunity_change",
                 "director_decision",
                 "health_change",
-                "mailbox_gap",
-                "drop_notice",
-                "manifest_trailer"
+                "mailbox_gap"
               ]
             }
           }
@@ -5223,6 +5636,40 @@
         "payload_matches_record_type",
         "config_pair_coherent"
       ]
+    },
+    "TapeRecordCount": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "recordType": {
+          "enum": [
+            "context_applied",
+            "feature_frame",
+            "detector_observation",
+            "event_candidate",
+            "narrative_event",
+            "fact_change",
+            "episode_change",
+            "opportunity_change",
+            "director_decision",
+            "llm_attempt",
+            "speech_exposure",
+            "config_applied",
+            "health_change",
+            "mailbox_gap",
+            "drop_notice",
+            "manifest_trailer"
+          ]
+        }
+      },
+      "required": [
+        "recordType",
+        "count"
+      ],
+      "type": "object"
     },
     "TimelineSnapshot": {
       "additionalProperties": false,
@@ -5992,6 +6439,33 @@
     },
     {
       "$ref": "#/$defs/ConfigApplied"
+    },
+    {
+      "$ref": "#/$defs/TapeLossBucket"
+    },
+    {
+      "$ref": "#/$defs/ConfigTransitionLoss"
+    },
+    {
+      "$ref": "#/$defs/TapeLossAccumulator"
+    },
+    {
+      "$ref": "#/$defs/DropNotice"
+    },
+    {
+      "$ref": "#/$defs/TapeRecordCount"
+    },
+    {
+      "$ref": "#/$defs/TapePurposeCount"
+    },
+    {
+      "$ref": "#/$defs/TapeChannelCount"
+    },
+    {
+      "$ref": "#/$defs/TapeDropCount"
+    },
+    {
+      "$ref": "#/$defs/ManifestTrailer"
     },
     {
       "$ref": "#/$defs/TapeManifest"
