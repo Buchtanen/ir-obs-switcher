@@ -5,6 +5,13 @@
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
 **Design-freeze audit:** [Pre-implementation contract gate](design-freeze-audit.md)
+**Event/beat disposition:** [60 identifiers → 64 BeatDefinitions](event-beat-disposition.md)
+**Public contracts:** [Exact v2 config, migration and HTTP shapes](public-contracts.md)
+**Actor transitions:** [Single mailbox, lane, overflow, reset and shutdown contract](actor-transition-contract.md)
+**Schemas and IDs:** [DTO fields, versions, identity/nullability and reason registry](schema-contracts.md)
+**Realization/verifier:** [Controlled EN, all 37 families, rejects and promotion gates](realization-verifier-contract.md)
+**Frozen slice fixtures:** [Fourteen expected reducer/director/speech scenarios](vertical-slice-fixtures.md)
+**Final-PR exclusions:** [Planning and temporary mechanism removal gate](final-pr-exclusion-manifest.md)
 **Baseline:** `master@0ce75d4`
 
 This index covers the complete refactor, not only the first vertical slice. Each linked issue contains atomic tasks, acceptance criteria, verification requirements and docs/config impact. GitHub issue state is authoritative; checkboxes here are a release-planning mirror and are updated from evidence committed on the v2 development branch.
@@ -25,7 +32,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - Opportunity consumption occurs at backend playback acceptance (`SPEECH_STARTED`), not at selection or an unverifiable physical audio-frame boundary.
 - `tight` is the only prompt profile allowed in the first production slice.
 - Issues #280–#281 are offline follow-ups and do not block the v2 runtime release unless explicitly promoted.
-- No planning specification/index/audit file is included in the final PR to `master`; actual behavior/config/API/migration docs remain mandatory.
+- No planning specification/index/audit/disposition/public-contract freeze file is included in the final PR to `master`; actual behavior/config/API/migration docs remain mandatory.
 - A child issue may close from verified branch work when its dev diary records the pushed commit SHA; #279 and #234 remain integration/release gates.
 
 ## Wave A — contracts, configuration and recording
@@ -33,7 +40,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [ ] [#235 — v2: architecture contracts and dependency-direction ADR](https://github.com/Buchtanen/ir-obs-switcher/issues/235) — mandatory design-freeze gate; no runtime behavior edit may precede closure.
 - [ ] [#236 — v2: versioned IDs, clocks, units and schema primitives](https://github.com/Buchtanen/ir-obs-switcher/issues/236) — depends on #235.
 - [ ] [#237 — v2: single ordered narrative event stream](https://github.com/Buchtanen/ir-obs-switcher/issues/237) — depends on #236; preserves V4 overlay wire and introduces the internal NarrativeEvent/command boundary.
-- [ ] [#238 — v2: v2 config model and rollout flags](https://github.com/Buchtanen/ir-obs-switcher/issues/238) — frozen breaking config/migration contract; no public legacy runtime flag.
+- [ ] [#238 — v2: configuration and migration contract](https://github.com/Buchtanen/ir-obs-switcher/issues/238) — frozen breaking config/migration contract; no public legacy runtime flag.
 - [ ] [#239 — v2: NarrativeTape schema and stream manifest](https://github.com/Buchtanen/ir-obs-switcher/issues/239) — depends on #236, #237; includes pre-arbitration DetectorObservation and fixed funnel boundaries.
 - [ ] [#240 — v2: bounded asynchronous NarrativeTape writer](https://github.com/Buchtanen/ir-obs-switcher/issues/240) — depends on #239.
 - [ ] [#241 — v2: trigger-driven CapturePlan compiler](https://github.com/Buchtanen/ir-obs-switcher/issues/241) — depends on #238–#240.
@@ -57,7 +64,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [ ] [#253 — v2: CLOSING temporal detector](https://github.com/Buchtanen/ir-obs-switcher/issues/253) — depends on #241, #248–#250.
 - [ ] [#254 — v2: UNDER_PRESSURE temporal detector](https://github.com/Buchtanen/ir-obs-switcher/issues/254) — depends on #241, #248–#250.
 - [ ] [#255 — v2: composite two-front battle detector](https://github.com/Buchtanen/ir-obs-switcher/issues/255) — depends on #253, #254.
-- [ ] [#256 — v2: v2 event-family coverage matrix](https://github.com/Buchtanen/ir-obs-switcher/issues/256) — depends on #235, #236 and governs every migration batch.
+- [ ] [#256 — v2: v2 event-family coverage matrix](https://github.com/Buchtanen/ir-obs-switcher/issues/256) — depends on #235, #236; audits all 60 identifiers and the 64-beat baseline.
 
 ## Wave D — episodes, beats and direction
 
@@ -83,7 +90,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 
 ## Wave F — integration and operation
 
-- [ ] [#284 — v2: single-owner NarrativeRuntime actor and command lifecycle](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — owns mailbox ordering, effects, recovery and shutdown; depends on core runtime/speech components.
+- [ ] [#284 — v2: single-owner NarrativeRuntime actor and command lifecycle](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — owns mailbox ordering, effects, recovery and shutdown; depends on #237, #238, #240, #243, #245, #258, #262, #264, #265 and #269.
 - [ ] [#272 — v2: legacy-to-v2 adapter and shadow comparison](https://github.com/Buchtanen/ir-obs-switcher/issues/272) — temporary branch-only harness after #284, removed before final PR.
 - [ ] [#273 — v2: v2 health, observability and operator configuration](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — depends on #238–#241, #269, #272, #283 and #284; owns exact public golden payloads.
 
@@ -117,7 +124,7 @@ These open issues remain independent until maintainers explicitly close or absor
 ## Release gates
 
 - [ ] All blocking issues #235–#279 and #282–#284 are closed or explicitly waived in #234 with evidence.
-- [ ] Event coverage matrix #256 has no unclassified master event.
+- [ ] Event coverage matrix #256 has no unclassified one of the 60 known master identifiers and validates all 64 beats.
 - [ ] Detector and LLM evidence is reproducible from versioned tape; no released production detector has `tuning.required`.
 - [ ] Per-`tape_channel` kick, queue, selection, expiry and spoken cadence is reproducible from tape.
 - [ ] All active speech is EN-only and uses no prepared waiter.

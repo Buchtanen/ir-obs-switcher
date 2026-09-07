@@ -11,7 +11,7 @@ This is a planning artifact for the v2 branch. It must not be included in the fi
 
 ## Current gate verdict
 
-**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. In particular, the complete catalog/disposition matrix, machine-readable schemas, exact config defaults/ranges, API golden payloads and command transition tables do not yet exist. Issue #235 must remain open until those files are reviewed, committed and pushed.
+**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. Complete disposition, public config/API, actor-transition and semantic-schema contracts now exist as review candidates. Machine-readable schemas/golden/model-based fixtures and automated cross-document validation do not. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -23,6 +23,7 @@ Master cross-checks that changed or sharpened the design:
 - `BroadcastClock` already owns a two-second output-flicker debounce and epoch; StreamTimeline consumes it instead of inventing a second stream clock.
 - Current TTS marks story “speaking” before backend playback and only SuperTonic has a pre-play hook. The v2 acknowledgement contract therefore requires changes in every supported backend wrapper.
 - Master uses `STREAM_START`, while the proposal uses lifecycle `STREAM_STARTED`; the canonical event-ID registry must explicitly map/remove the old name rather than allowing both.
+- The legacy graph's 50 event types are not the full master vocabulary. The audited union is 60 identifiers; the disposition candidate and exact 64-beat baseline live in `event-beat-disposition.md`.
 
 ## Frozen delivery model
 
@@ -33,7 +34,7 @@ Master cross-checks that changed or sharpened the design:
 - Rollback means restoring the latest v1 release/binary and its saved configuration, not flipping a runtime family flag.
 - A child issue may close before merge only after its implementation and tests are committed and pushed on this branch and its dev diary names the immutable commit SHA and evidence.
 - Closing an issue does not mean its code reached `master`. Issue #279 and umbrella #234 remain open through final integration and release disposition.
-- Planning-only files excluded from the final PR: this file, `docs/v2.0.0/README.md`, `docs/commentary_narrative_runtime_spec.md` and their temporary links from root/current-behavior docs.
+- Planning-only files excluded from the final PR are enumerated in `final-pr-exclusion-manifest.md`; the manifest itself and temporary links from root/current-behavior docs are also excluded.
 - Actual v2 behavior, config, API and migration documentation is mandatory in the final PR.
 
 ## Resolved contract conflicts
@@ -74,7 +75,7 @@ Master cross-checks that changed or sharpened the design:
 | Overlay compatibility | A proposed EventEnvelope v2 would make a commentary refactor break the overlay wire | Keep the accepted V4 EventEnvelope/wire unchanged; a narrative adapter creates an internal versioned `NarrativeEvent` command and resolves policy from catalogs |
 | Kick-rate evidence | Commentary sees only events accepted by EventManager, so suppressed detector activity was invisible | Add a read-only pre-arbitration `DetectorObservation` tape tap; only accepted events enter the narrative reducer |
 | TTS start | “First audio frame” is not observable uniformly for SAPI, eSpeak and SuperTonic | Each backend must acknowledge playback acceptance exactly once; physical speaker output is explicitly outside the contract |
-| Mid-speech priority | Critical-event interruption policy had no closed rule | Normal race events never interrupt an utterance; stream/session/reset invalidation may cancel it, and the new event then competes from its still-live opportunity |
+| Mid-speech priority | Critical-event interruption policy had no closed rule | Normal race events never interrupt an utterance; stream/session/reset invalidation, explicit commentary disable or shutdown may cancel it, and the new event then competes from its still-live opportunity |
 | Required tuning | Default-off tape plus `tuning.required` could disable production commentary unexpectedly | Released production detectors use `none` or `optional`; `required` is allowed only for an explicitly enabled experimental detector with successful recorder preflight |
 
 ## Frozen ownership and dependency direction
@@ -127,7 +128,7 @@ Neutral immutable DTOs may live in the producing layer or a narrow contracts mod
 - Consumption: backend playback acceptance (`PLAYBACK_ACCEPTED`, exposed as `SPEECH_STARTED`). SuperTonic acknowledges after `sd.play` accepts the stream; SAPI/eSpeak wrappers must provide an equivalent one-shot acknowledgement after process/backend acceptance. This is an auditable software boundary, not a claim that a physical speaker emitted a sample.
 - A failed beat suppresses only `(beat_id, episode_revision)` and leaves the underlying opportunity pending until TTL.
 - Overflow removes expired/superseded, then the lowest noncritical candidate; all-critical overflow evicts the oldest with an audit record.
-- An in-flight utterance is not preempted by another racing event. Only a stream/session/run reset, shutdown, or commit-truth invalidation may cancel it. A newly urgent event remains eligible only while its opportunity TTL is live.
+- An in-flight utterance is not preempted by another racing event. Only a stream/session/run reset, explicit commentary disable, shutdown, or commit-truth invalidation may cancel it. A newly urgent event remains eligible only while its opportunity TTL is live.
 
 ### Post-beat arbitration
 
@@ -161,27 +162,33 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Old commentary config produces migration warnings; invalid v2 commentary config disables only commentary.
 - No runtime compatibility loader for sequence-graph v1 remains in the final build.
 - Existing V4 EventEnvelope, overlay wire and presentation behavior remain unchanged by this refactor. Narrative-only identity, fact references, policy and `tape_channel` live in `NarrativeEvent`, story payloads and catalogs.
+- Exact v2 config/API review candidates, including apply boundaries, migration, nullability, request bounds and local/LAN Ollama URL policy, live in `public-contracts.md`; implementation fixtures must be byte-for-structure equivalents.
+- Exact single-mailbox admission/recovery, command inventory, speech-lane transitions, reset matrix and shutdown order live in `actor-transition-contract.md`; model-based transition fixtures remain blocking.
+- DTO fields, schema versions, stream-scope nullability, canonical hashes, tape envelopes and reason IDs live in `schema-contracts.md`; machine-readable schemas/goldens remain blocking.
+- The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
+- Fourteen ordered expected scenarios covering lineage, scoring, no-queue behavior, invalid Qwen, silence, overflow and callback/reset races live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
 
 All boxes below must be complete in branch planning commits and issue #235 before behavior code changes:
 
 - [ ] Canonical registry of event, feature, fact, reason, terminal-state and `tape_channel` IDs, including units and unknown semantics.
-- [ ] Complete disposition matrix for all 50 master event types and all 54 legacy nodes.
-- [ ] Audited 46–60 BeatDefinition inventory with required/forbidden claims, role, contexts and realization family.
+- [x] Complete identifier disposition matrix for all 60 known master identifiers and all 54 legacy nodes drafted in `event-beat-disposition.md`.
+- [ ] Final review and machine validation of the exact 64 BeatDefinitions, including required/forbidden claims and realization family for every beat.
 - [ ] Complete successor graph with deterministic relation, guard, preference and terminal/dead-end policy.
-- [ ] NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan and tape JSON schemas frozen with version strings; include a fixture proving the V4 EventEnvelope wire is unchanged.
-- [ ] Exact config defaults/ranges and v1→v2 migration fixture matching specification §20.
-- [ ] Exact API request/response golden fixtures matching §20.1.
-- [ ] Actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes.
+- [ ] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
+- [ ] Review the exact config defaults/ranges in `public-contracts.md` and add the v1→v2 migration fixture matching specification §20.
+- [ ] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
+- [ ] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
 - [ ] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.
 - [ ] Long-silence origin, pause/rearm rules and first-stream behavior table.
 - [ ] Pre-arbitration detector-observation tap and kick→accepted→queued→selected→started funnel definitions.
 - [ ] Released-versus-experimental detector tuning-policy matrix and recorder-failure transition behavior.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
-- [ ] Family claim taxonomy and verifier contract for every family admitted to authored/tight/balanced/loose realization.
-- [ ] First internal slice fixtures and expected tape decisions selected without changing runtime.
-- [ ] Final-PR exclusion manifest for planning files and temporary legacy/shadow code.
+- [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
+- [ ] Review the fourteen expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.
 

@@ -80,7 +80,7 @@ Diagram neznamená frontu budoucích vět. Eventy kontinuálně mění stav a je
 - nebude se trénovat nový jazykový model;
 - implementace nebude měnit `master` po dílčích rodinách ani do něj posílat plánovací dokumenty;
 - dočasný legacy/shadow adapter smí existovat pouze ve vývojové větvi a před finálním breaking PR musí být odstraněn;
-- první interní vertical slice není produkční rollout: finální v2.0.0 musí mít explicitní disposition všech 50 event typů.
+- první interní vertical slice není produkční rollout: finální v2.0.0 musí mít explicitní disposition všech 60 známých master event identifikátorů.
 
 ## 3. Slovník a vlastnictví
 
@@ -279,8 +279,8 @@ class AtomicFact:
     valid_from: float
     valid_until: float | None
     observed_at: float
-    occurrence_id: SessionOccurrenceId
-    lineage_id: str
+    occurrence_id: SessionOccurrenceId | None
+    lineage_id: str | None
     evidence_refs: tuple[str, ...]
     confidence: float
     scope: FactScope
@@ -289,6 +289,8 @@ class AtomicFact:
 ~~~
 
 Predikát s aktéry je uspořádaný. `closing(Richard, Page)` není stejný fakt jako `closing(Page, Richard)`.
+
+`occurrence_id` a `lineage_id` smějí být `None` pouze pro skutečný `stream` scope fakt, který může existovat před první coherent iRacing session. Occurrence/downstream/historical fakta vždy nesou původní occurrence; runtime nevytváří syntetickou session kvůli stream lifecycle tvrzení.
 
 ### 6.2 Scope faktů
 
@@ -666,7 +668,6 @@ priority:
   event_ttl_s: 8
   penalty_coefficient: 1.0
   continuation_base: 58
-  switch_margin: 8
 
 fatigue:
   semantic_half_life_s: 90
@@ -707,8 +708,9 @@ Výrazy se kompilují do typovaných predikátů; runtime nesmí interpretovat l
 class EpisodeInstance:
     episode_id: str
     definition_id: str
-    occurrence_id: SessionOccurrenceId
-    lineage_id: str
+    scope: Literal["stream", "occurrence"]
+    occurrence_id: SessionOccurrenceId | None
+    lineage_id: str | None
     semantic_identity: tuple[str, ...]
     correlation_ids: tuple[str, ...]
     state: EpisodeState
@@ -739,6 +741,8 @@ dormant → candidate → active → suspended → active
 - `invalidated`: identita, occurrence nebo evidence se rozpadla bez oprávněného outcome claimu.
 
 Episode lifecycle je nezávislý na tom, zda se něco odvysílalo.
+
+Pouze `stream_lifecycle` epizoda má `scope=stream` a nullable occurrence/lineage. Všechny ostatní story templates jsou occurrence-scoped a obě identity vyžadují.
 
 ### 7.5 Typy beatů
 
@@ -806,7 +810,6 @@ story:
     broadcast_context: [on_track, replay, unknown]
   continuation:
     base_priority: 58
-    switch_margin: 8
     max_consecutive_beats: 3
     min_interval_s: 6
 
@@ -840,31 +843,31 @@ beats:
 
 O tom, kdy beat zazní, rozhodují nejprve hard guards: current occurrence/lineage, platná epizoda, required facts, povolené session/vehicle/broadcast kontexty, TTL, cadence a conflicts. Teprve mezi platnými beaty rozhoduje score z priority, urgency, continuity, material change, closure, fatigue, penalty a staleness. Trigger threshold sportovní pravdy se nikdy nesmí přesunout do tohoto skóre.
 
-První hodnoty se odvodí z master dat a označí `estimated`: `speak_priority` zachová relativní pořadí jako seed `base_priority`, `cooldown_s` se použije jako seed cadence/min-interval (nikoliv TTL), `editorial.repeat_weight` jako seed penalizačního koeficientu a dnešní hrany pouze jako návrhy successors čekající na guard audit. Výchozí rozpočty:
+První hodnoty se odvodí z master dat a označí `estimated`: `speak_priority` zachová relativní pořadí jako seed `base_priority`, `cooldown_s` se použije jako seed cadence/min-interval (nikoliv TTL), `editorial.repeat_weight` jako seed penalizačního koeficientu a dnešní hrany pouze jako návrhy successors čekající na guard audit. Jediné výchozí speech policy profily jsou:
 
-| Třída | Priority | Opportunity TTL | Penalty coefficient | Typická cadence |
-| --- | ---: | ---: | ---: | --- |
-| Critical result | 80–100 | 15–45 s | 0–0,5 | jednou na outcome/occurrence |
-| Story outcome | 70–90 | 8–20 s | 0,5–1,0 | jednou na resolution |
-| Live relation/open/update | 45–75 | 3–8 s | 1,0–1,5 | jen material revision, min. 6–15 s |
-| Timing/context | 30–65 | 5–12 s | 1,25–2,0 | typicky jednou za kolo/segment |
-| Session transition | 55–95 | 15–60 s | 0,25–1,0 | jednou na occurrence/transition |
-| Filler | 10–30 | 3–8 s | 2,0–3,0 | silence-triggered, nejvýše jeden beat |
+| Profil | Priority | Urgency | Opportunity TTL | Penalty coefficient | Cadence scope/minimum |
+| --- | ---: | --- | ---: | ---: | --- |
+| `critical` | 90 | `critical` | 45 s | 0,25 | jednou na semantic outcome revision |
+| `result` | 78 | `story` | 30 s | 0,50 | semantic identity / 8 s |
+| `live_story` | 64 | `story` | 10 s | 0,80 | episode / 8 s |
+| `transient` | 56 | `story` | 6 s | 1,00 | semantic identity / 12 s |
+| `context` | 46 | `context` | 20 s | 1,00 | `tape_channel` / 45 s |
+| `filler` | 24 | `background` | 12 s | 1,40 | silence impulse / `long_silence_s` |
 
-Rozsahy nejsou kalibrované konstanty. Každá effective hodnota se zapisuje do tape a ladí se po `tape_channel` podle kick→queued→selected→spoken funnelu, expiry rate, cadence a ruční relevance kontroly. Cílem není maximalizovat kick nebo spoken rate, ale najít přijatelný poměr relevantního komentáře a ticha.
+Hodnoty jsou initial estimates, ne kalibrované konstanty; schema dovoluje priority 0–100, TTL 1–120 s a penalty 0–4. Cadence je samostatná story/beat vlastnost, nikoli odvozenina TTL. Každá effective hodnota se zapisuje do tape a ladí se po `tape_channel` podle kick→queued→selected→spoken funnelu, expiry rate, cadence a ruční relevance kontroly. Cílem není maximalizovat kick nebo spoken rate, ale najít přijatelný poměr relevantního komentáře a ticha.
 
 ## 8. Závodní a filler tok
 
 ### 8.1 Kontinuální event-driven běh
 
-Narrative runtime je reducer nad kontinuálním proudem typovaných eventů, ne producent dávky budoucích komentářů. Minimální deterministické eventy jsou:
+Narrative runtime je reducer nad kontinuálním proudem typovaných eventů, ne producent dávky budoucích komentářů. Minimální deterministické commands/events jsou:
 
 - `STREAM_STARTED`, `STREAM_ENDED`;
-- `SESSION_STARTED`, `SESSION_ENDED`, `SESSION_RESTARTED`, `SESSION_REWOUND`;
+- `SESSION_STARTED`, `SESSION_ENDED`, `SESSION_RESTARTED`; návrat na jiný/starší `SessionRef` je uspořádaná dvojice `SESSION_ENDED` + `SESSION_STARTED`, ne čtvrtý rewind event;
 - `VEHICLE_PHASE_CHANGED` pro garage/outlap/timed lap/inlap/parade/racing;
 - potvrzené závodní eventy z detektorů;
 - `LONG_SILENCE_ELAPSED` z monotonic clocku;
-- `SPEECH_STARTED`, `SPEECH_COMPLETED`, `SPEECH_INTERRUPTED`.
+- interní `PLAYBACK_ACCEPTED`, `SPEECH_COMPLETED`, `SPEECH_INTERRUPTED`, kde `PLAYBACK_ACCEPTED` se veřejně promítá jako `SPEECH_STARTED`.
 
 Deterministický zde znamená, že typ, identita, pořadí a čas eventu vznikají z runtime stavu bez rozhodnutí LLM. Neznamená to povinně deterministickou větu: event může otevřít/uzavřít epizodu a vyvolat director pass, který zvolí authored beat, Qwen beat, nebo ticho.
 
@@ -875,7 +878,7 @@ Každý accepted command nese coherent immutable timeline/fact version. Actor ne
 3. pokud právě probíhá řeč, nevytváří se čekající text — pouze se aktualizuje světový stav;
 4. `SPEECH_COMPLETED/INTERRUPTED` vyvolá nový director pass nad nejnovějším stavem.
 
-Runtime má dvě jasně odlišné bounded fronty. Vstupní event-envelope fronta serializuje všechny eventy podle `source_sequence`. Speakable eventy po redukci vytvoří nebo aktualizují položku v `EventOpportunityQueue`. Tato druhá fronta drží pouze význam, prioritu, životnost, penalizaci, correlation a `tape_channel`; nikdy hotovou větu, prompt ani BeatPlan. Během jedné řeči tak mohou některé mezistavy expirovat nebo být superseded, aniž se později odříkají.
+Runtime má dvě jasně odlišné bounded struktury. Jediný `NarrativeMailbox` serializuje external batches a interní worker/timer commands; není to druhá kopie V4 EventEnvelope subscription. Speakable eventy po redukci vytvoří nebo aktualizují položku v `EventOpportunityQueue`. Tato druhá struktura drží pouze význam, prioritu, životnost, penalizaci, correlation a `tape_channel`; nikdy hotovou větu, prompt ani BeatPlan. Během jedné řeči tak mohou některé mezistavy expirovat nebo být superseded, aniž se později odříkají.
 
 Významná událost během řeči se přesto nesmí ztratit jen proto, že její edge už skončil. Reducer ji promítne do current/resolved `EpisodeInstance` a event opportunity s explicitním `expires_monotonic_ms`, resolution a material revision. Po dokončení řeči director arbitruje tento aktuální světový stav proti přirozeným pokračovatelům právě odvysílaného příběhu. Pass/result může zůstat krátce způsobilým self-contained outcome beatem; starý gap update expiruje. Jde o frontu významů, ne o commentary queue textů.
 
@@ -941,7 +944,7 @@ Opportunity se odstraní jen explicitním stavem `consumed`, `expired`, `superse
 
 Přesný lifecycle je `pending → reserved → consumed` nebo `pending/reserved → expired | superseded | invalidated | evicted`. `reserved` znamená pouze probíhající BeatPlan attempt a neblokuje přijetí vyšší revision. Opportunity se stane `consumed` na backend-neutral `PLAYBACK_ACCEPTED`, který veřejný lifecycle publikuje jako `SPEECH_STARTED`. Jde o přesnou softwarovou hranici, nikoli o neověřitelný fyzický první audio frame: SuperTonic potvrzuje úspěšné přijetí `sd.play`, SAPI/eSpeak wrapper potvrzuje přijetí playback procesu/backendu. Rejection, generation timeout, stale commit nebo TTS failure před acknowledgement rezervaci uvolní a ponechá opportunity pending do TTL, ale stejný `(beat_id, episode_revision)` zůstane suppressed. Přerušení nebo chyba po acknowledgement již consumption nevrací; ExposureStore je zapíše s konzervativní plnou repetition weight, aby systém nezačal tutéž věc opakovat.
 
-Nový závodní event nikdy tvrdě nepřerušuje již přijatý playback. Může pouze vyhrát následující arbitráž, pokud jeho opportunity do té doby neexpiruje. Cancel je dovolen jen pro `STREAM_ENDED`, session/run reset nebo supersession, která zneplatní tvrzení právě mluveného beatu, a pro shutdown. Manual API speech live utterance nepreemptuje.
+Nový závodní event nikdy tvrdě nepřerušuje již přijatý playback. Může pouze vyhrát následující arbitráž, pokud jeho opportunity do té doby neexpiruje. Cancel je dovolen jen pro `STREAM_ENDED`, session/run reset, explicitní vypnutí commentary, supersession, která zneplatní tvrzení právě mluveného beatu, a shutdown. Manual API speech live utterance nepreemptuje.
 
 Novější `ACTIVE/UPDATE` stejného `(event_type, occurrence, correlation_key)` superseduje starší opportunity, pokud katalog výslovně neoznačí obě revision jako samostatné speakable outcomes. `RESULT`, změna identity a rozdílné outcome type se nikdy neslijí pouhou shodou story family.
 
@@ -1023,30 +1026,50 @@ Počáteční model:
 
 ~~~text
 score = base_priority
-      + event_salience
       + continuity_bonus
+      + edge_preference
       + closure_urgency
       + material_change_bonus
       + silence_pressure
-      - semantic_fatigue
-      - pattern_fatigue
-      - lexical_repetition
-      - staleness
-      - interruption_cost
+      - semantic_fatigue_penalty
+      - pattern_fatigue_penalty
+      - lexical_repetition_penalty
+      - staleness_penalty
+      - replacement_cost
 ~~~
 
 `base_priority`, `continuation_base` a `selection_threshold` jsou konečná čísla v rozsahu 0–100; koeficienty a bonusy musejí být konečné a schema odmítne NaN/∞. `urgency` má pevné pořadí `background < context < story < critical`. Nejprve se odstraní kandidáti pod `selection_threshold`, potom se vybírá lexikograficky podle vyšší urgency a vyššího score. Úplný stabilní tie-break je: nižší `source_sequence` (starší stále platná opportunity), `episode_id`, `beat_id`. Pod prahem se zvolí ticho. Urgency ani score nikdy neobcházejí hard gate.
 
+Počáteční koeficienty jsou přesné `estimated` defaults:
+
+| Člen | Hodnota |
+| --- | --- |
+| `continuity_bonus` | +6 pro stejnou active episode, jinak 0 |
+| `edge_preference` | +6 preferred, 0 allowed, +8 closure edge |
+| `closure_urgency` | +12 pro doloženou resolution s dosud neodvysílaným outcome, jinak 0 |
+| `material_change_bonus` | 0/3/6/10 pro catalog band `none/minor/material/major` |
+| `silence_pressure` | pouze filler: 12 při silence impulse + lineárně nejvýše dalších 8 za jeden další `long_silence_s`; jinak 0 |
+| `semantic_fatigue_penalty` | `8 × min(3, F_semantic)` |
+| `pattern_fatigue_penalty` | `5 × min(2, F_pattern)` |
+| `lexical_repetition_penalty` | `8 × max Jaccard` nad normalizovanými content-token sets nejméně repetitivní dostupné pattern card; 0 bez historie |
+| `staleness_penalty` | `10 × clamp(age / TTL, 0, 1)`; successor používá svůj revision expiry místo event TTL |
+| `replacement_cost` | pouze při precommit nahrazení building planu: `8 + 8 × clamp(elapsed / request_timeout, 0, 1)`; jinak 0 |
+
+Fatigue používá `F(t)=Σ weight×2^(-(t-spoken_at)/half_life)`, kde completed i post-accept interruption/failure mají konzervativní weight 1.0. Semantic half-life je 90 s, pattern half-life 180 s. Lexical Jaccard před realizací pracuje s pattern-card signature po odstranění schváleného EN stopword setu; neznámý budoucí Qwen text se nikdy neskóruje zpětně. `continuation_base = max(0, base_priority-6)`, pokud StoryDefinition nemá explicitní hodnotu v rozsahu 0–100.
+
 Eventová penalizace je definována zvlášť od obecné audience fatigue:
 
 ~~~text
+channel_pressure(ch,S) = 6 × min(3,
+    Σ 2^(-(now-started_at)/cadence_half_life(ch)))
+
 event_penalty(e, S) = e.penalty_coefficient
                     × channel_pressure(e.tape_channel, S)
 
 event_score(e, S) = score(candidate(e), S) - event_penalty(e, S)
 ~~~
 
-`channel_pressure` vychází pouze ze skutečných exposures a z nakonfigurovaného cadence okna. První konzervativní koeficienty mohou být odhadnuté; tape poskytne data pro pozdější fine tuning.
+`cadence_half_life` je profile cadence minimum z tabulky § 7.7, nejméně však globální 4 s interval. `channel_pressure` vychází pouze ze skutečných playback-accepted exposures. První konzervativní koeficienty jsou odhadnuté; tape poskytne data pro pozdější fine tuning. V4 wire priority/severity nejsou ve score a nesmějí se sem skrytě přičíst.
 
 ### 9.3 Arbitráž po beatu: event versus pokračování příběhu
 
@@ -1091,7 +1114,7 @@ V MVP lze ponechat dnešní deterministické lexical-tail porovnání. Embedding
 
 - `planned/building`: vyšší race beat smí filler okamžitě nahradit;
 - `verified`, ale necommitnutý: vždy znovu hard gate;
-- `speaking`: přerušovat jen podle explicitní criticality a pouze pokud hodnota převáží cenu useknuté věty;
+- `speaking`: závodní ani critical event nepřerušuje; cancel smí vyvolat jen stream/session/run invalidace, explicitní vypnutí commentary, supersession zneplatňující právě mluvený claim nebo shutdown;
 - během `speaking` se nevytváří waiter s textem ani BeatPlanem; příchozí eventy pouze aktualizují stav a po uvolnění lane se plánuje znovu;
 - session occurrence změna invaliduje všechny necommitnuté beaty starého occurrence.
 
@@ -1128,8 +1151,8 @@ class BeatPlan:
     beat_id: str
     episode_id: str
     beat_role: str
-    occurrence_id: SessionOccurrenceId
-    lineage_id: str
+    occurrence_id: SessionOccurrenceId | None
+    lineage_id: str | None
     episode_revision: int
     required_claims: tuple[AtomicClaim, ...]
     optional_claims: tuple[AtomicClaim, ...]
@@ -1148,6 +1171,8 @@ class BeatPlan:
 ~~~
 
 BeatPlan neobsahuje mutable observer ani globální telemetry dump. Vzniká just-in-time pouze pro aktuální director pass; další beaty mini-příběhu se předem neplánují ani negenerují.
+
+Nullable occurrence/lineage je dovolena pouze pro `stream.started`; všechny session, race, bio a filler beaty musí být připnuty ke coherent occurrence.
 
 ### 10.2 Lifecycle jedné utterance
 
@@ -1334,19 +1359,23 @@ Pro cílový anglický runtime je zdrojovým poolem pouze 2 128 EN variant. Čes
 
 MVP nemusí nahradit 2 128 anglických vět stejným počtem. Variabilita vznikne kombinací bezpečných patternů, jmen, čísel, clause order a cadence.
 
-Navržený obsah pro jediný podporovaný jazyk, angličtinu:
+Auditovaný cílový obsah pro jediný podporovaný jazyk, angličtinu, je rozepsán v `docs/v2.0.0/event-beat-disposition.md`:
 
-| Skupina | Rodiny | Sémantické BeatDefinition | EN patterny na beat | Odhad patternů |
+| Skupina | Realization families | Sémantické BeatDefinition | EN patterny na beat | Minimum patternů |
 | --- | ---: | ---: | ---: | ---: |
-| Vícebeatové race stories | 7 | 21 | 4 | 84 |
-| Single-shot race/result | 11 | 11 | 4 | 44 |
-| Session/transition | 4 | 8 | 4 | 32 |
-| Filler families | 6 | 6 | 4 | 24 |
-| **Celkem základní katalog** | **28** | **46** |  | **cca 184 EN patternů** |
+| Timing a pace | 7 | 12 | 4 | 48 |
+| Battles | 6 | 8 | 4 | 32 |
+| Position outcomes | 3 | 4 | 4 | 16 |
+| Incidents/recovery | 4 | 5 | 4 | 20 |
+| Pit cycle | 2 | 6 | 4 | 24 |
+| Stream/session/context | 12 | 22 | 4 | 88 |
+| Bio context | 1 | 1 | 4 | 4 |
+| Filler families | 2 | 6 | 4 | 24 |
+| **Celkem základní katalog** | **37** | **64** |  | **minimum 256 EN pattern cards** |
 
-Číslo **46** je datově odvozený plánovací baseline, ne umělý limit. Současných 54 nodes se nepřekládá 1:1: některé jsou pouze rozdílné formulace stejného významu, jiné naopak kombinují více lifecycle nebo session kontextů a musejí se rozdělit. Po schema auditu proto očekáváme **46–60 BeatDefinition**. Navýšení je oprávněné pouze tehdy, když se liší required/forbidden claims, role, lifecycle, hard guard nebo successor chování; samotný styl, emoce či jiná věta nový beat nevytváří.
+Číslo **64** vzniklo úplnou inventurou, ne umělým limitem. Původních 50 event types bylo pouze průnikem legacy graphu; union graphu, V4 catalog entries/fallbacks a samostatného `PACE_HUNT` obsahuje 60 identifikátorů. Současných 54 nodes se nepřekládá 1:1: aliases a visual-only eventy nemají beat, některé nodes jsou pouze rozdílné formulace, zatímco sector, incident, stage-specific intro/wrap/in-car, pit lane/release, restart a šest filler situací vyžadují samostatný význam. Nový beat je oprávněný pouze rozdílem required/forbidden claims, role, lifecycle, hard guard nebo successor chování; styl, emoce či jiná věta nový beat nevytváří.
 
-První branch-only vývojový vertical slice může začít přibližně na **16–20 BeatDefinition** a 64–80 EN patternech; nejde o částečný merge ani produkční režim:
+První branch-only vývojový vertical slice může začít přibližně na **20–24 BeatDefinition** a 80–96 EN patternech; nejde o částečný merge ani produkční režim:
 
 - pursuit/front pressure/two-front;
 - pass a position change;
@@ -1357,7 +1386,7 @@ První branch-only vývojový vertical slice může začít přibližně na **16
 - outlap/inlap/parade/garage filler;
 - weather/field context.
 
-Plný odhad je přibližně 184 auditovaných EN patternů. Jeden pattern není jedna výsledná věta; se sloty a čtyřmi clause/verb variantami vytváří mnohonásobně větší prostor. Dnešních 2 128 EN strings pravděpodobně obsahuje dost surového materiálu, ale každý pattern musí být označen required claims, forbidden claims a safe lexical transformations.
+Zmrazený baseline je nejméně čtyři enabled auditované EN pattern cards na beat, tedy **minimálně 256**. Jeden pattern není jedna výsledná věta; se sloty a povolenými clause/verb variantami vytváří mnohonásobně větší prostor. Dnešních 2 128 EN strings pravděpodobně obsahuje dost surového materiálu, ale každý pattern musí být označen required claims, forbidden claims a safe lexical transformations.
 
 ### 12.5 Převod dnešních vět
 
@@ -1644,7 +1673,7 @@ Exit: žádný stale nebo významově neplatný generated text nedosáhne TTS v 
 ### Fáze 8 — úplná migrace katalogu
 
 - migrovat zbývající event families po malých skupinách;
-- kurátorovat přibližně 184 EN patternů;
+- kurátorovat minimálně 256 enabled EN pattern cards, čtyři pro každý z 64 beatů;
 - převést stávající variants na pattern/authored/style/reject třídy;
 - přidat anglickou poslechovou QA;
 - v novém runtime odmítnout jiný locale než `en`; legacy CS větev zůstane izolovaná jen do odstranění starého enginu.
@@ -1653,7 +1682,7 @@ Exit: všech 50 relevantních event types má explicitní story/beat/authored co
 
 ### Fáze 9 — atomický breaking cutover
 
-- dokončit všech 50 event-type dispositions a odstranit dočasné branch-only shadow/legacy větve;
+- dokončit všech 60 event-identifier dispositions a odstranit dočasné branch-only shadow/legacy větve;
 - spustit Windows/iRSDK/OBS/Ollama/SuperTonic test nad výsledným jediným v2 runtime;
 - porovnat audio, tape a obraz a uzavřít všechny blocking issues evidencí z konkrétního branch commit SHA;
 - připravit config/API migration note a zálohu poslední v1 konfigurace;
@@ -2031,10 +2060,12 @@ Agregované metriky:
 
 Tento planning dokument runtime ani veřejný config nemění, ale finální v2.0.0 má explicitně breaking config/API kontrakt. Public config surface je před implementací uzavřen na tyto skupiny:
 
+Přesné typy, defaults, ranges, jednotky, apply boundaries, migrační tabulka a HTTP golden examples jsou zmrazeny v branch-only dokumentu [`v2.0.0/public-contracts.md`](v2.0.0/public-contracts.md). Tato sekce je jeho architektonický souhrn; při rozporu blokuje implementaci a oba dokumenty se musejí znovu sjednotit v #235.
+
 | Sekce | Keys |
 | --- | --- |
 | `[commentary]` | `enabled`, `max_utterance_s`, `driver_name`, `driver_nickname`, `tone_source` (`none | heart_rate`) |
-| `[commentary.director]` | `selection_threshold`, `global_min_interval_s`, `long_silence_s`, `opportunity_capacity`, `active_episode_capacity`, `resolved_episode_capacity`, `max_consecutive_story_beats` |
+| `[commentary.director]` | `selection_threshold`, `switch_margin`, `global_min_interval_s`, `long_silence_s`, `mailbox_capacity`, `opportunity_capacity`, `active_episode_capacity`, `resolved_episode_capacity`, `decision_capacity`, `max_consecutive_story_beats` |
 | `[commentary.llm]` | `enabled`, `base_url`, `model`, `timeout_s`, `max_tokens`, `warmup`, `max_profile` |
 | `[commentary.tts]` | `backend`, `voice`, `rate`, `steps`, `audio_device`, `duck_input`, `duck_ratio`, `duck_fade_ms` |
 | `[commentary.detectors]` | `profile`; pouze catalogem exportované overrides používají `[commentary.detector.<id>]` |
@@ -2042,7 +2073,7 @@ Tento planning dokument runtime ani veřejný config nemění, ale finální v2.
 
 Catalog defaults vlastní per-event TTL/priority/urgency/penalty, story continuation/switch policy, cadence a allowed contexts. Tyto hodnoty se nekopírují do globálního INI. Deployment override smí existovat pouze pro pole označené `exposed=true` s typem, units, range a cross-field validací.
 
-Breaking migrace nahradí `commentary.use_hr_emotion` explicitním `tone_source`; odstraní globální `commentary.cooldown_s`, `sector_speak*`, `session_briefs`, `stream_start`, `gap_hunt_tts_*`, `llm_polish`, `llm_*`, celou `[commentary.scheduler]` a `[commentary.graph_runtime]`. Odpovídající význam se přesune do nových sekcí nebo katalogu; `llm_max_attempts` nemá náhradu, protože kontrakt je právě jeden attempt. Starý key vyvolá konkrétní migration warning, ale nesmí shodit scene-switch službu. Neplatný v2 commentary config nastaví commentary health `disabled_invalid_config` a zbytek aplikace pokračuje.
+Breaking migrace nahradí `commentary.use_hr_emotion` explicitním `tone_source`; odstraní globální `commentary.cooldown_s`, `sector_speak*`, `session_briefs`, `stream_start`, `gap_hunt_tts_*`, `llm_polish`, `llm_*`, celou `[commentary.scheduler]` a `[commentary.graph_runtime]`. Odpovídající význam se přesune do nových sekcí nebo katalogu; `llm_max_attempts` nemá náhradu, protože kontrakt je právě jeden attempt. Starý key vyvolá konkrétní migration warning, ale v paměti se automaticky nepřekládá: commentary pro tuto config generation zůstane disabled, zatímco scene-switch služba pokračuje. Neplatný v2 commentary config stejně nastaví commentary health `disabled_invalid_config` a zbytek aplikace pokračuje.
 
 Reload policy:
 
@@ -2070,10 +2101,17 @@ Stávající route names mohou zůstat, jejich payload je breaking a vždy nese 
 - `docs/commentary_narrative_runtime_spec.md` — nový cílový návrh;
 - `docs/v2.0.0/README.md` — úplný issue/dependency index pro realizaci v2.0.0;
 - `docs/v2.0.0/design-freeze-audit.md` — předimplementační konflikty, uzavřená rozhodnutí a blocking artifacts;
+- `docs/v2.0.0/event-beat-disposition.md` — úplná branch-only matice 60 identifikátorů, 54 legacy nodes a 64 cílových beatů;
+- `docs/v2.0.0/public-contracts.md` — přesné branch-only config defaults/ranges, migrace a HTTP golden payloads;
+- `docs/v2.0.0/actor-transition-contract.md` — přesný branch-only actor/mailbox/speech/reset/shutdown přechodový kontrakt;
+- `docs/v2.0.0/schema-contracts.md` — přesné branch-only DTO/version/identity/tape/reason kontrakty;
+- `docs/v2.0.0/realization-verifier-contract.md` — přesný branch-only controlled-EN/verifier kontrakt pro všech 37 realizačních rodin;
+- `docs/v2.0.0/vertical-slice-fixtures.md` — čtrnáct branch-only očekávaných decision/reducer/speech scénářů;
+- `docs/v2.0.0/final-pr-exclusion-manifest.md` — povinný seznam planning/temporary položek odstraněných před PR do masteru;
 - `README.md` — odkaz na v2.0.0 implementační index;
 - `COMMENTARY_ENGINE.md` — odkaz na návrh, současný engine zůstává current-behavior autoritou.
 
-Tyto čtyři změny jsou planning artifacts pouze ve v2 vývojové větvi. Finální breaking PR je nesmí přenést do `master`: před otevřením PR se odstraní cílová specifikace, issue index a jejich dočasné odkazy z `README.md`/`COMMENTARY_ENGINE.md` z výsledného diffu. Trvalá rozhodnutí se v PR projeví pouze implementací, testy, migration note a aktualizovanou dokumentací skutečného v2 chování.
+Tyto planning změny existují pouze ve v2 vývojové větvi. Úplný seznam je v `final-pr-exclusion-manifest.md`; finální breaking PR je nesmí přenést do `master` a odstraní i manifest samotný a dočasné odkazy z `README.md`/`COMMENTARY_ENGINE.md`. Trvalá rozhodnutí se v PR projeví pouze implementací, testy, migration note a aktualizovanou dokumentací skutečného v2 chování.
 
 **Pending při implementaci:**
 
@@ -2189,21 +2227,39 @@ Kandidátní množina a výběr:
 ~~~text
 C_event(S) = {candidate(q) | q ∈ Q AND opportunity_valid(q, S)}
 C_successor(S, b_prev) = Succ(b_prev, S)
-C_other(S) = {b | Eligible(b, S) AND b není successor ani event candidate}
+C_other(S) = {b | Eligible(b, S)
+                  AND source_guard(b, S)
+                  AND b není successor ani event candidate}
 
-C(S, b_prev) = C_event(S) ∪ C_successor(S, b_prev) ∪ C_other(S)
+C_raw(S, b_prev) = dedupe(C_event ∪ C_successor ∪ C_other,
+                          key=(beat_id, episode_id, episode_revision))
 
-C_ok(S) = {b ∈ C(S) | Score(b, S) >= selection_threshold}
+EffectiveScore(b,S) = EventScore(source_opportunity(b),S)  for event-backed candidate
+                    = ContinuationScore(b,S)              for successor candidate
+                    = Score(b,S)                          otherwise
 
-b* = lexmax_(b ∈ C_ok(S)) (
-       urgency_rank(b), Score(b, S), -source_sequence(b),
-       reverse_lex(episode_id(b)), reverse_lex(beat_id(b)))
+C_threshold(S) = {b ∈ C_raw | EffectiveScore(b, S) >= selection_threshold}
+
+P(S) = best candidate in C_threshold that continues the focused episode
+       through a successor edge or event relation updates/resolves;
+       NONE when no such candidate exists
+
+Admit(b, P, S) = true                                      if P = NONE
+               = true                                      if b continues P's episode
+               = true                                      if urgency(b) > urgency(P)
+               = EffectiveScore(b,S) >= EffectiveScore(P,S)+director.switch_margin otherwise
+
+C_ok(S) = {b ∈ C_threshold | Admit(b, P(S), S)}
+
+rank(b) = (urgency_rank(b), EffectiveScore(b,S), -source_sequence(b))
+
+b* = maximum rank; exact ties choose ascending episode_id, then beat_id
 
 Select(S) = b*       pokud C_ok(S) není prázdná
           = SILENCE  jinak
 ~~~
 
-Při shodě urgency a skóre platí pevný tie-break: nižší `source_sequence`, potom `episode_id` a `beat_id`. Skóre z § 9.2 ovlivňuje pouze pořadí již způsobilých kandidátů; nemůže změnit `Eligible=false` na pravdu.
+Focused episode je epizoda posledního playback-accepted narrative beatu, pokud stále existuje a je active/resolved se speakable closure; ostatní EpisodeRegistry položky nejsou implicitně „current story“. `source_guard` vyžaduje skutečný event/silence impulse, material revision nebo explicitně povolený active-episode beat; pouhá existence BeatDefinition nesmí sama vyrábět řeč. Při deduplikaci stejného beatu/revision se zachová nejstarší source sequence, nejvyšší urgency/score a všechny source refs; nevzniknou dva attempts. Při shodě urgency a skóre platí pevný tie-break: nižší `source_sequence`, potom lexikograficky nižší `episode_id` a `beat_id`. Skóre z § 9.2 ovlivňuje pouze pořadí již způsobilých kandidátů; nemůže změnit `Eligible=false` na pravdu.
 
 Pro event opportunity `q` a successor `b_s`:
 
@@ -2217,11 +2273,12 @@ ContinuationScore(b_s, S) = continuation_base(episode(b_s))
                           - fatigue - staleness
 
 SwitchToEvent(q, b_s, S) =
-    urgency(q) > urgency(b_s)
- OR EventScore(q, S) >= ContinuationScore(b_s, S) + switch_margin(b_s)
+    relation(q, episode(b_s)) ∈ {updates, resolves}
+ OR urgency(q) > urgency(b_s)
+ OR EventScore(q, S) >= ContinuationScore(b_s, S) + director.switch_margin
 ~~~
 
-Pokud `relation(q, active_episode) ∈ {updates, resolves}`, výhra eventu pokračuje ve stejném příběhu. Pro `independent` nebo `conflicts` zahajuje či přepíná příběh. Funkce `relation` je katalogová a korelační, nikoliv vektorová. Když event nevyhraje, zůstává v `Q` jen do TTL a může soutěžit v dalším director passu.
+Pokud `relation(q, active_episode) ∈ {updates, resolves}`, event patří do pokračovací množiny a nepotřebuje switch margin; stále však musí projít hard gate, threshold a běžné pořadí proti jiným pokračováním. Pro `independent` nebo `conflicts` zahajuje či přepíná příběh pouze přes urgency/margin pravidlo. Funkce `relation` je katalogová a korelační, nikoliv vektorová. Když event nevyhraje, zůstává v `Q` jen do TTL a může soutěžit v dalším director passu.
 
 Validita časového tvrzení musí zahrnout také coverage. Pro predicate `p`, okno `Δ` a minimální coverage `c_min`:
 
@@ -2351,11 +2408,17 @@ První implementaci neblokuje chybějící měřicí corpus. Odhadnuté konzerva
 | Oblast | Stav na masteru | Nutný krok |
 | --- | --- | --- |
 | Session/stream vlastnictví | rozdělené mezi `logic/`, overlay SessionCoordinator, RunClock a narrative FSM | jeden `logic/StreamTimeline`, definovaná precedence OBS/iRSDK a transition reasons |
+| Session plan/order | raw `SessionInfo.Sessions[]` je dostupný, ale `SessionContext` drží jen current track/roster | typovaný seznam přítomných supported stages pro preview/lineage; neodvozovat chybějící stage |
+| Stream-before-session | OBS může být active dřív než vznikne coherent SessionRef | explicitní stream-scope fact/episode/BeatPlan s nullable occurrence; žádná syntetická session |
+| Vehicle phase | `on_pit_road`, track surface, speed a parade SessionState existují; in/out-lap je dnes lokální heuristic v RaceObserver | jeden versioned VehiclePhase classifier s unknown/hysteresis a immutable projection |
+| Broadcast context | `SwitchState.mode` rozlišuje lobby/garage/race/replay/loading | čistý mapovací DTO z `logic/`; žádná raw OBS scene name ani mutable state read v commentary |
 | Gap feature | přibližný fractional-distance × hero lap-time odhad; 3s regrese | versioned estimator, quality/invalidation kontrakt; první odhad může zůstat `estimated_v1` |
 | Trigger schema | část detektorů má vlastní hardcoded/config FSM | typed feature registry, predicate AST, correlation identity a společný lifecycle |
 | Speech lane | ProcessTtsSink drží in-flight + jeden waiter a generuje uvnitř workeru | odstranit waiter, přidat atomické `try_start`, completion event a replan z aktuálního stavu |
 | Tape | eventově orientovaný overlay tape; commentary/LLM detail závisí na DEBUG | samostatný channel-based NarrativeTape, povinný `tape_channel`, CapturePlan a bounded writer |
-| Semantic verifier | převážně regex/lexikon family checks | typed family verifier corpus; production nejprve pouze `tight` |
+| Semantic verifier | převážně regex/lexikon family checks | controlled-EN parser pro všech 37 families; production nejprve pouze `tight`, každá nerozpoznaná významová fráze je reject |
+| Data/context extras | weather, SoF, roster, flags, incident aftermath, timing a HR už mají fail-soft extractory/FSM | přesunout výstup do typed facts; volitelné/missing zdroje znamenají ineligible beat, ne implementační blok |
+| Nepodporovaná pravda | fyzický první audio sample, oficiální post-race classification a obecné pochopení volné EN nejsou spolehlivě k dispozici | nejsou runtime claimem; používat software playback acceptance, observed finish a controlled EN |
 | Runtime evidence | šest eventových tapes, přibližně 5,6 MB; ne kontinuální trendová data | lze začít bez nich, ale testovací rollout musí zapnout tuning capture |
 | Live výkon | Qwen změřen lokálně, nikoliv celý Windows/Ollama/TTS řetězec | end-to-end TTFT, generation, synth, audio-start a resource-contention acceptance |
 | Test prostředí | project test extra existuje; worktree používá ověřený sdílený venv nebo vlastní reproducible venv | před prvním runtime commitem uložit baseline suite výsledek a stejné prostředí používat pro charakterizační testy |
@@ -2377,10 +2440,12 @@ Je nutné zavést malé neutrální schema kontrakty nebo dependency injection t
 1. **Přesná session lineage:** reconnect, loading, SessionNum změna a SessionTime rewind mají částečně stejné symptomy. Transition precedence a debounce musejí být jediným zdrojem pravdy.
 2. **Gap a target identity:** dobrý trend nad špatnou nebo přepnutou gap metrikou dává přesvědčivě chybný event. Každé okno musí patřit stejné target identity a occurrence.
 3. **No-queue speech:** odstranění waiteru je proveditelné, ale musí zůstat bounded EventOpportunityQueue a current/resolved episode state s krátkou family TTL. Jinak se během dlouhé řeči ztratí pass nebo finish; ukládá se význam světa a scheduling metadata, nikoliv připravená věta.
-4. **Semantic verification:** úplná významová kontrola volné angličtiny není spolehlivě řešitelná několika regexy. Tight compiled realization je proveditelná; loose generace vyžaduje výrazně větší verifier corpus nebo další nezávislý model.
+4. **Semantic verification:** úplná významová kontrola volné angličtiny není spolehlivě řešitelná několika regexy. Tight controlled realization je proveditelná; balanced/loose vyžadují rozšířenou auditovanou rodinnou gramatiku a výrazně větší verifier corpus. Druhý model smí být offline eval signál, nikdy autoritativní live fact gate.
 5. **Recorder backpressure:** required tuning capture a zásada „main loop nikdy nespadne“ jsou v napětí. Řešení je prioritní bounded writer a deaktivace pouze dotčeného experimentálního detectoru, nikoliv synchronní disk I/O.
 6. **Konfigurační exploze:** pokud každý beat a detector dostane desítky vah, systém nebude laditelný. Vystavují se pouze interpretovatelné knobs; ostatní zůstávají versioned catalog defaults.
 7. **Post-beat arbitráž:** bez explicitní priority pokračování by runtime buď mechanicky dokončoval zastaralý příběh, nebo jej každý nový event rozbil. Jedna kandidátní množina, urgency class, `switch_margin` a deterministická event↔episode relation jsou proto nutnou součástí runtime, ne volitelný polish.
+8. **Stream scope bez session:** OBS lifecycle může být pravdivý bez iRSDK occurrence. Vynucení non-null occurrence by vedlo k falešné session nebo ztrátě stream opening; null je proto povolen pouze explicitně stream-scoped DTO.
+9. **Volitelné zdroje:** HR, weather, roster/SoF nebo přesný opponent nejsou vždy dostupné. Jejich absence nesmí degradovat celý runtime ani vytvořit obecnou náhradní větu; hard gate pouze vyřadí závislý beat.
 
 ### 24.5 Chybějící prerequisity
 
@@ -2391,6 +2456,8 @@ Pro zahájení implementace jsou nutné:
 - definovat schema versioning a migration policy pro detector/story/realization catalog a tape;
 - definovat `try_start`/busy/completion kontrakt speech lane a thread-safe návrat eventu do reduceru;
 - rozhodnout první gap estimator (`estimated_v1` lze převzít) a explicitní invalidation cases;
+- definovat typovaný current weekend session plan a VehiclePhase projection nad již dostupnými raw vstupy;
+- převést weather/SoF/flags/aftermath/HR na immutable facts bez čtení mutable RaceObserver z commentary;
 - zmrazit interní vertical slice a jeho branch-only comparison hranici;
 - připravit test extra prostředí a charakterizační testy masteru.
 
@@ -2432,7 +2499,7 @@ Pro první vertical slice je potřeba přibližně:
 - 10–25 authored EN utterances pro předem určené critical/lifecycle beaty;
 - 20–50 adversarial/minimal-pair testů na směrovou nebo číselnou family, celkem řádově 300–700 eval cases.
 
-Většinu patternů a authored lines lze kurátorovat z dnešních 2 128 EN variant. Nové texty budou nutné pouze tam, kde dnešní věty obsahují nepodloženou příčinu/barvu, nemají self-contained outcome, nebo chybí nový session/rewind/tape stav. Odhad čistě nově napsaných vět pro vertical slice je **10–30**, nikoliv stovky. Plný v1 odhad kolem 184 auditovaných patterns zůstává rozumný kapacitní strop, ne hard minimum.
+Většinu patternů a authored lines lze kurátorovat z dnešních 2 128 EN variant. Nové texty budou nutné pouze tam, kde dnešní věty obsahují nepodloženou příčinu/barvu, nemají self-contained outcome, nebo chybí nový session/rewind/tape stav. Odhad čistě nově napsaných vět pro vertical slice je **10–30**, nikoliv stovky. Plný v2 baseline má hard minimum **256 enabled auditovaných pattern cards** (4 × 64); další disabled kandidáti mohou zůstat v kurátorském corpus, ale nepočítají se do release coverage.
 
 LLM eval corpus není produkční copy. Jde o testovací vstupy a očekávané claim verdicts; může být částečně syntetický a musí obsahovat prohozené aktéry, polarity, pozice, stale fakta a forbidden outcomes.
 
@@ -2449,7 +2516,7 @@ První branch checkpoint nemá zahrnout celý graf. Není samostatně releasovat
 - NarrativeTape `flow + llm_eval + detector_tuning` pro vybrané detektory;
 - dočasný branch-only legacy comparison pro nemigrované families.
 
-Tento řez ověří timeline, kombinované podmínky, epizodu, no-queue chování, Qwen, verifier, TTS i tuning tape bez nutnosti migrovat všech 50 event types.
+Tento řez ověří timeline, kombinované podmínky, epizodu, no-queue chování, Qwen, verifier, TTS i tuning tape bez nutnosti migrovat všech 60 event identifiers.
 
 ### 24.9 Go/no-go brány
 

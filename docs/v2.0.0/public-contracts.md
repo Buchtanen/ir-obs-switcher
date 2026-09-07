@@ -1,0 +1,343 @@
+# v2.0.0 commentary public contract freeze
+
+**Status:** design-freeze candidate owned by issues #238 and #273
+
+This branch-only artifact freezes the public configuration and HTTP shape before parser or handler implementation. Initial numeric values are estimates permitted by the design; their types, units, ranges and reload boundaries are contract, while later value tuning inside those ranges is not an architecture change.
+
+## Configuration
+
+Unknown keys under `commentary.*` are errors. A commentary configuration error sets commentary health to `disabled_invalid_config` but does not fail scene switching, OBS control or the main race loop. All durations use monotonic time at runtime.
+
+INI booleans are exactly `true|false`; integers/floats use finite base-10 notation with `.` and no exponent; enums/IDs are case-sensitive as listed. Set values are comma-separated IDs with whitespace trimmed, stable input order ignored and duplicates rejected. Empty string is allowed only where the table explicitly uses an empty default. A next-stream change made during an active stream is validated and reported in `restartRequiredKeys` but is not partly applied.
+
+### Root and director
+
+| Key | Type | Default | Allowed | Unit | Apply boundary |
+| --- | --- | --- | --- | --- | --- |
+| `commentary.enabled` | bool | `false` | bool | — | disable immediately; enable at command boundary, creating incomplete narrative epoch if stream already active |
+| `commentary.max_utterance_s` | float | `14.0` | 2–30 | seconds | next BeatPlan |
+| `commentary.driver_name` | string | empty | 0–128 UTF-8 chars | — | next stream epoch |
+| `commentary.driver_nickname` | string | empty | 0–64 UTF-8 chars | — | next stream epoch |
+| `commentary.tone_source` | enum | `none` | `none`, `heart_rate` | — | next BeatPlan |
+| `commentary.director.selection_threshold` | float | `35.0` | 0–100 | score | next director pass |
+| `commentary.director.switch_margin` | float | `8.0` | 0–50 | score | next director pass |
+| `commentary.director.global_min_interval_s` | float | `4.0` | 0–30 | seconds | next director pass |
+| `commentary.director.long_silence_s` | float | `33.0` | 10–300 | seconds | rearm next silence deadline |
+| `commentary.director.mailbox_capacity` | int | `64` | 16–512, power of two | commands | next stream epoch |
+| `commentary.director.opportunity_capacity` | int | `128` | 16–512 | opportunities | next stream epoch |
+| `commentary.director.active_episode_capacity` | int | `64` | 8–256 | episodes | next stream epoch |
+| `commentary.director.resolved_episode_capacity` | int | `256` | 32–2048 | summaries | next stream epoch |
+| `commentary.director.decision_capacity` | int | `128` | 16–1000 | decisions | next stream epoch |
+| `commentary.director.max_consecutive_story_beats` | int | `3` | 1–8 | beats | next director pass |
+
+Enabling commentary during an already active OBS stream creates a new narrative epoch with `start_reason=enabled_mid_stream` and `history_complete=false`; it does not claim pre-enable history. Disabling cancels unaccepted generation and future automatic planning immediately. Already accepted narrative playback receives a bounded stop request and records its actual terminal state; an explicitly requested manual audio test is independent and continues.
+
+### LLM and TTS
+
+| Key | Type | Default | Allowed | Unit | Apply boundary |
+| --- | --- | --- | --- | --- | --- |
+| `commentary.llm.enabled` | bool | `false` | bool | — | next BeatPlan |
+| `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN HTTP(S) policy below | — | next BeatPlan |
+| `commentary.llm.model` | string | `qwen3:4b-instruct-2507-q4_K_M` | 1–128 chars | — | next BeatPlan + warmup generation |
+| `commentary.llm.timeout_s` | float | `1.5` | 0.2–10 | seconds wall clock | next request |
+| `commentary.llm.max_tokens` | int | `96` | 32–256 | tokens | next request |
+| `commentary.llm.warmup` | bool | `true` | bool | — | process/config generation |
+| `commentary.llm.max_profile` | enum | `tight` | `tight`, `balanced`, `loose` | — | next BeatPlan; family verifier may impose lower cap |
+| `commentary.tts.backend` | enum | `auto` | `auto`, `sapi`, `espeak`, `supertonic` | — | next utterance |
+| `commentary.tts.voice` | string | empty | 0–128 chars/backend-valid | — | next utterance |
+| `commentary.tts.rate` | int | `0` | -10–10 | SAPI-style steps | next utterance |
+| `commentary.tts.steps` | int | `6` | 5–12 | inference steps | next SuperTonic utterance |
+| `commentary.tts.audio_device` | string | empty | 0–256 chars | — | next utterance |
+| `commentary.tts.duck_input` | string | empty | 0–256 chars | — | next utterance |
+| `commentary.tts.duck_ratio` | float | `0.25` | 0–1 | original-volume fraction | next utterance |
+| `commentary.tts.duck_fade_ms` | int | `750` | 0–5000 | milliseconds | next utterance |
+
+`llm.enabled=false` means only beats whose catalog-selected realization mode is authored are eligible. An unavailable or rejected Qwen realization does not switch the same beat to authored mode; the attempt is discarded and the director chooses another eligible beat or silence.
+
+`llm.base_url` is accepted only when all of these conditions hold: scheme is `http` or `https`; userinfo, query and fragment are absent; port is in `1..65535`; path is empty, `/v1` or ends in `/v1` after slash normalization; and host is exactly `localhost` or an IP literal classified as loopback, RFC1918 private, IPv6 unique-local or link-local. Other DNS names and public IP addresses are rejected, so validation never performs DNS resolution and cannot be changed by DNS rebinding. The transport appends exactly `/chat/completions`. This is a new v2 validation requirement; the v1 scheme-only check is not sufficient evidence.
+
+### Detectors and tape
+
+| Key | Type | Default | Allowed | Unit | Apply boundary |
+| --- | --- | --- | --- | --- | --- |
+| `commentary.detectors.profile` | enum | `production` | `production`, `calibration` | — | next stream epoch |
+| `commentary.detector.<id>.enabled` | bool | catalog value | bool; ID must be exported | — | next stream epoch |
+| `commentary.detector.<id>.<parameter>` | catalog typed | catalog value | exported min/max and cross-field rules | catalog unit | next stream epoch |
+| `commentary.tape.enabled` | bool | `false` | bool | — | next record boundary |
+| `commentary.tape.channels` | enum set | `flow` | subset of `flow,llm_eval,detector_tuning` | — | next record boundary |
+| `commentary.tape.detail` | enum | `normal` | `minimal`, `normal`, `full` | — | next record boundary |
+| `commentary.tape.output_dir` | path | `recordings/commentary` | safe non-root path | — | next rotated file |
+| `commentary.tape.rotate_mb` | int | `64` | 1–1024 | MiB | next record boundary |
+| `commentary.tape.keep_files` | int | `8` | 1–100 | files | next rotation |
+| `commentary.tape.compress_rotated` | bool | `true` | bool | — | next rotation |
+| `commentary.tape.flush_interval_ms` | int | `500` | 50–5000 | milliseconds | next writer deadline |
+| `commentary.tape.writer_capacity` | int | `4096` | 256–32768 | records | next stream epoch |
+| `commentary.tape.shutdown_flush_timeout_s` | float | `2.0` | 0.1–10 | seconds | next shutdown |
+| `commentary.tape.flow.candidate_detail` | enum | `selected_and_rejected` | `selected`, `selected_and_rejected`, `all` | — | next record boundary |
+| `commentary.tape.flow.tape_channel_allowlist` | string set | `*` | known channel IDs or `*` | — | next record boundary |
+| `commentary.tape.llm_eval.capture_prompt` | enum | `hash` | `none`, `hash`, `full` | — | next request |
+| `commentary.tape.llm_eval.capture_completion` | bool | `true` | bool | — | next request |
+| `commentary.tape.detector_tuning.trigger_allowlist` | string set | empty | known detector IDs | — | next stream epoch |
+| `commentary.tape.detector_tuning.negative_sample_interval_s` | float | `5.0` | 0.5–60 | seconds | next stream epoch |
+| `commentary.tape.detector_tuning.near_threshold_margin` | float | `0.15` | 0–1 | normalized fraction | next stream epoch |
+| `commentary.tape.detector_tuning.capture_input_windows` | bool | `true` | bool | — | next stream epoch |
+
+`production` rejects any enabled detector with `tuning.required`. `calibration` may enable `experimental=true, tuning.required` only after writable recorder preflight. Losing required capture emits `CAPTURE_UNAVAILABLE` and disables only affected experimental detectors.
+
+### Cross-field validation
+
+- `active_episode_capacity <= resolved_episode_capacity`;
+- `selection_threshold` and `switch_margin` are independent: the former gates eligibility and the latter gates replacement of a preferred equal-urgency successor;
+- `switch_margin` is one director value in the v2 baseline; StoryDefinition and BeatDefinition cannot override it;
+- detector relationships are validated only when declared by that detector schema, including `window_s >= confirm_s`, `exit_gap > enter_gap` where gap hysteresis applies, and sample interval smaller than its window;
+- `llm.max_profile` is only a ceiling; catalog/verifier readiness can lower it;
+- `tape.channels` must be nonempty when tape is enabled;
+- full prompt capture requires explicit `llm_eval` channel and remains subject to redaction;
+- paths resolving to filesystem root, home root or repository root are rejected.
+
+String values are trimmed, reject control characters and are measured after Unicode normalization. A relative tape path resolves against the application working directory; validation uses the canonical parent path, rejects exact filesystem/home/repository roots and requires the destination to be creatable without following an existing symlink outside that parent.
+
+### v1 migration table
+
+| v1 key | v2 result |
+| --- | --- |
+| `commentary.use_hr_emotion=true|false` | `commentary.tone_source=heart_rate|none` |
+| `commentary.cooldown_s` | removed; use director interval plus catalog cadence/fatigue |
+| `commentary.decision_log_size` | `commentary.director.decision_capacity` |
+| `commentary.sector_speak*` | removed; sector beat/catalog policy |
+| `commentary.session_briefs` | removed; session context beats are catalog-driven |
+| `commentary.stream_start` | removed; stream lifecycle is deterministic whenever commentary is enabled |
+| `commentary.gap_hunt_tts_*` | removed; beat guards and event speech policy |
+| `commentary.llm_polish` | `commentary.llm.enabled`; behavior is generation, not polish |
+| `commentary.llm_base_url/model/timeout_s/max_tokens` | move to same names under `[commentary.llm]` |
+| `commentary.llm_temperature` | removed; PromptOptions/catalog owns profile sampling |
+| `commentary.llm_max_attempts` | removed with no replacement; exactly one attempt |
+| `[commentary.scheduler]` | removed; director/opportunity/speech contracts replace it |
+| `[commentary.graph_runtime]` | removed; final v2 has one runtime |
+
+Migration warnings identify the exact old key and replacement/removal. They never silently reinterpret a value.
+
+The table is an operator migration map, not a compatibility loader. A recognized v1 key emits a `legacy_key` diagnostic naming its replacement/removal and disables commentary for that config generation until the file is changed; it is never applied in memory. An absent `[commentary]` section is valid and equivalent to `commentary.enabled=false`.
+
+## HTTP API
+
+All registered commentary JSON responses use `Content-Type: application/json` and top-level `schemaVersion: "commentary-runtime/2"`. Both write requests require `Content-Type: application/json`, the same schema version in their body, a body no larger than 64 KiB and the exact `X-Requested-With: irswitch` CSRF header. Their peer address must be loopback (`127.0.0.0/8` or `::1`); forwarded headers never grant locality. Unknown request fields are rejected. Limits are applied before serialization.
+
+### Common error
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "error": {
+    "code": "invalid_request",
+    "message": "Human-readable bounded detail.",
+    "fields": {"fieldName": "reason_code"}
+  }
+}
+~~~
+
+Error codes are stable enums: `invalid_json` (400), `invalid_request` (400), `forbidden` (403), `not_found` (404), `speech_busy` (409), `validation_failed` (422), `component_unavailable` (503). Internal exception strings and filesystem/model secrets are never returned.
+
+### `GET /api/commentary/status`
+
+Always returns 200 when the HTTP service is alive, including when commentary is disabled or degraded.
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "ready",
+  "reason": null,
+  "language": "en",
+  "timeline": {
+    "streamEpoch": 3,
+    "streamActive": true,
+    "streamState": "active",
+    "sessionRef": {"subSessionId": "123", "sessionNum": 2},
+    "occurrenceId": "3:race:2",
+    "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+    "stage": "race",
+    "historyComplete": true
+  },
+  "speech": {
+    "state": "idle",
+    "utteranceId": null,
+    "beatId": null,
+    "opportunityId": null,
+    "acceptedAtMonoMs": null,
+    "lastTerminal": {
+      "utteranceId": "plan:400",
+      "reason": "completed",
+      "atMonoMs": 88710
+    }
+  },
+  "queues": {
+    "mailbox": {"depth": 0, "capacity": 64, "overflows": 0},
+    "opportunities": {"depth": 2, "capacity": 128, "expired": 4, "evicted": 0}
+  },
+  "episodes": {
+    "active": 1,
+    "candidate": 0,
+    "suspended": 0,
+    "retainedCurrentCapacity": 64,
+    "resolved": 12,
+    "resolvedCapacity": 256
+  },
+  "catalog": {
+    "schemaVersion": "narrative-catalog/2",
+    "hash": "sha256:example",
+    "eventIdentifierCount": 60,
+    "beatCount": 64
+  },
+  "config": {
+    "generation": 7,
+    "hash": "sha256:example",
+    "restartRequiredKeys": []
+  },
+  "components": {
+    "llm": {"status": "ready", "model": "qwen3:4b-instruct-2507-q4_K_M", "lastTtftMs": 130, "lastTotalMs": 530},
+    "tts": {"status": "ready", "backend": "supertonic", "voice": "M1"},
+    "tape": {"status": "disabled", "path": null, "drops": 0},
+    "detectors": {"status": "ready", "disabled": []}
+  },
+  "byTapeChannel": {
+    "race.battle.closing": {"kick": 3, "accepted": 2, "queued": 2, "selected": 1, "started": 1, "expired": 1}
+  }
+}
+~~~
+
+Enums: status is `disabled|starting|ready|degraded|stopping`; streamState is `inactive|active|unknown`; `streamActive` is its lossless projection `false|true|null`. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first known stream, `streamEpoch=0`; whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
+
+Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
+
+### `GET /api/commentary/decisions?limit=N`
+
+`limit` defaults to 20 and is clamped to 1–100. Records are newest-first and bounded by `decision_capacity`.
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "runtime": true,
+  "decisions": [
+    {
+      "reducerSequence": 418,
+      "atMonoMs": 90231,
+      "decision": "selected",
+      "reason": "highest_valid_candidate",
+      "beatId": "battle.approach",
+      "episodeId": "battle-ahead:3:17:22:4",
+      "opportunityId": "opp:401",
+      "tapeChannel": "race.battle.closing",
+      "candidateSource": "event_opportunity",
+      "relation": "updates_active_episode",
+      "urgency": "story",
+      "score": 68.5,
+      "threshold": 35.0,
+      "runnerUp": {"beatId": "battle.pursuit", "score": 56.0},
+      "terminalReason": null
+    }
+  ]
+}
+~~~
+
+Decision is `selected|silence|discarded|replaced|expired|invalidated`; candidateSource is `event_opportunity|story_successor|episode_beat|filler`; relation is a stable ID from the frozen relation registry or `null`. The endpoint does not return prompt/completion content; that belongs to explicitly enabled tape capture.
+
+### `POST /api/commentary/validate`
+
+The endpoint is offline with respect to live state: it validates supplied EN text against one catalog beat and supplied immutable bindings at the caller-supplied monotonic evaluation instant. Times only need to share an origin inside this request; they are never compared with the live process clock.
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "text": "He is closing on Morgan, the gap down to eight tenths.",
+  "beatId": "battle.approach",
+  "evaluationAtMonoMs": 90231,
+  "factBindings": [
+    {
+      "schemaVersion": "atomic-fact/2",
+      "factId": "fact:88",
+      "predicate": "approaching",
+      "subjectId": "hero",
+      "objectId": "car:22",
+      "attributes": {"gap_s": 0.8},
+      "polarity": "positive",
+      "validFromMonoMs": 89000,
+      "validUntilMonoMs": 94000,
+      "observedAtMonoMs": 90180,
+      "occurrenceId": "3:race:2",
+      "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+      "evidenceRefs": ["event:401", "feature:gap-ahead:77"],
+      "confidence": 0.94,
+      "scope": "occurrence",
+      "status": "active",
+      "revision": 4
+    }
+  ]
+}
+~~~
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "valid": true,
+  "beatId": "battle.approach",
+  "issues": [],
+  "claims": [
+    {"predicate": "approaching", "subjectId": "hero", "objectId": "car:22", "verdict": "supported"}
+  ]
+}
+~~~
+
+Syntactically valid requests return 200 even when `valid=false`. Unknown beat or malformed binding schema is 400. `text` is 1–512 normalized Unicode characters, `beatId` is 1–128 ASCII ID characters, `factBindings` contains 1–32 unique fact IDs, every attributes object has at most 32 registry keys and every evidenceRefs array has at most 16 unique IDs. Every binding contains exactly the fields shown; nullable fields are `subjectId`, `objectId` and `validUntilMonoMs`. Predicate/attribute IDs, scalar types and implied units come from the frozen fact registry. `polarity` is `positive|negative`, confidence is finite `0..1`, scope is `occurrence|downstream|stream|revalidate|historical_only`, status is `active|expired|superseded|historical|provisional|rejected|unknown`, revisions and millisecond times are nonnegative integers and all strings reject control characters. Only the EN catalog/tokenizer is used. Issues contain stable `code`, `severity` (`error|warning`) and a message capped at 256 characters.
+
+Validation is available while automatic commentary is disabled, provided the v2 catalog/registries loaded successfully. Otherwise it returns `component_unavailable`/503; it never calls Qwen or reads live runtime facts.
+
+### `POST /api/commentary/speak`
+
+This is a manual EN audio-device test, not a narrative injection endpoint. It uses the same single speech lane, never preempts live speech and never creates EventOpportunity, episode transition or ExposureStore entry.
+
+It remains available while automatic commentary is disabled. Admission is decided by NarrativeRuntime, so a 202 response means the request actually owns the lane; the HTTP handler never maintains its own busy flag or waiter.
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "text": "Commentary audio test.",
+  "language": "en",
+  "backend": "supertonic",
+  "voice": "M1",
+  "rate": 0
+}
+~~~
+
+On immediate lane admission it returns 202:
+
+~~~json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "accepted": true,
+  "requestId": "manual:7f5b",
+  "admittedState": "building"
+}
+~~~
+
+Busy returns `speech_busy`/409; invalid text returns `validation_failed`/422; unavailable selected backend returns `component_unavailable`/503. `force`, arbitrary locale and live fact/event injection are not supported.
+
+`schemaVersion`, `text` and fixed `language="en"` are required. `text` is 1–400 normalized Unicode characters with no control characters. `backend`, `voice` and `rate` are optional and default to the effective TTS config; when present they use the same enums/ranges. `admittedState` records the atomic admission transition, not a promise that the worker has not progressed before the HTTP response arrives; the current matching `utteranceId` is visible in status while active. No language classifier is claimed—the explicit EN tag and EN-only operator contract are authoritative.
+
+### Removed endpoint
+
+`GET /api/commentary/assignments` is not registered. It therefore returns the server's generic 404 contract, which is not a commentary-runtime JSON response and is deliberately not a compatibility tombstone. The `/commentary` operator page may remain, but it consumes only the v2 public endpoints.
+
+### Overall health projection
+
+`GET /health` keeps its existing overall service contract and success status. It adds only this bounded component field:
+
+~~~json
+{
+  "commentary": {
+    "status": "ready",
+    "reason": null
+  }
+}
+~~~
+
+Commentary `disabled` or `degraded` does not make overall health fail. Full component detail remains in `/api/commentary/status`.
