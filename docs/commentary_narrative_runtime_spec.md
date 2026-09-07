@@ -1173,17 +1173,18 @@ Všechny intervaly platnosti jsou half-open: horní mez už neplatí. Actor vlas
 
 ~~~text
 schemaVersion, planId, planningCycleId, cycleAttemptOrdinal,
-beatId, episodeId, opportunityId?, candidateSource, beatRole,
+beatId, episodeId, opportunityId?, candidateSource, candidateOrder, beatRole,
 streamEpoch, occurrenceId?, lineageId?, episodeRevision,
-requiredClaims, optionalClaims, forbiddenClaimTypes, requiredFactIds,
+requiredClaims, optionalClaims, forbiddenClaimTypes, selectedFactIds,
 realizationFamily, realizationPattern, realizationBackend, promptOptions,
 language="en", styleCardId?, maxChars, maxSeconds,
-plannedMonoMs, expiresMonoMs, sourceRefs, catalogHash, factViewRevision
+plannedMonoMs, expiresMonoMs, sourceRefs, catalogHash,
+effectiveConfigHash, configApplySequence, factViewRevision
 ~~~
 
 Přesné typy, bounds a nullability jsou jedině v `docs/v2.0.0/schema-contracts.md`; tento seznam je záměrně stejný a nesmí se vyvíjet jako druhé schema.
 
-BeatPlan neobsahuje mutable observer ani globální telemetry dump. Vzniká just-in-time pouze pro aktuální director pass; další beaty mini-příběhu se předem neplánují ani negenerují.
+BeatPlan neobsahuje mutable observer ani globální telemetry dump. Vzniká just-in-time pouze pro aktuální director pass; další beaty mini-příběhu se předem neplánují ani negenerují. Ve stejném synchronním reducer turnu z něj pure compiler a aktuální FactView vytvoří jeden `realization-bundle/2`: celý BeatPlan, canonical-equal kopie přesně `selectedFactIds`, úplné collision-free actor bindings, konečné SurfaceValueSets/relation lexemes a jejich hashe. Authored/Qwen worker ani verifier potom nikdy nečtou live FactLedger, roster, config nebo observer. Před verifikací response actor porovná všechny bound facts, occurrence, lineage a episode revision s nejnovějším FactView; jakákoli změna je `freshness_stale`, ne důvod přestavět lexikon.
 
 Nullable occurrence/lineage je dovolena pouze pro `stream.started` a přísnou stream-scope variantu `filler.lobby`, která váže pouze lobby context a track identity. Všechny ostatní session, race, bio a filler beaty musí být připnuty ke coherent occurrence.
 
@@ -1998,7 +1999,7 @@ Základní typy records odpovídají jedinému frozen enumu:
 - `detector_observation`: predicate tree s true/false/unknown, transition/reason a inclusive frame-window reference;
 - `narrative_event`, `fact_change`, `episode_change` a `opportunity_change`: přesné stavové změny; opportunity payload nese event ref, `tape_channel`, TTL, priority, urgency, penalty coefficient, queue/terminal state a reason;
 - `director_decision`: facts, episodes, event/successor kandidáti, jejich relace, hard-gate reasons a score breakdown;
-- `llm_attempt`: BeatPlan, prompt metadata/obsah dle configu, completion, latency, tokens a verifier;
+- `llm_attempt`: BeatPlan plus RealizationBundle/fact/surface hashes, prompt metadata/obsah dle configu, completion, latency, tokens a verifier; full bundle capture follows the same explicit redaction/detail policy and no replay reads live facts;
 - `speech_exposure`: committed text, backend playback acceptance (`SPEECH_STARTED`), completion/interruption/failure;
 - `config_applied`, `health_change` a `mailbox_gap`: replay/operational boundaries;
 - `drop_notice`: počet a typ záznamů zahozených při writer overload nebo I/O chybě.
@@ -2051,7 +2052,7 @@ Každé director rozhodnutí musí být vysvětlitelné minimálně těmito poli
     "final": 71
   },
   "requiredSwitchMargin": 8,
-  "requiredFactIds": ["relation:17", "gap:91"],
+  "selectedFactIds": ["relation:17", "gap:91"],
   "realizationFamily": "battle.closing",
   "realizationPattern": "reels_in",
   "realizationBackend": "qwen_compiled",

@@ -27,7 +27,7 @@ The single speech lane has exactly these states:
 | State | Owned data | Text waiting behind it? |
 | --- | --- | --- |
 | `idle` | none | no |
-| `building` | one immutable narrative BeatPlan and realizer generation token | no |
+| `building` | one immutable narrative BeatPlan + RealizationBundle and realizer generation token | no |
 | `committed` | one verified current utterance dispatched to TTS, awaiting backend acceptance | no |
 | `speaking` | one backend-accepted utterance and playback token | no |
 | `stopping` | one cancellation in progress | no |
@@ -60,7 +60,7 @@ Every context batch carries `external_order`; worker/timer/API commands do not. 
 | `CONFIG_UPDATE` | stream/config coordinator | yes | never; admitted atomically before its optional matching context batch | cache the already installed ConfigLedger snapshot/diagnostic and launch generation-tagged component preflights; run/episode/speech lifecycle changes only in the immediately following coherent context batch |
 | `LONG_SILENCE_ELAPSED` | owned one-shot deadline | no | same deadline generation only | clear fired token, evaluate one filler impulse, then rearm by frozen rule |
 | `VALIDITY_DEADLINE_ELAPSED` | owned nearest-expiry one-shot deadline | no | same deadline generation only | sweep facts already expired in the applied view plus opportunity/BeatPlan revision deadlines; cancel invalid building/committed work, never run director, then rearm |
-| `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, verify synchronously, freshness-check and dispatch TTS or reject |
+| `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, freshness-check bound facts/identity, verify synchronously against the same bundle and dispatch TTS or reject |
 | `REALIZATION_FAILED` | authored/Qwen worker | yes | never | token-check, suppress beat/revision and release reservation |
 | `PLAYBACK_ACCEPTED` | TTS worker | yes | duplicate token is ignored and audited | narrative token consumes its opportunity and creates exposure; manual token does neither; both enter `speaking` and pause audience silence |
 | `SPEECH_COMPLETED` | TTS worker | yes | duplicate token is ignored and audited | terminalize narrative exposure or manual request and free lane; only a narrative terminal runs one director pass |
@@ -122,7 +122,7 @@ Every reducer command first performs the same logical validity sweep at its capt
 
 | Current lane | Input/condition | Next lane | Required effects |
 | --- | --- | --- | --- |
-| `idle` | director selects valid beat | `building` | reserve opportunity if present; create one BeatPlan/token; dispatch one realizer |
+| `idle` | director selects valid beat | `building` | reserve opportunity if present; synchronously create one BeatPlan + RealizationBundle/token; dispatch one realizer |
 | `idle` | no candidate/TTS unavailable | `idle` | record bounded SILENCE/reason; do not consume anything |
 | `building` | context makes plan hard-invalid | `idle` | cancel token, release reservation, terminal `invalidated`; replan only if this same command contains an accepted/lifecycle event impulse, otherwise wait |
 | `building` | a later accepted-event impulse admits a challenger that outranks the plan | `building` or `idle` | cancel old token/release as `replaced` without suppression; close its cycle and start the event's new cycle at attempt 1 |

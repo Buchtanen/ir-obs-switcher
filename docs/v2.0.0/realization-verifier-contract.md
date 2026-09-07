@@ -8,7 +8,7 @@ This branch-only artifact closes what “factually valid generated text” can m
 
 An embedding/cosine score cannot prove actor direction, polarity, number, freshness or causality. It may only reduce repetition. A second LLM judging the first is also not an authoritative fact gate. Production acceptance is therefore hybrid:
 
-1. deterministic BeatPlan selects the complete allowed claim frame;
+1. deterministic BeatPlan selects the complete allowed claim frame and a pure compiler freezes one RealizationBundle;
 2. authored output or Qwen realizes one bounded EN utterance;
 3. a family-specific deterministic parser maps every semantic fragment back to typed claims and precomputed surface values;
 4. any unknown semantic fragment, missing required claim or extra claim rejects the attempt;
@@ -48,19 +48,13 @@ AND TemporalFrameMatch(P,C)
 
 ## Compiler-owned surface data
 
-Before Qwen is called, the prompt compiler creates:
+Before Qwen is called, the prompt compiler creates the exact `realization-bundle/2` object frozen in `schema-contracts.md`. Its SurfaceLexicon contains:
 
 ```text
-SurfaceLexicon {
-  actorAliases: actorId -> finite allowed strings/pronouns,
-  values: factId/attribute -> finite exact EN strings,
-  relationLexemes: predicate+polarity+tense -> finite allowed phrases,
-  connectives: family-approved non-semantic strings,
-  forbiddenLexemes: family/global strings and constructions
-}
+surfaceValueSets, relationLexemes, connectives, forbiddenLexemes
 ```
 
-The verifier receives this exact immutable object by hash; it never reconstructs values from current mutable telemetry. Number expansion, rounding, unit pluralization and ordinal rendering are pure shared functions tested once and reused by authored and Qwen paths.
+Actor aliases live in the bundle's separate collision-free `actorBindings`; selected AtomicFact copies live in `factBindings`. The verifier receives this exact immutable bundle and hashes; it never reconstructs values from current mutable telemetry. Number expansion, rounding, unit pluralization and ordinal rendering are pure shared functions tested once and reused by authored and Qwen paths. A response is evaluated only after the actor proves that every bound AtomicFact remains canonical-equal/current in its newest FactView and that occurrence, lineage and episode revision still match.
 
 ## Common rejection codes
 
@@ -118,7 +112,7 @@ The loader must prove all 64 beats resolve to one of these 37 rows, and every ro
 
 - Critical lifecycle/results default to authored patterns until their Qwen family holdout is separately promoted.
 - Authored text is not trusted merely because it is in source control; catalog load validates its placeholders and CI runs it through the same family parser with representative bindings.
-- Qwen receives only the selected semantic frame, one tight pattern or approved family pool, SurfaceLexicon and relevant family rules. It never receives the full graph, mutable FactLedger, unrelated telemetry or prior hidden chain of thought.
+- Qwen receives only the selected semantic frame, one tight pattern or approved family pool, immutable RealizationBundle surface/bindings and relevant family rules. It never receives the full graph, mutable FactLedger/FactView, unrelated telemetry, current config or prior hidden chain of thought.
 - One transport attempt is allowed. Invalid transport/content/verification suppresses the beat revision and returns control to the director.
 
 ## Promotion gates

@@ -34,6 +34,7 @@ Implementation placement is one neutral `irswitch/contracts/narrative.py` module
 | event opportunity | `event-opportunity/2` |
 | beat plan | `beat-plan/2` |
 | prompt options | `prompt-options/2` |
+| realization bundle | `realization-bundle/2` |
 | narrative catalog | `narrative-catalog/2` |
 | tape manifest | `narrative-tape-manifest/2` |
 | tape record | `narrative-tape-record/2` |
@@ -258,13 +259,36 @@ BeatPlan is exactly:
 schemaVersion, planId, planningCycleId, cycleAttemptOrdinal, beatId, episodeId, opportunityId?, candidateSource,
 candidateOrder, beatRole, streamEpoch, occurrenceId?, lineageId?, episodeRevision,
 requiredClaims[1..16], optionalClaims[0..2], forbiddenClaimTypes[0..32],
-requiredFactIds[1..32], realizationFamily, realizationPattern,
+selectedFactIds[1..32], realizationFamily, realizationPattern,
 realizationBackend, promptOptions, language, styleCardId?, maxChars,
 maxSeconds, plannedMonoMs, expiresMonoMs, sourceRefs[1..32],
 catalogHash, effectiveConfigHash, configApplySequence, factViewRevision
 ```
 
-Candidate source is `event_opportunity|story_successor|episode_beat|filler`; role is `opening|update|outcome|recap|transition|filler`; backend is `authored|qwen_compiled`; language is constant `en`. `candidateOrder` is exactly `{reducerSequence, sourceOrdinal}` with nonnegative integers: event ordinal inside the reducing batch, zero for a timer/worker impulse, or the episode `materialOrder` for a successor/episode beat. It is the stable age/tie-break authority; V4 sequence and timestamps are not substituted. `planningCycleId` identifies one director impulse and `cycleAttemptOrdinal` is exactly `1|2`; at most two different BeatPlans may be dispatched in that cycle. Only `stream.started` and the stream-scope form of `filler.lobby` may omit occurrence/lineage; the latter may bind only `broadcast.context(context=lobby)` plus a current stream-scope `context.track_identity`. Claims are typed predicate/actor/attribute objects referencing required fact IDs, not natural-language assertions. `maxChars` is 1..512 and cannot exceed endpoint/catalog limits. `expiresMonoMs` is strictly greater than `plannedMonoMs` and uses the same half-open validity boundary. `effectiveConfigHash` and `configApplySequence` are the same atomic ConfigLedger snapshot taken at planning. A BeatPlan is immutable and exists only for the current lane attempt.
+Candidate source is `event_opportunity|story_successor|episode_beat|filler`; role is `opening|update|outcome|recap|transition|filler`; backend is `authored|qwen_compiled`; language is constant `en`. `candidateOrder` is exactly `{reducerSequence, sourceOrdinal}` with nonnegative integers: event ordinal inside the reducing batch, zero for a timer/worker impulse, or the episode `materialOrder` for a successor/episode beat. It is the stable age/tie-break authority; V4 sequence and timestamps are not substituted. `planningCycleId` identifies one director impulse and `cycleAttemptOrdinal` is exactly `1|2`; at most two different BeatPlans may be dispatched in that cycle. Only `stream.started` and the stream-scope form of `filler.lobby` may omit occurrence/lineage; the latter may bind only `broadcast.context(context=lobby)` plus a current stream-scope `context.track_identity`. A bound claim is exactly `{claimId,predicate,subjectId?,objectId?,polarity,temporalFrame,attributes[0..32],factIds[1..16]}`; polarity is `positive|negative`, temporal frame is `current|projected|historical`, attributes are sorted unique registered attribute IDs, and every claim fact ID occurs in `selectedFactIds`. `requiredClaims` contains every mandatory selected claim; `optionalClaims` contains only the zero to two optional claims actually selected for this attempt, not the BeatDefinition's unselected options. `selectedFactIds` is the sorted unique union used by both arrays. `maxChars` is 1..512 and cannot exceed endpoint/catalog limits. `expiresMonoMs` is strictly greater than `plannedMonoMs` and uses the same half-open validity boundary. `effectiveConfigHash` and `configApplySequence` are the same atomic ConfigLedger snapshot taken at planning. A BeatPlan is immutable and exists only for the current lane attempt.
+
+## RealizationBundle
+
+The pure prompt compiler runs synchronously in the same reducer turn that creates a BeatPlan and produces exactly one immutable worker input:
+
+```text
+schemaVersion, bundleId, beatPlan, factBindings[1..32],
+actorBindings[0..16], surfaceLexicon, factBindingHash,
+surfaceLexiconHash, bundleHash
+```
+
+`bundleHash` is the canonical hash of `{beatPlan,factBindings,actorBindings,surfaceLexicon}`; `bundleId` is exactly `rb:` plus the first 32 lower-case hex characters of that digest. `factBindings` are complete AtomicFact copies sorted by fact ID; their IDs equal `beatPlan.selectedFactIds`, every copy is current at `plannedMonoMs`, and `factBindingHash` is the canonical hash of that array. Actor bindings are sorted by actor ID and each is exactly `{actorId,aliases[1..8]}` using the same normalized, unique, collision-free rules as the offline validation endpoint. They bind every non-null subject/object in the selected claims and facts and contain no unused actor.
+
+SurfaceLexicon is exactly:
+
+```text
+surfaceValueSets[0..64], relationLexemes[1..64],
+connectives[0..32], forbiddenLexemes[0..128]
+```
+
+A surface value set is exactly `{surfaceValueSetId,factId,attributeId,valueType,unit?,forms[1..16]}`. It references one selected fact/attribute, uses its registry type/unit, and contains sorted unique exact EN renderings produced by the shared pure number/unit/ordinal/band functions. A relation row is exactly `{claimId,polarity,temporalFrame,forms[1..16]}` and resolves one selected claim. Connectives and forbidden lexemes are sorted unique normalized EN strings from the selected audited family/card and global verifier registry. `surfaceLexiconHash` hashes this exact object; aliases are separately covered by `bundleHash`.
+
+The authored/Qwen worker and deterministic verifier receive this bundle and no live FactLedger, FactView, roster, config or observer reference. On `REALIZATION_SUCCEEDED`, the actor first token-checks, then requires the current FactView to contain canonical-equal, currently valid copies of every bound fact and the same occurrence/lineage/episode revision before verification/commit. Any absence or difference is `freshness_stale`; the verifier never rebuilds a lexicon from newer truth. A compiler bound/reference failure is `realization_input_invalid`, fails closed and consumes the current cycle attempt; validated catalogs/registries must make it unreachable for a valid FactView.
 
 ## ConfigLedger
 
@@ -336,7 +360,7 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | timeline transition | `broadcast_started`, `broadcast_ended`, `broadcast_unknown`, `broadcast_resumed`, `narrative_enabled`, `narrative_disabled`, `attached_live`, `process_recovery`, `session_started`, `session_ended`, `session_restarted`, `session_superseded`, `session_suspended`, `session_resumed` |
 | opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `commentary_disabled`, `evicted_capacity` |
 | episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated`, `capacity_evicted` |
-| attempt terminal | `realization_timeout`, `realization_transport`, `realization_invalid_response`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
+| attempt terminal | `realization_input_invalid`, `realization_timeout`, `realization_transport`, `realization_invalid_response`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
 | verifier rejection | `empty`, `too_long`, `sentence_count`, `token_count`, `non_en_contract`, `meta_output`, `unknown_fragment`, `unknown_entity`, `actor_reversed`, `actor_ambiguous`, `number_unbound`, `number_mismatch`, `unit_mismatch`, `polarity_mismatch`, `tense_mismatch`, `required_missing`, `forbidden_claim`, `extra_claim`, `causal_inference`, `intent_inference`, `emotion_inference`, `medical_inference`, `prediction_as_result`, `result_as_prediction`, `unsupported_certainty`, `unsafe_negation` |
 | detector transition | `enter_started`, `enter_confirmed`, `enter_lost`, `material_band_changed`, `material_delta_met`, `update_rate_limited`, `clear_started`, `clear_cancelled`, `clear_confirmed`, `target_changed`, `occurrence_reset`, `stream_reset`, `unsupported_stage`, `identity_conflict`, `feature_unknown`, `required_capture_lost` |
 | speech terminal | `completed`, `interrupted_stream_end`, `interrupted_occurrence_reset`, `interrupted_commentary_disabled`, `interrupted_truth_invalidated`, `interrupted_shutdown`, `tts_failed_after_acceptance`, `tts_start_timeout`, `tts_playback_watchdog`, `tts_stop_timeout` |
@@ -364,7 +388,7 @@ The loader rejects duplicate/case-colliding IDs, unknown references, unit mismat
 The design gate remains closed until branch-only fixtures prove:
 
 1. master EventEnvelope canonical JSON/hash is unchanged;
-2. every DTO accepts one complete golden and rejects unknown fields, NaN/infinity, bad units, bad enums, missing required fields and illegal nulls;
+2. every DTO accepts one complete golden and rejects unknown fields, NaN/infinity, bad units, bad enums, missing required fields and illegal nulls, including RealizationBundle fact/actor/surface/hash mismatch;
 3. all 64 beats and 60 dispositions resolve through the registries;
 4. tape manifest/record/trailer round-trip and detect truncation/hash mismatch;
 5. API fact bindings round-trip through the same AtomicFact schema rather than a looser duplicate;

@@ -380,6 +380,18 @@ Expected:
 - the building context challenger reaches exactly `70+8` after replacement cost and may replace as a new accepted-event planning cycle; the same candidate at 77 cannot replace, and no successor/filler/pure-fact/timer input can invoke this precommit replacement path;
 - every result records the compared incumbent/challenger scores, urgency ranks, relation, margin, replacement cost and stable-tail inputs.
 
+## F38 — realization input is frozen and freshness compares exact facts
+
+Input: plan `battle.approach` from FactView 90 using relation fact R and gap fact G=1.4 seconds. In the same reducer turn compile its RealizationBundle, then let the live FactView advance while Qwen runs. Exercise separately: unrelated fact change; canonical-equal R/G copies retained; G superseded by G2=1.1; G evicted to unknown; actor alias changed in the live roster; and a malformed compiler output missing G's SurfaceValueSet.
+
+Expected:
+
+- bundle fact IDs equal sorted `selectedFactIds`; fact copies, collision-free actor bindings, exact finite EN surfaces, lexicon hash and bundle hash are frozen before worker dispatch, and Qwen/verifier receive no live state handle;
+- an unrelated change or a new FactView retaining canonical-equal current R/G passes freshness and verifies against the original 1.4-second surfaces; a later roster alias cannot alter or invalidate the frozen bundle;
+- superseded/different G2 and missing/evicted G both return `freshness_stale` before semantic parsing, release/suppress by the normal attempt rule and never rebuild the bundle around 1.1 seconds;
+- malformed/missing surface data fails closed as `realization_input_invalid` before worker dispatch, consumes only that cycle attempt and is unreachable after catalog/registry schema validation;
+- tape carries plan, bundle, fact and lexicon hashes plus captured content according to explicit redaction policy, sufficient to prove which immutable input produced the recorded completion/verdict.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:

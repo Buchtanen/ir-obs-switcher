@@ -58,6 +58,7 @@ Master cross-checks that changed or sharpened the design:
 | Sequence names | EventEnvelope sequence, fanout stream sequence and reducer order could be conflated | Preserve session-scoped overlay `EventEnvelope.sequence`; external narrative order is `(fanout_stream_sequence, source_ordinal)`; actor `reducer_sequence` is authoritative for decision replay |
 | Batch order/revision | One scalar external order and context revision could not describe a multi-event or fact-only batch | Context command carries fanout sequence plus nullable ordinal range and the exact `(timelineRevision,factViewRevision)` pair; event order remains per-event |
 | Prepared speech | Event waiting could become a renamed sentence queue | Opportunity contains meaning/scheduling metadata only; BeatPlan/text is just-in-time and single-flight |
+| Realizer input ownership | BeatPlan named fact IDs but worker/verifier could otherwise reread mutable FactView or regenerate numeric/name surfaces later | Same-turn pure compiler freezes one bounded RealizationBundle with exact fact copies, actor bindings and SurfaceLexicon; worker has no live-state reference and actor freshness-compares the copies |
 | Opportunity consumption | Selection, commit and exposure had no precise boundary | Reserve at planning, consume at the software-observable `PLAYBACK_ACCEPTED` boundary (public lifecycle name `SPEECH_STARTED`); failure before backend acceptance releases reservation, later failure/interruption stays consumed |
 | Opportunity updates | Multiple revisions could all be narrated late | Same correlation update supersedes older revision unless catalog marks distinct outcomes |
 | Post-beat behavior | Continuation versus new event was underdefined | One event/story/episode candidate tier with explicit focused-switch policy, then filler-only fallback or silence |
@@ -218,7 +219,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Thirty-seven ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Thirty-eight ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, immutable realization input/freshness, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -229,7 +230,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [x] Complete identifier disposition matrix for all 60 known master identifiers and all 54 legacy nodes drafted in `event-beat-disposition.md`.
 - [ ] Final review and machine validation of the exact 64 BeatDefinitions, including required/forbidden claims and realization family for every beat.
 - [ ] Complete successor graph with deterministic relation, guard, preference and terminal/dead-end policy.
-- [ ] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
+- [ ] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan, RealizationBundle, ConfigLedger and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
 - [ ] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
 - [ ] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
 - [ ] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
@@ -240,7 +241,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the thirty-seven expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the thirty-eight expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.
