@@ -1,6 +1,6 @@
 # v2.0.0 event and beat disposition freeze
 
-**Status:** 64-beat inventory reviewed and machine-frozen; successor graph remains a separate design-freeze gate owned by issues #256/#257
+**Status:** 64-beat inventory and closed successor DAG reviewed and machine-frozen; implementation loader remains owned by issue #257
 
 This branch-only artifact closes the inventory gap between the current V4 event surface, the legacy commentary graph and the target narrative catalog. It is not shipped to `master`; the final v2 behavior documentation is generated from the implemented catalogs.
 
@@ -209,21 +209,21 @@ The lifecycle command that caused a filler evaluation remains on `filler.lifecyc
 
 ## Story templates and terminal contracts
 
-| Story | Correlation identity | Opens | Updates | Closes | Natural successor order |
-| --- | --- | --- | --- | --- | --- |
-| `timing_attempt` | occurrence + lap/attempt | hot lap, gain/target | projection, attack, sector | lap complete, invalid lap, restart | hot → projection/target → sector → lap result |
-| `battle_ahead` | occurrence + hero + target + relation epoch | pursuit | approach, attack range, side-by-side | pass, battle won, target change, exit hysteresis, reset | pursuit → approach → attack range → side-by-side → outcome |
-| `battle_behind` | occurrence + hero + target + relation epoch | pressure/rival threat | material pressure band | position lost, target change, exit hysteresis, reset | pressure → rival threat/two-front → loss or closure |
-| `battle_two_front` | occurrence + hero + front/rear targets + both relation epochs | composite predicate enter | material front/rear band | either identity changes or composite exits | two-front → side-by-side/pass/loss when correlated |
-| `pit_cycle` | occurrence + pit-cycle ordinal | entry | lane, stopped, released, exit | outcome, reset | entry → lane → stopped? → released? → exit → outcome |
-| `incident` | occurrence + incident ordinal | classified incident | aftermath | recovered, session/reset | incident → aftermath/invalid-lap → recovery |
-| `session_occurrence` | occurrence ID | session started/restarted | context, flags, final lap | session ended/superseded | intro/restart → context → checkered/finish → wrap → preview |
-| `stream_lifecycle` | narrative `streamEpoch` under one `broadcastEpoch` | narrative run started | none | OBS stream end/commentary disable/process shutdown | stream opening only |
-| `bio_pressure` | occurrence + hero + sensor epoch | pressure enter | material band revision | clear/stale/reset | pressure context or silence |
-| `single_result` | occurrence + accepted event ID | self-contained accepted result/context event | never | consumed, superseded, invalid or TTL | none; may also close a correlated story |
-| `filler_single` | silence impulse ID + scope; occurrence normally, stream only for pre-session lobby | long silence + one valid fact set | never | selected, invalid or TTL | none |
+| Story | Correlation identity | Opens | Updates | Closes | Natural successor order | Max consecutive non-closing | Story cadence |
+| --- | --- | --- | --- | --- | --- | ---: | ---: |
+| `timing_attempt` | occurrence + lap/attempt | hot lap, gain/target | projection, attack, sector | lap complete, invalid lap, restart | hot → projection/target → sector → lap result | 2 | 8 s |
+| `battle_ahead` | occurrence + hero + target + relation epoch | pursuit | approach, attack range, side-by-side | pass, battle won, target change, exit hysteresis, reset | pursuit → approach → attack range → side-by-side → outcome | 3 | 8 s |
+| `battle_behind` | occurrence + hero + target + relation epoch | pressure/rival threat | material pressure band | position lost, target change, exit hysteresis, reset | pressure → rival threat/two-front → loss or closure | 2 | 8 s |
+| `battle_two_front` | occurrence + hero + front/rear targets + both relation epochs | composite predicate enter | material front/rear band | either identity changes or composite exits | two-front → side-by-side/pass/loss when correlated | 2 | 8 s |
+| `pit_cycle` | occurrence + pit-cycle ordinal | entry | lane, stopped, released, exit | outcome, reset | entry → lane → stopped? → released? → exit → outcome | 3 | 8 s |
+| `incident` | occurrence + incident ordinal | classified incident | aftermath | recovered, session/reset | incident → aftermath/invalid-lap → recovery | 2 | 8 s |
+| `session_occurrence` | occurrence ID | session started/restarted | context, flags, final lap | session ended/superseded | intro/restart → context → checkered/finish → wrap → preview | 3 | 8 s |
+| `stream_lifecycle` | narrative `streamEpoch` under one `broadcastEpoch` | narrative run started | none | OBS stream end/commentary disable/process shutdown | stream opening only | 1 | 0 s |
+| `bio_pressure` | occurrence + hero + sensor epoch | pressure enter | material band revision | clear/stale/reset | pressure context or silence | 1 | 0 s |
+| `single_result` | occurrence + accepted event ID | self-contained accepted result/context event | never | consumed, superseded, invalid or TTL | none; may also close a correlated story | 1 | 0 s |
+| `filler_single` | silence impulse ID + scope; occurrence normally, stream only for pre-session lobby | long silence + one valid fact set | never | selected, invalid or TTL | none | 1 | 0 s |
 
-Question marks mean an optional lifecycle state, not a non-deterministic edge. Every edge additionally requires matching occurrence/lineage and its listed correlation identity. A terminal event may produce a self-contained result beat even if its opening beat was never spoken.
+Question marks mean an optional lifecycle state, not a non-deterministic edge. Every edge between occurrence-scoped episodes additionally requires matching occurrence/lineage and its listed correlation identity; the stream-opening edges bind the current confirmed occurrence named by their guard. A terminal event may produce a self-contained result beat even if its opening beat was never spoken.
 
 Episode routing is deterministic and ordered:
 
@@ -293,6 +293,23 @@ These edges create candidates only while the target beat's required claims and h
 | `session.qualifying_recap` | `session.preview.next` | next present stage known | preferred, closing |
 
 No other natural successor edge exists in v2 baseline. In particular, filler, bio, field/weather update, flags, standalone position results and single-result beats have no implicit continuation. They may be followed only through a new event/silence opportunity and normal arbitration.
+
+### Frozen successor evaluation
+
+The table above is a closed 50-edge set. An implementation cannot infer another edge from matching groups, stories, predicates, embeddings or realization text. Each director pass expands only the edges whose `from` beat is the last playback-accepted beat. It then applies, in order:
+
+1. the same active narrative `streamEpoch`;
+2. the edge's exact typed correlation bindings and positive/negative fact conditions;
+3. the target BeatDefinition's required claims and hard context, where `unknown` is ineligible;
+4. half-open fact/opportunity validity and not-already-exposed material identity;
+5. the maximum of global, policy and StoryDefinition cadence;
+6. the minimum of public and StoryDefinition consecutive-beat caps for non-closing edges.
+
+A closing edge bypasses only the consecutive non-closing cap. It does not mutate or resolve episode truth when selected or spoken: the accepted event/fact/lifecycle reducer already owns that transition. Closing permits a still-valid outcome realization from the matching resolved identity. If no edge remains eligible, the director returns to ordinary event/episode/filler arbitration; it never waits on or manufactures a successor.
+
+Successor scoring is frozen as `58 continuation base + 6 same-story continuity + edge bonus + 6 material revision`, before the already-defined fatigue/penalty terms. `preferred` contributes 6 and `allowed` contributes 0. Preference is only a score term; it is not a traversal lock and cannot bypass a hard guard, a higher-urgency challenger or the inclusive `switch_margin` rule. An event and successor route producing the same `(beatId, episodeId, materialRevision)` are one deduplicated candidate.
+
+The generated projection contains 64 nodes and 50 edges: 28 preferred, 22 allowed, 18 closing and 32 non-closing. Thirty-six nodes have no implicit continuation. The graph is a DAG with 64 singleton strongly connected components, so there is no cyclic story walk; validity, cadence, exposure identity and story caps remain mandatory barriers even if a future schema version intentionally introduces a cycle.
 
 ## Beat inventory
 
@@ -456,7 +473,7 @@ During branch calibration, a changed temporal/composite detector may be marked `
 
 The exact beat projection is generated as `machine/beat-catalog.json` with its Draft 2020-12 schema, invalid-mutation fixtures and standard-library checker. It cross-validates all 64 beat IDs against the 57-predicate/five-allowlist fact registry, all 37 realization families, six policies and 36 `tape_channel` values. Required predicates retain actor direction, exact claim cardinality, required/optional attributes and literal enum constraints; per-beat forbidden additions remain exact catalog strings under the closed global forbidden-claim list. Replaced `STREAM_START`, `SESSION_INTRO_*` and `SESSION_WRAP` identifiers are disposition/migration evidence only and cannot appear as v2 beat triggers; the canonical lifecycle kinds are used instead.
 
-This checkpoint reserves four audited EN cards per beat but does not claim those 256 cards or verifier corpora already exist. Their materialization remains the controlled-English gate. Natural successor edges and SCC/dead-end proof remain the next graph gate.
+This checkpoint reserves four audited EN cards per beat but does not claim those 256 cards or verifier corpora already exist. Their materialization remains the controlled-English gate. The 50 natural successor edges and SCC/dead-end proof are materialized in `machine/successor-graph.json`; executing the named invariants in the production catalog loader remains a separate implementation gate.
 
 Issue #256 cannot close until CI or a catalog audit script proves:
 

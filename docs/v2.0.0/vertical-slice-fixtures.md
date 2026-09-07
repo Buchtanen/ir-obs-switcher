@@ -219,7 +219,7 @@ Expected:
 
 ## F23 — scoring decay, order and story cap use one formula
 
-Input: one semantic exposure of weight 1 is exactly 90 seconds old, one pattern exposure is exactly 180 seconds old, and two otherwise equal story candidates have candidate orders `(40,3)` and `(40,4)`. Public consecutive limit is 3, the focused StoryDefinition limit is 2, and two beats of that episode have been playback-accepted consecutively.
+Input: one semantic exposure of weight 1 is exactly 90 seconds old, one pattern exposure is exactly 180 seconds old, and two otherwise equal story candidates have candidate orders `(40,3)` and `(40,4)`. Public consecutive limit is 3, the focused `timing_attempt` StoryDefinition limit is 2, and two beats of that episode have been playback-accepted consecutively.
 
 Expected:
 

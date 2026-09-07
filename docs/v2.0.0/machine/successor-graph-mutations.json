@@ -1,0 +1,74 @@
+{
+  "invalid": [
+    {
+      "errorContains": "edge IDs or ordinals are not unique and contiguous",
+      "id": "remove_edge",
+      "operation": "delete",
+      "path": ["edges", 0]
+    },
+    {
+      "errorContains": "edge has unknown beat reference",
+      "id": "unknown_target",
+      "operation": "set",
+      "path": ["edges", 0, "toBeatId"],
+      "value": "unknown.beat"
+    },
+    {
+      "errorContains": "edges differ from frozen human table",
+      "id": "reverse_closure",
+      "operation": "set",
+      "path": ["edges", 9, "edgeClass"],
+      "value": "non-closing"
+    },
+    {
+      "errorContains": "edge preference bonus differs",
+      "id": "preferred_without_bonus",
+      "operation": "set",
+      "path": ["edges", 0, "scoreBonus"],
+      "value": 0
+    },
+    {
+      "errorContains": "expected const 'ineligible'",
+      "id": "unknown_becomes_eligible",
+      "operation": "set",
+      "path": ["guardProfiles", 0, "unknownVerdict"],
+      "value": "eligible"
+    },
+    {
+      "errorContains": "story definitions differ from frozen contract",
+      "id": "loosen_story_cap",
+      "operation": "set",
+      "path": ["storyDefinitions", 0, "maxConsecutiveNonClosingBeats"],
+      "value": 8
+    },
+    {
+      "errorContains": "beat catalog hash differs",
+      "id": "wrong_catalog_hash",
+      "operation": "set",
+      "path": ["sourceBaseline", "beatCatalogSha256"],
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "errorContains": "expected const True",
+      "id": "false_dag_claim",
+      "operation": "set",
+      "path": ["analysis", "isDirectedAcyclic"],
+      "value": false
+    },
+    {
+      "errorContains": "node degree differs from edge set",
+      "id": "wrong_node_degree",
+      "operation": "set",
+      "path": ["nodePolicies", 0, "incomingEdgeCount"],
+      "value": 99
+    },
+    {
+      "errorContains": "unbounded nonterminal component",
+      "id": "self_loop_cycle",
+      "operation": "set",
+      "path": ["edges", 0, "toBeatId"],
+      "value": "stream.started"
+    }
+  ],
+  "schemaVersion": "successor-graph-mutations/1"
+}

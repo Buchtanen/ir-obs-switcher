@@ -215,7 +215,7 @@ An optional unavailable source only suppresses dependent facts/beats. It never b
 
 ## Closure checks
 
-`machine/build_beat_catalog.py` now proves every required beat predicate, attribute, literal enum constraint, repeated-claim cardinality and allowlist reference resolves through this registry. It deliberately does not implement runtime predicate evaluation or successor-graph safety; those remain catalog-loader/graph gates.
+`machine/build_beat_catalog.py` now proves every required beat predicate, attribute, literal enum constraint, repeated-claim cardinality and allowlist reference resolves through this registry. `machine/build_successor_graph.py` separately proves the closed edge/reference/SCC contract. Neither implements runtime predicate evaluation; executing those invariants remains the production catalog-loader gate.
 
 Issue #236/#245/#247 cannot close until generated machine registries prove:
 
