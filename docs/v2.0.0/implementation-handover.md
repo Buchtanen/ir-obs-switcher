@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #238 acceptance complete — closing metadata gate before #239
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236) and [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), closing [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), next [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239)
+**Phase:** #239 implementation — exact NarrativeTape framing schema checkpoint
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237) and [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), active [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -39,6 +39,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #238 fail-soft load SHA: `349ee51587cadc909dbdad19b4da6a8d2a08ae2f` (`feat: load v2 commentary config fail-soft (#238)`); [CI run 34161392389](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34161392389) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - #238 persistent reload-owner SHA: `64b75f03dafc4bea2d6c9c194a43afc10617981d` (`feat: own v2 config reload generations (#238)`); [CI run 34162015998](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34162015998) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - #238 public-control/migration SHA: `fe72658f104180d2b02158ec426853075ccb76b5` (`refactor: remove legacy commentary config controls (#238)`); [CI run 34162505534](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34162505534) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 closing-metadata SHA: `6278c3419b40763aae7c127dac020539f7b4934c` (`docs: close v2 config checkpoint (#238)`); final [CI run 34162894430](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34162894430) is green and #238 is closed as completed.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -54,8 +55,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent through the #238 closing metadata gate.
-- Dirty scope: this handover only.
+- Editing owner: current root agent through the first #239 schema checkpoint.
+- Dirty scope: DTO schema generator, generated documentation and packaged schemas, DTO golden fixtures, focused NarrativeTape schema test and this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -64,8 +65,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - Completed #238 load scope: every `AppConfig.from_file` call, including `POST /config/reload`, produces a strict immutable v2 commentary candidate. Invalid or legacy commentary sections emit value-free diagnostics, do not abort other application-domain loading and leave the legacy commentary runtime disabled. Valid v2 values remain isolated from `OverlaySettings.commentary`, so this checkpoint cannot activate the future `NarrativeRuntime` or reinterpret a v1 key.
 - Completed #238 reload-owner scope: one process-lifetime `CommentaryConfigCoordinator` owns `ConfigLedger` from application startup across reloads. Generation zero bootstraps from the valid startup candidate or disabled frozen defaults; each valid reload installs one generation and immediately applies only the `command` boundary. Invalid input creates no generation, sets automatic requested state false, preserves last-valid desired/effective maps and current manual TTS readiness. `POST /config/reload` projects hashes, generation, apply sequence, value-free sorted pending changes, fixed `speech_language=en`, diagnostics and generation-tagged preflight requests without constructing resources or activating NarrativeRuntime.
 - Completed #238 public-control scope: the schema-driven GET/PUT config surface, flattened overlay value projection and generic live-key whitelist contain no `commentary.*` key. Attempts to write legacy commentary or graph-runtime keys fail as unknown rather than persisting an unusable selector. The legacy manual-test page no longer offers a config save action; direct INI reload remains the sole current v2 entry and preserves frozen migration diagnostics. A runtime test derives all 13 migration rows from the packaged contract and exercises 16 exact/prefix/group/section representatives.
-- TDD phase: `GREEN` — public-control tests first proved legacy graph writes, overlay projection and live-key exposure still existed; the implementation removes all three. The complete migration audit covers every frozen row and all four grouped LLM keys. #238's checklist is fully reconciled with explicit downstream ownership: #284 owns ordered live lifecycle/cancellation/tape-barrier/quarantine effects and #273 owns public epoch/status payloads.
-- Verification: 59 focused migration/public-control tests pass; 1,527 full pytest tests pass; Ruff and Black pass the CI `src tests` scope; Mypy passes 187 source files; all 11 frozen builders pass.
+- #239 schema scope in progress: the manifest now uses exact redaction-safe effective-config projection entries and bounded exact detector parameter snapshots. The record-kind discriminator is closed to the frozen 16 kinds; the six already-materialized DTO payloads are tied to their exact schema versions while the ten payload DTOs not yet materialized remain explicitly grouped and open only within their record kind.
+- TDD phase: `GREEN` for this slice — the focused test first failed because manifest children were anonymous objects and `recordType` had no enum. It now proves exact nested references, the closed kind enum and six known payload discriminators. Golden counterexamples reject empty detector snapshots, unknown record kinds and a known kind paired with the wrong payload schema version.
+- Verification for current dirty slice: DTO builder reports 27 definitions with 7 valid and 8 invalid goldens; 76 focused schema/primitive/session-plan tests pass. Full repository gates and CI remain pending until this checkpoint is committed.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
@@ -74,9 +76,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Commit/push this #238 closing metadata and require green CI.
-2. Close #238 as completed and append the final metadata SHA/CI to its existing dated diary.
-3. Start #239 with TDD for packaged NarrativeTape manifest/record/trailer schemas and representative/counterexample records; do not activate the writer or actor early.
+1. Commit/push the first #239 exact framing-schema checkpoint and require green CI.
+2. Append its immutable SHA/CI evidence to the existing 2026-09-07 #239 dev diary comment.
+3. Continue TDD by materializing exact payload DTOs for the remaining record kinds, beginning with loss/trailer and config-barrier records; do not activate the writer or actor early.
 
 ## Resume commands
 
@@ -88,7 +90,7 @@ git rev-parse HEAD
 git rev-parse @{upstream}
 ```
 
-Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, #235/#236 closed, #237 either at its closing metadata gate or closed, and dirty files matching the ownership section. Any mismatch is a blocker until its ownership is understood.
+Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, #235–#238 closed, #239 open, and dirty files matching the ownership section. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 

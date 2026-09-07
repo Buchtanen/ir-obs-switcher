@@ -855,6 +855,42 @@ def build_schema() -> dict[str, Any]:
             "acceptedMonoMs": N0,
         },
     )
+    replay_scalar = {
+        "oneOf": [
+            BOOL,
+            {"type": "integer"},
+            {"type": "number", "not": {"type": "integer"}},
+            S,
+            arr(S, 0, 128),
+        ]
+    }
+    defs["EffectiveConfigProjectionEntry"] = obj(
+        {
+            "key": ID,
+            "value": replay_scalar,
+            "redacted": {"type": ["boolean", "null"]},
+        },
+        optional={"value", "redacted"},
+    )
+    defs["EffectiveConfigProjectionEntry"]["oneOf"] = [
+        {
+            "required": ["key", "value"],
+            "properties": {"redacted": {"type": "null"}},
+        },
+        {
+            "required": ["key", "redacted"],
+            "properties": {"redacted": {"const": True}},
+        },
+    ]
+    defs["DetectorParameterSnapshot"] = obj(
+        {
+            "parameterSnapshotId": ID,
+            "detectorId": ID,
+            "detectorVersion": ID,
+            "detectorConfigHash": HASH,
+            "parameters": any_obj,
+        }
+    )
     defs["TapeManifest"] = closed(
         "narrative-tape-manifest/2",
         {
@@ -875,11 +911,15 @@ def build_schema() -> dict[str, Any]:
             "desiredConfigHash": HASH,
             "effectiveConfigHash": HASH,
             "configApplySequence": N0,
-            "effectiveConfigProjection": arr(any_obj, 1, 128),
+            "effectiveConfigProjection": arr(
+                {"$ref": "#/$defs/EffectiveConfigProjectionEntry"}, 1, 128
+            ),
             "enabledPurposeChannels": arr(enum("flow", "llm_eval", "detector_tuning"), 1, 3),
             "redactionPolicy": any_obj,
             "historyComplete": BOOL,
-            "detectorParameterSnapshots": arr(any_obj, 0, 128),
+            "detectorParameterSnapshots": arr(
+                {"$ref": "#/$defs/DetectorParameterSnapshot"}, 0, 128
+            ),
             "previousFileHash": nullable(HASH),
         },
     )
@@ -887,7 +927,24 @@ def build_schema() -> dict[str, Any]:
         "narrative-tape-record/2",
         {
             "recordId": ID,
-            "recordType": ID,
+            "recordType": enum(
+                "context_applied",
+                "feature_frame",
+                "detector_observation",
+                "event_candidate",
+                "narrative_event",
+                "fact_change",
+                "episode_change",
+                "opportunity_change",
+                "director_decision",
+                "llm_attempt",
+                "speech_exposure",
+                "config_applied",
+                "health_change",
+                "mailbox_gap",
+                "drop_notice",
+                "manifest_trailer",
+            ),
             "processInstanceId": ID,
             "broadcastEpoch": NULLABLE_N0,
             "streamEpoch": NULLABLE_N0,
@@ -904,6 +961,44 @@ def build_schema() -> dict[str, Any]:
             "payload": any_obj,
         },
     )
+    typed_tape_payloads = {
+        "feature_frame": ("feature-frame/2", "FeatureFrame"),
+        "detector_observation": ("detector-observation/2", "DetectorObservation"),
+        "event_candidate": ("event-candidate-tap/2", "EventCandidateTap"),
+        "narrative_event": ("narrative-event/2", "NarrativeEvent"),
+        "llm_attempt": ("llm-attempt/2", "LlmAttempt"),
+        "speech_exposure": ("speech-exposure/2", "SpeechExposure"),
+    }
+    untyped_tape_records = [
+        "context_applied",
+        "fact_change",
+        "episode_change",
+        "opportunity_change",
+        "director_decision",
+        "config_applied",
+        "health_change",
+        "mailbox_gap",
+        "drop_notice",
+        "manifest_trailer",
+    ]
+    defs["TapeRecord"]["oneOf"] = [
+        {
+            "properties": {
+                "recordType": {"const": record_type},
+                "payloadSchemaVersion": {"const": schema_version},
+                "payload": {"$ref": f"#/$defs/{definition}"},
+            }
+        }
+        for record_type, (schema_version, definition) in typed_tape_payloads.items()
+    ] + [
+        {
+            "properties": {
+                "recordType": {"enum": untyped_tape_records},
+                "payloadSchemaVersion": ID,
+                "payload": any_obj,
+            }
+        }
+    ]
     defs["ApplyContextBatch"] = obj(
         {
             "timeline": {"$ref": "#/$defs/TimelineSnapshot"},

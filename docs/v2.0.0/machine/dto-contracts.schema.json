@@ -938,6 +938,109 @@
         "registered_feature_units"
       ]
     },
+    "DetectorParameterSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "detectorConfigHash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "detectorId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "detectorVersion": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "parameterSnapshotId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "parameters": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "parameterSnapshotId",
+        "detectorId",
+        "detectorVersion",
+        "detectorConfigHash",
+        "parameters"
+      ],
+      "type": "object"
+    },
+    "EffectiveConfigProjectionEntry": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "redacted": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "key",
+            "value"
+          ]
+        },
+        {
+          "properties": {
+            "redacted": {
+              "const": true
+            }
+          },
+          "required": [
+            "key",
+            "redacted"
+          ]
+        }
+      ],
+      "properties": {
+        "key": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "redacted": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "not": {
+                "type": "integer"
+              },
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 128,
+              "minItems": 0,
+              "type": "array",
+              "uniqueItems": true
+            }
+          ]
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
     "Episode": {
       "additionalProperties": false,
       "oneOf": [
@@ -4571,7 +4674,7 @@
         },
         "detectorParameterSnapshots": {
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/DetectorParameterSnapshot"
           },
           "maxItems": 128,
           "minItems": 0,
@@ -4584,7 +4687,7 @@
         },
         "effectiveConfigProjection": {
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/EffectiveConfigProjectionEntry"
           },
           "maxItems": 128,
           "minItems": 1,
@@ -4695,6 +4798,111 @@
     },
     "TapeRecord": {
       "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/FeatureFrame"
+            },
+            "payloadSchemaVersion": {
+              "const": "feature-frame/2"
+            },
+            "recordType": {
+              "const": "feature_frame"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/DetectorObservation"
+            },
+            "payloadSchemaVersion": {
+              "const": "detector-observation/2"
+            },
+            "recordType": {
+              "const": "detector_observation"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/EventCandidateTap"
+            },
+            "payloadSchemaVersion": {
+              "const": "event-candidate-tap/2"
+            },
+            "recordType": {
+              "const": "event_candidate"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/NarrativeEvent"
+            },
+            "payloadSchemaVersion": {
+              "const": "narrative-event/2"
+            },
+            "recordType": {
+              "const": "narrative_event"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/LlmAttempt"
+            },
+            "payloadSchemaVersion": {
+              "const": "llm-attempt/2"
+            },
+            "recordType": {
+              "const": "llm_attempt"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/SpeechExposure"
+            },
+            "payloadSchemaVersion": {
+              "const": "speech-exposure/2"
+            },
+            "recordType": {
+              "const": "speech_exposure"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "type": "object"
+            },
+            "payloadSchemaVersion": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "recordType": {
+              "enum": [
+                "context_applied",
+                "fact_change",
+                "episode_change",
+                "opportunity_change",
+                "director_decision",
+                "config_applied",
+                "health_change",
+                "mailbox_gap",
+                "drop_notice",
+                "manifest_trailer"
+              ]
+            }
+          }
+        }
+      ],
       "properties": {
         "broadcastEpoch": {
           "minimum": 0,
@@ -4751,8 +4959,24 @@
           ]
         },
         "recordType": {
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
-          "type": "string"
+          "enum": [
+            "context_applied",
+            "feature_frame",
+            "detector_observation",
+            "event_candidate",
+            "narrative_event",
+            "fact_change",
+            "episode_change",
+            "opportunity_change",
+            "director_decision",
+            "llm_attempt",
+            "speech_exposure",
+            "config_applied",
+            "health_change",
+            "mailbox_gap",
+            "drop_notice",
+            "manifest_trailer"
+          ]
         },
         "recordedAtUtc": {
           "type": [
@@ -5578,6 +5802,12 @@
     },
     {
       "$ref": "#/$defs/ConfigLedger"
+    },
+    {
+      "$ref": "#/$defs/EffectiveConfigProjectionEntry"
+    },
+    {
+      "$ref": "#/$defs/DetectorParameterSnapshot"
     },
     {
       "$ref": "#/$defs/TapeManifest"
