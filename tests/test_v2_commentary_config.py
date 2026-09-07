@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from irswitch.contracts.config import parse_commentary_ini, parse_commentary_mapping
+from irswitch.contracts.config import ConfigLedger, parse_commentary_ini, parse_commentary_mapping
 from irswitch.contracts.resources import packaged_schema_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,3 +154,158 @@ def test_exported_detector_override_uses_catalog_type_and_range() -> None:
     assert "out of range" in invalid.diagnostics[0].message
     assert unknown.valid is False
     assert "unknown config key" in unknown.diagnostics[0].message
+
+
+def _candidate(**values: object):
+    candidate = parse_commentary_mapping(values, repository_root=ROOT)
+    assert candidate.valid is True
+    return candidate
+
+
+def test_ledger_installs_whole_candidate_and_recomputes_sorted_pending() -> None:
+    initial = _candidate()
+    assert initial.snapshot is not None
+    ledger = ConfigLedger(
+        initial.snapshot,
+        desired_generation=6,
+        apply_sequence=20,
+        ready_components=("llm", "tts"),
+    )
+    candidate = _candidate(
+        **{
+            "commentary.detector.battle_ahead_v1.max_closing_slope": -0.08,
+            "commentary.director.selection_threshold": 42.0,
+            "commentary.max_utterance_s": 12.0,
+            "commentary.tape.detail": "full",
+            "commentary.tts.backend": "supertonic",
+            "commentary.tts.voice": "M1",
+        }
+    )
+
+    outcome = ledger.install(candidate)
+
+    assert outcome.installed is True
+    assert outcome.desired_generation == 7
+    assert [(item.component, item.generation) for item in outcome.preflights] == [("tts", 7)]
+    assert [item.key for item in ledger.pending_changes] == sorted(
+        item.key for item in ledger.pending_changes
+    )
+    assert {item.boundary for item in ledger.pending_changes} == {
+        "next_director_pass",
+        "next_plan_or_manual",
+        "next_record",
+        "next_stream",
+        "next_utterance",
+    }
+    assert ledger.effective_snapshot == initial.snapshot
+
+
+def test_ledger_applies_only_matching_boundary_and_never_emits_noop() -> None:
+    initial = _candidate()
+    changed = _candidate(**{"commentary.tape.detail": "full"})
+    assert initial.snapshot is not None
+    ledger = ConfigLedger(initial.snapshot, desired_generation=6, apply_sequence=20)
+    ledger.install(changed)
+
+    assert ledger.apply_boundary("next_stream") is None
+    record = ledger.apply_boundary("next_record")
+
+    assert record is not None
+    assert record.apply_sequence == 21
+    assert record.desired_generation == 7
+    assert record.changed_keys == ("commentary.tape.detail",)
+    assert record.effective_patch[0].value == "full"
+    assert record.effective_patch[0].redacted is False
+    assert ledger.pending_changes == ()
+
+
+def test_ledger_revert_recomputes_pending_from_whole_desired_map() -> None:
+    initial = _candidate()
+    changed = _candidate(**{"commentary.driver_name": "Alice"})
+    assert initial.snapshot is not None
+    ledger = ConfigLedger(initial.snapshot, desired_generation=6)
+    ledger.install(changed)
+    assert len(ledger.pending_changes) == 1
+
+    ledger.install(initial)
+
+    assert ledger.desired_generation == 8
+    assert ledger.pending_changes == ()
+
+
+def test_ledger_stale_preflight_cannot_make_old_generation_available() -> None:
+    initial = _candidate()
+    generation_7 = _candidate(**{"commentary.tts.voice": "M1"})
+    generation_8 = _candidate(**{"commentary.tts.voice": "M2"})
+    assert initial.snapshot is not None
+    ledger = ConfigLedger(initial.snapshot, desired_generation=6, ready_components=("tts",))
+    ledger.install(generation_7)
+    ledger.install(generation_8)
+
+    assert ledger.record_preflight("tts", 7, success=True) is False
+    assert ledger.component_available("tts", 7) is False
+    assert ledger.component_available("tts", 8) is False
+    assert ledger.record_preflight("tts", 8, success=True) is True
+    assert ledger.component_available("tts", 8) is True
+
+
+def test_invalid_candidate_installs_no_generation_and_disables_automatic_only() -> None:
+    initial = _candidate()
+    invalid = parse_commentary_mapping({"commentary.magic": True}, repository_root=ROOT)
+    assert initial.snapshot is not None
+    ledger = ConfigLedger(initial.snapshot, desired_generation=6, ready_components=("tts",))
+
+    outcome = ledger.install(invalid)
+
+    assert outcome.installed is False
+    assert outcome.desired_generation == 6
+    assert outcome.automatic_enabled is False
+    assert ledger.desired_generation == 6
+    assert ledger.component_available("tts", 6) is True
+
+
+def test_ledger_reproduces_the_frozen_mixed_boundary_hash_chain() -> None:
+    scenario = GOLDENS["ledgerScenario"]
+    dynamic_key = "commentary.detector.battle_ahead_v1.max_closing_slope"
+    initial = _candidate(**{dynamic_key: -0.04})
+    generation_7 = _candidate(
+        **{
+            dynamic_key: -0.05,
+            "commentary.director.selection_threshold": 42.0,
+            "commentary.max_utterance_s": 12.0,
+            "commentary.tts.backend": "supertonic",
+            "commentary.tts.voice": "golden-voice",
+            "commentary.tape.detail": "full",
+        }
+    )
+    assert initial.snapshot is not None
+    ledger = ConfigLedger(initial.snapshot, desired_generation=6, apply_sequence=20)
+
+    outcome = ledger.install(generation_7)
+
+    assert ledger.effective_snapshot.config_hash == scenario["initialEffectiveHash"]
+    assert ledger.desired_snapshot.config_hash == scenario["generation7DesiredHash"]
+    assert [(item.component, item.generation) for item in outcome.preflights] == [("tts", 7)]
+    for expected in scenario["appliedTransitions"]:
+        actual = ledger.apply_boundary(expected["boundary"])
+        assert actual is not None
+        assert actual.apply_sequence == expected["applySequence"]
+        assert actual.changed_keys == tuple(expected["changedKeys"])
+        assert actual.old_effective_hash == expected["oldEffectiveHash"]
+        assert actual.new_effective_hash == expected["newEffectiveHash"]
+    assert [
+        {
+            "key": item.key,
+            "boundary": item.boundary,
+            "desiredGeneration": item.desired_generation,
+        }
+        for item in ledger.pending_changes
+    ] == scenario["pendingAfterAvailableBoundaries"]
+
+    generation_8_values = generation_7.snapshot.to_dict() if generation_7.snapshot else {}
+    generation_8_values[dynamic_key] = -0.04
+    generation_8 = parse_commentary_mapping(generation_8_values, repository_root=ROOT)
+    ledger.install(generation_8)
+
+    assert ledger.desired_snapshot.config_hash == scenario["generation8DesiredHash"]
+    assert ledger.pending_changes == ()

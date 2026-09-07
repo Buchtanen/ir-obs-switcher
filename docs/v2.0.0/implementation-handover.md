@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #238 implementation — strict immutable config-candidate parser GREEN, pending commit/CI
+**Phase:** #238 implementation — immutable ConfigLedger GREEN, pending commit/CI
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236) and [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), active [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -33,6 +33,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Cross-artifact correction SHA: `4e8a1f7dfdb48f1c79f11c2e6108afcc7780ce99` (`docs: refresh recovery contract evidence (#237)`); corrective [CI run 34157345490](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157345490) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - The public #237 checklist now records the explicit implementation boundary: #237 owns deterministic admission/order/deduplication and the bounded mailbox primitive; #284 owns live actor wiring, reducer-state replay and integrated loop liveness.
 - #237 closing-metadata SHA: `a174c82d631aafb0009950b34e98fdfae8a0ce61` (`docs: close narrative admission checkpoint (#237)`); final [CI run 34157790048](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157790048) is green and #237 is closed as completed.
+- First #238 parser SHA: `ccd88f707c7641c8845161e2991911e0fcd750d9` (`feat: add strict v2 config candidate parser (#238)`); [CI run 34158763067](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34158763067) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -48,13 +49,14 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent through the first #238 parser checkpoint.
-- Dirty scope: packaged config/detector registries, v2 config contract/parser, resource allowlist, focused tests and this handover.
+- Editing owner: current root agent through the #238 ConfigLedger checkpoint.
+- Dirty scope: v2 config contract/ledger, focused tests and this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
-- Current #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
-- TDD phase: `GREEN` — initial collection RED was the absent `irswitch.contracts.config` module; implementation then satisfied 20 focused tests.
-- Verification: 20 focused v2 config tests and the full regression pass with 1,505 tests; packaged registries are equality-tested against both frozen machine sources; affected Ruff, Black and Mypy pass. Full lint/type and frozen-builder gates remain before push.
+- Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
+- Current #238 scope: lock-owned `ConfigLedger` preserves complete immutable desired/effective snapshots, installs only whole valid candidates, monotonically assigns desired generations and apply sequence, recomputes sorted pending changes from the whole desired/effective maps, applies only exact named-boundary patches and emits no no-op record. Component preflights are generation-tagged; stale completions cannot make an old backend available. Invalid input installs no generation, disables automatic narration in its outcome and preserves the last valid manual component readiness.
+- TDD phase: `GREEN` — the ConfigLedger import was the focused RED; 6 ledger tests now include exact replay of the frozen mixed-boundary F36 hash chain and revert semantics.
+- Verification: 26 focused v2 config/ledger tests pass. Full regression, lint/type and frozen-builder gates remain before push.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: none.
@@ -63,10 +65,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Run full lint/type and all 11 frozen builders, then commit/push the first #238 parser checkpoint and require green CI.
+1. Run full regression, lint/type and all 11 frozen builders, then commit/push the #238 ConfigLedger checkpoint and require green CI.
 2. Append that SHA/CI to the existing dated #238 dev diary; do not create a second dated comment.
-3. TDD the immutable ConfigLedger: full desired/effective snapshots, monotonically increasing generations/apply sequence, whole-map pending recomputation, exact named-boundary patches, generation-tagged LLM/TTS preflight and no old-generation fallback.
-4. Add detector cross-field/tuning preflight and filesystem-parent/symlink validation before connecting the candidate parser to reload/composition wiring.
+3. Add detector cross-field/tuning preflight and complete filesystem-parent/symlink validation.
+4. Integrate the v2 candidate/ledger boundary with reload/composition fail-soft behavior, then update `CONFIG.md` and `config/config.example.ini`; do not silently reinterpret any v1 key.
 
 ## Resume commands
 

@@ -12,6 +12,7 @@ import ipaddress
 import json
 import math
 import re
+import threading
 import unicodedata
 from dataclasses import dataclass
 from functools import lru_cache
@@ -72,6 +73,218 @@ class CommentaryConfigCandidate:
     valid: bool
     snapshot: CommentaryConfigSnapshot | None
     diagnostics: tuple[ConfigDiagnostic, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class PendingConfigChange:
+    key: str
+    boundary: str
+    desired_generation: int
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigPreflight:
+    component: str
+    generation: int
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigInstallOutcome:
+    installed: bool
+    desired_generation: int
+    automatic_enabled: bool
+    diagnostics: tuple[ConfigDiagnostic, ...]
+    preflights: tuple[ConfigPreflight, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EffectiveConfigPatch:
+    key: str
+    value: object | None
+    redacted: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigApplyRecord:
+    apply_sequence: int
+    boundary: str
+    desired_generation: int
+    changed_keys: tuple[str, ...]
+    old_effective_hash: Sha256Hash
+    new_effective_hash: Sha256Hash
+    effective_patch: tuple[EffectiveConfigPatch, ...]
+
+
+_MISSING = object()
+
+
+class ConfigLedger:
+    """Single-owner desired/effective ledger with exact boundary application."""
+
+    def __init__(
+        self,
+        initial: CommentaryConfigSnapshot,
+        *,
+        desired_generation: int = 0,
+        apply_sequence: int = 0,
+        ready_components: tuple[str, ...] = (),
+    ) -> None:
+        if desired_generation < 0 or apply_sequence < 0:
+            raise ValueError("config generation and apply sequence must be nonnegative")
+        if any(component not in {"llm", "tts"} for component in ready_components):
+            raise ValueError("unknown config preflight component")
+        self._lock = threading.Lock()
+        self._desired = initial
+        self._effective = initial
+        self._desired_generation = desired_generation
+        self._apply_sequence = apply_sequence
+        self._pending: tuple[PendingConfigChange, ...] = ()
+        self._component_status = dict.fromkeys(ready_components, (desired_generation, True))
+
+    @property
+    def desired_generation(self) -> int:
+        with self._lock:
+            return self._desired_generation
+
+    @property
+    def apply_sequence(self) -> int:
+        with self._lock:
+            return self._apply_sequence
+
+    @property
+    def desired_snapshot(self) -> CommentaryConfigSnapshot:
+        with self._lock:
+            return self._desired
+
+    @property
+    def effective_snapshot(self) -> CommentaryConfigSnapshot:
+        with self._lock:
+            return self._effective
+
+    @property
+    def pending_changes(self) -> tuple[PendingConfigChange, ...]:
+        with self._lock:
+            return self._pending
+
+    def install(self, candidate: CommentaryConfigCandidate) -> ConfigInstallOutcome:
+        """Install one whole valid desired generation or preserve all prior state."""
+
+        with self._lock:
+            if not candidate.valid or candidate.snapshot is None:
+                return ConfigInstallOutcome(
+                    False,
+                    self._desired_generation,
+                    False,
+                    candidate.diagnostics,
+                    (),
+                )
+            old_desired = self._desired
+            self._desired_generation += 1
+            self._desired = candidate.snapshot
+            self._pending = self._recompute_pending()
+
+            changed_components: set[str] = set()
+            all_keys = set(old_desired.values) | set(candidate.snapshot.values)
+            for key in all_keys:
+                if old_desired.values.get(key, _MISSING) == candidate.snapshot.values.get(
+                    key, _MISSING
+                ):
+                    continue
+                definition = _definition_for(key)
+                component = None if definition is None else definition.get("preflightComponent")
+                if component in {"llm", "tts"}:
+                    changed_components.add(component)
+
+            for component in ("llm", "tts"):
+                if component in changed_components:
+                    self._component_status[component] = (self._desired_generation, False)
+                elif component in self._component_status:
+                    _, ready = self._component_status[component]
+                    self._component_status[component] = (self._desired_generation, ready)
+
+            preflights = tuple(
+                ConfigPreflight(component, self._desired_generation)
+                for component in sorted(changed_components)
+            )
+            return ConfigInstallOutcome(
+                True,
+                self._desired_generation,
+                bool(candidate.snapshot.values["commentary.enabled"]),
+                (),
+                preflights,
+            )
+
+    def apply_boundary(self, boundary: str) -> ConfigApplyRecord | None:
+        """Apply every pending key owned by one exact frozen boundary."""
+
+        boundaries = frozenset(_contract()["ledgerContract"]["boundaryVocabulary"])
+        if boundary not in boundaries:
+            raise ValueError(f"unknown config apply boundary: {boundary}")
+        with self._lock:
+            keys = tuple(item.key for item in self._pending if item.boundary == boundary)
+            if not keys:
+                return None
+            old_snapshot = self._effective
+            effective_values = dict(old_snapshot.values)
+            for key in keys:
+                if key in self._desired.values:
+                    effective_values[key] = self._desired.values[key]
+                else:
+                    effective_values.pop(key, None)
+            self._effective = CommentaryConfigSnapshot.create(effective_values)
+            self._apply_sequence += 1
+            self._pending = self._recompute_pending()
+            sensitive = frozenset(_contract()["ledgerContract"]["sensitiveKeys"])
+            patch = tuple(
+                EffectiveConfigPatch(
+                    key,
+                    None if key in sensitive else self._desired.values.get(key),
+                    key in sensitive,
+                )
+                for key in keys
+            )
+            return ConfigApplyRecord(
+                self._apply_sequence,
+                boundary,
+                self._desired_generation,
+                keys,
+                old_snapshot.config_hash,
+                self._effective.config_hash,
+                patch,
+            )
+
+    def record_preflight(self, component: str, generation: int, *, success: bool) -> bool:
+        """Accept only the current generation's component completion."""
+
+        with self._lock:
+            status = self._component_status.get(component)
+            if status is None or status[0] != generation or generation != self._desired_generation:
+                return False
+            self._component_status[component] = (generation, success)
+            return True
+
+    def component_available(self, component: str, generation: int) -> bool:
+        """Never use a ready backend proved for an older desired generation."""
+
+        with self._lock:
+            return self._component_status.get(component) == (generation, True)
+
+    def _recompute_pending(self) -> tuple[PendingConfigChange, ...]:
+        keys = set(self._desired.values) | set(self._effective.values)
+        pending: list[PendingConfigChange] = []
+        for key in sorted(keys):
+            if self._desired.values.get(key, _MISSING) == self._effective.values.get(key, _MISSING):
+                continue
+            definition = _definition_for(key)
+            if definition is None:
+                raise ValueError(f"missing frozen definition for effective key: {key}")
+            boundary = (
+                "next_stream"
+                if key.startswith("commentary.detector.")
+                else definition["applyBoundary"]
+            )
+            pending.append(PendingConfigChange(key, boundary, self._desired_generation))
+        return tuple(pending)
 
 
 @lru_cache(maxsize=1)
