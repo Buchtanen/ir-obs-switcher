@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #236 implementation — first primitives checkpoint GREEN, pending push
+**Phase:** #236 implementation — first primitives checkpoint pushed and GREEN; next slice pending
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), active [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -15,7 +15,9 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Last pushed design-freeze SHA: `b0cab18cba23c3acc96aecad7ac527793d22d4b0`
 - Control-plane evidence SHA: `2d2f014592d5728f0eebe49afae73424ff44c35d` (`ci: enforce v2 checkpoints and agent handover (#235)`)
 - Last pushed handover SHA before #236: `d81b70a85b67a30273abfddbb39cd0b6ad513097`
-- Expected working tree before the first #236 commit: the files listed under current checkpoint ownership are dirty; after push it must be clean and synchronized with upstream
+- First #236 implementation SHA: `be7c915a410fa9e9752e5259f2ad9a04ff3c037c` (`feat: add v2 contract primitives (#236)`)
+- Green CI: [run 34148330942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34148330942)
+- Expected working tree after this handover metadata update: clean and synchronized with upstream
 - Runtime behavior edits so far: new dependency-neutral v2 primitive contract layer only; it is not yet wired into live producers or commentary
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -31,10 +33,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent until the #236 primitives checkpoint is pushed and recorded.
-- Dirty scope: `pyproject.toml`, `src/irswitch/contracts/**`, `tests/test_contract_primitives.py` and this handover record.
+- Editing owner: none for the pushed primitives checkpoint; next owner must re-verify HEAD/upstream before entering the next RED slice.
+- Dirty scope: this handover metadata only until its follow-up commit is pushed.
 - Completed scope in this checkpoint: validated broadcast/stream epochs, source sequence, correlation/occurrence/lineage IDs, process/stream/session monotonic clocks, scalar-unit/confidence/unknown/stale semantics, closed schema/hash values, canonical JSON hashing and packaged frozen registry/DTO schemas.
-- TDD phase: `GREEN` — the focused suite passes after an observed import-failure RED.
+- TDD phase: `GREEN` — the focused suite passes after an observed import-failure RED; next slice has not entered RED.
 - Verification: 60 focused tests pass; affected Ruff, Ruff format, Black and Mypy pass; all 11 freeze builders pass; full regression passes with 1,424 tests outside the socket-restricted sandbox.
 - Config impact: packaging metadata only; no commentary configuration key or example change.
 - API impact: none; no live/public endpoint is wired in this checkpoint.
@@ -43,7 +45,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 After the first #236 primitives checkpoint is pushed:
 
-1. Verify local HEAD equals upstream and record the immutable SHA plus CI run in issue #236.
+1. Verify local HEAD equals upstream. The issue #236 diary comment is pending explicit authorization after the connector rejected publication of the detailed implementation/evidence payload.
 2. Continue #236 with focused RED tests for the bounded serializable `SessionPlan` and shared DTO field adapters that consume these primitives; do not implement timeline ownership from #243/#244 early.
 3. Add a wheel-content verification proving both packaged JSON artifacts survive distribution packaging.
 4. Re-run focused pytest, affected Ruff/Black/Mypy, all 11 freeze builders and the full regression before deciding whether #236 acceptance is complete.
