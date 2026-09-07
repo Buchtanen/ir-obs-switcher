@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #237 implementation — recovery evidence reconciliation GREEN, pending push
+**Phase:** #237 implementation — recovery evidence reconciliation pushed; cross-artifact hash correction GREEN, pending push
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), active [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -29,6 +29,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Coherent-batch SHA: `2a6d57e03419a7e8cadfd2153184df6e01403da3` (`feat: add coherent narrative context batches (#237)`); [CI run 34152629347](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34152629347) is green on Python 3.11–3.13.
 - Bounded command/mailbox foundation SHA: `325e2020dff3768e70a16137905769f710ae7ff5` (`feat: add bounded narrative mailbox foundation (#237)`); [CI run 34155593258](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34155593258) is green on Python 3.11–3.13.
 - Lifecycle/idempotency SHA: `abce38b604cd51d4b22791f5ecf0ebcc9dabf8ac` (`feat: add lifecycle narrative admission (#237)`); [CI run 34156674432](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34156674432) is green on Python 3.11–3.13.
+- Recovery-evidence SHA: `3ce1535c06e542f88ccdd3fc58346c2e57e93318` (`fix: preserve bounded mailbox recovery evidence (#237)`). CI run [34157119475](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157119475) correctly failed the frozen-contract job because the dependent F01–F44 fixture bundle still named the prior actor-model hash.
 - Expected working tree before the recovery-evidence push: only the files listed in the ownership section are dirty.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
@@ -46,11 +47,11 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Current checkpoint ownership
 
 - Editing owner: current root agent until the recovery-evidence checkpoint is pushed, green in CI and recorded.
-- Dirty scope: `src/irswitch/commentary/mailbox.py`, `tests/test_narrative_context_batch.py`, `docs/v2.0.0/actor-transition-contract.md`, `docs/v2.0.0/machine/{build_actor_transition_model.py,actor-transition-model.json,actor-transition-model.schema.json}` and this handover record.
+- Dirty scope: regenerated `docs/v2.0.0/machine/vertical-slice-fixtures.json` plus this handover record only.
 - Completed #237 scope: the accepted-event and coherent-batch scope above plus factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; and idempotent shutdown ownership of the emergency cell.
 - Current #237 scope: recovery-producing admission results return the complete immutable evicted command, preserving its external ordinal range, context revision and payload for actor/tape evidence. More than 64 distinct protected safety effects are represented by one chained canonical digest commitment plus the latest 63 explicit effects; refresh changes the commitment rather than silently dropping prior evidence.
 - TDD phase: `GREEN` — focused RED asserted full evicted context evidence; the existing overflow test was tightened to prove the digest commitment is present and changes on refresh.
-- Verification: 37 focused context-batch/command/mailbox/lifecycle/idempotency tests pass; actor-transition machine builder validates 5×17 transition pairs, 13 race traces, 10 overflow scenarios and 10 rejected mutations; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,485 tests.
+- Verification: 37 focused context-batch/command/mailbox/lifecycle/idempotency tests pass; actor-transition machine builder validates 5×17 transition pairs, 13 race traces, 10 overflow scenarios and 10 rejected mutations; all 11 frozen builders now pass including 44 F01–F44 scenarios with 248 rules, 14 calculations and refreshed actor-model hashes; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,485 tests.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: none.
