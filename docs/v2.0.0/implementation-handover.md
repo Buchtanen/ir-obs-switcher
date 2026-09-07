@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** design freeze accepted; control-plane checkpoint green, pending #235 closure
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), next [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236)
+**Phase:** ready for implementation at #236
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), next [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -24,6 +24,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - Independent design-freeze repair is complete: 11/11 machine builders pass.
 - Baseline evidence: 1,364 pytest tests passed; 12 branch Python files pass Ruff and Black; Mypy passes 174 source files; 33 JSON files parse and seven Draft 2020-12 schemas validate.
 - Issue #235 contains the published evidence at commit `b0cab18`; human acceptance was given on 2026-09-07.
+- The control-plane evidence and green CI are recorded in the [closing dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/235#issuecomment-5573626335); #235 is closed as completed.
 - Frozen architecture, DTO, catalog, detector, realization, transport and F01–F44 contracts live under `docs/v2.0.0/`.
 
 ## Current checkpoint ownership
@@ -36,7 +37,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-After this control-plane checkpoint is green, pushed, recorded in the issue diary and #235 is closed:
+The control-plane checkpoint is green, pushed and recorded; implementation starts at #236:
 
 1. Start issue #236; do not skip its dependency gate.
 2. Enter `RED` by adding focused tests for canonical ID parsing/serialization, version validation, units, clock semantics and deterministic JSON hashing.
