@@ -1,0 +1,1294 @@
+{
+  "boundaries": [
+    {
+      "id": "command",
+      "owner": "stream_config_coordinator",
+      "registryOrdinal": 1
+    },
+    {
+      "id": "next_stream",
+      "owner": "stream_config_coordinator",
+      "registryOrdinal": 2
+    },
+    {
+      "id": "next_plan_or_manual",
+      "owner": "narrative_actor",
+      "registryOrdinal": 3
+    },
+    {
+      "id": "next_beat_plan",
+      "owner": "narrative_actor",
+      "registryOrdinal": 4
+    },
+    {
+      "id": "next_director_pass",
+      "owner": "narrative_actor",
+      "registryOrdinal": 5
+    },
+    {
+      "id": "next_silence_deadline",
+      "owner": "narrative_actor",
+      "registryOrdinal": 6
+    },
+    {
+      "id": "next_request",
+      "owner": "narrative_actor",
+      "registryOrdinal": 7
+    },
+    {
+      "id": "next_utterance",
+      "owner": "narrative_actor",
+      "registryOrdinal": 8
+    },
+    {
+      "id": "next_cancellation",
+      "owner": "narrative_actor",
+      "registryOrdinal": 9
+    },
+    {
+      "id": "next_record",
+      "owner": "tape_writer",
+      "registryOrdinal": 10
+    },
+    {
+      "id": "next_rotated_file",
+      "owner": "tape_writer",
+      "registryOrdinal": 11
+    },
+    {
+      "id": "next_rotation",
+      "owner": "tape_writer",
+      "registryOrdinal": 12
+    },
+    {
+      "id": "next_writer_deadline",
+      "owner": "tape_writer",
+      "registryOrdinal": 13
+    },
+    {
+      "id": "next_shutdown",
+      "owner": "composition_root",
+      "registryOrdinal": 14
+    }
+  ],
+  "contractProjectionVersion": 1,
+  "crossFieldInvariants": [
+    "active_episode_capacity_lte_resolved_episode_capacity",
+    "tape_channels_nonempty_when_enabled",
+    "full_prompt_requires_llm_eval_channel",
+    "output_path_not_filesystem_home_or_repository_root",
+    "detector_overrides_resolve_exported_contract",
+    "required_tuning_detector_requires_calibration_capture_preflight"
+  ],
+  "defaultConfig": {
+    "commentary.detectors.profile": "production",
+    "commentary.director.active_episode_capacity": 64,
+    "commentary.director.decision_capacity": 128,
+    "commentary.director.global_min_interval_s": 4.0,
+    "commentary.director.long_silence_s": 33.0,
+    "commentary.director.max_consecutive_story_beats": 3,
+    "commentary.director.opportunity_capacity": 128,
+    "commentary.director.resolved_episode_capacity": 256,
+    "commentary.director.selection_threshold": 35.0,
+    "commentary.director.switch_margin": 8.0,
+    "commentary.driver_name": "",
+    "commentary.driver_nickname": "",
+    "commentary.enabled": false,
+    "commentary.llm.base_url": "http://127.0.0.1:11434/v1",
+    "commentary.llm.enabled": false,
+    "commentary.llm.max_profile": "tight",
+    "commentary.llm.max_tokens": 96,
+    "commentary.llm.model": "qwen3:4b-instruct-2507-q4_K_M",
+    "commentary.llm.timeout_s": 1.5,
+    "commentary.llm.warmup": true,
+    "commentary.max_utterance_s": 14.0,
+    "commentary.tape.channels": [
+      "flow"
+    ],
+    "commentary.tape.compress_rotated": true,
+    "commentary.tape.detail": "normal",
+    "commentary.tape.detector_tuning.capture_input_windows": true,
+    "commentary.tape.detector_tuning.near_threshold_margin": 0.15,
+    "commentary.tape.detector_tuning.negative_sample_interval_s": 5.0,
+    "commentary.tape.detector_tuning.trigger_allowlist": [],
+    "commentary.tape.enabled": false,
+    "commentary.tape.flow.candidate_detail": "selected_and_rejected",
+    "commentary.tape.flow.tape_channel_allowlist": [
+      "*"
+    ],
+    "commentary.tape.flush_interval_ms": 500,
+    "commentary.tape.keep_files": 8,
+    "commentary.tape.llm_eval.capture_completion": true,
+    "commentary.tape.llm_eval.capture_prompt": "hash",
+    "commentary.tape.output_dir": "recordings/commentary",
+    "commentary.tape.rotate_mb": 64,
+    "commentary.tape.shutdown_flush_timeout_s": 2.0,
+    "commentary.tape.writer_capacity": 4096,
+    "commentary.tone_source": "none",
+    "commentary.tts.audio_device": "",
+    "commentary.tts.backend": "auto",
+    "commentary.tts.duck_fade_ms": 750,
+    "commentary.tts.duck_input": "",
+    "commentary.tts.duck_ratio": 0.25,
+    "commentary.tts.rate": 0,
+    "commentary.tts.start_timeout_s": 5.0,
+    "commentary.tts.steps": 6,
+    "commentary.tts.stop_timeout_s": 1.0,
+    "commentary.tts.voice": ""
+  },
+  "keyDefinitions": [
+    {
+      "applyBoundary": "command",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": false,
+      "defaultSource": "literal",
+      "key": "commentary.enabled",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_plan_or_manual",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 30.0,
+        "minimum": 2.0,
+        "normativeAllowed": "2–30"
+      },
+      "default": 14.0,
+      "defaultSource": "literal",
+      "key": "commentary.max_utterance_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maxLength": 128,
+        "minLength": 0,
+        "normativeAllowed": "0–128 UTF-8 chars"
+      },
+      "default": "",
+      "defaultSource": "literal",
+      "key": "commentary.driver_name",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": true,
+      "unit": null,
+      "valueType": "string"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maxLength": 64,
+        "minLength": 0,
+        "normativeAllowed": "0–64 UTF-8 chars"
+      },
+      "default": "",
+      "defaultSource": "literal",
+      "key": "commentary.driver_nickname",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": true,
+      "unit": null,
+      "valueType": "string"
+    },
+    {
+      "applyBoundary": "next_beat_plan",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "none, heart_rate",
+        "values": [
+          "none",
+          "heart_rate"
+        ]
+      },
+      "default": "none",
+      "defaultSource": "literal",
+      "key": "commentary.tone_source",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_director_pass",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "normativeAllowed": "0–100"
+      },
+      "default": 35.0,
+      "defaultSource": "literal",
+      "key": "commentary.director.selection_threshold",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "score",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_director_pass",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 50.0,
+        "minimum": 0.0,
+        "normativeAllowed": "0–50"
+      },
+      "default": 8.0,
+      "defaultSource": "literal",
+      "key": "commentary.director.switch_margin",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "score",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_director_pass",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 30.0,
+        "minimum": 0.0,
+        "normativeAllowed": "0–30"
+      },
+      "default": 4.0,
+      "defaultSource": "literal",
+      "key": "commentary.director.global_min_interval_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_silence_deadline",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 300.0,
+        "minimum": 10.0,
+        "normativeAllowed": "10–300"
+      },
+      "default": 33.0,
+      "defaultSource": "literal",
+      "key": "commentary.director.long_silence_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 512,
+        "minimum": 16,
+        "normativeAllowed": "16–512"
+      },
+      "default": 128,
+      "defaultSource": "literal",
+      "key": "commentary.director.opportunity_capacity",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "opportunities",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 256,
+        "minimum": 8,
+        "normativeAllowed": "8–256"
+      },
+      "default": 64,
+      "defaultSource": "literal",
+      "key": "commentary.director.active_episode_capacity",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "episodes",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 2048,
+        "minimum": 32,
+        "normativeAllowed": "32–2048"
+      },
+      "default": 256,
+      "defaultSource": "literal",
+      "key": "commentary.director.resolved_episode_capacity",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "summaries",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 1000,
+        "minimum": 16,
+        "normativeAllowed": "16–1000"
+      },
+      "default": 128,
+      "defaultSource": "literal",
+      "key": "commentary.director.decision_capacity",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "decisions",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_director_pass",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 8,
+        "minimum": 1,
+        "normativeAllowed": "1–8"
+      },
+      "default": 3,
+      "defaultSource": "literal",
+      "key": "commentary.director.max_consecutive_story_beats",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "beats",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_beat_plan",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": false,
+      "defaultSource": "literal",
+      "key": "commentary.llm.enabled",
+      "keyClass": "static",
+      "preflightComponent": "llm",
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_beat_plan",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "local/LAN HTTP(S) policy below",
+        "policy": "local_lan_v1_base_url"
+      },
+      "default": "http://127.0.0.1:11434/v1",
+      "defaultSource": "literal",
+      "key": "commentary.llm.base_url",
+      "keyClass": "static",
+      "preflightComponent": "llm",
+      "sensitive": true,
+      "unit": null,
+      "valueType": "url"
+    },
+    {
+      "applyBoundary": "next_beat_plan",
+      "boundaryNote": "starts preflight at acceptance",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maxLength": 128,
+        "minLength": 1,
+        "normativeAllowed": "1–128 chars"
+      },
+      "default": "qwen3:4b-instruct-2507-q4_K_M",
+      "defaultSource": "literal",
+      "key": "commentary.llm.model",
+      "keyClass": "static",
+      "preflightComponent": "llm",
+      "sensitive": false,
+      "unit": null,
+      "valueType": "string"
+    },
+    {
+      "applyBoundary": "next_request",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 10.0,
+        "minimum": 0.2,
+        "normativeAllowed": "0.2–10"
+      },
+      "default": 1.5,
+      "defaultSource": "literal",
+      "key": "commentary.llm.timeout_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "monotonic seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_request",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 256,
+        "minimum": 32,
+        "normativeAllowed": "32–256"
+      },
+      "default": 96,
+      "defaultSource": "literal",
+      "key": "commentary.llm.max_tokens",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "tokens",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_beat_plan",
+      "boundaryNote": "controls preflight started at acceptance",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": true,
+      "defaultSource": "literal",
+      "key": "commentary.llm.warmup",
+      "keyClass": "static",
+      "preflightComponent": "llm",
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_beat_plan",
+      "boundaryNote": "family verifier may impose lower cap",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "tight, balanced, loose",
+        "values": [
+          "tight",
+          "balanced",
+          "loose"
+        ]
+      },
+      "default": "tight",
+      "defaultSource": "literal",
+      "key": "commentary.llm.max_profile",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "auto, sapi, espeak, supertonic",
+        "values": [
+          "auto",
+          "sapi",
+          "espeak",
+          "supertonic"
+        ]
+      },
+      "default": "auto",
+      "defaultSource": "literal",
+      "key": "commentary.tts.backend",
+      "keyClass": "static",
+      "preflightComponent": "tts",
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maxLength": 128,
+        "minLength": 0,
+        "normativeAllowed": "0–128 chars/backend-valid"
+      },
+      "default": "",
+      "defaultSource": "literal",
+      "key": "commentary.tts.voice",
+      "keyClass": "static",
+      "preflightComponent": "tts",
+      "sensitive": true,
+      "unit": null,
+      "valueType": "string"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 10,
+        "minimum": -10,
+        "normativeAllowed": "-10–10"
+      },
+      "default": 0,
+      "defaultSource": "literal",
+      "key": "commentary.tts.rate",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "SAPI-style steps",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 12,
+        "minimum": 5,
+        "normativeAllowed": "5–12"
+      },
+      "default": 6,
+      "defaultSource": "literal",
+      "key": "commentary.tts.steps",
+      "keyClass": "static",
+      "preflightComponent": "tts",
+      "sensitive": false,
+      "unit": "inference steps",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 30.0,
+        "minimum": 0.5,
+        "normativeAllowed": "0.5–30"
+      },
+      "default": 5.0,
+      "defaultSource": "literal",
+      "key": "commentary.tts.start_timeout_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "monotonic seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_cancellation",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 5.0,
+        "minimum": 0.1,
+        "normativeAllowed": "0.1–5"
+      },
+      "default": 1.0,
+      "defaultSource": "literal",
+      "key": "commentary.tts.stop_timeout_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "monotonic seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maxLength": 256,
+        "minLength": 0,
+        "normativeAllowed": "0–256 chars"
+      },
+      "default": "",
+      "defaultSource": "literal",
+      "key": "commentary.tts.audio_device",
+      "keyClass": "static",
+      "preflightComponent": "tts",
+      "sensitive": true,
+      "unit": null,
+      "valueType": "string"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maxLength": 256,
+        "minLength": 0,
+        "normativeAllowed": "0–256 chars"
+      },
+      "default": "",
+      "defaultSource": "literal",
+      "key": "commentary.tts.duck_input",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": true,
+      "unit": null,
+      "valueType": "string"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "normativeAllowed": "0–1"
+      },
+      "default": 0.25,
+      "defaultSource": "literal",
+      "key": "commentary.tts.duck_ratio",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "original-volume fraction",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_utterance",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "maximum": 5000,
+        "minimum": 0,
+        "normativeAllowed": "0–5000"
+      },
+      "default": 750,
+      "defaultSource": "literal",
+      "key": "commentary.tts.duck_fade_ms",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "milliseconds",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "normativeAllowed": "production, calibration",
+        "values": [
+          "production",
+          "calibration"
+        ]
+      },
+      "default": "production",
+      "defaultSource": "literal",
+      "key": "commentary.detectors.profile",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "normativeAllowed": "bool; ID must be exported"
+      },
+      "default": null,
+      "defaultSource": "catalog",
+      "key": "commentary.detector.<id>.enabled",
+      "keyClass": "template",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "normativeAllowed": "exported min/max and cross-field rules",
+        "reference": "exported_detector_parameter_contract"
+      },
+      "default": null,
+      "defaultSource": "catalog",
+      "key": "commentary.detector.<id>.<parameter>",
+      "keyClass": "template",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "catalog unit",
+      "valueType": "catalog_typed"
+    },
+    {
+      "applyBoundary": "next_record",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": false,
+      "defaultSource": "literal",
+      "key": "commentary.tape.enabled",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_record",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "subset of flow,llm_eval,detector_tuning",
+        "unique": true,
+        "values": [
+          "flow",
+          "llm_eval",
+          "detector_tuning"
+        ]
+      },
+      "default": [
+        "flow"
+      ],
+      "defaultSource": "literal",
+      "key": "commentary.tape.channels",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum_set"
+    },
+    {
+      "applyBoundary": "next_record",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "minimal, normal, full",
+        "values": [
+          "minimal",
+          "normal",
+          "full"
+        ]
+      },
+      "default": "normal",
+      "defaultSource": "literal",
+      "key": "commentary.tape.detail",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_rotated_file",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "safe non-root path",
+        "policy": "safe_non_root_output_path"
+      },
+      "default": "recordings/commentary",
+      "defaultSource": "literal",
+      "key": "commentary.tape.output_dir",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": true,
+      "unit": null,
+      "valueType": "path"
+    },
+    {
+      "applyBoundary": "next_record",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "maximum": 1024,
+        "minimum": 1,
+        "normativeAllowed": "1–1024"
+      },
+      "default": 64,
+      "defaultSource": "literal",
+      "key": "commentary.tape.rotate_mb",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "MiB",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_rotation",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "maximum": 100,
+        "minimum": 1,
+        "normativeAllowed": "1–100"
+      },
+      "default": 8,
+      "defaultSource": "literal",
+      "key": "commentary.tape.keep_files",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "files",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_rotation",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": true,
+      "defaultSource": "literal",
+      "key": "commentary.tape.compress_rotated",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_writer_deadline",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "maximum": 5000,
+        "minimum": 50,
+        "normativeAllowed": "50–5000"
+      },
+      "default": 500,
+      "defaultSource": "literal",
+      "key": "commentary.tape.flush_interval_ms",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "milliseconds",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 32768,
+        "minimum": 256,
+        "normativeAllowed": "256–32768"
+      },
+      "default": 4096,
+      "defaultSource": "literal",
+      "key": "commentary.tape.writer_capacity",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "records",
+      "valueType": "integer"
+    },
+    {
+      "applyBoundary": "next_shutdown",
+      "boundaryNote": null,
+      "boundaryOwner": "composition_root",
+      "constraints": {
+        "maximum": 10.0,
+        "minimum": 0.1,
+        "normativeAllowed": "0.1–10"
+      },
+      "default": 2.0,
+      "defaultSource": "literal",
+      "key": "commentary.tape.shutdown_flush_timeout_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_record",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "selected, selected_and_rejected, all",
+        "values": [
+          "selected",
+          "selected_and_rejected",
+          "all"
+        ]
+      },
+      "default": "selected_and_rejected",
+      "defaultSource": "literal",
+      "key": "commentary.tape.flow.candidate_detail",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_record",
+      "boundaryNote": null,
+      "boundaryOwner": "tape_writer",
+      "constraints": {
+        "normativeAllowed": "known channel IDs or *",
+        "unique": true,
+        "values": [
+          "*",
+          "bio.pressure",
+          "compat.alias",
+          "filler.lifecycle",
+          "filler.track_state",
+          "race.battle.attack",
+          "race.battle.closing",
+          "race.battle.outcome",
+          "race.battle.pressure",
+          "race.battle.side_by_side",
+          "race.battle.two_front",
+          "race.control.flag",
+          "race.incident.aftermath",
+          "race.incident.event",
+          "race.incident.invalid_lap",
+          "race.incident.recovery",
+          "race.pit.cycle",
+          "race.pit.outcome",
+          "race.position.change",
+          "race.position.leader",
+          "race.position.pass",
+          "race.session.final_lap",
+          "race.session.finish",
+          "race.timing.attempt",
+          "race.timing.consistency",
+          "race.timing.delta",
+          "race.timing.lap",
+          "race.timing.sector",
+          "race.timing.target",
+          "session.context.field",
+          "session.context.weather",
+          "session.lifecycle",
+          "session.qualifying.recap",
+          "session.vehicle",
+          "stream.lifecycle",
+          "system.connectivity",
+          "system.thermal"
+        ]
+      },
+      "default": [
+        "*"
+      ],
+      "defaultSource": "literal",
+      "key": "commentary.tape.flow.tape_channel_allowlist",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "string_set"
+    },
+    {
+      "applyBoundary": "next_request",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "none, hash, full",
+        "values": [
+          "none",
+          "hash",
+          "full"
+        ]
+      },
+      "default": "hash",
+      "defaultSource": "literal",
+      "key": "commentary.tape.llm_eval.capture_prompt",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "applyBoundary": "next_request",
+      "boundaryNote": null,
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": true,
+      "defaultSource": "literal",
+      "key": "commentary.tape.llm_eval.capture_completion",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "normativeAllowed": "known detector IDs",
+        "reference": "exported_detector_ids",
+        "unique": true
+      },
+      "default": [],
+      "defaultSource": "literal",
+      "key": "commentary.tape.detector_tuning.trigger_allowlist",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "string_set"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 60.0,
+        "minimum": 0.5,
+        "normativeAllowed": "0.5–60"
+      },
+      "default": 5.0,
+      "defaultSource": "literal",
+      "key": "commentary.tape.detector_tuning.negative_sample_interval_s",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "seconds",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "maximum": 1.0,
+        "minimum": 0.0,
+        "normativeAllowed": "0–1"
+      },
+      "default": 0.15,
+      "defaultSource": "literal",
+      "key": "commentary.tape.detector_tuning.near_threshold_margin",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": "normalized fraction",
+      "valueType": "number"
+    },
+    {
+      "applyBoundary": "next_stream",
+      "boundaryNote": null,
+      "boundaryOwner": "stream_config_coordinator",
+      "constraints": {
+        "normativeAllowed": "bool"
+      },
+      "default": true,
+      "defaultSource": "literal",
+      "key": "commentary.tape.detector_tuning.capture_input_windows",
+      "keyClass": "static",
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "boolean"
+    }
+  ],
+  "ledgerContract": {
+    "applyOnlyNamedBoundary": true,
+    "applySequenceMonotonic": true,
+    "boundaryVocabulary": [
+      "command",
+      "next_stream",
+      "next_plan_or_manual",
+      "next_beat_plan",
+      "next_director_pass",
+      "next_silence_deadline",
+      "next_request",
+      "next_utterance",
+      "next_cancellation",
+      "next_record",
+      "next_rotated_file",
+      "next_rotation",
+      "next_writer_deadline",
+      "next_shutdown"
+    ],
+    "changedKeysSortedUnique": true,
+    "installMode": "full_validated_candidate",
+    "invalidCandidateCreatesGeneration": false,
+    "invalidCandidateDisablesAutomaticOnly": true,
+    "noFallbackToOlderComponentGeneration": true,
+    "noOpBoundaryEmitsRecord": false,
+    "pendingRecomputedFromWholeDesiredMap": true,
+    "preflightStartsAtDesiredAcceptance": true,
+    "preflightSuccessDoesNotStartWork": true,
+    "sensitiveKeys": [
+      "commentary.driver_name",
+      "commentary.driver_nickname",
+      "commentary.llm.base_url",
+      "commentary.tape.output_dir",
+      "commentary.tts.audio_device",
+      "commentary.tts.duck_input",
+      "commentary.tts.voice"
+    ]
+  },
+  "migrationContract": {
+    "absentCommentarySectionEquivalent": {
+      "commentary.enabled": false
+    },
+    "compatibilityLoader": false,
+    "entries": [
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [
+          "commentary.tone_source"
+        ],
+        "result": "removed; diagnostic names commentary.tone_source and the former boolean-to-enum mapping (true → heart_rate, false → none) for operator guidance only",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.use_hr_emotion"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [],
+        "result": "removed; use director interval plus catalog cadence/fatigue",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.cooldown_s"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [
+          "commentary.director.decision_capacity"
+        ],
+        "result": "commentary.director.decision_capacity",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.decision_log_size"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "prefix",
+        "replacementKeys": [],
+        "result": "removed; sector beat/catalog policy",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.sector_speak*"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [],
+        "result": "removed; session context beats are catalog-driven",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.session_briefs"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [],
+        "result": "removed; stream lifecycle is deterministic whenever commentary is enabled",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.stream_start"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "prefix",
+        "replacementKeys": [],
+        "result": "removed; beat guards and event speech policy",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.gap_hunt_tts_*"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [
+          "commentary.llm.enabled"
+        ],
+        "result": "commentary.llm.enabled; behavior is generation, not polish",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.llm_polish"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "group",
+        "replacementKeys": [
+          "commentary.llm.base_url",
+          "commentary.llm.model",
+          "commentary.llm.timeout_s",
+          "commentary.llm.max_tokens"
+        ],
+        "result": "move to same names under [commentary.llm]",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.llm_base_url/model/timeout_s/max_tokens"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [],
+        "result": "removed; PromptOptions/catalog owns profile sampling",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.llm_temperature"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "exact",
+        "replacementKeys": [],
+        "result": "removed; one transport attempt per beat/revision and a fixed maximum of two distinct beats per planning cycle",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "commentary.llm_max_attempts"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "section",
+        "replacementKeys": [],
+        "result": "removed; director/opportunity/speech contracts replace it",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "[commentary.scheduler]"
+      },
+      {
+        "diagnosticReason": "legacy_key",
+        "matchKind": "section",
+        "replacementKeys": [],
+        "result": "removed; final v2 has one runtime",
+        "runtimeAction": "reject_generation_with_legacy_key",
+        "source": "[commentary.graph_runtime]"
+      }
+    ]
+  },
+  "schemaVersion": "commentary-config-contract/2",
+  "sourceBaseline": {
+    "configurationHeadings": [
+      "### Root and director",
+      "### LLM and TTS",
+      "### Detectors and tape"
+    ],
+    "document": "docs/v2.0.0/public-contracts.md"
+  }
+}

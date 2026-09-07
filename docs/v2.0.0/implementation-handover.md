@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #237 acceptance reconciliation — implementation and public checklist complete; closing metadata pending CI, then #238
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), closing candidate [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), next [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238)
+**Phase:** #238 implementation — strict immutable config-candidate parser GREEN, pending commit/CI
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236) and [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), active [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -32,6 +32,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Recovery-evidence SHA: `3ce1535c06e542f88ccdd3fc58346c2e57e93318` (`fix: preserve bounded mailbox recovery evidence (#237)`). CI run [34157119475](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157119475) correctly failed the frozen-contract job because the dependent F01–F44 fixture bundle still named the prior actor-model hash.
 - Cross-artifact correction SHA: `4e8a1f7dfdb48f1c79f11c2e6108afcc7780ce99` (`docs: refresh recovery contract evidence (#237)`); corrective [CI run 34157345490](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157345490) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - The public #237 checklist now records the explicit implementation boundary: #237 owns deterministic admission/order/deduplication and the bounded mailbox primitive; #284 owns live actor wiring, reducer-state replay and integrated loop liveness.
+- #237 closing-metadata SHA: `a174c82d631aafb0009950b34e98fdfae8a0ce61` (`docs: close narrative admission checkpoint (#237)`); final [CI run 34157790048](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157790048) is green and #237 is closed as completed.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -47,12 +48,13 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent through the #237 closing-metadata CI and automatic issue closure, then the #238 checkpoint.
-- Dirty scope: this acceptance handover and the v2 issue index only.
+- Editing owner: current root agent through the first #238 parser checkpoint.
+- Dirty scope: packaged config/detector registries, v2 config contract/parser, resource allowlist, focused tests and this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
-- TDD phase: `GREEN` — focused RED asserted full evicted context evidence; the existing overflow test was tightened to prove the digest commitment is present and changes on refresh.
-- Verification: 37 focused context-batch/command/mailbox/lifecycle/idempotency tests pass; actor-transition machine builder validates 5×17 transition pairs, 13 race traces, 10 overflow scenarios and 10 rejected mutations; all 11 frozen builders now pass including 44 F01–F44 scenarios with 248 rules, 14 calculations and refreshed actor-model hashes; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,485 tests.
+- Current #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
+- TDD phase: `GREEN` — initial collection RED was the absent `irswitch.contracts.config` module; implementation then satisfied 20 focused tests.
+- Verification: 20 focused v2 config tests and the full regression pass with 1,505 tests; packaged registries are equality-tested against both frozen machine sources; affected Ruff, Black and Mypy pass. Full lint/type and frozen-builder gates remain before push.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: none.
@@ -61,9 +63,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Commit and push this #237 acceptance metadata.
-2. Require green CI, append the closing SHA/CI evidence to the existing dated #237 diary and close #237 as completed.
-3. Start #238, the configuration and migration contract, in dependency order. Do not activate the runtime or widen the public API while implementing that package.
+1. Run full lint/type and all 11 frozen builders, then commit/push the first #238 parser checkpoint and require green CI.
+2. Append that SHA/CI to the existing dated #238 dev diary; do not create a second dated comment.
+3. TDD the immutable ConfigLedger: full desired/effective snapshots, monotonically increasing generations/apply sequence, whole-map pending recomputation, exact named-boundary patches, generation-tagged LLM/TTS preflight and no old-generation fallback.
+4. Add detector cross-field/tuning preflight and filesystem-parent/symlink validation before connecting the candidate parser to reload/composition wiring.
 
 ## Resume commands
 
@@ -86,3 +89,4 @@ Expected before resuming: correct worktree and branch, local HEAD/upstream relat
 - Quota exhaustion does not automatically transfer ownership. Resume from this file plus the latest issue diary.
 - Mailbox foundation alone is not live actor acceptance: actor reduction still owns reducer-sequence replay equivalence, shutdown terminal-callback handling and health/tape counter effects in #284.
 - The two independent audit agents exhausted their own quota after the lifecycle checkpoint. Continuity remained intact through this handover, the existing issue diary, local TDD evidence and reproducible machine builders; rerun independent review when capacity returns, but do not discard the verified working state.
+- The packaged `config-contract.json` and `detector-catalog.json` are runtime validation inputs and must remain byte-semantic JSON equivalents of their branch-only frozen machine sources; the focused test enforces this until the final-PR generation/copy path is formalized.
