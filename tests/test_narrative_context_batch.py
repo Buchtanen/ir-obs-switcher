@@ -320,6 +320,9 @@ def test_lost_context_creates_visible_recovery_with_latest_projection() -> None:
     assert result.accepted
     assert result.reason == "mailbox_recovery"
     assert result.evicted_command_ids == ("context:0",)
+    assert result.evicted_commands[0].external_order == ExternalOrder(11, 0, 0)
+    assert result.evicted_commands[0].context_revision == ContextRevision(3, 9)
+    assert result.evicted_commands[0].payload == _context_command("context:0").payload
     assert mailbox.recovery is not None
     assert mailbox.recovery.kind == "MAILBOX_RECOVERY"
     assert mailbox.recovery.payload["historyComplete"] is False
@@ -753,6 +756,22 @@ def test_recovery_safety_effect_overflow_is_explicitly_digest_compacted() -> Non
     assert len(effects) == 64
     assert effects[0]["kind"] == "MAILBOX_RECOVERY"
     assert effects[0]["identity"] == "safety-effects:compacted"
+    assert effects[0]["payloadHash"].startswith("sha256:")
+    first_commitment = effects[0]["payloadHash"]
+
+    mailbox.admit(
+        NarrativeCommand.component_health(
+            "health:lost:next",
+            4200,
+            component="tts",
+            generation=999,
+            status="unavailable",
+            reason="preflight_failed",
+        )
+    )
+    refreshed_effects = mailbox.recovery.payload["safetyEffects"]
+    assert len(refreshed_effects) == 64
+    assert refreshed_effects[0]["payloadHash"] != first_commitment
 
 
 def test_context_pressure_accepts_maximum_length_command_identity() -> None:
@@ -767,6 +786,7 @@ def test_context_pressure_accepts_maximum_length_command_identity() -> None:
     assert result.accepted
     assert result.reason == "mailbox_recovery"
     assert result.command.payload["safetyEffects"][0]["identity"] == oldest_id
+    assert result.evicted_commands[0].command_id == oldest_id
 
 
 def test_recovery_command_requires_projection_order_and_revision() -> None:

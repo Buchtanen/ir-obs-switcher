@@ -223,16 +223,17 @@ def disposition(lane: str, command: str) -> str:
 def build_model() -> dict[str, Any]:
     inventory = []
     for kind in COMMANDS:
+        atomic_bundle = None
+        if kind == "CONFIG_UPDATE":
+            atomic_bundle = "config_then_context"
+        elif kind == "TAPE_HEALTH_CHANGED":
+            atomic_bundle = "capture_health_then_context"
         inventory.append(
             {
                 "kind": kind,
                 "protectedWhen": PROTECTED.get(kind, "never"),
                 "coalesceKey": COALESCE.get(kind),
-                "atomicBundle": (
-                    "config_then_context"
-                    if kind == "CONFIG_UPDATE"
-                    else "capture_health_then_context" if kind == "TAPE_HEALTH_CHANGED" else None
-                ),
+                "atomicBundle": atomic_bundle,
             }
         )
     matrix = [
@@ -259,6 +260,9 @@ def build_model() -> dict[str, Any]:
             "reducerOrder": "assign_reducer_sequence_at_dequeue",
             "priorityReorders": False,
             "recoveryKeepsOriginalPosition": True,
+            "recoveryEffectCapacity": 64,
+            "recoveryEffectOverflow": "canonical_digest_commitment_plus_latest_63",
+            "evictionEvidence": "immutable_evicted_command_in_admission_result",
             "shutdownOwnsEmergencyCell": True,
         },
         "commands": inventory,
@@ -332,6 +336,11 @@ def build_schema() -> dict[str, Any]:
                     "reducerOrder": {"const": "assign_reducer_sequence_at_dequeue"},
                     "priorityReorders": {"const": False},
                     "recoveryKeepsOriginalPosition": {"const": True},
+                    "recoveryEffectCapacity": {"const": 64},
+                    "recoveryEffectOverflow": {
+                        "const": "canonical_digest_commitment_plus_latest_63"
+                    },
+                    "evictionEvidence": {"const": "immutable_evicted_command_in_admission_result"},
                     "shutdownOwnsEmergencyCell": {"const": True},
                 }
             ),

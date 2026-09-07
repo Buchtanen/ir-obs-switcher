@@ -18,6 +18,7 @@ class AdmissionResult:
     reason: str
     command: NarrativeCommand
     evicted_command_ids: tuple[str, ...] = ()
+    evicted_commands: tuple[NarrativeCommand, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +155,7 @@ class NarrativeMailbox:
                 "mailbox_evicted_update",
                 stamped,
                 (str(evicted.command_id),),
+                (evicted,),
             )
         context_index = self._oldest_index(
             lambda item: not item.protected and item.kind == "APPLY_CONTEXT_BATCH"
@@ -179,6 +181,7 @@ class NarrativeMailbox:
             "mailbox_recovery",
             recovery,
             (str(evicted.command_id),),
+            (evicted,),
         )
 
     def _admit_protected(self, command: NarrativeCommand) -> AdmissionResult:

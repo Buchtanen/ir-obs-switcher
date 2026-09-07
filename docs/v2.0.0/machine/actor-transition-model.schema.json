@@ -111,6 +111,9 @@
         "emergencyCells": {
           "const": 1
         },
+        "evictionEvidence": {
+          "const": "immutable_evicted_command_in_admission_result"
+        },
         "ordinaryCells": {
           "const": 56
         },
@@ -119,6 +122,12 @@
         },
         "protectedCells": {
           "const": 7
+        },
+        "recoveryEffectCapacity": {
+          "const": 64
+        },
+        "recoveryEffectOverflow": {
+          "const": "canonical_digest_commitment_plus_latest_63"
         },
         "recoveryKeepsOriginalPosition": {
           "const": true
@@ -142,6 +151,9 @@
         "reducerOrder",
         "priorityReorders",
         "recoveryKeepsOriginalPosition",
+        "recoveryEffectCapacity",
+        "recoveryEffectOverflow",
+        "evictionEvidence",
         "shutdownOwnsEmergencyCell"
       ],
       "type": "object"

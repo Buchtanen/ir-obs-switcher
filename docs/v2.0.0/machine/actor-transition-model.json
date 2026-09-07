@@ -147,9 +147,12 @@
   "mailbox": {
     "dequeueOrder": "mailbox_sequence_ascending",
     "emergencyCells": 1,
+    "evictionEvidence": "immutable_evicted_command_in_admission_result",
     "ordinaryCells": 56,
     "priorityReorders": false,
     "protectedCells": 7,
+    "recoveryEffectCapacity": 64,
+    "recoveryEffectOverflow": "canonical_digest_commitment_plus_latest_63",
     "recoveryKeepsOriginalPosition": true,
     "reducerOrder": "assign_reducer_sequence_at_dequeue",
     "shutdownOwnsEmergencyCell": true,
