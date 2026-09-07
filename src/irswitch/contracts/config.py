@@ -39,6 +39,7 @@ _RFC1918_NETWORKS = tuple(
     ipaddress.ip_network(value) for value in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
 )
 _IPV6_UNIQUE_LOCAL = ipaddress.ip_network("fc00::/7")
+COMMENTARY_SPEECH_LANGUAGE = "en"
 
 
 @dataclass(frozen=True, slots=True)
@@ -290,6 +291,12 @@ class ConfigLedger:
             )
             pending.append(PendingConfigChange(key, boundary, self._desired_generation))
         return tuple(pending)
+
+
+def default_commentary_snapshot() -> CommentaryConfigSnapshot:
+    """Return the frozen default snapshot without environment-dependent activation."""
+
+    return CommentaryConfigSnapshot.create(dict(_contract()["defaultConfig"]))
 
 
 @lru_cache(maxsize=1)

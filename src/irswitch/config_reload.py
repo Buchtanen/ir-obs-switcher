@@ -6,9 +6,87 @@ API responses; other AppConfig fields are ignored for classification.
 
 from __future__ import annotations
 
+import threading
+
 from irswitch.config import AppConfig
+from irswitch.contracts.config import (
+    COMMENTARY_SPEECH_LANGUAGE,
+    CommentaryConfigCandidate,
+    ConfigDiagnostic,
+    ConfigInstallOutcome,
+    ConfigLedger,
+    default_commentary_snapshot,
+)
 from irswitch.models import DrivingMode
 from irswitch.overlay.schema import overlay_values
+
+
+class CommentaryConfigCoordinator:
+    """Long-lived owner of v2 reload state, independent of NarrativeRuntime."""
+
+    def __init__(
+        self,
+        ledger: ConfigLedger,
+        *,
+        automatic_enabled: bool,
+        diagnostics: tuple[ConfigDiagnostic, ...],
+    ) -> None:
+        self._lock = threading.Lock()
+        self.ledger = ledger
+        self._automatic_enabled = automatic_enabled
+        self._diagnostics = diagnostics
+
+    @classmethod
+    def bootstrap(
+        cls,
+        candidate: CommentaryConfigCandidate,
+        *,
+        ready_components: tuple[str, ...] = (),
+    ) -> CommentaryConfigCoordinator:
+        """Create generation zero from a valid startup candidate or safe defaults."""
+
+        snapshot = (
+            candidate.snapshot
+            if candidate.valid and candidate.snapshot is not None
+            else default_commentary_snapshot()
+        )
+        return cls(
+            ConfigLedger(snapshot, ready_components=ready_components),
+            automatic_enabled=bool(
+                candidate.valid
+                and candidate.snapshot is not None
+                and candidate.snapshot.values["commentary.enabled"]
+            ),
+            diagnostics=candidate.diagnostics,
+        )
+
+    @property
+    def automatic_enabled(self) -> bool:
+        with self._lock:
+            return self._automatic_enabled
+
+    @property
+    def diagnostics(self) -> tuple[ConfigDiagnostic, ...]:
+        with self._lock:
+            return self._diagnostics
+
+    @property
+    def speech_language(self) -> str:
+        """V2 speech locale is fixed and intentionally has no config key."""
+
+        return COMMENTARY_SPEECH_LANGUAGE
+
+    def install(self, candidate: CommentaryConfigCandidate) -> ConfigInstallOutcome:
+        """Install one reload candidate while retaining last-valid effective state."""
+
+        with self._lock:
+            outcome = self.ledger.install(candidate)
+            if outcome.installed:
+                self.ledger.apply_boundary("command")
+            self._automatic_enabled = outcome.automatic_enabled
+            self._diagnostics = outcome.diagnostics
+        return outcome
+
 
 # Keys that take effect after POST /config/reload without process restart.
 LIVE_CONFIG_KEYS: frozenset[str] = frozenset(

@@ -11,6 +11,7 @@ from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.server.api import (
+    APP_COMMENTARY_CONFIG,
     APP_CONFIG,
     APP_CONFIG_PATH,
     create_app,
@@ -412,7 +413,21 @@ dashboard_event_log_size = 50
             assert "needs_restart" in data
             assert isinstance(data["applied_live"], list)
             assert isinstance(data["needs_restart"], list)
+            assert data["commentary_config"] == {
+                "installed": True,
+                "desired_generation": 0,
+                "apply_sequence": 0,
+                "desired_hash": data["commentary_config"]["desired_hash"],
+                "effective_hash": data["commentary_config"]["effective_hash"],
+                "pending_changes": [],
+                "automatic_enabled": False,
+                "speech_language": "en",
+                "diagnostics": [],
+                "preflights": [],
+            }
             assert APP_CONFIG in app
+            assert APP_COMMENTARY_CONFIG in app
+            commentary_coordinator = app[APP_COMMENTARY_CONFIG]
             from irswitch.logic.policy import Policy
             from irswitch.logic.state_machine import StateMachine
             from irswitch.models import DrivingMode
@@ -494,6 +509,9 @@ dashboard_event_log_size = 50
             resp2 = await client.post("/config/reload")
             assert resp2.status == 200
             data2 = await resp2.json()
+            assert app[APP_COMMENTARY_CONFIG] is commentary_coordinator
+            assert data2["commentary_config"]["installed"] is True
+            assert data2["commentary_config"]["desired_generation"] == 1
             assert "switching.debounce_ms" in data2["applied_live"]
             assert "iracing.poll_hz" in data2["applied_live"]
             assert "scenes.IDLE" in data2["applied_live"]
@@ -507,6 +525,19 @@ dashboard_event_log_size = 50
             assert sm._override_seconds == 99
             assert sm._policy.safe_scene == "SafeNew"
             assert sm._policy.scenes[DrivingMode.IDLE] == "IdleNew"
+
+            with config_file.open("a", encoding="utf-8") as handle:
+                handle.write("\n[commentary]\n" "enabled = true\n" "max_utterance_s = invalid\n")
+            resp3 = await client.post("/config/reload")
+            assert resp3.status == 200
+            data3 = await resp3.json()
+            assert data3["status"] == "success"
+            assert data3["commentary_config"]["installed"] is False
+            assert data3["commentary_config"]["desired_generation"] == 1
+            assert data3["commentary_config"]["automatic_enabled"] is False
+            assert data3["commentary_config"]["diagnostics"][0]["source_key"] == (
+                "commentary.max_utterance_s"
+            )
 
 
 @pytest.mark.asyncio

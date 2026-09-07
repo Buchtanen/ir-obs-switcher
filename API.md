@@ -322,7 +322,25 @@ Přenačtení konfigurace ze souboru.
   "status": "success",
   "message": "Config reloaded successfully",
   "applied_live": ["switching.debounce_ms", "iracing.poll_hz"],
-  "needs_restart": ["app.http_port"]
+  "needs_restart": ["app.http_port"],
+  "commentary_config": {
+    "installed": true,
+    "desired_generation": 7,
+    "apply_sequence": 21,
+    "desired_hash": "sha256:...",
+    "effective_hash": "sha256:...",
+    "pending_changes": [
+      {
+        "key": "commentary.tts.voice",
+        "boundary": "next_utterance",
+        "desired_generation": 7
+      }
+    ],
+    "automatic_enabled": true,
+    "speech_language": "en",
+    "diagnostics": [],
+    "preflights": [{"component": "tts", "generation": 7}]
+  }
 }
 ```
 
@@ -330,8 +348,11 @@ Přenačtení konfigurace ze souboru.
 |-------|------|-------------|
 | `applied_live` | `string[]` | Changed keys that apply without process restart (diff old vs new; whitelist from `CONFIG.md`) |
 | `needs_restart` | `string[]` | Changed keys that still require a process restart |
+| `commentary_config` | `object` | Persistent v2 ConfigLedger projection for this reload |
 
 Prázdné seznamy = žádný tracked klíč se nezměnil, nebo nebylo s čím porovnat (chybí předchozí runtime config).
+
+`commentary_config.installed=false` znamená, že commentary kandidát byl odmítnut bez nové generace. HTTP odpověď přesto zůstává 200 a ostatní validní aplikační domény se reloadují. `diagnostics` obsahuje `reason`, `source_key`, případné `replacement_keys` a bezpečnou zprávu bez hodnoty. `pending_changes` zveřejňuje pouze klíč, přesnou apply boundary a desired generation, nikdy citlivou hodnotu. `command` boundary se aplikuje uvnitř reload coordinatoru; ostatní boundaries čekají na svého runtime ownera. `preflights` jsou generation-tagged požadavky pro změněné LLM/TTS komponenty a `speech_language` je vždy `en`.
 
 **Error Response** (400/500):
 ```json

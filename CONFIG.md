@@ -667,6 +667,7 @@ Response obsahuje diff vůči předchozímu runtime configu:
 
 - `applied_live` — změněné klíče ze seznamu níže (platí ihned)
 - `needs_restart` — změněné klíče ze restart whitelistu (stále vyžadují restart procesu)
+- `commentary_config` — v2 ledger stav: zda se kandidát instaloval, desired generation/hash, effective hash/apply sequence, pending boundaries, diagnostics a požadované LLM/TTS preflights
 
 GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 

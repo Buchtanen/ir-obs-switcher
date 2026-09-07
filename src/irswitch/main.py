@@ -15,6 +15,7 @@ from aiohttp import web
 
 from irswitch.commentary.duck import restore_shared_ducker
 from irswitch.config import AppConfig
+from irswitch.config_reload import CommentaryConfigCoordinator
 from irswitch.i18n import set_language
 from irswitch.iracing.extractors import (
     extract_session_fields,
@@ -33,6 +34,7 @@ from irswitch.obs.stream_status_refresh import (
     schedule_post_stop_status_refresh,
 )
 from irswitch.server.api import (
+    APP_COMMENTARY_CONFIG,
     APP_CONFIG,
     APP_CONFIG_PATH,
     create_app,
@@ -1489,6 +1491,8 @@ async def run_service(
         app = create_app()
         app[APP_CONFIG] = config  # Store config in app for dashboard access
         app[APP_CONFIG_PATH] = config_path  # type: ignore[misc]  # Store config path for hot reload
+        if config.commentary_v2 is not None:
+            app[APP_COMMENTARY_CONFIG] = CommentaryConfigCoordinator.bootstrap(config.commentary_v2)
 
         # Also set config in API module's container for backward compatibility
         set_app_config(config)
