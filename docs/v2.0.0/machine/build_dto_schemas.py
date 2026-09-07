@@ -13,16 +13,22 @@ from typing import Any
 OUT = Path(__file__).with_name("dto-contracts.schema.json")
 GOLDENS = Path(__file__).with_name("dto-schema-goldens.json")
 ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+LINEAGE_PATTERN = (
+    r"^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)"
+    r"(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$"
+)
 HASH_PATTERN = r"^sha256:[0-9a-f]{64}$"
 
 S = {"type": "string"}
 ID = {"type": "string", "pattern": ID_PATTERN}
+LINEAGE_ID = {"type": "string", "pattern": LINEAGE_PATTERN, "maxLength": 512}
 HASH = {"type": "string", "pattern": HASH_PATTERN}
 N0 = {"type": "integer", "minimum": 0}
 P1 = {"type": "integer", "minimum": 1}
 NUM = {"type": "number"}
 BOOL = {"type": "boolean"}
 NULLABLE_ID = {"oneOf": [ID, {"type": "null"}]}
+NULLABLE_LINEAGE_ID = {"oneOf": [LINEAGE_ID, {"type": "null"}]}
 NULLABLE_S = {"type": ["string", "null"]}
 NULLABLE_N0 = {"type": ["integer", "null"], "minimum": 0}
 
@@ -145,7 +151,7 @@ def build_schema() -> dict[str, Any]:
             "stage": nullable(enum("practice", "qualifying", "race")),
             "sessionPlanRevision": NULLABLE_N0,
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "historyComplete": BOOL,
             "transitionReasons": id_list(0, 8),
         },
@@ -160,7 +166,7 @@ def build_schema() -> dict[str, Any]:
             "streamEpoch": N0,
             "sessionRef": nullable(SESSION_REF),
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "correlationKey": id_list(1, 8),
             "values": arr(any_obj, 0, 64),
         },
@@ -178,7 +184,7 @@ def build_schema() -> dict[str, Any]:
             "streamEpoch": N0,
             "sessionRef": nullable(SESSION_REF),
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "correlationKey": id_list(0, 8),
             "windowFrameRange": nullable(any_obj),
             "previousState": enum("inactive", "candidate", "active", "clearing"),
@@ -205,7 +211,7 @@ def build_schema() -> dict[str, Any]:
             "streamEpoch": N0,
             "sessionRef": nullable(SESSION_REF),
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "correlationKey": id_list(0, 8),
             "materialRevision": N0,
             "tapeChannel": ID,
@@ -255,7 +261,7 @@ def build_schema() -> dict[str, Any]:
             "streamEpoch": N0,
             "sessionRef": nullable(SESSION_REF),
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "correlationKey": id_list(0, 8),
             "factIds": id_list(1, 32),
             "factViewRevision": N0,
@@ -282,7 +288,7 @@ def build_schema() -> dict[str, Any]:
             "broadcastEpoch": P1,
             "streamEpoch": P1,
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "evidenceRefs": id_list(1, 16),
             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
             "scope": enum("occurrence", "downstream", "stream", "revalidate", "historical_only"),
@@ -310,7 +316,7 @@ def build_schema() -> dict[str, Any]:
             "properties": {
                 "scope": {"enum": ["occurrence", "downstream", "revalidate", "historical_only"]},
                 "occurrenceId": ID,
-                "lineageId": ID,
+                "lineageId": LINEAGE_ID,
             }
         },
     ]
@@ -322,7 +328,7 @@ def build_schema() -> dict[str, Any]:
             "broadcastEpoch": N0,
             "streamEpoch": N0,
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "historyComplete": BOOL,
             "facts": arr({"$ref": "#/$defs/AtomicFact"}, 0, 1024),
             "compactedSummaryRefs": id_list(0, 64),
@@ -335,7 +341,7 @@ def build_schema() -> dict[str, Any]:
             "definitionId": ID,
             "scope": enum("stream", "occurrence"),
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "semanticIdentity": id_list(1, 8),
             "correlationIds": id_list(0, 8),
             "state": enum("candidate", "active", "suspended", "resolved", "invalidated"),
@@ -380,7 +386,7 @@ def build_schema() -> dict[str, Any]:
             "candidateOrder": ORDER,
             "streamEpoch": P1,
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "episodeId": ID,
             "correlationKey": id_list(0, 8),
             "tapeChannel": ID,
@@ -508,7 +514,7 @@ def build_schema() -> dict[str, Any]:
             "beatRole": enum("opening", "update", "outcome", "recap", "transition", "filler"),
             "streamEpoch": P1,
             "occurrenceId": NULLABLE_ID,
-            "lineageId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
             "episodeRevision": N0,
             "requiredClaims": arr(any_obj, 1, 16),
             "optionalClaims": arr(any_obj, 0, 2),
@@ -1185,12 +1191,20 @@ def schema_errors(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--emit", action="store_true")
+    parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
     generated = build_schema()
     if generated.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
         raise ValueError("wrong JSON Schema dialect")
     if args.emit:
         print(json.dumps(generated, ensure_ascii=False, sort_keys=True, indent=2))
+        return 0
+    if args.write:
+        OUT.write_text(
+            json.dumps(generated, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"wrote {OUT.name}")
         return 0
     checked = json.loads(OUT.read_text(encoding="utf-8"))
     if canonical(generated) != canonical(checked):

@@ -1,0 +1,3064 @@
+{
+  "$defs": {
+    "AtomicFact": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "lineageId": {
+              "type": "null"
+            },
+            "occurrenceId": {
+              "type": "null"
+            },
+            "scope": {
+              "const": "stream"
+            }
+          }
+        },
+        {
+          "properties": {
+            "lineageId": {
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
+              "type": "string"
+            },
+            "occurrenceId": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "scope": {
+              "enum": [
+                "occurrence",
+                "downstream",
+                "revalidate",
+                "historical_only"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "attributes": {
+          "maxProperties": 32,
+          "type": "object"
+        },
+        "broadcastEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "evidenceRefs": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "factId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "objectId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observedAtMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "polarity": {
+          "enum": [
+            "positive",
+            "negative"
+          ]
+        },
+        "predicate": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schemaVersion": {
+          "const": "atomic-fact/2"
+        },
+        "scope": {
+          "enum": [
+            "occurrence",
+            "downstream",
+            "stream",
+            "revalidate",
+            "historical_only"
+          ]
+        },
+        "status": {
+          "enum": [
+            "provisional",
+            "active",
+            "expired",
+            "superseded",
+            "historical",
+            "rejected",
+            "unknown"
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "subjectId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validFromMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "validUntilMonoMs": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "factId",
+        "predicate",
+        "subjectId",
+        "objectId",
+        "attributes",
+        "polarity",
+        "validFromMonoMs",
+        "validUntilMonoMs",
+        "observedAtMonoMs",
+        "broadcastEpoch",
+        "streamEpoch",
+        "occurrenceId",
+        "lineageId",
+        "evidenceRefs",
+        "confidence",
+        "scope",
+        "status",
+        "revision"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "valid_until_gte_valid_from",
+        "registered_predicate_attributes_scope"
+      ]
+    },
+    "DecisionsResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "decisions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "atMonoMs": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "beatId": {
+                "oneOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "candidateOrder": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "reducerSequence": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "sourceOrdinal": {
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "reducerSequence",
+                      "sourceOrdinal"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "candidateSource": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "event_opportunity",
+                      "story_successor",
+                      "episode_beat",
+                      "filler"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "decision": {
+                "enum": [
+                  "selected",
+                  "silence",
+                  "discarded",
+                  "replaced",
+                  "expired",
+                  "invalidated"
+                ]
+              },
+              "episodeId": {
+                "oneOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "opportunityId": {
+                "oneOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "enum": [
+                  "active_story_continuation",
+                  "attempt_suppressed",
+                  "below_threshold",
+                  "cadence_blocked",
+                  "context_unknown",
+                  "episode_capacity_rejected",
+                  "fatigue_blocked",
+                  "hard_guard_failed",
+                  "higher_urgency_switch",
+                  "highest_valid_candidate",
+                  "no_candidate",
+                  "no_episode_route",
+                  "planning_cycle_exhausted",
+                  "related_event_update",
+                  "source_guard_failed",
+                  "stream_inactive",
+                  "switch_margin_met",
+                  "tts_unavailable"
+                ]
+              },
+              "reducerSequence": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "relation": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "opens_episode",
+                      "updates_active_episode",
+                      "resolves_active_episode",
+                      "continues_focused_episode",
+                      "conflicts_with_focused_episode",
+                      "independent_of_focused_episode"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "runnerUp": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "beatId": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                        "type": "string"
+                      },
+                      "score": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "beatId",
+                      "score"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "score": {
+                "oneOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tapeChannel": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "bio.pressure",
+                      "compat.alias",
+                      "filler.lifecycle",
+                      "filler.track_state",
+                      "race.battle.attack",
+                      "race.battle.closing",
+                      "race.battle.outcome",
+                      "race.battle.pressure",
+                      "race.battle.side_by_side",
+                      "race.battle.two_front",
+                      "race.control.flag",
+                      "race.incident.aftermath",
+                      "race.incident.event",
+                      "race.incident.invalid_lap",
+                      "race.incident.recovery",
+                      "race.pit.cycle",
+                      "race.pit.outcome",
+                      "race.position.change",
+                      "race.position.leader",
+                      "race.position.pass",
+                      "race.session.final_lap",
+                      "race.session.finish",
+                      "race.timing.attempt",
+                      "race.timing.consistency",
+                      "race.timing.delta",
+                      "race.timing.lap",
+                      "race.timing.sector",
+                      "race.timing.target",
+                      "session.context.field",
+                      "session.context.weather",
+                      "session.lifecycle",
+                      "session.qualifying.recap",
+                      "session.vehicle",
+                      "stream.lifecycle",
+                      "system.connectivity",
+                      "system.thermal"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "terminalReason": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "accepted",
+                      "active_story_continuation",
+                      "actor_ambiguous",
+                      "actor_reversed",
+                      "admission_timeout",
+                      "attached_live",
+                      "attempt_suppressed",
+                      "backend_audio_error",
+                      "backend_cancelled",
+                      "backend_process_exit",
+                      "backend_rejected",
+                      "backend_unavailable",
+                      "below_threshold",
+                      "broadcast_ended",
+                      "broadcast_resumed",
+                      "broadcast_started",
+                      "broadcast_unknown",
+                      "cadence_blocked",
+                      "capacity_evicted",
+                      "capture_unavailable",
+                      "causal_inference",
+                      "clear_cancelled",
+                      "clear_confirmed",
+                      "clear_started",
+                      "closed_stream",
+                      "commentary_disabled",
+                      "completed",
+                      "component_preflight_failed",
+                      "component_preflight_pending",
+                      "component_unavailable",
+                      "composite_exited",
+                      "config_transition_lost",
+                      "consumed_playback_accepted",
+                      "context_unknown",
+                      "cooldown",
+                      "deadline_admission_skipped",
+                      "disabled_by_config",
+                      "disabled_invalid_config",
+                      "duck_unavailable",
+                      "emotion_inference",
+                      "empty",
+                      "enter_confirmed",
+                      "enter_lost",
+                      "enter_started",
+                      "episode_capacity_rejected",
+                      "event_candidate_protocol_violation",
+                      "evicted_capacity",
+                      "evidence_invalidated",
+                      "expired_ttl",
+                      "extra_claim",
+                      "fact_capacity_evicted",
+                      "fact_capacity_exhausted",
+                      "fatigue_blocked",
+                      "feature_unknown",
+                      "forbidden_claim",
+                      "freshness_stale",
+                      "hard_guard_failed",
+                      "higher_urgency_switch",
+                      "highest_valid_candidate",
+                      "history_incomplete",
+                      "identity_conflict",
+                      "intent_inference",
+                      "interrupted_commentary_disabled",
+                      "interrupted_occurrence_reset",
+                      "interrupted_shutdown",
+                      "interrupted_stream_end",
+                      "interrupted_truth_invalidated",
+                      "invalid_candidate",
+                      "invalidated_occurrence",
+                      "invalidated_truth",
+                      "legacy_key",
+                      "lower_priority",
+                      "mailbox_evicted_update",
+                      "mailbox_history_incomplete",
+                      "mailbox_overloaded",
+                      "mailbox_recovery",
+                      "material_band_changed",
+                      "material_delta_met",
+                      "medical_inference",
+                      "meta_output",
+                      "narrative_disabled",
+                      "narrative_enabled",
+                      "natural_exit",
+                      "no_candidate",
+                      "no_episode_route",
+                      "non_en_contract",
+                      "number_mismatch",
+                      "number_unbound",
+                      "obs_state_unknown",
+                      "occurrence_ended",
+                      "occurrence_reset",
+                      "occurrence_superseded",
+                      "outcome_observed",
+                      "overlay_disabled",
+                      "pit_cycle",
+                      "planning_cycle_exhausted",
+                      "polarity_mismatch",
+                      "prediction_as_result",
+                      "process_recovery",
+                      "ready",
+                      "realization_cancelled",
+                      "realization_input_invalid",
+                      "realization_invalid_response",
+                      "realization_output_oversize",
+                      "realization_protocol_violation",
+                      "realization_timeout",
+                      "realization_transport",
+                      "related_event_update",
+                      "replaced_precommit",
+                      "required_capture_lost",
+                      "required_missing",
+                      "result_as_prediction",
+                      "semantic_rejected",
+                      "sentence_count",
+                      "session_ended",
+                      "session_identity_conflict",
+                      "session_plan_conflict",
+                      "session_restarted",
+                      "session_resumed",
+                      "session_started",
+                      "session_superseded",
+                      "session_suspended",
+                      "source_guard_failed",
+                      "stale_worker_token",
+                      "starting",
+                      "stream_ended",
+                      "stream_inactive",
+                      "stream_reset",
+                      "superseded_revision",
+                      "switch_margin_met",
+                      "tape_flush_timeout",
+                      "tape_queue_drop",
+                      "tape_write_failed",
+                      "target_changed",
+                      "tense_mismatch",
+                      "token_count",
+                      "too_long",
+                      "tts_failed_after_acceptance",
+                      "tts_failed_before_acceptance",
+                      "tts_playback_watchdog",
+                      "tts_protocol_violation",
+                      "tts_start_timeout",
+                      "tts_stop_timeout",
+                      "tts_unavailable",
+                      "unit_mismatch",
+                      "unknown_entity",
+                      "unknown_fragment",
+                      "unmatched_exit",
+                      "unmatched_update",
+                      "unsafe_negation",
+                      "unsupported_certainty",
+                      "unsupported_stage",
+                      "update_rate_limited"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "threshold": {
+                "type": "number"
+              },
+              "urgency": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "background",
+                      "context",
+                      "story",
+                      "critical"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "reducerSequence",
+              "atMonoMs",
+              "decision",
+              "reason",
+              "beatId",
+              "episodeId",
+              "opportunityId",
+              "tapeChannel",
+              "candidateSource",
+              "candidateOrder",
+              "relation",
+              "urgency",
+              "score",
+              "threshold",
+              "runnerUp",
+              "terminalReason"
+            ],
+            "type": "object",
+            "x-irswitch-invariants": [
+              "silence_has_no_candidate_identity",
+              "non_silence_has_candidate_identity",
+              "decisions_newest_first"
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 0,
+          "type": "array"
+        },
+        "runtime": {
+          "type": "boolean"
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "runtime",
+        "decisions"
+      ],
+      "type": "object"
+    },
+    "ErrorResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_json",
+                "invalid_request",
+                "forbidden",
+                "not_found",
+                "speech_busy",
+                "validation_failed",
+                "component_unavailable",
+                "mailbox_overloaded",
+                "admission_timeout"
+              ]
+            },
+            "fields": {
+              "additionalProperties": {
+                "maxLength": 128,
+                "type": "string"
+              },
+              "maxProperties": 32,
+              "type": "object"
+            },
+            "message": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "fields"
+          ],
+          "type": "object"
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "error"
+      ],
+      "type": "object"
+    },
+    "HealthCommentarySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "oneOf": [
+            {
+              "enum": [
+                "disabled_by_config",
+                "disabled_invalid_config",
+                "legacy_key",
+                "starting",
+                "ready",
+                "component_preflight_pending",
+                "component_preflight_failed",
+                "component_unavailable",
+                "admission_timeout",
+                "session_identity_conflict",
+                "session_plan_conflict",
+                "fact_capacity_evicted",
+                "fact_capacity_exhausted",
+                "obs_state_unknown",
+                "history_incomplete",
+                "duck_unavailable"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "disabled",
+            "starting",
+            "ready",
+            "degraded",
+            "stopping",
+            "stopped"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "SpeakAcceptedResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "const": true
+        },
+        "admittedState": {
+          "const": "committed"
+        },
+        "requestId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "accepted",
+        "requestId",
+        "admittedState"
+      ],
+      "type": "object"
+    },
+    "SpeakRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "const": "en"
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        },
+        "text": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "text",
+        "language"
+      ],
+      "type": "object"
+    },
+    "StatusResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "byTapeChannel": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "expired": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "kick": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "queued": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "selected": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "started": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kick",
+              "accepted",
+              "queued",
+              "selected",
+              "started",
+              "expired"
+            ],
+            "type": "object"
+          },
+          "maxProperties": 128,
+          "propertyNames": {
+            "enum": [
+              "bio.pressure",
+              "compat.alias",
+              "filler.lifecycle",
+              "filler.track_state",
+              "race.battle.attack",
+              "race.battle.closing",
+              "race.battle.outcome",
+              "race.battle.pressure",
+              "race.battle.side_by_side",
+              "race.battle.two_front",
+              "race.control.flag",
+              "race.incident.aftermath",
+              "race.incident.event",
+              "race.incident.invalid_lap",
+              "race.incident.recovery",
+              "race.pit.cycle",
+              "race.pit.outcome",
+              "race.position.change",
+              "race.position.leader",
+              "race.position.pass",
+              "race.session.final_lap",
+              "race.session.finish",
+              "race.timing.attempt",
+              "race.timing.consistency",
+              "race.timing.delta",
+              "race.timing.lap",
+              "race.timing.sector",
+              "race.timing.target",
+              "session.context.field",
+              "session.context.weather",
+              "session.lifecycle",
+              "session.qualifying.recap",
+              "session.vehicle",
+              "stream.lifecycle",
+              "system.connectivity",
+              "system.thermal"
+            ]
+          },
+          "type": "object"
+        },
+        "catalog": {
+          "additionalProperties": false,
+          "properties": {
+            "beatCount": {
+              "const": 64
+            },
+            "eventIdentifierCount": {
+              "const": 60
+            },
+            "hash": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "schemaVersion": {
+              "const": "narrative-catalog/2"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "hash",
+            "eventIdentifierCount",
+            "beatCount"
+          ],
+          "type": "object"
+        },
+        "components": {
+          "additionalProperties": false,
+          "properties": {
+            "detectors": {
+              "additionalProperties": false,
+              "properties": {
+                "disabled": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                        "type": "string"
+                      },
+                      "reason": {
+                        "enum": [
+                          "accepted",
+                          "active_story_continuation",
+                          "actor_ambiguous",
+                          "actor_reversed",
+                          "admission_timeout",
+                          "attached_live",
+                          "attempt_suppressed",
+                          "backend_audio_error",
+                          "backend_cancelled",
+                          "backend_process_exit",
+                          "backend_rejected",
+                          "backend_unavailable",
+                          "below_threshold",
+                          "broadcast_ended",
+                          "broadcast_resumed",
+                          "broadcast_started",
+                          "broadcast_unknown",
+                          "cadence_blocked",
+                          "capacity_evicted",
+                          "capture_unavailable",
+                          "causal_inference",
+                          "clear_cancelled",
+                          "clear_confirmed",
+                          "clear_started",
+                          "closed_stream",
+                          "commentary_disabled",
+                          "completed",
+                          "component_preflight_failed",
+                          "component_preflight_pending",
+                          "component_unavailable",
+                          "composite_exited",
+                          "config_transition_lost",
+                          "consumed_playback_accepted",
+                          "context_unknown",
+                          "cooldown",
+                          "deadline_admission_skipped",
+                          "disabled_by_config",
+                          "disabled_invalid_config",
+                          "duck_unavailable",
+                          "emotion_inference",
+                          "empty",
+                          "enter_confirmed",
+                          "enter_lost",
+                          "enter_started",
+                          "episode_capacity_rejected",
+                          "event_candidate_protocol_violation",
+                          "evicted_capacity",
+                          "evidence_invalidated",
+                          "expired_ttl",
+                          "extra_claim",
+                          "fact_capacity_evicted",
+                          "fact_capacity_exhausted",
+                          "fatigue_blocked",
+                          "feature_unknown",
+                          "forbidden_claim",
+                          "freshness_stale",
+                          "hard_guard_failed",
+                          "higher_urgency_switch",
+                          "highest_valid_candidate",
+                          "history_incomplete",
+                          "identity_conflict",
+                          "intent_inference",
+                          "interrupted_commentary_disabled",
+                          "interrupted_occurrence_reset",
+                          "interrupted_shutdown",
+                          "interrupted_stream_end",
+                          "interrupted_truth_invalidated",
+                          "invalid_candidate",
+                          "invalidated_occurrence",
+                          "invalidated_truth",
+                          "legacy_key",
+                          "lower_priority",
+                          "mailbox_evicted_update",
+                          "mailbox_history_incomplete",
+                          "mailbox_overloaded",
+                          "mailbox_recovery",
+                          "material_band_changed",
+                          "material_delta_met",
+                          "medical_inference",
+                          "meta_output",
+                          "narrative_disabled",
+                          "narrative_enabled",
+                          "natural_exit",
+                          "no_candidate",
+                          "no_episode_route",
+                          "non_en_contract",
+                          "number_mismatch",
+                          "number_unbound",
+                          "obs_state_unknown",
+                          "occurrence_ended",
+                          "occurrence_reset",
+                          "occurrence_superseded",
+                          "outcome_observed",
+                          "overlay_disabled",
+                          "pit_cycle",
+                          "planning_cycle_exhausted",
+                          "polarity_mismatch",
+                          "prediction_as_result",
+                          "process_recovery",
+                          "ready",
+                          "realization_cancelled",
+                          "realization_input_invalid",
+                          "realization_invalid_response",
+                          "realization_output_oversize",
+                          "realization_protocol_violation",
+                          "realization_timeout",
+                          "realization_transport",
+                          "related_event_update",
+                          "replaced_precommit",
+                          "required_capture_lost",
+                          "required_missing",
+                          "result_as_prediction",
+                          "semantic_rejected",
+                          "sentence_count",
+                          "session_ended",
+                          "session_identity_conflict",
+                          "session_plan_conflict",
+                          "session_restarted",
+                          "session_resumed",
+                          "session_started",
+                          "session_superseded",
+                          "session_suspended",
+                          "source_guard_failed",
+                          "stale_worker_token",
+                          "starting",
+                          "stream_ended",
+                          "stream_inactive",
+                          "stream_reset",
+                          "superseded_revision",
+                          "switch_margin_met",
+                          "tape_flush_timeout",
+                          "tape_queue_drop",
+                          "tape_write_failed",
+                          "target_changed",
+                          "tense_mismatch",
+                          "token_count",
+                          "too_long",
+                          "tts_failed_after_acceptance",
+                          "tts_failed_before_acceptance",
+                          "tts_playback_watchdog",
+                          "tts_protocol_violation",
+                          "tts_start_timeout",
+                          "tts_stop_timeout",
+                          "tts_unavailable",
+                          "unit_mismatch",
+                          "unknown_entity",
+                          "unknown_fragment",
+                          "unmatched_exit",
+                          "unmatched_update",
+                          "unsafe_negation",
+                          "unsupported_certainty",
+                          "unsupported_stage",
+                          "update_rate_limited"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "reason"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 128,
+                  "minItems": 0,
+                  "type": "array"
+                },
+                "reason": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "accepted",
+                        "active_story_continuation",
+                        "actor_ambiguous",
+                        "actor_reversed",
+                        "admission_timeout",
+                        "attached_live",
+                        "attempt_suppressed",
+                        "backend_audio_error",
+                        "backend_cancelled",
+                        "backend_process_exit",
+                        "backend_rejected",
+                        "backend_unavailable",
+                        "below_threshold",
+                        "broadcast_ended",
+                        "broadcast_resumed",
+                        "broadcast_started",
+                        "broadcast_unknown",
+                        "cadence_blocked",
+                        "capacity_evicted",
+                        "capture_unavailable",
+                        "causal_inference",
+                        "clear_cancelled",
+                        "clear_confirmed",
+                        "clear_started",
+                        "closed_stream",
+                        "commentary_disabled",
+                        "completed",
+                        "component_preflight_failed",
+                        "component_preflight_pending",
+                        "component_unavailable",
+                        "composite_exited",
+                        "config_transition_lost",
+                        "consumed_playback_accepted",
+                        "context_unknown",
+                        "cooldown",
+                        "deadline_admission_skipped",
+                        "disabled_by_config",
+                        "disabled_invalid_config",
+                        "duck_unavailable",
+                        "emotion_inference",
+                        "empty",
+                        "enter_confirmed",
+                        "enter_lost",
+                        "enter_started",
+                        "episode_capacity_rejected",
+                        "event_candidate_protocol_violation",
+                        "evicted_capacity",
+                        "evidence_invalidated",
+                        "expired_ttl",
+                        "extra_claim",
+                        "fact_capacity_evicted",
+                        "fact_capacity_exhausted",
+                        "fatigue_blocked",
+                        "feature_unknown",
+                        "forbidden_claim",
+                        "freshness_stale",
+                        "hard_guard_failed",
+                        "higher_urgency_switch",
+                        "highest_valid_candidate",
+                        "history_incomplete",
+                        "identity_conflict",
+                        "intent_inference",
+                        "interrupted_commentary_disabled",
+                        "interrupted_occurrence_reset",
+                        "interrupted_shutdown",
+                        "interrupted_stream_end",
+                        "interrupted_truth_invalidated",
+                        "invalid_candidate",
+                        "invalidated_occurrence",
+                        "invalidated_truth",
+                        "legacy_key",
+                        "lower_priority",
+                        "mailbox_evicted_update",
+                        "mailbox_history_incomplete",
+                        "mailbox_overloaded",
+                        "mailbox_recovery",
+                        "material_band_changed",
+                        "material_delta_met",
+                        "medical_inference",
+                        "meta_output",
+                        "narrative_disabled",
+                        "narrative_enabled",
+                        "natural_exit",
+                        "no_candidate",
+                        "no_episode_route",
+                        "non_en_contract",
+                        "number_mismatch",
+                        "number_unbound",
+                        "obs_state_unknown",
+                        "occurrence_ended",
+                        "occurrence_reset",
+                        "occurrence_superseded",
+                        "outcome_observed",
+                        "overlay_disabled",
+                        "pit_cycle",
+                        "planning_cycle_exhausted",
+                        "polarity_mismatch",
+                        "prediction_as_result",
+                        "process_recovery",
+                        "ready",
+                        "realization_cancelled",
+                        "realization_input_invalid",
+                        "realization_invalid_response",
+                        "realization_output_oversize",
+                        "realization_protocol_violation",
+                        "realization_timeout",
+                        "realization_transport",
+                        "related_event_update",
+                        "replaced_precommit",
+                        "required_capture_lost",
+                        "required_missing",
+                        "result_as_prediction",
+                        "semantic_rejected",
+                        "sentence_count",
+                        "session_ended",
+                        "session_identity_conflict",
+                        "session_plan_conflict",
+                        "session_restarted",
+                        "session_resumed",
+                        "session_started",
+                        "session_superseded",
+                        "session_suspended",
+                        "source_guard_failed",
+                        "stale_worker_token",
+                        "starting",
+                        "stream_ended",
+                        "stream_inactive",
+                        "stream_reset",
+                        "superseded_revision",
+                        "switch_margin_met",
+                        "tape_flush_timeout",
+                        "tape_queue_drop",
+                        "tape_write_failed",
+                        "target_changed",
+                        "tense_mismatch",
+                        "token_count",
+                        "too_long",
+                        "tts_failed_after_acceptance",
+                        "tts_failed_before_acceptance",
+                        "tts_playback_watchdog",
+                        "tts_protocol_violation",
+                        "tts_start_timeout",
+                        "tts_stop_timeout",
+                        "tts_unavailable",
+                        "unit_mismatch",
+                        "unknown_entity",
+                        "unknown_fragment",
+                        "unmatched_exit",
+                        "unmatched_update",
+                        "unsafe_negation",
+                        "unsupported_certainty",
+                        "unsupported_stage",
+                        "update_rate_limited"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "disabled",
+                    "starting",
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "status",
+                "reason",
+                "disabled"
+              ],
+              "type": "object"
+            },
+            "facts": {
+              "additionalProperties": false,
+              "properties": {
+                "active": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "historicalSummaries": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "historyComplete": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "disabled_by_config",
+                        "disabled_invalid_config",
+                        "legacy_key",
+                        "starting",
+                        "ready",
+                        "component_preflight_pending",
+                        "component_preflight_failed",
+                        "component_unavailable",
+                        "admission_timeout",
+                        "session_identity_conflict",
+                        "session_plan_conflict",
+                        "fact_capacity_evicted",
+                        "fact_capacity_exhausted",
+                        "obs_state_unknown",
+                        "history_incomplete",
+                        "duck_unavailable"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "disabled",
+                    "starting",
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                },
+                "viewRevision": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "status",
+                "reason",
+                "viewRevision",
+                "active",
+                "historicalSummaries",
+                "historyComplete"
+              ],
+              "type": "object"
+            },
+            "llm": {
+              "additionalProperties": false,
+              "properties": {
+                "configGeneration": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "generation": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "lastAttempt": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "enum": [
+                            "succeeded",
+                            "failed",
+                            "cancelled",
+                            "timed_out",
+                            "stale"
+                          ]
+                        },
+                        "reducerLagMs": {
+                          "oneOf": [
+                            {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "requestId": {
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                          "type": "string"
+                        },
+                        "terminalReason": {
+                          "oneOf": [
+                            {
+                              "enum": [
+                                "accepted",
+                                "active_story_continuation",
+                                "actor_ambiguous",
+                                "actor_reversed",
+                                "admission_timeout",
+                                "attached_live",
+                                "attempt_suppressed",
+                                "backend_audio_error",
+                                "backend_cancelled",
+                                "backend_process_exit",
+                                "backend_rejected",
+                                "backend_unavailable",
+                                "below_threshold",
+                                "broadcast_ended",
+                                "broadcast_resumed",
+                                "broadcast_started",
+                                "broadcast_unknown",
+                                "cadence_blocked",
+                                "capacity_evicted",
+                                "capture_unavailable",
+                                "causal_inference",
+                                "clear_cancelled",
+                                "clear_confirmed",
+                                "clear_started",
+                                "closed_stream",
+                                "commentary_disabled",
+                                "completed",
+                                "component_preflight_failed",
+                                "component_preflight_pending",
+                                "component_unavailable",
+                                "composite_exited",
+                                "config_transition_lost",
+                                "consumed_playback_accepted",
+                                "context_unknown",
+                                "cooldown",
+                                "deadline_admission_skipped",
+                                "disabled_by_config",
+                                "disabled_invalid_config",
+                                "duck_unavailable",
+                                "emotion_inference",
+                                "empty",
+                                "enter_confirmed",
+                                "enter_lost",
+                                "enter_started",
+                                "episode_capacity_rejected",
+                                "event_candidate_protocol_violation",
+                                "evicted_capacity",
+                                "evidence_invalidated",
+                                "expired_ttl",
+                                "extra_claim",
+                                "fact_capacity_evicted",
+                                "fact_capacity_exhausted",
+                                "fatigue_blocked",
+                                "feature_unknown",
+                                "forbidden_claim",
+                                "freshness_stale",
+                                "hard_guard_failed",
+                                "higher_urgency_switch",
+                                "highest_valid_candidate",
+                                "history_incomplete",
+                                "identity_conflict",
+                                "intent_inference",
+                                "interrupted_commentary_disabled",
+                                "interrupted_occurrence_reset",
+                                "interrupted_shutdown",
+                                "interrupted_stream_end",
+                                "interrupted_truth_invalidated",
+                                "invalid_candidate",
+                                "invalidated_occurrence",
+                                "invalidated_truth",
+                                "legacy_key",
+                                "lower_priority",
+                                "mailbox_evicted_update",
+                                "mailbox_history_incomplete",
+                                "mailbox_overloaded",
+                                "mailbox_recovery",
+                                "material_band_changed",
+                                "material_delta_met",
+                                "medical_inference",
+                                "meta_output",
+                                "narrative_disabled",
+                                "narrative_enabled",
+                                "natural_exit",
+                                "no_candidate",
+                                "no_episode_route",
+                                "non_en_contract",
+                                "number_mismatch",
+                                "number_unbound",
+                                "obs_state_unknown",
+                                "occurrence_ended",
+                                "occurrence_reset",
+                                "occurrence_superseded",
+                                "outcome_observed",
+                                "overlay_disabled",
+                                "pit_cycle",
+                                "planning_cycle_exhausted",
+                                "polarity_mismatch",
+                                "prediction_as_result",
+                                "process_recovery",
+                                "ready",
+                                "realization_cancelled",
+                                "realization_input_invalid",
+                                "realization_invalid_response",
+                                "realization_output_oversize",
+                                "realization_protocol_violation",
+                                "realization_timeout",
+                                "realization_transport",
+                                "related_event_update",
+                                "replaced_precommit",
+                                "required_capture_lost",
+                                "required_missing",
+                                "result_as_prediction",
+                                "semantic_rejected",
+                                "sentence_count",
+                                "session_ended",
+                                "session_identity_conflict",
+                                "session_plan_conflict",
+                                "session_restarted",
+                                "session_resumed",
+                                "session_started",
+                                "session_superseded",
+                                "session_suspended",
+                                "source_guard_failed",
+                                "stale_worker_token",
+                                "starting",
+                                "stream_ended",
+                                "stream_inactive",
+                                "stream_reset",
+                                "superseded_revision",
+                                "switch_margin_met",
+                                "tape_flush_timeout",
+                                "tape_queue_drop",
+                                "tape_write_failed",
+                                "target_changed",
+                                "tense_mismatch",
+                                "token_count",
+                                "too_long",
+                                "tts_failed_after_acceptance",
+                                "tts_failed_before_acceptance",
+                                "tts_playback_watchdog",
+                                "tts_protocol_violation",
+                                "tts_start_timeout",
+                                "tts_stop_timeout",
+                                "tts_unavailable",
+                                "unit_mismatch",
+                                "unknown_entity",
+                                "unknown_fragment",
+                                "unmatched_exit",
+                                "unmatched_update",
+                                "unsafe_negation",
+                                "unsupported_certainty",
+                                "unsupported_stage",
+                                "update_rate_limited"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "totalMs": {
+                          "oneOf": [
+                            {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "ttfbMs": {
+                          "oneOf": [
+                            {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "ttftMs": {
+                          "oneOf": [
+                            {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "requestId",
+                        "outcome",
+                        "ttfbMs",
+                        "ttftMs",
+                        "totalMs",
+                        "reducerLagMs",
+                        "terminalReason"
+                      ],
+                      "type": "object",
+                      "x-irswitch-invariants": [
+                        "llm_latency_milestone_order"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "model": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "reason": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "accepted",
+                        "active_story_continuation",
+                        "actor_ambiguous",
+                        "actor_reversed",
+                        "admission_timeout",
+                        "attached_live",
+                        "attempt_suppressed",
+                        "backend_audio_error",
+                        "backend_cancelled",
+                        "backend_process_exit",
+                        "backend_rejected",
+                        "backend_unavailable",
+                        "below_threshold",
+                        "broadcast_ended",
+                        "broadcast_resumed",
+                        "broadcast_started",
+                        "broadcast_unknown",
+                        "cadence_blocked",
+                        "capacity_evicted",
+                        "capture_unavailable",
+                        "causal_inference",
+                        "clear_cancelled",
+                        "clear_confirmed",
+                        "clear_started",
+                        "closed_stream",
+                        "commentary_disabled",
+                        "completed",
+                        "component_preflight_failed",
+                        "component_preflight_pending",
+                        "component_unavailable",
+                        "composite_exited",
+                        "config_transition_lost",
+                        "consumed_playback_accepted",
+                        "context_unknown",
+                        "cooldown",
+                        "deadline_admission_skipped",
+                        "disabled_by_config",
+                        "disabled_invalid_config",
+                        "duck_unavailable",
+                        "emotion_inference",
+                        "empty",
+                        "enter_confirmed",
+                        "enter_lost",
+                        "enter_started",
+                        "episode_capacity_rejected",
+                        "event_candidate_protocol_violation",
+                        "evicted_capacity",
+                        "evidence_invalidated",
+                        "expired_ttl",
+                        "extra_claim",
+                        "fact_capacity_evicted",
+                        "fact_capacity_exhausted",
+                        "fatigue_blocked",
+                        "feature_unknown",
+                        "forbidden_claim",
+                        "freshness_stale",
+                        "hard_guard_failed",
+                        "higher_urgency_switch",
+                        "highest_valid_candidate",
+                        "history_incomplete",
+                        "identity_conflict",
+                        "intent_inference",
+                        "interrupted_commentary_disabled",
+                        "interrupted_occurrence_reset",
+                        "interrupted_shutdown",
+                        "interrupted_stream_end",
+                        "interrupted_truth_invalidated",
+                        "invalid_candidate",
+                        "invalidated_occurrence",
+                        "invalidated_truth",
+                        "legacy_key",
+                        "lower_priority",
+                        "mailbox_evicted_update",
+                        "mailbox_history_incomplete",
+                        "mailbox_overloaded",
+                        "mailbox_recovery",
+                        "material_band_changed",
+                        "material_delta_met",
+                        "medical_inference",
+                        "meta_output",
+                        "narrative_disabled",
+                        "narrative_enabled",
+                        "natural_exit",
+                        "no_candidate",
+                        "no_episode_route",
+                        "non_en_contract",
+                        "number_mismatch",
+                        "number_unbound",
+                        "obs_state_unknown",
+                        "occurrence_ended",
+                        "occurrence_reset",
+                        "occurrence_superseded",
+                        "outcome_observed",
+                        "overlay_disabled",
+                        "pit_cycle",
+                        "planning_cycle_exhausted",
+                        "polarity_mismatch",
+                        "prediction_as_result",
+                        "process_recovery",
+                        "ready",
+                        "realization_cancelled",
+                        "realization_input_invalid",
+                        "realization_invalid_response",
+                        "realization_output_oversize",
+                        "realization_protocol_violation",
+                        "realization_timeout",
+                        "realization_transport",
+                        "related_event_update",
+                        "replaced_precommit",
+                        "required_capture_lost",
+                        "required_missing",
+                        "result_as_prediction",
+                        "semantic_rejected",
+                        "sentence_count",
+                        "session_ended",
+                        "session_identity_conflict",
+                        "session_plan_conflict",
+                        "session_restarted",
+                        "session_resumed",
+                        "session_started",
+                        "session_superseded",
+                        "session_suspended",
+                        "source_guard_failed",
+                        "stale_worker_token",
+                        "starting",
+                        "stream_ended",
+                        "stream_inactive",
+                        "stream_reset",
+                        "superseded_revision",
+                        "switch_margin_met",
+                        "tape_flush_timeout",
+                        "tape_queue_drop",
+                        "tape_write_failed",
+                        "target_changed",
+                        "tense_mismatch",
+                        "token_count",
+                        "too_long",
+                        "tts_failed_after_acceptance",
+                        "tts_failed_before_acceptance",
+                        "tts_playback_watchdog",
+                        "tts_protocol_violation",
+                        "tts_start_timeout",
+                        "tts_stop_timeout",
+                        "tts_unavailable",
+                        "unit_mismatch",
+                        "unknown_entity",
+                        "unknown_fragment",
+                        "unmatched_exit",
+                        "unmatched_update",
+                        "unsafe_negation",
+                        "unsupported_certainty",
+                        "unsupported_stage",
+                        "update_rate_limited"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "residencyEvidence": {
+                  "enum": [
+                    "warmup_succeeded",
+                    "not_requested"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "disabled",
+                    "starting",
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "status",
+                "reason",
+                "generation",
+                "configGeneration",
+                "model",
+                "residencyEvidence",
+                "lastAttempt"
+              ],
+              "type": "object"
+            },
+            "tape": {
+              "additionalProperties": false,
+              "properties": {
+                "drops": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "dropsByPriority": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "critical": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "normal": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "sample": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "sample",
+                    "normal",
+                    "critical"
+                  ],
+                  "type": "object"
+                },
+                "path": {
+                  "oneOf": [
+                    {
+                      "maxLength": 512,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "accepted",
+                        "active_story_continuation",
+                        "actor_ambiguous",
+                        "actor_reversed",
+                        "admission_timeout",
+                        "attached_live",
+                        "attempt_suppressed",
+                        "backend_audio_error",
+                        "backend_cancelled",
+                        "backend_process_exit",
+                        "backend_rejected",
+                        "backend_unavailable",
+                        "below_threshold",
+                        "broadcast_ended",
+                        "broadcast_resumed",
+                        "broadcast_started",
+                        "broadcast_unknown",
+                        "cadence_blocked",
+                        "capacity_evicted",
+                        "capture_unavailable",
+                        "causal_inference",
+                        "clear_cancelled",
+                        "clear_confirmed",
+                        "clear_started",
+                        "closed_stream",
+                        "commentary_disabled",
+                        "completed",
+                        "component_preflight_failed",
+                        "component_preflight_pending",
+                        "component_unavailable",
+                        "composite_exited",
+                        "config_transition_lost",
+                        "consumed_playback_accepted",
+                        "context_unknown",
+                        "cooldown",
+                        "deadline_admission_skipped",
+                        "disabled_by_config",
+                        "disabled_invalid_config",
+                        "duck_unavailable",
+                        "emotion_inference",
+                        "empty",
+                        "enter_confirmed",
+                        "enter_lost",
+                        "enter_started",
+                        "episode_capacity_rejected",
+                        "event_candidate_protocol_violation",
+                        "evicted_capacity",
+                        "evidence_invalidated",
+                        "expired_ttl",
+                        "extra_claim",
+                        "fact_capacity_evicted",
+                        "fact_capacity_exhausted",
+                        "fatigue_blocked",
+                        "feature_unknown",
+                        "forbidden_claim",
+                        "freshness_stale",
+                        "hard_guard_failed",
+                        "higher_urgency_switch",
+                        "highest_valid_candidate",
+                        "history_incomplete",
+                        "identity_conflict",
+                        "intent_inference",
+                        "interrupted_commentary_disabled",
+                        "interrupted_occurrence_reset",
+                        "interrupted_shutdown",
+                        "interrupted_stream_end",
+                        "interrupted_truth_invalidated",
+                        "invalid_candidate",
+                        "invalidated_occurrence",
+                        "invalidated_truth",
+                        "legacy_key",
+                        "lower_priority",
+                        "mailbox_evicted_update",
+                        "mailbox_history_incomplete",
+                        "mailbox_overloaded",
+                        "mailbox_recovery",
+                        "material_band_changed",
+                        "material_delta_met",
+                        "medical_inference",
+                        "meta_output",
+                        "narrative_disabled",
+                        "narrative_enabled",
+                        "natural_exit",
+                        "no_candidate",
+                        "no_episode_route",
+                        "non_en_contract",
+                        "number_mismatch",
+                        "number_unbound",
+                        "obs_state_unknown",
+                        "occurrence_ended",
+                        "occurrence_reset",
+                        "occurrence_superseded",
+                        "outcome_observed",
+                        "overlay_disabled",
+                        "pit_cycle",
+                        "planning_cycle_exhausted",
+                        "polarity_mismatch",
+                        "prediction_as_result",
+                        "process_recovery",
+                        "ready",
+                        "realization_cancelled",
+                        "realization_input_invalid",
+                        "realization_invalid_response",
+                        "realization_output_oversize",
+                        "realization_protocol_violation",
+                        "realization_timeout",
+                        "realization_transport",
+                        "related_event_update",
+                        "replaced_precommit",
+                        "required_capture_lost",
+                        "required_missing",
+                        "result_as_prediction",
+                        "semantic_rejected",
+                        "sentence_count",
+                        "session_ended",
+                        "session_identity_conflict",
+                        "session_plan_conflict",
+                        "session_restarted",
+                        "session_resumed",
+                        "session_started",
+                        "session_superseded",
+                        "session_suspended",
+                        "source_guard_failed",
+                        "stale_worker_token",
+                        "starting",
+                        "stream_ended",
+                        "stream_inactive",
+                        "stream_reset",
+                        "superseded_revision",
+                        "switch_margin_met",
+                        "tape_flush_timeout",
+                        "tape_queue_drop",
+                        "tape_write_failed",
+                        "target_changed",
+                        "tense_mismatch",
+                        "token_count",
+                        "too_long",
+                        "tts_failed_after_acceptance",
+                        "tts_failed_before_acceptance",
+                        "tts_playback_watchdog",
+                        "tts_protocol_violation",
+                        "tts_start_timeout",
+                        "tts_stop_timeout",
+                        "tts_unavailable",
+                        "unit_mismatch",
+                        "unknown_entity",
+                        "unknown_fragment",
+                        "unmatched_exit",
+                        "unmatched_update",
+                        "unsafe_negation",
+                        "unsupported_certainty",
+                        "unsupported_stage",
+                        "update_rate_limited"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "disabled",
+                    "starting",
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                }
+              },
+              "required": [
+                "status",
+                "reason",
+                "path",
+                "drops",
+                "dropsByPriority"
+              ],
+              "type": "object"
+            },
+            "tts": {
+              "additionalProperties": false,
+              "properties": {
+                "backend": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "sapi",
+                        "espeak",
+                        "supertonic"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "backendGeneration": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "configGeneration": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "quarantinedGeneration": {
+                  "oneOf": [
+                    {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "accepted",
+                        "active_story_continuation",
+                        "actor_ambiguous",
+                        "actor_reversed",
+                        "admission_timeout",
+                        "attached_live",
+                        "attempt_suppressed",
+                        "backend_audio_error",
+                        "backend_cancelled",
+                        "backend_process_exit",
+                        "backend_rejected",
+                        "backend_unavailable",
+                        "below_threshold",
+                        "broadcast_ended",
+                        "broadcast_resumed",
+                        "broadcast_started",
+                        "broadcast_unknown",
+                        "cadence_blocked",
+                        "capacity_evicted",
+                        "capture_unavailable",
+                        "causal_inference",
+                        "clear_cancelled",
+                        "clear_confirmed",
+                        "clear_started",
+                        "closed_stream",
+                        "commentary_disabled",
+                        "completed",
+                        "component_preflight_failed",
+                        "component_preflight_pending",
+                        "component_unavailable",
+                        "composite_exited",
+                        "config_transition_lost",
+                        "consumed_playback_accepted",
+                        "context_unknown",
+                        "cooldown",
+                        "deadline_admission_skipped",
+                        "disabled_by_config",
+                        "disabled_invalid_config",
+                        "duck_unavailable",
+                        "emotion_inference",
+                        "empty",
+                        "enter_confirmed",
+                        "enter_lost",
+                        "enter_started",
+                        "episode_capacity_rejected",
+                        "event_candidate_protocol_violation",
+                        "evicted_capacity",
+                        "evidence_invalidated",
+                        "expired_ttl",
+                        "extra_claim",
+                        "fact_capacity_evicted",
+                        "fact_capacity_exhausted",
+                        "fatigue_blocked",
+                        "feature_unknown",
+                        "forbidden_claim",
+                        "freshness_stale",
+                        "hard_guard_failed",
+                        "higher_urgency_switch",
+                        "highest_valid_candidate",
+                        "history_incomplete",
+                        "identity_conflict",
+                        "intent_inference",
+                        "interrupted_commentary_disabled",
+                        "interrupted_occurrence_reset",
+                        "interrupted_shutdown",
+                        "interrupted_stream_end",
+                        "interrupted_truth_invalidated",
+                        "invalid_candidate",
+                        "invalidated_occurrence",
+                        "invalidated_truth",
+                        "legacy_key",
+                        "lower_priority",
+                        "mailbox_evicted_update",
+                        "mailbox_history_incomplete",
+                        "mailbox_overloaded",
+                        "mailbox_recovery",
+                        "material_band_changed",
+                        "material_delta_met",
+                        "medical_inference",
+                        "meta_output",
+                        "narrative_disabled",
+                        "narrative_enabled",
+                        "natural_exit",
+                        "no_candidate",
+                        "no_episode_route",
+                        "non_en_contract",
+                        "number_mismatch",
+                        "number_unbound",
+                        "obs_state_unknown",
+                        "occurrence_ended",
+                        "occurrence_reset",
+                        "occurrence_superseded",
+                        "outcome_observed",
+                        "overlay_disabled",
+                        "pit_cycle",
+                        "planning_cycle_exhausted",
+                        "polarity_mismatch",
+                        "prediction_as_result",
+                        "process_recovery",
+                        "ready",
+                        "realization_cancelled",
+                        "realization_input_invalid",
+                        "realization_invalid_response",
+                        "realization_output_oversize",
+                        "realization_protocol_violation",
+                        "realization_timeout",
+                        "realization_transport",
+                        "related_event_update",
+                        "replaced_precommit",
+                        "required_capture_lost",
+                        "required_missing",
+                        "result_as_prediction",
+                        "semantic_rejected",
+                        "sentence_count",
+                        "session_ended",
+                        "session_identity_conflict",
+                        "session_plan_conflict",
+                        "session_restarted",
+                        "session_resumed",
+                        "session_started",
+                        "session_superseded",
+                        "session_suspended",
+                        "source_guard_failed",
+                        "stale_worker_token",
+                        "starting",
+                        "stream_ended",
+                        "stream_inactive",
+                        "stream_reset",
+                        "superseded_revision",
+                        "switch_margin_met",
+                        "tape_flush_timeout",
+                        "tape_queue_drop",
+                        "tape_write_failed",
+                        "target_changed",
+                        "tense_mismatch",
+                        "token_count",
+                        "too_long",
+                        "tts_failed_after_acceptance",
+                        "tts_failed_before_acceptance",
+                        "tts_playback_watchdog",
+                        "tts_protocol_violation",
+                        "tts_start_timeout",
+                        "tts_stop_timeout",
+                        "tts_unavailable",
+                        "unit_mismatch",
+                        "unknown_entity",
+                        "unknown_fragment",
+                        "unmatched_exit",
+                        "unmatched_update",
+                        "unsafe_negation",
+                        "unsupported_certainty",
+                        "unsupported_stage",
+                        "update_rate_limited"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "disabled",
+                    "starting",
+                    "ready",
+                    "degraded",
+                    "unavailable"
+                  ]
+                },
+                "voice": {
+                  "oneOf": [
+                    {
+                      "maxLength": 128,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "status",
+                "reason",
+                "backend",
+                "backendGeneration",
+                "configGeneration",
+                "quarantinedGeneration",
+                "voice"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "llm",
+            "tts",
+            "tape",
+            "detectors",
+            "facts"
+          ],
+          "type": "object"
+        },
+        "config": {
+          "additionalProperties": false,
+          "properties": {
+            "applySequence": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "desiredGeneration": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "desiredHash": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "effectiveHash": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "pendingChanges": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "boundary": {
+                    "enum": [
+                      "command",
+                      "next_stream",
+                      "next_plan_or_manual",
+                      "next_beat_plan",
+                      "next_director_pass",
+                      "next_silence_deadline",
+                      "next_request",
+                      "next_utterance",
+                      "next_cancellation",
+                      "next_record",
+                      "next_rotated_file",
+                      "next_rotation",
+                      "next_writer_deadline",
+                      "next_shutdown"
+                    ]
+                  },
+                  "desiredGeneration": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "key": {
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "key",
+                  "boundary",
+                  "desiredGeneration"
+                ],
+                "type": "object"
+              },
+              "maxItems": 128,
+              "minItems": 0,
+              "type": "array"
+            },
+            "schemaVersion": {
+              "const": "commentary-config/2"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "desiredGeneration",
+            "desiredHash",
+            "effectiveHash",
+            "applySequence",
+            "pendingChanges"
+          ],
+          "type": "object"
+        },
+        "episodes": {
+          "additionalProperties": false,
+          "properties": {
+            "active": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "candidate": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolved": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "resolvedCapacity": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "retainedCurrentCapacity": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "suspended": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "active",
+            "candidate",
+            "suspended",
+            "retainedCurrentCapacity",
+            "resolved",
+            "resolvedCapacity"
+          ],
+          "type": "object"
+        },
+        "language": {
+          "const": "en"
+        },
+        "queues": {
+          "additionalProperties": false,
+          "properties": {
+            "mailbox": {
+              "additionalProperties": false,
+              "properties": {
+                "capacity": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "depth": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "overflows": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "depth",
+                "capacity",
+                "overflows"
+              ],
+              "type": "object"
+            },
+            "opportunities": {
+              "additionalProperties": false,
+              "properties": {
+                "capacity": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "depth": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "evicted": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "expired": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "depth",
+                "capacity",
+                "expired",
+                "evicted"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "mailbox",
+            "opportunities"
+          ],
+          "type": "object"
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "enum": [
+                "disabled_by_config",
+                "disabled_invalid_config",
+                "legacy_key",
+                "starting",
+                "ready",
+                "component_preflight_pending",
+                "component_preflight_failed",
+                "component_unavailable",
+                "admission_timeout",
+                "session_identity_conflict",
+                "session_plan_conflict",
+                "fact_capacity_evicted",
+                "fact_capacity_exhausted",
+                "obs_state_unknown",
+                "history_incomplete",
+                "duck_unavailable"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        },
+        "speech": {
+          "additionalProperties": false,
+          "properties": {
+            "acceptedAtMonoMs": {
+              "oneOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "backend": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "sapi",
+                    "espeak",
+                    "supertonic"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "backendGeneration": {
+              "oneOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "beatId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "dispatchedAtMonoMs": {
+              "oneOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastTerminal": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "atMonoMs": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "reason": {
+                      "enum": [
+                        "completed",
+                        "interrupted_stream_end",
+                        "interrupted_occurrence_reset",
+                        "interrupted_commentary_disabled",
+                        "interrupted_truth_invalidated",
+                        "interrupted_shutdown",
+                        "tts_failed_after_acceptance",
+                        "tts_start_timeout",
+                        "tts_playback_watchdog",
+                        "tts_stop_timeout",
+                        "tts_protocol_violation"
+                      ]
+                    },
+                    "sourceKind": {
+                      "enum": [
+                        "narrative",
+                        "manual"
+                      ]
+                    },
+                    "utteranceId": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "utteranceId",
+                    "sourceKind",
+                    "reason",
+                    "atMonoMs"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "opportunityId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sourceKind": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "narrative",
+                    "manual"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "state": {
+              "enum": [
+                "idle",
+                "building",
+                "committed",
+                "speaking",
+                "stopping"
+              ]
+            },
+            "utteranceId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "state",
+            "sourceKind",
+            "utteranceId",
+            "beatId",
+            "opportunityId",
+            "backend",
+            "backendGeneration",
+            "dispatchedAtMonoMs",
+            "acceptedAtMonoMs",
+            "lastTerminal"
+          ],
+          "type": "object",
+          "x-irswitch-invariants": [
+            "speech_idle_fields_null",
+            "speech_source_identity_shape",
+            "accepted_gte_dispatched"
+          ]
+        },
+        "status": {
+          "enum": [
+            "disabled",
+            "starting",
+            "ready",
+            "degraded",
+            "stopping",
+            "stopped"
+          ]
+        },
+        "timeline": {
+          "additionalProperties": false,
+          "properties": {
+            "broadcastEpoch": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "historyComplete": {
+              "type": "boolean"
+            },
+            "lineageId": {
+              "oneOf": [
+                {
+                  "maxLength": 512,
+                  "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "narrativeRunActive": {
+              "type": "boolean"
+            },
+            "occurrenceId": {
+              "oneOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sessionPlan": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "oneOf": [
+                        {
+                          "enum": [
+                            "session_plan_conflict"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "revision": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "stages": {
+                      "items": {
+                        "enum": [
+                          "practice",
+                          "qualifying",
+                          "race"
+                        ]
+                      },
+                      "maxItems": 3,
+                      "minItems": 0,
+                      "type": "array",
+                      "uniqueItems": true
+                    },
+                    "valid": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "revision",
+                    "valid",
+                    "reason",
+                    "stages"
+                  ],
+                  "type": "object",
+                  "x-irswitch-invariants": [
+                    "session_plan_validity_shape_and_canonical_stage_order"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sessionRef": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "sessionNum": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "subSessionId": {
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "subSessionId",
+                    "sessionNum"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "stage": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "practice",
+                    "qualifying",
+                    "race"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "streamActive": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "streamEpoch": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "streamState": {
+              "enum": [
+                "inactive",
+                "active",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "broadcastEpoch",
+            "streamEpoch",
+            "narrativeRunActive",
+            "streamActive",
+            "streamState",
+            "sessionPlan",
+            "sessionRef",
+            "occurrenceId",
+            "lineageId",
+            "stage",
+            "historyComplete"
+          ],
+          "type": "object",
+          "x-irswitch-invariants": [
+            "stream_state_active_projection",
+            "session_identity_all_or_none"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "status",
+        "reason",
+        "language",
+        "timeline",
+        "speech",
+        "queues",
+        "episodes",
+        "catalog",
+        "config",
+        "components",
+        "byTapeChannel"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "status_reason_matches_state",
+        "pending_changes_sorted_unique",
+        "episode_counts_within_capacities",
+        "component_generations_coherent",
+        "tts_quarantine_unavailable",
+        "tape_drops_equal_priority_sum",
+        "detectors_disabled_sorted_unique",
+        "channel_counters_nonzero_and_sorted_known"
+      ]
+    },
+    "ValidateRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "actorBindings": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "actorId": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                "type": "string"
+              },
+              "aliases": {
+                "items": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 8,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "actorId",
+              "aliases"
+            ],
+            "type": "object"
+          },
+          "maxItems": 16,
+          "minItems": 0,
+          "type": "array"
+        },
+        "beatId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "evaluationAtMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "factBindings": {
+          "items": {
+            "$ref": "#/$defs/AtomicFact"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        },
+        "text": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "text",
+        "beatId",
+        "evaluationAtMonoMs",
+        "actorBindings",
+        "factBindings"
+      ],
+      "type": "object"
+    },
+    "ValidateResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "beatId": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "claims": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "objectId": {
+                "oneOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "predicate": {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                "type": "string"
+              },
+              "subjectId": {
+                "oneOf": [
+                  {
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "supported",
+                  "unsupported",
+                  "ambiguous"
+                ]
+              }
+            },
+            "required": [
+              "predicate",
+              "subjectId",
+              "objectId",
+              "verdict"
+            ],
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array"
+        },
+        "issues": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "enum": [
+                  "empty",
+                  "too_long",
+                  "sentence_count",
+                  "token_count",
+                  "non_en_contract",
+                  "meta_output",
+                  "unknown_fragment",
+                  "unknown_entity",
+                  "actor_reversed",
+                  "actor_ambiguous",
+                  "number_unbound",
+                  "number_mismatch",
+                  "unit_mismatch",
+                  "polarity_mismatch",
+                  "tense_mismatch",
+                  "required_missing",
+                  "forbidden_claim",
+                  "extra_claim",
+                  "causal_inference",
+                  "intent_inference",
+                  "emotion_inference",
+                  "medical_inference",
+                  "prediction_as_result",
+                  "result_as_prediction",
+                  "unsupported_certainty",
+                  "unsafe_negation"
+                ]
+              },
+              "message": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "severity": {
+                "enum": [
+                  "error",
+                  "warning"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "severity",
+              "message"
+            ],
+            "type": "object"
+          },
+          "maxItems": 32,
+          "minItems": 0,
+          "type": "array"
+        },
+        "schemaVersion": {
+          "const": "commentary-runtime/2"
+        },
+        "valid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "valid",
+        "beatId",
+        "issues",
+        "claims"
+      ],
+      "type": "object",
+      "x-irswitch-invariants": [
+        "valid_iff_no_error_issues"
+      ]
+    }
+  },
+  "$id": "https://irswitch.local/contracts/v2/api-contracts.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ErrorResponse"
+    },
+    {
+      "$ref": "#/$defs/StatusResponse"
+    },
+    {
+      "$ref": "#/$defs/DecisionsResponse"
+    },
+    {
+      "$ref": "#/$defs/ValidateRequest"
+    },
+    {
+      "$ref": "#/$defs/ValidateResponse"
+    },
+    {
+      "$ref": "#/$defs/SpeakRequest"
+    },
+    {
+      "$ref": "#/$defs/SpeakAcceptedResponse"
+    },
+    {
+      "$ref": "#/$defs/HealthCommentarySummary"
+    }
+  ],
+  "title": "irswitch commentary-runtime/2 public API payloads",
+  "x-irswitch-invariants": [
+    "atomic_fact_definition_byte_equivalent_to_dto_bundle",
+    "finite_numbers_only",
+    "normalized_strings_no_control_characters",
+    "registered_reason_relation_channel_ids_only"
+  ]
+}

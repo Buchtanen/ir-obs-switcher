@@ -16,6 +16,10 @@
     {
       "id": "shutdown-command",
       "value": {"schemaVersion":"narrative-command/2","commandId":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000}}
+    },
+    {
+      "id": "atomic-fact-canonical-lineage",
+      "value": {"schemaVersion":"atomic-fact/2","factId":"fact:88","predicate":"battle.approaching","subjectId":"hero","objectId":"car:22","attributes":{"gap":1.4},"polarity":"positive","validFromMonoMs":89000,"validUntilMonoMs":94000,"observedAtMonoMs":90180,"broadcastEpoch":2,"streamEpoch":3,"occurrenceId":"3:race:2","lineageId":"3:practice:0>3:qualifying:1>3:race:2","evidenceRefs":["event:401"],"confidence":0.94,"scope":"occurrence","status":"active","revision":4}
     }
   ],
   "invalid": [
@@ -34,6 +38,10 @@
     {
       "id": "unknown-command-payload-field",
       "value": {"schemaVersion":"narrative-command/2","commandId":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000,"retry":true}}
+    },
+    {
+      "id": "atomic-fact-noncanonical-lineage",
+      "value": {"schemaVersion":"atomic-fact/2","factId":"fact:88","predicate":"battle.approaching","subjectId":"hero","objectId":"car:22","attributes":{"gap":1.4},"polarity":"positive","validFromMonoMs":89000,"validUntilMonoMs":94000,"observedAtMonoMs":90180,"broadcastEpoch":2,"streamEpoch":3,"occurrenceId":"3:race:2","lineageId":"03:race:2","evidenceRefs":["event:401"],"confidence":0.94,"scope":"occurrence","status":"active","revision":4}
     }
   ]
 }

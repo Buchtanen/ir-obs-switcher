@@ -2333,6 +2333,32 @@
     }
   ],
   "registryVersion": "v2-freeze-registry/1",
+  "relationRegistry": [
+    {
+      "id": "opens_episode",
+      "meaning": "accepted event opens its routed episode"
+    },
+    {
+      "id": "updates_active_episode",
+      "meaning": "accepted event materially updates the same active episode"
+    },
+    {
+      "id": "resolves_active_episode",
+      "meaning": "accepted event supplies the correlated outcome/closure"
+    },
+    {
+      "id": "continues_focused_episode",
+      "meaning": "successor or explicit episode beat continues the focused episode"
+    },
+    {
+      "id": "conflicts_with_focused_episode",
+      "meaning": "candidate's routed episode conflicts with the focused episode"
+    },
+    {
+      "id": "independent_of_focused_episode",
+      "meaning": "candidate's routed episode is independent of the focused episode"
+    }
+  ],
   "scalarTypes": [
     {
       "contract": "JSON boolean; missing is not false",

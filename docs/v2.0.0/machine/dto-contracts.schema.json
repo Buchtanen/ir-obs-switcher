@@ -49,7 +49,8 @@
         {
           "properties": {
             "lineageId": {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             "occurrenceId": {
@@ -98,7 +99,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -419,7 +421,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -795,7 +798,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -1023,7 +1027,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -1254,7 +1259,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -1635,7 +1641,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -1807,7 +1814,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -1880,7 +1888,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -3267,7 +3276,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {
@@ -4823,7 +4833,8 @@
         "lineageId": {
           "oneOf": [
             {
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
               "type": "string"
             },
             {

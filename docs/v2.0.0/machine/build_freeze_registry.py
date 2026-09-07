@@ -143,6 +143,10 @@ def build_registry() -> dict[str, Any]:
         for row in _table(schema_path, "## Frozen reason IDs")
         if row[0] != "Domain"
     ]
+    relations = [
+        {"id": row[0], "meaning": row[1]}
+        for row in _table(schema_path, "## Frozen director relation IDs")
+    ]
     event_identifiers = []
     for row in _table(event_path, "## Identifier disposition"):
         narrative_kind = None if row[3] == "—" else row[3]
@@ -188,6 +192,7 @@ def build_registry() -> dict[str, Any]:
         "tapeChannels": _tape_channels(fact_text),
         "schemaVersions": versions,
         "reasonRegistry": reasons,
+        "relationRegistry": relations,
         "stateRegistry": _states(),
         "eventIdentifiers": event_identifiers,
         "internalLifecycleEvents": lifecycle_events,
@@ -211,6 +216,7 @@ def validate_registry(registry: dict[str, Any]) -> None:
         "tapeChannels": 36,
         "eventIdentifiers": 60,
         "internalLifecycleEvents": 5,
+        "relationRegistry": 6,
     }
     for key, expected in expected_counts.items():
         actual = len(registry[key])
@@ -228,6 +234,7 @@ def validate_registry(registry: dict[str, Any]) -> None:
     _unique([item["id"] for item in registry["eventIdentifiers"]], "event identifier")
     _unique([item["id"] for item in registry["internalLifecycleEvents"]], "lifecycle event")
     _unique([item["schemaVersion"] for item in registry["schemaVersions"]], "schema version")
+    _unique([item["id"] for item in registry["relationRegistry"]], "director relation")
 
     for predicate in registry["factPredicates"]:
         _unique([item["id"] for item in predicate["attributes"]], f"{predicate['id']} attribute")
@@ -284,11 +291,19 @@ def validate_v4_golden() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--emit", action="store_true", help="print generated registry JSON")
+    parser.add_argument("--write", action="store_true", help="write generated registry JSON")
     args = parser.parse_args()
     generated = build_registry()
     validate_registry(generated)
     if args.emit:
         print(json.dumps(generated, ensure_ascii=False, sort_keys=True, indent=2))
+        return 0
+    if args.write:
+        REGISTRY_PATH.write_text(
+            json.dumps(generated, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"wrote {REGISTRY_PATH.name}")
         return 0
     checked_in = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
     if canonical_bytes(generated) != canonical_bytes(checked_in):
@@ -298,7 +313,8 @@ def main() -> int:
     validate_v4_golden()
     print(
         "freeze registry OK: 60 events + 5 lifecycle, 57 predicates, 21 features, "
-        f"36 tape channels, {len(checked_in['schemaVersions'])} schemas"
+        f"36 tape channels, {len(checked_in['relationRegistry'])} relations, "
+        f"{len(checked_in['schemaVersions'])} schemas"
     )
     return 0
 

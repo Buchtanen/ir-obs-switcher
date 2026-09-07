@@ -1,0 +1,1369 @@
+{
+  "invalid": [
+    {
+      "errorContains": "unknown force",
+      "id": "speak_unknown_field",
+      "schema": "SpeakRequest",
+      "value": {
+        "force": true,
+        "language": "en",
+        "schemaVersion": "commentary-runtime/2",
+        "text": "Commentary audio test."
+      }
+    },
+    {
+      "errorContains": "expected const 'en'",
+      "id": "speak_wrong_language",
+      "schema": "SpeakRequest",
+      "value": {
+        "language": "cs",
+        "schemaVersion": "commentary-runtime/2",
+        "text": "Commentary audio test."
+      }
+    },
+    {
+      "errorContains": "alias collision",
+      "id": "validate_alias_collision",
+      "schema": "ValidateRequest",
+      "value": {
+        "actorBindings": [
+          {
+            "actorId": "hero",
+            "aliases": [
+              "he",
+              "the driver"
+            ]
+          },
+          {
+            "actorId": "car:22",
+            "aliases": [
+              "Morgan",
+              "the car ahead",
+              " HE "
+            ]
+          }
+        ],
+        "beatId": "battle.approach",
+        "evaluationAtMonoMs": 90231,
+        "factBindings": [
+          {
+            "attributes": {
+              "gap": 1.4,
+              "materialBand": "material",
+              "targetEpoch": "relation:4"
+            },
+            "broadcastEpoch": 2,
+            "confidence": 0.94,
+            "evidenceRefs": [
+              "event:401",
+              "feature:gap-ahead:77"
+            ],
+            "factId": "fact:88",
+            "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+            "objectId": "car:22",
+            "observedAtMonoMs": 90180,
+            "occurrenceId": "3:race:2",
+            "polarity": "positive",
+            "predicate": "battle.approaching",
+            "revision": 4,
+            "schemaVersion": "atomic-fact/2",
+            "scope": "occurrence",
+            "status": "active",
+            "streamEpoch": 3,
+            "subjectId": "hero",
+            "validFromMonoMs": 89000,
+            "validUntilMonoMs": 94000
+          }
+        ],
+        "schemaVersion": "commentary-runtime/2",
+        "text": "He is closing on Morgan, the gap at one point four seconds."
+      }
+    },
+    {
+      "errorContains": "fact not valid at evaluation instant",
+      "id": "validate_at_expiry",
+      "schema": "ValidateRequest",
+      "value": {
+        "actorBindings": [
+          {
+            "actorId": "hero",
+            "aliases": [
+              "he",
+              "the driver"
+            ]
+          },
+          {
+            "actorId": "car:22",
+            "aliases": [
+              "Morgan",
+              "the car ahead"
+            ]
+          }
+        ],
+        "beatId": "battle.approach",
+        "evaluationAtMonoMs": 94000,
+        "factBindings": [
+          {
+            "attributes": {
+              "gap": 1.4,
+              "materialBand": "material",
+              "targetEpoch": "relation:4"
+            },
+            "broadcastEpoch": 2,
+            "confidence": 0.94,
+            "evidenceRefs": [
+              "event:401",
+              "feature:gap-ahead:77"
+            ],
+            "factId": "fact:88",
+            "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+            "objectId": "car:22",
+            "observedAtMonoMs": 90180,
+            "occurrenceId": "3:race:2",
+            "polarity": "positive",
+            "predicate": "battle.approaching",
+            "revision": 4,
+            "schemaVersion": "atomic-fact/2",
+            "scope": "occurrence",
+            "status": "active",
+            "streamEpoch": 3,
+            "subjectId": "hero",
+            "validFromMonoMs": 89000,
+            "validUntilMonoMs": 94000
+          }
+        ],
+        "schemaVersion": "commentary-runtime/2",
+        "text": "He is closing on Morgan, the gap at one point four seconds."
+      }
+    },
+    {
+      "errorContains": "idle speech field is non-null",
+      "id": "status_idle_identity_leak",
+      "schema": "StatusResponse",
+      "value": {
+        "byTapeChannel": {
+          "race.battle.closing": {
+            "accepted": 2,
+            "expired": 1,
+            "kick": 3,
+            "queued": 2,
+            "selected": 1,
+            "started": 1
+          }
+        },
+        "catalog": {
+          "beatCount": 64,
+          "eventIdentifierCount": 60,
+          "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "schemaVersion": "narrative-catalog/2"
+        },
+        "components": {
+          "detectors": {
+            "disabled": [],
+            "reason": null,
+            "status": "ready"
+          },
+          "facts": {
+            "active": 87,
+            "historicalSummaries": 19,
+            "historyComplete": true,
+            "reason": null,
+            "status": "ready",
+            "viewRevision": 204
+          },
+          "llm": {
+            "configGeneration": 7,
+            "generation": 2,
+            "lastAttempt": {
+              "outcome": "succeeded",
+              "reducerLagMs": 3,
+              "requestId": "rr:12",
+              "terminalReason": null,
+              "totalMs": 530,
+              "ttfbMs": 82,
+              "ttftMs": 130
+            },
+            "model": "qwen3:4b-instruct-2507-q4_K_M",
+            "reason": null,
+            "residencyEvidence": "warmup_succeeded",
+            "status": "ready"
+          },
+          "tape": {
+            "drops": 0,
+            "dropsByPriority": {
+              "critical": 0,
+              "normal": 0,
+              "sample": 0
+            },
+            "path": null,
+            "reason": null,
+            "status": "disabled"
+          },
+          "tts": {
+            "backend": "supertonic",
+            "backendGeneration": 4,
+            "configGeneration": 7,
+            "quarantinedGeneration": null,
+            "reason": null,
+            "status": "ready",
+            "voice": "M1"
+          }
+        },
+        "config": {
+          "applySequence": 12,
+          "desiredGeneration": 7,
+          "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "pendingChanges": [
+            {
+              "boundary": "next_stream",
+              "desiredGeneration": 7,
+              "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+            }
+          ],
+          "schemaVersion": "commentary-config/2"
+        },
+        "episodes": {
+          "active": 1,
+          "candidate": 0,
+          "resolved": 12,
+          "resolvedCapacity": 256,
+          "retainedCurrentCapacity": 64,
+          "suspended": 0
+        },
+        "language": "en",
+        "queues": {
+          "mailbox": {
+            "capacity": 64,
+            "depth": 0,
+            "overflows": 0
+          },
+          "opportunities": {
+            "capacity": 128,
+            "depth": 2,
+            "evicted": 0,
+            "expired": 4
+          }
+        },
+        "reason": null,
+        "schemaVersion": "commentary-runtime/2",
+        "speech": {
+          "acceptedAtMonoMs": null,
+          "backend": null,
+          "backendGeneration": null,
+          "beatId": null,
+          "dispatchedAtMonoMs": null,
+          "lastTerminal": {
+            "atMonoMs": 88710,
+            "reason": "completed",
+            "sourceKind": "narrative",
+            "utteranceId": "utt:17"
+          },
+          "opportunityId": null,
+          "sourceKind": null,
+          "state": "idle",
+          "utteranceId": "utt:active"
+        },
+        "status": "ready",
+        "timeline": {
+          "broadcastEpoch": 2,
+          "historyComplete": true,
+          "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+          "narrativeRunActive": true,
+          "occurrenceId": "3:race:2",
+          "sessionPlan": {
+            "reason": null,
+            "revision": 4,
+            "stages": [
+              "practice",
+              "qualifying",
+              "race"
+            ],
+            "valid": true
+          },
+          "sessionRef": {
+            "sessionNum": 2,
+            "subSessionId": "123"
+          },
+          "stage": "race",
+          "streamActive": true,
+          "streamEpoch": 3,
+          "streamState": "active"
+        }
+      }
+    },
+    {
+      "errorContains": "tape drop sum differs",
+      "id": "status_drop_sum_mismatch",
+      "schema": "StatusResponse",
+      "value": {
+        "byTapeChannel": {
+          "race.battle.closing": {
+            "accepted": 2,
+            "expired": 1,
+            "kick": 3,
+            "queued": 2,
+            "selected": 1,
+            "started": 1
+          }
+        },
+        "catalog": {
+          "beatCount": 64,
+          "eventIdentifierCount": 60,
+          "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "schemaVersion": "narrative-catalog/2"
+        },
+        "components": {
+          "detectors": {
+            "disabled": [],
+            "reason": null,
+            "status": "ready"
+          },
+          "facts": {
+            "active": 87,
+            "historicalSummaries": 19,
+            "historyComplete": true,
+            "reason": null,
+            "status": "ready",
+            "viewRevision": 204
+          },
+          "llm": {
+            "configGeneration": 7,
+            "generation": 2,
+            "lastAttempt": {
+              "outcome": "succeeded",
+              "reducerLagMs": 3,
+              "requestId": "rr:12",
+              "terminalReason": null,
+              "totalMs": 530,
+              "ttfbMs": 82,
+              "ttftMs": 130
+            },
+            "model": "qwen3:4b-instruct-2507-q4_K_M",
+            "reason": null,
+            "residencyEvidence": "warmup_succeeded",
+            "status": "ready"
+          },
+          "tape": {
+            "drops": 1,
+            "dropsByPriority": {
+              "critical": 0,
+              "normal": 0,
+              "sample": 0
+            },
+            "path": null,
+            "reason": null,
+            "status": "disabled"
+          },
+          "tts": {
+            "backend": "supertonic",
+            "backendGeneration": 4,
+            "configGeneration": 7,
+            "quarantinedGeneration": null,
+            "reason": null,
+            "status": "ready",
+            "voice": "M1"
+          }
+        },
+        "config": {
+          "applySequence": 12,
+          "desiredGeneration": 7,
+          "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "pendingChanges": [
+            {
+              "boundary": "next_stream",
+              "desiredGeneration": 7,
+              "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+            }
+          ],
+          "schemaVersion": "commentary-config/2"
+        },
+        "episodes": {
+          "active": 1,
+          "candidate": 0,
+          "resolved": 12,
+          "resolvedCapacity": 256,
+          "retainedCurrentCapacity": 64,
+          "suspended": 0
+        },
+        "language": "en",
+        "queues": {
+          "mailbox": {
+            "capacity": 64,
+            "depth": 0,
+            "overflows": 0
+          },
+          "opportunities": {
+            "capacity": 128,
+            "depth": 2,
+            "evicted": 0,
+            "expired": 4
+          }
+        },
+        "reason": null,
+        "schemaVersion": "commentary-runtime/2",
+        "speech": {
+          "acceptedAtMonoMs": null,
+          "backend": null,
+          "backendGeneration": null,
+          "beatId": null,
+          "dispatchedAtMonoMs": null,
+          "lastTerminal": {
+            "atMonoMs": 88710,
+            "reason": "completed",
+            "sourceKind": "narrative",
+            "utteranceId": "utt:17"
+          },
+          "opportunityId": null,
+          "sourceKind": null,
+          "state": "idle",
+          "utteranceId": null
+        },
+        "status": "ready",
+        "timeline": {
+          "broadcastEpoch": 2,
+          "historyComplete": true,
+          "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+          "narrativeRunActive": true,
+          "occurrenceId": "3:race:2",
+          "sessionPlan": {
+            "reason": null,
+            "revision": 4,
+            "stages": [
+              "practice",
+              "qualifying",
+              "race"
+            ],
+            "valid": true
+          },
+          "sessionRef": {
+            "sessionNum": 2,
+            "subSessionId": "123"
+          },
+          "stage": "race",
+          "streamActive": true,
+          "streamEpoch": 3,
+          "streamState": "active"
+        }
+      }
+    },
+    {
+      "errorContains": "session identity is partial",
+      "id": "status_partial_session_identity",
+      "schema": "StatusResponse",
+      "value": {
+        "byTapeChannel": {
+          "race.battle.closing": {
+            "accepted": 2,
+            "expired": 1,
+            "kick": 3,
+            "queued": 2,
+            "selected": 1,
+            "started": 1
+          }
+        },
+        "catalog": {
+          "beatCount": 64,
+          "eventIdentifierCount": 60,
+          "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "schemaVersion": "narrative-catalog/2"
+        },
+        "components": {
+          "detectors": {
+            "disabled": [],
+            "reason": null,
+            "status": "ready"
+          },
+          "facts": {
+            "active": 87,
+            "historicalSummaries": 19,
+            "historyComplete": true,
+            "reason": null,
+            "status": "ready",
+            "viewRevision": 204
+          },
+          "llm": {
+            "configGeneration": 7,
+            "generation": 2,
+            "lastAttempt": {
+              "outcome": "succeeded",
+              "reducerLagMs": 3,
+              "requestId": "rr:12",
+              "terminalReason": null,
+              "totalMs": 530,
+              "ttfbMs": 82,
+              "ttftMs": 130
+            },
+            "model": "qwen3:4b-instruct-2507-q4_K_M",
+            "reason": null,
+            "residencyEvidence": "warmup_succeeded",
+            "status": "ready"
+          },
+          "tape": {
+            "drops": 0,
+            "dropsByPriority": {
+              "critical": 0,
+              "normal": 0,
+              "sample": 0
+            },
+            "path": null,
+            "reason": null,
+            "status": "disabled"
+          },
+          "tts": {
+            "backend": "supertonic",
+            "backendGeneration": 4,
+            "configGeneration": 7,
+            "quarantinedGeneration": null,
+            "reason": null,
+            "status": "ready",
+            "voice": "M1"
+          }
+        },
+        "config": {
+          "applySequence": 12,
+          "desiredGeneration": 7,
+          "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "pendingChanges": [
+            {
+              "boundary": "next_stream",
+              "desiredGeneration": 7,
+              "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+            }
+          ],
+          "schemaVersion": "commentary-config/2"
+        },
+        "episodes": {
+          "active": 1,
+          "candidate": 0,
+          "resolved": 12,
+          "resolvedCapacity": 256,
+          "retainedCurrentCapacity": 64,
+          "suspended": 0
+        },
+        "language": "en",
+        "queues": {
+          "mailbox": {
+            "capacity": 64,
+            "depth": 0,
+            "overflows": 0
+          },
+          "opportunities": {
+            "capacity": 128,
+            "depth": 2,
+            "evicted": 0,
+            "expired": 4
+          }
+        },
+        "reason": null,
+        "schemaVersion": "commentary-runtime/2",
+        "speech": {
+          "acceptedAtMonoMs": null,
+          "backend": null,
+          "backendGeneration": null,
+          "beatId": null,
+          "dispatchedAtMonoMs": null,
+          "lastTerminal": {
+            "atMonoMs": 88710,
+            "reason": "completed",
+            "sourceKind": "narrative",
+            "utteranceId": "utt:17"
+          },
+          "opportunityId": null,
+          "sourceKind": null,
+          "state": "idle",
+          "utteranceId": null
+        },
+        "status": "ready",
+        "timeline": {
+          "broadcastEpoch": 2,
+          "historyComplete": true,
+          "lineageId": null,
+          "narrativeRunActive": true,
+          "occurrenceId": "3:race:2",
+          "sessionPlan": {
+            "reason": null,
+            "revision": 4,
+            "stages": [
+              "practice",
+              "qualifying",
+              "race"
+            ],
+            "valid": true
+          },
+          "sessionRef": {
+            "sessionNum": 2,
+            "subSessionId": "123"
+          },
+          "stage": "race",
+          "streamActive": true,
+          "streamEpoch": 3,
+          "streamState": "active"
+        }
+      }
+    },
+    {
+      "errorContains": "expected exactly one oneOf match",
+      "id": "decision_unknown_relation",
+      "schema": "DecisionsResponse",
+      "value": {
+        "decisions": [
+          {
+            "atMonoMs": 90231,
+            "beatId": "battle.approach",
+            "candidateOrder": {
+              "reducerSequence": 417,
+              "sourceOrdinal": 0
+            },
+            "candidateSource": "event_opportunity",
+            "decision": "selected",
+            "episodeId": "battle-ahead:3:17:22:4",
+            "opportunityId": "opp:401",
+            "reason": "highest_valid_candidate",
+            "reducerSequence": 418,
+            "relation": "similar_by_embedding",
+            "runnerUp": {
+              "beatId": "battle.pursuit",
+              "score": 56.0
+            },
+            "score": 68.5,
+            "tapeChannel": "race.battle.closing",
+            "terminalReason": null,
+            "threshold": 35.0,
+            "urgency": "story"
+          }
+        ],
+        "runtime": true,
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "errorContains": "unknown beat",
+      "id": "validate_unknown_beat",
+      "schema": "ValidateRequest",
+      "value": {
+        "actorBindings": [
+          {
+            "actorId": "hero",
+            "aliases": [
+              "he",
+              "the driver"
+            ]
+          },
+          {
+            "actorId": "car:22",
+            "aliases": [
+              "Morgan",
+              "the car ahead"
+            ]
+          }
+        ],
+        "beatId": "unknown.beat",
+        "evaluationAtMonoMs": 90231,
+        "factBindings": [
+          {
+            "attributes": {
+              "gap": 1.4,
+              "materialBand": "material",
+              "targetEpoch": "relation:4"
+            },
+            "broadcastEpoch": 2,
+            "confidence": 0.94,
+            "evidenceRefs": [
+              "event:401",
+              "feature:gap-ahead:77"
+            ],
+            "factId": "fact:88",
+            "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+            "objectId": "car:22",
+            "observedAtMonoMs": 90180,
+            "occurrenceId": "3:race:2",
+            "polarity": "positive",
+            "predicate": "battle.approaching",
+            "revision": 4,
+            "schemaVersion": "atomic-fact/2",
+            "scope": "occurrence",
+            "status": "active",
+            "streamEpoch": 3,
+            "subjectId": "hero",
+            "validFromMonoMs": 89000,
+            "validUntilMonoMs": 94000
+          }
+        ],
+        "schemaVersion": "commentary-runtime/2",
+        "text": "He is closing on Morgan, the gap at one point four seconds."
+      }
+    },
+    {
+      "errorContains": "control character",
+      "id": "speak_control_character",
+      "schema": "SpeakRequest",
+      "value": {
+        "language": "en",
+        "schemaVersion": "commentary-runtime/2",
+        "text": "Bad\u0001text"
+      }
+    }
+  ],
+  "query": [
+    {
+      "effectiveLimit": 20,
+      "input": null
+    },
+    {
+      "effectiveLimit": 1,
+      "input": -4
+    },
+    {
+      "effectiveLimit": 100,
+      "input": 999
+    }
+  ],
+  "removed": {
+    "behavior": "generic_server_404_no_commentary_tombstone",
+    "commentaryJson": false,
+    "method": "GET",
+    "path": "/api/commentary/assignments"
+  },
+  "schemaVersion": "commentary-api-goldens/2",
+  "transport": {
+    "invalid": [
+      {
+        "bodyBytes": 128,
+        "contentType": "application/json",
+        "csrf": "irswitch",
+        "error": "forbidden",
+        "forwardedFor": "127.0.0.1",
+        "id": "public_peer_forwarded_loopback",
+        "peer": "192.168.1.8"
+      },
+      {
+        "bodyBytes": 128,
+        "contentType": "application/json",
+        "csrf": null,
+        "error": "forbidden",
+        "id": "missing_csrf",
+        "peer": "127.0.0.1"
+      },
+      {
+        "bodyBytes": 128,
+        "contentType": "text/plain",
+        "csrf": "irswitch",
+        "error": "invalid_request",
+        "id": "wrong_content_type",
+        "peer": "127.0.0.1"
+      },
+      {
+        "bodyBytes": 65537,
+        "contentType": "application/json",
+        "csrf": "irswitch",
+        "error": "invalid_request",
+        "id": "oversized_body",
+        "peer": "127.0.0.1"
+      }
+    ],
+    "valid": [
+      {
+        "bodyBytes": 4096,
+        "contentType": "application/json",
+        "csrf": "irswitch",
+        "id": "validate_ipv4_loopback",
+        "method": "POST",
+        "path": "/api/commentary/validate",
+        "peer": "127.0.0.2"
+      },
+      {
+        "bodyBytes": 128,
+        "contentType": "application/json",
+        "csrf": "irswitch",
+        "id": "speak_ipv6_loopback",
+        "method": "POST",
+        "path": "/api/commentary/speak",
+        "peer": "::1"
+      }
+    ]
+  },
+  "valid": [
+    {
+      "id": "status_ready",
+      "schema": "StatusResponse",
+      "value": {
+        "byTapeChannel": {
+          "race.battle.closing": {
+            "accepted": 2,
+            "expired": 1,
+            "kick": 3,
+            "queued": 2,
+            "selected": 1,
+            "started": 1
+          }
+        },
+        "catalog": {
+          "beatCount": 64,
+          "eventIdentifierCount": 60,
+          "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "schemaVersion": "narrative-catalog/2"
+        },
+        "components": {
+          "detectors": {
+            "disabled": [],
+            "reason": null,
+            "status": "ready"
+          },
+          "facts": {
+            "active": 87,
+            "historicalSummaries": 19,
+            "historyComplete": true,
+            "reason": null,
+            "status": "ready",
+            "viewRevision": 204
+          },
+          "llm": {
+            "configGeneration": 7,
+            "generation": 2,
+            "lastAttempt": {
+              "outcome": "succeeded",
+              "reducerLagMs": 3,
+              "requestId": "rr:12",
+              "terminalReason": null,
+              "totalMs": 530,
+              "ttfbMs": 82,
+              "ttftMs": 130
+            },
+            "model": "qwen3:4b-instruct-2507-q4_K_M",
+            "reason": null,
+            "residencyEvidence": "warmup_succeeded",
+            "status": "ready"
+          },
+          "tape": {
+            "drops": 0,
+            "dropsByPriority": {
+              "critical": 0,
+              "normal": 0,
+              "sample": 0
+            },
+            "path": null,
+            "reason": null,
+            "status": "disabled"
+          },
+          "tts": {
+            "backend": "supertonic",
+            "backendGeneration": 4,
+            "configGeneration": 7,
+            "quarantinedGeneration": null,
+            "reason": null,
+            "status": "ready",
+            "voice": "M1"
+          }
+        },
+        "config": {
+          "applySequence": 12,
+          "desiredGeneration": 7,
+          "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "pendingChanges": [
+            {
+              "boundary": "next_stream",
+              "desiredGeneration": 7,
+              "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+            }
+          ],
+          "schemaVersion": "commentary-config/2"
+        },
+        "episodes": {
+          "active": 1,
+          "candidate": 0,
+          "resolved": 12,
+          "resolvedCapacity": 256,
+          "retainedCurrentCapacity": 64,
+          "suspended": 0
+        },
+        "language": "en",
+        "queues": {
+          "mailbox": {
+            "capacity": 64,
+            "depth": 0,
+            "overflows": 0
+          },
+          "opportunities": {
+            "capacity": 128,
+            "depth": 2,
+            "evicted": 0,
+            "expired": 4
+          }
+        },
+        "reason": null,
+        "schemaVersion": "commentary-runtime/2",
+        "speech": {
+          "acceptedAtMonoMs": null,
+          "backend": null,
+          "backendGeneration": null,
+          "beatId": null,
+          "dispatchedAtMonoMs": null,
+          "lastTerminal": {
+            "atMonoMs": 88710,
+            "reason": "completed",
+            "sourceKind": "narrative",
+            "utteranceId": "utt:17"
+          },
+          "opportunityId": null,
+          "sourceKind": null,
+          "state": "idle",
+          "utteranceId": null
+        },
+        "status": "ready",
+        "timeline": {
+          "broadcastEpoch": 2,
+          "historyComplete": true,
+          "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+          "narrativeRunActive": true,
+          "occurrenceId": "3:race:2",
+          "sessionPlan": {
+            "reason": null,
+            "revision": 4,
+            "stages": [
+              "practice",
+              "qualifying",
+              "race"
+            ],
+            "valid": true
+          },
+          "sessionRef": {
+            "sessionNum": 2,
+            "subSessionId": "123"
+          },
+          "stage": "race",
+          "streamActive": true,
+          "streamEpoch": 3,
+          "streamState": "active"
+        }
+      }
+    },
+    {
+      "id": "status_unknown_invalid_plan",
+      "schema": "StatusResponse",
+      "value": {
+        "byTapeChannel": {
+          "race.battle.closing": {
+            "accepted": 2,
+            "expired": 1,
+            "kick": 3,
+            "queued": 2,
+            "selected": 1,
+            "started": 1
+          }
+        },
+        "catalog": {
+          "beatCount": 64,
+          "eventIdentifierCount": 60,
+          "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "schemaVersion": "narrative-catalog/2"
+        },
+        "components": {
+          "detectors": {
+            "disabled": [],
+            "reason": null,
+            "status": "ready"
+          },
+          "facts": {
+            "active": 87,
+            "historicalSummaries": 19,
+            "historyComplete": true,
+            "reason": null,
+            "status": "ready",
+            "viewRevision": 204
+          },
+          "llm": {
+            "configGeneration": 7,
+            "generation": 2,
+            "lastAttempt": {
+              "outcome": "succeeded",
+              "reducerLagMs": 3,
+              "requestId": "rr:12",
+              "terminalReason": null,
+              "totalMs": 530,
+              "ttfbMs": 82,
+              "ttftMs": 130
+            },
+            "model": "qwen3:4b-instruct-2507-q4_K_M",
+            "reason": null,
+            "residencyEvidence": "warmup_succeeded",
+            "status": "ready"
+          },
+          "tape": {
+            "drops": 0,
+            "dropsByPriority": {
+              "critical": 0,
+              "normal": 0,
+              "sample": 0
+            },
+            "path": null,
+            "reason": null,
+            "status": "disabled"
+          },
+          "tts": {
+            "backend": "supertonic",
+            "backendGeneration": 4,
+            "configGeneration": 7,
+            "quarantinedGeneration": null,
+            "reason": null,
+            "status": "ready",
+            "voice": "M1"
+          }
+        },
+        "config": {
+          "applySequence": 12,
+          "desiredGeneration": 7,
+          "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+          "pendingChanges": [
+            {
+              "boundary": "next_stream",
+              "desiredGeneration": 7,
+              "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+            }
+          ],
+          "schemaVersion": "commentary-config/2"
+        },
+        "episodes": {
+          "active": 1,
+          "candidate": 0,
+          "resolved": 12,
+          "resolvedCapacity": 256,
+          "retainedCurrentCapacity": 64,
+          "suspended": 0
+        },
+        "language": "en",
+        "queues": {
+          "mailbox": {
+            "capacity": 64,
+            "depth": 0,
+            "overflows": 0
+          },
+          "opportunities": {
+            "capacity": 128,
+            "depth": 2,
+            "evicted": 0,
+            "expired": 4
+          }
+        },
+        "reason": "obs_state_unknown",
+        "schemaVersion": "commentary-runtime/2",
+        "speech": {
+          "acceptedAtMonoMs": null,
+          "backend": null,
+          "backendGeneration": null,
+          "beatId": null,
+          "dispatchedAtMonoMs": null,
+          "lastTerminal": {
+            "atMonoMs": 88710,
+            "reason": "completed",
+            "sourceKind": "narrative",
+            "utteranceId": "utt:17"
+          },
+          "opportunityId": null,
+          "sourceKind": null,
+          "state": "idle",
+          "utteranceId": null
+        },
+        "status": "degraded",
+        "timeline": {
+          "broadcastEpoch": 2,
+          "historyComplete": false,
+          "lineageId": null,
+          "narrativeRunActive": true,
+          "occurrenceId": null,
+          "sessionPlan": {
+            "reason": "session_plan_conflict",
+            "revision": 5,
+            "stages": [],
+            "valid": false
+          },
+          "sessionRef": null,
+          "stage": null,
+          "streamActive": null,
+          "streamEpoch": 3,
+          "streamState": "unknown"
+        }
+      }
+    },
+    {
+      "id": "decisions_selected",
+      "schema": "DecisionsResponse",
+      "value": {
+        "decisions": [
+          {
+            "atMonoMs": 90231,
+            "beatId": "battle.approach",
+            "candidateOrder": {
+              "reducerSequence": 417,
+              "sourceOrdinal": 0
+            },
+            "candidateSource": "event_opportunity",
+            "decision": "selected",
+            "episodeId": "battle-ahead:3:17:22:4",
+            "opportunityId": "opp:401",
+            "reason": "highest_valid_candidate",
+            "reducerSequence": 418,
+            "relation": "updates_active_episode",
+            "runnerUp": {
+              "beatId": "battle.pursuit",
+              "score": 56.0
+            },
+            "score": 68.5,
+            "tapeChannel": "race.battle.closing",
+            "terminalReason": null,
+            "threshold": 35.0,
+            "urgency": "story"
+          }
+        ],
+        "runtime": true,
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "id": "validate_request",
+      "schema": "ValidateRequest",
+      "value": {
+        "actorBindings": [
+          {
+            "actorId": "hero",
+            "aliases": [
+              "he",
+              "the driver"
+            ]
+          },
+          {
+            "actorId": "car:22",
+            "aliases": [
+              "Morgan",
+              "the car ahead"
+            ]
+          }
+        ],
+        "beatId": "battle.approach",
+        "evaluationAtMonoMs": 90231,
+        "factBindings": [
+          {
+            "attributes": {
+              "gap": 1.4,
+              "materialBand": "material",
+              "targetEpoch": "relation:4"
+            },
+            "broadcastEpoch": 2,
+            "confidence": 0.94,
+            "evidenceRefs": [
+              "event:401",
+              "feature:gap-ahead:77"
+            ],
+            "factId": "fact:88",
+            "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+            "objectId": "car:22",
+            "observedAtMonoMs": 90180,
+            "occurrenceId": "3:race:2",
+            "polarity": "positive",
+            "predicate": "battle.approaching",
+            "revision": 4,
+            "schemaVersion": "atomic-fact/2",
+            "scope": "occurrence",
+            "status": "active",
+            "streamEpoch": 3,
+            "subjectId": "hero",
+            "validFromMonoMs": 89000,
+            "validUntilMonoMs": 94000
+          }
+        ],
+        "schemaVersion": "commentary-runtime/2",
+        "text": "He is closing on Morgan, the gap at one point four seconds."
+      }
+    },
+    {
+      "id": "validate_supported",
+      "schema": "ValidateResponse",
+      "value": {
+        "beatId": "battle.approach",
+        "claims": [
+          {
+            "objectId": "car:22",
+            "predicate": "battle.approaching",
+            "subjectId": "hero",
+            "verdict": "supported"
+          }
+        ],
+        "issues": [],
+        "schemaVersion": "commentary-runtime/2",
+        "valid": true
+      }
+    },
+    {
+      "id": "validate_rejected",
+      "schema": "ValidateResponse",
+      "value": {
+        "beatId": "battle.approach",
+        "claims": [
+          {
+            "objectId": "hero",
+            "predicate": "battle.approaching",
+            "subjectId": "car:22",
+            "verdict": "unsupported"
+          }
+        ],
+        "issues": [
+          {
+            "code": "actor_reversed",
+            "message": "Actor direction is reversed.",
+            "severity": "error"
+          }
+        ],
+        "schemaVersion": "commentary-runtime/2",
+        "valid": false
+      }
+    },
+    {
+      "id": "speak_request",
+      "schema": "SpeakRequest",
+      "value": {
+        "language": "en",
+        "schemaVersion": "commentary-runtime/2",
+        "text": "Commentary audio test."
+      }
+    },
+    {
+      "id": "speak_accepted",
+      "schema": "SpeakAcceptedResponse",
+      "value": {
+        "accepted": true,
+        "admittedState": "committed",
+        "requestId": "manual:7f5b",
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "id": "health_ready",
+      "schema": "HealthCommentarySummary",
+      "value": {
+        "reason": null,
+        "status": "ready"
+      }
+    },
+    {
+      "httpStatus": 400,
+      "id": "error_invalid_json",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "invalid_json",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 400,
+      "id": "error_invalid_request",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "invalid_request",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 403,
+      "id": "error_forbidden",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "forbidden",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 404,
+      "id": "error_not_found",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "not_found",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 409,
+      "id": "error_speech_busy",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "speech_busy",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 422,
+      "id": "error_validation_failed",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "validation_failed",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 503,
+      "id": "error_component_unavailable",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "component_unavailable",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 503,
+      "id": "error_mailbox_overloaded",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "mailbox_overloaded",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    },
+    {
+      "httpStatus": 503,
+      "id": "error_admission_timeout",
+      "schema": "ErrorResponse",
+      "value": {
+        "error": {
+          "code": "admission_timeout",
+          "fields": {},
+          "message": "Bounded public detail."
+        },
+        "schemaVersion": "commentary-runtime/2"
+      }
+    }
+  ]
+}
