@@ -16,4 +16,5 @@ Task skills (start/restart, YouTube OAuth) live in:
 - Async-first: no blocking in async loops; background tasks must be owned/cancellable; cooldowns are time-based (monotonic).
 - Evidence required for behavior changes: tests or explicit TDD-exception + verification plan.
 - Docs/config are part of the contract; update relevant docs when behavior changes.
+- Leave a durable handover before ownership transfer or interruption; see `.cursor/rules/09-agent-handover.mdc`.
 - No new dependencies unless explicitly requested + reviewed.

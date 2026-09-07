@@ -35,6 +35,7 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `overlay-hud-copy` — HUD tokeny v `overlay/i18n.py`; golden ≠ live OBS
 - `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
+- `subagents` také řídí trvalý handover při předání, delší pauze nebo riziku vyčerpání kontextu/kvóty
 
 ### Doporučené workflow
 - `/hotfix` → repro → minimální diff → test → restart (bez issue/PR)
@@ -46,4 +47,8 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `/pr-description` → připraví PR popis podle policy
 - `/restart-service` → start/stop/restart + ověření health/verze + cache bump
 - `/parallel-plan` → rozdělí nezávislé úkoly před worktrees / více agenty
+- `/handover` → zapíše nebo ověří worktree, SHA, TDD fázi, vlastnictví a přesný další krok
 
+### Codex agents
+
+Repo poskytuje `issue-steward`, `docs-keeper` a read-only `verifier` v `.codex/agents/`. Cursor ekvivalenty jsou v `.cursor/agents/`.

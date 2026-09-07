@@ -33,11 +33,14 @@ Hot-fix bez PR → `/hotfix` (repro, test, restart). Tento command je na issue �
      - overlay JS v diffu: `?v=` lockstep (command `/qa`)
      - dej PASS/BAD report + konkrétní next kroky
 
-5) **PR popis**
+5) **Handover checkpoint**
+   - Aktualizuj trvalý stav podle `/handover` včetně TDD fáze, HEAD/upstream a přesného dalšího kroku.
+
+6) **PR popis**
    - Vygeneruj PR popis podle našeho template (AC/test plan/docs impact/config impact) a připomeň:
      - přesně jeden `semver:*` label
 
-6) **Po merge na master** (jen když se má služba hned jet z tohoto stroje)
+7) **Po merge na master** (jen když se má služba hned jet z tohoto stroje)
    - `/restart-service` a zkontroluj verzi v `/health`
 
 ## Výstup
@@ -46,6 +49,6 @@ Na konci vrať:
 - dev diary: stručné shrnutí, co bylo zapsáno
 - docs: seznam změněných doc souborů (nebo důvod „no change“)
 - qa: PASS/BAD
+- handover: cesta + poslední pushed SHA + next
 - pr: hotový text PR popisu
 - restart (optional): health + version, pokud se spouštělo `/restart-service`
-

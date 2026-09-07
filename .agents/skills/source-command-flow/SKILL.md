@@ -9,7 +9,7 @@ Use this skill when the user asks to run the migrated source command `flow`. Can
 
 ## Command Template
 
-# Flow: issue → dev diary → docs → QA → PR
+# Flow: issue → dev diary → docs → QA → handover → PR
 
 Proveď kompletní workflow pro aktuální změny v repu (bez zbytečných refactorů).
 
@@ -26,9 +26,10 @@ Hot-fix bez PR → `/hotfix` (repro, test, restart). Tento command je na issue �
 2) **Dev diary** — nezdvojovat dnešní záznam
 3) **Docs impact** — subagent `/docs-keeper`
 4) **QA** — `/verifier`; overlay JS: `?v=` lockstep (`/qa`)
-5) **PR popis** — přesně jeden `semver:*` label
-6) Po merge na master (když se má jet na tomhle stroji) — `/restart-service`
+5) **Handover** — `/handover`; zapiš worktree, SHA, TDD fázi, ownership a next
+6) **PR popis** — přesně jeden `semver:*` label
+7) Po merge na master (když se má jet na tomhle stroji) — `/restart-service`
 
 ## Výstup
-- issue, dev diary, docs, qa PASS/BAD, pr text, restart optional
+- issue, dev diary, docs, qa PASS/BAD, handover, pr text, restart optional
 ---

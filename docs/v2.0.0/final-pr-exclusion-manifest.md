@@ -20,6 +20,7 @@ The v2 branch intentionally contains planning evidence and may temporarily conta
 - `docs/v2.0.0/machine/**`
 - `docs/v2.0.0/vertical-slice-fixtures.md`
 - `docs/v2.0.0/final-pr-exclusion-manifest.md`
+- `docs/v2.0.0/implementation-handover.md`
 - temporary v2 planning links added to root `README.md` and `COMMENTARY_ENGINE.md`
 
 Their decisions survive only in implementation, tests/fixtures, migration/release notes and updated current-behavior docs.

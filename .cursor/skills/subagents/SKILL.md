@@ -1,6 +1,6 @@
 ---
 name: subagents
-description: Decides when to launch Task subagents vs doing the work in the parent agent. Use when considering parallel agents, worktrees, explore, generalPurpose, verifier, docs-keeper, issue-steward, /parallel-plan, /flow, /hotfix, or spawning more than one agent.
+description: Decides when to launch Task subagents, how to isolate ownership, and how to leave durable handover state. Use for parallel agents, worktrees, verifier/docs/issue roles, handover, checkpoint, recovery, resume, /parallel-plan, /flow, or /hotfix.
 ---
 
 # Subagenti (irswitch)
@@ -38,7 +38,7 @@ Paralelní **upravující** agenti jen po `/parallel-plan` **a** schválení už
 ## Paralelní worktrees
 
 Každý nezávislý úkol: vlastní větev + vlastní issue + jeden worktree. Nikdy commit na `master`.
-Po dokončení vrať diff + evidence. Push/PR jen po schválení.
+Po dokončení vrať diff + evidence a aktualizuj trvalý handover podle `09-agent-handover.mdc`. Push/PR jen po schválení.
 
 Překryv → sekvenčně. Stopnuté agenty a stash ping-pong = mělo to jít za sebou.
 
@@ -50,6 +50,7 @@ Než spustíš víc upravujících agentů: `/parallel-plan`, počkej na OK.
 - Prompt musí obsahovat celý kontext (subagent nevidí historii parenta)
 - `run_in_background: true` v Multitask Mode
 - Po kódu z subagenta: parent zkontroluje diff, nespouští overlapping agenty
+- Před ukončením nebo převzetím: `/handover`; in-memory zpráva sama nestačí
 
 ## Výstup (vyžaduj od subagenta)
 
