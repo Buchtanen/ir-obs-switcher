@@ -841,6 +841,36 @@
       ],
       "type": "object"
     },
+    "ContextApplied": {
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "items": {
+            "$ref": "#/$defs/NarrativeEvent"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "factView": {
+          "$ref": "#/$defs/FactView"
+        },
+        "schemaVersion": {
+          "const": "context-applied/2"
+        },
+        "timeline": {
+          "$ref": "#/$defs/TimelineSnapshot"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "timeline",
+        "factView",
+        "events"
+      ],
+      "type": "object"
+    },
     "DetectorObservation": {
       "additionalProperties": false,
       "properties": {
@@ -1069,6 +1099,277 @@
         "detectorVersion",
         "detectorConfigHash",
         "parameters"
+      ],
+      "type": "object"
+    },
+    "DirectorDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "beatRole": {
+          "enum": [
+            "opening",
+            "update",
+            "outcome",
+            "recap",
+            "filler"
+          ]
+        },
+        "candidateOrder": {
+          "additionalProperties": false,
+          "properties": {
+            "reducerSequence": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "sourceOrdinal": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "reducerSequence",
+            "sourceOrdinal"
+          ],
+          "type": "object"
+        },
+        "candidateSource": {
+          "enum": [
+            "event_opportunity",
+            "successor",
+            "other_story",
+            "filler",
+            "silence"
+          ]
+        },
+        "commit": {
+          "enum": [
+            "current",
+            "stale",
+            "skipped"
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "episodeId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "episodeRevision": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "generationMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lineageId": {
+          "oneOf": [
+            {
+              "maxLength": 512,
+              "pattern": "^[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*)(>[1-9][0-9]*:(practice|qualifying|race):(0|[1-9][0-9]*))*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurrenceId": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "promptOptions": {
+          "$ref": "#/$defs/PromptOptions"
+        },
+        "realizationBackend": {
+          "enum": [
+            "authored",
+            "qwen_compiled"
+          ]
+        },
+        "realizationFamily": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "realizationPattern": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "relation": {
+          "oneOf": [
+            {
+              "enum": [
+                "opens_episode",
+                "updates_active_episode",
+                "resolves_active_episode",
+                "continues_focused_episode",
+                "conflicts_with_focused_episode",
+                "independent_of_focused_episode"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requiredSwitchMargin": {
+          "type": "number"
+        },
+        "schemaVersion": {
+          "const": "director-decision/2"
+        },
+        "score": {
+          "$ref": "#/$defs/DirectorScore"
+        },
+        "selectedFactIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "speech": {
+          "enum": [
+            "completed",
+            "interrupted",
+            "failed",
+            "not_started",
+            "silence"
+          ]
+        },
+        "streamEpoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "tapeChannel": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "type": "string"
+        },
+        "triggerEvent": {
+          "oneOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "skipped"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "streamEpoch",
+        "occurrenceId",
+        "lineageId",
+        "episodeId",
+        "episodeRevision",
+        "triggerEvent",
+        "tapeChannel",
+        "candidateSource",
+        "candidateOrder",
+        "relation",
+        "beatRole",
+        "eligible",
+        "score",
+        "requiredSwitchMargin",
+        "selectedFactIds",
+        "realizationFamily",
+        "realizationPattern",
+        "realizationBackend",
+        "promptOptions",
+        "generationMs",
+        "verification",
+        "commit",
+        "speech"
+      ],
+      "type": "object"
+    },
+    "DirectorScore": {
+      "additionalProperties": false,
+      "properties": {
+        "basePriority": {
+          "type": "number"
+        },
+        "closureUrgency": {
+          "type": "number"
+        },
+        "continuityBonus": {
+          "type": "number"
+        },
+        "edgePreference": {
+          "type": "number"
+        },
+        "eventPenalty": {
+          "type": "number"
+        },
+        "final": {
+          "type": "number"
+        },
+        "lexicalRepetitionPenalty": {
+          "type": "number"
+        },
+        "materialChangeBonus": {
+          "type": "number"
+        },
+        "patternFatiguePenalty": {
+          "type": "number"
+        },
+        "replacementCost": {
+          "type": "number"
+        },
+        "semanticFatiguePenalty": {
+          "type": "number"
+        },
+        "silencePressure": {
+          "type": "number"
+        },
+        "stalenessPenalty": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "basePriority",
+        "continuityBonus",
+        "edgePreference",
+        "closureUrgency",
+        "materialChangeBonus",
+        "silencePressure",
+        "semanticFatiguePenalty",
+        "patternFatiguePenalty",
+        "lexicalRepetitionPenalty",
+        "stalenessPenalty",
+        "replacementCost",
+        "eventPenalty",
+        "final"
       ],
       "type": "object"
     },
@@ -1391,6 +1692,22 @@
         "opened_lte_updated_lte_resolved",
         "scope_identity_contract"
       ]
+    },
+    "EpisodeChange": {
+      "additionalProperties": false,
+      "properties": {
+        "episode": {
+          "$ref": "#/$defs/Episode"
+        },
+        "schemaVersion": {
+          "const": "episode-change/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "episode"
+      ],
+      "type": "object"
     },
     "EventCandidateTap": {
       "additionalProperties": false,
@@ -2008,6 +2325,22 @@
         "funnel_identity_monotonic"
       ]
     },
+    "FactChange": {
+      "additionalProperties": false,
+      "properties": {
+        "fact": {
+          "$ref": "#/$defs/AtomicFact"
+        },
+        "schemaVersion": {
+          "const": "fact-change/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "fact"
+      ],
+      "type": "object"
+    },
     "FactView": {
       "additionalProperties": false,
       "properties": {
@@ -2206,6 +2539,145 @@
         "values_sorted_by_feature_id",
         "identity_all_or_none"
       ]
+    },
+    "HealthChange": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "component": {
+              "type": "null"
+            },
+            "generation": {
+              "type": "null"
+            },
+            "recorderGeneration": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "scope": {
+              "const": "tape"
+            }
+          }
+        },
+        {
+          "properties": {
+            "affectedDetectorIds": {
+              "maxItems": 0
+            },
+            "component": {
+              "enum": [
+                "llm",
+                "tts"
+              ]
+            },
+            "firstLostSequence": {
+              "type": "null"
+            },
+            "generation": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "lastLostSequence": {
+              "type": "null"
+            },
+            "recorderGeneration": {
+              "type": "null"
+            },
+            "scope": {
+              "const": "component"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "affectedDetectorIds": {
+          "items": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "type": "string"
+          },
+          "maxItems": 128,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "component": {
+          "oneOf": [
+            {
+              "enum": [
+                "llm",
+                "tts"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "firstLostSequence": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "generation": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lastLostSequence": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recorderGeneration": {
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "schemaVersion": {
+          "const": "health-change/2"
+        },
+        "scope": {
+          "enum": [
+            "tape",
+            "component"
+          ]
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "degraded",
+            "unavailable"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "scope",
+        "status",
+        "recorderGeneration",
+        "affectedDetectorIds",
+        "firstLostSequence",
+        "lastLostSequence",
+        "component",
+        "generation",
+        "reason"
+      ],
+      "type": "object"
     },
     "LlmAttempt": {
       "additionalProperties": false,
@@ -2418,6 +2890,50 @@
         "latency_equations_match_milestones",
         "capture_policy_projection"
       ]
+    },
+    "MailboxGap": {
+      "additionalProperties": false,
+      "properties": {
+        "historyComplete": {
+          "const": false
+        },
+        "latestFactView": {
+          "$ref": "#/$defs/FactView"
+        },
+        "latestTimeline": {
+          "$ref": "#/$defs/TimelineSnapshot"
+        },
+        "lossFirstMailboxSequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lossLastMailboxSequence": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "safetyEffects": {
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "schemaVersion": {
+          "const": "mailbox-gap/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "latestTimeline",
+        "latestFactView",
+        "lossFirstMailboxSequence",
+        "lossLastMailboxSequence",
+        "historyComplete",
+        "safetyEffects"
+      ],
+      "type": "object"
     },
     "ManifestTrailer": {
       "additionalProperties": false,
@@ -3777,6 +4293,22 @@
         "delivery_class_derived",
         "facts_resolve_same_view_identity"
       ]
+    },
+    "OpportunityChange": {
+      "additionalProperties": false,
+      "properties": {
+        "opportunity": {
+          "$ref": "#/$defs/EventOpportunity"
+        },
+        "schemaVersion": {
+          "const": "opportunity-change/2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "opportunity"
+      ],
+      "type": "object"
     },
     "PromptOptions": {
       "additionalProperties": false,
@@ -5330,14 +5862,14 @@
                 "recordType": {
                   "enum": [
                     "context_applied",
+                    "feature_frame",
                     "fact_change",
                     "episode_change",
-                    "health_change",
-                    "mailbox_gap",
-                    "feature_frame",
                     "llm_attempt",
                     "speech_exposure",
                     "config_applied",
+                    "health_change",
+                    "mailbox_gap",
                     "drop_notice",
                     "manifest_trailer"
                   ]
@@ -5348,6 +5880,19 @@
         }
       ],
       "oneOf": [
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/ContextApplied"
+            },
+            "payloadSchemaVersion": {
+              "const": "context-applied/2"
+            },
+            "recordType": {
+              "const": "context_applied"
+            }
+          }
+        },
         {
           "properties": {
             "payload": {
@@ -5403,6 +5948,58 @@
         {
           "properties": {
             "payload": {
+              "$ref": "#/$defs/FactChange"
+            },
+            "payloadSchemaVersion": {
+              "const": "fact-change/2"
+            },
+            "recordType": {
+              "const": "fact_change"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/EpisodeChange"
+            },
+            "payloadSchemaVersion": {
+              "const": "episode-change/2"
+            },
+            "recordType": {
+              "const": "episode_change"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/OpportunityChange"
+            },
+            "payloadSchemaVersion": {
+              "const": "opportunity-change/2"
+            },
+            "recordType": {
+              "const": "opportunity_change"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/DirectorDecision"
+            },
+            "payloadSchemaVersion": {
+              "const": "director-decision/2"
+            },
+            "recordType": {
+              "const": "director_decision"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
               "$ref": "#/$defs/LlmAttempt"
             },
             "payloadSchemaVersion": {
@@ -5445,6 +6042,38 @@
         {
           "properties": {
             "payload": {
+              "$ref": "#/$defs/HealthChange"
+            },
+            "payloadSchemaVersion": {
+              "const": "health-change/2"
+            },
+            "recordPriority": {
+              "const": "critical"
+            },
+            "recordType": {
+              "const": "health_change"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
+              "$ref": "#/$defs/MailboxGap"
+            },
+            "payloadSchemaVersion": {
+              "const": "mailbox-gap/2"
+            },
+            "recordPriority": {
+              "const": "critical"
+            },
+            "recordType": {
+              "const": "mailbox_gap"
+            }
+          }
+        },
+        {
+          "properties": {
+            "payload": {
               "$ref": "#/$defs/DropNotice"
             },
             "payloadSchemaVersion": {
@@ -5471,29 +6100,6 @@
             },
             "recordType": {
               "const": "manifest_trailer"
-            }
-          }
-        },
-        {
-          "properties": {
-            "payload": {
-              "type": "object"
-            },
-            "payloadSchemaVersion": {
-              "maxLength": 128,
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}(/[1-9][0-9]*)?$",
-              "type": "string"
-            },
-            "recordType": {
-              "enum": [
-                "context_applied",
-                "fact_change",
-                "episode_change",
-                "opportunity_change",
-                "director_decision",
-                "health_change",
-                "mailbox_gap"
-              ]
             }
           }
         }
@@ -6477,6 +7083,30 @@
     },
     {
       "$ref": "#/$defs/ApplyContextBatch"
+    },
+    {
+      "$ref": "#/$defs/ContextApplied"
+    },
+    {
+      "$ref": "#/$defs/FactChange"
+    },
+    {
+      "$ref": "#/$defs/EpisodeChange"
+    },
+    {
+      "$ref": "#/$defs/OpportunityChange"
+    },
+    {
+      "$ref": "#/$defs/DirectorScore"
+    },
+    {
+      "$ref": "#/$defs/DirectorDecision"
+    },
+    {
+      "$ref": "#/$defs/HealthChange"
+    },
+    {
+      "$ref": "#/$defs/MailboxGap"
     },
     {
       "$ref": "#/$defs/NarrativeCommand"

@@ -46,6 +46,16 @@ Implementation placement is one neutral `src/irswitch/contracts/narrative.py` mo
 | narrative catalog | `narrative-catalog/2` |
 | tape manifest | `narrative-tape-manifest/2` |
 | tape record | `narrative-tape-record/2` |
+| tape context applied | `context-applied/2` |
+| tape fact change | `fact-change/2` |
+| tape episode change | `episode-change/2` |
+| tape opportunity change | `opportunity-change/2` |
+| tape director decision | `director-decision/2` |
+| tape health change | `health-change/2` |
+| tape mailbox gap | `mailbox-gap/2` |
+| tape config applied | `config-applied/2` |
+| tape drop notice | `drop-notice/2` |
+| tape manifest trailer | `manifest-trailer/2` |
 | public commentary HTTP | `commentary-runtime/2` |
 | effective commentary config | `commentary-config/2` |
 
@@ -432,7 +442,7 @@ configApplySequence, payloadSchemaVersion, payload
 
 `payloadSchemaVersion` is a schema-version token, not a generic ID: it accepts the existing colon form used by still-open record kinds and the exact `name/2` tokens of materialized payloads. It must match the payload `$id`/`schemaVersion` of that record type.
 
-Purpose channel is `flow|llm_eval|detector_tuning`; priority is `sample|normal|critical`. Record type is one of `context_applied|feature_frame|detector_observation|event_candidate|narrative_event|fact_change|episode_change|opportunity_change|director_decision|llm_attempt|speech_exposure|config_applied|health_change|mailbox_gap|drop_notice|manifest_trailer`. `payload` must validate against its named schema; `feature_frame` payload is exactly FeatureFrame and `event_candidate` payload is exactly EventCandidateTap. The writer records ordered actor facts/decisions with reducer sequence and unordered upstream feature/detector/candidate observations without one. Prompt/completion contents obey capture policy and redaction; hashes and latency metadata remain.
+Purpose channel is `flow|llm_eval|detector_tuning`; priority is `sample|normal|critical`. Record type is one of `context_applied|feature_frame|detector_observation|event_candidate|narrative_event|fact_change|episode_change|opportunity_change|director_decision|llm_attempt|speech_exposure|config_applied|health_change|mailbox_gap|drop_notice|manifest_trailer`. `payload` must validate against its named schema. `context_applied` is exactly `context-applied/2` `{timeline,factView,events[0..64]}` — the same coherent projections as `APPLY_CONTEXT_BATCH`. `fact_change` is `{fact}` wrapping one `atomic-fact/2`. `episode_change` is `{episode}` wrapping one `episode/2`. `opportunity_change` is `{opportunity}` wrapping one `event-opportunity/2`. `director_decision` is exactly the closed decision record from the director relation/score contract: `{streamEpoch,occurrenceId?,lineageId?,episodeId?,episodeRevision?,triggerEvent?,tapeChannel,candidateSource,candidateOrder,relation?,beatRole,eligible,score,requiredSwitchMargin,selectedFactIds[0..32],realizationFamily,realizationPattern,realizationBackend,promptOptions,generationMs,verification,commit,speech}`. `health_change` is exactly `health-change/2` with `scope=tape|component` and the frozen tape/component health fields; tape scope requires `recorderGeneration` and null component fields, component scope requires `component`/`generation` and empty tape-loss fields. `mailbox_gap` is exactly `mailbox-gap/2` `{latestTimeline,latestFactView,lossFirstMailboxSequence,lossLastMailboxSequence,historyComplete=false,safetyEffects[1..64]}`. `feature_frame` payload is exactly FeatureFrame and `event_candidate` payload is exactly EventCandidateTap. The writer records ordered actor facts/decisions with reducer sequence and unordered upstream feature/detector/candidate observations without one. Prompt/completion contents obey capture policy and redaction; hashes and latency metadata remain.
 
 Every record snapshots one ConfigLedger `effectiveConfigHash/configApplySequence` pair in its envelope; a `config_applied` record names its proposed new pair. Within one open file, `config_applied` is the only forward transition between effective snapshots; while recording is disabled, the next manifest is authoritative for otherwise unrecorded transitions. Upstream feature/detector payloads additionally carry their detector config hash and parameter snapshot reference. A rotated continuation may therefore have different desired/effective manifest hashes from the prior file, but keeps the same run identity and detector parameter snapshot array; replay starts from each manifest snapshot and reduces later `config_applied` records in file/apply-sequence order.
 

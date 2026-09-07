@@ -1128,25 +1128,23 @@ def build_schema() -> dict[str, Any]:
         },
     )
     typed_tape_payloads = {
+        "context_applied": ("context-applied/2", "ContextApplied"),
         "feature_frame": ("feature-frame/2", "FeatureFrame"),
         "detector_observation": ("detector-observation/2", "DetectorObservation"),
         "event_candidate": ("event-candidate-tap/2", "EventCandidateTap"),
         "narrative_event": ("narrative-event/2", "NarrativeEvent"),
+        "fact_change": ("fact-change/2", "FactChange"),
+        "episode_change": ("episode-change/2", "EpisodeChange"),
+        "opportunity_change": ("opportunity-change/2", "OpportunityChange"),
+        "director_decision": ("director-decision/2", "DirectorDecision"),
         "llm_attempt": ("llm-attempt/2", "LlmAttempt"),
         "speech_exposure": ("speech-exposure/2", "SpeechExposure"),
         "config_applied": ("config-applied/2", "ConfigApplied"),
+        "health_change": ("health-change/2", "HealthChange"),
+        "mailbox_gap": ("mailbox-gap/2", "MailboxGap"),
         "drop_notice": ("drop-notice/2", "DropNotice"),
         "manifest_trailer": ("manifest-trailer/2", "ManifestTrailer"),
     }
-    untyped_tape_records = [
-        "context_applied",
-        "fact_change",
-        "episode_change",
-        "opportunity_change",
-        "director_decision",
-        "health_change",
-        "mailbox_gap",
-    ]
     defs["TapeRecord"]["oneOf"] = [
         {
             "properties": {
@@ -1156,18 +1154,12 @@ def build_schema() -> dict[str, Any]:
             }
         }
         for record_type, (schema_version, definition) in typed_tape_payloads.items()
-    ] + [
-        {
-            "properties": {
-                "recordType": {"enum": untyped_tape_records},
-                "payloadSchemaVersion": SCHEMA_VERSION,
-                "payload": any_obj,
-            }
-        }
     ]
     for branch in defs["TapeRecord"]["oneOf"]:
         if branch["properties"]["recordType"].get("const") in {
             "config_applied",
+            "health_change",
+            "mailbox_gap",
             "drop_notice",
             "manifest_trailer",
         }:
@@ -1201,7 +1193,7 @@ def build_schema() -> dict[str, Any]:
     ]
     channel_optional_tape_records = [
         record_type
-        for record_type in untyped_tape_records + list(typed_tape_payloads)
+        for record_type in typed_tape_payloads
         if record_type not in channel_required_tape_records
     ]
     defs["TapeRecord"]["allOf"] = [
@@ -1239,6 +1231,119 @@ def build_schema() -> dict[str, Any]:
             "factView": {"$ref": "#/$defs/FactView"},
             "events": arr({"$ref": "#/$defs/NarrativeEvent"}, 0, 64),
         }
+    )
+    context_fields = {
+        "timeline": {"$ref": "#/$defs/TimelineSnapshot"},
+        "factView": {"$ref": "#/$defs/FactView"},
+        "events": arr({"$ref": "#/$defs/NarrativeEvent"}, 0, 64),
+    }
+    defs["ContextApplied"] = closed("context-applied/2", context_fields)
+    defs["FactChange"] = closed("fact-change/2", {"fact": {"$ref": "#/$defs/AtomicFact"}})
+    defs["EpisodeChange"] = closed("episode-change/2", {"episode": {"$ref": "#/$defs/Episode"}})
+    defs["OpportunityChange"] = closed(
+        "opportunity-change/2", {"opportunity": {"$ref": "#/$defs/EventOpportunity"}}
+    )
+    defs["DirectorScore"] = obj(
+        {
+            "basePriority": NUM,
+            "continuityBonus": NUM,
+            "edgePreference": NUM,
+            "closureUrgency": NUM,
+            "materialChangeBonus": NUM,
+            "silencePressure": NUM,
+            "semanticFatiguePenalty": NUM,
+            "patternFatiguePenalty": NUM,
+            "lexicalRepetitionPenalty": NUM,
+            "stalenessPenalty": NUM,
+            "replacementCost": NUM,
+            "eventPenalty": NUM,
+            "final": NUM,
+        }
+    )
+    defs["DirectorDecision"] = closed(
+        "director-decision/2",
+        {
+            "streamEpoch": P1,
+            "occurrenceId": NULLABLE_ID,
+            "lineageId": NULLABLE_LINEAGE_ID,
+            "episodeId": NULLABLE_ID,
+            "episodeRevision": NULLABLE_N0,
+            "triggerEvent": NULLABLE_ID,
+            "tapeChannel": ID,
+            "candidateSource": enum(
+                "event_opportunity", "successor", "other_story", "filler", "silence"
+            ),
+            "candidateOrder": ORDER,
+            "relation": nullable(
+                enum(
+                    "opens_episode",
+                    "updates_active_episode",
+                    "resolves_active_episode",
+                    "continues_focused_episode",
+                    "conflicts_with_focused_episode",
+                    "independent_of_focused_episode",
+                )
+            ),
+            "beatRole": enum("opening", "update", "outcome", "recap", "filler"),
+            "eligible": BOOL,
+            "score": {"$ref": "#/$defs/DirectorScore"},
+            "requiredSwitchMargin": NUM,
+            "selectedFactIds": id_list(0, 32),
+            "realizationFamily": ID,
+            "realizationPattern": ID,
+            "realizationBackend": enum("authored", "qwen_compiled"),
+            "promptOptions": {"$ref": "#/$defs/PromptOptions"},
+            "generationMs": N0,
+            "verification": enum("accepted", "rejected", "skipped"),
+            "commit": enum("current", "stale", "skipped"),
+            "speech": enum("completed", "interrupted", "failed", "not_started", "silence"),
+        },
+    )
+    defs["HealthChange"] = closed(
+        "health-change/2",
+        {
+            "scope": enum("tape", "component"),
+            "status": enum("ready", "degraded", "unavailable"),
+            "recorderGeneration": NULLABLE_N0,
+            "affectedDetectorIds": id_list(0, 128),
+            "firstLostSequence": NULLABLE_N0,
+            "lastLostSequence": NULLABLE_N0,
+            "component": nullable(enum("llm", "tts")),
+            "generation": NULLABLE_N0,
+            "reason": NULLABLE_S,
+        },
+    )
+    defs["HealthChange"]["oneOf"] = [
+        {
+            "properties": {
+                "scope": {"const": "tape"},
+                "recorderGeneration": N0,
+                "component": {"type": "null"},
+                "generation": {"type": "null"},
+            }
+        },
+        {
+            "properties": {
+                "scope": {"const": "component"},
+                "component": enum("llm", "tts"),
+                "generation": N0,
+                "recorderGeneration": {"type": "null"},
+                "affectedDetectorIds": {"maxItems": 0},
+                "firstLostSequence": {"type": "null"},
+                "lastLostSequence": {"type": "null"},
+            }
+        },
+    ]
+    defs["MailboxGap"] = closed(
+        "mailbox-gap/2",
+        {
+            "latestTimeline": {"$ref": "#/$defs/TimelineSnapshot"},
+            "latestFactView": {"$ref": "#/$defs/FactView"},
+            "lossFirstMailboxSequence": N0,
+            "lossLastMailboxSequence": N0,
+            "historyComplete": {"const": False},
+            "safetyEffects": arr(any_obj, 1, 64),
+        },
     )
     defs["NarrativeCommand"] = closed(
         "narrative-command/2",

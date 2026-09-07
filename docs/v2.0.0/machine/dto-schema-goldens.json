@@ -3,125 +3,1239 @@
   "valid": [
     {
       "id": "prompt-tight",
-      "value": {"schemaVersion":"prompt-options/2","freedom":"tight","patternChoice":"fixed","optionalClaimLimit":0,"allowClauseReorder":false,"maxSentences":1,"temperature":0.15,"topP":0.75,"seed":0}
+      "value": {
+        "schemaVersion": "prompt-options/2",
+        "freedom": "tight",
+        "patternChoice": "fixed",
+        "optionalClaimLimit": 0,
+        "allowClauseReorder": false,
+        "maxSentences": 1,
+        "temperature": 0.15,
+        "topP": 0.75,
+        "seed": 0
+      }
     },
     {
       "id": "prompt-balanced",
-      "value": {"schemaVersion":"prompt-options/2","freedom":"balanced","patternChoice":"family_pool","optionalClaimLimit":1,"allowClauseReorder":true,"maxSentences":1,"temperature":0.35,"topP":0.85,"seed":18446744073709551615}
+      "value": {
+        "schemaVersion": "prompt-options/2",
+        "freedom": "balanced",
+        "patternChoice": "family_pool",
+        "optionalClaimLimit": 1,
+        "allowClauseReorder": true,
+        "maxSentences": 1,
+        "temperature": 0.35,
+        "topP": 0.85,
+        "seed": 18446744073709551615
+      }
     },
     {
       "id": "tts-accepted",
-      "value": {"schemaVersion":"tts-callback/2","callbackId":"ttscb:utt:1:1","kind":"playback_accepted","utteranceId":"utt:1","utteranceOrdinal":1,"backend":"supertonic","backendGeneration":4,"dispatchGeneration":7,"workerSequence":1,"observedMonoMs":1000,"detailCode":null}
+      "value": {
+        "schemaVersion": "tts-callback/2",
+        "callbackId": "ttscb:utt:1:1",
+        "kind": "playback_accepted",
+        "utteranceId": "utt:1",
+        "utteranceOrdinal": 1,
+        "backend": "supertonic",
+        "backendGeneration": 4,
+        "dispatchGeneration": 7,
+        "workerSequence": 1,
+        "observedMonoMs": 1000,
+        "detailCode": null
+      }
     },
     {
       "id": "shutdown-command",
-      "value": {"schemaVersion":"narrative-command/2","commandId":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000}}
+      "value": {
+        "schemaVersion": "narrative-command/2",
+        "commandId": "cmd:9",
+        "kind": "SHUTDOWN",
+        "enqueuedMonoMs": 1000,
+        "mailboxSequence": 9,
+        "externalOrder": null,
+        "contextRevision": null,
+        "token": null,
+        "payload": {
+          "reason": "process_shutdown",
+          "requestedMonoMs": 1000
+        }
+      }
     },
     {
       "id": "atomic-fact-canonical-lineage",
-      "value": {"schemaVersion":"atomic-fact/2","factId":"fact:88","predicate":"battle.approaching","subjectId":"hero","objectId":"car:22","attributes":{"gap":1.4},"polarity":"positive","validFromMonoMs":89000,"validUntilMonoMs":94000,"observedAtMonoMs":90180,"broadcastEpoch":2,"streamEpoch":3,"occurrenceId":"3:race:2","lineageId":"3:practice:0>3:qualifying:1>3:race:2","evidenceRefs":["event:401"],"confidence":0.94,"scope":"occurrence","status":"active","revision":4}
+      "value": {
+        "schemaVersion": "atomic-fact/2",
+        "factId": "fact:88",
+        "predicate": "battle.approaching",
+        "subjectId": "hero",
+        "objectId": "car:22",
+        "attributes": {
+          "gap": 1.4
+        },
+        "polarity": "positive",
+        "validFromMonoMs": 89000,
+        "validUntilMonoMs": 94000,
+        "observedAtMonoMs": 90180,
+        "broadcastEpoch": 2,
+        "streamEpoch": 3,
+        "occurrenceId": "3:race:2",
+        "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+        "evidenceRefs": [
+          "event:401"
+        ],
+        "confidence": 0.94,
+        "scope": "occurrence",
+        "status": "active",
+        "revision": 4
+      }
     },
     {
       "id": "tape-manifest-framing",
-      "value": {"schemaVersion":"narrative-tape-manifest/2","recordType":"manifest","processInstanceId":"process:1","processStartedAtUtc":"2026-09-07T20:00:00Z","processMonotonicOriginMs":0,"appVersion":"2.0.0","gitRevision":"abc1234","platform":"windows","broadcastEpoch":4,"streamEpoch":7,"fileOrdinal":0,"openedAtUtc":"2026-09-07T20:01:00Z","catalogVersion":"narrative-catalog:2","catalogHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","desiredConfigGeneration":3,"desiredConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"effectiveConfigProjection":[{"key":"commentary.enabled","value":true},{"key":"commentary.tts.voice","redacted":true}],"enabledPurposeChannels":["flow"],"redactionPolicy":{"sensitiveValues":"marker_only"},"historyComplete":true,"detectorParameterSnapshots":[{"parameterSnapshotId":"params:battle-ahead:1","detectorId":"battle_ahead_v1","detectorVersion":"1","detectorConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","parameters":{"confirm_s":1.5,"window_s":5.0}}],"previousFileHash":null}
+      "value": {
+        "schemaVersion": "narrative-tape-manifest/2",
+        "recordType": "manifest",
+        "processInstanceId": "process:1",
+        "processStartedAtUtc": "2026-09-07T20:00:00Z",
+        "processMonotonicOriginMs": 0,
+        "appVersion": "2.0.0",
+        "gitRevision": "abc1234",
+        "platform": "windows",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "fileOrdinal": 0,
+        "openedAtUtc": "2026-09-07T20:01:00Z",
+        "catalogVersion": "narrative-catalog:2",
+        "catalogHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "desiredConfigGeneration": 3,
+        "desiredConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "effectiveConfigProjection": [
+          {
+            "key": "commentary.enabled",
+            "value": true
+          },
+          {
+            "key": "commentary.tts.voice",
+            "redacted": true
+          }
+        ],
+        "enabledPurposeChannels": [
+          "flow"
+        ],
+        "redactionPolicy": {
+          "sensitiveValues": "marker_only"
+        },
+        "historyComplete": true,
+        "detectorParameterSnapshots": [
+          {
+            "parameterSnapshotId": "params:battle-ahead:1",
+            "detectorId": "battle_ahead_v1",
+            "detectorVersion": "1",
+            "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "parameters": {
+              "confirm_s": 1.5,
+              "window_s": 5.0
+            }
+          }
+        ],
+        "previousFileHash": null
+      }
     },
     {
       "id": "tape-health-record",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:1","recordType":"health_change","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":9,"recordedMonoMs":1200,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:1",
+        "recordType": "health_change",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": 9,
+        "recordedMonoMs": 1200,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "critical",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "health-change/2",
+        "payload": {
+          "schemaVersion": "health-change/2",
+          "scope": "tape",
+          "status": "degraded",
+          "recorderGeneration": 1,
+          "affectedDetectorIds": [],
+          "firstLostSequence": null,
+          "lastLostSequence": null,
+          "component": null,
+          "generation": null,
+          "reason": null
+        }
+      }
     },
     {
       "id": "config-applied-redacted-patch",
-      "value": {"schemaVersion":"config-applied/2","applySequence":9,"desiredGeneration":4,"boundary":"next_utterance","changedKeys":["commentary.tts.voice"],"effectivePatch":[{"key":"commentary.tts.voice","redacted":true}],"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+      "value": {
+        "schemaVersion": "config-applied/2",
+        "applySequence": 9,
+        "desiredGeneration": 4,
+        "boundary": "next_utterance",
+        "changedKeys": [
+          "commentary.tts.voice"
+        ],
+        "effectivePatch": [
+          {
+            "key": "commentary.tts.voice",
+            "redacted": true
+          }
+        ],
+        "oldEffectiveHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "newEffectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      }
     },
     {
       "id": "drop-notice-unordered-loss",
-      "value": {"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":3}],"firstLostMonoMs":1000,"lastLostMonoMs":1400,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}
+      "value": {
+        "schemaVersion": "drop-notice/2",
+        "noticeId": "notice:1",
+        "loss": {
+          "buckets": [
+            {
+              "recordType": "feature_frame",
+              "recordPriority": "sample",
+              "reason": "tape_queue_drop",
+              "count": 3
+            }
+          ],
+          "firstLostMonoMs": 1000,
+          "lastLostMonoMs": 1400,
+          "firstLostReducerSequence": null,
+          "lastLostReducerSequence": null,
+          "configTransitions": []
+        }
+      }
     },
     {
       "id": "drop-notice-actor-loss",
-      "value": {"schemaVersion":"drop-notice/2","noticeId":"notice:2","loss":{"buckets":[{"recordType":"health_change","recordPriority":"critical","reason":"tape_write_failed","count":1},{"recordType":"config_applied","recordPriority":"critical","reason":"config_transition_lost","count":1}],"firstLostMonoMs":1500,"lastLostMonoMs":1800,"firstLostReducerSequence":10,"lastLostReducerSequence":12,"configTransitions":[{"applySequence":9,"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}]}}
+      "value": {
+        "schemaVersion": "drop-notice/2",
+        "noticeId": "notice:2",
+        "loss": {
+          "buckets": [
+            {
+              "recordType": "health_change",
+              "recordPriority": "critical",
+              "reason": "tape_write_failed",
+              "count": 1
+            },
+            {
+              "recordType": "config_applied",
+              "recordPriority": "critical",
+              "reason": "config_transition_lost",
+              "count": 1
+            }
+          ],
+          "firstLostMonoMs": 1500,
+          "lastLostMonoMs": 1800,
+          "firstLostReducerSequence": 10,
+          "lastLostReducerSequence": 12,
+          "configTransitions": [
+            {
+              "applySequence": 9,
+              "oldEffectiveHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "newEffectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ]
+        }
+      }
     },
     {
       "id": "manifest-trailer-clean",
-      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[{"recordType":"health_change","count":1}],"purposeCounts":[{"purposeChannel":"flow","count":1}],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":null,"lastReducerSequence":9,"closeReason":"shutdown","complete":true}
+      "value": {
+        "schemaVersion": "manifest-trailer/2",
+        "finalRecordHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "fileHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recordCounts": [
+          {
+            "recordType": "health_change",
+            "count": 1
+          }
+        ],
+        "purposeCounts": [
+          {
+            "purposeChannel": "flow",
+            "count": 1
+          }
+        ],
+        "tapeChannelCounts": [],
+        "dropCounts": [],
+        "lossAccumulator": null,
+        "lastReducerSequence": 9,
+        "closeReason": "shutdown",
+        "complete": true
+      }
     },
     {
       "id": "manifest-trailer-with-loss",
-      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[{"recordType":"drop_notice","count":1}],"purposeCounts":[{"purposeChannel":"flow","count":1}],"tapeChannelCounts":[],"dropCounts":[{"reason":"tape_write_failed","count":1}],"lossAccumulator":{"buckets":[{"recordType":"health_change","recordPriority":"critical","reason":"tape_write_failed","count":1}],"firstLostMonoMs":1500,"lastLostMonoMs":1800,"firstLostReducerSequence":10,"lastLostReducerSequence":12,"configTransitions":[]},"lastReducerSequence":12,"closeReason":"write_failed","complete":false}
+      "value": {
+        "schemaVersion": "manifest-trailer/2",
+        "finalRecordHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "fileHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recordCounts": [
+          {
+            "recordType": "drop_notice",
+            "count": 1
+          }
+        ],
+        "purposeCounts": [
+          {
+            "purposeChannel": "flow",
+            "count": 1
+          }
+        ],
+        "tapeChannelCounts": [],
+        "dropCounts": [
+          {
+            "reason": "tape_write_failed",
+            "count": 1
+          }
+        ],
+        "lossAccumulator": {
+          "buckets": [
+            {
+              "recordType": "health_change",
+              "recordPriority": "critical",
+              "reason": "tape_write_failed",
+              "count": 1
+            }
+          ],
+          "firstLostMonoMs": 1500,
+          "lastLostMonoMs": 1800,
+          "firstLostReducerSequence": 10,
+          "lastLostReducerSequence": 12,
+          "configTransitions": []
+        },
+        "lastReducerSequence": 12,
+        "closeReason": "write_failed",
+        "complete": false
+      }
     },
     {
       "id": "tape-drop-notice-record",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:drop:1","recordType":"drop_notice","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":1900,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"drop-notice/2","payload":{"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":3}],"firstLostMonoMs":1000,"lastLostMonoMs":1400,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:drop:1",
+        "recordType": "drop_notice",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": null,
+        "recordedMonoMs": 1900,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "critical",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "drop-notice/2",
+        "payload": {
+          "schemaVersion": "drop-notice/2",
+          "noticeId": "notice:1",
+          "loss": {
+            "buckets": [
+              {
+                "recordType": "feature_frame",
+                "recordPriority": "sample",
+                "reason": "tape_queue_drop",
+                "count": 3
+              }
+            ],
+            "firstLostMonoMs": 1000,
+            "lastLostMonoMs": 1400,
+            "firstLostReducerSequence": null,
+            "lastLostReducerSequence": null,
+            "configTransitions": []
+          }
+        }
+      }
     },
     {
       "id": "tape-trailer-record",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:trailer:1","recordType":"manifest_trailer","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":2000,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"manifest-trailer/2","payload":{"schemaVersion":"manifest-trailer/2","finalRecordHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[{"recordType":"health_change","count":1}],"purposeCounts":[{"purposeChannel":"flow","count":1}],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":null,"lastReducerSequence":9,"closeReason":"shutdown","complete":true}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:trailer:1",
+        "recordType": "manifest_trailer",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": null,
+        "recordedMonoMs": 2000,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "critical",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "manifest-trailer/2",
+        "payload": {
+          "schemaVersion": "manifest-trailer/2",
+          "finalRecordHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "fileHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "recordCounts": [
+            {
+              "recordType": "health_change",
+              "count": 1
+            }
+          ],
+          "purposeCounts": [
+            {
+              "purposeChannel": "flow",
+              "count": 1
+            }
+          ],
+          "tapeChannelCounts": [],
+          "dropCounts": [],
+          "lossAccumulator": null,
+          "lastReducerSequence": 9,
+          "closeReason": "shutdown",
+          "complete": true
+        }
+      }
     },
     {
       "id": "tape-continuation-manifest",
-      "value": {"schemaVersion":"narrative-tape-manifest/2","recordType":"manifest","processInstanceId":"process:1","processStartedAtUtc":"2026-09-07T20:00:00Z","processMonotonicOriginMs":0,"appVersion":"2.0.0","gitRevision":"abc1234","platform":"windows","broadcastEpoch":4,"streamEpoch":7,"fileOrdinal":1,"openedAtUtc":"2026-09-07T20:05:00Z","catalogVersion":"narrative-catalog:2","catalogHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","desiredConfigGeneration":3,"desiredConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"effectiveConfigProjection":[{"key":"commentary.enabled","value":true},{"key":"commentary.tts.voice","redacted":true}],"enabledPurposeChannels":["flow"],"redactionPolicy":{"sensitiveValues":"marker_only"},"historyComplete":true,"detectorParameterSnapshots":[{"parameterSnapshotId":"params:battle-ahead:1","detectorId":"battle_ahead_v1","detectorVersion":"1","detectorConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","parameters":{"confirm_s":1.5,"window_s":5.0}}],"previousFileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+      "value": {
+        "schemaVersion": "narrative-tape-manifest/2",
+        "recordType": "manifest",
+        "processInstanceId": "process:1",
+        "processStartedAtUtc": "2026-09-07T20:00:00Z",
+        "processMonotonicOriginMs": 0,
+        "appVersion": "2.0.0",
+        "gitRevision": "abc1234",
+        "platform": "windows",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "fileOrdinal": 1,
+        "openedAtUtc": "2026-09-07T20:05:00Z",
+        "catalogVersion": "narrative-catalog:2",
+        "catalogHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "desiredConfigGeneration": 3,
+        "desiredConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "effectiveConfigProjection": [
+          {
+            "key": "commentary.enabled",
+            "value": true
+          },
+          {
+            "key": "commentary.tts.voice",
+            "redacted": true
+          }
+        ],
+        "enabledPurposeChannels": [
+          "flow"
+        ],
+        "redactionPolicy": {
+          "sensitiveValues": "marker_only"
+        },
+        "historyComplete": true,
+        "detectorParameterSnapshots": [
+          {
+            "parameterSnapshotId": "params:battle-ahead:1",
+            "detectorId": "battle_ahead_v1",
+            "detectorVersion": "1",
+            "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "parameters": {
+              "confirm_s": 1.5,
+              "window_s": 5.0
+            }
+          }
+        ],
+        "previousFileHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "context-applied-batch",
+      "value": {
+        "schemaVersion": "context-applied/2",
+        "timeline": {
+          "schemaVersion": "timeline-snapshot/2",
+          "timelineRevision": 4,
+          "observedMonoMs": 1000,
+          "broadcastEpoch": 4,
+          "streamEpoch": 7,
+          "narrativeRunActive": true,
+          "obsState": "active",
+          "sessionRef": {
+            "subSessionId": "sub:1",
+            "sessionNum": 2
+          },
+          "stage": "race",
+          "sessionPlanRevision": 1,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "historyComplete": true,
+          "transitionReasons": []
+        },
+        "factView": {
+          "schemaVersion": "fact-view/2",
+          "viewRevision": 4,
+          "createdMonoMs": 1000,
+          "broadcastEpoch": 4,
+          "streamEpoch": 7,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "historyComplete": true,
+          "facts": [],
+          "compactedSummaryRefs": []
+        },
+        "events": []
+      }
+    },
+    {
+      "id": "fact-change-active",
+      "value": {
+        "schemaVersion": "fact-change/2",
+        "fact": {
+          "schemaVersion": "atomic-fact/2",
+          "factId": "fact:88",
+          "predicate": "battle.approaching",
+          "subjectId": "hero",
+          "objectId": "car:22",
+          "attributes": {
+            "gap": 1.4
+          },
+          "polarity": "positive",
+          "validFromMonoMs": 89000,
+          "validUntilMonoMs": 94000,
+          "observedAtMonoMs": 90180,
+          "broadcastEpoch": 2,
+          "streamEpoch": 3,
+          "occurrenceId": "3:race:2",
+          "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+          "evidenceRefs": [
+            "event:401"
+          ],
+          "confidence": 0.94,
+          "scope": "occurrence",
+          "status": "active",
+          "revision": 4
+        }
+      }
+    },
+    {
+      "id": "episode-change-active",
+      "value": {
+        "schemaVersion": "episode-change/2",
+        "episode": {
+          "schemaVersion": "episode/2",
+          "episodeId": "episode:1",
+          "definitionId": "battle.pursuit",
+          "scope": "occurrence",
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "semanticIdentity": [
+            "hero",
+            "car:22"
+          ],
+          "correlationIds": [
+            "corr:1"
+          ],
+          "state": "active",
+          "openedMonoMs": 800,
+          "updatedMonoMs": 1000,
+          "resolvedMonoMs": null,
+          "resolutionReason": null,
+          "factIds": [
+            "fact:88"
+          ],
+          "materialRevision": 4,
+          "spokenBeatIds": [],
+          "materialOrder": {
+            "reducerSequence": 9,
+            "sourceOrdinal": 0
+          },
+          "nextEligibleMonoMs": 1000,
+          "lastSpokenBeatId": null,
+          "continuationPriority": 64,
+          "historyComplete": true
+        }
+      }
+    },
+    {
+      "id": "opportunity-change-pending",
+      "value": {
+        "schemaVersion": "opportunity-change/2",
+        "opportunity": {
+          "schemaVersion": "event-opportunity/2",
+          "opportunityId": "opp:1",
+          "eventId": "event:401",
+          "eventKind": "battle.approach",
+          "sourceOrder": {
+            "fanoutStreamSequence": 3,
+            "sourceOrdinal": 0
+          },
+          "funnel": {
+            "sourceClass": "detector",
+            "candidateId": "cand:1",
+            "detectorObservationId": "obs:1",
+            "eventId": "event:401",
+            "materialRevision": 4,
+            "opportunityId": "opp:1",
+            "planId": null,
+            "utteranceId": null,
+            "tapeChannel": "race.battle.closing"
+          },
+          "candidateOrder": {
+            "reducerSequence": 10,
+            "sourceOrdinal": 0
+          },
+          "streamEpoch": 7,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "episodeId": "episode:1",
+          "correlationKey": [
+            "hero",
+            "car:22"
+          ],
+          "tapeChannel": "race.battle.closing",
+          "createdMonoMs": 900,
+          "expiresMonoMs": 12000,
+          "basePriority": 64,
+          "urgency": "story",
+          "penaltyCoefficient": 0,
+          "materialRevision": 4,
+          "state": "pending",
+          "reservationToken": null,
+          "terminalReason": null,
+          "policyHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "sourceFactIds": [
+            "fact:88"
+          ]
+        }
+      }
+    },
+    {
+      "id": "director-decision-event",
+      "value": {
+        "schemaVersion": "director-decision/2",
+        "streamEpoch": 7,
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "episodeId": "episode:1",
+        "episodeRevision": 4,
+        "triggerEvent": "event:401",
+        "tapeChannel": "race.battle.closing",
+        "candidateSource": "event_opportunity",
+        "candidateOrder": {
+          "reducerSequence": 11,
+          "sourceOrdinal": 0
+        },
+        "relation": "updates_active_episode",
+        "beatRole": "update",
+        "eligible": true,
+        "score": {
+          "basePriority": 64,
+          "continuityBonus": 6,
+          "edgePreference": 0,
+          "closureUrgency": 0,
+          "materialChangeBonus": 10,
+          "silencePressure": 0,
+          "semanticFatiguePenalty": 3,
+          "patternFatiguePenalty": 2,
+          "lexicalRepetitionPenalty": 1,
+          "stalenessPenalty": 0,
+          "replacementCost": 0,
+          "eventPenalty": 3,
+          "final": 71
+        },
+        "requiredSwitchMargin": 8,
+        "selectedFactIds": [
+          "fact:88"
+        ],
+        "realizationFamily": "battle.closing",
+        "realizationPattern": "reels_in",
+        "realizationBackend": "qwen_compiled",
+        "promptOptions": {
+          "schemaVersion": "prompt-options/2",
+          "freedom": "tight",
+          "patternChoice": "fixed",
+          "optionalClaimLimit": 0,
+          "allowClauseReorder": false,
+          "maxSentences": 1,
+          "temperature": 0.15,
+          "topP": 0.75,
+          "seed": 0
+        },
+        "generationMs": 530,
+        "verification": "accepted",
+        "commit": "current",
+        "speech": "completed"
+      }
+    },
+    {
+      "id": "health-change-tape",
+      "value": {
+        "schemaVersion": "health-change/2",
+        "scope": "tape",
+        "status": "degraded",
+        "recorderGeneration": 1,
+        "affectedDetectorIds": [],
+        "firstLostSequence": null,
+        "lastLostSequence": null,
+        "component": null,
+        "generation": null,
+        "reason": null
+      }
+    },
+    {
+      "id": "mailbox-gap-recovery",
+      "value": {
+        "schemaVersion": "mailbox-gap/2",
+        "latestTimeline": {
+          "schemaVersion": "timeline-snapshot/2",
+          "timelineRevision": 4,
+          "observedMonoMs": 1000,
+          "broadcastEpoch": 4,
+          "streamEpoch": 7,
+          "narrativeRunActive": true,
+          "obsState": "active",
+          "sessionRef": {
+            "subSessionId": "sub:1",
+            "sessionNum": 2
+          },
+          "stage": "race",
+          "sessionPlanRevision": 1,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "historyComplete": true,
+          "transitionReasons": []
+        },
+        "latestFactView": {
+          "schemaVersion": "fact-view/2",
+          "viewRevision": 4,
+          "createdMonoMs": 1000,
+          "broadcastEpoch": 4,
+          "streamEpoch": 7,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "historyComplete": true,
+          "facts": [],
+          "compactedSummaryRefs": []
+        },
+        "lossFirstMailboxSequence": 4,
+        "lossLastMailboxSequence": 6,
+        "historyComplete": false,
+        "safetyEffects": [
+          {
+            "kind": "APPLY_CONTEXT_BATCH",
+            "identity": "batch:lost",
+            "payloadHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ]
+      }
     }
   ],
   "invalid": [
     {
       "id": "prompt-tight-widened",
-      "value": {"schemaVersion":"prompt-options/2","freedom":"tight","patternChoice":"family_pool","optionalClaimLimit":1,"allowClauseReorder":true,"maxSentences":2,"temperature":0.55,"topP":0.9,"seed":0}
+      "value": {
+        "schemaVersion": "prompt-options/2",
+        "freedom": "tight",
+        "patternChoice": "family_pool",
+        "optionalClaimLimit": 1,
+        "allowClauseReorder": true,
+        "maxSentences": 2,
+        "temperature": 0.55,
+        "topP": 0.9,
+        "seed": 0
+      }
     },
     {
       "id": "tts-accepted-with-error-detail",
-      "value": {"schemaVersion":"tts-callback/2","callbackId":"ttscb:utt:1:1","kind":"playback_accepted","utteranceId":"utt:1","utteranceOrdinal":1,"backend":"supertonic","backendGeneration":4,"dispatchGeneration":7,"workerSequence":1,"observedMonoMs":1000,"detailCode":"backend_audio_error"}
+      "value": {
+        "schemaVersion": "tts-callback/2",
+        "callbackId": "ttscb:utt:1:1",
+        "kind": "playback_accepted",
+        "utteranceId": "utt:1",
+        "utteranceOrdinal": 1,
+        "backend": "supertonic",
+        "backendGeneration": 4,
+        "dispatchGeneration": 7,
+        "workerSequence": 1,
+        "observedMonoMs": 1000,
+        "detailCode": "backend_audio_error"
+      }
     },
     {
       "id": "snake-case-command",
-      "value": {"schemaVersion":"narrative-command/2","command_id":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000}}
+      "value": {
+        "schemaVersion": "narrative-command/2",
+        "command_id": "cmd:9",
+        "kind": "SHUTDOWN",
+        "enqueuedMonoMs": 1000,
+        "mailboxSequence": 9,
+        "externalOrder": null,
+        "contextRevision": null,
+        "token": null,
+        "payload": {
+          "reason": "process_shutdown",
+          "requestedMonoMs": 1000
+        }
+      }
     },
     {
       "id": "unknown-command-payload-field",
-      "value": {"schemaVersion":"narrative-command/2","commandId":"cmd:9","kind":"SHUTDOWN","enqueuedMonoMs":1000,"mailboxSequence":9,"externalOrder":null,"contextRevision":null,"token":null,"payload":{"reason":"process_shutdown","requestedMonoMs":1000,"retry":true}}
+      "value": {
+        "schemaVersion": "narrative-command/2",
+        "commandId": "cmd:9",
+        "kind": "SHUTDOWN",
+        "enqueuedMonoMs": 1000,
+        "mailboxSequence": 9,
+        "externalOrder": null,
+        "contextRevision": null,
+        "token": null,
+        "payload": {
+          "reason": "process_shutdown",
+          "requestedMonoMs": 1000,
+          "retry": true
+        }
+      }
     },
     {
       "id": "atomic-fact-noncanonical-lineage",
-      "value": {"schemaVersion":"atomic-fact/2","factId":"fact:88","predicate":"battle.approaching","subjectId":"hero","objectId":"car:22","attributes":{"gap":1.4},"polarity":"positive","validFromMonoMs":89000,"validUntilMonoMs":94000,"observedAtMonoMs":90180,"broadcastEpoch":2,"streamEpoch":3,"occurrenceId":"3:race:2","lineageId":"03:race:2","evidenceRefs":["event:401"],"confidence":0.94,"scope":"occurrence","status":"active","revision":4}
+      "value": {
+        "schemaVersion": "atomic-fact/2",
+        "factId": "fact:88",
+        "predicate": "battle.approaching",
+        "subjectId": "hero",
+        "objectId": "car:22",
+        "attributes": {
+          "gap": 1.4
+        },
+        "polarity": "positive",
+        "validFromMonoMs": 89000,
+        "validUntilMonoMs": 94000,
+        "observedAtMonoMs": 90180,
+        "broadcastEpoch": 2,
+        "streamEpoch": 3,
+        "occurrenceId": "3:race:2",
+        "lineageId": "03:race:2",
+        "evidenceRefs": [
+          "event:401"
+        ],
+        "confidence": 0.94,
+        "scope": "occurrence",
+        "status": "active",
+        "revision": 4
+      }
     },
     {
       "id": "tape-manifest-empty-detector-snapshot",
-      "value": {"schemaVersion":"narrative-tape-manifest/2","recordType":"manifest","processInstanceId":"process:1","processStartedAtUtc":"2026-09-07T20:00:00Z","processMonotonicOriginMs":0,"appVersion":"2.0.0","gitRevision":null,"platform":"windows","broadcastEpoch":4,"streamEpoch":7,"fileOrdinal":0,"openedAtUtc":"2026-09-07T20:01:00Z","catalogVersion":"narrative-catalog:2","catalogHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","desiredConfigGeneration":3,"desiredConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"effectiveConfigProjection":[{"key":"commentary.enabled","value":true}],"enabledPurposeChannels":["flow"],"redactionPolicy":{},"historyComplete":true,"detectorParameterSnapshots":[{}],"previousFileHash":null}
+      "value": {
+        "schemaVersion": "narrative-tape-manifest/2",
+        "recordType": "manifest",
+        "processInstanceId": "process:1",
+        "processStartedAtUtc": "2026-09-07T20:00:00Z",
+        "processMonotonicOriginMs": 0,
+        "appVersion": "2.0.0",
+        "gitRevision": null,
+        "platform": "windows",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "fileOrdinal": 0,
+        "openedAtUtc": "2026-09-07T20:01:00Z",
+        "catalogVersion": "narrative-catalog:2",
+        "catalogHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "desiredConfigGeneration": 3,
+        "desiredConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "effectiveConfigProjection": [
+          {
+            "key": "commentary.enabled",
+            "value": true
+          }
+        ],
+        "enabledPurposeChannels": [
+          "flow"
+        ],
+        "redactionPolicy": {},
+        "historyComplete": true,
+        "detectorParameterSnapshots": [
+          {}
+        ],
+        "previousFileHash": null
+      }
     },
     {
       "id": "tape-record-unknown-kind",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:1","recordType":"surprise","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":9,"recordedMonoMs":1200,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:1",
+        "recordType": "surprise",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": 9,
+        "recordedMonoMs": 1200,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "critical",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "health-change:2",
+        "payload": {
+          "status": "degraded"
+        }
+      }
     },
     {
       "id": "tape-record-known-kind-wrong-payload-version",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:2","recordType":"event_candidate","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":10,"recordedMonoMs":1300,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"normal","tapeChannel":"battle","correlationIds":["candidate:1"],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:2",
+        "recordType": "event_candidate",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": 10,
+        "recordedMonoMs": 1300,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "normal",
+        "tapeChannel": "battle",
+        "correlationIds": [
+          "candidate:1"
+        ],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "health-change:2",
+        "payload": {
+          "status": "degraded"
+        }
+      }
     },
     {
       "id": "tape-actor-record-without-reducer-order",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:3","recordType":"health_change","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":1400,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"health-change:2","payload":{"status":"degraded"}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:3",
+        "recordType": "health_change",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": null,
+        "recordedMonoMs": 1400,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "critical",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "health-change:2",
+        "payload": {
+          "status": "degraded"
+        }
+      }
     },
     {
       "id": "config-applied-redacted-value-leak",
-      "value": {"schemaVersion":"config-applied/2","applySequence":9,"desiredGeneration":4,"boundary":"next_utterance","changedKeys":["commentary.tts.voice"],"effectivePatch":[{"key":"commentary.tts.voice","value":"secret voice","redacted":true}],"oldEffectiveHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","newEffectiveHash":"sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+      "value": {
+        "schemaVersion": "config-applied/2",
+        "applySequence": 9,
+        "desiredGeneration": 4,
+        "boundary": "next_utterance",
+        "changedKeys": [
+          "commentary.tts.voice"
+        ],
+        "effectivePatch": [
+          {
+            "key": "commentary.tts.voice",
+            "value": "secret voice",
+            "redacted": true
+          }
+        ],
+        "oldEffectiveHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "newEffectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      }
     },
     {
       "id": "drop-notice-one-sided-reducer-range",
-      "value": {"schemaVersion":"drop-notice/2","noticeId":"notice:bad","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":10,"lastLostReducerSequence":null,"configTransitions":[]}}
+      "value": {
+        "schemaVersion": "drop-notice/2",
+        "noticeId": "notice:bad",
+        "loss": {
+          "buckets": [
+            {
+              "recordType": "feature_frame",
+              "recordPriority": "sample",
+              "reason": "tape_queue_drop",
+              "count": 1
+            }
+          ],
+          "firstLostMonoMs": 1000,
+          "lastLostMonoMs": 1100,
+          "firstLostReducerSequence": 10,
+          "lastLostReducerSequence": null,
+          "configTransitions": []
+        }
+      }
     },
     {
       "id": "manifest-trailer-complete-with-loss",
-      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":null,"fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[],"purposeCounts":[],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]},"lastReducerSequence":null,"closeReason":"shutdown","complete":true}
+      "value": {
+        "schemaVersion": "manifest-trailer/2",
+        "finalRecordHash": null,
+        "fileHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recordCounts": [],
+        "purposeCounts": [],
+        "tapeChannelCounts": [],
+        "dropCounts": [],
+        "lossAccumulator": {
+          "buckets": [
+            {
+              "recordType": "feature_frame",
+              "recordPriority": "sample",
+              "reason": "tape_queue_drop",
+              "count": 1
+            }
+          ],
+          "firstLostMonoMs": 1000,
+          "lastLostMonoMs": 1100,
+          "firstLostReducerSequence": null,
+          "lastLostReducerSequence": null,
+          "configTransitions": []
+        },
+        "lastReducerSequence": null,
+        "closeReason": "shutdown",
+        "complete": true
+      }
     },
     {
       "id": "manifest-trailer-complete-write-failed",
-      "value": {"schemaVersion":"manifest-trailer/2","finalRecordHash":null,"fileHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","recordCounts":[],"purposeCounts":[],"tapeChannelCounts":[],"dropCounts":[],"lossAccumulator":null,"lastReducerSequence":null,"closeReason":"write_failed","complete":true}
+      "value": {
+        "schemaVersion": "manifest-trailer/2",
+        "finalRecordHash": null,
+        "fileHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "recordCounts": [],
+        "purposeCounts": [],
+        "tapeChannelCounts": [],
+        "dropCounts": [],
+        "lossAccumulator": null,
+        "lastReducerSequence": null,
+        "closeReason": "write_failed",
+        "complete": true
+      }
     },
     {
       "id": "tape-drop-notice-with-reducer-order",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:drop:bad","recordType":"drop_notice","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":5,"recordedMonoMs":1900,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"critical","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"drop-notice/2","payload":{"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:drop:bad",
+        "recordType": "drop_notice",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": 5,
+        "recordedMonoMs": 1900,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "critical",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "drop-notice/2",
+        "payload": {
+          "schemaVersion": "drop-notice/2",
+          "noticeId": "notice:1",
+          "loss": {
+            "buckets": [
+              {
+                "recordType": "feature_frame",
+                "recordPriority": "sample",
+                "reason": "tape_queue_drop",
+                "count": 1
+              }
+            ],
+            "firstLostMonoMs": 1000,
+            "lastLostMonoMs": 1100,
+            "firstLostReducerSequence": null,
+            "lastLostReducerSequence": null,
+            "configTransitions": []
+          }
+        }
+      }
     },
     {
       "id": "tape-drop-notice-normal-priority",
-      "value": {"schemaVersion":"narrative-tape-record/2","recordId":"record:drop:pri","recordType":"drop_notice","processInstanceId":"process:1","broadcastEpoch":4,"streamEpoch":7,"reducerSequence":null,"recordedMonoMs":1900,"recordedAtUtc":null,"purposeChannel":"flow","recordPriority":"normal","tapeChannel":null,"correlationIds":[],"effectiveConfigHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","configApplySequence":8,"payloadSchemaVersion":"drop-notice/2","payload":{"schemaVersion":"drop-notice/2","noticeId":"notice:1","loss":{"buckets":[{"recordType":"feature_frame","recordPriority":"sample","reason":"tape_queue_drop","count":1}],"firstLostMonoMs":1000,"lastLostMonoMs":1100,"firstLostReducerSequence":null,"lastLostReducerSequence":null,"configTransitions":[]}}}
+      "value": {
+        "schemaVersion": "narrative-tape-record/2",
+        "recordId": "record:drop:pri",
+        "recordType": "drop_notice",
+        "processInstanceId": "process:1",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "reducerSequence": null,
+        "recordedMonoMs": 1900,
+        "recordedAtUtc": null,
+        "purposeChannel": "flow",
+        "recordPriority": "normal",
+        "tapeChannel": null,
+        "correlationIds": [],
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "payloadSchemaVersion": "drop-notice/2",
+        "payload": {
+          "schemaVersion": "drop-notice/2",
+          "noticeId": "notice:1",
+          "loss": {
+            "buckets": [
+              {
+                "recordType": "feature_frame",
+                "recordPriority": "sample",
+                "reason": "tape_queue_drop",
+                "count": 1
+              }
+            ],
+            "firstLostMonoMs": 1000,
+            "lastLostMonoMs": 1100,
+            "firstLostReducerSequence": null,
+            "lastLostReducerSequence": null,
+            "configTransitions": []
+          }
+        }
+      }
+    },
+    {
+      "id": "health-change-mixed-scope",
+      "value": {
+        "schemaVersion": "health-change/2",
+        "scope": "tape",
+        "status": "degraded",
+        "recorderGeneration": 1,
+        "affectedDetectorIds": [],
+        "firstLostSequence": null,
+        "lastLostSequence": null,
+        "component": "tts",
+        "generation": 2,
+        "reason": null
+      }
+    },
+    {
+      "id": "mailbox-gap-history-complete",
+      "value": {
+        "schemaVersion": "mailbox-gap/2",
+        "latestTimeline": {
+          "schemaVersion": "timeline-snapshot/2",
+          "timelineRevision": 4,
+          "observedMonoMs": 1000,
+          "broadcastEpoch": 4,
+          "streamEpoch": 7,
+          "narrativeRunActive": true,
+          "obsState": "active",
+          "sessionRef": {
+            "subSessionId": "sub:1",
+            "sessionNum": 2
+          },
+          "stage": "race",
+          "sessionPlanRevision": 1,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "historyComplete": true,
+          "transitionReasons": []
+        },
+        "latestFactView": {
+          "schemaVersion": "fact-view/2",
+          "viewRevision": 4,
+          "createdMonoMs": 1000,
+          "broadcastEpoch": 4,
+          "streamEpoch": 7,
+          "occurrenceId": "7:race:2",
+          "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+          "historyComplete": true,
+          "facts": [],
+          "compactedSummaryRefs": []
+        },
+        "lossFirstMailboxSequence": 4,
+        "lossLastMailboxSequence": 6,
+        "historyComplete": true,
+        "safetyEffects": [
+          {
+            "kind": "APPLY_CONTEXT_BATCH",
+            "identity": "batch:lost",
+            "payloadHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ]
+      }
+    },
+    {
+      "id": "director-decision-unknown-relation",
+      "value": {
+        "schemaVersion": "director-decision/2",
+        "streamEpoch": 7,
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "episodeId": "episode:1",
+        "episodeRevision": 4,
+        "triggerEvent": "event:401",
+        "tapeChannel": "race.battle.closing",
+        "candidateSource": "event_opportunity",
+        "candidateOrder": {
+          "reducerSequence": 11,
+          "sourceOrdinal": 0
+        },
+        "relation": "feels_close",
+        "beatRole": "update",
+        "eligible": true,
+        "score": {
+          "basePriority": 64,
+          "continuityBonus": 6,
+          "edgePreference": 0,
+          "closureUrgency": 0,
+          "materialChangeBonus": 10,
+          "silencePressure": 0,
+          "semanticFatiguePenalty": 3,
+          "patternFatiguePenalty": 2,
+          "lexicalRepetitionPenalty": 1,
+          "stalenessPenalty": 0,
+          "replacementCost": 0,
+          "eventPenalty": 3,
+          "final": 71
+        },
+        "requiredSwitchMargin": 8,
+        "selectedFactIds": [
+          "fact:88"
+        ],
+        "realizationFamily": "battle.closing",
+        "realizationPattern": "reels_in",
+        "realizationBackend": "qwen_compiled",
+        "promptOptions": {
+          "schemaVersion": "prompt-options/2",
+          "freedom": "tight",
+          "patternChoice": "fixed",
+          "optionalClaimLimit": 0,
+          "allowClauseReorder": false,
+          "maxSentences": 1,
+          "temperature": 0.15,
+          "topP": 0.75,
+          "seed": 0
+        },
+        "generationMs": 530,
+        "verification": "accepted",
+        "commit": "current",
+        "speech": "completed"
+      }
     }
   ]
 }

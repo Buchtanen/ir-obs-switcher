@@ -43,7 +43,7 @@ python3 docs/v2.0.0/machine/build_vertical_slice_fixtures.py
 Expected baseline summary:
 
 ```text
-freeze registry OK: 60 events + 5 lifecycle, 57 predicates, 21 features, 36 tape channels, 6 relations, 27 schemas
+freeze registry OK: 60 events + 5 lifecycle, 57 predicates, 21 features, 36 tape channels, 6 relations, 37 schemas
 DTO schemas OK: 25 definitions, 5 valid + 5 invalid goldens
 Beat catalog OK: 64 beats, 37 families, 9 rejected mutations
 Successor graph OK: 64 nodes, 50 edges, 36 no-continuation nodes, DAG, 10 rejected mutations

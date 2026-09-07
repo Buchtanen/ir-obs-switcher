@@ -95,6 +95,28 @@ def test_tape_record_type_is_closed_and_known_payloads_are_discriminated() -> No
     assert branches["narrative_event"]["payload"] == {"$ref": "#/$defs/NarrativeEvent"}
     assert branches["llm_attempt"]["payload"] == {"$ref": "#/$defs/LlmAttempt"}
     assert branches["speech_exposure"]["payload"] == {"$ref": "#/$defs/SpeechExposure"}
+    assert branches["context_applied"]["payload"] == {"$ref": "#/$defs/ContextApplied"}
+    assert branches["fact_change"]["payload"] == {"$ref": "#/$defs/FactChange"}
+    assert branches["episode_change"]["payload"] == {"$ref": "#/$defs/EpisodeChange"}
+    assert branches["opportunity_change"]["payload"] == {"$ref": "#/$defs/OpportunityChange"}
+    assert branches["director_decision"]["payload"] == {"$ref": "#/$defs/DirectorDecision"}
+    assert branches["health_change"]["payload"] == {"$ref": "#/$defs/HealthChange"}
+    assert branches["mailbox_gap"]["payload"] == {"$ref": "#/$defs/MailboxGap"}
+    assert SCHEMA["$defs"]["ContextApplied"]["properties"]["schemaVersion"]["const"] == (
+        "context-applied/2"
+    )
+    assert SCHEMA["$defs"]["FactChange"]["properties"]["fact"] == {"$ref": "#/$defs/AtomicFact"}
+    assert SCHEMA["$defs"]["EpisodeChange"]["properties"]["episode"] == {"$ref": "#/$defs/Episode"}
+    assert SCHEMA["$defs"]["OpportunityChange"]["properties"]["opportunity"] == {
+        "$ref": "#/$defs/EventOpportunity"
+    }
+    assert SCHEMA["$defs"]["DirectorDecision"]["properties"]["schemaVersion"]["const"] == (
+        "director-decision/2"
+    )
+    assert SCHEMA["$defs"]["HealthChange"]["properties"]["schemaVersion"]["const"] == (
+        "health-change/2"
+    )
+    assert SCHEMA["$defs"]["MailboxGap"]["properties"]["historyComplete"] == {"const": False}
 
 
 def test_tape_record_enforces_reducer_order_and_tape_channel_boundaries() -> None:
@@ -257,3 +279,38 @@ def test_loss_trailer_invalid_goldens_reject_pairing_completeness_and_order() ->
     reversed_range = _golden("drop-notice-actor-loss", "valid")["loss"]
     assert reversed_range["firstLostReducerSequence"] <= reversed_range["lastLostReducerSequence"]
     assert reversed_range["firstLostMonoMs"] <= reversed_range["lastLostMonoMs"]
+
+
+def test_remaining_tape_payload_goldens_wrap_existing_truth_dtos() -> None:
+    valid_ids = (
+        "context-applied-batch",
+        "fact-change-active",
+        "episode-change-active",
+        "opportunity-change-pending",
+        "director-decision-event",
+        "health-change-tape",
+        "mailbox-gap-recovery",
+        "tape-health-record",
+    )
+    for fixture_id in valid_ids:
+        assert _errors(_golden(fixture_id, "valid")) == [], fixture_id
+
+    context = _golden("context-applied-batch", "valid")
+    assert set(context) == {"schemaVersion", "timeline", "factView", "events"}
+    assert context["timeline"]["schemaVersion"] == "timeline-snapshot/2"
+    assert context["factView"]["schemaVersion"] == "fact-view/2"
+    assert _golden("fact-change-active", "valid")["fact"]["schemaVersion"] == "atomic-fact/2"
+    assert _golden("episode-change-active", "valid")["episode"]["schemaVersion"] == "episode/2"
+    assert (
+        _golden("opportunity-change-pending", "valid")["opportunity"]["schemaVersion"]
+        == "event-opportunity/2"
+    )
+    assert _golden("mailbox-gap-recovery", "valid")["historyComplete"] is False
+
+    invalid_ids = (
+        "health-change-mixed-scope",
+        "mailbox-gap-history-complete",
+        "director-decision-unknown-relation",
+    )
+    for fixture_id in invalid_ids:
+        assert _errors(_golden(fixture_id, "invalid")), fixture_id

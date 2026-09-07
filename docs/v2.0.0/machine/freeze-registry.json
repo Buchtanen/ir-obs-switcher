@@ -2532,6 +2532,46 @@
       "schemaVersion": "narrative-tape-record/2"
     },
     {
+      "artifact": "tape context applied",
+      "schemaVersion": "context-applied/2"
+    },
+    {
+      "artifact": "tape fact change",
+      "schemaVersion": "fact-change/2"
+    },
+    {
+      "artifact": "tape episode change",
+      "schemaVersion": "episode-change/2"
+    },
+    {
+      "artifact": "tape opportunity change",
+      "schemaVersion": "opportunity-change/2"
+    },
+    {
+      "artifact": "tape director decision",
+      "schemaVersion": "director-decision/2"
+    },
+    {
+      "artifact": "tape health change",
+      "schemaVersion": "health-change/2"
+    },
+    {
+      "artifact": "tape mailbox gap",
+      "schemaVersion": "mailbox-gap/2"
+    },
+    {
+      "artifact": "tape config applied",
+      "schemaVersion": "config-applied/2"
+    },
+    {
+      "artifact": "tape drop notice",
+      "schemaVersion": "drop-notice/2"
+    },
+    {
+      "artifact": "tape manifest trailer",
+      "schemaVersion": "manifest-trailer/2"
+    },
+    {
       "artifact": "public commentary HTTP",
       "schemaVersion": "commentary-runtime/2"
     },
