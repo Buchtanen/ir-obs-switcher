@@ -15,6 +15,8 @@ These files make the human design registries mechanically reviewable before runt
 - `config-goldens.json` and `build_config_contract.py` validate defaults, local/LAN URL and cross-field rules, invalid and legacy inputs, and the F36 generation-7 mixed-boundary/preflight plus generation-8 pending-revert replay.
 - `api-contract.json` and `api-contracts.schema.json` freeze four routes, eight closed public payload definitions, nine error/status pairs, write transport bounds, health augmentation, privacy exclusions and the removed assignments route.
 - `api-goldens.json` and `build_api_contracts.py` validate ready/degraded status, decision nullability/order, offline validation bindings, manual speech admission, all public errors, transport/limit guards and registry-backed cross-field invariants.
+- `actor-transition-model.json` and its schema enumerate the exact five speech-lane states × 17 NarrativeCommand kinds, single-mailbox partitions, admission/coalescing rules and planning-cycle bounds.
+- `actor-transition-goldens.json`, `actor-transition-mutations.json` and `build_actor_transition_model.py` execute token/reset/deadline/manual/quarantine/shutdown races, overflow recovery and same-time reducer ordering while rejecting structural policy drift.
 
 Run from the repository root:
 
@@ -25,6 +27,7 @@ python3 docs/v2.0.0/machine/build_beat_catalog.py
 python3 docs/v2.0.0/machine/build_successor_graph.py
 python3 docs/v2.0.0/machine/build_config_contract.py
 python3 docs/v2.0.0/machine/build_api_contracts.py
+python3 docs/v2.0.0/machine/build_actor_transition_model.py
 ```
 
 Expected baseline summary:
@@ -36,6 +39,7 @@ Beat catalog OK: 64 beats, 37 families, 9 rejected mutations
 Successor graph OK: 64 nodes, 50 edges, 36 no-continuation nodes, DAG, 10 rejected mutations
 Config contract OK: 50 static + 2 template keys, 14 boundaries, 13 migrations, 2 valid + 8 invalid + 2 legacy goldens, mixed-boundary replay
 API contracts OK: 4 routes, 8 public schemas, 18 valid + 10 invalid payload goldens, 6 transport/query guards, 1 removed route
+Actor transition model OK: 5 lanes × 17 commands = 85 pairs, 13 race traces, 10 overflow scenarios, 10 rejected mutations
 ```
 
 Reason identity is the pair `(reasonDomain, reasonId)`. Repeated strings across domains are intentional only when their plain-language meaning is identical; uniqueness is enforced inside each domain.

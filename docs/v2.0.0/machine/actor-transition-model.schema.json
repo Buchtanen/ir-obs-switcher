@@ -1,0 +1,279 @@
+{
+  "$id": "https://irswitch.local/contracts/actor-transition-model-v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "commands": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "atomicBundle": {
+            "enum": [
+              null,
+              "config_then_context",
+              "capture_health_then_context"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coalesceKey": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "minItems": 2,
+                "type": "array"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "APPLY_CONTEXT_BATCH",
+              "CONFIG_UPDATE",
+              "LONG_SILENCE_ELAPSED",
+              "VALIDITY_DEADLINE_ELAPSED",
+              "REALIZATION_SUCCEEDED",
+              "REALIZATION_FAILED",
+              "REALIZATION_DEADLINE_ELAPSED",
+              "PLAYBACK_ACCEPTED",
+              "SPEECH_COMPLETED",
+              "SPEECH_INTERRUPTED",
+              "SPEECH_FAILED",
+              "SPEECH_DEADLINE_ELAPSED",
+              "MANUAL_SPEAK_REQUEST",
+              "TAPE_HEALTH_CHANGED",
+              "COMPONENT_HEALTH_CHANGED",
+              "MAILBOX_RECOVERY",
+              "SHUTDOWN"
+            ],
+            "type": "string"
+          },
+          "protectedWhen": {
+            "enum": [
+              "never",
+              "always",
+              "status_unavailable",
+              "timeline_transition_or_protected_event",
+              "required_capture_loss"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "protectedWhen",
+          "coalesceKey",
+          "atomicBundle"
+        ],
+        "type": "object"
+      },
+      "maxItems": 17,
+      "minItems": 17,
+      "type": "array"
+    },
+    "invariants": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 11,
+      "minItems": 11,
+      "type": "array"
+    },
+    "laneStates": {
+      "items": {
+        "enum": [
+          "idle",
+          "building",
+          "committed",
+          "speaking",
+          "stopping"
+        ],
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "type": "array"
+    },
+    "mailbox": {
+      "additionalProperties": false,
+      "properties": {
+        "dequeueOrder": {
+          "const": "mailbox_sequence_ascending"
+        },
+        "emergencyCells": {
+          "const": 1
+        },
+        "ordinaryCells": {
+          "const": 56
+        },
+        "priorityReorders": {
+          "const": false
+        },
+        "protectedCells": {
+          "const": 7
+        },
+        "recoveryKeepsOriginalPosition": {
+          "const": true
+        },
+        "reducerOrder": {
+          "const": "assign_reducer_sequence_at_dequeue"
+        },
+        "shutdownOwnsEmergencyCell": {
+          "const": true
+        },
+        "totalCapacity": {
+          "const": 64
+        }
+      },
+      "required": [
+        "totalCapacity",
+        "ordinaryCells",
+        "protectedCells",
+        "emergencyCells",
+        "dequeueOrder",
+        "reducerOrder",
+        "priorityReorders",
+        "recoveryKeepsOriginalPosition",
+        "shutdownOwnsEmergencyCell"
+      ],
+      "type": "object"
+    },
+    "planningCycle": {
+      "additionalProperties": false,
+      "properties": {
+        "manualTerminalStartsCycle": {
+          "const": false
+        },
+        "maximumDistinctPlansPerImpulse": {
+          "const": 2
+        },
+        "pureFactBatchStartsCycle": {
+          "const": false
+        },
+        "replacementStartsNewCycle": {
+          "const": true
+        }
+      },
+      "required": [
+        "maximumDistinctPlansPerImpulse",
+        "replacementStartsNewCycle",
+        "pureFactBatchStartsCycle",
+        "manualTerminalStartsCycle"
+      ],
+      "type": "object"
+    },
+    "runtimeStates": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": "actor-transition-model/2"
+    },
+    "sourceBaseline": {
+      "const": "master@0ce75d4"
+    },
+    "transitionMatrix": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "enum": [
+              "APPLY_CONTEXT_BATCH",
+              "CONFIG_UPDATE",
+              "LONG_SILENCE_ELAPSED",
+              "VALIDITY_DEADLINE_ELAPSED",
+              "REALIZATION_SUCCEEDED",
+              "REALIZATION_FAILED",
+              "REALIZATION_DEADLINE_ELAPSED",
+              "PLAYBACK_ACCEPTED",
+              "SPEECH_COMPLETED",
+              "SPEECH_INTERRUPTED",
+              "SPEECH_FAILED",
+              "SPEECH_DEADLINE_ELAPSED",
+              "MANUAL_SPEAK_REQUEST",
+              "TAPE_HEALTH_CHANGED",
+              "COMPONENT_HEALTH_CHANGED",
+              "MAILBOX_RECOVERY",
+              "SHUTDOWN"
+            ],
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "handled",
+              "ignored_stale_or_inapplicable",
+              "rejected_busy"
+            ],
+            "type": "string"
+          },
+          "lane": {
+            "enum": [
+              "idle",
+              "building",
+              "committed",
+              "speaking",
+              "stopping"
+            ],
+            "type": "string"
+          },
+          "possibleNextLanes": {
+            "items": {
+              "enum": [
+                "idle",
+                "building",
+                "committed",
+                "speaking",
+                "stopping"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "lane",
+          "command",
+          "disposition",
+          "possibleNextLanes"
+        ],
+        "type": "object"
+      },
+      "maxItems": 85,
+      "minItems": 85,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "sourceBaseline",
+    "runtimeStates",
+    "laneStates",
+    "mailbox",
+    "commands",
+    "transitionMatrix",
+    "invariants",
+    "planningCycle"
+  ],
+  "type": "object",
+  "x-irswitch-invariants": [
+    "command_inventory_matches_narrative_command_union",
+    "lane_command_product_is_exactly_total",
+    "possible_next_lanes_match_frozen_table",
+    "coalescing_allowlist_is_exact",
+    "mailbox_partitions_sum_to_total"
+  ]
+}

@@ -1,0 +1,734 @@
+{
+  "orderingScenarios": [
+    {
+      "admissions": [
+        {
+          "kind": "APPLY_CONTEXT_BATCH",
+          "mailboxSequence": 41
+        },
+        {
+          "kind": "REALIZATION_SUCCEEDED",
+          "mailboxSequence": 42
+        }
+      ],
+      "expectedReducerOrder": [
+        41,
+        42
+      ],
+      "id": "same_time_external_before_callback"
+    },
+    {
+      "admissions": [
+        {
+          "kind": "REALIZATION_SUCCEEDED",
+          "mailboxSequence": 51
+        },
+        {
+          "kind": "APPLY_CONTEXT_BATCH",
+          "mailboxSequence": 52
+        }
+      ],
+      "expectedReducerOrder": [
+        51,
+        52
+      ],
+      "id": "same_time_callback_before_reset"
+    }
+  ],
+  "overflowScenarios": [
+    {
+      "expected": "existing_position_refreshed",
+      "id": "coalesce_same_silence_generation",
+      "incoming": "LONG_SILENCE_ELAPSED",
+      "operation": "coalesce"
+    },
+    {
+      "expected": "distinct_item_or_deadline_admission_skipped",
+      "id": "different_generation_does_not_coalesce",
+      "incoming": "VALIDITY_DEADLINE_ELAPSED",
+      "operation": "ordinary_admit"
+    },
+    {
+      "expected": "reject_mailbox_overloaded",
+      "id": "manual_full_partition",
+      "incoming": "MANUAL_SPEAK_REQUEST",
+      "operation": "ordinary_full"
+    },
+    {
+      "expected": "evict_oldest_ordinary_silence",
+      "id": "ordinary_context_evicts_oldest_silence",
+      "incoming": "APPLY_CONTEXT_BATCH",
+      "operation": "ordinary_full"
+    },
+    {
+      "expected": "evict_oldest_context_and_place_recovery",
+      "id": "ordinary_context_loss_creates_recovery",
+      "incoming": "APPLY_CONTEXT_BATCH",
+      "operation": "ordinary_full_no_silence"
+    },
+    {
+      "expected": "refresh_recovery_with_safety_effect",
+      "id": "protected_saturation_collapses",
+      "incoming": "REALIZATION_SUCCEEDED",
+      "operation": "protected_full"
+    },
+    {
+      "expected": "two_consecutive_sequences_or_one_recovery",
+      "id": "config_pair_all_or_recovery",
+      "incoming": "CONFIG_UPDATE+APPLY_CONTEXT_BATCH",
+      "operation": "protected_atomic_pair"
+    },
+    {
+      "expected": "two_consecutive_sequences_or_one_recovery",
+      "id": "capture_pair_all_or_recovery",
+      "incoming": "TAPE_HEALTH_CHANGED+APPLY_CONTEXT_BATCH",
+      "operation": "protected_atomic_pair"
+    },
+    {
+      "expected": "same_mailbox_sequence_expanded_range_latest_projection",
+      "id": "recovery_refresh_keeps_order",
+      "incoming": "newer_projection_and_loss",
+      "operation": "refresh_recovery"
+    },
+    {
+      "expected": "ingress_closed_recovery_metadata_attached",
+      "id": "shutdown_takes_emergency",
+      "incoming": "SHUTDOWN",
+      "operation": "shutdown"
+    }
+  ],
+  "pairCoverage": [
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "lane": "idle"
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "lane": "idle"
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "lane": "idle"
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "lane": "idle"
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "lane": "idle"
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "lane": "idle"
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "lane": "idle"
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "lane": "idle"
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "lane": "idle"
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "lane": "idle"
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "lane": "idle"
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "lane": "idle"
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "lane": "idle"
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "lane": "idle"
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "lane": "idle"
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "lane": "idle"
+    },
+    {
+      "command": "SHUTDOWN",
+      "lane": "idle"
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "lane": "building"
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "lane": "building"
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "lane": "building"
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "lane": "building"
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "lane": "building"
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "lane": "building"
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "lane": "building"
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "lane": "building"
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "lane": "building"
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "lane": "building"
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "lane": "building"
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "lane": "building"
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "lane": "building"
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "lane": "building"
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "lane": "building"
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "lane": "building"
+    },
+    {
+      "command": "SHUTDOWN",
+      "lane": "building"
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "lane": "committed"
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "lane": "committed"
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "lane": "committed"
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "lane": "committed"
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "lane": "committed"
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "lane": "committed"
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "lane": "committed"
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "lane": "committed"
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "lane": "committed"
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "lane": "committed"
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "lane": "committed"
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "lane": "committed"
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "lane": "committed"
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "lane": "committed"
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "lane": "committed"
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "lane": "committed"
+    },
+    {
+      "command": "SHUTDOWN",
+      "lane": "committed"
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "lane": "speaking"
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "lane": "speaking"
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "lane": "speaking"
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "lane": "speaking"
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "lane": "speaking"
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "lane": "speaking"
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "lane": "speaking"
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "lane": "speaking"
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "lane": "speaking"
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "lane": "speaking"
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "lane": "speaking"
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "lane": "speaking"
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "lane": "speaking"
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "lane": "speaking"
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "lane": "speaking"
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "lane": "speaking"
+    },
+    {
+      "command": "SHUTDOWN",
+      "lane": "speaking"
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "lane": "stopping"
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "lane": "stopping"
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "lane": "stopping"
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "lane": "stopping"
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "lane": "stopping"
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "lane": "stopping"
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "lane": "stopping"
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "lane": "stopping"
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "lane": "stopping"
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "lane": "stopping"
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "lane": "stopping"
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "lane": "stopping"
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "lane": "stopping"
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "lane": "stopping"
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "lane": "stopping"
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "lane": "stopping"
+    },
+    {
+      "command": "SHUTDOWN",
+      "lane": "stopping"
+    }
+  ],
+  "raceTraces": [
+    {
+      "assertions": [
+        "one_utterance",
+        "deadline_cannot_strand_building"
+      ],
+      "finalLane": "committed",
+      "id": "result_before_deadline",
+      "initialLane": "building",
+      "steps": [
+        {
+          "command": "REALIZATION_SUCCEEDED",
+          "laneAfter": "committed",
+          "laneBefore": "building",
+          "outcome": "matching_verified_fresh"
+        },
+        {
+          "command": "REALIZATION_DEADLINE_ELAPSED",
+          "laneAfter": "committed",
+          "laneBefore": "committed",
+          "outcome": "stale_token_noop"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "one_realizer",
+        "late_result_cannot_commit"
+      ],
+      "finalLane": "building",
+      "id": "deadline_before_result",
+      "initialLane": "building",
+      "steps": [
+        {
+          "command": "REALIZATION_DEADLINE_ELAPSED",
+          "laneAfter": "building",
+          "laneBefore": "building",
+          "outcome": "matching_attempt_two_selected"
+        },
+        {
+          "command": "REALIZATION_SUCCEEDED",
+          "laneAfter": "building",
+          "laneBefore": "building",
+          "outcome": "stale_token_noop"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "reservation_released",
+        "old_occurrence_cannot_speak"
+      ],
+      "finalLane": "idle",
+      "id": "reset_before_result",
+      "initialLane": "building",
+      "steps": [
+        {
+          "command": "APPLY_CONTEXT_BATCH",
+          "laneAfter": "idle",
+          "laneBefore": "building",
+          "outcome": "occurrence_reset"
+        },
+        {
+          "command": "REALIZATION_SUCCEEDED",
+          "laneAfter": "idle",
+          "laneBefore": "idle",
+          "outcome": "stale_token_noop"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "exposure_consumed_once",
+        "generation_quarantined"
+      ],
+      "finalLane": "idle",
+      "id": "duplicate_acceptance_quarantines",
+      "initialLane": "committed",
+      "steps": [
+        {
+          "command": "PLAYBACK_ACCEPTED",
+          "laneAfter": "speaking",
+          "laneBefore": "committed",
+          "outcome": "matching"
+        },
+        {
+          "command": "PLAYBACK_ACCEPTED",
+          "laneAfter": "stopping",
+          "laneBefore": "speaking",
+          "outcome": "duplicate_protocol_violation"
+        },
+        {
+          "command": "SPEECH_INTERRUPTED",
+          "laneAfter": "idle",
+          "laneBefore": "stopping",
+          "outcome": "matching_cleanup"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "terminalized_once",
+        "director_pass_once"
+      ],
+      "finalLane": "idle",
+      "id": "completion_then_duplicate",
+      "initialLane": "speaking",
+      "steps": [
+        {
+          "command": "SPEECH_COMPLETED",
+          "laneAfter": "idle",
+          "laneBefore": "speaking",
+          "outcome": "matching_natural"
+        },
+        {
+          "command": "SPEECH_COMPLETED",
+          "laneAfter": "idle",
+          "laneBefore": "idle",
+          "outcome": "duplicate_stale_noop"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "opportunity_unconsumed",
+        "generation_quarantined"
+      ],
+      "finalLane": "idle",
+      "id": "committed_terminal_protocol_violation",
+      "initialLane": "committed",
+      "steps": [
+        {
+          "command": "SPEECH_COMPLETED",
+          "laneAfter": "stopping",
+          "laneBefore": "committed",
+          "outcome": "terminal_before_acceptance"
+        },
+        {
+          "command": "SPEECH_DEADLINE_ELAPSED",
+          "laneAfter": "idle",
+          "laneBefore": "stopping",
+          "outcome": "stop_timeout"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "http_202",
+        "no_episode_or_exposure"
+      ],
+      "finalLane": "committed",
+      "id": "manual_claim_wins",
+      "initialLane": "idle",
+      "steps": [
+        {
+          "command": "MANUAL_SPEAK_REQUEST",
+          "laneAfter": "committed",
+          "laneBefore": "idle",
+          "outcome": "actor_claimed_and_dispatched"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "http_503_admission_timeout",
+        "no_audio_later"
+      ],
+      "finalLane": "idle",
+      "id": "manual_abandon_wins",
+      "initialLane": "idle",
+      "steps": [
+        {
+          "command": "MANUAL_SPEAK_REQUEST",
+          "laneAfter": "idle",
+          "laneBefore": "idle",
+          "outcome": "caller_abandoned_stale_noop"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "http_409",
+        "current_playback_unchanged"
+      ],
+      "finalLane": "speaking",
+      "id": "manual_busy",
+      "initialLane": "speaking",
+      "steps": [
+        {
+          "command": "MANUAL_SPEAK_REQUEST",
+          "laneAfter": "speaking",
+          "laneBefore": "speaking",
+          "outcome": "rejected_speech_busy"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "half_open_validity",
+        "no_director_impulse"
+      ],
+      "finalLane": "idle",
+      "id": "validity_exact_upper_bound",
+      "initialLane": "building",
+      "steps": [
+        {
+          "command": "VALIDITY_DEADLINE_ELAPSED",
+          "laneAfter": "idle",
+          "laneBefore": "building",
+          "outcome": "expires_at_equal_deadline"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "exposure_retained",
+        "component_unavailable",
+        "late_callback_noop"
+      ],
+      "finalLane": "idle",
+      "id": "playback_watchdog",
+      "initialLane": "speaking",
+      "steps": [
+        {
+          "command": "SPEECH_DEADLINE_ELAPSED",
+          "laneAfter": "stopping",
+          "laneBefore": "speaking",
+          "outcome": "playback_timeout"
+        },
+        {
+          "command": "SPEECH_DEADLINE_ELAPSED",
+          "laneAfter": "idle",
+          "laneBefore": "stopping",
+          "outcome": "stop_timeout"
+        },
+        {
+          "command": "SPEECH_COMPLETED",
+          "laneAfter": "idle",
+          "laneBefore": "idle",
+          "outcome": "late_stale_noop"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "never_replan",
+        "bounded_tape_flush",
+        "fail_soft"
+      ],
+      "finalLane": "idle",
+      "id": "shutdown_during_playback",
+      "initialLane": "speaking",
+      "steps": [
+        {
+          "command": "SHUTDOWN",
+          "laneAfter": "stopping",
+          "laneBefore": "speaking",
+          "outcome": "ingress_closed_cancel_requested"
+        },
+        {
+          "command": "SPEECH_INTERRUPTED",
+          "laneAfter": "idle",
+          "laneBefore": "stopping",
+          "outcome": "matching_shutdown_terminal"
+        }
+      ]
+    },
+    {
+      "assertions": [
+        "lost_events_not_recreated",
+        "old_revision_stale"
+      ],
+      "finalLane": "idle",
+      "id": "recovery_cancels_building",
+      "initialLane": "building",
+      "steps": [
+        {
+          "command": "MAILBOX_RECOVERY",
+          "laneAfter": "idle",
+          "laneBefore": "building",
+          "outcome": "jump_latest_history_incomplete"
+        },
+        {
+          "command": "REALIZATION_SUCCEEDED",
+          "laneAfter": "idle",
+          "laneBefore": "idle",
+          "outcome": "stale_token_noop"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": "actor-transition-goldens/2"
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "capacity_65",
+    "operation": "replace",
+    "path": "mailbox.totalCapacity",
+    "value": "65"
+  },
+  {
+    "id": "ordinary_55",
+    "operation": "replace",
+    "path": "mailbox.ordinaryCells",
+    "value": "55"
+  },
+  {
+    "id": "priority_reorders",
+    "operation": "replace",
+    "path": "mailbox.priorityReorders",
+    "value": "true"
+  },
+  {
+    "id": "missing_lane_pair",
+    "operation": "remove",
+    "path": "transitionMatrix[0]",
+    "value": ""
+  },
+  {
+    "id": "duplicate_lane_pair",
+    "operation": "duplicate_previous",
+    "path": "transitionMatrix[1]",
+    "value": ""
+  },
+  {
+    "id": "context_coalesces",
+    "operation": "replace",
+    "path": "commands.APPLY_CONTEXT_BATCH.coalesceKey",
+    "value": "kind"
+  },
+  {
+    "id": "manual_protected",
+    "operation": "replace",
+    "path": "commands.MANUAL_SPEAK_REQUEST.protectedWhen",
+    "value": "always"
+  },
+  {
+    "id": "three_plan_cycle",
+    "operation": "replace",
+    "path": "planningCycle.maximumDistinctPlansPerImpulse",
+    "value": "3"
+  },
+  {
+    "id": "removed_command",
+    "operation": "remove",
+    "path": "commands.SHUTDOWN",
+    "value": ""
+  },
+  {
+    "id": "unknown_command",
+    "operation": "replace",
+    "path": "commands[0].kind",
+    "value": "SESSION_REWOUND"
+  }
+]

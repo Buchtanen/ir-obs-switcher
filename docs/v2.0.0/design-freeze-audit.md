@@ -11,7 +11,7 @@ This is a planning artifact for the v2 branch. It must not be included in the fi
 
 ## Current gate verdict
 
-**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. The exact 64-beat catalog, closed successor DAG, public config/migration and HTTP contracts, core DTO JSON Schemas and structural goldens are materialized. Detector, actor-model, catalog-loader, controlled-English and end-to-end executable fixtures remain open. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
+**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the unchecked artifacts below are real blockers, not implementation details. The exact 64-beat catalog, closed successor DAG, public config/migration and HTTP contracts, core DTO JSON Schemas, actor transition model and structural goldens are materialized. Detector, catalog-loader, controlled-English and end-to-end executable fixtures remain open. Issue #235 must remain open until every blocking artifact is reviewed, committed and pushed.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -221,7 +221,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - No runtime compatibility loader for sequence-graph v1 remains in the final build.
 - Existing V4 EventEnvelope, overlay wire and presentation behavior remain unchanged by this refactor. Narrative-only identity, fact references, policy and `tape_channel` live in `NarrativeEvent`, story payloads and catalogs.
 - Exact v2 config/API review candidates, including apply boundaries, migration, nullability, request bounds and local/LAN Ollama URL policy, live in `public-contracts.md`; implementation fixtures must be byte-for-structure equivalents.
-- Exact single-mailbox admission/recovery, command inventory, speech-lane transitions, reset matrix and shutdown order live in `actor-transition-contract.md`; model-based transition fixtures remain blocking.
+- Exact single-mailbox admission/recovery, command inventory, speech-lane transitions, reset matrix and shutdown order live in `actor-transition-contract.md`; the machine model covers all 85 lane/command pairs plus race, ordering, overflow and mutation fixtures.
 - DTO fields, schema versions, stream-scope nullability, canonical hashes, tape envelopes and reason IDs live in `schema-contracts.md`; 25 closed DTO definitions, positive/negative structural goldens and the unchanged V4 wire golden are materialized in `machine/`. Implementation must promote byte-equivalent registry/schema outputs to packaged `src/irswitch/contracts/schemas/v2/` artifacts while keeping typed parsing and explicit invariant checks authoritative at runtime; no new schema-validation dependency is implied.
 - The generated branch-only machine registry and V4 master golden live in `machine/`; its checker enforces 60 current events, five internal lifecycle events, 57 predicates, 21 features, 36 tape channels, six director relations, 27 schema versions, typed attributes/features, scoped reasons/states and unchanged V4 freeze/thaw.
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; their generated machine registry is complete, while catalog-level referential checks remain part of the open catalog-loader gate.
@@ -242,7 +242,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [x] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan, RealizationBundle, CompiledPrompt, RealizationRequest/Result, LlmAttempt, TtsUtterance, TtsCallback, SpeechExposure, ConfigLedger and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
 - [x] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
 - [x] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
-- [ ] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
+- [x] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
 - [x] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.
 - [x] Long-silence origin, pause/rearm rules and first-stream behavior table.
 - [x] Pre-arbitration detector-observation/candidate tap and kick→accepted→queued→selected→started funnel definitions.

@@ -1,0 +1,873 @@
+{
+  "commands": [
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "APPLY_CONTEXT_BATCH",
+      "protectedWhen": "timeline_transition_or_protected_event"
+    },
+    {
+      "atomicBundle": "config_then_context",
+      "coalesceKey": null,
+      "kind": "CONFIG_UPDATE",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": [
+        "kind",
+        "token.generation"
+      ],
+      "kind": "LONG_SILENCE_ELAPSED",
+      "protectedWhen": "never"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": [
+        "kind",
+        "token.generation"
+      ],
+      "kind": "VALIDITY_DEADLINE_ELAPSED",
+      "protectedWhen": "never"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "REALIZATION_SUCCEEDED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "REALIZATION_FAILED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": [
+        "kind",
+        "token.requestId",
+        "token.requestOrdinal",
+        "token.dispatchGeneration"
+      ],
+      "kind": "REALIZATION_DEADLINE_ELAPSED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "PLAYBACK_ACCEPTED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "SPEECH_COMPLETED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "SPEECH_INTERRUPTED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "SPEECH_FAILED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "SPEECH_DEADLINE_ELAPSED",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "MANUAL_SPEAK_REQUEST",
+      "protectedWhen": "never"
+    },
+    {
+      "atomicBundle": "capture_health_then_context",
+      "coalesceKey": [
+        "kind",
+        "payload.recorderGeneration",
+        "payload.status",
+        "payload.affectedDetectorIds"
+      ],
+      "kind": "TAPE_HEALTH_CHANGED",
+      "protectedWhen": "required_capture_loss"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": [
+        "kind",
+        "payload.component",
+        "payload.generation",
+        "payload.status"
+      ],
+      "kind": "COMPONENT_HEALTH_CHANGED",
+      "protectedWhen": "status_unavailable"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "MAILBOX_RECOVERY",
+      "protectedWhen": "always"
+    },
+    {
+      "atomicBundle": null,
+      "coalesceKey": null,
+      "kind": "SHUTDOWN",
+      "protectedWhen": "always"
+    }
+  ],
+  "invariants": [
+    "single_actor_writer",
+    "one_mailbox_total_order",
+    "at_most_one_realizer",
+    "at_most_one_utterance",
+    "no_prepared_text_queue",
+    "pure_fact_batch_never_plans",
+    "callback_token_idempotence",
+    "recovery_never_recreates_lost_events",
+    "manual_admission_linearized",
+    "quarantined_generation_cannot_admit",
+    "shutdown_fail_soft"
+  ],
+  "laneStates": [
+    "idle",
+    "building",
+    "committed",
+    "speaking",
+    "stopping"
+  ],
+  "mailbox": {
+    "dequeueOrder": "mailbox_sequence_ascending",
+    "emergencyCells": 1,
+    "ordinaryCells": 56,
+    "priorityReorders": false,
+    "protectedCells": 7,
+    "recoveryKeepsOriginalPosition": true,
+    "reducerOrder": "assign_reducer_sequence_at_dequeue",
+    "shutdownOwnsEmergencyCell": true,
+    "totalCapacity": 64
+  },
+  "planningCycle": {
+    "manualTerminalStartsCycle": false,
+    "maximumDistinctPlansPerImpulse": 2,
+    "pureFactBatchStartsCycle": false,
+    "replacementStartsNewCycle": true
+  },
+  "runtimeStates": [
+    "disabled",
+    "starting",
+    "ready",
+    "degraded",
+    "stopping",
+    "stopped"
+  ],
+  "schemaVersion": "actor-transition-model/2",
+  "sourceBaseline": "master@0ce75d4",
+  "transitionMatrix": [
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle",
+        "committed"
+      ]
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SHUTDOWN",
+      "disposition": "handled",
+      "lane": "idle",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle",
+        "building",
+        "committed"
+      ]
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "disposition": "rejected_busy",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "building"
+      ]
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SHUTDOWN",
+      "disposition": "handled",
+      "lane": "building",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed",
+        "stopping"
+      ]
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed",
+        "stopping"
+      ]
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "disposition": "rejected_busy",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "committed"
+      ]
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "SHUTDOWN",
+      "disposition": "handled",
+      "lane": "committed",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking",
+        "stopping"
+      ]
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "idle",
+        "building"
+      ]
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "disposition": "rejected_busy",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking"
+      ]
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "speaking",
+        "stopping"
+      ]
+    },
+    {
+      "command": "SHUTDOWN",
+      "disposition": "handled",
+      "lane": "speaking",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "APPLY_CONTEXT_BATCH",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "CONFIG_UPDATE",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "LONG_SILENCE_ELAPSED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "VALIDITY_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "REALIZATION_SUCCEEDED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "REALIZATION_FAILED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "REALIZATION_DEADLINE_ELAPSED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "PLAYBACK_ACCEPTED",
+      "disposition": "ignored_stale_or_inapplicable",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "SPEECH_COMPLETED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_INTERRUPTED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_FAILED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "idle"
+      ]
+    },
+    {
+      "command": "SPEECH_DEADLINE_ELAPSED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "idle",
+        "stopping"
+      ]
+    },
+    {
+      "command": "MANUAL_SPEAK_REQUEST",
+      "disposition": "rejected_busy",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "TAPE_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "COMPONENT_HEALTH_CHANGED",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "MAILBOX_RECOVERY",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    },
+    {
+      "command": "SHUTDOWN",
+      "disposition": "handled",
+      "lane": "stopping",
+      "possibleNextLanes": [
+        "stopping"
+      ]
+    }
+  ]
+}

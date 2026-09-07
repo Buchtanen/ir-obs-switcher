@@ -1,6 +1,6 @@
 # v2.0.0 NarrativeRuntime actor and transition freeze
 
-**Status:** design-freeze candidate owned by issues #235, #264 and #284
+**Status:** actor transition design machine-frozen for issues #235, #264 and #284
 
 This branch-only artifact closes ordering, overflow, pipeline and shutdown choices before runtime edits. It specifies one actor and one speech lane; it never authorizes a queue of prepared text.
 
@@ -273,3 +273,5 @@ Issues #235/#284 cannot close until tests or model-based transition enumeration 
 - overflow/recovery cannot resurrect lost events or stale facts;
 - reset/disable/shutdown cancellation follows the matrix;
 - tape replay over reducer sequence reproduces director decisions when recorded Qwen completions are supplied.
+
+The branch-only model evidence is `machine/actor-transition-model.json` with its closed schema, goldens and mutation set. Its checker cross-checks the exact 17-kind NarrativeCommand union, enumerates all 85 lane/command pairs, verifies the 56/7/1 single-mailbox partition and exact protected/coalescing allowlists, then executes race, ordering and overflow traces. These fixtures close the pre-implementation design gate; implementation still owes focused pytest/pytest-asyncio tests using byte-equivalent rules.
