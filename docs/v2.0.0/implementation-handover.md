@@ -21,7 +21,9 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - First #236 [dev diary checkpoint](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5574070160)
 - Final #236 [dated dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5566224409); every checklist item is complete and the issue is closed.
 - #236 closing metadata SHA: `935fb02eec07dccd94113f3cba0b0312edafff2d`
-- Expected working tree before the first #237 push: only the files listed in the ownership section are dirty.
+- First #237 implementation SHA: `c7a6709160b29c483283fdaac0002daeb9eff56b` (`feat: add narrative event admission contracts (#237)`).
+- CI run [34151258760](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34151258760) correctly failed the first cross-platform acceptance attempt: raw packaged JSON bytes hash differently after Windows CRLF checkout materialization.
+- Expected working tree before the portability-fix push: only `src/irswitch/events/taxonomy.py`, `tests/test_narrative_event_contract.py` and this handover are dirty.
 - Runtime behavior edits so far: dependency-neutral v2 primitives plus a stateless accepted-V4-to-NarrativeEvent adapter; no live producer or actor wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -40,9 +42,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - Editing owner: current root agent until the first #237 checkpoint is pushed, green in CI and recorded.
 - Dirty scope: `src/irswitch/contracts/{__init__,narrative}.py`, `src/irswitch/events/{narrative,taxonomy}.py`, `tests/test_narrative_event_contract.py` and this handover record.
 - Completed #237 scope: immutable exact NarrativeEvent/source-order/funnel DTOs, derived delivery class, package-registry-backed event policy/tape-channel lookup and a stateless adapter from frozen accepted V4 events.
-- TDD phase: `GREEN` — the focused suite began with an import-collection RED for the missing NarrativeEvent/FunnelIdentity contracts.
+- TDD phase: `GREEN` locally after two RED signals — the initial import-collection failure for missing contracts, then the Windows CI raw-byte taxonomy-hash mismatch.
 - Verification: 10 new focused tests and 84 combined contract tests pass; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,448 tests outside the socket-restricted sandbox.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
+- Portability fix: runtime `taxonomyHash` is canonical-JSON identity `sha256:7420930a...d7d52`; raw artifact hash `cab0aaf8...fd8db2b` remains packaging evidence only.
 - Config impact: none.
 - API impact: none; the existing V4 envelope/overlay wire remains unchanged and the adapter is not live-wired yet.
 

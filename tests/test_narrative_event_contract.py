@@ -118,7 +118,7 @@ def test_narrative_taxonomy_resolves_one_channel_and_rejects_non_narrative_ids()
     assert hunting.narrative_kind == "battle.pursuit"
     assert hunting.tape_channel == "race.battle.closing"
     assert narrative_taxonomy_hash() == (
-        "sha256:cab0aaf8dc3c929ae6d99a28ef50231ad8468cbe61e7b8409397e3f66fd8db2b"
+        "sha256:7420930a571471ea89b409418bfdb6678522af648d251619fa4802b5dced7d52"
     )
 
     with pytest.raises(NarrativeAdmissionError, match="visual_only"):

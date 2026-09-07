@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 
-from irswitch.contracts import Identifier, Sha256Hash, packaged_schema_bytes
+from irswitch.contracts import Identifier, canonical_sha256, packaged_schema_bytes
 
 
 class NarrativeAdmissionError(ValueError):
@@ -33,8 +32,9 @@ def _registry() -> dict[str, Any]:
 
 @lru_cache(maxsize=1)
 def narrative_taxonomy_hash() -> str:
-    digest = hashlib.sha256(packaged_schema_bytes("freeze-registry.json")).hexdigest()
-    return str(Sha256Hash(f"sha256:{digest}"))
+    # Git may materialize packaged text with CRLF on Windows. The policy identity
+    # is the canonical JSON value, not checkout-specific line endings.
+    return str(canonical_sha256(_registry()))
 
 
 @lru_cache(maxsize=1)
