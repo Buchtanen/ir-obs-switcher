@@ -170,12 +170,17 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
   },
   "speech": {
     "state": "idle",
+    "sourceKind": null,
     "utteranceId": null,
     "beatId": null,
     "opportunityId": null,
+    "backend": null,
+    "backendGeneration": null,
+    "dispatchedAtMonoMs": null,
     "acceptedAtMonoMs": null,
     "lastTerminal": {
-      "utteranceId": "plan:400",
+      "utteranceId": "utt:550e8400-e29b-41d4-a716-446655440000:17",
+      "sourceKind": "narrative",
       "reason": "completed",
       "atMonoMs": 88710
     }
@@ -221,9 +226,11 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
 }
 ~~~
 
-Enums: status is `disabled|starting|ready|degraded|stopping|stopped`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. `sessionPlan` is null before first plan publication; otherwise it is the exact bounded status projection `{revision,valid,reason,stages}`. Revision is nonnegative, stages has 0–3 unique values in canonical order, a valid plan has 1–3 stages and null reason, and an invalid plan has no stages plus `session_plan_conflict`. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`, but the independently published session plan remains visible. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `config.applySequence` is nonnegative and names the effective snapshot. `config.pendingChanges` has 0–128 exact `{key,boundary,desiredGeneration}` entries sorted by key and never exposes values; desired/effective hashes may differ until every named boundary occurs. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
+Enums: status is `disabled|starting|ready|degraded|stopping|stopped`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. `sessionPlan` is null before first plan publication; otherwise it is the exact bounded status projection `{revision,valid,reason,stages}`. Revision is nonnegative, stages has 0–3 unique values in canonical order, a valid plan has 1–3 stages and null reason, and an invalid plan has no stages plus `session_plan_conflict`. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`, but the independently published session plan remains visible. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `config.applySequence` is nonnegative and names the effective snapshot. `config.pendingChanges` has 0–128 exact `{key,boundary,desiredGeneration}` entries sorted by key and never exposes values; desired/effective hashes may differ until every named boundary occurs. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
 
 Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. LLM/TTS worker/backend generations, their `configGeneration`, and fact view revisions/counts are nonnegative integers. Component `configGeneration` names the desired generation whose effective component values its current preflight proves; while a newer applied component generation is pending/failed, that component cannot be used. TTS quarantined generation is null or no greater than the current backend generation; while equal, TTS must be unavailable and admit no speech. `drops` equals the sum of the three nonnegative `dropsByPriority` counters. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Fact health becomes degraded with `fact_capacity_evicted` after lossy compaction for the rest of the narrative run and unavailable with `fact_capacity_exhausted` while no complete bounded view can be published. The next complete coherent bounded view moves unavailable→degraded; only a new complete run with no loss restores ready. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
+
+The speech projection is exactly `{state,sourceKind,utteranceId,beatId,opportunityId,backend,backendGeneration,dispatchedAtMonoMs,acceptedAtMonoMs,lastTerminal}`. Source kind is `narrative|manual`; all current fields except state and retained `lastTerminal` are null in idle. Narrative beat/opportunity follow the immutable request, while manual beat/opportunity remain null. Backend is concrete `sapi|espeak|supertonic`; no text, voice, device or dispatch token is exposed. The retained terminal shape is exactly `{utteranceId,sourceKind,reason,atMonoMs}`.
 
 ### `GET /api/commentary/decisions?limit=N`
 

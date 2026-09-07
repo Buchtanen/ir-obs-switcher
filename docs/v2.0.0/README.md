@@ -12,7 +12,7 @@
 **Facts/features/channels:** [Closed predicates, units, allowlists, feature IDs and tape taxonomy](fact-feature-registry.md)
 **Detector catalog:** [Temporal math, estimated parameter ranges, hysteresis and two-front contract](detector-catalog-freeze.md)
 **Realization/verifier:** [Controlled EN, all 37 families, rejects and promotion gates](realization-verifier-contract.md)
-**Frozen slice fixtures:** [Thirty-eight expected reducer/director/speech/config/realization scenarios](vertical-slice-fixtures.md)
+**Frozen slice fixtures:** [Thirty-nine expected reducer/director/speech/config/realization/TTS scenarios](vertical-slice-fixtures.md)
 **Final-PR exclusions:** [Planning and temporary mechanism removal gate](final-pr-exclusion-manifest.md)
 **Baseline:** `master@0ce75d4`
 

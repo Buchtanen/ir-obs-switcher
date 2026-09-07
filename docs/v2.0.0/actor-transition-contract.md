@@ -62,10 +62,10 @@ Every context batch carries `external_order`; worker/timer/API commands do not. 
 | `VALIDITY_DEADLINE_ELAPSED` | owned nearest-expiry one-shot deadline | no | same deadline generation only | sweep facts already expired in the applied view plus opportunity/BeatPlan revision deadlines; cancel invalid building/committed work, never run director, then rearm |
 | `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, freshness-check bound facts/identity, verify synchronously against the same bundle and dispatch TTS or reject |
 | `REALIZATION_FAILED` | authored/Qwen worker | yes | never | token-check, suppress beat/revision and release reservation |
-| `PLAYBACK_ACCEPTED` | TTS worker | yes | duplicate token is ignored and audited | narrative token consumes its opportunity and creates exposure; manual token does neither; both enter `speaking` and pause audience silence |
-| `SPEECH_COMPLETED` | TTS worker | yes | duplicate token is ignored and audited | terminalize narrative exposure or manual request and free lane; only a narrative terminal runs one director pass |
-| `SPEECH_INTERRUPTED` | TTS worker | yes | duplicate token is ignored and audited | terminalize narrative exposure or manual request and free lane; only a narrative terminal replans when enabled |
-| `SPEECH_FAILED` | TTS worker | yes | duplicate token is ignored and audited | narrative before acceptance releases+suppress and after acceptance keeps consumed exposure; manual only terminalizes its request; both free lane |
+| `PLAYBACK_ACCEPTED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; narrative consumes its opportunity and creates exposure, manual does neither; both enter `speaking` and pause audience silence |
+| `SPEECH_COMPLETED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; terminalize exposure/request and free lane; only a natural narrative terminal runs one director pass |
+| `SPEECH_INTERRUPTED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; terminalize exposure/request and free lane; replan only for a natural narrative terminal whose cancellation policy permits it |
+| `SPEECH_FAILED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; narrative before acceptance releases+suppress and after acceptance keeps consumed exposure; manual only terminalizes its request; both free lane |
 | `SPEECH_DEADLINE_ELAPSED` | actor-owned one-shot watchdog | yes | duplicate/stale token ignored | `start|playback|stop` stage applies the bounded timeout transition below; never creates a second utterance |
 | `MANUAL_SPEAK_REQUEST` | localhost API adapter | no | never | atomically claim its one-shot admission latch, then nonblocking-dispatch the effective preflighted TTS generation and enter committed only when idle/available; never create episode/opportunity/exposure |
 | `TAPE_HEALTH_CHANGED` | tape writer | required-capture loss is protected | same recorder generation/status | update health; disable only affected required experimental detectors |
@@ -135,14 +135,23 @@ Every reducer command first performs the same logical validity sweep at its capt
 | `committed` | ordinary/critical race event | `committed` | reduce truth only; do not replace dispatched utterance |
 | `committed` | `PLAYBACK_ACCEPTED` matching token | `speaking` | consume opportunity exactly once; add exposure with full repetition weight |
 | `committed` | `SPEECH_FAILED` before ack | `idle` | release and suppress beat/revision; mark TTS degraded when applicable; dispatch the one alternative only if TTS remains available and this was cycle attempt 1 |
+| `committed` | completion/interruption or malformed/out-of-order callback | `stopping` | record `tts_protocol_violation`, quarantine the backend generation immediately, keep an unaccepted narrative opportunity unconsumed and request bounded cancellation |
+| `speaking` | matching completion | `idle` | terminalize exactly once as completed; request idempotent duck restore; narrative alone starts one current-state director pass |
+| `speaking` | matching interruption/failure | `idle` | terminalize exactly once with consumed exposure retained; request idempotent duck restore; replan only when the stored terminal policy permits it |
+| `speaking` | second acceptance or malformed/out-of-order callback | `stopping` | record `tts_protocol_violation`, quarantine the backend generation immediately and request bounded cancellation; the already consumed exposure stays consumed |
+| `stopping` | acceptance callback | `stopping` | audit as stale/illegal and never consume; await terminal or stop watchdog |
+| `stopping` | matching terminal callback | `idle` | terminalize exactly once according to whether acceptance already occurred; request idempotent duck restore; never run director for lifecycle/shutdown cancellation |
+| any | callback for noncurrent/terminal token, or quarantined generation other than its retained cleanup token | unchanged | audited no-op; never consume, restore twice, replan or revive a backend |
 | `speaking` | ordinary/critical race event | `speaking` | reduce state/opportunities only; no interruption and no prepared text |
 | `speaking` | allowed cancellation | `stopping` | request one backend cancellation; consumption is never rolled back |
-| `speaking` | completion/failure | `idle` | terminalize exposure, clear token and run one director pass over latest state |
-| `stopping` | terminal callback | `idle` or `stopping` | free lane; remain `stopping` only during runtime shutdown |
 
 Allowed automatic cancellation is limited to confirmed stream end, occurrence/run reset, explicit commentary disable, shutdown, or fact/identity supersession that makes the utterance's committed claims false. A newer or more urgent racing event never cancels accepted or dispatched playback.
 
 Each TTS token owns at most one current watchdog. In `committed`, `start_timeout_s` bounds dispatch-to-`PLAYBACK_ACCEPTED|SPEECH_FAILED`. In `speaking`, the selected BeatPlan `maxSeconds` (manual uses global `max_utterance_s`) bounds accepted playback. Either deadline moves the lane to `stopping`, requests cancellation and arms `stop_timeout_s`. A matching terminal callback before the stop deadline follows the normal table. On stop timeout the actor invalidates/quarantines the worker token, terminalizes any accepted exposure conservatively, marks TTS `component_unavailable`, and frees narrative state; no later callback for that token may mutate state and no automatic/manual speech is admitted until a `COMPONENT_HEALTH_CHANGED(backendGeneration>quarantinedGeneration,status=ready)` from a successful explicit config-rebuild preflight. There is no periodic retry or spontaneous recovery from a stale callback. Backend wrappers must make best effort to terminate their process/audio handle, but inability to prove physical silence never blocks or crashes the main loop.
+
+Every dispatched request is the exact immutable `tts-utterance/2` object and every worker response is the exact `tts-callback/2` object from the schema contract. The actor stores `accepted=false`, nullable accepted time and one terminal-director policy with the token. Normal narrative completion/interruption uses `replan_if_enabled`; manual speech and every stream/session/reset/disable/shutdown/truth-invalidating cancellation use `never`. Reducer dequeue time is the authoritative accepted/terminal time; callback-observed time is latency evidence only. A synchronous dispatch rejection creates no committed lane/token. After successful nonblocking dispatch, only mailbox callbacks or actor watchdogs may advance it.
+
+Ducking belongs to the worker token, not NarrativeRuntime or OBS scene logic. The worker attempts ducking before `PLAYBACK_ACCEPTED` and issues one idempotent best-effort restore operation on terminal/cancel. A duck failure is recorded as `duck_unavailable` but remains fail-soft and does not reinterpret playback acceptance; a terminal/watchdog must still release the token and request restoration without claiming that unavailable OBS applied it.
 
 `auto` backend selection is resolved before utterance admission and the concrete backend/generation is immutable in its token. The baseline compatibility order is SAPI, then eSpeak; SuperTonic is explicit-only. No dispatched text fails over to another backend after error/timeout.
 
@@ -182,7 +191,7 @@ Manual text passes length/control-character and EN-tag validation, then goes dir
 
 - At confirmed broadcast start, allocate a new `streamEpoch`; at re-enable during the same active `broadcastEpoch`, allocate another new `streamEpoch` with `historyComplete=false`. Then arm generation `g+1` for `now + long_silence_s` if OBS state is active and no speech is accepted.
 - On narrative or manual `PLAYBACK_ACCEPTED`, cancel the armed deadline. A stale timer token cannot fire.
-- On any speech terminal callback, rearm from that callback time when the audience window is active; a manual terminal does not itself run the director.
+- On any speech terminal command, rearm from actor reduction time when the audience window is active; worker-observed callback time is metrics only, and a manual terminal does not itself run the director.
 - On OBS unknown, cancel while retaining no elapsed credit. On return to active, rearm from return time.
 - On `LONG_SILENCE_ELAPSED`, evaluate exactly once. If no speech starts, rearm from command reduction time; never use a shorter retry.
 - Race/event director passes do not move the silence origin unless playback is accepted.

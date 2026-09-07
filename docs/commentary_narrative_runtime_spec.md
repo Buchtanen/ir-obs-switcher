@@ -889,7 +889,7 @@ Každý accepted command nese coherent immutable timeline/fact version. Actor ne
 1. pokud je speech lane volná, director smí vytvořit právě jeden BeatPlan;
 2. pokud právě probíhá generování, event může rozpracovaný beat invalidovat nebo preemptovat;
 3. pokud právě probíhá řeč, nevytváří se čekající text — pouze se aktualizuje světový stav;
-4. `SPEECH_COMPLETED/INTERRUPTED` vyvolá nový director pass nad nejnovějším stavem.
+4. přirozený narrative `SPEECH_COMPLETED/INTERRUPTED` vyvolá nový director pass nad nejnovějším stavem; manual terminal ani terminal po reset/disable/shutdown/truth-invalidating cancelu director nespouští.
 
 Runtime má dvě jasně odlišné bounded struktury. Jediný `NarrativeMailbox` serializuje external batches a interní worker/timer commands; není to druhá kopie V4 EventEnvelope subscription. Speakable eventy po redukci vytvoří nebo aktualizují položku v `EventOpportunityQueue`. Tato druhá struktura drží pouze význam, prioritu, životnost, penalizaci, correlation a `tape_channel`; nikdy hotovou větu, prompt ani BeatPlan. Během jedné řeči tak mohou některé mezistavy expirovat nebo být superseded, aniž se později odříkají.
 
@@ -1092,7 +1092,7 @@ event_score(e, S) = score(candidate(e), S) - event_penalty(e, S)
 
 ### 9.3 Arbitráž po beatu: event versus pokračování příběhu
 
-Po narrative `SPEECH_COMPLETED`, narrative `SPEECH_INTERRUPTED` i po zahozeném automatickém pokusu v rámci povoleného planning cycle sestaví director jeden story tier a oddělený filler fallback. Manual terminal pouze uvolní lane a založí nový silence origin; director nespouští:
+Po přirozeném narrative `SPEECH_COMPLETED`, narrative `SPEECH_INTERRUPTED` s uloženou policy `replan_if_enabled` i po zahozeném automatickém pokusu v rámci povoleného planning cycle sestaví director jeden story tier a oddělený filler fallback. Manual terminal a terminal po lifecycle/reset/disable/shutdown/truth-invalidating cancelu pouze uvolní lane a založí nový silence origin; director nespouští:
 
 ~~~text
 C_story = valid_event_opportunities
@@ -1204,6 +1204,8 @@ speaking ───────────────────→ interrupte
 - `committed` znamená, že BeatPlan je stále aktuální;
 - fatigue se zapíše až při `speaking`.
 - `rejected`, `invalidated` a `stale` jsou pro daný beat/revision terminální; director smí pokračovat pouze jiným způsobilým beatem.
+
+Po verifikaci actor vytvoří přesně jeden immutable `tts-utterance/2`; backend vrací pouze uspořádané `tts-callback/2`. Playback acceptance spotřebuje opportunity, callback timestamp slouží jen pro měření a reducer dequeue time je autorita. Přesné tokeny, callback FSM, protocol-violation karanténa, ducking a `speech-exposure/2` jsou zmrazené v `docs/v2.0.0/schema-contracts.md` a `docs/v2.0.0/actor-transition-contract.md`.
 
 ## 11. Stavba textu
 
@@ -1502,7 +1504,7 @@ Zachová právě jednu in-flight utterance, TTS backend, ducking, lifecycle call
 
 ### 13.18 NarrativeTape a ReplayEvaluator
 
-Zaznamenává raw rozhodné vstupy nebo odkazy, fact revisions, timeline transition, episode transition, všechny kandidáty se score breakdownem, BeatPlan, prompt family/pattern, model latency/tokens, verifier claims, commit verdict a TTS exposure.
+Zaznamenává raw rozhodné vstupy nebo odkazy, fact revisions, timeline transition, episode transition, všechny kandidáty se score breakdownem, BeatPlan, prompt family/pattern, model latency/tokens, verifier claims, commit verdict a TTS request/callback/exposure identity. Přesné immutable DTO jsou `tts-utterance/2` a `tts-callback/2`; reducer pořadí je autorita a callback timestamp pouze latence.
 
 ### 13.19 TapePolicyCompiler a TapeWriter
 

@@ -35,6 +35,9 @@ Implementation placement is one neutral `irswitch/contracts/narrative.py` module
 | beat plan | `beat-plan/2` |
 | prompt options | `prompt-options/2` |
 | realization bundle | `realization-bundle/2` |
+| TTS utterance | `tts-utterance/2` |
+| TTS callback | `tts-callback/2` |
+| speech exposure | `speech-exposure/2` |
 | narrative catalog | `narrative-catalog/2` |
 | tape manifest | `narrative-tape-manifest/2` |
 | tape record | `narrative-tape-record/2` |
@@ -290,6 +293,51 @@ A surface value set is exactly `{surfaceValueSetId,factId,attributeId,valueType,
 
 The authored/Qwen worker and deterministic verifier receive this bundle and no live FactLedger, FactView, roster, config or observer reference. On `REALIZATION_SUCCEEDED`, the actor first token-checks, then requires the current FactView to contain canonical-equal, currently valid copies of every bound fact and the same occurrence/lineage/episode revision before verification/commit. Any absence or difference is `freshness_stale`; the verifier never rebuilds a lexicon from newer truth. A compiler bound/reference failure is `realization_input_invalid`, fails closed and consumes the current cycle attempt; validated catalogs/registries must make it unreachable for a valid FactView.
 
+## TTS utterance and callback protocol
+
+The actor creates one immutable backend request only after a narrative realization has passed token, freshness, semantic and technical validation, or after a manual request has won its admission latch. `TtsUtterance` is exactly:
+
+```text
+schemaVersion, utteranceId, utteranceOrdinal, sourceKind,
+planId?, opportunityId?, episodeId?, manualRequestId?, text, textHash,
+language, backend, backendGeneration, configGeneration,
+effectiveConfigHash, configApplySequence, voice?, rate, steps?,
+audioDevice?, duckInput?, duckRatio, duckFadeMs, maxSeconds,
+dispatchedMonoMs, requestHash
+```
+
+`utteranceOrdinal` is positive and process-monotonic; `utteranceId` is the canonical ASCII `utt:<processInstanceId>:<utteranceOrdinal>`. `sourceKind` is `narrative|manual`. Narrative requests require `planId` and `episodeId`, carry the BeatPlan's nullable `opportunityId`, and require null `manualRequestId`; manual requests require `manualRequestId` and null narrative IDs. Text is normalized EN with no control characters: 1..512 characters for narrative and 1..400 for manual. `textHash` hashes the exact normalized text. Language is constant `en`.
+
+`backend` is the already resolved concrete `sapi|espeak|supertonic`, never `auto`; `backendGeneration` is positive and names the successful preflight used by this dispatch. `configGeneration`, `effectiveConfigHash` and `configApplySequence` are the matching ConfigLedger snapshot after `next_utterance`. Voice/device/duck strings are normalized nullable values whose empty config form becomes null. `rate` is always present; `steps` is present only for SuperTonic. `duckRatio` and `duckFadeMs` are always snapshotted even when `duckInput` is null. Narrative `maxSeconds` equals the BeatPlan value; manual uses the `next_plan_or_manual` global value. `requestHash` is the canonical hash of every preceding field, including actual sensitive values; ordinary status/tape projection applies the frozen redaction policy and never substitutes a redacted hash input.
+
+The actor gives the TTS worker an opaque process-local dispatch token exactly `{utteranceId,utteranceOrdinal,backendGeneration,dispatchGeneration}`. `dispatchGeneration` is positive and process-monotonic across TTS submissions; cancellation references the same value and never allocates a replacement token. The token is callback identity, not a replay identity or public credential. The worker may return only this `TtsCallback`:
+
+```text
+schemaVersion, callbackId, kind, utteranceId, utteranceOrdinal,
+backend, backendGeneration, dispatchGeneration, workerSequence,
+observedMonoMs, detailCode?
+```
+
+Kind is `playback_accepted|completed|interrupted|failed`. `workerSequence` is positive and starts at 1 per dispatch token. One worker/token may emit at most one `playback_accepted` followed by at most one terminal callback; `failed` may instead be the sole pre-acceptance callback. The worker must enqueue callbacks in increasing sequence through the one NarrativeMailbox. Completion/interruption/failure after acceptance therefore has sequence 2; any missing, repeated, decreasing or otherwise illegal transition is `tts_protocol_violation`. `callbackId` is `ttscb:<utteranceId>:<workerSequence>`. `observedMonoMs` is same-process monotonic metadata no earlier than dispatch and nondecreasing per token; reducer order, deadlines and state changes use actor dequeue time, never trust callback time as ordering authority. The command mapping is exact: the four callback kinds become `PLAYBACK_ACCEPTED`, `SPEECH_COMPLETED`, `SPEECH_INTERRUPTED` and `SPEECH_FAILED` respectively, with the complete callback as payload. `detailCode` is null for accepted/completed, `backend_cancelled` for interrupted, and one of `backend_rejected|backend_process_exit|backend_audio_error|backend_unavailable` for failed; exception text is never admitted.
+
+Callback acceptance requires an exact current dispatch token before inspecting its kind. Stale tokens and canonical-identical duplicate callback IDs are audited no-ops; reuse of a callback ID with different canonical content is `tts_protocol_violation`. The actor writes exactly one terminal result per utterance; a watchdog may synthesize that actor terminal result without fabricating a TtsCallback. Once terminalized, every later worker callback is a no-op. Playback acceptance is valid only from `committed`; a terminal-before-acceptance `failed` is the only legal direct terminal there. Completion/interruption before acceptance or any second acceptance is a protocol violation: it immediately quarantines that backend generation against new work, retains the current token only for bounded cancellation cleanup, and cannot consume an unaccepted narrative opportunity. Acceptance arriving after the actor has already requested cancellation is a stale race no-op rather than a protocol violation, because cancellation and backend acceptance may cross outside the mailbox.
+
+The TTS worker owns ducking as part of the same dispatch token. When `duckInput` is present it attempts the configured duck before acknowledging playback acceptance and issues exactly one idempotent best-effort restore operation on every terminal/cancel path; both operations are bounded inside the existing start/stop watchdogs. Actual OBS attenuation/restoration cannot be guaranteed when OBS is unavailable. Duck failure records `duck_unavailable` and may continue audio, but never crashes or delays the main loop beyond the same watchdog; playback acceptance still means backend acceptance, not proof of acoustic output or successful ducking.
+
+Every utterance produces one final `speech-exposure/2` payload, even when it never reached playback acceptance:
+
+```text
+utteranceId, sourceKind, planId?, opportunityId?, episodeId?, manualRequestId?,
+requestHash, textHash, backend, backendGeneration, effectiveConfigHash,
+configApplySequence, dispatchedMonoMs, acceptedMonoMs?, terminalMonoMs,
+terminalReason, opportunityConsumed, exposureWeight, duckStatus,
+callbackIds[0..2]
+```
+
+IDs and source nullability match the TtsUtterance. `acceptedMonoMs` is null exactly when no valid acceptance reduced. `opportunityConsumed` is true exactly for accepted narrative speech; manual is always false. `exposureWeight` is 1 for accepted narrative speech and 0 otherwise. `duckStatus` is `not_configured|applied|unavailable|restore_unconfirmed`; it reports the strongest terminal outcome without claiming physical state. Callback IDs are the unique accepted callback IDs in worker sequence order and exclude rejected stale/duplicate inputs; a watchdog-only terminal may therefore have no terminal callback ID. The payload contains neither raw text nor sensitive voice/device values. Its record envelope and the utterance request hash retain config/replay provenance.
+
+`terminalReason` is exactly `tts_failed_before_acceptance` when dispatch/callback fails before acceptance, otherwise one of the speech-terminal registry IDs. A protocol violation uses `tts_protocol_violation` regardless of acceptance; the separate accepted/consumed fields preserve its exposure semantics.
+
 ## ConfigLedger
 
 The validated desired configuration and currently effective mixed-boundary configuration are distinct. ConfigLedger publishes exactly:
@@ -362,10 +410,11 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated`, `capacity_evicted` |
 | attempt terminal | `realization_input_invalid`, `realization_timeout`, `realization_transport`, `realization_invalid_response`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
 | verifier rejection | `empty`, `too_long`, `sentence_count`, `token_count`, `non_en_contract`, `meta_output`, `unknown_fragment`, `unknown_entity`, `actor_reversed`, `actor_ambiguous`, `number_unbound`, `number_mismatch`, `unit_mismatch`, `polarity_mismatch`, `tense_mismatch`, `required_missing`, `forbidden_claim`, `extra_claim`, `causal_inference`, `intent_inference`, `emotion_inference`, `medical_inference`, `prediction_as_result`, `result_as_prediction`, `unsupported_certainty`, `unsafe_negation` |
+| TTS backend detail | `backend_rejected`, `backend_process_exit`, `backend_audio_error`, `backend_cancelled`, `backend_unavailable` |
 | detector transition | `enter_started`, `enter_confirmed`, `enter_lost`, `material_band_changed`, `material_delta_met`, `update_rate_limited`, `clear_started`, `clear_cancelled`, `clear_confirmed`, `target_changed`, `occurrence_reset`, `stream_reset`, `unsupported_stage`, `identity_conflict`, `feature_unknown`, `required_capture_lost` |
-| speech terminal | `completed`, `interrupted_stream_end`, `interrupted_occurrence_reset`, `interrupted_commentary_disabled`, `interrupted_truth_invalidated`, `interrupted_shutdown`, `tts_failed_after_acceptance`, `tts_start_timeout`, `tts_playback_watchdog`, `tts_stop_timeout` |
+| speech terminal | `completed`, `interrupted_stream_end`, `interrupted_occurrence_reset`, `interrupted_commentary_disabled`, `interrupted_truth_invalidated`, `interrupted_shutdown`, `tts_failed_after_acceptance`, `tts_start_timeout`, `tts_playback_watchdog`, `tts_stop_timeout`, `tts_protocol_violation` |
 | mailbox/tape health | `mailbox_overloaded`, `mailbox_evicted_update`, `mailbox_recovery`, `mailbox_history_incomplete`, `deadline_admission_skipped`, `tape_queue_drop`, `tape_write_failed`, `tape_flush_timeout`, `config_transition_lost`, `capture_unavailable` |
-| config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_preflight_pending`, `component_preflight_failed`, `component_unavailable`, `admission_timeout`, `session_identity_conflict`, `session_plan_conflict`, `fact_capacity_evicted`, `fact_capacity_exhausted`, `obs_state_unknown`, `history_incomplete` |
+| config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_preflight_pending`, `component_preflight_failed`, `component_unavailable`, `admission_timeout`, `session_identity_conflict`, `session_plan_conflict`, `fact_capacity_evicted`, `fact_capacity_exhausted`, `obs_state_unknown`, `history_incomplete`, `duck_unavailable` |
 
 Adding a diagnostic reason is additive only inside the same version when no consumer exhaustively switches on it; implementation code must still use a registry constant. Removing, renaming or changing terminal meaning requires a schema version change.
 

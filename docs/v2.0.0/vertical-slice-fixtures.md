@@ -392,6 +392,20 @@ Expected:
 - malformed/missing surface data fails closed as `realization_input_invalid` before worker dispatch, consumes only that cycle attempt and is unreachable after catalog/registry schema validation;
 - tape carries plan, bundle, fact and lexicon hashes plus captured content according to explicit redaction policy, sufficient to prove which immutable input produced the recorded completion/verdict.
 
+## F39 — TTS request and callback protocol is one-shot and ordered
+
+Input: dispatch one narrative `tts-utterance/2` through concrete backend generation 4 with ducking configured. Exercise separately: normal accepted→completed callbacks; `failed` before acceptance; completion before acceptance; duplicate acceptance; reset before acceptance followed by late acceptance/completion; acceptance before reset followed by interruption; actor stop timeout followed by a late terminal; and OBS duck failure. Also submit a later manual utterance after the first token is terminal.
+
+Expected:
+
+- utterance ordinal/ID, source identities, exact EN text hash, resolved backend/generation, effective config identity, voice/device/duck snapshot, deadline and request hash remain immutable after dispatch; narrative and manual nullable identity rules differ exactly as specified;
+- worker callbacks carry the same dispatch identity with sequence 1 acceptance and sequence 2 terminal, or one sequence-1 pre-acceptance failure; reducer dequeue order owns state, while observed timestamps are latency metadata only;
+- normal acceptance consumes the narrative opportunity once and completion writes one terminal exposure; pre-acceptance failure leaves it unconsumed and follows the bounded alternative-beat rule;
+- completion before acceptance and duplicate acceptance produce `tts_protocol_violation`, immediately quarantine the exact backend generation and start bounded cleanup; they never manufacture consumption or a second terminal;
+- reset before acceptance makes late callbacks no-ops and leaves the opportunity unconsumed; reset after acceptance retains consumed exposure. Lifecycle/reset/shutdown cancellation never launches a director pass from its terminal callback;
+- ducking is attempted before acceptance and gets exactly one idempotent best-effort restore operation on every terminal/cancel/watchdog path. `duck_unavailable`/`restore_unconfirmed` state is recorded honestly, does not crash the loop and does not change acceptance semantics;
+- after terminalization, every duplicate/late callback is audited without state mutation. The later manual request receives a new ordinal/dispatch generation, creates no narrative exposure and proves that an old token cannot affect it.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:
