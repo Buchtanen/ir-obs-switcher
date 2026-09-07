@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #239 implementation — FeatureFrame/DetectorObservation nested rows GREEN, pending push
+**Phase:** #239 implementation — FeatureFrame/DetectorObservation nested rows CI green; coverage/redactionPolicy still open
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237) and [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), active [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -55,8 +55,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent until the nested FeatureFrame/DetectorObservation row checkpoint is pushed and green in CI.
-- Dirty scope: `build_dto_schemas.py`, dto goldens/schema, packaged `dto-contracts.schema.json`, `tests/test_narrative_tape_schema.py` and this handover.
+- Editing owner: current cloud agent after green nested-row CI. Next owner only types `coverage` / `redactionPolicy` if the written contract names those fields; otherwise leave them and start #240 after #239 close.
+- Dirty scope: this handover only.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -72,7 +72,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #239 loss/trailer golden SHA: `bfb4187637cb81d50113ce321f94e6b50ac6cc0d` (`feat: add narrative tape loss goldens (#239)`); [CI run 34167795931](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167795931) is green across 14/14 checks.
 - #239 remaining-payload SHA: `7484487afa3c0da1fa87a9828dcbac8f5069fcde` (`feat: close remaining narrative tape payloads (#239)`); [CI run 34168334293](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34168334293) is green across 14/14 checks (frozen contracts, Python 3.11–3.13, lint, format, type, security). Runtime `taxonomyHash` is `sha256:720769b0a1dfb234c69529eab9e1818e37944eead1de6e41499e6cbb56baa26b`.
 - TDD phase: `GREEN` for FeatureFrame/DetectorObservation nested rows. `FeatureFrame.values` and observation `featureValues` are `FeatureValue`; `windowFrameRange` is exact `{firstFrameSequence,lastFrameSequence,postWindowComplete}`; `predicateResults` is `{predicateId,result=true|false|unknown}`. Coverage rows and manifest `redactionPolicy` stay `any_obj` — their field lists are not closed in the written contract.
-- Nested-row slice in progress: DTO builder 48 definitions, 24 valid + 21 invalid goldens. Focused tape/event/primitive tests **81** passed. Docs-only SHA `71a6f97` failed Python 3.12 on unrelated wall-clock flake `test_full_queue_500_batch_publication_meets_n12_deadline` (66ms > 50ms) after 14/14 green parent `7484487`.
+- #239 nested-row SHA: `1b73fcff5df6f6f6e511e504f78339dc6dc0f636` (`feat: type feature-frame and observation rows (#239)`); [CI run 34169039942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34169039942) is green across 14/14 checks. DTO builder 48 definitions, 24 valid + 21 invalid goldens; local pytest **1536** passed.
+- Docs-only SHA `71a6f97` failed Python 3.12 on unrelated wall-clock flake `test_full_queue_500_batch_publication_meets_n12_deadline` (66ms > 50ms) after 14/14 green parent `7484487`; the nested-row SHA recovered CI without changing that test.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
 - Portability fix: runtime `taxonomyHash` remains canonical-JSON identity of the packaged freeze registry, not raw checkout bytes. The hash moved because the schema-version table grew; Windows CRLF lesson from #237 still applies.
 - Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
@@ -81,8 +82,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Push this nested-row checkpoint and require green CI, including a clean Python 3.12 run after the unrelated N12 wall-clock flake on `71a6f97`.
-2. Leave `coverage` and `redactionPolicy` untyped until the contract names their exact fields. Executable funnel-counter replay stays #242.
+1. Leave `coverage` and `redactionPolicy` untyped until the contract names their exact fields. Do not invent objects.
+2. Executable kick→accepted→queued→selected→started aggregation stays #242. Rotation/frame-range persistence stays #240.
 3. Close #239 on this branch only when remaining AC/checkboxes are actually proven. Start #240 TapeWriter only after that. Do not activate TapeWriter or NarrativeRuntime.
 
 ## Resume commands
