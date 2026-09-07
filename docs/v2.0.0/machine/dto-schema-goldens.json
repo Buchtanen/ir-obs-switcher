@@ -125,7 +125,9 @@
           "flow"
         ],
         "redactionPolicy": {
-          "sensitiveValues": "marker_only"
+          "sensitiveValues": "marker_only",
+          "prompt": "hash",
+          "completion": true
         },
         "historyComplete": true,
         "detectorParameterSnapshots": [
@@ -442,7 +444,9 @@
           "flow"
         ],
         "redactionPolicy": {
-          "sensitiveValues": "marker_only"
+          "sensitiveValues": "marker_only",
+          "prompt": "hash",
+          "completion": true
         },
         "historyComplete": true,
         "detectorParameterSnapshots": [
@@ -824,7 +828,15 @@
             "result": true
           }
         ],
-        "coverage": [],
+        "coverage": [
+          {
+            "bucketStartMonoMs": 1000,
+            "bucketDurationS": 1.0,
+            "coveredDurationS": 0.25,
+            "sampleCount": 1,
+            "usable": false
+          }
+        ],
         "wouldEmitEventKind": "HUNTING",
         "tapeChannel": "race.battle.closing"
       }
@@ -1463,6 +1475,123 @@
         "coverage": [],
         "wouldEmitEventKind": "HUNTING",
         "tapeChannel": "race.battle.closing"
+      }
+    },
+    {
+      "id": "detector-coverage-zero-bucket",
+      "value": {
+        "schemaVersion": "detector-observation/2",
+        "observationId": "obs:200",
+        "detectorId": "battle_ahead_v1",
+        "detectorVersion": "1",
+        "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "parameterSnapshotId": "params:battle-ahead:1",
+        "observedMonoMs": 1000,
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "sessionRef": {
+          "subSessionId": "sub:1",
+          "sessionNum": 2
+        },
+        "occurrenceId": "7:race:2",
+        "lineageId": "7:practice:0>7:qualifying:1>7:race:2",
+        "correlationKey": [
+          "hero",
+          "car:22"
+        ],
+        "windowFrameRange": {
+          "firstFrameSequence": 200,
+          "lastFrameSequence": 214,
+          "postWindowComplete": true
+        },
+        "previousState": "candidate",
+        "candidateState": "active",
+        "transitionReason": "confirm_elapsed",
+        "featureValues": [
+          {
+            "featureId": "gap.relation.seconds.estimated_v1",
+            "value": 1.4,
+            "unit": "seconds",
+            "quality": "measured",
+            "observedMonoMs": 1000,
+            "validUntilMonoMs": null,
+            "evidenceRefs": [
+              "frame:200"
+            ]
+          }
+        ],
+        "predicateResults": [
+          {
+            "predicateId": "battle.approaching",
+            "result": true
+          }
+        ],
+        "coverage": [
+          {
+            "bucketStartMonoMs": 1000,
+            "bucketDurationS": 0,
+            "coveredDurationS": 0,
+            "sampleCount": 0,
+            "usable": false
+          }
+        ],
+        "wouldEmitEventKind": "HUNTING",
+        "tapeChannel": "race.battle.closing"
+      }
+    },
+    {
+      "id": "redaction-policy-plaintext-sensitive",
+      "value": {
+        "schemaVersion": "narrative-tape-manifest/2",
+        "recordType": "manifest",
+        "processInstanceId": "process:1",
+        "processStartedAtUtc": "2026-09-07T20:00:00Z",
+        "processMonotonicOriginMs": 0,
+        "appVersion": "2.0.0",
+        "gitRevision": "abc1234",
+        "platform": "windows",
+        "broadcastEpoch": 4,
+        "streamEpoch": 7,
+        "fileOrdinal": 0,
+        "openedAtUtc": "2026-09-07T20:01:00Z",
+        "catalogVersion": "narrative-catalog:2",
+        "catalogHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "desiredConfigGeneration": 3,
+        "desiredConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "effectiveConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "configApplySequence": 8,
+        "effectiveConfigProjection": [
+          {
+            "key": "commentary.enabled",
+            "value": true
+          },
+          {
+            "key": "commentary.tts.voice",
+            "redacted": true
+          }
+        ],
+        "enabledPurposeChannels": [
+          "flow"
+        ],
+        "redactionPolicy": {
+          "sensitiveValues": "plaintext",
+          "prompt": "hash",
+          "completion": true
+        },
+        "historyComplete": true,
+        "detectorParameterSnapshots": [
+          {
+            "parameterSnapshotId": "params:battle-ahead:1",
+            "detectorId": "battle_ahead_v1",
+            "detectorVersion": "1",
+            "detectorConfigHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "parameters": {
+              "confirm_s": 1.5,
+              "window_s": 5.0
+            }
+          }
+        ],
+        "previousFileHash": null
       }
     }
   ]

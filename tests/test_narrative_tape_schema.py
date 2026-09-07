@@ -369,3 +369,53 @@ def test_feature_frame_and_observation_rows_are_exact() -> None:
         "predicate-result-unknown-token",
     ):
         assert _errors(_golden(fixture_id, "invalid")), fixture_id
+
+
+def test_coverage_bucket_and_redaction_policy_are_exact() -> None:
+    definitions = SCHEMA["$defs"]
+    assert definitions["DetectorObservation"]["properties"]["coverage"]["items"] == {
+        "$ref": "#/$defs/CoverageBucket"
+    }
+    assert definitions["TapeManifest"]["properties"]["redactionPolicy"] == {
+        "$ref": "#/$defs/RedactionPolicy"
+    }
+    assert definitions["CoverageBucket"]["required"] == [
+        "bucketStartMonoMs",
+        "bucketDurationS",
+        "coveredDurationS",
+        "sampleCount",
+        "usable",
+    ]
+    assert definitions["RedactionPolicy"] == {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "sensitiveValues": {"const": "marker_only"},
+            "prompt": {"enum": ["none", "hash", "full"]},
+            "completion": {"type": "boolean"},
+        },
+        "required": ["sensitiveValues", "prompt", "completion"],
+    }
+
+    observation = _golden("detector-observation-windowed", "valid")
+    assert _errors(observation) == []
+    assert observation["coverage"][0] == {
+        "bucketStartMonoMs": 1000,
+        "bucketDurationS": 1.0,
+        "coveredDurationS": 0.25,
+        "sampleCount": 1,
+        "usable": False,
+    }
+    manifest = _golden("tape-manifest-framing", "valid")
+    assert _errors(manifest) == []
+    assert manifest["redactionPolicy"] == {
+        "sensitiveValues": "marker_only",
+        "prompt": "hash",
+        "completion": True,
+    }
+
+    for fixture_id in (
+        "detector-coverage-zero-bucket",
+        "redaction-policy-plaintext-sensitive",
+    ):
+        assert _errors(_golden(fixture_id, "invalid")), fixture_id

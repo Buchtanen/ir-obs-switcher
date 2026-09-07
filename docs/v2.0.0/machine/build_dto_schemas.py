@@ -136,6 +136,22 @@ PREDICATE_RESULT = obj(
         "result": {"enum": [True, False, "unknown"]},
     }
 )
+COVERAGE_BUCKET = obj(
+    {
+        "bucketStartMonoMs": N0,
+        "bucketDurationS": {"type": "number", "exclusiveMinimum": 0},
+        "coveredDurationS": {"type": "number", "minimum": 0},
+        "sampleCount": N0,
+        "usable": BOOL,
+    }
+)
+REDACTION_POLICY = obj(
+    {
+        "sensitiveValues": {"const": "marker_only"},
+        "prompt": enum("none", "hash", "full"),
+        "completion": BOOL,
+    }
+)
 FUNNEL = obj(
     {
         "sourceClass": enum("detector", "direct", "lifecycle", "silence", "successor"),
@@ -228,6 +244,8 @@ def build_schema() -> dict[str, Any]:
     defs["FeatureValue"] = FEATURE_VALUE
     defs["WindowFrameRange"] = WINDOW_FRAME_RANGE
     defs["PredicateResult"] = PREDICATE_RESULT
+    defs["CoverageBucket"] = COVERAGE_BUCKET
+    defs["RedactionPolicy"] = REDACTION_POLICY
     defs["DetectorObservation"] = closed(
         "detector-observation/2",
         {
@@ -249,7 +267,7 @@ def build_schema() -> dict[str, Any]:
             "transitionReason": ID,
             "featureValues": arr({"$ref": "#/$defs/FeatureValue"}, 0, 64),
             "predicateResults": arr({"$ref": "#/$defs/PredicateResult"}, 0, 64),
-            "coverage": arr(any_obj, 0, 16),
+            "coverage": arr({"$ref": "#/$defs/CoverageBucket"}, 0, 16),
             "wouldEmitEventKind": NULLABLE_ID,
             "tapeChannel": ID,
         },
@@ -1150,7 +1168,7 @@ def build_schema() -> dict[str, Any]:
                 {"$ref": "#/$defs/EffectiveConfigProjectionEntry"}, 1, 128
             ),
             "enabledPurposeChannels": arr(enum(*purpose_channels), 1, 3),
-            "redactionPolicy": any_obj,
+            "redactionPolicy": {"$ref": "#/$defs/RedactionPolicy"},
             "historyComplete": BOOL,
             "detectorParameterSnapshots": arr(
                 {"$ref": "#/$defs/DetectorParameterSnapshot"}, 0, 128
@@ -1541,7 +1559,12 @@ def build_schema() -> dict[str, Any]:
         "SessionPlan": ["valid_shape", "canonical_stage_order", "immutable_prefix_per_run"],
         "TimelineSnapshot": ["session_identity_all_or_none", "transition_reason_canonical_order"],
         "FeatureFrame": ["values_sorted_by_feature_id", "identity_all_or_none"],
-        "DetectorObservation": ["inclusive_frame_range_ordered", "registered_feature_units"],
+        "DetectorObservation": [
+            "inclusive_frame_range_ordered",
+            "registered_feature_units",
+            "coverage_sorted_unique_by_bucket_start",
+            "covered_duration_lte_bucket",
+        ],
         "EventCandidateTap": ["source_provenance_union", "candidate_id_canonical_content"],
         "NarrativeEvent": ["delivery_class_derived", "facts_resolve_same_view_identity"],
         "AtomicFact": ["valid_until_gte_valid_from", "registered_predicate_attributes_scope"],
@@ -1582,7 +1605,11 @@ def build_schema() -> dict[str, Any]:
             "callback_ids_ordered",
         ],
         "ConfigLedger": ["pending_sorted_and_matches_diff", "hashes_match_full_values"],
-        "TapeManifest": ["file_scope_single_stream", "parameter_snapshots_sorted"],
+        "TapeManifest": [
+            "file_scope_single_stream",
+            "parameter_snapshots_sorted",
+            "redaction_full_prompt_requires_llm_eval",
+        ],
         "TapeRecord": ["priority_derived", "payload_matches_record_type", "config_pair_coherent"],
         "ApplyContextBatch": ["projection_revisions_coherent", "event_source_order_partition"],
         "NarrativeCommand": ["context_fields_match_payload", "mailbox_sequence_total_order"],

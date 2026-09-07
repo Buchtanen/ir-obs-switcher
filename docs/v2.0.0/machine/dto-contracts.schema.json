@@ -871,6 +871,38 @@
       ],
       "type": "object"
     },
+    "CoverageBucket": {
+      "additionalProperties": false,
+      "properties": {
+        "bucketDurationS": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "bucketStartMonoMs": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "coveredDurationS": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "sampleCount": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "usable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "bucketStartMonoMs",
+        "bucketDurationS",
+        "coveredDurationS",
+        "sampleCount",
+        "usable"
+      ],
+      "type": "object"
+    },
     "DetectorObservation": {
       "additionalProperties": false,
       "properties": {
@@ -898,7 +930,7 @@
         },
         "coverage": {
           "items": {
-            "type": "object"
+            "$ref": "#/$defs/CoverageBucket"
           },
           "maxItems": 16,
           "minItems": 0,
@@ -1067,7 +1099,9 @@
       "type": "object",
       "x-irswitch-invariants": [
         "inclusive_frame_range_ordered",
-        "registered_feature_units"
+        "registered_feature_units",
+        "coverage_sorted_unique_by_bucket_start",
+        "covered_duration_lte_bucket"
       ]
     },
     "DetectorParameterSnapshot": {
@@ -4972,6 +5006,30 @@
         "canonical_hash_matches"
       ]
     },
+    "RedactionPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "completion": {
+          "type": "boolean"
+        },
+        "prompt": {
+          "enum": [
+            "none",
+            "hash",
+            "full"
+          ]
+        },
+        "sensitiveValues": {
+          "const": "marker_only"
+        }
+      },
+      "required": [
+        "sensitiveValues",
+        "prompt",
+        "completion"
+      ],
+      "type": "object"
+    },
     "SessionPlan": {
       "additionalProperties": false,
       "oneOf": [
@@ -5832,7 +5890,7 @@
           "const": "manifest"
         },
         "redactionPolicy": {
-          "type": "object"
+          "$ref": "#/$defs/RedactionPolicy"
         },
         "schemaVersion": {
           "const": "narrative-tape-manifest/2"
@@ -5874,7 +5932,8 @@
       "type": "object",
       "x-irswitch-invariants": [
         "file_scope_single_stream",
-        "parameter_snapshots_sorted"
+        "parameter_snapshots_sorted",
+        "redaction_full_prompt_requires_llm_eval"
       ]
     },
     "TapePurposeCount": {
@@ -7121,6 +7180,12 @@
     },
     {
       "$ref": "#/$defs/PredicateResult"
+    },
+    {
+      "$ref": "#/$defs/CoverageBucket"
+    },
+    {
+      "$ref": "#/$defs/RedactionPolicy"
     },
     {
       "$ref": "#/$defs/DetectorObservation"
