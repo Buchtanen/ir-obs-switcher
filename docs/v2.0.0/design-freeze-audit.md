@@ -222,7 +222,8 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Existing V4 EventEnvelope, overlay wire and presentation behavior remain unchanged by this refactor. Narrative-only identity, fact references, policy and `tape_channel` live in `NarrativeEvent`, story payloads and catalogs.
 - Exact v2 config/API review candidates, including apply boundaries, migration, nullability, request bounds and local/LAN Ollama URL policy, live in `public-contracts.md`; implementation fixtures must be byte-for-structure equivalents.
 - Exact single-mailbox admission/recovery, command inventory, speech-lane transitions, reset matrix and shutdown order live in `actor-transition-contract.md`; model-based transition fixtures remain blocking.
-- DTO fields, schema versions, stream-scope nullability, canonical hashes, tape envelopes and reason IDs live in `schema-contracts.md`; machine-readable schemas/goldens remain blocking.
+- DTO fields, schema versions, stream-scope nullability, canonical hashes, tape envelopes and reason IDs live in `schema-contracts.md`; the V4 wire golden is pinned, while DTO JSON Schemas and their positive/negative goldens remain blocking.
+- The generated branch-only machine registry and V4 master golden live in `machine/`; its checker enforces 60 current events, five internal lifecycle events, 57 predicates, 21 features, 36 tape channels, 27 schema versions, typed attributes/features, scoped reasons/states and unchanged V4 freeze/thaw.
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
@@ -234,7 +235,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 
 All boxes below must be complete in branch planning commits and issue #235 before behavior code changes:
 
-- [ ] Review the human canonical registries in `schema-contracts.md`, `event-beat-disposition.md` and `fact-feature-registry.md`, then materialize and cross-check the event, feature, fact, reason, terminal-state and `tape_channel` machine registries including units and unknown semantics.
+- [x] Review the human canonical registries in `schema-contracts.md`, `event-beat-disposition.md` and `fact-feature-registry.md`, then materialize and cross-check the event, feature, fact, reason, terminal-state and `tape_channel` machine registries including units and unknown semantics.
 - [x] Complete identifier disposition matrix for all 60 known master identifiers and all 54 legacy nodes drafted in `event-beat-disposition.md`.
 - [ ] Final review and machine validation of the exact 64 BeatDefinitions, including required/forbidden claims and realization family for every beat.
 - [ ] Complete successor graph with deterministic relation, guard, preference and terminal/dead-end policy.

@@ -13,6 +13,7 @@
 **Detector catalog:** [Temporal math, estimated parameter ranges, hysteresis and two-front contract](detector-catalog-freeze.md)
 **Realization/verifier:** [Controlled EN, all 37 families, rejects and promotion gates](realization-verifier-contract.md)
 **Qwen transport:** [Exact prompt, request/result, SSE, timeout and latency contract](qwen-transport-contract.md)
+**Machine freeze registry:** [Generated registries, checker and V4 wire golden](machine/README.md)
 **Frozen slice fixtures:** [Forty-four expected reducer/director/speech/config/realization/TTS scenarios](vertical-slice-fixtures.md)
 **Final-PR exclusions:** [Planning and temporary mechanism removal gate](final-pr-exclusion-manifest.md)
 **Baseline:** `master@0ce75d4`

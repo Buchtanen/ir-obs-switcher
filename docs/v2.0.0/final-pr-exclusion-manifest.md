@@ -17,6 +17,7 @@ The v2 branch intentionally contains planning evidence and may temporarily conta
 - `docs/v2.0.0/detector-catalog-freeze.md`
 - `docs/v2.0.0/realization-verifier-contract.md`
 - `docs/v2.0.0/qwen-transport-contract.md`
+- `docs/v2.0.0/machine/**`
 - `docs/v2.0.0/vertical-slice-fixtures.md`
 - `docs/v2.0.0/final-pr-exclusion-manifest.md`
 - temporary v2 planning links added to root `README.md` and `COMMENTARY_ENGINE.md`

@@ -442,7 +442,7 @@ Trailer payload contains final record/file hash, counts by record/purpose/tape c
 
 ## Frozen reason IDs
 
-Reason IDs are machine values; operator messages are separate and bounded. The initial registry is:
+Reason IDs are machine values; operator messages are separate and bounded. Their full identity is `(reasonDomain, reasonId)`: an object/state supplies the domain through its schema, while generic health/decision records carry both fields explicitly. The same ID may occur in two domains only with the same plain-language meaning, but consumers never dispatch on an unscoped free string. The initial registry is:
 
 | Domain | IDs |
 | --- | --- |
@@ -471,6 +471,8 @@ Before schemas can be implemented, issue #236 must materialize machine-readable 
 - feature IDs/units/sample quality;
 - story, beat, realization-family, relation and `tapeChannel` IDs;
 - reason IDs above and detector transition reasons.
+
+The branch-freeze projection is `machine/freeze-registry.json`, generated and checked by `machine/build_freeze_registry.py`. It is implementation input/evidence, not a runtime compatibility file and not a replacement for the still-required DTO JSON Schemas. The same checker pins `machine/v4-event-envelope.golden.json` to master baseline `0ce75d4`, rejects narrative-only top-level fields and exercises the current V4 freeze/thaw round-trip.
 
 The exact human-review candidate for fact predicates, scalar/unit types, claim allowlists, feature IDs and `tapeChannel` taxonomy is [the fact/feature registry](fact-feature-registry.md). Machine schemas may encode it, but may not silently add a predicate, attribute, enum literal, feature or channel.
 

@@ -1,0 +1,59 @@
+{
+  "baselineCommit": "0ce75d4",
+  "canonicalSha256": "sha256:35540c0c71fbf02a9cd6ab5f4a734b4375eb4175675b3b928f6801cf88b185b7",
+  "eventEnvelope": {
+    "confidence": 0.8,
+    "copy": {
+      "headlineToken": "battle.headline",
+      "statusToken": "battle.status"
+    },
+    "correlationId": "battle-with-17",
+    "dedupeKey": "RACE:BATTLE_HUNTING:player",
+    "eventId": "evt-BATTLE_HUNTING-125000",
+    "eventType": "BATTLE_HUNTING",
+    "expiresAt": "2026-08-28T09:00:06Z",
+    "metrics": {
+      "gapSeconds": 0.42
+    },
+    "mode": "RACE",
+    "monotonicMs": 125000,
+    "occurredAt": "2026-08-28T09:00:00Z",
+    "phase": "ENTER",
+    "presentation": {
+      "accent": "warn",
+      "maxHoldMs": 8000,
+      "minHoldMs": 1500,
+      "preferredState": "ACTIVE",
+      "variant": "attack",
+      "widget": "battle",
+      "zone": "EVENT"
+    },
+    "priority": 60,
+    "reason": {
+      "detector": "battle",
+      "rules": [
+        "gap<1.0"
+      ],
+      "suppressedAlternatives": [
+        "pit"
+      ]
+    },
+    "schemaVersion": "1.0",
+    "sequence": 0,
+    "sessionId": "sess-42",
+    "severity": 2,
+    "storyKey": "battle-with-17",
+    "subject": {
+      "carId": "player",
+      "carNumber": "3",
+      "classPosition": 4,
+      "displayName": "ME"
+    },
+    "target": {
+      "carId": "car17",
+      "carNumber": null,
+      "classPosition": 3,
+      "displayName": "NOVAK"
+    }
+  }
+}

@@ -1,0 +1,2610 @@
+{
+  "enums": {
+    "battle_outcome": [
+      "won",
+      "held",
+      "faded"
+    ],
+    "classification_status": [
+      "observed",
+      "provisional"
+    ],
+    "field_scope": [
+      "overall",
+      "class"
+    ],
+    "flag_scope": [
+      "session",
+      "local",
+      "unknown"
+    ],
+    "flag_state": [
+      "green",
+      "yellow",
+      "checkered"
+    ],
+    "gap_band": [
+      "closing",
+      "approach",
+      "attack",
+      "overlap"
+    ],
+    "hr_band": [
+      "calm",
+      "focused",
+      "pushing",
+      "high"
+    ],
+    "incident_state": [
+      "rolling",
+      "stalled",
+      "towing",
+      "unknown"
+    ],
+    "material_band": [
+      "none",
+      "minor",
+      "material",
+      "major"
+    ],
+    "pit_phase": [
+      "entry",
+      "lane",
+      "stopped",
+      "released",
+      "exit"
+    ],
+    "position_direction": [
+      "gained",
+      "lost",
+      "unchanged"
+    ],
+    "position_scope": [
+      "overall",
+      "class"
+    ],
+    "relative_direction": [
+      "ahead",
+      "behind"
+    ],
+    "session_end_reason": [
+      "completed",
+      "forward_transition",
+      "rewind_superseded",
+      "same_ref_restart",
+      "stream_ended"
+    ],
+    "session_start_reason": [
+      "normal_transition",
+      "attached_mid_session",
+      "same_ref_restart",
+      "rewind_branch",
+      "reconnect_classified"
+    ],
+    "skies_state": [
+      "clear",
+      "partly_cloudy",
+      "mostly_cloudy",
+      "overcast"
+    ],
+    "stream_start_reason": [
+      "normal",
+      "attached_live",
+      "process_recovery",
+      "enabled_mid_stream"
+    ],
+    "surface_band": [
+      "on_track",
+      "off_track",
+      "pit_stall",
+      "pit_road",
+      "not_in_world",
+      "unknown"
+    ],
+    "track_wetness_band": [
+      "dry",
+      "mostly_dry",
+      "very_lightly_wet",
+      "lightly_wet",
+      "moderately_wet",
+      "very_wet",
+      "extremely_wet"
+    ],
+    "weather_metric": [
+      "air_temperature",
+      "track_temperature",
+      "skies",
+      "wind_speed",
+      "precipitation",
+      "track_wetness"
+    ],
+    "weather_source": [
+      "live",
+      "session"
+    ]
+  },
+  "eventIdentifiers": [
+    {
+      "beatDefinitions": [
+        "battle.approach"
+      ],
+      "disposition": "keep wire; normalize internally",
+      "eventClass": "speakable",
+      "id": "APPROACH",
+      "narrativeKind": "battle.approach",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.battle.closing"
+    },
+    {
+      "beatDefinitions": [
+        "battle.attack_range"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "ATTACK_RANGE",
+      "narrativeKind": "battle.attack_range",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.battle.attack"
+    },
+    {
+      "beatDefinitions": [
+        "incident.recovery"
+      ],
+      "disposition": "keep commentary input",
+      "eventClass": "speakable",
+      "id": "BACK_UNDER_WAY",
+      "narrativeKind": "incident.recovered",
+      "sourceClass": "graph, derived lifecycle",
+      "tapeChannel": "race.incident.recovery"
+    },
+    {
+      "beatDefinitions": [
+        "battle.two_front"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "BATTLE_FOR_POSITION",
+      "narrativeKind": "battle.two_front",
+      "sourceClass": "graph + wire, composite",
+      "tapeChannel": "race.battle.two_front"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "reject in v2 catalog; migrate fixture to POSITION_LOST",
+      "eventClass": "compatibility_alias",
+      "id": "BATTLE_LOST",
+      "narrativeKind": null,
+      "sourceClass": "fallback alias only",
+      "tapeChannel": "compat.alias"
+    },
+    {
+      "beatDefinitions": [
+        "battle.won"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "BATTLE_WON",
+      "narrativeKind": "battle.won",
+      "sourceClass": "graph + wire, outcome",
+      "tapeChannel": "race.battle.outcome"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "visual/operator only",
+      "eventClass": "visual_only",
+      "id": "BLE_LOST",
+      "narrativeKind": null,
+      "sourceClass": "wire catalog/UI fixture only",
+      "tapeChannel": "system.connectivity"
+    },
+    {
+      "beatDefinitions": [
+        "timing.clean_streak"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "CLEAN_STREAK",
+      "narrativeKind": "timing.clean_streak",
+      "sourceClass": "graph + wire, temporal counter",
+      "tapeChannel": "race.timing.consistency"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "visual/operator only",
+      "eventClass": "visual_only",
+      "id": "CPU_TEMP_HIGH",
+      "narrativeKind": null,
+      "sourceClass": "wire catalog only",
+      "tapeChannel": "system.thermal"
+    },
+    {
+      "beatDefinitions": [
+        "session.enter_car.practice",
+        "session.enter_car.qualifying",
+        "session.enter_car.race"
+      ],
+      "disposition": "keep input; route by confirmed stage",
+      "eventClass": "speakable",
+      "id": "ENTER_CAR",
+      "narrativeKind": "session.enter_car",
+      "sourceClass": "graph, vehicle lifecycle",
+      "tapeChannel": "session.vehicle"
+    },
+    {
+      "beatDefinitions": [
+        "session.field_fact"
+      ],
+      "disposition": "keep input",
+      "eventClass": "speakable",
+      "id": "FIELD_FACT",
+      "narrativeKind": "session.field_fact",
+      "sourceClass": "graph, derived context",
+      "tapeChannel": "session.context.field"
+    },
+    {
+      "beatDefinitions": [
+        "session.final_lap"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "FINAL_LAP",
+      "narrativeKind": "session.final_lap",
+      "sourceClass": "graph + wire, direct edge",
+      "tapeChannel": "race.session.final_lap"
+    },
+    {
+      "beatDefinitions": [
+        "session.hero_finish"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "FINISH",
+      "narrativeKind": "session.hero_finish",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.session.finish"
+    },
+    {
+      "beatDefinitions": [
+        "timing.pace.gain"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "GAIN_FOUND",
+      "narrativeKind": "timing.pace_gain",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.timing.delta"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "visual/operator only",
+      "eventClass": "visual_only",
+      "id": "GPU_TEMP_HIGH",
+      "narrativeKind": null,
+      "sourceClass": "wire catalog only",
+      "tapeChannel": "system.thermal"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "reject; migrate fixture to HR_PRESSURE_RISING",
+      "eventClass": "compatibility_alias",
+      "id": "HEART_RATE",
+      "narrativeKind": null,
+      "sourceClass": "fallback alias only",
+      "tapeChannel": "compat.alias"
+    },
+    {
+      "beatDefinitions": [
+        "timing.lap.hot"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "HOT_LAP",
+      "narrativeKind": "timing.hot_lap",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.timing.attempt"
+    },
+    {
+      "beatDefinitions": [
+        "bio.pressure"
+      ],
+      "disposition": "keep wire; fact-safe tone only",
+      "eventClass": "speakable",
+      "id": "HR_PRESSURE_RISING",
+      "narrativeKind": "bio.pressure_rising",
+      "sourceClass": "graph + wire, temporal bio",
+      "tapeChannel": "bio.pressure"
+    },
+    {
+      "beatDefinitions": [
+        "battle.pressure_behind"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "HUNTED",
+      "narrativeKind": "battle.pressure_behind",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.battle.pressure"
+    },
+    {
+      "beatDefinitions": [
+        "battle.pursuit"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "HUNTING",
+      "narrativeKind": "battle.pursuit",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.battle.closing"
+    },
+    {
+      "beatDefinitions": [
+        "incident.off_track",
+        "incident.unclassified"
+      ],
+      "disposition": "keep wire; split by explicit branch fact",
+      "eventClass": "speakable",
+      "id": "INCIDENT",
+      "narrativeKind": "incident.occurred",
+      "sourceClass": "graph + wire, direct/classified",
+      "tapeChannel": "race.incident.event"
+    },
+    {
+      "beatDefinitions": [
+        "incident.aftermath"
+      ],
+      "disposition": "keep input",
+      "eventClass": "speakable",
+      "id": "INCIDENT_AFTERMATH",
+      "narrativeKind": "incident.aftermath",
+      "sourceClass": "graph, derived lifecycle",
+      "tapeChannel": "race.incident.aftermath"
+    },
+    {
+      "beatDefinitions": [
+        "incident.invalid_lap"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "INVALID_LAP",
+      "narrativeKind": "incident.invalid_lap",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.incident.invalid_lap"
+    },
+    {
+      "beatDefinitions": [
+        "timing.lap.completed"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "LAP_COMPLETE",
+      "narrativeKind": "timing.lap_completed",
+      "sourceClass": "graph + wire, direct edge",
+      "tapeChannel": "race.timing.lap"
+    },
+    {
+      "beatDefinitions": [
+        "position.leader_change"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "LEADER_CHANGE",
+      "narrativeKind": "position.leader_change",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.position.leader"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "visual/operator only; never infer race facts",
+      "eventClass": "visual_only",
+      "id": "LINK_DROP",
+      "narrativeKind": null,
+      "sourceClass": "wire, connectivity",
+      "tapeChannel": "system.connectivity"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "reject/drop legacy fixture; do not infer a timing result",
+      "eventClass": "compatibility_alias",
+      "id": "NO_IMPROVEMENT",
+      "narrativeKind": null,
+      "sourceClass": "fallback alias only",
+      "tapeChannel": "compat.alias"
+    },
+    {
+      "beatDefinitions": [
+        "position.pass"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "OVERTAKE",
+      "narrativeKind": "position.pass_completed",
+      "sourceClass": "graph + wire, correlated result",
+      "tapeChannel": "race.position.pass"
+    },
+    {
+      "beatDefinitions": [],
+      "disposition": "reject as v2 input; migrate to POSITION_LOST with cause fact",
+      "eventClass": "compatibility_alias",
+      "id": "OVERTAKEN",
+      "narrativeKind": null,
+      "sourceClass": "graph + fallback alias, not current adapter output",
+      "tapeChannel": "compat.alias"
+    },
+    {
+      "beatDefinitions": [
+        "timing.pace.hunt"
+      ],
+      "disposition": "keep commentary input",
+      "eventClass": "speakable",
+      "id": "PACE_HUNT",
+      "narrativeKind": "timing.pace_hunt",
+      "sourceClass": "emitter only, temporal",
+      "tapeChannel": "race.timing.target"
+    },
+    {
+      "beatDefinitions": [
+        "filler.parade_lap"
+      ],
+      "disposition": "replace name in internal catalog",
+      "eventClass": "speakable",
+      "id": "PARADE_PAD",
+      "narrativeKind": "filler.parade_lap",
+      "sourceClass": "graph, filler impulse",
+      "tapeChannel": "filler.track_state"
+    },
+    {
+      "beatDefinitions": [
+        "timing.lap.personal_best"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "PERSONAL_BEST",
+      "narrativeKind": "timing.personal_best",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.timing.lap"
+    },
+    {
+      "beatDefinitions": [
+        "pit.entry"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "PIT_ENTRY",
+      "narrativeKind": "pit.entry",
+      "sourceClass": "graph + wire, lifecycle",
+      "tapeChannel": "race.pit.cycle"
+    },
+    {
+      "beatDefinitions": [
+        "pit.exit"
+      ],
+      "disposition": "keep wire; remove graph-node overlap",
+      "eventClass": "speakable",
+      "id": "PIT_EXIT",
+      "narrativeKind": "pit.exit",
+      "sourceClass": "graph + wire, lifecycle",
+      "tapeChannel": "race.pit.cycle"
+    },
+    {
+      "beatDefinitions": [
+        "pit.lane"
+      ],
+      "disposition": "keep wire and add narrative mapping",
+      "eventClass": "speakable",
+      "id": "PIT_LANE",
+      "narrativeKind": "pit.lane",
+      "sourceClass": "wire outside graph, lifecycle",
+      "tapeChannel": "race.pit.cycle"
+    },
+    {
+      "beatDefinitions": [
+        "pit.outcome"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "PIT_OUTCOME",
+      "narrativeKind": "pit.outcome",
+      "sourceClass": "graph + wire, result",
+      "tapeChannel": "race.pit.outcome"
+    },
+    {
+      "beatDefinitions": [
+        "pit.released"
+      ],
+      "disposition": "keep wire and add narrative mapping",
+      "eventClass": "speakable",
+      "id": "PIT_RELEASED",
+      "narrativeKind": "pit.released",
+      "sourceClass": "wire outside graph, lifecycle",
+      "tapeChannel": "race.pit.cycle"
+    },
+    {
+      "beatDefinitions": [
+        "pit.stopped"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "PIT_STOPPED",
+      "narrativeKind": "pit.stopped",
+      "sourceClass": "graph + wire, lifecycle",
+      "tapeChannel": "race.pit.cycle"
+    },
+    {
+      "beatDefinitions": [
+        "timing.position.attack"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "POSITION_ATTACK",
+      "narrativeKind": "timing.position_attack",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.timing.attempt"
+    },
+    {
+      "beatDefinitions": [
+        "position.gained"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "POSITION_GAINED",
+      "narrativeKind": "position.gained",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.position.change"
+    },
+    {
+      "beatDefinitions": [
+        "position.lost"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "POSITION_LOST",
+      "narrativeKind": "position.lost",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.position.change"
+    },
+    {
+      "beatDefinitions": [
+        "timing.lap.projected"
+      ],
+      "disposition": "keep wire; prediction wording tightly constrained",
+      "eventClass": "speakable",
+      "id": "PROJECTED_LAP",
+      "narrativeKind": "timing.projected_lap",
+      "sourceClass": "graph + wire, temporal estimate",
+      "tapeChannel": "race.timing.attempt"
+    },
+    {
+      "beatDefinitions": [
+        "session.qualifying_recap"
+      ],
+      "disposition": "keep input",
+      "eventClass": "speakable",
+      "id": "QUALI_RECAP",
+      "narrativeKind": "session.qualifying_recap",
+      "sourceClass": "graph, session result",
+      "tapeChannel": "session.qualifying.recap"
+    },
+    {
+      "beatDefinitions": [
+        "battle.rival_threat"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "RIVAL_THREAT",
+      "narrativeKind": "battle.rival_threat",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.battle.pressure"
+    },
+    {
+      "beatDefinitions": [
+        "timing.sector.best"
+      ],
+      "disposition": "keep wire; split from generic sector beat",
+      "eventClass": "speakable",
+      "id": "SECTOR_BEST",
+      "narrativeKind": "timing.sector_best",
+      "sourceClass": "graph + wire, direct result",
+      "tapeChannel": "race.timing.sector"
+    },
+    {
+      "beatDefinitions": [
+        "timing.sector.split"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "SECTOR_SPLIT",
+      "narrativeKind": "timing.sector_split",
+      "sourceClass": "graph + wire, direct edge",
+      "tapeChannel": "race.timing.sector"
+    },
+    {
+      "beatDefinitions": [
+        "session.checkered"
+      ],
+      "disposition": "keep input; dedupe with checkered flag branch",
+      "eventClass": "speakable",
+      "id": "SESSION_CHECKERED",
+      "narrativeKind": "session.checkered",
+      "sourceClass": "graph, lifecycle result",
+      "tapeChannel": "race.control.flag"
+    },
+    {
+      "beatDefinitions": [
+        "session.flag.yellow",
+        "session.flag.green",
+        "session.checkered"
+      ],
+      "disposition": "keep input; branch on explicit flag enum",
+      "eventClass": "speakable",
+      "id": "SESSION_FLAG",
+      "narrativeKind": "session.flag_changed",
+      "sourceClass": "graph, direct flag edge",
+      "tapeChannel": "race.control.flag"
+    },
+    {
+      "beatDefinitions": [
+        "session.intro.practice"
+      ],
+      "disposition": "replace with stage-routed SESSION_STARTED input",
+      "eventClass": "speakable",
+      "id": "SESSION_INTRO_PRACTICE",
+      "narrativeKind": "session.started",
+      "sourceClass": "graph, lifecycle",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "beatDefinitions": [
+        "session.intro.qualifying"
+      ],
+      "disposition": "replace with stage-routed SESSION_STARTED input",
+      "eventClass": "speakable",
+      "id": "SESSION_INTRO_QUALIFY",
+      "narrativeKind": "session.started",
+      "sourceClass": "graph, lifecycle",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "beatDefinitions": [
+        "session.intro.race"
+      ],
+      "disposition": "replace with stage-routed SESSION_STARTED input",
+      "eventClass": "speakable",
+      "id": "SESSION_INTRO_RACE",
+      "narrativeKind": "session.started",
+      "sourceClass": "graph, lifecycle",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "beatDefinitions": [
+        "session.preview.next"
+      ],
+      "disposition": "keep internal input",
+      "eventClass": "speakable",
+      "id": "SESSION_PREVIEW",
+      "narrativeKind": "session.preview_next",
+      "sourceClass": "graph, downstream context",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "beatDefinitions": [
+        "session.wrap.practice",
+        "session.wrap.qualifying",
+        "session.wrap.race"
+      ],
+      "disposition": "replace with stage-routed SESSION_ENDED input",
+      "eventClass": "speakable",
+      "id": "SESSION_WRAP",
+      "narrativeKind": "session.ended",
+      "sourceClass": "graph, lifecycle/result",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "beatDefinitions": [
+        "battle.side_by_side"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "SIDE_BY_SIDE",
+      "narrativeKind": "battle.side_by_side",
+      "sourceClass": "graph + wire, temporal/composite",
+      "tapeChannel": "race.battle.side_by_side"
+    },
+    {
+      "beatDefinitions": [
+        "session.sof_brief"
+      ],
+      "disposition": "keep internal input",
+      "eventClass": "speakable",
+      "id": "SOF_BRIEF",
+      "narrativeKind": "session.sof_brief",
+      "sourceClass": "graph, context",
+      "tapeChannel": "session.context.field"
+    },
+    {
+      "beatDefinitions": [
+        "stream.started"
+      ],
+      "disposition": "reject from final narrative catalog; adapter emits STREAM_STARTED",
+      "eventClass": "speakable",
+      "id": "STREAM_START",
+      "narrativeKind": "stream.started",
+      "sourceClass": "graph, OBS lifecycle",
+      "tapeChannel": "stream.lifecycle"
+    },
+    {
+      "beatDefinitions": [
+        "timing.target.locked"
+      ],
+      "disposition": "keep wire",
+      "eventClass": "speakable",
+      "id": "TARGET_LOCKED",
+      "narrativeKind": "timing.target_locked",
+      "sourceClass": "graph + wire, temporal",
+      "tapeChannel": "race.timing.target"
+    },
+    {
+      "beatDefinitions": [
+        "timing.pace.loss"
+      ],
+      "disposition": "keep wire-compatible input",
+      "eventClass": "speakable",
+      "id": "TIME_LOST",
+      "narrativeKind": "timing.pace_loss",
+      "sourceClass": "graph + catalog fallback, temporal",
+      "tapeChannel": "race.timing.delta"
+    },
+    {
+      "beatDefinitions": [
+        "session.weather_brief"
+      ],
+      "disposition": "keep internal input",
+      "eventClass": "speakable",
+      "id": "WEATHER_BRIEF",
+      "narrativeKind": "session.weather_brief",
+      "sourceClass": "graph, context",
+      "tapeChannel": "session.context.weather"
+    },
+    {
+      "beatDefinitions": [
+        "session.weather_change"
+      ],
+      "disposition": "keep internal input",
+      "eventClass": "speakable",
+      "id": "WEATHER_CHANGE",
+      "narrativeKind": "session.weather_changed",
+      "sourceClass": "graph, temporal context",
+      "tapeChannel": "session.context.weather"
+    }
+  ],
+  "factPredicates": [
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "startReason",
+          "required": true,
+          "scalarType": "stream_start_reason"
+        }
+      ],
+      "id": "stream.started",
+      "minimumAttributeCount": 1,
+      "producer": "logic BroadcastClock/StreamTimeline; common fact fields carry both epochs",
+      "scope": "stream"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "stage",
+          "required": true,
+          "scalarType": "stage"
+        },
+        {
+          "id": "startReason",
+          "required": true,
+          "scalarType": "session_start_reason"
+        }
+      ],
+      "id": "session.started",
+      "minimumAttributeCount": 2,
+      "producer": "logic StreamTimeline",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "stage",
+          "required": true,
+          "scalarType": "stage"
+        },
+        {
+          "id": "predecessorOccurrenceId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "session.restarted",
+      "minimumAttributeCount": 2,
+      "producer": "logic StreamTimeline confirmed same-ref rewind",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "stage",
+          "required": true,
+          "scalarType": "stage"
+        },
+        {
+          "id": "reason",
+          "required": true,
+          "scalarType": "session_end_reason"
+        }
+      ],
+      "id": "session.ended",
+      "minimumAttributeCount": 2,
+      "producer": "logic StreamTimeline",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "stage",
+          "required": true,
+          "scalarType": "stage"
+        },
+        {
+          "id": "sourceSubSessionId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "sourceSessionNum",
+          "required": true,
+          "scalarType": "count"
+        }
+      ],
+      "id": "session.next_present_stage",
+      "minimumAttributeCount": 3,
+      "producer": "typed SessionInfo.Sessions plan projection",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "stage",
+          "required": true,
+          "scalarType": "stage"
+        }
+      ],
+      "id": "vehicle.entered_car",
+      "minimumAttributeCount": 1,
+      "producer": "vehicle-phase edge",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "phase",
+          "required": true,
+          "scalarType": "vehicle_phase"
+        }
+      ],
+      "id": "vehicle.phase",
+      "minimumAttributeCount": 1,
+      "producer": "versioned VehiclePhase classifier",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "context",
+          "required": true,
+          "scalarType": "broadcast_context"
+        }
+      ],
+      "id": "broadcast.context",
+      "minimumAttributeCount": 1,
+      "producer": "logic SwitchState projection; superseded on normalized context change",
+      "scope": "stream"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "lap",
+          "required": true,
+          "scalarType": "lap_number"
+        },
+        {
+          "id": "lapTime",
+          "required": false,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "timing.lap_completed",
+      "minimumAttributeCount": 1,
+      "producer": "S/F crossing + completed-lap timing",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "lapTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "improvement",
+          "required": true,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "timing.personal_best",
+      "minimumAttributeCount": 3,
+      "producer": "completed-lap comparison",
+      "scope": "downstream"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "delta",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "segmentId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "timing.delta_improved",
+      "minimumAttributeCount": 3,
+      "producer": "timing reference comparison; magnitude normalized positive",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "delta",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "segmentId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "timing.delta_worsened",
+      "minimumAttributeCount": 3,
+      "producer": "timing reference comparison; magnitude normalized positive",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "sectorId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "segmentTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "delta",
+          "required": false,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "timing.sector_completed",
+      "minimumAttributeCount": 2,
+      "producer": "sector crossing",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "sectorId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "segmentTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "improvement",
+          "required": true,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "timing.sector_best",
+      "minimumAttributeCount": 4,
+      "producer": "sector best store",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "targetPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "gap",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "timing.target_locked",
+      "minimumAttributeCount": 3,
+      "producer": "qualifying/practice target detector",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "projectedTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "estimatorVersion",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "quality",
+          "required": true,
+          "scalarType": "fact_quality"
+        }
+      ],
+      "id": "timing.lap_projection",
+      "minimumAttributeCount": 3,
+      "producer": "versioned lap projection feature",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "attemptId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "timing.active_attempt",
+      "minimumAttributeCount": 1,
+      "producer": "hot/timed-lap lifecycle",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "targetPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "projectedTime",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceTime",
+          "required": true,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "timing.position_projection",
+      "minimumAttributeCount": 3,
+      "producer": "qualifying position estimator",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "count",
+          "required": true,
+          "scalarType": "count"
+        }
+      ],
+      "id": "timing.clean_lap_streak",
+      "minimumAttributeCount": 1,
+      "producer": "consecutive completed valid-lap counter",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "targetPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "gap",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "referenceId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "timing.pace_target",
+      "minimumAttributeCount": 3,
+      "producer": "PACE_HUNT detector",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "closer→target",
+      "attributes": [
+        {
+          "id": "gap",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "netClosing",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "slope",
+          "required": true,
+          "scalarType": "seconds_per_second"
+        },
+        {
+          "id": "targetEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "battle.closing",
+      "minimumAttributeCount": 4,
+      "producer": "correlated temporal gap detector",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "closer→target",
+      "attributes": [
+        {
+          "id": "materialBand",
+          "required": true,
+          "scalarType": "material_band"
+        },
+        {
+          "id": "gap",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "targetEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "battle.approaching",
+      "minimumAttributeCount": 3,
+      "producer": "closing lifecycle band",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "attacker→target",
+      "attributes": [
+        {
+          "id": "gapBand",
+          "required": true,
+          "scalarType": "gap_band"
+        },
+        {
+          "id": "gap",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "targetEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "battle.attack_range",
+      "minimumAttributeCount": 3,
+      "producer": "attack-range detector",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero→target",
+      "attributes": [
+        {
+          "id": "relationEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "battle.side_by_side",
+      "minimumAttributeCount": 1,
+      "producer": "overlap/composite detector",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "challenger→defender",
+      "attributes": [
+        {
+          "id": "positionAtRisk",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "relationEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "battle.position_threat",
+      "minimumAttributeCount": 2,
+      "producer": "rear-threat detector",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero→target",
+      "attributes": [
+        {
+          "id": "outcome",
+          "required": true,
+          "scalarType": "battle_outcome"
+        },
+        {
+          "id": "relationEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "battle.outcome",
+      "minimumAttributeCount": 2,
+      "producer": "correlated battle result",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "passer→passed",
+      "attributes": [
+        {
+          "id": "oldPasserPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "newPasserPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "oldTargetPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "newTargetPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        }
+      ],
+      "id": "position.passed",
+      "minimumAttributeCount": 4,
+      "producer": "ordered position transition",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "oldPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "newPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "direction",
+          "required": true,
+          "scalarType": "position_direction"
+        }
+      ],
+      "id": "position.changed",
+      "minimumAttributeCount": 3,
+      "producer": "class/overall position transition with declared scope",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "oldLeader→newLeader",
+      "attributes": [
+        {
+          "id": "oldCarId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "newCarId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "position.leader_changed",
+      "minimumAttributeCount": 2,
+      "producer": "leader identity edge",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "incidentOrdinal",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "incidentDelta",
+          "required": true,
+          "scalarType": "count"
+        }
+      ],
+      "id": "incident.occurred",
+      "minimumAttributeCount": 2,
+      "producer": "incident count/event edge",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "incidentOrdinal",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "surface",
+          "required": true,
+          "scalarType": "surface_band"
+        }
+      ],
+      "id": "incident.off_track",
+      "minimumAttributeCount": 2,
+      "producer": "explicit surface classification",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "lap",
+          "required": true,
+          "scalarType": "lap_number"
+        },
+        {
+          "id": "attemptId",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "incident.lap_invalid",
+      "minimumAttributeCount": 2,
+      "producer": "invalid-lap edge",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "incidentOrdinal",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "state",
+          "required": true,
+          "scalarType": "incident_state"
+        }
+      ],
+      "id": "incident.state",
+      "minimumAttributeCount": 2,
+      "producer": "aftermath FSM",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "incidentOrdinal",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "heldFor",
+          "required": true,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "incident.recovered_motion",
+      "minimumAttributeCount": 2,
+      "producer": "aftermath recovery FSM",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "surface",
+          "required": true,
+          "scalarType": "surface_band"
+        }
+      ],
+      "id": "vehicle.surface",
+      "minimumAttributeCount": 1,
+      "producer": "normalized CarIdxTrackSurface",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "phase",
+          "required": true,
+          "scalarType": "pit_phase"
+        },
+        {
+          "id": "cycleOrdinal",
+          "required": true,
+          "scalarType": "count"
+        }
+      ],
+      "id": "pit.phase",
+      "minimumAttributeCount": 2,
+      "producer": "pit lifecycle FSM",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "cycleOrdinal",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "entryPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "exitPosition",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "positionDelta",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "direction",
+          "required": true,
+          "scalarType": "position_direction"
+        }
+      ],
+      "id": "pit.outcome",
+      "minimumAttributeCount": 5,
+      "producer": "correlated pit entry/exit comparison",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "flag",
+          "required": true,
+          "scalarType": "flag_state"
+        },
+        {
+          "id": "scope",
+          "required": true,
+          "scalarType": "flag_scope"
+        }
+      ],
+      "id": "race.flag_changed",
+      "minimumAttributeCount": 2,
+      "producer": "normalized SessionFlags edge",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [],
+      "id": "race.checkered_active",
+      "minimumAttributeCount": 0,
+      "producer": "checkered state/edge dedupe",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "lap",
+          "required": true,
+          "scalarType": "lap_number"
+        }
+      ],
+      "id": "race.final_lap",
+      "minimumAttributeCount": 1,
+      "producer": "final-lap edge",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "position",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "classPosition",
+          "required": false,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "classificationStatus",
+          "required": false,
+          "scalarType": "classification_status"
+        }
+      ],
+      "id": "race.hero_finished",
+      "minimumAttributeCount": 1,
+      "producer": "observed player finish; not assumed official",
+      "scope": "historical_only"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "position",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "bestLapTime",
+          "required": false,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "session.qualifying_result",
+      "minimumAttributeCount": 1,
+      "producer": "completed qualifying occurrence summary",
+      "scope": "downstream"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "fieldScope",
+          "required": true,
+          "scalarType": "field_scope"
+        },
+        {
+          "id": "sampleCount",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "official",
+          "required": true,
+          "scalarType": "boolean"
+        }
+      ],
+      "id": "field.strength",
+      "minimumAttributeCount": 4,
+      "producer": "iRating roster computation",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "celsius"
+        },
+        {
+          "id": "source",
+          "required": true,
+          "scalarType": "weather_source"
+        }
+      ],
+      "id": "weather.air_temperature",
+      "minimumAttributeCount": 2,
+      "producer": "weather extractor",
+      "scope": "revalidate"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "celsius"
+        },
+        {
+          "id": "source",
+          "required": true,
+          "scalarType": "weather_source"
+        }
+      ],
+      "id": "weather.track_temperature",
+      "minimumAttributeCount": 2,
+      "producer": "weather extractor",
+      "scope": "revalidate"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "skies_state"
+        },
+        {
+          "id": "source",
+          "required": true,
+          "scalarType": "weather_source"
+        }
+      ],
+      "id": "weather.skies",
+      "minimumAttributeCount": 2,
+      "producer": "weather extractor",
+      "scope": "revalidate"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "meters_per_second"
+        },
+        {
+          "id": "source",
+          "required": true,
+          "scalarType": "weather_source"
+        }
+      ],
+      "id": "weather.wind_speed",
+      "minimumAttributeCount": 2,
+      "producer": "weather extractor",
+      "scope": "revalidate"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "fraction"
+        },
+        {
+          "id": "source",
+          "required": true,
+          "scalarType": "weather_source"
+        }
+      ],
+      "id": "weather.precipitation",
+      "minimumAttributeCount": 2,
+      "producer": "live weather extractor",
+      "scope": "revalidate"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "value",
+          "required": true,
+          "scalarType": "track_wetness_band"
+        },
+        {
+          "id": "source",
+          "required": true,
+          "scalarType": "weather_source"
+        }
+      ],
+      "id": "weather.track_wetness",
+      "minimumAttributeCount": 2,
+      "producer": "live/declared wetness extractor",
+      "scope": "revalidate"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "metric",
+          "required": true,
+          "scalarType": "weather_metric"
+        },
+        {
+          "id": "oldFactId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "newFactId",
+          "required": true,
+          "scalarType": "id"
+        },
+        {
+          "id": "materialRevision",
+          "required": true,
+          "scalarType": "count"
+        }
+      ],
+      "id": "weather.changed",
+      "minimumAttributeCount": 4,
+      "producer": "material weather comparison",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "position",
+          "required": true,
+          "scalarType": "ordinal"
+        },
+        {
+          "id": "positionScope",
+          "required": true,
+          "scalarType": "position_scope"
+        }
+      ],
+      "id": "context.hero_position",
+      "minimumAttributeCount": 2,
+      "producer": "current RaceState projection",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "count",
+          "required": true,
+          "scalarType": "count"
+        },
+        {
+          "id": "fieldScope",
+          "required": true,
+          "scalarType": "field_scope"
+        }
+      ],
+      "id": "context.field_size",
+      "minimumAttributeCount": 2,
+      "producer": "roster/RaceState projection",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "—",
+      "attributes": [
+        {
+          "id": "displayName",
+          "required": true,
+          "scalarType": "text"
+        },
+        {
+          "id": "trackId",
+          "required": false,
+          "scalarType": "id"
+        }
+      ],
+      "id": "context.track_identity",
+      "minimumAttributeCount": 1,
+      "producer": "SessionContext/WeekendInfo; TrackID is metadata, never SessionRef",
+      "scope": "stream"
+    },
+    {
+      "actors": "hero→target",
+      "attributes": [
+        {
+          "id": "direction",
+          "required": true,
+          "scalarType": "relative_direction"
+        },
+        {
+          "id": "gap",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "targetEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "context.nearby_gap",
+      "minimumAttributeCount": 3,
+      "producer": "current valid gap projection",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "lap",
+          "required": false,
+          "scalarType": "lap_number"
+        },
+        {
+          "id": "lapsRemaining",
+          "required": false,
+          "scalarType": "count"
+        },
+        {
+          "id": "timeRemaining",
+          "required": false,
+          "scalarType": "seconds"
+        }
+      ],
+      "id": "context.session_progress",
+      "minimumAttributeCount": 1,
+      "producer": "current session projection",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "leader",
+      "attributes": [
+        {
+          "id": "positionScope",
+          "required": true,
+          "scalarType": "position_scope"
+        }
+      ],
+      "id": "context.leader_identity",
+      "minimumAttributeCount": 1,
+      "producer": "current leader projection",
+      "scope": "occurrence"
+    },
+    {
+      "actors": "hero",
+      "attributes": [
+        {
+          "id": "band",
+          "required": true,
+          "scalarType": "hr_band"
+        },
+        {
+          "id": "bpm",
+          "required": true,
+          "scalarType": "beats_per_minute"
+        },
+        {
+          "id": "sampleAge",
+          "required": true,
+          "scalarType": "seconds"
+        },
+        {
+          "id": "sensorEpoch",
+          "required": true,
+          "scalarType": "id"
+        }
+      ],
+      "id": "bio.hr_state",
+      "minimumAttributeCount": 4,
+      "producer": "BLE provider/band detector",
+      "scope": "revalidate"
+    }
+  ],
+  "features": [
+    {
+      "definition": "fractional lap-distance × valid hero lap reference, keyed closer/target",
+      "id": "gap.relation.seconds.estimated_v1",
+      "scalarType": "seconds",
+      "unknownWhen": "target swap, wrap ambiguity, lap-down ambiguity, pit/tow/teleport, missing lap reference"
+    },
+    {
+      "definition": "compatible CarIdxEstTime difference, keyed closer/target",
+      "id": "gap.relation.seconds.est_time_v1",
+      "scalarType": "seconds",
+      "unknownWhen": "missing/invalid est time, pit/tow/teleport, target swap"
+    },
+    {
+      "definition": "choose/compare registered estimators and export quality reason",
+      "id": "gap.relation.seconds.hybrid_v1",
+      "scalarType": "seconds",
+      "unknownWhen": "estimator disagreement outside bound or both invalid"
+    },
+    {
+      "definition": "least-squares slope over median time buckets",
+      "id": "gap.trend.slope",
+      "scalarType": "seconds_per_second",
+      "unknownWhen": "insufficient duration/coverage or changed target epoch"
+    },
+    {
+      "definition": "first-third median minus last-third median",
+      "id": "gap.trend.net_closing",
+      "scalarType": "seconds",
+      "unknownWhen": "insufficient buckets/coverage"
+    },
+    {
+      "definition": "usable bucket time / requested window",
+      "id": "gap.trend.coverage",
+      "scalarType": "fraction",
+      "unknownWhen": "no coercion; detector compares explicitly"
+    },
+    {
+      "definition": "deterministic quality composition from estimator/bucket/identity flags",
+      "id": "gap.trend.confidence",
+      "scalarType": "fraction",
+      "unknownWhen": "unknown when required component unknown"
+    },
+    {
+      "definition": "same ordered actors and relation epoch for full window",
+      "id": "gap.target_stable",
+      "scalarType": "boolean",
+      "unknownWhen": "false on target/role change"
+    },
+    {
+      "definition": "relative order/distance overlap predicate with confirmation",
+      "id": "battle.overlap_active",
+      "scalarType": "boolean",
+      "unknownWhen": "unknown on missing ordered identities"
+    },
+    {
+      "definition": "valid front closing AND valid rear closing for same hero/occurrence",
+      "id": "battle.two_front_active",
+      "scalarType": "boolean",
+      "unknownWhen": "unknown if either side unknown; false only when known false"
+    },
+    {
+      "definition": "versioned FSM over DrivingMode, SessionState, pit, surface, speed and lap progress",
+      "id": "vehicle.phase.current",
+      "scalarType": "vehicle_phase",
+      "unknownWhen": "unknown on incoherent/missing evidence"
+    },
+    {
+      "definition": "normalized Speed",
+      "id": "vehicle.motion.speed",
+      "scalarType": "meters_per_second",
+      "unknownWhen": "missing/stale"
+    },
+    {
+      "definition": "wrap-aware LapDistPct change",
+      "id": "vehicle.motion.lap_delta",
+      "scalarType": "fraction",
+      "unknownWhen": "teleport/tow or missing sample"
+    },
+    {
+      "definition": "current versus selected reference segment",
+      "id": "timing.segment.delta",
+      "scalarType": "seconds",
+      "unknownWhen": "reference/segment mismatch"
+    },
+    {
+      "definition": "registered projection algorithm/version",
+      "id": "timing.lap.projection",
+      "scalarType": "seconds",
+      "unknownWhen": "insufficient completed segments or invalid lap"
+    },
+    {
+      "definition": "class/overall position with explicit scope",
+      "id": "position.current",
+      "scalarType": "ordinal",
+      "unknownWhen": "missing or scope mismatch"
+    },
+    {
+      "definition": "previous-current within same occurrence/scope",
+      "id": "position.transition",
+      "scalarType": "signed_count",
+      "unknownWhen": "reconnect baseline, missing sample or occurrence change"
+    },
+    {
+      "definition": "surface-first aftermath FSM using speed/lap delta/tow",
+      "id": "incident.motion_state",
+      "scalarType": "incident_state",
+      "unknownWhen": "missing incident correlation"
+    },
+    {
+      "definition": "per-metric registered delta/band comparison",
+      "id": "weather.material_change",
+      "scalarType": "material_band",
+      "unknownWhen": "old/new source or metric mismatch"
+    },
+    {
+      "definition": "rounded eligible roster mean with sample count",
+      "id": "field.strength",
+      "scalarType": "count",
+      "unknownWhen": "empty/ambiguous roster"
+    },
+    {
+      "definition": "provider sample plus versioned baseline/freshness bands",
+      "id": "bio.hr_band",
+      "scalarType": "hr_band",
+      "unknownWhen": "disconnected/stale/no baseline"
+    }
+  ],
+  "internalLifecycleEvents": [
+    {
+      "id": "STREAM_STARTED",
+      "producer": "debounced BroadcastClock edge/process attach",
+      "speechRouting": "stream.started",
+      "tapeChannel": "stream.lifecycle"
+    },
+    {
+      "id": "STREAM_ENDED",
+      "producer": "confirmed BroadcastClock inactive edge",
+      "speechRouting": "no beat; invalidate/close/flush",
+      "tapeChannel": "stream.lifecycle"
+    },
+    {
+      "id": "SESSION_STARTED",
+      "producer": "new coherent SessionRef occurrence",
+      "speechRouting": "stage-specific intro",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "id": "SESSION_ENDED",
+      "producer": "completed/superseded occurrence",
+      "speechRouting": "stage-specific wrap, qualifying recap, preview when valid",
+      "tapeChannel": "session.lifecycle"
+    },
+    {
+      "id": "SESSION_RESTARTED",
+      "producer": "same-ref confirmed rewind",
+      "speechRouting": "session.restart plus new occurrence",
+      "tapeChannel": "session.lifecycle"
+    }
+  ],
+  "reasonRegistry": [
+    {
+      "domain": "director selection",
+      "ids": [
+        "highest_valid_candidate",
+        "active_story_continuation",
+        "related_event_update",
+        "higher_urgency_switch",
+        "switch_margin_met"
+      ]
+    },
+    {
+      "domain": "director silence/reject",
+      "ids": [
+        "no_candidate",
+        "no_episode_route",
+        "below_threshold",
+        "hard_guard_failed",
+        "source_guard_failed",
+        "cadence_blocked",
+        "fatigue_blocked",
+        "attempt_suppressed",
+        "planning_cycle_exhausted",
+        "episode_capacity_rejected",
+        "tts_unavailable",
+        "stream_inactive",
+        "context_unknown"
+      ]
+    },
+    {
+      "domain": "event arbitration",
+      "ids": [
+        "accepted",
+        "pit_cycle",
+        "cooldown",
+        "lower_priority",
+        "unmatched_exit",
+        "unmatched_update",
+        "overlay_disabled",
+        "invalid_candidate",
+        "event_candidate_protocol_violation"
+      ]
+    },
+    {
+      "domain": "timeline transition",
+      "ids": [
+        "broadcast_started",
+        "broadcast_ended",
+        "broadcast_unknown",
+        "broadcast_resumed",
+        "narrative_enabled",
+        "narrative_disabled",
+        "attached_live",
+        "process_recovery",
+        "session_started",
+        "session_ended",
+        "session_restarted",
+        "session_superseded",
+        "session_suspended",
+        "session_resumed"
+      ]
+    },
+    {
+      "domain": "opportunity terminal",
+      "ids": [
+        "consumed_playback_accepted",
+        "expired_ttl",
+        "superseded_revision",
+        "invalidated_truth",
+        "invalidated_occurrence",
+        "closed_stream",
+        "commentary_disabled",
+        "evicted_capacity"
+      ]
+    },
+    {
+      "domain": "episode terminal",
+      "ids": [
+        "outcome_observed",
+        "natural_exit",
+        "target_changed",
+        "composite_exited",
+        "occurrence_ended",
+        "occurrence_superseded",
+        "stream_ended",
+        "commentary_disabled",
+        "evidence_invalidated",
+        "capacity_evicted"
+      ]
+    },
+    {
+      "domain": "attempt terminal",
+      "ids": [
+        "realization_input_invalid",
+        "realization_timeout",
+        "realization_transport",
+        "realization_invalid_response",
+        "realization_output_oversize",
+        "realization_cancelled",
+        "realization_protocol_violation",
+        "semantic_rejected",
+        "freshness_stale",
+        "replaced_precommit",
+        "tts_failed_before_acceptance",
+        "stale_worker_token"
+      ]
+    },
+    {
+      "domain": "verifier rejection",
+      "ids": [
+        "empty",
+        "too_long",
+        "sentence_count",
+        "token_count",
+        "non_en_contract",
+        "meta_output",
+        "unknown_fragment",
+        "unknown_entity",
+        "actor_reversed",
+        "actor_ambiguous",
+        "number_unbound",
+        "number_mismatch",
+        "unit_mismatch",
+        "polarity_mismatch",
+        "tense_mismatch",
+        "required_missing",
+        "forbidden_claim",
+        "extra_claim",
+        "causal_inference",
+        "intent_inference",
+        "emotion_inference",
+        "medical_inference",
+        "prediction_as_result",
+        "result_as_prediction",
+        "unsupported_certainty",
+        "unsafe_negation"
+      ]
+    },
+    {
+      "domain": "TTS backend detail",
+      "ids": [
+        "backend_rejected",
+        "backend_process_exit",
+        "backend_audio_error",
+        "backend_cancelled",
+        "backend_unavailable"
+      ]
+    },
+    {
+      "domain": "detector transition",
+      "ids": [
+        "enter_started",
+        "enter_confirmed",
+        "enter_lost",
+        "material_band_changed",
+        "material_delta_met",
+        "update_rate_limited",
+        "clear_started",
+        "clear_cancelled",
+        "clear_confirmed",
+        "target_changed",
+        "occurrence_reset",
+        "stream_reset",
+        "unsupported_stage",
+        "identity_conflict",
+        "feature_unknown",
+        "required_capture_lost"
+      ]
+    },
+    {
+      "domain": "speech terminal",
+      "ids": [
+        "completed",
+        "interrupted_stream_end",
+        "interrupted_occurrence_reset",
+        "interrupted_commentary_disabled",
+        "interrupted_truth_invalidated",
+        "interrupted_shutdown",
+        "tts_failed_after_acceptance",
+        "tts_start_timeout",
+        "tts_playback_watchdog",
+        "tts_stop_timeout",
+        "tts_protocol_violation"
+      ]
+    },
+    {
+      "domain": "mailbox/tape health",
+      "ids": [
+        "mailbox_overloaded",
+        "mailbox_evicted_update",
+        "mailbox_recovery",
+        "mailbox_history_incomplete",
+        "deadline_admission_skipped",
+        "tape_queue_drop",
+        "tape_write_failed",
+        "tape_flush_timeout",
+        "config_transition_lost",
+        "capture_unavailable"
+      ]
+    },
+    {
+      "domain": "config/runtime health",
+      "ids": [
+        "disabled_by_config",
+        "disabled_invalid_config",
+        "legacy_key",
+        "starting",
+        "ready",
+        "component_preflight_pending",
+        "component_preflight_failed",
+        "component_unavailable",
+        "admission_timeout",
+        "session_identity_conflict",
+        "session_plan_conflict",
+        "fact_capacity_evicted",
+        "fact_capacity_exhausted",
+        "obs_state_unknown",
+        "history_incomplete",
+        "duck_unavailable"
+      ]
+    }
+  ],
+  "registryVersion": "v2-freeze-registry/1",
+  "scalarTypes": [
+    {
+      "contract": "JSON boolean; missing is not false",
+      "id": "boolean"
+    },
+    {
+      "contract": "non-empty ASCII identifier matching ^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "id": "id"
+    },
+    {
+      "contract": "trimmed UTF-8 display text, 1..160 code points; never interpreted as an ID",
+      "id": "text"
+    },
+    {
+      "contract": "finite float, SI seconds",
+      "id": "seconds"
+    },
+    {
+      "contract": "finite signed float; negative gap slope means closing",
+      "id": "seconds_per_second"
+    },
+    {
+      "contract": "finite float 0..1",
+      "id": "fraction"
+    },
+    {
+      "contract": "nonnegative integer",
+      "id": "count"
+    },
+    {
+      "contract": "signed integer",
+      "id": "signed_count"
+    },
+    {
+      "contract": "integer >=1",
+      "id": "ordinal"
+    },
+    {
+      "contract": "integer >=0; claim surface must distinguish current/completed semantics",
+      "id": "lap_number"
+    },
+    {
+      "contract": "finite float, degrees Celsius",
+      "id": "celsius"
+    },
+    {
+      "contract": "finite nonnegative float",
+      "id": "meters_per_second"
+    },
+    {
+      "contract": "integer 20..260 after provider validation",
+      "id": "beats_per_minute"
+    },
+    {
+      "contract": "practice",
+      "id": "stage"
+    },
+    {
+      "contract": "garage",
+      "id": "vehicle_phase"
+    },
+    {
+      "contract": "on_track",
+      "id": "broadcast_context"
+    },
+    {
+      "contract": "measured",
+      "id": "fact_quality"
+    }
+  ],
+  "schemaVersions": [
+    {
+      "artifact": "unchanged overlay EventEnvelope wire",
+      "schemaVersion": "1.0"
+    },
+    {
+      "artifact": "narrative command",
+      "schemaVersion": "narrative-command/2"
+    },
+    {
+      "artifact": "internal narrative event",
+      "schemaVersion": "narrative-event/2"
+    },
+    {
+      "artifact": "feature frame",
+      "schemaVersion": "feature-frame/2"
+    },
+    {
+      "artifact": "detector observation",
+      "schemaVersion": "detector-observation/2"
+    },
+    {
+      "artifact": "pre-arbitration event candidate",
+      "schemaVersion": "event-candidate-tap/2"
+    },
+    {
+      "artifact": "timeline snapshot",
+      "schemaVersion": "timeline-snapshot/2"
+    },
+    {
+      "artifact": "session plan",
+      "schemaVersion": "session-plan/2"
+    },
+    {
+      "artifact": "atomic fact",
+      "schemaVersion": "atomic-fact/2"
+    },
+    {
+      "artifact": "fact view",
+      "schemaVersion": "fact-view/2"
+    },
+    {
+      "artifact": "episode instance/summary",
+      "schemaVersion": "episode/2"
+    },
+    {
+      "artifact": "event opportunity",
+      "schemaVersion": "event-opportunity/2"
+    },
+    {
+      "artifact": "beat plan",
+      "schemaVersion": "beat-plan/2"
+    },
+    {
+      "artifact": "prompt options",
+      "schemaVersion": "prompt-options/2"
+    },
+    {
+      "artifact": "realization bundle",
+      "schemaVersion": "realization-bundle/2"
+    },
+    {
+      "artifact": "compiled prompt",
+      "schemaVersion": "compiled-prompt/2"
+    },
+    {
+      "artifact": "realization request",
+      "schemaVersion": "realization-request/2"
+    },
+    {
+      "artifact": "realization result",
+      "schemaVersion": "realization-result/2"
+    },
+    {
+      "artifact": "LLM attempt",
+      "schemaVersion": "llm-attempt/2"
+    },
+    {
+      "artifact": "TTS utterance",
+      "schemaVersion": "tts-utterance/2"
+    },
+    {
+      "artifact": "TTS callback",
+      "schemaVersion": "tts-callback/2"
+    },
+    {
+      "artifact": "speech exposure",
+      "schemaVersion": "speech-exposure/2"
+    },
+    {
+      "artifact": "narrative catalog",
+      "schemaVersion": "narrative-catalog/2"
+    },
+    {
+      "artifact": "tape manifest",
+      "schemaVersion": "narrative-tape-manifest/2"
+    },
+    {
+      "artifact": "tape record",
+      "schemaVersion": "narrative-tape-record/2"
+    },
+    {
+      "artifact": "public commentary HTTP",
+      "schemaVersion": "commentary-runtime/2"
+    },
+    {
+      "artifact": "effective commentary config",
+      "schemaVersion": "commentary-config/2"
+    }
+  ],
+  "sourceBaseline": "master@0ce75d4",
+  "sources": [
+    "docs/v2.0.0/fact-feature-registry.md",
+    "docs/v2.0.0/schema-contracts.md",
+    "docs/v2.0.0/event-beat-disposition.md"
+  ],
+  "stateRegistry": {
+    "detector": [
+      "inactive",
+      "candidate",
+      "active",
+      "clearing"
+    ],
+    "episode": [
+      "candidate",
+      "active",
+      "suspended",
+      "resolved",
+      "invalidated"
+    ],
+    "eventOpportunity": [
+      "pending",
+      "reserved",
+      "consumed",
+      "expired",
+      "superseded",
+      "invalidated",
+      "evicted"
+    ],
+    "narrativeRuntime": [
+      "disabled",
+      "starting",
+      "ready",
+      "degraded",
+      "stopping",
+      "stopped"
+    ],
+    "obs": [
+      "inactive",
+      "active",
+      "unknown"
+    ],
+    "speechLane": [
+      "idle",
+      "building",
+      "committed",
+      "speaking",
+      "stopping"
+    ],
+    "ttsCallback": [
+      "playback_accepted",
+      "completed",
+      "interrupted",
+      "failed"
+    ]
+  },
+  "tapeChannels": [
+    "bio.pressure",
+    "compat.alias",
+    "filler.lifecycle",
+    "filler.track_state",
+    "race.battle.attack",
+    "race.battle.closing",
+    "race.battle.outcome",
+    "race.battle.pressure",
+    "race.battle.side_by_side",
+    "race.battle.two_front",
+    "race.control.flag",
+    "race.incident.aftermath",
+    "race.incident.event",
+    "race.incident.invalid_lap",
+    "race.incident.recovery",
+    "race.pit.cycle",
+    "race.pit.outcome",
+    "race.position.change",
+    "race.position.leader",
+    "race.position.pass",
+    "race.session.final_lap",
+    "race.session.finish",
+    "race.timing.attempt",
+    "race.timing.consistency",
+    "race.timing.delta",
+    "race.timing.lap",
+    "race.timing.sector",
+    "race.timing.target",
+    "session.context.field",
+    "session.context.weather",
+    "session.lifecycle",
+    "session.qualifying.recap",
+    "session.vehicle",
+    "stream.lifecycle",
+    "system.connectivity",
+    "system.thermal"
+  ]
+}
