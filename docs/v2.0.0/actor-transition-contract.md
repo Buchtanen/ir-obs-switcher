@@ -12,7 +12,8 @@ Only `NarrativeRuntime.run()` mutates:
 - EpisodeRegistry, EventOpportunityQueue and attempt suppressions;
 - ExposureStore and bounded decision records;
 - automatic/manual speech-lane state and worker tokens;
-- silence/validity deadline generations and commentary component health.
+- the last applied immutable ConfigLedger snapshot used by narrative decisions;
+- silence/validity deadline generations and commentary component health;
 - current planning-cycle ID, dispatched-plan count (`0..2`) and source impulse.
 
 StreamTimeline, FeatureEngine, FactLedger and DetectorBank remain upstream owners. Qwen, TTS and tape workers perform I/O but cannot mutate actor state. Server handlers post commands and read immutable status snapshots.
@@ -56,7 +57,7 @@ Every context batch carries `external_order`; worker/timer/API commands do not. 
 | Kind | Producer | Protected | Coalescing | Actor effect |
 | --- | --- | --- | --- | --- |
 | `APPLY_CONTEXT_BATCH` | narrative fanout adapter | exactly when timeline transitionReasons is nonempty or a contained event has derived `deliveryClass=protected` | never | atomically apply one coherent TimelineSnapshot/FactView plus 0..64 ordered NarrativeEvents; pure FactView change only invalidates/closes, while at least one accepted/lifecycle NarrativeEvent may trigger one director pass |
-| `CONFIG_UPDATE` | config owner | yes | never | validate/apply each generation in order; defer fields whose declared boundary is not yet legal |
+| `CONFIG_UPDATE` | stream/config coordinator | yes | never; admitted atomically before its optional matching context batch | cache the already installed ConfigLedger snapshot/diagnostic and launch generation-tagged component preflights; run/episode/speech lifecycle changes only in the immediately following coherent context batch |
 | `LONG_SILENCE_ELAPSED` | owned one-shot deadline | no | same deadline generation only | clear fired token, evaluate one filler impulse, then rearm by frozen rule |
 | `VALIDITY_DEADLINE_ELAPSED` | owned nearest-expiry one-shot deadline | no | same deadline generation only | sweep facts already expired in the applied view plus opportunity/BeatPlan revision deadlines; cancel invalid building/committed work, never run director, then rearm |
 | `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, verify synchronously, freshness-check and dispatch TTS or reject |
@@ -76,9 +77,32 @@ Stream/session/vehicle lifecycle names in the event disposition are items inside
 
 A batch containing no NarrativeEvent never starts a director pass merely because a fact changed. It may cancel a stale building/committed plan, invalidate an opportunity or close/suspend an episode. Accepted/lifecycle/silence input or a speech terminal command is the planning impulse; that later pass evaluates the newest FactView and any now-valid natural successor. This prevents raw tick cadence from becoming an implicit speech trigger while preserving fact-safe continuation.
 
+## Config boundary order
+
+ConfigLedger is the cross-component atomic owner defined in the schema contract; the actor never mutates it directly. The stream/config coordinator has already applied the `command` group and atomically admitted any matching timeline batch immediately after `CONFIG_UPDATE`. The actor caches that snapshot and starts or replaces required LLM/TTS preflight tokens without awaiting them; the following context command alone closes/creates the run. For actor-owned boundaries it requests exactly the named group and snapshots the returned hash/apply sequence before creating the object/action:
+
+```text
+stream/config coordinator: next_stream → open run tape manifest → first projection/frame
+director impulse: next_director_pass → score candidates
+silence arm/rearm: next_silence_deadline → create deadline token
+automatic selection: next_plan_or_manual → next_beat_plan → create BeatPlan
+manual admission: next_plan_or_manual → next_utterance → check matching TTS preflight → dispatch
+Qwen dispatch: next_request → create request token
+TTS dispatch: next_utterance → check matching preflight → create utterance token
+cancellation: next_cancellation → create cancellation/watchdog token
+tape writer: next_record/next_rotated_file/next_rotation/next_writer_deadline at its corresponding owned boundary
+shutdown owner: next_shutdown → bound tape flush
+```
+
+If an applied LLM/TTS group has no successful matching current-generation preflight, the actor records `component_preflight_pending|component_preflight_failed` and treats only that component as unavailable. It never uses the prior generation for new work. Existing plans, requests, utterances, cancellations, records, files and deadlines retain their snapshotted hash and values. `COMPONENT_HEALTH_CHANGED` accepts only the current token/generation, updates readiness, and does not itself run the director or dispatch speech.
+
+Tape/config ordering uses ConfigLedger's reserved writer barrier, not NarrativeMailbox. Before any effective snapshot becomes visible while recording is enabled, its unfilterable `config_applied` transition is admitted after all old-snapshot records and before any new-snapshot record. Enabling opens the current-run writer with the new manifest snapshot and then writes the transition; disabling admits the transition and complete trailer before capture stops. If a barrier cannot be admitted, that group stays pending and callers keep the prior snapshot. Tape boundaries are owned by the writer, while `next_stream` is owned upstream before DetectorBank's first new-run frame. Neither owner imports or calls NarrativeRuntime.
+
 ## Mailbox capacity and overflow
 
 Initial total capacity is 64 items: 56 ordinary cells, 7 protected cells and one emergency recovery/shutdown cell inside the same mailbox. The partitions are admission reservations, not independent queues; dequeue always follows the single recorded enqueue order.
+
+A config change that changes `commentary.enabled` is one atomic admission bundle: consecutive `CONFIG_UPDATE`, then its coherent protected `APPLY_CONTEXT_BATCH`. The mailbox reserves both cells or neither; no producer can obtain a mailbox sequence between them. When two protected cells are unavailable, the emergency recovery barrier receives the config diagnostic/snapshot plus the transition batch's latest projection and safety effects as one recoverable unit. It never admits only the config half.
 
 Admission is nonblocking:
 

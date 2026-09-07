@@ -354,6 +354,19 @@ Expected:
 - the lower-scoring event is retained only through its opportunity TTL, does not cancel the current build and does not change that build's cycle/ordinal;
 - every replacement is attributable to a recorded accepted-event impulse; pure facts, manual terminal and timer expiry can never reset the attempt budget or create a replacement loop.
 
+## F36 — mixed-boundary config is explicit and replayable
+
+Input: during an active race and while one BeatPlan from desired generation 6 is building, accept valid full config generation 7 changing `director.selection_threshold` (next director pass), `max_utterance_s` (next BeatPlan or manual admission), `tts.backend` (next utterance with preflight), `detector.battle_ahead_v1.max_closing_slope` (next stream) and `tape.detail` (next record). Hold the generation-7 TTS preflight pending, cross each available boundary, rotate the tape, then accept generation 8 reverting the still-pending detector value. Separately submit one invalid reload.
+
+Expected:
+
+- generation 7 immediately becomes desired, while the existing BeatPlan and its worker token retain generation-6 values/hash; status exposes distinct desired/effective hashes and only bounded sorted pending keys, never values or a fake service-restart requirement;
+- `next_record`, `next_director_pass` and `next_beat_plan` each apply exactly their own sorted group and emit `config_applied` payloads with strictly increasing apply sequence, generation 7 and old/new effective hashes; no boundary drains another group;
+- the first new TTS admission applies the generation-7 utterance group but returns component unavailable while its matching preflight is pending; it never dispatches through generation 6. A stale preflight completion is ignored, and a current successful completion only enables a later normal admission impulse;
+- the rotated file manifest snapshots the then-current desired/effective hashes and apply sequence; ConfigLedger's reserved recorder barrier places every transition after all old-snapshot records and before new-snapshot records, while detector parameter snapshots remain unchanged within the active run;
+- accepting generation 8 recomputes the entire pending set, so the reverted detector key disappears instead of applying generation 7 at the next stream; every remaining pending row is tagged 8;
+- invalid input creates no desired generation or hash; the config coordinator atomically orders its `CONFIG_UPDATE` immediately before the coherent disable batch, which closes automatic narration as `disabled_invalid_config` while preserving the last valid ready effective backend only for manual TTS/diagnostics. No unrelated command may interleave, and a later valid enabled update is required to start another incomplete run.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:

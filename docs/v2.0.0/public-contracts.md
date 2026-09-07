@@ -6,28 +6,28 @@ This branch-only artifact freezes the public configuration and HTTP shape before
 
 ## Configuration
 
-Unknown keys under `commentary.*` are errors. A commentary configuration error sets commentary health to `disabled_invalid_config` but does not fail scene switching, OBS control or the main race loop. All durations use monotonic time at runtime.
+Unknown keys under `commentary.*` are errors. A commentary configuration error sets automatic commentary health to `disabled_invalid_config`, closes its active narrative run, and installs no new config generation; it does not by itself cancel manual TTS or make a currently ready last-valid effective backend unusable, and it does not fail scene switching, OBS control or the main race loop. All durations use monotonic time at runtime.
 
-INI booleans are exactly `true|false`; integers/floats use finite base-10 notation with `.` and no exponent; enums/IDs are case-sensitive as listed. Set values are comma-separated IDs with whitespace trimmed, stable input order ignored and duplicates rejected. Empty string is allowed only where the table explicitly uses an empty default. A next-stream change made during an active stream is validated and reported in `restartRequiredKeys` but is not partly applied.
+INI booleans are exactly `true|false`; integers/floats use finite base-10 notation with `.` and no exponent; enums/IDs are case-sensitive as listed. Set values are comma-separated IDs with whitespace trimmed, stable input order ignored and duplicates rejected. Empty string is allowed only where the table explicitly uses an empty default. A next-stream change made during an active stream is validated and reported in `config.pendingChanges` but is not partly applied. It requires a new narrative stream boundary, not a service restart.
 
 ### Root and director
 
 | Key | Type | Default | Allowed | Unit | Apply boundary |
 | --- | --- | --- | --- | --- | --- |
-| `commentary.enabled` | bool | `false` | bool | — | disable immediately; enable at command boundary, creating incomplete narrative epoch if stream already active |
-| `commentary.max_utterance_s` | float | `14.0` | 2–30 | seconds | next BeatPlan |
-| `commentary.driver_name` | string | empty | 0–128 UTF-8 chars | — | next stream epoch |
-| `commentary.driver_nickname` | string | empty | 0–64 UTF-8 chars | — | next stream epoch |
-| `commentary.tone_source` | enum | `none` | `none`, `heart_rate` | — | next BeatPlan |
-| `commentary.director.selection_threshold` | float | `35.0` | 0–100 | score | next director pass |
-| `commentary.director.switch_margin` | float | `8.0` | 0–50 | score | next director pass |
-| `commentary.director.global_min_interval_s` | float | `4.0` | 0–30 | seconds | next director pass |
-| `commentary.director.long_silence_s` | float | `33.0` | 10–300 | seconds | rearm next silence deadline |
-| `commentary.director.opportunity_capacity` | int | `128` | 16–512 | opportunities | next stream epoch |
-| `commentary.director.active_episode_capacity` | int | `64` | 8–256 | episodes | next stream epoch |
-| `commentary.director.resolved_episode_capacity` | int | `256` | 32–2048 | summaries | next stream epoch |
-| `commentary.director.decision_capacity` | int | `128` | 16–1000 | decisions | next stream epoch |
-| `commentary.director.max_consecutive_story_beats` | int | `3` | 1–8 | beats | next director pass |
+| `commentary.enabled` | bool | `false` | bool | — | `command` |
+| `commentary.max_utterance_s` | float | `14.0` | 2–30 | seconds | `next_plan_or_manual` |
+| `commentary.driver_name` | string | empty | 0–128 UTF-8 chars | — | `next_stream` |
+| `commentary.driver_nickname` | string | empty | 0–64 UTF-8 chars | — | `next_stream` |
+| `commentary.tone_source` | enum | `none` | `none`, `heart_rate` | — | `next_beat_plan` |
+| `commentary.director.selection_threshold` | float | `35.0` | 0–100 | score | `next_director_pass` |
+| `commentary.director.switch_margin` | float | `8.0` | 0–50 | score | `next_director_pass` |
+| `commentary.director.global_min_interval_s` | float | `4.0` | 0–30 | seconds | `next_director_pass` |
+| `commentary.director.long_silence_s` | float | `33.0` | 10–300 | seconds | `next_silence_deadline` |
+| `commentary.director.opportunity_capacity` | int | `128` | 16–512 | opportunities | `next_stream` |
+| `commentary.director.active_episode_capacity` | int | `64` | 8–256 | episodes | `next_stream` |
+| `commentary.director.resolved_episode_capacity` | int | `256` | 32–2048 | summaries | `next_stream` |
+| `commentary.director.decision_capacity` | int | `128` | 16–1000 | decisions | `next_stream` |
+| `commentary.director.max_consecutive_story_beats` | int | `3` | 1–8 | beats | `next_director_pass` |
 
 Enabling commentary during an already active OBS stream creates a new narrative epoch with `start_reason=enabled_mid_stream` and `history_complete=false`; it does not claim pre-enable history. Disabling cancels unaccepted generation and future automatic planning immediately. Already accepted narrative playback receives a bounded stop request and records its actual terminal state; an explicitly requested manual audio test is independent and continues.
 
@@ -39,23 +39,23 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 
 | Key | Type | Default | Allowed | Unit | Apply boundary |
 | --- | --- | --- | --- | --- | --- |
-| `commentary.llm.enabled` | bool | `false` | bool | — | next BeatPlan |
-| `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN HTTP(S) policy below | — | next BeatPlan |
-| `commentary.llm.model` | string | `qwen3:4b-instruct-2507-q4_K_M` | 1–128 chars | — | next BeatPlan + warmup generation |
-| `commentary.llm.timeout_s` | float | `1.5` | 0.2–10 | seconds wall clock | next request |
-| `commentary.llm.max_tokens` | int | `96` | 32–256 | tokens | next request |
-| `commentary.llm.warmup` | bool | `true` | bool | — | process/config generation |
-| `commentary.llm.max_profile` | enum | `tight` | `tight`, `balanced`, `loose` | — | next BeatPlan; family verifier may impose lower cap |
-| `commentary.tts.backend` | enum | `auto` | `auto`, `sapi`, `espeak`, `supertonic` | — | next utterance |
-| `commentary.tts.voice` | string | empty | 0–128 chars/backend-valid | — | next utterance |
-| `commentary.tts.rate` | int | `0` | -10–10 | SAPI-style steps | next utterance |
-| `commentary.tts.steps` | int | `6` | 5–12 | inference steps | next SuperTonic utterance |
-| `commentary.tts.start_timeout_s` | float | `5.0` | 0.5–30 | seconds wall clock | next utterance |
-| `commentary.tts.stop_timeout_s` | float | `1.0` | 0.1–5 | seconds wall clock | next cancellation |
-| `commentary.tts.audio_device` | string | empty | 0–256 chars | — | next utterance |
-| `commentary.tts.duck_input` | string | empty | 0–256 chars | — | next utterance |
-| `commentary.tts.duck_ratio` | float | `0.25` | 0–1 | original-volume fraction | next utterance |
-| `commentary.tts.duck_fade_ms` | int | `750` | 0–5000 | milliseconds | next utterance |
+| `commentary.llm.enabled` | bool | `false` | bool | — | `next_beat_plan` |
+| `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN HTTP(S) policy below | — | `next_beat_plan` |
+| `commentary.llm.model` | string | `qwen3:4b-instruct-2507-q4_K_M` | 1–128 chars | — | `next_beat_plan`; starts preflight at acceptance |
+| `commentary.llm.timeout_s` | float | `1.5` | 0.2–10 | seconds wall clock | `next_request` |
+| `commentary.llm.max_tokens` | int | `96` | 32–256 | tokens | `next_request` |
+| `commentary.llm.warmup` | bool | `true` | bool | — | `next_beat_plan`; controls preflight started at acceptance |
+| `commentary.llm.max_profile` | enum | `tight` | `tight`, `balanced`, `loose` | — | `next_beat_plan`; family verifier may impose lower cap |
+| `commentary.tts.backend` | enum | `auto` | `auto`, `sapi`, `espeak`, `supertonic` | — | `next_utterance` |
+| `commentary.tts.voice` | string | empty | 0–128 chars/backend-valid | — | `next_utterance` |
+| `commentary.tts.rate` | int | `0` | -10–10 | SAPI-style steps | `next_utterance` |
+| `commentary.tts.steps` | int | `6` | 5–12 | inference steps | `next_utterance` |
+| `commentary.tts.start_timeout_s` | float | `5.0` | 0.5–30 | seconds wall clock | `next_utterance` |
+| `commentary.tts.stop_timeout_s` | float | `1.0` | 0.1–5 | seconds wall clock | `next_cancellation` |
+| `commentary.tts.audio_device` | string | empty | 0–256 chars | — | `next_utterance` |
+| `commentary.tts.duck_input` | string | empty | 0–256 chars | — | `next_utterance` |
+| `commentary.tts.duck_ratio` | float | `0.25` | 0–1 | original-volume fraction | `next_utterance` |
+| `commentary.tts.duck_fade_ms` | int | `750` | 0–5000 | milliseconds | `next_utterance` |
 
 `llm.enabled=false` means only beats whose catalog-selected realization mode is authored are eligible. An unavailable or rejected Qwen realization does not switch the same beat to authored mode; the attempt is discarded and the director chooses another eligible beat or silence. Profile ordering is exactly `tight < balanced < loose`; `llm.max_profile` is a ceiling and can never promote a catalog family.
 
@@ -67,27 +67,27 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 
 | Key | Type | Default | Allowed | Unit | Apply boundary |
 | --- | --- | --- | --- | --- | --- |
-| `commentary.detectors.profile` | enum | `production` | `production`, `calibration` | — | next stream epoch |
-| `commentary.detector.<id>.enabled` | bool | catalog value | bool; ID must be exported | — | next stream epoch |
-| `commentary.detector.<id>.<parameter>` | catalog typed | catalog value | exported min/max and cross-field rules | catalog unit | next stream epoch |
-| `commentary.tape.enabled` | bool | `false` | bool | — | next record boundary |
-| `commentary.tape.channels` | enum set | `flow` | subset of `flow,llm_eval,detector_tuning` | — | next record boundary |
-| `commentary.tape.detail` | enum | `normal` | `minimal`, `normal`, `full` | — | next record boundary |
-| `commentary.tape.output_dir` | path | `recordings/commentary` | safe non-root path | — | next rotated file |
-| `commentary.tape.rotate_mb` | int | `64` | 1–1024 | MiB | next record boundary |
-| `commentary.tape.keep_files` | int | `8` | 1–100 | files | next rotation |
-| `commentary.tape.compress_rotated` | bool | `true` | bool | — | next rotation |
-| `commentary.tape.flush_interval_ms` | int | `500` | 50–5000 | milliseconds | next writer deadline |
-| `commentary.tape.writer_capacity` | int | `4096` | 256–32768 | records | next stream epoch |
-| `commentary.tape.shutdown_flush_timeout_s` | float | `2.0` | 0.1–10 | seconds | next shutdown |
-| `commentary.tape.flow.candidate_detail` | enum | `selected_and_rejected` | `selected`, `selected_and_rejected`, `all` | — | next record boundary |
-| `commentary.tape.flow.tape_channel_allowlist` | string set | `*` | known channel IDs or `*` | — | next record boundary |
-| `commentary.tape.llm_eval.capture_prompt` | enum | `hash` | `none`, `hash`, `full` | — | next request |
-| `commentary.tape.llm_eval.capture_completion` | bool | `true` | bool | — | next request |
-| `commentary.tape.detector_tuning.trigger_allowlist` | string set | empty | known detector IDs | — | next stream epoch |
-| `commentary.tape.detector_tuning.negative_sample_interval_s` | float | `5.0` | 0.5–60 | seconds | next stream epoch |
-| `commentary.tape.detector_tuning.near_threshold_margin` | float | `0.15` | 0–1 | normalized fraction | next stream epoch |
-| `commentary.tape.detector_tuning.capture_input_windows` | bool | `true` | bool | — | next stream epoch |
+| `commentary.detectors.profile` | enum | `production` | `production`, `calibration` | — | `next_stream` |
+| `commentary.detector.<id>.enabled` | bool | catalog value | bool; ID must be exported | — | `next_stream` |
+| `commentary.detector.<id>.<parameter>` | catalog typed | catalog value | exported min/max and cross-field rules | catalog unit | `next_stream` |
+| `commentary.tape.enabled` | bool | `false` | bool | — | `next_record` |
+| `commentary.tape.channels` | enum set | `flow` | subset of `flow,llm_eval,detector_tuning` | — | `next_record` |
+| `commentary.tape.detail` | enum | `normal` | `minimal`, `normal`, `full` | — | `next_record` |
+| `commentary.tape.output_dir` | path | `recordings/commentary` | safe non-root path | — | `next_rotated_file` |
+| `commentary.tape.rotate_mb` | int | `64` | 1–1024 | MiB | `next_record` |
+| `commentary.tape.keep_files` | int | `8` | 1–100 | files | `next_rotation` |
+| `commentary.tape.compress_rotated` | bool | `true` | bool | — | `next_rotation` |
+| `commentary.tape.flush_interval_ms` | int | `500` | 50–5000 | milliseconds | `next_writer_deadline` |
+| `commentary.tape.writer_capacity` | int | `4096` | 256–32768 | records | `next_stream` |
+| `commentary.tape.shutdown_flush_timeout_s` | float | `2.0` | 0.1–10 | seconds | `next_shutdown` |
+| `commentary.tape.flow.candidate_detail` | enum | `selected_and_rejected` | `selected`, `selected_and_rejected`, `all` | — | `next_record` |
+| `commentary.tape.flow.tape_channel_allowlist` | string set | `*` | known channel IDs or `*` | — | `next_record` |
+| `commentary.tape.llm_eval.capture_prompt` | enum | `hash` | `none`, `hash`, `full` | — | `next_request` |
+| `commentary.tape.llm_eval.capture_completion` | bool | `true` | bool | — | `next_request` |
+| `commentary.tape.detector_tuning.trigger_allowlist` | string set | empty | known detector IDs | — | `next_stream` |
+| `commentary.tape.detector_tuning.negative_sample_interval_s` | float | `5.0` | 0.5–60 | seconds | `next_stream` |
+| `commentary.tape.detector_tuning.near_threshold_margin` | float | `0.15` | 0–1 | normalized fraction | `next_stream` |
+| `commentary.tape.detector_tuning.capture_input_windows` | bool | `true` | bool | — | `next_stream` |
 
 `production` rejects any enabled detector with `tuning.required`. `calibration` may enable `experimental=true, tuning.required` only after writable recorder preflight. Losing required capture emits `CAPTURE_UNAVAILABLE` and disables only affected experimental detectors.
 
@@ -199,13 +199,18 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
     "beatCount": 64
   },
   "config": {
-    "generation": 7,
-    "hash": "sha256:example",
-    "restartRequiredKeys": []
+    "schemaVersion": "commentary-config/2",
+    "desiredGeneration": 7,
+    "desiredHash": "sha256:desired-example",
+    "effectiveHash": "sha256:effective-example",
+    "applySequence": 12,
+    "pendingChanges": [
+      {"key": "commentary.detector.battle_ahead_v1.max_closing_slope", "boundary": "next_stream", "desiredGeneration": 7}
+    ]
   },
   "components": {
-    "llm": {"status": "ready", "reason": null, "generation": 2, "model": "qwen3:4b-instruct-2507-q4_K_M", "lastTtftMs": 130, "lastTotalMs": 530},
-    "tts": {"status": "ready", "reason": null, "backend": "supertonic", "backendGeneration": 4, "quarantinedGeneration": null, "voice": "M1"},
+    "llm": {"status": "ready", "reason": null, "generation": 2, "configGeneration": 7, "model": "qwen3:4b-instruct-2507-q4_K_M", "lastTtftMs": 130, "lastTotalMs": 530},
+    "tts": {"status": "ready", "reason": null, "backend": "supertonic", "backendGeneration": 4, "configGeneration": 7, "quarantinedGeneration": null, "voice": "M1"},
     "tape": {"status": "disabled", "reason": null, "path": null, "drops": 0, "dropsByPriority": {"sample": 0, "normal": 0, "critical": 0}},
     "detectors": {"status": "ready", "reason": null, "disabled": []},
     "facts": {"status": "ready", "reason": null, "viewRevision": 204, "active": 87, "historicalSummaries": 19, "historyComplete": true}
@@ -216,9 +221,9 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
 }
 ~~~
 
-Enums: status is `disabled|starting|ready|degraded|stopping|stopped`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. `sessionPlan` is null before first plan publication; otherwise it is the exact bounded status projection `{revision,valid,reason,stages}`. Revision is nonnegative, stages has 0–3 unique values in canonical order, a valid plan has 1–3 stages and null reason, and an invalid plan has no stages plus `session_plan_conflict`. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`, but the independently published session plan remains visible. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
+Enums: status is `disabled|starting|ready|degraded|stopping|stopped`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. `sessionPlan` is null before first plan publication; otherwise it is the exact bounded status projection `{revision,valid,reason,stages}`. Revision is nonnegative, stages has 0–3 unique values in canonical order, a valid plan has 1–3 stages and null reason, and an invalid plan has no stages plus `session_plan_conflict`. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`, but the independently published session plan remains visible. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `config.applySequence` is nonnegative and names the effective snapshot. `config.pendingChanges` has 0–128 exact `{key,boundary,desiredGeneration}` entries sorted by key and never exposes values; desired/effective hashes may differ until every named boundary occurs. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
 
-Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. LLM/TTS generations and fact view revisions/counts are nonnegative integers. TTS quarantined generation is null or no greater than the current backend generation; while equal, TTS must be unavailable and admit no speech. `drops` equals the sum of the three nonnegative `dropsByPriority` counters. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Fact health becomes degraded with `fact_capacity_evicted` after lossy compaction for the rest of the narrative run and unavailable with `fact_capacity_exhausted` while no complete bounded view can be published. The next complete coherent bounded view moves unavailable→degraded; only a new complete run with no loss restores ready. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
+Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. LLM/TTS worker/backend generations, their `configGeneration`, and fact view revisions/counts are nonnegative integers. Component `configGeneration` names the desired generation whose effective component values its current preflight proves; while a newer applied component generation is pending/failed, that component cannot be used. TTS quarantined generation is null or no greater than the current backend generation; while equal, TTS must be unavailable and admit no speech. `drops` equals the sum of the three nonnegative `dropsByPriority` counters. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Fact health becomes degraded with `fact_capacity_evicted` after lossy compaction for the rest of the narrative run and unavailable with `fact_capacity_exhausted` while no complete bounded view can be published. The next complete coherent bounded view moves unavailable→degraded; only a new complete run with no loss restores ready. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
 
 ### `GET /api/commentary/decisions?limit=N`
 

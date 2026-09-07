@@ -82,7 +82,10 @@ Master cross-checks that changed or sharpened the design:
 | Tape record naming | Main prose used detector/narrative decision names absent from the frozen record enum | Producers, schema and replay use only `detector_observation` and `director_decision` |
 | Detector window serialization | Required pre/post capture had no tape record/window/parameter reference capable of representing it | FeatureFrame is a tape payload, observations name inclusive frame ranges and manifest-owned parameter snapshots; gaps are explicit and fatal only for required capture |
 | Config reload | Mid-stream catalog/threshold changes could reinterpret state | Taxonomy/catalog/detectors/capacities freeze per stream; selected operational settings apply only at explicit generation boundaries |
-| Invalid config | Breaking config could crash the whole service | Disable commentary with explicit health reason; scene switching continues |
+| Mixed-boundary config identity | One `configHash` could falsely claim that pending and effective values were the same | Cross-component atomic ConfigLedger separates desired generation/hash from full effective hash, serializes boundary groups by apply sequence and snapshots immutable objects/tape transitions |
+| Config ownership direction | Narrative actor cannot apply detector settings before upstream frames or totally order tape-writer boundaries | Stream/config coordinator, narrative actor and tape writer own only their named boundaries; one narrow ConfigLedger serializes compare/apply without any producer importing commentary |
+| Component config preflight | A newly requested model/backend could silently use the old generation while construction was pending or failed | Generation-tagged preflight gates only new Qwen/TTS work; after its boundary there is no fallback to an older component generation |
+| Invalid config | Breaking config could crash the whole service or partially replace valid state | Invalid input installs no generation, closes automatic narration, retains last valid effective state for manual TTS/diagnostics, and scene switching continues |
 | API impact | Spec called API optional despite required diagnostics | Commentary API payload becomes explicit `commentary-runtime/2`; API docs/tests are mandatory |
 | Offline verifier actors | Validate example used a display name but supplied only opaque actor IDs and forbade live-state reads | Request carries a bounded collision-free actor alias binding for exactly the referenced actors; numeric surfaces remain deterministic from facts |
 | Language | Overlay locale could silently drive speech | v2 speech/validation is fixed EN and independent of overlay locale |
@@ -210,7 +213,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Thirty-five ordered expected scenarios covering lineage/session plans, scoring, no-queue behavior, invalid Qwen, prompt-profile clamps, silence, mailbox/tape/fact/episode overflow and detector-window replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Thirty-six ordered expected scenarios covering lineage/session plans, scoring, no-queue behavior, invalid Qwen, prompt-profile clamps, silence, mailbox/tape/fact/episode overflow and detector-window replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage, offline actor bindings and mixed-boundary config replay live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -222,7 +225,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Final review and machine validation of the exact 64 BeatDefinitions, including required/forbidden claims and realization family for every beat.
 - [ ] Complete successor graph with deterministic relation, guard, preference and terminal/dead-end policy.
 - [ ] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
-- [ ] Review the exact config defaults/ranges in `public-contracts.md` and add the v1→v2 migration fixture matching specification §20.
+- [ ] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
 - [ ] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
 - [ ] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
 - [ ] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.
@@ -232,7 +235,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the thirty-five expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the thirty-six expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.

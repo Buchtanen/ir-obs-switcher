@@ -2112,16 +2112,17 @@ Breaking migrace nahradí `commentary.use_hr_emotion` explicitním `tone_source`
 
 Reload policy:
 
-- event taxonomy, ID/units schema, detector/story/beat/realization catalog, kapacity a detector parameters jsou immutable pro stream epoch; změna je `restart_required` nebo platí až od příštího `STREAM_STARTED`;
-- tape enable/detail/allowlist/retention se může změnit atomicky na record boundary a vytvoří novou config generation;
-- LLM endpoint/model/timeout/profile cap a TTS device/voice se mohou změnit až pro příští BeatPlan/utterance; in-flight práce doběhne nebo se explicitně zruší podle lifecycle policy;
-- každý applied config generation a hash se zapisuje do tape; souborový hot reload bez `ConfigUpdate` je zakázaný.
+- event taxonomy, ID/units schema a detector/story/beat/realization catalog jsou versioned build artifacts; runtime config je nemění. Kapacity a detector parameters přijaté během runu zůstávají v `pendingChanges` do příštího narrative `STREAM_STARTED`, bez service restartu a bez částečné aplikace;
+- tape enable/detail/allowlist/retention se aplikuje atomicky na přesně pojmenovaných record/file/rotation boundaries;
+- LLM endpoint/model/timeout/profile cap a TTS device/voice se aplikují jen pro nový BeatPlan/request/utterance. LLM/TTS resource generation musí projít generation-tagged preflightem; po překročení hranice se pro novou práci nesmí fallbacknout na starou component generation;
+- cross-component `ConfigLedger` rozlišuje process-monotonic `desiredGeneration`/`desiredHash` od skutečného mixed-boundary `effectiveHash`, serializuje všechny boundary ownery přes `applySequence`, zveřejňuje bounded seznam pending keys bez hodnot a každý atomic apply zapisuje jako `config_applied` se starým/novým effective hashem;
+- neplatný reload nevytvoří generaci, uzavře automatic narrative run jako `disabled_invalid_config`, ale zachová poslední validní effective mapu pro diagnostiku a manual TTS; souborový hot reload bez actor-ordered `CONFIG_UPDATE` je zakázaný.
 
 ### 20.1 Veřejné commentary API v2
 
 Stávající route names mohou zůstat, jejich payload je breaking a vždy nese `schemaVersion: commentary-runtime/2`:
 
-- `GET /api/commentary/status`: runtime/health, fixed language `en`, timeline identity, speech state, queue depths, active/resolved counts, catalog/config hashes, recorder/model/detector status a per-`tape_channel` counters;
+- `GET /api/commentary/status`: runtime/health, fixed language `en`, timeline identity, speech state, queue depths, active/resolved counts, catalog hash, desired/effective config hashes a pending boundaries, recorder/model/detector status a per-`tape_channel` counters;
 - `GET /api/commentary/decisions?limit=N`: bounded newest-first decision records se score, relation, source opportunity/successor, terminal reason a tape channel;
 - `POST /api/commentary/validate`: localhost+CSRF offline validační request `{text, beatId, evaluationAtMonoMs, actorBindings, factBindings}`; actor aliases jsou úplné, collision-free a endpoint nikdy nečte live roster/facts ani nemění live state;
 - `POST /api/commentary/speak`: localhost+CSRF manual EN TTS test přes stejnou speech lane, nikdy nepreemptuje live utterance a nezapisuje narrative exposure; actor admission používá pouze process-local one-shot latch s pevným 1 000ms timeoutem a atomic abandon, takže zamítnutý/timeout request později nepromluví;
