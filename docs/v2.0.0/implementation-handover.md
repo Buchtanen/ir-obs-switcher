@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #237 implementation — recovery evidence reconciliation pushed; cross-artifact hash correction GREEN, pending push
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), active [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
+**Phase:** #237 acceptance reconciliation — implementation and public checklist complete; closing metadata pending CI, then #238
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), closing candidate [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), next [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -30,7 +30,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Bounded command/mailbox foundation SHA: `325e2020dff3768e70a16137905769f710ae7ff5` (`feat: add bounded narrative mailbox foundation (#237)`); [CI run 34155593258](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34155593258) is green on Python 3.11–3.13.
 - Lifecycle/idempotency SHA: `abce38b604cd51d4b22791f5ecf0ebcc9dabf8ac` (`feat: add lifecycle narrative admission (#237)`); [CI run 34156674432](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34156674432) is green on Python 3.11–3.13.
 - Recovery-evidence SHA: `3ce1535c06e542f88ccdd3fc58346c2e57e93318` (`fix: preserve bounded mailbox recovery evidence (#237)`). CI run [34157119475](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157119475) correctly failed the frozen-contract job because the dependent F01–F44 fixture bundle still named the prior actor-model hash.
-- Expected working tree before the recovery-evidence push: only the files listed in the ownership section are dirty.
+- Cross-artifact correction SHA: `4e8a1f7dfdb48f1c79f11c2e6108afcc7780ce99` (`docs: refresh recovery contract evidence (#237)`); corrective [CI run 34157345490](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157345490) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- The public #237 checklist now records the explicit implementation boundary: #237 owns deterministic admission/order/deduplication and the bounded mailbox primitive; #284 owns live actor wiring, reducer-state replay and integrated loop liveness.
 - Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
@@ -46,10 +47,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current root agent until the recovery-evidence checkpoint is pushed, green in CI and recorded.
-- Dirty scope: regenerated `docs/v2.0.0/machine/vertical-slice-fixtures.json` plus this handover record only.
-- Completed #237 scope: the accepted-event and coherent-batch scope above plus factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; and idempotent shutdown ownership of the emergency cell.
-- Current #237 scope: recovery-producing admission results return the complete immutable evicted command, preserving its external ordinal range, context revision and payload for actor/tape evidence. More than 64 distinct protected safety effects are represented by one chained canonical digest commitment plus the latest 63 explicit effects; refresh changes the commitment rather than silently dropping prior evidence.
+- Editing owner: current root agent through the #237 closing-metadata CI and automatic issue closure, then the #238 checkpoint.
+- Dirty scope: this acceptance handover and the v2 issue index only.
+- Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
+- Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - TDD phase: `GREEN` — focused RED asserted full evicted context evidence; the existing overflow test was tightened to prove the digest commitment is present and changes on refresh.
 - Verification: 37 focused context-batch/command/mailbox/lifecycle/idempotency tests pass; actor-transition machine builder validates 5×17 transition pairs, 13 race traces, 10 overflow scenarios and 10 rejected mutations; all 11 frozen builders now pass including 44 F01–F44 scenarios with 248 rules, 14 calculations and refreshed actor-model hashes; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,485 tests.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
@@ -60,11 +61,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-After the recovery-evidence checkpoint is pushed and CI is green:
-
-1. Record the checkpoint SHA/CI evidence in the existing dated #237 diary.
-2. Reconcile #237's implementation-boundary checklist with #284: live EventSubscription replacement, reducer sequence/state replay and integrated actor-loop liveness belong to the dependent NarrativeRuntime actor and cannot be activated before #238/#240/#243/#245/#258/#262/#264/#265/#269.
-3. Reconcile and publish the #237/#284 implementation boundary before closing #237: this package owns immutable admission/order/dedupe/mailbox behavior; #284 owns live actor wiring, reducer-state replay and integrated loop liveness after its remaining dependencies.
+1. Commit and push this #237 acceptance metadata.
+2. Require green CI, append the closing SHA/CI evidence to the existing dated #237 diary and close #237 as completed.
+3. Start #238, the configuration and migration contract, in dependency order. Do not activate the runtime or widen the public API while implementing that package.
 
 ## Resume commands
 
@@ -76,7 +75,7 @@ git rev-parse HEAD
 git rev-parse @{upstream}
 ```
 
-Expected before resuming #237: correct worktree and branch, local HEAD/upstream relationship understood, #235/#236 closed, and dirty files matching the ownership section. Any mismatch is a blocker until its ownership is understood.
+Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, #235/#236 closed, #237 either at its closing metadata gate or closed, and dirty files matching the ownership section. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 
