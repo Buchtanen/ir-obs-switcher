@@ -406,6 +406,21 @@ Expected:
 - ducking is attempted before acceptance and gets exactly one idempotent best-effort restore operation on every terminal/cancel/watchdog path. `duck_unavailable`/`restore_unconfirmed` state is recorded honestly, does not crash the loop and does not change acceptance semantics;
 - after terminalization, every duplicate/late callback is audited without state mutation. The later manual request receives a new ordinal/dispatch generation, creates no narrative exposure and proves that an old token cannot affect it.
 
+## F40 — Qwen request, streaming result and deadline have one authority
+
+Input: compile a tight Qwen request from one valid RealizationBundle. Exercise golden request bytes, normal split-SSE success, server usage, role-only leading frames, response without content, `finish_reason=length`, malformed/multiple/tool-call frames, output over 2,048 bytes, worker transport failure, actor deadline versus result in both mailbox orders, accepted-event replacement during inference, cancellation result after invalidation, duplicate result ID with same/different content, disabled warm-up and successful/failed warm-up. Saturate ordinary mailbox capacity while the request deadline fires.
+
+Expected:
+
+- CompiledPrompt contains only the literal versioned base/output blocks, one family/pattern selection and canonical bundle projection; system/user byte bounds and hashes are exact, and strings inside DATA cannot add instructions or bypass the verifier;
+- one request snapshots prompt/bundle/config/component identity and emits the exact OpenAI-compatible SSE body with `n=1`, `stream=true`, `think=false`, `reasoning_effort=none` and PromptOptions sampling; redirects/proxies and unregistered fields are absent;
+- the worker emits no chunk commands and at most one terminal RealizationResult. Only one choice/content stream ending in `stop` succeeds; malformed, multiple, tool, truncated and oversized responses fail with their exact reason and never create a TTS request;
+- result-first cancels the actor deadline; deadline-first records `realization_timeout`, cancels/detaches the transport, releases/suppresses the attempt and makes the result stale. Protected deadline admission or its recovery safety effect prevents a permanently building lane under mailbox pressure;
+- replacement/invalidation cancellation does not suppress the replaced beat and its cancelled/late result cannot consume attempt 2. A cycle alternative starts only through immediate atomic `try_start`; there is no realizer request queue;
+- canonical-identical duplicate results are no-ops, while changed content under the same result ID is `realization_protocol_violation` and degrades the component generation;
+- warm-up records `warmup_succeeded|not_requested`; failed warm-up makes only Qwen-backed beats unavailable. No periodic retry or old-generation fallback occurs;
+- tape/status derive admission, TTFB, TTFT, generation, total, reducer lag and plan-to-result from exact monotonic milestones. Missing milestones remain null, server token usage is never guessed, and warm/not-proven samples are reported separately.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:

@@ -115,6 +115,8 @@ The loader must prove all 64 beats resolve to one of these 37 rows, and every ro
 - Qwen receives only the selected semantic frame, one tight pattern or approved family pool, immutable RealizationBundle surface/bindings and relevant family rules. It never receives the full graph, mutable FactLedger/FactView, unrelated telemetry, current config or prior hidden chain of thought.
 - One transport attempt is allowed. Invalid transport/content/verification suppresses the beat revision and returns control to the director.
 
+The literal base/output prompt blocks, canonical DATA projection, UTF-8 bounds, exact OpenAI-compatible SSE body/parser, request/result identity, actor deadline and latency equations are normative in [the Qwen transport contract](qwen-transport-contract.md). Family grammar/card content comes from this document and the catalog, but transport code cannot add examples, repair context or prior text.
+
 ## Promotion gates
 
 For each family/profile/backend combination, a versioned corpus must include valid cases and counterfactual actor, polarity, number, staleness, forbidden outcome/cause and unknown-fragment cases. The first production slice admits only `tight`.
@@ -137,5 +139,5 @@ The design gate remains closed until branch-only fixtures provide:
 2. generated SurfaceValueSet cases for times, gaps, deltas, positions, laps and names;
 3. at least four enabled audited EN pattern cards per beat (minimum 256 total), with unusable legacy strings explicitly rejected rather than migrated blindly;
 4. family positive/counterexample corpus and expected reason codes;
-5. the exact Qwen prompt/profile/version and repeatable latency runner;
+5. the exact Qwen prompt/profile/version, request/SSE goldens and repeatable latency runner from `qwen-transport-contract.md`;
 6. proof that no verifier path calls an embedding or another LLM as a hard fact gate.

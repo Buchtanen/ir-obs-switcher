@@ -62,6 +62,7 @@ Every context batch carries `external_order`; worker/timer/API commands do not. 
 | `VALIDITY_DEADLINE_ELAPSED` | owned nearest-expiry one-shot deadline | no | same deadline generation only | sweep facts already expired in the applied view plus opportunity/BeatPlan revision deadlines; cancel invalid building/committed work, never run director, then rearm |
 | `REALIZATION_SUCCEEDED` | authored/Qwen worker | yes | never | token-check, freshness-check bound facts/identity, verify synchronously against the same bundle and dispatch TTS or reject |
 | `REALIZATION_FAILED` | authored/Qwen worker | yes | never | token-check, suppress beat/revision and release reservation |
+| `REALIZATION_DEADLINE_ELAPSED` | actor-owned one-shot deadline | yes | same request token only | token-check, terminalize as timeout, cancel/detach transport and apply the one-alternative cycle bound without waiting |
 | `PLAYBACK_ACCEPTED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; narrative consumes its opportunity and creates exposure, manual does neither; both enter `speaking` and pause audience silence |
 | `SPEECH_COMPLETED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; terminalize exposure/request and free lane; only a natural narrative terminal runs one director pass |
 | `SPEECH_INTERRUPTED` | TTS worker | yes | duplicate/stale callback identity is ignored and audited | validate the frozen TtsCallback/token; terminalize exposure/request and free lane; replan only for a natural narrative terminal whose cancellation policy permits it |
@@ -87,7 +88,7 @@ director impulse: next_director_pass → score candidates
 silence arm/rearm: next_silence_deadline → create deadline token
 automatic selection: next_plan_or_manual → next_beat_plan → create BeatPlan
 manual admission: next_plan_or_manual → next_utterance → check matching TTS preflight → dispatch
-Qwen dispatch: next_request → create request token
+Qwen dispatch: next_request → create exact RealizationRequest + request/deadline token
 TTS dispatch: next_utterance → check matching preflight → create utterance token
 cancellation: next_cancellation → create cancellation/watchdog token
 tape writer: next_record/next_rotated_file/next_rotation/next_writer_deadline at its corresponding owned boundary
@@ -106,7 +107,7 @@ A config change that changes `commentary.enabled` is one atomic admission bundle
 
 Admission is nonblocking:
 
-1. Coalesce only `LONG_SILENCE_ELAPSED` or `VALIDITY_DEADLINE_ELAPSED` with the same kind/generation, `TAPE_HEALTH_CHANGED` with the same recorder generation/status, or `COMPONENT_HEALTH_CHANGED` with the same component/generation/status. APPLY_CONTEXT_BATCH never coalesces.
+1. Coalesce only `LONG_SILENCE_ELAPSED` or `VALIDITY_DEADLINE_ELAPSED` with the same kind/generation, `REALIZATION_DEADLINE_ELAPSED` with the same exact request token, `TAPE_HEALTH_CHANGED` with the same recorder generation/status, or `COMPONENT_HEALTH_CHANGED` with the same component/generation/status. APPLY_CONTEXT_BATCH never coalesces.
 2. An ordinary command uses an ordinary cell when one exists. A manual request is rejected as `mailbox_overloaded` rather than evicting admitted work.
 3. If an ordinary context batch cannot fit, evict the oldest ordinary silence command first. If none exists, evict the oldest ordinary context batch, record its full source/revision range and atomically place/refresh `MAILBOX_RECOVERY` in the emergency cell with the latest coherent projections. Lost accepted events become auditable lost history and never opportunities.
 4. A protected item may evict the oldest ordinary silence/context item and must place/refresh the same recovery barrier whenever a context batch was lost.
@@ -127,6 +128,7 @@ Every reducer command first performs the same logical validity sweep at its capt
 | `building` | context makes plan hard-invalid | `idle` | cancel token, release reservation, terminal `invalidated`; replan only if this same command contains an accepted/lifecycle event impulse, otherwise wait |
 | `building` | a later accepted-event impulse admits a challenger that outranks the plan | `building` or `idle` | cancel old token/release as `replaced` without suppression; close its cycle and start the event's new cycle at attempt 1 |
 | `building` | stale/mismatched worker token | unchanged | discard callback and record `stale_worker_token` |
+| `building` | matching realization deadline | `idle` | invalidate token, cancel/detach transport, suppress revision as `realization_timeout`; immediately try one different beat only for cycle attempt 1 |
 | `building` | realization failure/timeout | `idle` | suppress `(beat_id, episode_revision)`, release reservation; dispatch one different beat only if this was cycle attempt 1, otherwise record `planning_cycle_exhausted` and wait |
 | `building` | realization succeeds but verifier rejects | `idle` | same suppression/release and cycle bound; no repair, retry or same-beat authored fallback |
 | `building` | verifier passes but freshness commit fails | `idle` | suppress stale revision, release reservation and apply the same one-alternative cycle bound |
@@ -158,6 +160,8 @@ Ducking belongs to the worker token, not NarrativeRuntime or OBS scene logic. Th
 Attempt suppression occurs only for realization/verification/commit/TTS-before-acceptance failure. Replacement by a new candidate does not suppress a still-valid old beat. Suppression clears only on material episode revision, opportunity/episode terminal state, occurrence reset or stream reset.
 
 One planning impulse owns one `planningCycleId` and may dispatch at most two distinct BeatPlans: its initial choice and one alternative after realization/verification/freshness/TTS-before-acceptance failure. That internal failure consumes ordinal 2; a second failure ends the cycle with `planning_cycle_exhausted`. A later accepted/lifecycle/silence event, material accepted event revision, or narrative speech-terminal command starts a new cycle. If such a new accepted event legitimately replaces a building plan, the old cycle closes `replaced_precommit` and the challenger is ordinal 1 of the new cycle; the cancelled beat is not suppressed. A non-outranking event leaves the existing cycle untouched. Pure FactView batches and manual terminals start no cycle. This fixed per-impulse bound is not public config and prevents an LLM/validator failure cascade without treating real new events as retries.
+
+Every realizer dispatch/result follows [the Qwen transport contract](qwen-transport-contract.md). NarrativeRuntime arms its own monotonic request deadline instead of trusting an HTTP library callback. Result-first cancels the timer; deadline-first invalidates the result token. RealizerService atomically owns at most one logical request and never queues another. Per-chunk streaming data stays inside the worker; only one terminal result enters NarrativeMailbox. A canonical duplicate is a no-op, while the same result ID with changed content is `realization_protocol_violation`. Worker-observed times are metrics; reducer sequence and dequeue time own state.
 
 ## Manual speech
 
@@ -222,6 +226,7 @@ Issues #235/#284 cannot close until tests or model-based transition enumeration 
 - every `(lane state, command kind)` is accepted, ignored with a reason, or rejected—never unspecified;
 - token mismatch and duplicate callbacks are idempotent;
 - no route creates a second generation, playback or waiter;
+- every admitted Qwen request reaches one result or actor deadline; result/deadline order cannot strand `building`, enqueue another request or produce two terminal attempts;
 - every reservation reaches release, consumption or a terminal opportunity state;
 - overflow/recovery cannot resurrect lost events or stale facts;
 - reset/disable/shutdown cancellation follows the matrix;

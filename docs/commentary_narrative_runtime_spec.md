@@ -899,7 +899,7 @@ Významná událost během řeči se přesto nesmí ztratit jen proto, že její
 
 `NarrativeRuntime` je jediná vlastněná async actor task a jediný zapisovatel narrative projection/episode/opportunity/exposure/director/speech-orchestration stavu. Autoritativní StreamTimeline, FeatureEngine windows a DetectorBank FSM zůstávají ve svých producentských vrstvách; actor dostává jejich immutable snapshoty a nikdy je zpětně nemutuje.
 
-Commentary `EventSubscription` se zobecní nebo nahradí jedním bounded `NarrativeMailbox`, který zachová dnešní overflow/recovery vlastnosti. Je to jediný actor inbox: narrow fanout adapter do něj vkládá accepted batch/timeline/config commands a Qwen/TTS/timer workers do téže fronty vracejí completion commands. Dvě paralelní input/result queues s následným `select` jsou zakázané, protože by neměly jednoznačné pořadí. Overlay si ponechá vlastní subscription a beze změny přijímá V4 envelope.
+Commentary `EventSubscription` se zobecní nebo nahradí jedním bounded `NarrativeMailbox`, který zachová dnešní overflow/recovery vlastnosti. Je to jediný actor inbox: narrow fanout adapter do něj vkládá accepted batch/timeline/config commands a Qwen/TTS/timer workers do téže fronty vracejí completion commands. Qwen request má navíc actor-owned `REALIZATION_DEADLINE_ELAPSED`, takže uváznutý HTTP callback nezablokuje jedinou building lane. Dvě paralelní input/result queues s následným `select` jsou zakázané, protože by neměly jednoznačné pořadí. Overlay si ponechá vlastní subscription a beze změny přijímá V4 envelope.
 
 - reducer a director pass jsou synchronní bounded výpočty bez `await` a bez I/O;
 - Qwen, TTS a tape writer běží v samostatných vlastněných/cancellable workers;
@@ -1218,7 +1218,7 @@ Po verifikaci actor vytvoří přesně jeden immutable `tts-utterance/2`; backen
 
 Backend se volí před pokusem. Selhání `qwen_compiled` nepřepíná tentýž beat do `authored`; beat se zahodí podle § 9.6 a director hledá jiný beat.
 
-Volnost Qwen není samostatný runtime mód. Je to součást immutable BeatPlan zvolená pro konkrétní beat:
+Volnost Qwen není samostatný runtime mód. Je to součást immutable BeatPlan zvolená pro konkrétní beat. Přesný literal base/output prompt, canonical DATA projection, request/result DTO, SSE parser, warm-up a latency rovnice jsou v `docs/v2.0.0/qwen-transport-contract.md`:
 
 ~~~python
 @dataclass(frozen=True)
@@ -1286,6 +1286,8 @@ Lokální model `qwen3:4b-instruct-2507-q4_K_M`, resident, 2026-09-06:
 | Total median / P90 / max | 0,53 / 0,86 / 1,04 s |
 
 Úplně první cold request před zahřátím modelu v předchozí sérii trval 3,46 s. Výsledky jsou vývojová evidence, nikoliv produkční garance. Musí se zopakovat nad plným corpus, na cílovém Windows stroji a s TTS.
+
+Tato čísla pocházejí z předchozího compiled-prompt experimentu a sama o sobě nevalidují nyní zmrazený byte-exact `qwen-surface-en-tight/1` kontrakt. Před runtime změnou musí být materializované F40 request/parser/ordering fixtures; opakovaný Qwen corpus/latency běh je implementační a release evidence, kterou lze doladit až nad funkčním řezem. Do té doby jsou prompt i budget design-freeze candidate, nikoliv přenesený pass.
 
 ### 11.4 Latency budget
 
@@ -1581,7 +1583,7 @@ src/irswitch/commentary/tape.py
 src/irswitch/commentary/tape_policy.py
 ~~~
 
-Transport a service glue zůstávají v dnešních vrstvách. `commentary/` nesmí sahat do mutable `RaceObserver`; dostává immutable snapshots/tokens.
+Transport a service glue zůstávají v dnešních vrstvách. `commentary/` nesmí sahat do mutable `RaceObserver`; dostává immutable snapshots/tokens. Qwen transport přijímá jen `realization-request/2`, vrací nejvýše jeden `realization-result/2`, nevkládá SSE chunky do mailboxu a nemá request queue.
 
 ### 14.3 Datové soubory
 

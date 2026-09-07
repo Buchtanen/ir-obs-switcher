@@ -35,6 +35,10 @@ Implementation placement is one neutral `irswitch/contracts/narrative.py` module
 | beat plan | `beat-plan/2` |
 | prompt options | `prompt-options/2` |
 | realization bundle | `realization-bundle/2` |
+| compiled prompt | `compiled-prompt/2` |
+| realization request | `realization-request/2` |
+| realization result | `realization-result/2` |
+| LLM attempt | `llm-attempt/2` |
 | TTS utterance | `tts-utterance/2` |
 | TTS callback | `tts-callback/2` |
 | speech exposure | `speech-exposure/2` |
@@ -293,6 +297,8 @@ A surface value set is exactly `{surfaceValueSetId,factId,attributeId,valueType,
 
 The authored/Qwen worker and deterministic verifier receive this bundle and no live FactLedger, FactView, roster, config or observer reference. On `REALIZATION_SUCCEEDED`, the actor first token-checks, then requires the current FactView to contain canonical-equal, currently valid copies of every bound fact and the same occurrence/lineage/episode revision before verification/commit. Any absence or difference is `freshness_stale`; the verifier never rebuilds a lexicon from newer truth. A compiler bound/reference failure is `realization_input_invalid`, fails closed and consumes the current cycle attempt; validated catalogs/registries must make it unreachable for a valid FactView.
 
+The exact compiled prompt, common request/result schemas, OpenAI-compatible SSE request/response subset, actor deadline, warm-up request, latency equations and `llm-attempt/2` tape payload are frozen in [the Qwen transport contract](qwen-transport-contract.md). That file is normative rather than an implementation example. The schema loader imports those four DTO definitions into the same neutral contracts package; transport code may not widen them.
+
 ## TTS utterance and callback protocol
 
 The actor creates one immutable backend request only after a narrative realization has passed token, freshness, semantic and technical validation, or after a manual request has won its admission latch. `TtsUtterance` is exactly:
@@ -408,7 +414,7 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | timeline transition | `broadcast_started`, `broadcast_ended`, `broadcast_unknown`, `broadcast_resumed`, `narrative_enabled`, `narrative_disabled`, `attached_live`, `process_recovery`, `session_started`, `session_ended`, `session_restarted`, `session_superseded`, `session_suspended`, `session_resumed` |
 | opportunity terminal | `consumed_playback_accepted`, `expired_ttl`, `superseded_revision`, `invalidated_truth`, `invalidated_occurrence`, `closed_stream`, `commentary_disabled`, `evicted_capacity` |
 | episode terminal | `outcome_observed`, `natural_exit`, `target_changed`, `composite_exited`, `occurrence_ended`, `occurrence_superseded`, `stream_ended`, `commentary_disabled`, `evidence_invalidated`, `capacity_evicted` |
-| attempt terminal | `realization_input_invalid`, `realization_timeout`, `realization_transport`, `realization_invalid_response`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
+| attempt terminal | `realization_input_invalid`, `realization_timeout`, `realization_transport`, `realization_invalid_response`, `realization_output_oversize`, `realization_cancelled`, `realization_protocol_violation`, `semantic_rejected`, `freshness_stale`, `replaced_precommit`, `tts_failed_before_acceptance`, `stale_worker_token` |
 | verifier rejection | `empty`, `too_long`, `sentence_count`, `token_count`, `non_en_contract`, `meta_output`, `unknown_fragment`, `unknown_entity`, `actor_reversed`, `actor_ambiguous`, `number_unbound`, `number_mismatch`, `unit_mismatch`, `polarity_mismatch`, `tense_mismatch`, `required_missing`, `forbidden_claim`, `extra_claim`, `causal_inference`, `intent_inference`, `emotion_inference`, `medical_inference`, `prediction_as_result`, `result_as_prediction`, `unsupported_certainty`, `unsafe_negation` |
 | TTS backend detail | `backend_rejected`, `backend_process_exit`, `backend_audio_error`, `backend_cancelled`, `backend_unavailable` |
 | detector transition | `enter_started`, `enter_confirmed`, `enter_lost`, `material_band_changed`, `material_delta_met`, `update_rate_limited`, `clear_started`, `clear_cancelled`, `clear_confirmed`, `target_changed`, `occurrence_reset`, `stream_reset`, `unsupported_stage`, `identity_conflict`, `feature_unknown`, `required_capture_lost` |

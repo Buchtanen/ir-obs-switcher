@@ -42,7 +42,7 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 | `commentary.llm.enabled` | bool | `false` | bool | — | `next_beat_plan` |
 | `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN HTTP(S) policy below | — | `next_beat_plan` |
 | `commentary.llm.model` | string | `qwen3:4b-instruct-2507-q4_K_M` | 1–128 chars | — | `next_beat_plan`; starts preflight at acceptance |
-| `commentary.llm.timeout_s` | float | `1.5` | 0.2–10 | seconds wall clock | `next_request` |
+| `commentary.llm.timeout_s` | float | `1.5` | 0.2–10 | monotonic seconds | `next_request` |
 | `commentary.llm.max_tokens` | int | `96` | 32–256 | tokens | `next_request` |
 | `commentary.llm.warmup` | bool | `true` | bool | — | `next_beat_plan`; controls preflight started at acceptance |
 | `commentary.llm.max_profile` | enum | `tight` | `tight`, `balanced`, `loose` | — | `next_beat_plan`; family verifier may impose lower cap |
@@ -50,8 +50,8 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 | `commentary.tts.voice` | string | empty | 0–128 chars/backend-valid | — | `next_utterance` |
 | `commentary.tts.rate` | int | `0` | -10–10 | SAPI-style steps | `next_utterance` |
 | `commentary.tts.steps` | int | `6` | 5–12 | inference steps | `next_utterance` |
-| `commentary.tts.start_timeout_s` | float | `5.0` | 0.5–30 | seconds wall clock | `next_utterance` |
-| `commentary.tts.stop_timeout_s` | float | `1.0` | 0.1–5 | seconds wall clock | `next_cancellation` |
+| `commentary.tts.start_timeout_s` | float | `5.0` | 0.5–30 | monotonic seconds | `next_utterance` |
+| `commentary.tts.stop_timeout_s` | float | `1.0` | 0.1–5 | monotonic seconds | `next_cancellation` |
 | `commentary.tts.audio_device` | string | empty | 0–256 chars | — | `next_utterance` |
 | `commentary.tts.duck_input` | string | empty | 0–256 chars | — | `next_utterance` |
 | `commentary.tts.duck_ratio` | float | `0.25` | 0–1 | original-volume fraction | `next_utterance` |
@@ -214,7 +214,23 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
     ]
   },
   "components": {
-    "llm": {"status": "ready", "reason": null, "generation": 2, "configGeneration": 7, "model": "qwen3:4b-instruct-2507-q4_K_M", "lastTtftMs": 130, "lastTotalMs": 530},
+    "llm": {
+      "status": "ready",
+      "reason": null,
+      "generation": 2,
+      "configGeneration": 7,
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "residencyEvidence": "warmup_succeeded",
+      "lastAttempt": {
+        "requestId": "rr:550e8400-e29b-41d4-a716-446655440000:12",
+        "outcome": "succeeded",
+        "ttfbMs": 82,
+        "ttftMs": 130,
+        "totalMs": 530,
+        "reducerLagMs": 3,
+        "terminalReason": null
+      }
+    },
     "tts": {"status": "ready", "reason": null, "backend": "supertonic", "backendGeneration": 4, "configGeneration": 7, "quarantinedGeneration": null, "voice": "M1"},
     "tape": {"status": "disabled", "reason": null, "path": null, "drops": 0, "dropsByPriority": {"sample": 0, "normal": 0, "critical": 0}},
     "detectors": {"status": "ready", "reason": null, "disabled": []},
@@ -229,6 +245,8 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
 Enums: status is `disabled|starting|ready|degraded|stopping|stopped`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. `sessionPlan` is null before first plan publication; otherwise it is the exact bounded status projection `{revision,valid,reason,stages}`. Revision is nonnegative, stages has 0–3 unique values in canonical order, a valid plan has 1–3 stages and null reason, and an invalid plan has no stages plus `session_plan_conflict`. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`, but the independently published session plan remains visible. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `config.applySequence` is nonnegative and names the effective snapshot. `config.pendingChanges` has 0–128 exact `{key,boundary,desiredGeneration}` entries sorted by key and never exposes values; desired/effective hashes may differ until every named boundary occurs. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
 
 Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. LLM/TTS worker/backend generations, their `configGeneration`, and fact view revisions/counts are nonnegative integers. Component `configGeneration` names the desired generation whose effective component values its current preflight proves; while a newer applied component generation is pending/failed, that component cannot be used. TTS quarantined generation is null or no greater than the current backend generation; while equal, TTS must be unavailable and admit no speech. `drops` equals the sum of the three nonnegative `dropsByPriority` counters. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Fact health becomes degraded with `fact_capacity_evicted` after lossy compaction for the rest of the narrative run and unavailable with `fact_capacity_exhausted` while no complete bounded view can be published. The next complete coherent bounded view moves unavailable→degraded; only a new complete run with no loss restores ready. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
+
+LLM `residencyEvidence` is `warmup_succeeded|not_requested`; it is evidence for latency grouping, not proof that a model remains resident. `lastAttempt` is null before the first admitted Qwen request and thereafter is exactly `{requestId,outcome,ttfbMs,ttftMs,totalMs,reducerLagMs,terminalReason}`. Outcome is `succeeded|failed|cancelled|timed_out|stale`; nullable metrics remain null when their source milestone was not observed. It exposes no prompt, completion, endpoint or exception text. Exact metric equations and terminal meanings are defined by `qwen-transport-contract.md`.
 
 The speech projection is exactly `{state,sourceKind,utteranceId,beatId,opportunityId,backend,backendGeneration,dispatchedAtMonoMs,acceptedAtMonoMs,lastTerminal}`. Source kind is `narrative|manual`; all current fields except state and retained `lastTerminal` are null in idle. Narrative beat/opportunity follow the immutable request, while manual beat/opportunity remain null. Backend is concrete `sapi|espeak|supertonic`; no text, voice, device or dispatch token is exposed. The retained terminal shape is exactly `{utteranceId,sourceKind,reason,atMonoMs}`.
 
