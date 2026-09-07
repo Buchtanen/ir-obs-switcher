@@ -57,6 +57,7 @@
       "distinctTargets": true,
       "heldSeconds": 1.0,
       "id": "distinct_relations_open",
+      "initialState": "inactive",
       "result": "started",
       "sameHero": true
     },
@@ -64,6 +65,7 @@
       "distinctTargets": false,
       "heldSeconds": 1.0,
       "id": "same_target_rejected",
+      "initialState": "inactive",
       "result": "inactive",
       "sameHero": true
     },
@@ -71,6 +73,7 @@
       "distinctTargets": true,
       "heldSeconds": 1.0,
       "id": "one_relation_unknown",
+      "initialState": "inactive",
       "relationKnown": false,
       "result": "inactive",
       "sameHero": true
@@ -78,6 +81,7 @@
     {
       "distinctTargets": true,
       "id": "relation_replacement_closes",
+      "initialState": "active",
       "replacement": true,
       "result": "ended",
       "sameHero": true
@@ -85,6 +89,7 @@
     {
       "distinctTargets": true,
       "id": "temporary_loss_restored",
+      "initialState": "active",
       "lossSeconds": 0.99,
       "result": "active",
       "sameHero": true
@@ -92,6 +97,7 @@
     {
       "distinctTargets": true,
       "id": "loss_at_boundary_closes",
+      "initialState": "active",
       "lossSeconds": 1.0,
       "result": "ended",
       "sameHero": true

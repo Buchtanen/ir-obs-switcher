@@ -10,10 +10,10 @@
       "family": "timing.lap_result",
       "id": "timing.lap_result:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "requiredClaimSurface": "set a personal best lap of 1:32.400",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + completed PB result; bound lap time reference only when selected."
+      "text": "Alex set a personal best lap of 1:32.400."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -22,16 +22,50 @@
         "required-frame:timing.lap_result"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "timing.lap_result",
       "id": "timing.lap_result:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "requiredClaimSurface": "set a personal best lap of 1:32.400",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + completed PB result; bound lap time reference only when selected."
+      "text": "Morgan set a personal best lap of 1:32.400."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.lap_result"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.lap_result",
+      "id": "timing.lap_result:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "set a personal best lap of 1:32.400",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex set a personal best lap of 1:32.400 in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.lap_result"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.lap_result",
+      "id": "timing.lap_result:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "set a personal best lap of 1:32.400",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex set a personal best lap of 1:32.400."
     },
     {
       "category": "forbidden_addition",
@@ -46,10 +80,10 @@
       "family": "timing.lap_result",
       "id": "timing.lap_result:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "requiredClaimSurface": "set a personal best lap of 1:32.400",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + completed PB result; bound lap time reference only when selected because the driver wanted it."
+      "text": "Alex set a personal best lap of 1:32.400 because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -63,10 +97,10 @@
       "family": "timing.lap_result",
       "id": "timing.lap_result:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + completed PB result; bound lap time reference only when selected",
+        "requiredClaimSurface": "set a personal best lap of 1:32.400",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + completed PB result; bound lap time reference only when selected beneath a purple moon."
+      "text": "Alex set a personal best lap of 1:32.400 beneath a purple moon."
     },
     {
       "category": "positive",
@@ -78,10 +112,10 @@
       "family": "timing.delta",
       "id": "timing.delta:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "requiredClaimSurface": "improved by 0.35 seconds",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + improved worsened polarity + bound delta reference."
+      "text": "Alex improved by 0.35 seconds."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -96,10 +130,45 @@
       "family": "timing.delta",
       "id": "timing.delta:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "requiredClaimSurface": "improved by 0.35 seconds",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + improved worsened polarity + bound delta reference."
+      "text": "It is not true that Alex improved by 0.35 seconds."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.delta"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.delta",
+      "id": "timing.delta:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "improved by 0.35 seconds",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex improved by 0.35 seconds in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.delta"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.delta",
+      "id": "timing.delta:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "improved by 0.35 seconds",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex improved by 0.35 seconds."
     },
     {
       "category": "forbidden_addition",
@@ -114,10 +183,10 @@
       "family": "timing.delta",
       "id": "timing.delta:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "requiredClaimSurface": "improved by 0.35 seconds",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + improved worsened polarity + bound delta reference because the driver wanted it."
+      "text": "Alex improved by 0.35 seconds because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -131,10 +200,10 @@
       "family": "timing.delta",
       "id": "timing.delta:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + improved worsened polarity + bound delta reference",
+        "requiredClaimSurface": "improved by 0.35 seconds",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + improved worsened polarity + bound delta reference beneath a purple moon."
+      "text": "Alex improved by 0.35 seconds beneath a purple moon."
     },
     {
       "category": "positive",
@@ -146,10 +215,10 @@
       "family": "timing.sector",
       "id": "timing.sector:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "requiredClaimSurface": "set the best split in sector two",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + sector identity + split best polarity."
+      "text": "Alex set the best split in sector two."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -158,16 +227,50 @@
         "required-frame:timing.sector"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "timing.sector",
       "id": "timing.sector:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "requiredClaimSurface": "set the best split in sector two",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + sector identity + split best polarity."
+      "text": "Morgan set the best split in sector two."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.sector"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.sector",
+      "id": "timing.sector:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "set the best split in sector two",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex set the best split in sector two in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.sector"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.sector",
+      "id": "timing.sector:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "set the best split in sector two",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex set the best split in sector two."
     },
     {
       "category": "forbidden_addition",
@@ -182,10 +285,10 @@
       "family": "timing.sector",
       "id": "timing.sector:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "requiredClaimSurface": "set the best split in sector two",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + sector identity + split best polarity because the driver wanted it."
+      "text": "Alex set the best split in sector two because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -199,10 +302,10 @@
       "family": "timing.sector",
       "id": "timing.sector:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + sector identity + split best polarity",
+        "requiredClaimSurface": "set the best split in sector two",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + sector identity + split best polarity beneath a purple moon."
+      "text": "Alex set the best split in sector two beneath a purple moon."
     },
     {
       "category": "positive",
@@ -214,10 +317,10 @@
       "family": "timing.target",
       "id": "timing.target:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "requiredClaimSurface": "is chasing third place, 0.8 seconds ahead",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero pursuing timing position target with bound gap."
+      "text": "Alex is chasing third place, 0.8 seconds ahead."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -232,10 +335,45 @@
       "family": "timing.target",
       "id": "timing.target:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "requiredClaimSurface": "is chasing third place, 0.8 seconds ahead",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero pursuing timing position target with bound gap."
+      "text": "It is not true that Alex is chasing third place, 0.8 seconds ahead."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.target"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.target",
+      "id": "timing.target:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is chasing third place, 0.8 seconds ahead",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is chasing third place, 0.8 seconds ahead in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.target"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.target",
+      "id": "timing.target:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is chasing third place, 0.8 seconds ahead",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is chasing third place, 0.8 seconds ahead."
     },
     {
       "category": "forbidden_addition",
@@ -250,10 +388,10 @@
       "family": "timing.target",
       "id": "timing.target:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "requiredClaimSurface": "is chasing third place, 0.8 seconds ahead",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero pursuing timing position target with bound gap because the driver wanted it."
+      "text": "Alex is chasing third place, 0.8 seconds ahead because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -267,10 +405,10 @@
       "family": "timing.target",
       "id": "timing.target:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero pursuing timing position target with bound gap",
+        "requiredClaimSurface": "is chasing third place, 0.8 seconds ahead",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero pursuing timing position target with bound gap beneath a purple moon."
+      "text": "Alex is chasing third place, 0.8 seconds ahead beneath a purple moon."
     },
     {
       "category": "positive",
@@ -282,10 +420,10 @@
       "family": "timing.projection",
       "id": "timing.projection:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "requiredClaimSurface": "is projected to finish third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + explicit projected modality + projected time position."
+      "text": "Alex is projected to finish third."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -294,16 +432,50 @@
         "required-frame:timing.projection"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "timing.projection",
       "id": "timing.projection:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "requiredClaimSurface": "is projected to finish third",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + explicit projected modality + projected time position."
+      "text": "Morgan is projected to finish third."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.projection"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.projection",
+      "id": "timing.projection:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is projected to finish third",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is projected to finish third in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.projection"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.projection",
+      "id": "timing.projection:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is projected to finish third",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is projected to finish third."
     },
     {
       "category": "forbidden_addition",
@@ -318,10 +490,10 @@
       "family": "timing.projection",
       "id": "timing.projection:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "requiredClaimSurface": "is projected to finish third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + explicit projected modality + projected time position because the driver wanted it."
+      "text": "Alex is projected to finish third because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -335,10 +507,10 @@
       "family": "timing.projection",
       "id": "timing.projection:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + explicit projected modality + projected time position",
+        "requiredClaimSurface": "is projected to finish third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + explicit projected modality + projected time position beneath a purple moon."
+      "text": "Alex is projected to finish third beneath a purple moon."
     },
     {
       "category": "positive",
@@ -350,10 +522,10 @@
       "family": "timing.attempt",
       "id": "timing.attempt:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "requiredClaimSurface": "is on a flying lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + current active attempt."
+      "text": "Alex is on a flying lap."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -368,10 +540,45 @@
       "family": "timing.attempt",
       "id": "timing.attempt:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "requiredClaimSurface": "is on a flying lap",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + current active attempt."
+      "text": "It is not true that Alex is on a flying lap."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.attempt"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.attempt",
+      "id": "timing.attempt:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on a flying lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is on a flying lap in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.attempt"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.attempt",
+      "id": "timing.attempt:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on a flying lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is on a flying lap."
     },
     {
       "category": "forbidden_addition",
@@ -386,10 +593,10 @@
       "family": "timing.attempt",
       "id": "timing.attempt:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "requiredClaimSurface": "is on a flying lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + current active attempt because the driver wanted it."
+      "text": "Alex is on a flying lap because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -403,10 +610,10 @@
       "family": "timing.attempt",
       "id": "timing.attempt:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + current active attempt",
+        "requiredClaimSurface": "is on a flying lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + current active attempt beneath a purple moon."
+      "text": "Alex is on a flying lap beneath a purple moon."
     },
     {
       "category": "positive",
@@ -418,10 +625,10 @@
       "family": "timing.consistency",
       "id": "timing.consistency:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "requiredClaimSurface": "has completed three clean laps",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact clean-lap count."
+      "text": "Alex has completed three clean laps."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -430,16 +637,50 @@
         "required-frame:timing.consistency"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "timing.consistency",
       "id": "timing.consistency:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "requiredClaimSurface": "has completed three clean laps",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + exact clean-lap count."
+      "text": "Morgan has completed three clean laps."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.consistency"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "timing.consistency",
+      "id": "timing.consistency:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has completed three clean laps",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has completed three clean laps in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:timing.consistency"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "timing.consistency",
+      "id": "timing.consistency:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has completed three clean laps",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has completed three clean laps."
     },
     {
       "category": "forbidden_addition",
@@ -454,10 +695,10 @@
       "family": "timing.consistency",
       "id": "timing.consistency:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "requiredClaimSurface": "has completed three clean laps",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact clean-lap count because the driver wanted it."
+      "text": "Alex has completed three clean laps because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -471,10 +712,10 @@
       "family": "timing.consistency",
       "id": "timing.consistency:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact clean-lap count",
+        "requiredClaimSurface": "has completed three clean laps",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact clean-lap count beneath a purple moon."
+      "text": "Alex has completed three clean laps beneath a purple moon."
     },
     {
       "category": "positive",
@@ -486,10 +727,10 @@
       "family": "battle.closing",
       "id": "battle.closing:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "requiredClaimSurface": "is closing on Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered closer to target + trend material band; gap if selected."
+      "text": "Alex is closing on Morgan."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -504,10 +745,45 @@
       "family": "battle.closing",
       "id": "battle.closing:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "requiredClaimSurface": "is closing on Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound ordered closer to target + trend material band; gap if selected."
+      "text": "It is not true that Alex is closing on Morgan."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.closing"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "battle.closing",
+      "id": "battle.closing:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is closing on Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is closing on Morgan in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.closing"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "battle.closing",
+      "id": "battle.closing:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is closing on Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is closing on Morgan."
     },
     {
       "category": "forbidden_addition",
@@ -522,10 +798,10 @@
       "family": "battle.closing",
       "id": "battle.closing:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "requiredClaimSurface": "is closing on Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered closer to target + trend material band; gap if selected because the driver wanted it."
+      "text": "Alex is closing on Morgan because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -539,10 +815,10 @@
       "family": "battle.closing",
       "id": "battle.closing:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered closer to target + trend material band; gap if selected",
+        "requiredClaimSurface": "is closing on Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered closer to target + trend material band; gap if selected beneath a purple moon."
+      "text": "Alex is closing on Morgan beneath a purple moon."
     },
     {
       "category": "positive",
@@ -554,10 +830,10 @@
       "family": "battle.attack",
       "id": "battle.attack:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "requiredClaimSurface": "is within attack range of Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered hero to target + current attack-range band."
+      "text": "Alex is within attack range of Morgan."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -566,16 +842,50 @@
         "required-frame:battle.attack"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "battle.attack",
       "id": "battle.attack:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "requiredClaimSurface": "is within attack range of Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound ordered hero to target + current attack-range band."
+      "text": "Morgan is within attack range of Morgan."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.attack"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "battle.attack",
+      "id": "battle.attack:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is within attack range of Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is within attack range of Morgan in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.attack"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "battle.attack",
+      "id": "battle.attack:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is within attack range of Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is within attack range of Morgan."
     },
     {
       "category": "forbidden_addition",
@@ -590,10 +900,10 @@
       "family": "battle.attack",
       "id": "battle.attack:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "requiredClaimSurface": "is within attack range of Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered hero to target + current attack-range band because the driver wanted it."
+      "text": "Alex is within attack range of Morgan because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -607,10 +917,10 @@
       "family": "battle.attack",
       "id": "battle.attack:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero to target + current attack-range band",
+        "requiredClaimSurface": "is within attack range of Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered hero to target + current attack-range band beneath a purple moon."
+      "text": "Alex is within attack range of Morgan beneath a purple moon."
     },
     {
       "category": "positive",
@@ -622,10 +932,10 @@
       "family": "battle.overlap",
       "id": "battle.overlap:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "requiredClaimSurface": "is side by side with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered hero target pair + simultaneous side-by-side state."
+      "text": "Alex is side by side with Morgan."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -640,10 +950,45 @@
       "family": "battle.overlap",
       "id": "battle.overlap:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "requiredClaimSurface": "is side by side with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound ordered hero target pair + simultaneous side-by-side state."
+      "text": "It is not true that Alex is side by side with Morgan."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.overlap"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "battle.overlap",
+      "id": "battle.overlap:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is side by side with Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is side by side with Morgan in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.overlap"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "battle.overlap",
+      "id": "battle.overlap:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is side by side with Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is side by side with Morgan."
     },
     {
       "category": "forbidden_addition",
@@ -658,10 +1003,10 @@
       "family": "battle.overlap",
       "id": "battle.overlap:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "requiredClaimSurface": "is side by side with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered hero target pair + simultaneous side-by-side state because the driver wanted it."
+      "text": "Alex is side by side with Morgan because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -675,10 +1020,10 @@
       "family": "battle.overlap",
       "id": "battle.overlap:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered hero target pair + simultaneous side-by-side state",
+        "requiredClaimSurface": "is side by side with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered hero target pair + simultaneous side-by-side state beneath a purple moon."
+      "text": "Alex is side by side with Morgan beneath a purple moon."
     },
     {
       "category": "positive",
@@ -690,10 +1035,10 @@
       "family": "battle.pressure",
       "id": "battle.pressure:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "requiredClaimSurface": "is under pressure from Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered rear target to hero + threat closing relation."
+      "text": "Alex is under pressure from Morgan."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -702,16 +1047,50 @@
         "required-frame:battle.pressure"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "battle.pressure",
       "id": "battle.pressure:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "requiredClaimSurface": "is under pressure from Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound ordered rear target to hero + threat closing relation."
+      "text": "Morgan is under pressure from Morgan."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.pressure"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "battle.pressure",
+      "id": "battle.pressure:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is under pressure from Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is under pressure from Morgan in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.pressure"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "battle.pressure",
+      "id": "battle.pressure:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is under pressure from Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is under pressure from Morgan."
     },
     {
       "category": "forbidden_addition",
@@ -726,10 +1105,10 @@
       "family": "battle.pressure",
       "id": "battle.pressure:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "requiredClaimSurface": "is under pressure from Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered rear target to hero + threat closing relation because the driver wanted it."
+      "text": "Alex is under pressure from Morgan because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -743,10 +1122,10 @@
       "family": "battle.pressure",
       "id": "battle.pressure:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered rear target to hero + threat closing relation",
+        "requiredClaimSurface": "is under pressure from Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered rear target to hero + threat closing relation beneath a purple moon."
+      "text": "Alex is under pressure from Morgan beneath a purple moon."
     },
     {
       "category": "positive",
@@ -758,10 +1137,10 @@
       "family": "battle.two_front",
       "id": "battle.two_front:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "requiredClaimSurface": "is chasing Morgan while Taylor is closing from behind",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero to front and rear to hero as two distinct relations."
+      "text": "Alex is chasing Morgan while Taylor is closing from behind."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -776,10 +1155,45 @@
       "family": "battle.two_front",
       "id": "battle.two_front:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "requiredClaimSurface": "is chasing Morgan while Taylor is closing from behind",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero to front and rear to hero as two distinct relations."
+      "text": "It is not true that Alex is chasing Morgan while Taylor is closing from behind."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.two_front"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "battle.two_front",
+      "id": "battle.two_front:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is chasing Morgan while Taylor is closing from behind",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is chasing Morgan while Taylor is closing from behind in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.two_front"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "battle.two_front",
+      "id": "battle.two_front:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is chasing Morgan while Taylor is closing from behind",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is chasing Morgan while Taylor is closing from behind."
     },
     {
       "category": "forbidden_addition",
@@ -794,10 +1208,10 @@
       "family": "battle.two_front",
       "id": "battle.two_front:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "requiredClaimSurface": "is chasing Morgan while Taylor is closing from behind",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero to front and rear to hero as two distinct relations because the driver wanted it."
+      "text": "Alex is chasing Morgan while Taylor is closing from behind because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -811,10 +1225,10 @@
       "family": "battle.two_front",
       "id": "battle.two_front:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero to front and rear to hero as two distinct relations",
+        "requiredClaimSurface": "is chasing Morgan while Taylor is closing from behind",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero to front and rear to hero as two distinct relations beneath a purple moon."
+      "text": "Alex is chasing Morgan while Taylor is closing from behind beneath a purple moon."
     },
     {
       "category": "positive",
@@ -826,10 +1240,10 @@
       "family": "battle.outcome",
       "id": "battle.outcome:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "requiredClaimSurface": "has won the battle with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero target + won outcome."
+      "text": "Alex has won the battle with Morgan."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -838,16 +1252,50 @@
         "required-frame:battle.outcome"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "battle.outcome",
       "id": "battle.outcome:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "requiredClaimSurface": "has won the battle with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero target + won outcome."
+      "text": "Morgan has won the battle with Morgan."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.outcome"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "battle.outcome",
+      "id": "battle.outcome:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has won the battle with Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has won the battle with Morgan in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:battle.outcome"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "battle.outcome",
+      "id": "battle.outcome:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has won the battle with Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has won the battle with Morgan."
     },
     {
       "category": "forbidden_addition",
@@ -862,10 +1310,10 @@
       "family": "battle.outcome",
       "id": "battle.outcome:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "requiredClaimSurface": "has won the battle with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero target + won outcome because the driver wanted it."
+      "text": "Alex has won the battle with Morgan because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -879,10 +1327,10 @@
       "family": "battle.outcome",
       "id": "battle.outcome:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero target + won outcome",
+        "requiredClaimSurface": "has won the battle with Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero target + won outcome beneath a purple moon."
+      "text": "Alex has won the battle with Morgan beneath a purple moon."
     },
     {
       "category": "positive",
@@ -894,10 +1342,10 @@
       "family": "position.pass",
       "id": "position.pass:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "requiredClaimSurface": "has passed Morgan for third place",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered passer to passed + old new order."
+      "text": "Alex has passed Morgan for third place."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -912,10 +1360,45 @@
       "family": "position.pass",
       "id": "position.pass:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "requiredClaimSurface": "has passed Morgan for third place",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound ordered passer to passed + old new order."
+      "text": "It is not true that Alex has passed Morgan for third place."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.pass"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "position.pass",
+      "id": "position.pass:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has passed Morgan for third place",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has passed Morgan for third place in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.pass"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "position.pass",
+      "id": "position.pass:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has passed Morgan for third place",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has passed Morgan for third place."
     },
     {
       "category": "forbidden_addition",
@@ -930,10 +1413,10 @@
       "family": "position.pass",
       "id": "position.pass:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "requiredClaimSurface": "has passed Morgan for third place",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered passer to passed + old new order because the driver wanted it."
+      "text": "Alex has passed Morgan for third place because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -947,10 +1430,10 @@
       "family": "position.pass",
       "id": "position.pass:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ordered passer to passed + old new order",
+        "requiredClaimSurface": "has passed Morgan for third place",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound ordered passer to passed + old new order beneath a purple moon."
+      "text": "Alex has passed Morgan for third place beneath a purple moon."
     },
     {
       "category": "positive",
@@ -962,10 +1445,10 @@
       "family": "position.change",
       "id": "position.change:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "requiredClaimSurface": "has gained two positions, from fifth to third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + old new ordinal + gained lost polarity."
+      "text": "Alex has gained two positions, from fifth to third."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -974,16 +1457,50 @@
         "required-frame:position.change"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "position.change",
       "id": "position.change:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "requiredClaimSurface": "has gained two positions, from fifth to third",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + old new ordinal + gained lost polarity."
+      "text": "Morgan has gained two positions, from fifth to third."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.change"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "position.change",
+      "id": "position.change:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has gained two positions, from fifth to third",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has gained two positions, from fifth to third in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.change"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "position.change",
+      "id": "position.change:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has gained two positions, from fifth to third",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has gained two positions, from fifth to third."
     },
     {
       "category": "forbidden_addition",
@@ -998,10 +1515,10 @@
       "family": "position.change",
       "id": "position.change:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "requiredClaimSurface": "has gained two positions, from fifth to third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + old new ordinal + gained lost polarity because the driver wanted it."
+      "text": "Alex has gained two positions, from fifth to third because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1015,10 +1532,10 @@
       "family": "position.change",
       "id": "position.change:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + old new ordinal + gained lost polarity",
+        "requiredClaimSurface": "has gained two positions, from fifth to third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + old new ordinal + gained lost polarity beneath a purple moon."
+      "text": "Alex has gained two positions, from fifth to third beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1030,10 +1547,10 @@
       "family": "position.leader",
       "id": "position.leader:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "requiredClaimSurface": "has lost the lead to Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound old leader to new leader."
+      "text": "Alex has lost the lead to Morgan."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1048,10 +1565,45 @@
       "family": "position.leader",
       "id": "position.leader:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "requiredClaimSurface": "has lost the lead to Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound old leader to new leader."
+      "text": "It is not true that Alex has lost the lead to Morgan."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.leader"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "position.leader",
+      "id": "position.leader:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has lost the lead to Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has lost the lead to Morgan in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:position.leader"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "position.leader",
+      "id": "position.leader:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has lost the lead to Morgan",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has lost the lead to Morgan."
     },
     {
       "category": "forbidden_addition",
@@ -1066,10 +1618,10 @@
       "family": "position.leader",
       "id": "position.leader:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "requiredClaimSurface": "has lost the lead to Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound old leader to new leader because the driver wanted it."
+      "text": "Alex has lost the lead to Morgan because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1083,10 +1635,10 @@
       "family": "position.leader",
       "id": "position.leader:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound old leader to new leader",
+        "requiredClaimSurface": "has lost the lead to Morgan",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound old leader to new leader beneath a purple moon."
+      "text": "Alex has lost the lead to Morgan beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1098,10 +1650,10 @@
       "family": "incident.event",
       "id": "incident.event:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "requiredClaimSurface": "has recorded an incident",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero incident; optional off-track only for classified branch."
+      "text": "Alex has recorded an incident."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1110,16 +1662,50 @@
         "required-frame:incident.event"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "incident.event",
       "id": "incident.event:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "requiredClaimSurface": "has recorded an incident",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero incident; optional off-track only for classified branch."
+      "text": "Morgan has recorded an incident."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.event"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "incident.event",
+      "id": "incident.event:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has recorded an incident",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has recorded an incident in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.event"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "incident.event",
+      "id": "incident.event:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has recorded an incident",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has recorded an incident."
     },
     {
       "category": "forbidden_addition",
@@ -1134,10 +1720,10 @@
       "family": "incident.event",
       "id": "incident.event:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "requiredClaimSurface": "has recorded an incident",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero incident; optional off-track only for classified branch because the driver wanted it."
+      "text": "Alex has recorded an incident because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1151,10 +1737,10 @@
       "family": "incident.event",
       "id": "incident.event:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero incident; optional off-track only for classified branch",
+        "requiredClaimSurface": "has recorded an incident",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero incident; optional off-track only for classified branch beneath a purple moon."
+      "text": "Alex has recorded an incident beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1166,10 +1752,10 @@
       "family": "incident.invalid_lap",
       "id": "incident.invalid_lap:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "requiredClaimSurface": "is on an invalid lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + invalid current lap."
+      "text": "Alex is on an invalid lap."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1184,10 +1770,45 @@
       "family": "incident.invalid_lap",
       "id": "incident.invalid_lap:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "requiredClaimSurface": "is on an invalid lap",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + invalid current lap."
+      "text": "It is not true that Alex is on an invalid lap."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.invalid_lap"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "incident.invalid_lap",
+      "id": "incident.invalid_lap:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on an invalid lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is on an invalid lap in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.invalid_lap"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "incident.invalid_lap",
+      "id": "incident.invalid_lap:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on an invalid lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is on an invalid lap."
     },
     {
       "category": "forbidden_addition",
@@ -1202,10 +1823,10 @@
       "family": "incident.invalid_lap",
       "id": "incident.invalid_lap:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "requiredClaimSurface": "is on an invalid lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + invalid current lap because the driver wanted it."
+      "text": "Alex is on an invalid lap because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1219,10 +1840,10 @@
       "family": "incident.invalid_lap",
       "id": "incident.invalid_lap:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + invalid current lap",
+        "requiredClaimSurface": "is on an invalid lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + invalid current lap beneath a purple moon."
+      "text": "Alex is on an invalid lap beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1234,10 +1855,10 @@
       "family": "incident.aftermath",
       "id": "incident.aftermath:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "requiredClaimSurface": "is stationary after the incident",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact current aftermath state."
+      "text": "Alex is stationary after the incident."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1246,16 +1867,50 @@
         "required-frame:incident.aftermath"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "incident.aftermath",
       "id": "incident.aftermath:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "requiredClaimSurface": "is stationary after the incident",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + exact current aftermath state."
+      "text": "Morgan is stationary after the incident."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.aftermath"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "incident.aftermath",
+      "id": "incident.aftermath:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is stationary after the incident",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is stationary after the incident in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.aftermath"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "incident.aftermath",
+      "id": "incident.aftermath:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is stationary after the incident",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is stationary after the incident."
     },
     {
       "category": "forbidden_addition",
@@ -1270,10 +1925,10 @@
       "family": "incident.aftermath",
       "id": "incident.aftermath:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "requiredClaimSurface": "is stationary after the incident",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact current aftermath state because the driver wanted it."
+      "text": "Alex is stationary after the incident because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1287,10 +1942,10 @@
       "family": "incident.aftermath",
       "id": "incident.aftermath:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact current aftermath state",
+        "requiredClaimSurface": "is stationary after the incident",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact current aftermath state beneath a purple moon."
+      "text": "Alex is stationary after the incident beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1302,10 +1957,10 @@
       "family": "incident.recovery",
       "id": "incident.recovery:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "requiredClaimSurface": "is moving again on the racing surface",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + resumed motion + known surface state."
+      "text": "Alex is moving again on the racing surface."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1320,10 +1975,45 @@
       "family": "incident.recovery",
       "id": "incident.recovery:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "requiredClaimSurface": "is moving again on the racing surface",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + resumed motion + known surface state."
+      "text": "It is not true that Alex is moving again on the racing surface."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.recovery"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "incident.recovery",
+      "id": "incident.recovery:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is moving again on the racing surface",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is moving again on the racing surface in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:incident.recovery"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "incident.recovery",
+      "id": "incident.recovery:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is moving again on the racing surface",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is moving again on the racing surface."
     },
     {
       "category": "forbidden_addition",
@@ -1338,10 +2028,10 @@
       "family": "incident.recovery",
       "id": "incident.recovery:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "requiredClaimSurface": "is moving again on the racing surface",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + resumed motion + known surface state because the driver wanted it."
+      "text": "Alex is moving again on the racing surface because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1355,10 +2045,10 @@
       "family": "incident.recovery",
       "id": "incident.recovery:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + resumed motion + known surface state",
+        "requiredClaimSurface": "is moving again on the racing surface",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + resumed motion + known surface state beneath a purple moon."
+      "text": "Alex is moving again on the racing surface beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1370,10 +2060,10 @@
       "family": "pit.lifecycle",
       "id": "pit.lifecycle:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "requiredClaimSurface": "is in the pit lane on pit cycle one",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact phase + pit-cycle identity."
+      "text": "Alex is in the pit lane on pit cycle one."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1382,16 +2072,50 @@
         "required-frame:pit.lifecycle"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "pit.lifecycle",
       "id": "pit.lifecycle:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "requiredClaimSurface": "is in the pit lane on pit cycle one",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + exact phase + pit-cycle identity."
+      "text": "Morgan is in the pit lane on pit cycle one."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.lifecycle"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "pit.lifecycle",
+      "id": "pit.lifecycle:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is in the pit lane on pit cycle one",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is in the pit lane on pit cycle one in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.lifecycle"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "pit.lifecycle",
+      "id": "pit.lifecycle:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is in the pit lane on pit cycle one",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is in the pit lane on pit cycle one."
     },
     {
       "category": "forbidden_addition",
@@ -1406,10 +2130,10 @@
       "family": "pit.lifecycle",
       "id": "pit.lifecycle:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "requiredClaimSurface": "is in the pit lane on pit cycle one",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact phase + pit-cycle identity because the driver wanted it."
+      "text": "Alex is in the pit lane on pit cycle one because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1423,10 +2147,10 @@
       "family": "pit.lifecycle",
       "id": "pit.lifecycle:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact phase + pit-cycle identity",
+        "requiredClaimSurface": "is in the pit lane on pit cycle one",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact phase + pit-cycle identity beneath a purple moon."
+      "text": "Alex is in the pit lane on pit cycle one beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1438,10 +2162,10 @@
       "family": "pit.outcome",
       "id": "pit.outcome:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "requiredClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + entry exit comparison and polarity."
+      "text": "Alex rejoined 2.0 seconds ahead of the entry comparison."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1456,10 +2180,45 @@
       "family": "pit.outcome",
       "id": "pit.outcome:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "requiredClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + entry exit comparison and polarity."
+      "text": "It is not true that Alex rejoined 2.0 seconds ahead of the entry comparison."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.outcome"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "pit.outcome",
+      "id": "pit.outcome:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex rejoined 2.0 seconds ahead of the entry comparison in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:pit.outcome"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "pit.outcome",
+      "id": "pit.outcome:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex rejoined 2.0 seconds ahead of the entry comparison."
     },
     {
       "category": "forbidden_addition",
@@ -1474,10 +2233,10 @@
       "family": "pit.outcome",
       "id": "pit.outcome:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "requiredClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + entry exit comparison and polarity because the driver wanted it."
+      "text": "Alex rejoined 2.0 seconds ahead of the entry comparison because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1491,10 +2250,10 @@
       "family": "pit.outcome",
       "id": "pit.outcome:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + entry exit comparison and polarity",
+        "requiredClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + entry exit comparison and polarity beneath a purple moon."
+      "text": "Alex rejoined 2.0 seconds ahead of the entry comparison beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1506,10 +2265,10 @@
       "family": "stream.lifecycle",
       "id": "stream.lifecycle:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stream epoch + started reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has started for race coverage",
+        "subjectSurface": "The broadcast"
       },
-      "text": "Alex reports the bound stream epoch + started reason."
+      "text": "The broadcast has started for race coverage."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1518,16 +2277,50 @@
         "required-frame:stream.lifecycle"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "stream.lifecycle",
       "id": "stream.lifecycle:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stream epoch + started reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has started for race coverage",
+        "subjectSurface": "The broadcast"
       },
-      "text": "Not Alex reports the bound stream epoch + started reason."
+      "text": "Morgan has started for race coverage."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:stream.lifecycle"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "stream.lifecycle",
+      "id": "stream.lifecycle:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has started for race coverage",
+        "subjectSurface": "The broadcast"
+      },
+      "text": "The broadcast has started for race coverage in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:stream.lifecycle"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "stream.lifecycle",
+      "id": "stream.lifecycle:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has started for race coverage",
+        "subjectSurface": "The broadcast"
+      },
+      "text": "Yesterday, The broadcast has started for race coverage."
     },
     {
       "category": "forbidden_addition",
@@ -1542,10 +2335,10 @@
       "family": "stream.lifecycle",
       "id": "stream.lifecycle:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stream epoch + started reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has started for race coverage",
+        "subjectSurface": "The broadcast"
       },
-      "text": "Alex reports the bound stream epoch + started reason because the driver wanted it."
+      "text": "The broadcast has started for race coverage because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1559,10 +2352,10 @@
       "family": "stream.lifecycle",
       "id": "stream.lifecycle:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stream epoch + started reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has started for race coverage",
+        "subjectSurface": "The broadcast"
       },
-      "text": "Alex reports the bound stream epoch + started reason beneath a purple moon."
+      "text": "The broadcast has started for race coverage beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1574,10 +2367,10 @@
       "family": "session.intro",
       "id": "session.intro:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is underway in occurrence three",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound current occurrence + exact stage."
+      "text": "The race session is underway in occurrence three."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1592,10 +2385,45 @@
       "family": "session.intro",
       "id": "session.intro:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is underway in occurrence three",
+        "subjectSurface": "The race session"
       },
-      "text": "Not Alex reports the bound current occurrence + exact stage."
+      "text": "It is not true that The race session is underway in occurrence three."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.intro"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.intro",
+      "id": "session.intro:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is underway in occurrence three",
+        "subjectSurface": "The race session"
+      },
+      "text": "The race session is underway in occurrence three in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.intro"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.intro",
+      "id": "session.intro:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is underway in occurrence three",
+        "subjectSurface": "The race session"
+      },
+      "text": "Yesterday, The race session is underway in occurrence three."
     },
     {
       "category": "forbidden_addition",
@@ -1610,10 +2438,10 @@
       "family": "session.intro",
       "id": "session.intro:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is underway in occurrence three",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound current occurrence + exact stage because the driver wanted it."
+      "text": "The race session is underway in occurrence three because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1627,10 +2455,10 @@
       "family": "session.intro",
       "id": "session.intro:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound current occurrence + exact stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is underway in occurrence three",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound current occurrence + exact stage beneath a purple moon."
+      "text": "The race session is underway in occurrence three beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1642,10 +2470,10 @@
       "family": "session.restart",
       "id": "session.restart:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has restarted with a new occurrence",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound stage + old new occurrence relation."
+      "text": "The race session has restarted with a new occurrence."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1654,16 +2482,50 @@
         "required-frame:session.restart"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "session.restart",
       "id": "session.restart:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has restarted with a new occurrence",
+        "subjectSurface": "The race session"
       },
-      "text": "Not Alex reports the bound stage + old new occurrence relation."
+      "text": "Morgan has restarted with a new occurrence."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.restart"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.restart",
+      "id": "session.restart:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has restarted with a new occurrence",
+        "subjectSurface": "The race session"
+      },
+      "text": "The race session has restarted with a new occurrence in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.restart"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.restart",
+      "id": "session.restart:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has restarted with a new occurrence",
+        "subjectSurface": "The race session"
+      },
+      "text": "Yesterday, The race session has restarted with a new occurrence."
     },
     {
       "category": "forbidden_addition",
@@ -1678,10 +2540,10 @@
       "family": "session.restart",
       "id": "session.restart:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has restarted with a new occurrence",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound stage + old new occurrence relation because the driver wanted it."
+      "text": "The race session has restarted with a new occurrence because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1695,10 +2557,10 @@
       "family": "session.restart",
       "id": "session.restart:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound stage + old new occurrence relation",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has restarted with a new occurrence",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound stage + old new occurrence relation beneath a purple moon."
+      "text": "The race session has restarted with a new occurrence beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1710,10 +2572,10 @@
       "family": "session.wrap",
       "id": "session.wrap:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has ended under the checkered flag",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound ended occurrence + exact stage reason."
+      "text": "The race session has ended under the checkered flag."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1728,10 +2590,45 @@
       "family": "session.wrap",
       "id": "session.wrap:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has ended under the checkered flag",
+        "subjectSurface": "The race session"
       },
-      "text": "Not Alex reports the bound ended occurrence + exact stage reason."
+      "text": "It is not true that The race session has ended under the checkered flag."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.wrap"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.wrap",
+      "id": "session.wrap:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has ended under the checkered flag",
+        "subjectSurface": "The race session"
+      },
+      "text": "The race session has ended under the checkered flag in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.wrap"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.wrap",
+      "id": "session.wrap:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has ended under the checkered flag",
+        "subjectSurface": "The race session"
+      },
+      "text": "Yesterday, The race session has ended under the checkered flag."
     },
     {
       "category": "forbidden_addition",
@@ -1746,10 +2643,10 @@
       "family": "session.wrap",
       "id": "session.wrap:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has ended under the checkered flag",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound ended occurrence + exact stage reason because the driver wanted it."
+      "text": "The race session has ended under the checkered flag because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1763,10 +2660,10 @@
       "family": "session.wrap",
       "id": "session.wrap:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound ended occurrence + exact stage reason",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has ended under the checkered flag",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound ended occurrence + exact stage reason beneath a purple moon."
+      "text": "The race session has ended under the checkered flag beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1778,10 +2675,10 @@
       "family": "session.preview",
       "id": "session.preview:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound next actually present stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is next",
+        "subjectSurface": "The qualifying session"
       },
-      "text": "Alex reports the bound next actually present stage."
+      "text": "The qualifying session is next."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1790,16 +2687,50 @@
         "required-frame:session.preview"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "session.preview",
       "id": "session.preview:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound next actually present stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is next",
+        "subjectSurface": "The qualifying session"
       },
-      "text": "Not Alex reports the bound next actually present stage."
+      "text": "Morgan is next."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.preview"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.preview",
+      "id": "session.preview:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is next",
+        "subjectSurface": "The qualifying session"
+      },
+      "text": "The qualifying session is next in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.preview"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.preview",
+      "id": "session.preview:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is next",
+        "subjectSurface": "The qualifying session"
+      },
+      "text": "Yesterday, The qualifying session is next."
     },
     {
       "category": "forbidden_addition",
@@ -1814,10 +2745,10 @@
       "family": "session.preview",
       "id": "session.preview:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound next actually present stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is next",
+        "subjectSurface": "The qualifying session"
       },
-      "text": "Alex reports the bound next actually present stage because the driver wanted it."
+      "text": "The qualifying session is next because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1831,10 +2762,10 @@
       "family": "session.preview",
       "id": "session.preview:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound next actually present stage",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "is next",
+        "subjectSurface": "The qualifying session"
       },
-      "text": "Alex reports the bound next actually present stage beneath a purple moon."
+      "text": "The qualifying session is next beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1846,10 +2777,10 @@
       "family": "session.flag",
       "id": "session.flag:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has changed from green to checkered",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound exact flag transition scope or checkered state."
+      "text": "The race session has changed from green to checkered."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1864,10 +2795,45 @@
       "family": "session.flag",
       "id": "session.flag:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has changed from green to checkered",
+        "subjectSurface": "The race session"
       },
-      "text": "Not Alex reports the bound exact flag transition scope or checkered state."
+      "text": "It is not true that The race session has changed from green to checkered."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.flag"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.flag",
+      "id": "session.flag:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has changed from green to checkered",
+        "subjectSurface": "The race session"
+      },
+      "text": "The race session has changed from green to checkered in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.flag"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.flag",
+      "id": "session.flag:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has changed from green to checkered",
+        "subjectSurface": "The race session"
+      },
+      "text": "Yesterday, The race session has changed from green to checkered."
     },
     {
       "category": "forbidden_addition",
@@ -1882,10 +2848,10 @@
       "family": "session.flag",
       "id": "session.flag:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has changed from green to checkered",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound exact flag transition scope or checkered state because the driver wanted it."
+      "text": "The race session has changed from green to checkered because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1899,10 +2865,10 @@
       "family": "session.flag",
       "id": "session.flag:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact flag transition scope or checkered state",
-        "subjectSurface": "Alex"
+        "requiredClaimSurface": "has changed from green to checkered",
+        "subjectSurface": "The race session"
       },
-      "text": "Alex reports the bound exact flag transition scope or checkered state beneath a purple moon."
+      "text": "The race session has changed from green to checkered beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1914,10 +2880,10 @@
       "family": "session.final_lap",
       "id": "session.final_lap:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "requiredClaimSurface": "is on the final lap, lap 20",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact final-lap identity."
+      "text": "Alex is on the final lap, lap 20."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -1926,16 +2892,50 @@
         "required-frame:session.final_lap"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "session.final_lap",
       "id": "session.final_lap:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "requiredClaimSurface": "is on the final lap, lap 20",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + exact final-lap identity."
+      "text": "Morgan is on the final lap, lap 20."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.final_lap"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.final_lap",
+      "id": "session.final_lap:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on the final lap, lap 20",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is on the final lap, lap 20 in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.final_lap"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.final_lap",
+      "id": "session.final_lap:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on the final lap, lap 20",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is on the final lap, lap 20."
     },
     {
       "category": "forbidden_addition",
@@ -1950,10 +2950,10 @@
       "family": "session.final_lap",
       "id": "session.final_lap:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "requiredClaimSurface": "is on the final lap, lap 20",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact final-lap identity because the driver wanted it."
+      "text": "Alex is on the final lap, lap 20 because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -1967,10 +2967,10 @@
       "family": "session.final_lap",
       "id": "session.final_lap:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + exact final-lap identity",
+        "requiredClaimSurface": "is on the final lap, lap 20",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + exact final-lap identity beneath a purple moon."
+      "text": "Alex is on the final lap, lap 20 beneath a purple moon."
     },
     {
       "category": "positive",
@@ -1982,10 +2982,10 @@
       "family": "session.finish",
       "id": "session.finish:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "requiredClaimSurface": "finished third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + observed finish position; class position only if selected."
+      "text": "Alex finished third."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2000,10 +3000,45 @@
       "family": "session.finish",
       "id": "session.finish:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "requiredClaimSurface": "finished third",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + observed finish position; class position only if selected."
+      "text": "It is not true that Alex finished third."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.finish"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.finish",
+      "id": "session.finish:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "finished third",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex finished third in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.finish"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.finish",
+      "id": "session.finish:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "finished third",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex finished third."
     },
     {
       "category": "forbidden_addition",
@@ -2018,10 +3053,10 @@
       "family": "session.finish",
       "id": "session.finish:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "requiredClaimSurface": "finished third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + observed finish position; class position only if selected because the driver wanted it."
+      "text": "Alex finished third because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2035,10 +3070,10 @@
       "family": "session.finish",
       "id": "session.finish:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + observed finish position; class position only if selected",
+        "requiredClaimSurface": "finished third",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + observed finish position; class position only if selected beneath a purple moon."
+      "text": "Alex finished third beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2050,10 +3085,10 @@
       "family": "session.recap",
       "id": "session.recap:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "requiredClaimSurface": "qualified third with a 1:32.400 lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound past qualifying occurrence + selected result time."
+      "text": "Alex qualified third with a 1:32.400 lap."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2062,16 +3097,50 @@
         "required-frame:session.recap"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "session.recap",
       "id": "session.recap:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "requiredClaimSurface": "qualified third with a 1:32.400 lap",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound past qualifying occurrence + selected result time."
+      "text": "Morgan qualified third with a 1:32.400 lap."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.recap"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.recap",
+      "id": "session.recap:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "qualified third with a 1:32.400 lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex qualified third with a 1:32.400 lap in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.recap"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.recap",
+      "id": "session.recap:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "qualified third with a 1:32.400 lap",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex qualified third with a 1:32.400 lap."
     },
     {
       "category": "forbidden_addition",
@@ -2086,10 +3155,10 @@
       "family": "session.recap",
       "id": "session.recap:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "requiredClaimSurface": "qualified third with a 1:32.400 lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound past qualifying occurrence + selected result time because the driver wanted it."
+      "text": "Alex qualified third with a 1:32.400 lap because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2103,10 +3172,10 @@
       "family": "session.recap",
       "id": "session.recap:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound past qualifying occurrence + selected result time",
+        "requiredClaimSurface": "qualified third with a 1:32.400 lap",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound past qualifying occurrence + selected result time beneath a purple moon."
+      "text": "Alex qualified third with a 1:32.400 lap beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2118,10 +3187,10 @@
       "family": "session.context",
       "id": "session.context:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "requiredClaimSurface": "is racing in a field strength of 2400",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exactly one selected field SoF fact and scope."
+      "text": "Alex is racing in a field strength of 2400."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2136,10 +3205,45 @@
       "family": "session.context",
       "id": "session.context:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "requiredClaimSurface": "is racing in a field strength of 2400",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound exactly one selected field SoF fact and scope."
+      "text": "It is not true that Alex is racing in a field strength of 2400."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.context"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.context",
+      "id": "session.context:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is racing in a field strength of 2400",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is racing in a field strength of 2400 in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.context"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.context",
+      "id": "session.context:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is racing in a field strength of 2400",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is racing in a field strength of 2400."
     },
     {
       "category": "forbidden_addition",
@@ -2154,10 +3258,10 @@
       "family": "session.context",
       "id": "session.context:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "requiredClaimSurface": "is racing in a field strength of 2400",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exactly one selected field SoF fact and scope because the driver wanted it."
+      "text": "Alex is racing in a field strength of 2400 because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2171,10 +3275,10 @@
       "family": "session.context",
       "id": "session.context:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exactly one selected field SoF fact and scope",
+        "requiredClaimSurface": "is racing in a field strength of 2400",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exactly one selected field SoF fact and scope beneath a purple moon."
+      "text": "Alex is racing in a field strength of 2400 beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2186,10 +3290,10 @@
       "family": "session.weather",
       "id": "session.weather:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "requiredClaimSurface": "is racing in dry conditions now",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound selected current change weather predicates with temporal polarity."
+      "text": "Alex is racing in dry conditions now."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2198,16 +3302,50 @@
         "required-frame:session.weather"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "session.weather",
       "id": "session.weather:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "requiredClaimSurface": "is racing in dry conditions now",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound selected current change weather predicates with temporal polarity."
+      "text": "Morgan is racing in dry conditions now."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.weather"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.weather",
+      "id": "session.weather:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is racing in dry conditions now",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is racing in dry conditions now in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.weather"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.weather",
+      "id": "session.weather:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is racing in dry conditions now",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is racing in dry conditions now."
     },
     {
       "category": "forbidden_addition",
@@ -2222,10 +3360,10 @@
       "family": "session.weather",
       "id": "session.weather:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "requiredClaimSurface": "is racing in dry conditions now",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound selected current change weather predicates with temporal polarity because the driver wanted it."
+      "text": "Alex is racing in dry conditions now because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2239,10 +3377,10 @@
       "family": "session.weather",
       "id": "session.weather:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound selected current change weather predicates with temporal polarity",
+        "requiredClaimSurface": "is racing in dry conditions now",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound selected current change weather predicates with temporal polarity beneath a purple moon."
+      "text": "Alex is racing in dry conditions now beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2254,10 +3392,10 @@
       "family": "session.vehicle",
       "id": "session.vehicle:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "requiredClaimSurface": "has entered the car for the race occurrence",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero entered car + exact current stage occurrence."
+      "text": "Alex has entered the car for the race occurrence."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2272,10 +3410,45 @@
       "family": "session.vehicle",
       "id": "session.vehicle:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "requiredClaimSurface": "has entered the car for the race occurrence",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero entered car + exact current stage occurrence."
+      "text": "It is not true that Alex has entered the car for the race occurrence."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.vehicle"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "session.vehicle",
+      "id": "session.vehicle:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has entered the car for the race occurrence",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has entered the car for the race occurrence in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:session.vehicle"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "session.vehicle",
+      "id": "session.vehicle:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has entered the car for the race occurrence",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has entered the car for the race occurrence."
     },
     {
       "category": "forbidden_addition",
@@ -2290,10 +3463,10 @@
       "family": "session.vehicle",
       "id": "session.vehicle:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "requiredClaimSurface": "has entered the car for the race occurrence",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero entered car + exact current stage occurrence because the driver wanted it."
+      "text": "Alex has entered the car for the race occurrence because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2307,10 +3480,10 @@
       "family": "session.vehicle",
       "id": "session.vehicle:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero entered car + exact current stage occurrence",
+        "requiredClaimSurface": "has entered the car for the race occurrence",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero entered car + exact current stage occurrence beneath a purple moon."
+      "text": "Alex has entered the car for the race occurrence beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2322,10 +3495,10 @@
       "family": "bio.context",
       "id": "bio.context:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "requiredClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + measured HR band freshness only."
+      "text": "Alex has a fresh measured heart-rate band of 140 to 149 beats per minute."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2334,16 +3507,50 @@
         "required-frame:bio.context"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "bio.context",
       "id": "bio.context:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "requiredClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound hero + measured HR band freshness only."
+      "text": "Morgan has a fresh measured heart-rate band of 140 to 149 beats per minute."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:bio.context"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "bio.context",
+      "id": "bio.context:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex has a fresh measured heart-rate band of 140 to 149 beats per minute in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:bio.context"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "bio.context",
+      "id": "bio.context:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex has a fresh measured heart-rate band of 140 to 149 beats per minute."
     },
     {
       "category": "forbidden_addition",
@@ -2358,10 +3565,10 @@
       "family": "bio.context",
       "id": "bio.context:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "requiredClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + measured HR band freshness only because the driver wanted it."
+      "text": "Alex has a fresh measured heart-rate band of 140 to 149 beats per minute because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2375,10 +3582,10 @@
       "family": "bio.context",
       "id": "bio.context:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound hero + measured HR band freshness only",
+        "requiredClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound hero + measured HR band freshness only beneath a purple moon."
+      "text": "Alex has a fresh measured heart-rate band of 140 to 149 beats per minute beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2390,10 +3597,10 @@
       "family": "filler.track_state",
       "id": "filler.track_state:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "requiredClaimSurface": "is on track under a green flag",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exact vehicle broadcast phase + one selected stable fact."
+      "text": "Alex is on track under a green flag."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2408,10 +3615,45 @@
       "family": "filler.track_state",
       "id": "filler.track_state:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "requiredClaimSurface": "is on track under a green flag",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound exact vehicle broadcast phase + one selected stable fact."
+      "text": "It is not true that Alex is on track under a green flag."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.track_state"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "filler.track_state",
+      "id": "filler.track_state:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on track under a green flag",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is on track under a green flag in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.track_state"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "filler.track_state",
+      "id": "filler.track_state:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is on track under a green flag",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is on track under a green flag."
     },
     {
       "category": "forbidden_addition",
@@ -2426,10 +3668,10 @@
       "family": "filler.track_state",
       "id": "filler.track_state:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "requiredClaimSurface": "is on track under a green flag",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exact vehicle broadcast phase + one selected stable fact because the driver wanted it."
+      "text": "Alex is on track under a green flag because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2443,10 +3685,10 @@
       "family": "filler.track_state",
       "id": "filler.track_state:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact vehicle broadcast phase + one selected stable fact",
+        "requiredClaimSurface": "is on track under a green flag",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exact vehicle broadcast phase + one selected stable fact beneath a purple moon."
+      "text": "Alex is on track under a green flag beneath a purple moon."
     },
     {
       "category": "positive",
@@ -2458,10 +3700,10 @@
       "family": "filler.off_track",
       "id": "filler.off_track:positive",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "requiredClaimSurface": "is in the garage with the car stationary",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exact lobby garage context + one selected stable fact."
+      "text": "Alex is in the garage with the car stationary."
     },
     {
       "category": "actor_or_polarity_counterexample",
@@ -2470,16 +3712,50 @@
         "required-frame:filler.off_track"
       ],
       "expectedReasons": [
-        "unsafe_negation",
-        "polarity_mismatch"
+        "actor_reversed"
       ],
       "family": "filler.off_track",
       "id": "filler.off_track:polarity",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "requiredClaimSurface": "is in the garage with the car stationary",
         "subjectSurface": "Alex"
       },
-      "text": "Not Alex reports the bound exact lobby garage context + one selected stable fact."
+      "text": "Morgan is in the garage with the car stationary."
+    },
+    {
+      "category": "value_or_unit_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.off_track"
+      ],
+      "expectedReasons": [
+        "number_unbound",
+        "unit_mismatch"
+      ],
+      "family": "filler.off_track",
+      "id": "filler.off_track:value_unit",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is in the garage with the car stationary",
+        "subjectSurface": "Alex"
+      },
+      "text": "Alex is in the garage with the car stationary in 9.9 laps."
+    },
+    {
+      "category": "temporal_counterexample",
+      "expectedAccepted": false,
+      "expectedClaims": [
+        "required-frame:filler.off_track"
+      ],
+      "expectedReasons": [
+        "tense_mismatch"
+      ],
+      "family": "filler.off_track",
+      "id": "filler.off_track:temporal",
+      "surfaceBindings": {
+        "requiredClaimSurface": "is in the garage with the car stationary",
+        "subjectSurface": "Alex"
+      },
+      "text": "Yesterday, Alex is in the garage with the car stationary."
     },
     {
       "category": "forbidden_addition",
@@ -2494,10 +3770,10 @@
       "family": "filler.off_track",
       "id": "filler.off_track:forbidden",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "requiredClaimSurface": "is in the garage with the car stationary",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exact lobby garage context + one selected stable fact because the driver wanted it."
+      "text": "Alex is in the garage with the car stationary because the driver wanted it."
     },
     {
       "category": "unknown_fragment",
@@ -2511,10 +3787,10 @@
       "family": "filler.off_track",
       "id": "filler.off_track:unknown",
       "surfaceBindings": {
-        "requiredClaimSurface": "reports the bound exact lobby garage context + one selected stable fact",
+        "requiredClaimSurface": "is in the garage with the car stationary",
         "subjectSurface": "Alex"
       },
-      "text": "Alex reports the bound exact lobby garage context + one selected stable fact beneath a purple moon."
+      "text": "Alex is in the garage with the car stationary beneath a purple moon."
     }
   ],
   "maximumReportedReasons": 16,

@@ -1,17 +1,37 @@
 # v2.0.0 narrative runtime — pre-implementation design-freeze audit
 
-**Status:** branch design-freeze checklist complete; issue #235 review/closure remains the administrative runtime gate
+**Status:** branch design-freeze checklist complete after independent verification; issue #235 review/closure remains the administrative runtime gate
 **Baseline:** `master@0ce75d4`
 **Development branch:** `codex/commentary-story-flow-spec`
-**Baseline evidence:** 1,364 pytest tests passed on 2026-09-07 using the existing project virtualenv
-**Static baseline evidence:** Ruff passed, Black would leave 322 files unchanged, Mypy passed 174 source files
+**Baseline evidence:** 1,364 pytest tests passed in 13.43 seconds on 2026-09-07 using the existing project virtualenv
+**Static evidence:** all twelve branch Python files pass Ruff and Black; Mypy passes 174 source files. Full-tree baseline debt remains only in unchanged master files as recorded below.
 **Delivery:** one atomic breaking-change PR after the complete branch passes release gates
 
 This is a planning artifact for the v2 branch. It must not be included in the final diff to `master`.
 
 ## Current gate verdict
 
-**BRANCH DESIGN FREEZE COMPLETE.** All nineteen pre-implementation artifacts are now reviewed and machine-checkable: exact beat/detector catalogs, successor DAG, integrated loader, public contracts, DTO schemas, actor model, controlled-English grammars/corpora, Qwen wire/deadline goldens and structured F01–F44 fixtures. Runtime edits may begin only after this commit is pushed and issue #235 records/accepts the evidence; production gates below remain intentionally post-implementation.
+**BRANCH DESIGN FREEZE COMPLETE AFTER REPAIR.** An independent verification on 2026-09-07 reopened five items whose executable evidence was weaker than claimed. Actor/detector reference reducers, concrete controlled-English/Qwen evidence, F01–F44 model rules and scoped static gates are now repaired and rerun. Runtime edits may begin only after this commit is pushed and issue #235 records/accepts the evidence; production gates below remain intentionally post-implementation.
+
+### Reopened work item
+
+Acceptance criteria:
+
+- [x] Actor race/overflow fixtures are evaluated by a stateful reference model, including token idempotence, exposure, quarantine, recovery and atomic mailbox effects.
+- [x] Detector band-boundary and composite fixtures are evaluated by reference reducers rather than accepted by fixture count.
+- [x] Controlled-English cases contain concrete family-specific utterances and the verifier evaluates actor, polarity, value/unit, temporal and forbidden-claim failures; Qwen goldens cover the complete common request and transport boundaries.
+- [x] F01–F44 expectations are executable assertions over fixture inputs and outputs, not unbound symbolic labels.
+- [x] Ruff, Black and Mypy evidence is reproducible with the current project toolchain, with pre-existing baseline failures distinguished from branch-introduced failures.
+
+Test plan:
+
+- Run every machine builder in check mode and independently validate all emitted JSON against its Draft 2020-12 schema.
+- Run mutation suites that demonstrate each new semantic validator rejects a deliberately incorrect expected outcome.
+- Run the repository pytest suite plus Ruff, Black and Mypy; record exact scoped and full-repository results.
+
+Docs impact: this audit and the affected v2 normative contracts/machine artifacts only. Runtime, public API and production config remain unchanged.
+
+Config impact: none; this remains pre-implementation design evidence.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -242,18 +262,18 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [x] Review the NarrativeEvent, NarrativeCommand, DetectorObservation, Fact, Episode, EventOpportunity, BeatPlan, RealizationBundle, CompiledPrompt, RealizationRequest/Result, LlmAttempt, TtsUtterance, TtsCallback, SpeechExposure, ConfigLedger and tape contracts in `schema-contracts.md`; materialize JSON Schemas and a fixture proving the V4 EventEnvelope wire is unchanged.
 - [x] Review the exact config defaults/ranges and ConfigLedger boundary mapping in `public-contracts.md`/`schema-contracts.md`; add the v1→v2 migration and mixed-boundary/preflight golden fixtures matching specification §20.
 - [x] Review the exact API shapes in `public-contracts.md` and add request/response golden fixtures matching §20.1.
-- [x] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures.
+- [x] Review the actor state-transition table, single-mailbox enqueue/dequeue order, protected/coalescible command matrix and shutdown/overflow reason codes in `actor-transition-contract.md`, then add model-based fixtures. Reverified: the checker now executes stateful lane/token/reservation/exposure/quarantine evidence, every named assertion and concrete mailbox-capacity inputs; negative assertion and overflow mutations are rejected.
 - [x] Backend-neutral playback-acceptance acknowledgement, cancellation matrix and exact speech terminal-state table.
 - [x] Long-silence origin, pause/rearm rules and first-stream behavior table.
 - [x] Pre-arbitration detector-observation/candidate tap and kick→accepted→queued→selected→started funnel definitions.
 - [x] Released-versus-experimental detector tuning-policy matrix and recorder-failure transition behavior.
-- [x] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
+- [x] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures. Reverified: all eight band-boundary and six two-front scenarios are executed by reference reducers; negative band/composite mutations are rejected.
 - [x] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
-- [x] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`, plus the literal/compiler/wire/deadline contract in `qwen-transport-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [x] Review the forty-four expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [x] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`, plus the literal/compiler/wire/deadline contract in `qwen-transport-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths. Reverified: 222 concrete family cases cover six isolated semantic categories; authored/Qwen common requests validate against the DTO contract; incremental UTF-8 plus visible/frame/stream limits are executed with exact reasons.
+- [x] Review the forty-four expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime. Reverified: 248 expectation rules conjunctively consume each scenario's complete input set and must reproduce its exact ordered expectations; fourteen numerical boundary calculations remain independently evaluated.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
-- [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.
+- [x] Static no-regression evidence captured: all twelve branch Python files pass Ruff/Black and Mypy passes all 174 runtime source files. Full-tree Ruff still reports twelve pre-existing findings in unchanged `scripts/bump_version.py`; full-tree Black still identifies that file and unchanged `scripts/build_pit_wall_theme_additions.py`. Both files are byte-unchanged from `master`, so they are documented baseline debt rather than hidden or branch-introduced regressions.
 
 If any item changes after runtime implementation starts, work stops and returns to #235 for explicit re-freeze. Tuning an `estimated` value inside an already frozen type/unit/range is not an architecture change; changing identity, ownership, lifecycle, units, queue semantics, API/config schema or dependency direction is.
 

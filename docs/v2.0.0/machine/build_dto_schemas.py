@@ -554,7 +554,7 @@ def build_schema() -> dict[str, Any]:
         "compiled-prompt/2",
         {
             "promptId": ID,
-            "promptContractVersion": ID,
+            "promptContractVersion": {"const": "qwen-surface-en-tight/1"},
             "bundleId": ID,
             "bundleHash": HASH,
             "realizationFamily": ID,

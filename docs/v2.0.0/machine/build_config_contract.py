@@ -192,11 +192,7 @@ def build_contract() -> dict[str, Any]:
         match_kind = (
             "section"
             if source.startswith("[")
-            else "prefix"
-            if "*" in source
-            else "group"
-            if "/" in source
-            else "exact"
+            else "prefix" if "*" in source else "group" if "/" in source else "exact"
         )
         migrations.append(
             {
@@ -519,9 +515,11 @@ def _ledger_scenario(contract: dict[str, Any]) -> dict[str, Any]:
                 "boundary": boundary,
                 "changedKeys": keys,
                 "effectivePatch": [
-                    {"key": key, "redacted": True}
-                    if key in SENSITIVE_KEYS
-                    else {"key": key, "value": effective[key]}
+                    (
+                        {"key": key, "redacted": True}
+                        if key in SENSITIVE_KEYS
+                        else {"key": key, "value": effective[key]}
+                    )
                     for key in keys
                 ],
                 "oldEffectiveHash": old_hash,

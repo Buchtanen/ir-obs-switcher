@@ -106,7 +106,7 @@ Each row declares the parser's core relation frame and additions forbidden beyon
 | `filler.track_state` | exact vehicle/broadcast phase + one selected stable fact | invented event, urgency, prediction |
 | `filler.off_track` | exact lobby/garage context + one selected stable fact | on-track action or active-session claim |
 
-The loader must prove all 64 beats resolve to one of these 37 rows, and every row has at least one accepted positive, one actor/polarity counterexample where applicable, one forbidden-addition counterexample and one unknown-fragment counterexample.
+The loader must prove all 64 beats resolve to one of these 37 rows. Every row has one concrete accepted commentary utterance plus isolated actor/polarity, value/unit, temporal, forbidden-addition and unknown-fragment counterexamples. The machine checker evaluates each expected semantic reason; it does not accept prose parse-frame descriptions as sample utterances.
 
 ## Authored versus Qwen
 
@@ -142,4 +142,4 @@ The design gate remains closed until branch-only fixtures provide:
 5. the exact Qwen prompt/profile/version, request/SSE goldens and repeatable latency runner from `qwen-transport-contract.md`;
 6. proof that no verifier path calls an embedding or another LLM as a hard fact gate.
 
-The branch-only evidence is `machine/realization-contract.json`, `machine/realization-pattern-cards.json`, `machine/realization-corpus.json`, `machine/qwen-transport-goldens.json` and their checker/mutation set. It materializes all 37 tight grammars, four enabled audited cards for each of 64 beats, 148 family corpus cases, six closed surface-value sets, canonical prompt/request bytes, nine SSE fixtures and four deadline races. `machine/run_qwen_latency.py` is the no-proxy/no-redirect, no-retry warm/cold measurement runner; target-machine results remain a post-implementation release gate rather than a reason to widen this grammar.
+The branch-only evidence is `machine/realization-contract.json`, `machine/realization-pattern-cards.json`, `machine/realization-corpus.json`, `machine/qwen-transport-goldens.json` and their checker/mutation set. It materializes all 37 tight grammars, four enabled audited cards for each of 64 beats, 222 family corpus cases, six closed surface-value sets, complete authored/Qwen common requests, canonical prompt/request bytes, thirteen SSE fixtures and four deadline races. The SSE set includes incremental split-UTF-8 decoding and exact visible/frame/stream overflow reasons. `machine/run_qwen_latency.py` is the no-proxy/no-redirect, no-retry warm/cold measurement runner; target-machine results remain a post-implementation release gate rather than a reason to widen this grammar.

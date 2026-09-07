@@ -40,60 +40,123 @@
       "expected": "existing_position_refreshed",
       "id": "coalesce_same_silence_generation",
       "incoming": "LONG_SILENCE_ELAPSED",
-      "operation": "coalesce"
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "LONG_SILENCE_ELAPSED",
+        "ordinaryUsed": 1,
+        "protectedUsed": 0
+      },
+      "operation": "coalesce",
+      "sameCoalesceKey": true
     },
     {
       "expected": "distinct_item_or_deadline_admission_skipped",
       "id": "different_generation_does_not_coalesce",
       "incoming": "VALIDITY_DEADLINE_ELAPSED",
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 0
+      },
       "operation": "ordinary_admit"
     },
     {
       "expected": "reject_mailbox_overloaded",
       "id": "manual_full_partition",
       "incoming": "MANUAL_SPEAK_REQUEST",
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 0
+      },
       "operation": "ordinary_full"
     },
     {
       "expected": "evict_oldest_ordinary_silence",
       "id": "ordinary_context_evicts_oldest_silence",
       "incoming": "APPLY_CONTEXT_BATCH",
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "LONG_SILENCE_ELAPSED",
+        "ordinaryUsed": 56,
+        "protectedUsed": 0
+      },
       "operation": "ordinary_full"
     },
     {
       "expected": "evict_oldest_context_and_place_recovery",
       "id": "ordinary_context_loss_creates_recovery",
       "incoming": "APPLY_CONTEXT_BATCH",
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 0
+      },
       "operation": "ordinary_full_no_silence"
     },
     {
       "expected": "refresh_recovery_with_safety_effect",
       "id": "protected_saturation_collapses",
       "incoming": "REALIZATION_SUCCEEDED",
+      "initialMailbox": {
+        "emergencyKind": "MAILBOX_RECOVERY",
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 7
+      },
       "operation": "protected_full"
     },
     {
+      "atomicWidth": 2,
       "expected": "two_consecutive_sequences_or_one_recovery",
       "id": "config_pair_all_or_recovery",
       "incoming": "CONFIG_UPDATE+APPLY_CONTEXT_BATCH",
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 6
+      },
       "operation": "protected_atomic_pair"
     },
     {
+      "atomicWidth": 2,
       "expected": "two_consecutive_sequences_or_one_recovery",
       "id": "capture_pair_all_or_recovery",
       "incoming": "TAPE_HEALTH_CHANGED+APPLY_CONTEXT_BATCH",
+      "initialMailbox": {
+        "emergencyKind": null,
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 6
+      },
       "operation": "protected_atomic_pair"
     },
     {
       "expected": "same_mailbox_sequence_expanded_range_latest_projection",
       "id": "recovery_refresh_keeps_order",
       "incoming": "newer_projection_and_loss",
+      "initialMailbox": {
+        "emergencyKind": "MAILBOX_RECOVERY",
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 7
+      },
       "operation": "refresh_recovery"
     },
     {
       "expected": "ingress_closed_recovery_metadata_attached",
       "id": "shutdown_takes_emergency",
       "incoming": "SHUTDOWN",
+      "initialMailbox": {
+        "emergencyKind": "MAILBOX_RECOVERY",
+        "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+        "ordinaryUsed": 56,
+        "protectedUsed": 7
+      },
       "operation": "shutdown"
     }
   ],

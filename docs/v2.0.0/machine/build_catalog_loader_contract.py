@@ -209,9 +209,11 @@ def validate_bundle(
             known = (
                 event_ids
                 if trigger["kind"] == "accepted_event"
-                else lifecycle_ids
-                if trigger["kind"] == "lifecycle_event"
-                else {"LONG_SILENCE_ELAPSED"}
+                else (
+                    lifecycle_ids
+                    if trigger["kind"] == "lifecycle_event"
+                    else {"LONG_SILENCE_ELAPSED"}
+                )
             )
             if trigger["id"] not in known:
                 errors.append("unknown trigger")
@@ -220,10 +222,7 @@ def validate_bundle(
         errors.append("unused realization family")
     if len(beat_rows) != 64:
         errors.append("beat inventory differs")
-    if (
-        digest(beats).removeprefix("sha256:")
-        != graph["sourceBaseline"]["beatCatalogSha256"]
-    ):
+    if digest(beats).removeprefix("sha256:") != graph["sourceBaseline"]["beatCatalogSha256"]:
         errors.append("beat catalog hash differs")
     adjacency: dict[str, list[str]] = defaultdict(list)
     incoming: dict[str, int] = defaultdict(int)

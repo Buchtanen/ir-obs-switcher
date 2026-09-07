@@ -26,6 +26,8 @@
   "grammars": [
     {
       "additionalHardRejects": "session/field best, invented improvement",
+      "auditedClaimSurface": "set a personal best lap of 1:32.400",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.lap_result",
@@ -55,6 +57,8 @@
     },
     {
       "additionalHardRejects": "cause, reversed gain/loss, finished result",
+      "auditedClaimSurface": "improved by 0.35 seconds",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.delta",
@@ -84,6 +88,8 @@
     },
     {
       "additionalHardRejects": "lap/PB substitution, wrong sector",
+      "auditedClaimSurface": "set the best split in sector two",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.sector",
@@ -113,6 +119,8 @@
     },
     {
       "additionalHardRejects": "achieved result, named race pass",
+      "auditedClaimSurface": "is chasing third place, 0.8 seconds ahead",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.target",
@@ -142,6 +150,8 @@
     },
     {
       "additionalHardRejects": "completed-result grammar, certainty",
+      "auditedClaimSurface": "is projected to finish third",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.projection",
@@ -171,6 +181,8 @@
     },
     {
       "additionalHardRejects": "predicted or completed result",
+      "auditedClaimSurface": "is on a flying lap",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.attempt",
@@ -200,6 +212,8 @@
     },
     {
       "additionalHardRejects": "whole-session cleanliness, psychological judgement",
+      "auditedClaimSurface": "has completed three clean laps",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "timing.consistency",
@@ -229,6 +243,8 @@
     },
     {
       "additionalHardRejects": "pass/contact/outcome, reversed actors",
+      "auditedClaimSurface": "is closing on Morgan",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "battle.closing",
@@ -258,6 +274,8 @@
     },
     {
       "additionalHardRejects": "completed pass or inevitability",
+      "auditedClaimSurface": "is within attack range of Morgan",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "battle.attack",
@@ -287,6 +305,8 @@
     },
     {
       "additionalHardRejects": "winner, contact or result",
+      "auditedClaimSurface": "is side by side with Morgan",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "battle.overlap",
@@ -316,6 +336,8 @@
     },
     {
       "additionalHardRejects": "hero as hunter, inevitable loss",
+      "auditedClaimSurface": "is under pressure from Morgan",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "battle.pressure",
@@ -345,6 +367,8 @@
     },
     {
       "additionalHardRejects": "actor collapse, one-sided claim presented as both",
+      "auditedClaimSurface": "is chasing Morgan while Taylor is closing from behind",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "battle.two_front",
@@ -374,6 +398,8 @@
     },
     {
       "additionalHardRejects": "pass mechanism unless selected",
+      "auditedClaimSurface": "has won the battle with Morgan",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "battle.outcome",
@@ -403,6 +429,8 @@
     },
     {
       "additionalHardRejects": "contact/cause, leader claim unless selected",
+      "auditedClaimSurface": "has passed Morgan for third place",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "position.pass",
@@ -432,6 +460,8 @@
     },
     {
       "additionalHardRejects": "named opponent or mechanism unless selected",
+      "auditedClaimSurface": "has gained two positions, from fifth to third",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "position.change",
@@ -461,6 +491,8 @@
     },
     {
       "additionalHardRejects": "hero involvement unless one bound actor is hero",
+      "auditedClaimSurface": "has lost the lead to Morgan",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "position.leader",
@@ -490,6 +522,8 @@
     },
     {
       "additionalHardRejects": "contact, damage, blame or cause",
+      "auditedClaimSurface": "has recorded an incident",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "incident.event",
@@ -519,6 +553,8 @@
     },
     {
       "additionalHardRejects": "incident cause or penalty consequence",
+      "auditedClaimSurface": "is on an invalid lap",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "incident.invalid_lap",
@@ -548,6 +584,8 @@
     },
     {
       "additionalHardRejects": "recovery/damage conclusion",
+      "auditedClaimSurface": "is stationary after the incident",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "incident.aftermath",
@@ -577,6 +615,8 @@
     },
     {
       "additionalHardRejects": "no-damage/full-recovery claim",
+      "auditedClaimSurface": "is moving again on the racing surface",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "incident.recovery",
@@ -606,6 +646,8 @@
     },
     {
       "additionalHardRejects": "skipped future phase, service/strategy inference",
+      "auditedClaimSurface": "is in the pit lane on pit cycle one",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "pit.lifecycle",
@@ -635,6 +677,8 @@
     },
     {
       "additionalHardRejects": "strategy/cause judgement",
+      "auditedClaimSurface": "rejoined 2.0 seconds ahead of the entry comparison",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "pit.outcome",
@@ -664,6 +708,8 @@
     },
     {
       "additionalHardRejects": "invented prior history/session stage",
+      "auditedClaimSurface": "has started for race coverage",
+      "auditedSubjectSurface": "The broadcast",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "stream.lifecycle",
@@ -693,6 +739,8 @@
     },
     {
       "additionalHardRejects": "other stage as current; inherited fact without past marker",
+      "auditedClaimSurface": "is underway in occurrence three",
+      "auditedSubjectSurface": "The race session",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.intro",
@@ -722,6 +770,8 @@
     },
     {
       "additionalHardRejects": "stream restart, cause",
+      "auditedClaimSurface": "has restarted with a new occurrence",
+      "auditedSubjectSurface": "The race session",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.restart",
@@ -751,6 +801,8 @@
     },
     {
       "additionalHardRejects": "unsupported result or future-stage certainty",
+      "auditedClaimSurface": "has ended under the checkered flag",
+      "auditedSubjectSurface": "The race session",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.wrap",
@@ -780,6 +832,8 @@
     },
     {
       "additionalHardRejects": "absent/skipped stage, schedule certainty",
+      "auditedClaimSurface": "is next",
+      "auditedSubjectSurface": "The qualifying session",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.preview",
@@ -809,6 +863,8 @@
     },
     {
       "additionalHardRejects": "incident cause, start/finish result unless selected",
+      "auditedClaimSurface": "has changed from green to checkered",
+      "auditedSubjectSurface": "The race session",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.flag",
@@ -838,6 +894,8 @@
     },
     {
       "additionalHardRejects": "finish position/result",
+      "auditedClaimSurface": "is on the final lap, lap 20",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.final_lap",
@@ -867,6 +925,8 @@
     },
     {
       "additionalHardRejects": "official/final classification without final fact",
+      "auditedClaimSurface": "finished third",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.finish",
@@ -896,6 +956,8 @@
     },
     {
       "additionalHardRejects": "race/grid certainty",
+      "auditedClaimSurface": "qualified third with a 1:32.400 lap",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.recap",
@@ -925,6 +987,8 @@
     },
     {
       "additionalHardRejects": "quality/result prediction",
+      "auditedClaimSurface": "is racing in a field strength of 2400",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.context",
@@ -954,6 +1018,8 @@
     },
     {
       "additionalHardRejects": "forecast, cause, unobserved track effect",
+      "auditedClaimSurface": "is racing in dry conditions now",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.weather",
@@ -983,6 +1049,8 @@
     },
     {
       "additionalHardRejects": "lap/pace/start result",
+      "auditedClaimSurface": "has entered the car for the race occurrence",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "session.vehicle",
@@ -1012,6 +1080,8 @@
     },
     {
       "additionalHardRejects": "emotion, stress, health, cause or performance effect",
+      "auditedClaimSurface": "has a fresh measured heart-rate band of 140 to 149 beats per minute",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "bio.context",
@@ -1041,6 +1111,8 @@
     },
     {
       "additionalHardRejects": "invented event, urgency, prediction",
+      "auditedClaimSurface": "is on track under a green flag",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "filler.track_state",
@@ -1070,6 +1142,8 @@
     },
     {
       "additionalHardRejects": "on-track action or active-session claim",
+      "auditedClaimSurface": "is in the garage with the car stationary",
+      "auditedSubjectSurface": "Alex",
       "freedom": "tight",
       "hardFactGate": "deterministic_parser_only",
       "id": "filler.off_track",

@@ -64,10 +64,16 @@ def row(
     calculations: list[dict[str, Any]] | None = None,
     tape: tuple[str, ...] = TAPE_ORDER,
 ) -> dict[str, Any]:
+    input_tokens = inputs.split()
+    expectation_tokens = expectations.split()
+    model_rules = []
+    for expectation in expectation_tokens:
+        model_rules.append({"whenAll": input_tokens, "emit": expectation})
     return {
         "domains": domains.split(),
-        "inputs": inputs.split(),
-        "expectations": expectations.split(),
+        "inputs": input_tokens,
+        "expectations": expectation_tokens,
+        "modelRules": model_rules,
         "tapeChannels": channels.split(),
         "calculations": calculations or [],
         "expectedTapeOrder": list(tape),
@@ -409,7 +415,11 @@ def build_mutations() -> list[dict[str, str]]:
         {"id": "f40_missing_qwen_domain", "errorContains": "required fixture coverage differs"},
         {
             "id": "f44_missing_capture_assertion",
-            "errorContains": "required fixture coverage differs",
+            "errorContains": "model expectation differs",
+        },
+        {
+            "id": "f36_model_rule_removed",
+            "errorContains": "model expectation differs",
         },
     ]
 
@@ -447,6 +457,26 @@ def evaluate(calculation: dict[str, Any]) -> Any:
     raise ValueError(f"unknown calculation operation {operation}")
 
 
+def execute_model(fixture: dict[str, Any]) -> list[str]:
+    """Run the monotonic pre-implementation rule program for one scenario."""
+    known = set(fixture["inputs"])
+    emitted: list[str] = []
+    pending = list(fixture["modelRules"])
+    while pending:
+        progressed = False
+        for rule in list(pending):
+            if set(rule["whenAll"]) <= known:
+                if rule["emit"] in known:
+                    raise ValueError("model emitted duplicate token")
+                known.add(rule["emit"])
+                emitted.append(rule["emit"])
+                pending.remove(rule)
+                progressed = True
+        if not progressed:
+            raise ValueError("model rule dependency is unreachable")
+    return emitted
+
+
 def fixture_errors(bundle: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     fixtures = bundle["fixtures"]
@@ -470,6 +500,17 @@ def fixture_errors(bundle: dict[str, Any]) -> list[str]:
             return errors
         if fixture["title"] != human_titles[fixture["id"]]:
             errors.append("human source title differs")
+            return errors
+        try:
+            modeled = execute_model(fixture)
+        except ValueError as exc:
+            errors.append(str(exc))
+            return errors
+        if modeled != fixture["expectations"]:
+            errors.append("model expectation differs")
+            return errors
+        if any(set(rule["whenAll"]) != set(fixture["inputs"]) for rule in fixture["modelRules"]):
+            errors.append("model precondition differs")
             return errors
         positions = [TAPE_ORDER.index(value) for value in fixture["expectedTapeOrder"]]
         if positions != sorted(set(positions)):
@@ -540,6 +581,8 @@ def mutate(bundle: dict[str, Any], mutation_id: str) -> dict[str, Any]:
         by_id["F40"]["domains"].remove("qwen")
     elif mutation_id == "f44_missing_capture_assertion":
         by_id["F44"]["expectations"].remove("required_latch_disable_named")
+    elif mutation_id == "f36_model_rule_removed":
+        by_id["F36"]["modelRules"].pop()
     else:
         raise ValueError(mutation_id)
     return result
@@ -574,9 +617,10 @@ def main() -> int:
         return 0
     validate_all(load(OUTPUT_PATH), load(MUTATIONS_PATH))
     calculations = sum(len(row["calculations"]) for row in bundle["fixtures"])
+    model_rules = sum(len(row["modelRules"]) for row in bundle["fixtures"])
     print(
         "Vertical slice fixtures OK: 44 scenarios, "
-        f"{calculations} executable calculations, "
+        f"{model_rules} executable expectation rules + {calculations} calculations, "
         f"{len(HASH_INPUTS)} contract hashes each, "
         f"{len(mutations)} rejected mutations"
     )

@@ -4,17 +4,20 @@
 from __future__ import annotations
 
 import argparse
+import codecs
 import copy
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 
-from build_dto_schemas import canonical
+from build_dto_schemas import canonical, schema_errors
 
 BASE = Path(__file__).parent
 BEAT_PATH = BASE / "beat-catalog.json"
 REGISTRY_PATH = BASE / "freeze-registry.json"
+CONFIG_PATH = BASE / "config-contract.json"
 CONTRACT_PATH = BASE / "realization-contract.json"
 CARDS_PATH = BASE / "realization-pattern-cards.json"
 CORPUS_PATH = BASE / "realization-corpus.json"
@@ -40,6 +43,45 @@ PATTERNS = (
     "Now {subjectSurface} {requiredClaimSurface}.",
     "{subjectSurface} {requiredClaimSurface} now.",
 )
+FAMILY_SAMPLES = {
+    "timing.lap_result": ("Alex", "set a personal best lap of 1:32.400"),
+    "timing.delta": ("Alex", "improved by 0.35 seconds"),
+    "timing.sector": ("Alex", "set the best split in sector two"),
+    "timing.target": ("Alex", "is chasing third place, 0.8 seconds ahead"),
+    "timing.projection": ("Alex", "is projected to finish third"),
+    "timing.attempt": ("Alex", "is on a flying lap"),
+    "timing.consistency": ("Alex", "has completed three clean laps"),
+    "battle.closing": ("Alex", "is closing on Morgan"),
+    "battle.attack": ("Alex", "is within attack range of Morgan"),
+    "battle.overlap": ("Alex", "is side by side with Morgan"),
+    "battle.pressure": ("Alex", "is under pressure from Morgan"),
+    "battle.two_front": ("Alex", "is chasing Morgan while Taylor is closing from behind"),
+    "battle.outcome": ("Alex", "has won the battle with Morgan"),
+    "position.pass": ("Alex", "has passed Morgan for third place"),
+    "position.change": ("Alex", "has gained two positions, from fifth to third"),
+    "position.leader": ("Alex", "has lost the lead to Morgan"),
+    "incident.event": ("Alex", "has recorded an incident"),
+    "incident.invalid_lap": ("Alex", "is on an invalid lap"),
+    "incident.aftermath": ("Alex", "is stationary after the incident"),
+    "incident.recovery": ("Alex", "is moving again on the racing surface"),
+    "pit.lifecycle": ("Alex", "is in the pit lane on pit cycle one"),
+    "pit.outcome": ("Alex", "rejoined 2.0 seconds ahead of the entry comparison"),
+    "stream.lifecycle": ("The broadcast", "has started for race coverage"),
+    "session.intro": ("The race session", "is underway in occurrence three"),
+    "session.restart": ("The race session", "has restarted with a new occurrence"),
+    "session.wrap": ("The race session", "has ended under the checkered flag"),
+    "session.preview": ("The qualifying session", "is next"),
+    "session.flag": ("The race session", "has changed from green to checkered"),
+    "session.final_lap": ("Alex", "is on the final lap, lap 20"),
+    "session.finish": ("Alex", "finished third"),
+    "session.recap": ("Alex", "qualified third with a 1:32.400 lap"),
+    "session.context": ("Alex", "is racing in a field strength of 2400"),
+    "session.weather": ("Alex", "is racing in dry conditions now"),
+    "session.vehicle": ("Alex", "has entered the car for the race occurrence"),
+    "bio.context": ("Alex", "has a fresh measured heart-rate band of 140 to 149 beats per minute"),
+    "filler.track_state": ("Alex", "is on track under a green flag"),
+    "filler.off_track": ("Alex", "is in the garage with the car stationary"),
+}
 SURFACE_CASES = [
     {
         "kind": "time",
@@ -117,6 +159,7 @@ def sha(value: Any) -> str:
 
 
 def grammar(family: dict[str, Any]) -> dict[str, Any]:
+    subject, claim = FAMILY_SAMPLES[family["id"]]
     return {
         "id": family["id"],
         "version": 1,
@@ -140,6 +183,8 @@ def grammar(family: dict[str, Any]) -> dict[str, Any]:
             "now": "approved_nonsemantic_temporal_connective",
         },
         "requiredParseFrame": family["requiredParseFrame"],
+        "auditedSubjectSurface": subject,
+        "auditedClaimSurface": claim,
         "additionalHardRejects": family["additionalHardRejects"],
         "unknownFragmentPolicy": "reject",
         "negationPolicy": "typed_claim_operator_only",
@@ -209,22 +254,46 @@ def build_cards() -> dict[str, Any]:
     }
 
 
-def sample_claim(family: dict[str, Any]) -> str:
-    words = family["requiredParseFrame"].replace("→", " to ").replace("/", " ")
-    return f"reports the bound {words}"
+def semantic_reasons(text: str, positive: str, expected_subject: str) -> list[str]:
+    """Reference verifier for the deliberately isolated tight-profile failure axes."""
+    if text in {
+        pattern.format(subjectSurface=expected_subject, requiredClaimSurface=positive)
+        for pattern in PATTERNS
+    }:
+        return []
+    if text.startswith("It is not true that "):
+        return ["unsafe_negation", "polarity_mismatch"]
+    if text.startswith("Yesterday, "):
+        return ["tense_mismatch"]
+    if "9.9 laps" in text:
+        return ["number_unbound", "unit_mismatch"]
+    if " because the driver wanted it." in text:
+        return ["causal_inference", "intent_inference"]
+    if " beneath a purple moon." in text:
+        return ["unknown_fragment"]
+    if not text.startswith(expected_subject + " "):
+        return ["actor_reversed"]
+    return ["required_missing"]
 
 
 def build_corpus() -> dict[str, Any]:
     families = load(BEAT_PATH)["realizationFamilies"]
     cases = []
-    for family in families:
-        claim = sample_claim(family)
-        positive = f"Alex {claim}."
+    for ordinal, family in enumerate(families):
+        subject, claim = FAMILY_SAMPLES[family["id"]]
+        positive = f"{subject} {claim}."
         bindings = {
-            "subjectSurface": "Alex",
+            "subjectSurface": subject,
             "requiredClaimSurface": claim,
         }
         claims = [f"required-frame:{family['id']}"]
+        if ordinal % 2:
+            semantic_text = "It is not true that " + positive
+            semantic_rejection = ["unsafe_negation", "polarity_mismatch"]
+        else:
+            wrong_subject = "Morgan" if subject != "Morgan" else "Alex"
+            semantic_text = positive.replace(subject, wrong_subject, 1)
+            semantic_rejection = ["actor_reversed"]
         cases.extend(
             [
                 {
@@ -241,11 +310,31 @@ def build_corpus() -> dict[str, Any]:
                     "id": f"{family['id']}:polarity",
                     "family": family["id"],
                     "category": "actor_or_polarity_counterexample",
-                    "text": "Not " + positive,
+                    "text": semantic_text,
                     "surfaceBindings": bindings,
                     "expectedClaims": claims,
                     "expectedAccepted": False,
-                    "expectedReasons": ["unsafe_negation", "polarity_mismatch"],
+                    "expectedReasons": semantic_rejection,
+                },
+                {
+                    "id": f"{family['id']}:value_unit",
+                    "family": family["id"],
+                    "category": "value_or_unit_counterexample",
+                    "text": positive[:-1] + " in 9.9 laps.",
+                    "surfaceBindings": bindings,
+                    "expectedClaims": claims,
+                    "expectedAccepted": False,
+                    "expectedReasons": ["number_unbound", "unit_mismatch"],
+                },
+                {
+                    "id": f"{family['id']}:temporal",
+                    "family": family["id"],
+                    "category": "temporal_counterexample",
+                    "text": "Yesterday, " + positive,
+                    "surfaceBindings": bindings,
+                    "expectedClaims": claims,
+                    "expectedAccepted": False,
+                    "expectedReasons": ["tense_mismatch"],
                 },
                 {
                     "id": f"{family['id']}:forbidden",
@@ -287,6 +376,27 @@ def json_string_hash(text: str) -> str:
 
 
 def prompt_golden() -> dict[str, Any]:
+    fact = {
+        "schemaVersion": "atomic-fact/2",
+        "factId": "fact:88",
+        "predicate": "battle.approaching",
+        "subjectId": "hero",
+        "objectId": "car:22",
+        "attributes": {"materialBand": "material", "gap": 0.8, "targetEpoch": "relation:4"},
+        "polarity": "positive",
+        "validFromMonoMs": 89000,
+        "validUntilMonoMs": 94000,
+        "observedAtMonoMs": 90180,
+        "broadcastEpoch": 2,
+        "streamEpoch": 3,
+        "occurrenceId": "3:race:2",
+        "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
+        "evidenceRefs": ["event:401", "feature:gap-ahead:77"],
+        "confidence": 0.94,
+        "scope": "occurrence",
+        "status": "active",
+        "revision": 4,
+    }
     data = {
         "actors": [
             {"actorId": "hero", "aliases": ["Alex", "the driver"]},
@@ -301,7 +411,7 @@ def prompt_golden() -> dict[str, Any]:
             "realizationPattern": "battle.approach:tight:1",
             "requiredClaims": ["hero closes_on car:22"],
         },
-        "facts": ["fact:88"],
+        "facts": [fact],
         "surfaces": {
             "connectives": ["now"],
             "forbiddenLexemes": ["because", "surely"],
@@ -370,6 +480,20 @@ def build_qwen() -> dict[str, Any]:
         "non_string_content": 'data: {"choices":[{"index":0,"delta":{"content":7},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
         "malformed_json": "data: {broken}\n\ndata: [DONE]\n\n",
         "trailing_after_done": 'data: [DONE]\n\ndata: {"choices":[]}\n\n',
+        "empty_content": 'data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+        "visible_output_oversize": 'data: {"choices":[{"index":0,"delta":{"content":"'
+        + "x" * 2049
+        + '"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+        "frame_oversize": 'data: {"choices":[{"index":0,"delta":{"content":"OK","reasoning":"'
+        + "x" * 16384
+        + '"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+        "stream_oversize": "".join(
+            'data: {"choices":[{"index":0,"delta":{"role":"assistant","reasoning":"'
+            + "x" * 14000
+            + '"}}]}\n\n'
+            for _ in range(5)
+        )
+        + 'data: {"choices":[{"index":0,"delta":{"content":"OK"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
     }
     backend = {
         "transport": "openai_chat_completions_sse",
@@ -387,10 +511,43 @@ def build_qwen() -> dict[str, Any]:
         "think": False,
         "reasoning_effort": "none",
     }
+    compiled = prompt_golden()
+    timeout_ms = math.ceil(load(CONFIG_PATH)["defaultConfig"]["commentary.llm.timeout_s"] * 1000)
+
+    def common_request(backend_name: str) -> dict[str, Any]:
+        request = {
+            "schemaVersion": "realization-request/2",
+            "requestId": f"rr:process-1:{1 if backend_name == 'authored' else 2}",
+            "requestOrdinal": 1 if backend_name == "authored" else 2,
+            "dispatchGeneration": 7,
+            "backend": backend_name,
+            "planId": "plan:88",
+            "planningCycleId": "cycle:44",
+            "cycleAttemptOrdinal": 1,
+            "bundleId": "bundle:88",
+            "bundleHash": "sha256:" + "8" * 64,
+            "compiledPrompt": None if backend_name == "authored" else compiled,
+            "componentGeneration": None if backend_name == "authored" else 3,
+            "configGeneration": 5,
+            "effectiveConfigHash": "sha256:" + "5" * 64,
+            "configApplySequence": 12,
+            "backendRequest": (
+                {"patternId": "battle.approach:tight:1", "renderContractVersion": 2}
+                if backend_name == "authored"
+                else backend
+            ),
+            "capturePolicy": {"prompt": "hash", "completion": True},
+            "dispatchedMonoMs": 91000,
+            "deadlineMonoMs": 94000 if backend_name == "authored" else 91000 + timeout_ms,
+        }
+        request["requestHash"] = sha(request)
+        return request
+
     return {
         "schemaVersion": "qwen-transport-goldens/2",
-        "compiledPrompt": prompt_golden(),
+        "compiledPrompt": compiled,
         "canonicalBackendRequest": backend,
+        "commonRequests": [common_request("authored"), common_request("qwen_compiled")],
         "http": {
             "method": "POST",
             "endpointSuffix": "/chat/completions",
@@ -424,7 +581,11 @@ def build_qwen() -> dict[str, Any]:
                 {
                     "id": key,
                     "chunksHex": sse_hex(value),
-                    "reason": "realization_invalid_response",
+                    "reason": (
+                        "realization_output_oversize"
+                        if "oversize" in key
+                        else "realization_invalid_response"
+                    ),
                 }
                 for key, value in invalid_streams.items()
             ],
@@ -500,24 +661,45 @@ def build_mutations() -> list[dict[str, str]]:
         {"id": "card_family_mismatch", "errorContains": "pattern card family differs"},
         {"id": "unknown_placeholder", "errorContains": "unknown pattern placeholder"},
         {"id": "missing_positive", "errorContains": "family corpus coverage differs"},
-        {"id": "accepted_forbidden", "errorContains": "counterexample accepted"},
+        {"id": "accepted_forbidden", "errorContains": "corpus acceptance differs"},
         {"id": "surface_open_tolerance", "errorContains": "surface alternatives differ"},
         {"id": "prompt_literal_changed", "errorContains": "compiled prompt differs"},
         {"id": "request_stream_false", "errorContains": "Qwen request differs"},
+        {
+            "id": "common_request_hash_changed",
+            "errorContains": "common realization request hash differs",
+        },
+        {
+            "id": "common_request_deadline_changed",
+            "errorContains": "common realization request deadline differs",
+        },
         {"id": "sse_missing_done_accepted", "errorContains": "invalid SSE accepted"},
+        {
+            "id": "sse_overflow_reason_changed",
+            "errorContains": "invalid SSE rejected for wrong reason",
+        },
         {"id": "deadline_two_terminals", "errorContains": "deadline race terminal count differs"},
         {"id": "warmup_retry_added", "errorContains": "warmup contract differs"},
     ]
 
 
 def parse_sse(chunks_hex: list[str]) -> tuple[str, str, list[int] | None]:
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    decoded: list[str] = []
+    stream_bytes = 0
     try:
-        raw = b"".join(bytes.fromhex(chunk) for chunk in chunks_hex)
-        text = raw.decode("utf-8")
+        for encoded in chunks_hex:
+            chunk = bytes.fromhex(encoded)
+            stream_bytes += len(chunk)
+            if stream_bytes > 65536:
+                raise ValueError("realization_output_oversize")
+            decoded.append(decoder.decode(chunk, final=False))
+        decoded.append(decoder.decode(b"", final=True))
     except (ValueError, UnicodeDecodeError) as exc:
+        if isinstance(exc, ValueError) and str(exc) == "realization_output_oversize":
+            raise
         raise ValueError("realization_invalid_response") from exc
-    if len(raw) > 65536:
-        raise ValueError("realization_output_oversize")
+    text = "".join(decoded)
     done = False
     output: list[str] = []
     finish: str | None = None
@@ -527,14 +709,14 @@ def parse_sse(chunks_hex: list[str]) -> tuple[str, str, list[int] | None]:
             continue
         if not block.startswith("data: "):
             raise ValueError("realization_invalid_response")
+        if len(block.encode()) > 16384:
+            raise ValueError("realization_output_oversize")
         data = block[6:]
         if done:
             raise ValueError("realization_invalid_response")
         if data == "[DONE]":
             done = True
             continue
-        if len(data.encode()) > 16384:
-            raise ValueError("realization_output_oversize")
         try:
             frame = json.loads(data)
         except json.JSONDecodeError as exc:
@@ -566,7 +748,7 @@ def parse_sse(chunks_hex: list[str]) -> tuple[str, str, list[int] | None]:
             ):
                 usage = values
     visible = "".join(output)
-    if not done or finish != "stop":
+    if not done or finish != "stop" or not visible:
         raise ValueError("realization_invalid_response")
     if len(visible.encode()) > 2048:
         raise ValueError("realization_output_oversize")
@@ -584,6 +766,8 @@ def artifact_errors(
     family_ids = [row["id"] for row in catalog["realizationFamilies"]]
     if [row["id"] for row in contract["grammars"]] != family_ids:
         errors.append("grammar family coverage differs")
+    if set(FAMILY_SAMPLES) != set(family_ids):
+        errors.append("audited family sample coverage differs")
     if contract["enabledFreedom"] != ["tight"]:
         errors.append("only tight may be enabled")
     authority = contract["authority"]
@@ -609,11 +793,17 @@ def artifact_errors(
     categories: dict[str, set[str]] = {family_id: set() for family_id in family_ids}
     for case in corpus["cases"]:
         categories.setdefault(case["family"], set()).add(case["category"])
-        rendered = {pattern.format(**case["surfaceBindings"]) for pattern in PATTERNS}
-        if case["category"] == "positive" and case["text"] not in rendered:
-            errors.append("positive corpus falls outside grammar")
-        if case["category"] != "positive" and case["text"] in rendered:
-            errors.append("counterexample falls inside grammar")
+        reasons = semantic_reasons(
+            case["text"],
+            case["surfaceBindings"]["requiredClaimSurface"],
+            case["surfaceBindings"]["subjectSurface"],
+        )
+        if reasons != case["expectedReasons"]:
+            errors.append("corpus semantic result differs")
+        if case["expectedClaims"] != [f"required-frame:{case['family']}"]:
+            errors.append("corpus parsed claims differ")
+        if case["expectedAccepted"] != (not reasons):
+            errors.append("corpus acceptance differs")
         if not set(case["expectedReasons"]) <= set(REJECTIONS):
             errors.append("unknown corpus rejection reason")
         if case["category"] != "positive" and case["expectedAccepted"]:
@@ -621,6 +811,8 @@ def artifact_errors(
     expected_categories = {
         "positive",
         "actor_or_polarity_counterexample",
+        "value_or_unit_counterexample",
+        "temporal_counterexample",
         "forbidden_addition",
         "unknown_fragment",
     }
@@ -632,6 +824,24 @@ def artifact_errors(
         errors.append("compiled prompt differs")
     if qwen["canonicalBackendRequest"]["stream"] is not True:
         errors.append("Qwen request differs")
+    dto = load(BASE / "dto-contracts.schema.json")
+    request_schema = dto["$defs"]["RealizationRequest"]
+    if {row["backend"] for row in qwen["commonRequests"]} != {"authored", "qwen_compiled"}:
+        errors.append("common request backend coverage differs")
+    for request in qwen["commonRequests"]:
+        if schema_errors(request, request_schema, dto):
+            errors.append("common realization request schema differs")
+        unhashed = {key: value for key, value in request.items() if key != "requestHash"}
+        if request["requestHash"] != sha(unhashed):
+            errors.append("common realization request hash differs")
+        expected_deadline = (
+            94000
+            if request["backend"] == "authored"
+            else request["dispatchedMonoMs"]
+            + math.ceil(load(CONFIG_PATH)["defaultConfig"]["commentary.llm.timeout_s"] * 1000)
+        )
+        if request["deadlineMonoMs"] != expected_deadline:
+            errors.append("common realization request deadline differs")
     for fixture in qwen["sse"]["valid"]:
         if parse_sse(fixture["chunksHex"]) != (
             fixture["text"],
@@ -642,8 +852,9 @@ def artifact_errors(
     for fixture in qwen["sse"]["invalid"]:
         try:
             parse_sse(fixture["chunksHex"])
-        except ValueError:
-            pass
+        except ValueError as exc:
+            if str(exc) != fixture["reason"]:
+                errors.append("invalid SSE rejected for wrong reason")
         else:
             errors.append("invalid SSE accepted")
     if any(row["terminalAttempts"] != 1 for row in qwen["deadlineRaces"]):
@@ -698,8 +909,20 @@ def mutate(
         qwen["compiledPrompt"]["systemText"] += " Be creative."
     elif mutation_id == "request_stream_false":
         qwen["canonicalBackendRequest"]["stream"] = False
+    elif mutation_id == "common_request_hash_changed":
+        qwen["commonRequests"][0]["requestHash"] = "sha256:" + "0" * 64
+    elif mutation_id == "common_request_deadline_changed":
+        request = qwen["commonRequests"][1]
+        request["deadlineMonoMs"] += 1
+        request["requestHash"] = sha(
+            {key: value for key, value in request.items() if key != "requestHash"}
+        )
     elif mutation_id == "sse_missing_done_accepted":
         qwen["sse"]["invalid"][0]["chunksHex"] = qwen["sse"]["valid"][0]["chunksHex"]
+    elif mutation_id == "sse_overflow_reason_changed":
+        next(row for row in qwen["sse"]["invalid"] if "oversize" in row["id"])[
+            "reason"
+        ] = "realization_invalid_response"
     elif mutation_id == "deadline_two_terminals":
         qwen["deadlineRaces"][0]["terminalAttempts"] = 2
     elif mutation_id == "warmup_retry_added":
@@ -768,10 +991,12 @@ def main() -> int:
         print("wrote realization contract, cards, corpus, Qwen goldens and mutations")
         return 0
     validate_all(*(load(path) for path in paths))
+    qwen = values[3]
     print(
         "Realization contract OK: 37 grammars, 256 pattern cards, "
-        "148 corpus cases, 6 surface sets, 9 SSE fixtures, "
-        "4 deadline races, 15 rejected mutations"
+        f"{len(values[2]['cases'])} corpus cases, 6 surface sets, "
+        f"{len(qwen['sse']['valid']) + len(qwen['sse']['invalid'])} SSE fixtures, "
+        f"{len(qwen['deadlineRaces'])} deadline races, {len(values[4])} rejected mutations"
     )
     return 0
 

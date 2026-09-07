@@ -743,9 +743,7 @@ def validate_catalog(catalog: dict[str, Any], schema: dict[str, Any]) -> None:
                 actual_actor_count = (
                     0
                     if requirement["actorFrame"] == "none"
-                    else 2
-                    if "→" in requirement["actorFrame"]
-                    else 1
+                    else 2 if "→" in requirement["actorFrame"] else 1
                 )
                 if actual_actor_count != actor_count:
                     raise ValueError(f"{beat['id']}: actor arity differs from predicate")

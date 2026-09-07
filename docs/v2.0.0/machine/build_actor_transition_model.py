@@ -231,9 +231,7 @@ def build_model() -> dict[str, Any]:
                 "atomicBundle": (
                     "config_then_context"
                     if kind == "CONFIG_UPDATE"
-                    else "capture_health_then_context"
-                    if kind == "TAPE_HEALTH_CHANGED"
-                    else None
+                    else "capture_health_then_context" if kind == "TAPE_HEALTH_CHANGED" else None
                 ),
             }
         )
@@ -393,6 +391,187 @@ def trace(
     }
 
 
+def initial_trace_state(lane: str) -> dict[str, Any]:
+    """Create the minimum state needed to execute the frozen actor races."""
+    narrative = lane in {"building", "committed", "speaking", "stopping"}
+    accepted = lane == "speaking"
+    return {
+        "lane": lane,
+        "realizerActive": lane == "building",
+        "maxConcurrentRealizers": 1 if lane == "building" else 0,
+        "utteranceActive": lane in {"committed", "speaking", "stopping"},
+        "utteranceDispatches": 1 if lane in {"committed", "speaking", "stopping"} else 0,
+        "opportunity": "consumed" if accepted else ("reserved" if narrative else "none"),
+        "exposures": 1 if accepted else 0,
+        "terminalizations": 0,
+        "directorPasses": 0,
+        "quarantined": False,
+        "componentUnavailable": False,
+        "response": None,
+        "historyComplete": True,
+        "lostEventsRecreated": False,
+        "oldRevisionStale": False,
+        "ingressClosed": False,
+        "tapeFlushBounded": False,
+        "failedSoft": True,
+        "validityExpired": False,
+    }
+
+
+def reduce_trace_step(state: dict[str, Any], command: str, outcome: str) -> None:
+    """Execute one named race outcome against explicit actor evidence state."""
+    if outcome in {"stale_token_noop", "duplicate_stale_noop", "late_stale_noop"}:
+        return
+    if outcome == "matching_verified_fresh":
+        state.update(lane="committed", realizerActive=False, utteranceActive=True)
+        state["utteranceDispatches"] += 1
+    elif outcome == "matching_attempt_two_selected":
+        state["realizerActive"] = True
+        state["maxConcurrentRealizers"] = max(state["maxConcurrentRealizers"], 1)
+    elif outcome == "occurrence_reset":
+        state.update(
+            lane="idle",
+            realizerActive=False,
+            opportunity="released",
+            oldRevisionStale=True,
+        )
+    elif outcome == "matching":
+        if state["opportunity"] != "consumed":
+            state["opportunity"] = "consumed"
+            state["exposures"] += 1
+        state["lane"] = "speaking"
+    elif outcome == "duplicate_protocol_violation":
+        state.update(lane="stopping", quarantined=True)
+    elif outcome in {"matching_cleanup", "matching_shutdown_terminal"}:
+        state.update(lane="idle", utteranceActive=False)
+        state["terminalizations"] += 1
+    elif outcome == "matching_natural":
+        state.update(lane="idle", utteranceActive=False)
+        state["terminalizations"] += 1
+        state["directorPasses"] += 1
+    elif outcome == "terminal_before_acceptance":
+        state.update(lane="stopping", quarantined=True)
+    elif outcome == "actor_claimed_and_dispatched":
+        state.update(lane="committed", utteranceActive=True, response="http_202")
+        state["utteranceDispatches"] += 1
+    elif outcome == "caller_abandoned_stale_noop":
+        state["response"] = "http_503_admission_timeout"
+    elif outcome == "rejected_speech_busy":
+        state["response"] = "http_409"
+    elif outcome == "expires_at_equal_deadline":
+        state.update(lane="idle", realizerActive=False, opportunity="expired")
+        state["validityExpired"] = True
+    elif outcome == "playback_timeout":
+        state["lane"] = "stopping"
+    elif outcome == "stop_timeout":
+        state.update(
+            lane="idle",
+            utteranceActive=False,
+            quarantined=True,
+            componentUnavailable=True,
+        )
+        if state["opportunity"] == "consumed":
+            state["terminalizations"] += 1
+    elif outcome == "ingress_closed_cancel_requested":
+        state.update(lane="stopping", ingressClosed=True, tapeFlushBounded=True)
+    elif outcome == "jump_latest_history_incomplete":
+        state.update(
+            lane="idle",
+            realizerActive=False,
+            opportunity="released",
+            historyComplete=False,
+            oldRevisionStale=True,
+        )
+    else:
+        raise ValueError(f"unknown trace outcome {command}/{outcome}")
+
+
+def assertion_holds(assertion: str, state: dict[str, Any]) -> bool:
+    checks = {
+        "one_utterance": state["utteranceDispatches"] == 1,
+        "deadline_cannot_strand_building": state["lane"] != "building",
+        "one_realizer": state["maxConcurrentRealizers"] <= 1,
+        "late_result_cannot_commit": state["utteranceDispatches"] == 0,
+        "reservation_released": state["opportunity"] == "released",
+        "old_occurrence_cannot_speak": state["utteranceDispatches"] == 0,
+        "exposure_consumed_once": state["exposures"] == 1,
+        "generation_quarantined": state["quarantined"],
+        "terminalized_once": state["terminalizations"] == 1,
+        "director_pass_once": state["directorPasses"] == 1,
+        "opportunity_unconsumed": state["opportunity"] != "consumed",
+        "http_202": state["response"] == "http_202",
+        "no_episode_or_exposure": state["exposures"] == 0,
+        "http_503_admission_timeout": state["response"] == "http_503_admission_timeout",
+        "no_audio_later": state["utteranceDispatches"] == 0,
+        "http_409": state["response"] == "http_409",
+        "current_playback_unchanged": state["lane"] == "speaking" and state["exposures"] == 1,
+        "half_open_validity": state["validityExpired"],
+        "no_director_impulse": state["directorPasses"] == 0,
+        "exposure_retained": state["exposures"] == 1,
+        "component_unavailable": state["componentUnavailable"],
+        "late_callback_noop": state["terminalizations"] == 1,
+        "never_replan": state["directorPasses"] == 0,
+        "bounded_tape_flush": state["tapeFlushBounded"],
+        "fail_soft": state["failedSoft"],
+        "lost_events_not_recreated": not state["lostEventsRecreated"],
+        "old_revision_stale": state["oldRevisionStale"],
+    }
+    if assertion not in checks:
+        raise ValueError(f"unknown trace assertion {assertion}")
+    return checks[assertion]
+
+
+def evaluate_overflow(fixture: dict[str, Any]) -> str:
+    """Apply the frozen bounded-mailbox admission policy to a scenario."""
+    operation = fixture["operation"]
+    incoming = fixture["incoming"]
+    mailbox = fixture["initialMailbox"]
+    ordinary_free = 56 - mailbox["ordinaryUsed"]
+    protected_free = 7 - mailbox["protectedUsed"]
+    if operation == "coalesce" and incoming in COALESCE and fixture["sameCoalesceKey"]:
+        return "existing_position_refreshed"
+    if (
+        operation == "ordinary_admit"
+        and incoming == "VALIDITY_DEADLINE_ELAPSED"
+        and ordinary_free == 0
+    ):
+        return "distinct_item_or_deadline_admission_skipped"
+    if operation == "ordinary_full" and incoming == "MANUAL_SPEAK_REQUEST" and ordinary_free == 0:
+        return "reject_mailbox_overloaded"
+    if (
+        operation == "ordinary_full"
+        and incoming == "APPLY_CONTEXT_BATCH"
+        and ordinary_free == 0
+        and mailbox["oldestOrdinaryKind"] in COALESCE
+    ):
+        return "evict_oldest_ordinary_silence"
+    if (
+        operation == "ordinary_full_no_silence"
+        and incoming == "APPLY_CONTEXT_BATCH"
+        and ordinary_free == 0
+        and mailbox["oldestOrdinaryKind"] == "APPLY_CONTEXT_BATCH"
+    ):
+        return "evict_oldest_context_and_place_recovery"
+    if operation == "protected_full" and incoming in PROTECTED and protected_free == 0:
+        return "refresh_recovery_with_safety_effect"
+    if (
+        operation == "protected_atomic_pair"
+        and fixture["atomicWidth"] == 2
+        and protected_free < fixture["atomicWidth"]
+        and incoming
+        in {
+            "CONFIG_UPDATE+APPLY_CONTEXT_BATCH",
+            "TAPE_HEALTH_CHANGED+APPLY_CONTEXT_BATCH",
+        }
+    ):
+        return "two_consecutive_sequences_or_one_recovery"
+    if operation == "refresh_recovery" and mailbox["emergencyKind"] == "MAILBOX_RECOVERY":
+        return "same_mailbox_sequence_expanded_range_latest_projection"
+    if operation == "shutdown" and incoming == "SHUTDOWN" and mailbox["emergencyKind"]:
+        return "ingress_closed_recovery_metadata_attached"
+    raise ValueError(f"unsupported overflow scenario {fixture['id']}")
+
+
 def build_goldens() -> dict[str, Any]:
     traces = [
         trace(
@@ -508,60 +687,123 @@ def build_goldens() -> dict[str, Any]:
             "id": "coalesce_same_silence_generation",
             "operation": "coalesce",
             "incoming": "LONG_SILENCE_ELAPSED",
+            "initialMailbox": {
+                "ordinaryUsed": 1,
+                "protectedUsed": 0,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "LONG_SILENCE_ELAPSED",
+            },
+            "sameCoalesceKey": True,
             "expected": "existing_position_refreshed",
         },
         {
             "id": "different_generation_does_not_coalesce",
             "operation": "ordinary_admit",
             "incoming": "VALIDITY_DEADLINE_ELAPSED",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 0,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
             "expected": "distinct_item_or_deadline_admission_skipped",
         },
         {
             "id": "manual_full_partition",
             "operation": "ordinary_full",
             "incoming": "MANUAL_SPEAK_REQUEST",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 0,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
             "expected": "reject_mailbox_overloaded",
         },
         {
             "id": "ordinary_context_evicts_oldest_silence",
             "operation": "ordinary_full",
             "incoming": "APPLY_CONTEXT_BATCH",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 0,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "LONG_SILENCE_ELAPSED",
+            },
             "expected": "evict_oldest_ordinary_silence",
         },
         {
             "id": "ordinary_context_loss_creates_recovery",
             "operation": "ordinary_full_no_silence",
             "incoming": "APPLY_CONTEXT_BATCH",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 0,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
             "expected": "evict_oldest_context_and_place_recovery",
         },
         {
             "id": "protected_saturation_collapses",
             "operation": "protected_full",
             "incoming": "REALIZATION_SUCCEEDED",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 7,
+                "emergencyKind": "MAILBOX_RECOVERY",
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
             "expected": "refresh_recovery_with_safety_effect",
         },
         {
             "id": "config_pair_all_or_recovery",
             "operation": "protected_atomic_pair",
             "incoming": "CONFIG_UPDATE+APPLY_CONTEXT_BATCH",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 6,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
+            "atomicWidth": 2,
             "expected": "two_consecutive_sequences_or_one_recovery",
         },
         {
             "id": "capture_pair_all_or_recovery",
             "operation": "protected_atomic_pair",
             "incoming": "TAPE_HEALTH_CHANGED+APPLY_CONTEXT_BATCH",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 6,
+                "emergencyKind": None,
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
+            "atomicWidth": 2,
             "expected": "two_consecutive_sequences_or_one_recovery",
         },
         {
             "id": "recovery_refresh_keeps_order",
             "operation": "refresh_recovery",
             "incoming": "newer_projection_and_loss",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 7,
+                "emergencyKind": "MAILBOX_RECOVERY",
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
             "expected": "same_mailbox_sequence_expanded_range_latest_projection",
         },
         {
             "id": "shutdown_takes_emergency",
             "operation": "shutdown",
             "incoming": "SHUTDOWN",
+            "initialMailbox": {
+                "ordinaryUsed": 56,
+                "protectedUsed": 7,
+                "emergencyKind": "MAILBOX_RECOVERY",
+                "oldestOrdinaryKind": "APPLY_CONTEXT_BATCH",
+            },
             "expected": "ingress_closed_recovery_metadata_attached",
         },
     ]
@@ -706,15 +948,21 @@ def validate_goldens(model: dict[str, Any], goldens: dict[str, Any]) -> None:
         raise ValueError("pair coverage is incomplete")
     matrix = {(row["lane"], row["command"]): row for row in model["transitionMatrix"]}
     for fixture in goldens["raceTraces"]:
-        lane = fixture["initialLane"]
+        state = initial_trace_state(fixture["initialLane"])
         for step in fixture["steps"]:
-            if step["laneBefore"] != lane:
+            if step["laneBefore"] != state["lane"]:
                 raise ValueError(f"trace {fixture['id']} has discontinuous lane")
-            if step["laneAfter"] not in matrix[(lane, step["command"])]["possibleNextLanes"]:
+            lane_before = state["lane"]
+            if step["laneAfter"] not in matrix[(lane_before, step["command"])]["possibleNextLanes"]:
                 raise ValueError(f"trace {fixture['id']} uses forbidden transition")
-            lane = step["laneAfter"]
-        if lane != fixture["finalLane"]:
+            reduce_trace_step(state, step["command"], step["outcome"])
+            if state["lane"] != step["laneAfter"]:
+                raise ValueError(f"trace {fixture['id']} model lane differs")
+        if state["lane"] != fixture["finalLane"]:
             raise ValueError(f"trace {fixture['id']} final lane differs")
+        for assertion in fixture["assertions"]:
+            if not assertion_holds(assertion, state):
+                raise ValueError(f"trace {fixture['id']} assertion {assertion} differs")
     for fixture in goldens["orderingScenarios"]:
         sequences = [row["mailboxSequence"] for row in fixture["admissions"]]
         if sorted(sequences) != fixture["expectedReducerOrder"]:
@@ -733,6 +981,9 @@ def validate_goldens(model: dict[str, Any], goldens: dict[str, Any]) -> None:
     }
     if {row["id"] for row in goldens["overflowScenarios"]} != expected_overflow:
         raise ValueError("overflow scenario coverage differs")
+    for fixture in goldens["overflowScenarios"]:
+        if evaluate_overflow(fixture) != fixture["expected"]:
+            raise ValueError(f"overflow scenario {fixture['id']} differs")
 
 
 def mutate(model: dict[str, Any], mutation: dict[str, str]) -> dict[str, Any]:

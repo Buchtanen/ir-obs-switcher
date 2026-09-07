@@ -56,7 +56,11 @@
     "id": "f40_missing_qwen_domain"
   },
   {
-    "errorContains": "required fixture coverage differs",
+    "errorContains": "model expectation differs",
     "id": "f44_missing_capture_assertion"
+  },
+  {
+    "errorContains": "model expectation differs",
+    "id": "f36_model_rule_removed"
   }
 ]

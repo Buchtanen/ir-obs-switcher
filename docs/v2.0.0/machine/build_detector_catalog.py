@@ -374,6 +374,49 @@ def reduce_directional(
     return "clearing", None
 
 
+def reduce_band(state: str, row: dict[str, Any]) -> str:
+    """Evaluate one frozen hysteretic band transition."""
+    gap = row["gap"]
+    overlap_ready = row.get("overlapHeld", 0.0) >= PARAMETERS["overlap_confirm_s"][2]
+    overlap_known = row.get("overlapKnown", True)
+
+    # Inward movement may skip intermediate bands, but overlap requires its hold.
+    if gap <= PARAMETERS["overlap_enter_s"][2] and overlap_ready:
+        return "overlap"
+    if state != "overlap" and gap <= PARAMETERS["attack_enter_s"][2]:
+        return "attack"
+    if state in {"closing", "approach"} and gap <= PARAMETERS["approach_enter_s"][2]:
+        return "approach"
+
+    # Outward movement crosses at most the current band's exit boundary.
+    if state == "overlap" and overlap_known and gap >= PARAMETERS["overlap_exit_s"][2]:
+        return "attack"
+    if state == "attack" and gap >= PARAMETERS["attack_exit_s"][2]:
+        return "approach"
+    if state == "approach" and gap >= PARAMETERS["approach_exit_s"][2]:
+        return "closing"
+    return state
+
+
+def reduce_composite(state: str, row: dict[str, Any]) -> tuple[str, str | None]:
+    """Evaluate the frozen two-front entry, clear and invalidation rules."""
+    if row.get("replacement", False):
+        return ("inactive", "ended") if state == "active" else ("inactive", None)
+    if state == "active":
+        loss = row.get("lossSeconds")
+        if loss is not None and loss >= COMPOSITE_PARAMETERS["two_front_clear_s"][2]:
+            return "inactive", "ended"
+        return "active", None
+    eligible = (
+        row.get("sameHero", False)
+        and row.get("distinctTargets", False)
+        and row.get("relationKnown", True)
+    )
+    if eligible and row.get("heldSeconds", 0.0) >= COMPOSITE_PARAMETERS["two_front_confirm_s"][2]:
+        return "active", "started"
+    return "inactive", None
+
+
 def directional_trace(
     fixture_id: str, steps: list[dict[str, Any]], assertions: list[str]
 ) -> dict[str, Any]:
@@ -476,6 +519,7 @@ def build_goldens() -> dict[str, Any]:
     composite = [
         {
             "id": "distinct_relations_open",
+            "initialState": "inactive",
             "sameHero": True,
             "distinctTargets": True,
             "heldSeconds": 1.0,
@@ -483,6 +527,7 @@ def build_goldens() -> dict[str, Any]:
         },
         {
             "id": "same_target_rejected",
+            "initialState": "inactive",
             "sameHero": True,
             "distinctTargets": False,
             "heldSeconds": 1.0,
@@ -490,6 +535,7 @@ def build_goldens() -> dict[str, Any]:
         },
         {
             "id": "one_relation_unknown",
+            "initialState": "inactive",
             "sameHero": True,
             "distinctTargets": True,
             "heldSeconds": 1.0,
@@ -498,6 +544,7 @@ def build_goldens() -> dict[str, Any]:
         },
         {
             "id": "relation_replacement_closes",
+            "initialState": "active",
             "sameHero": True,
             "distinctTargets": True,
             "replacement": True,
@@ -505,6 +552,7 @@ def build_goldens() -> dict[str, Any]:
         },
         {
             "id": "temporary_loss_restored",
+            "initialState": "active",
             "sameHero": True,
             "distinctTargets": True,
             "lossSeconds": 0.99,
@@ -512,6 +560,7 @@ def build_goldens() -> dict[str, Any]:
         },
         {
             "id": "loss_at_boundary_closes",
+            "initialState": "active",
             "sameHero": True,
             "distinctTargets": True,
             "lossSeconds": 1.0,
@@ -730,6 +779,14 @@ def validate_goldens(goldens: dict[str, Any]) -> None:
             state = step["stateAfter"]
     if len(goldens["bandBoundaries"]) != 8 or len(goldens["compositeScenarios"]) != 6:
         raise ValueError("boundary/composite fixture count differs")
+    for fixture in goldens["bandBoundaries"]:
+        if reduce_band(fixture["from"], fixture) != fixture["to"]:
+            raise ValueError(f"band fixture {fixture['id']} differs")
+    for fixture in goldens["compositeScenarios"]:
+        state, emission = reduce_composite(fixture["initialState"], fixture)
+        actual = emission or state
+        if actual != fixture["result"]:
+            raise ValueError(f"composite fixture {fixture['id']} differs")
 
 
 def validate_all(

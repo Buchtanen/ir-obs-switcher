@@ -16,7 +16,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -47,6 +47,40 @@
         "no_session_ref",
         "playback_terminal"
       ],
+      "modelRules": [
+        {
+          "emit": "stream_scope_identity_null",
+          "whenAll": [
+            "stream_started",
+            "no_session_ref",
+            "playback_terminal"
+          ]
+        },
+        {
+          "emit": "authored_stream_start",
+          "whenAll": [
+            "stream_started",
+            "no_session_ref",
+            "playback_terminal"
+          ]
+        },
+        {
+          "emit": "no_session_invented",
+          "whenAll": [
+            "stream_started",
+            "no_session_ref",
+            "playback_terminal"
+          ]
+        },
+        {
+          "emit": "silence_after_terminal",
+          "whenAll": [
+            "stream_started",
+            "no_session_ref",
+            "playback_terminal"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f01",
       "tapeChannels": [
@@ -62,7 +96,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -92,6 +126,40 @@
         "qualifying_result",
         "race_start"
       ],
+      "modelRules": [
+        {
+          "emit": "lineage_p0_q0_r0",
+          "whenAll": [
+            "practice_best",
+            "qualifying_result",
+            "race_start"
+          ]
+        },
+        {
+          "emit": "current_facts_r0",
+          "whenAll": [
+            "practice_best",
+            "qualifying_result",
+            "race_start"
+          ]
+        },
+        {
+          "emit": "historical_requires_past_marker",
+          "whenAll": [
+            "practice_best",
+            "qualifying_result",
+            "race_start"
+          ]
+        },
+        {
+          "emit": "no_absent_stage",
+          "whenAll": [
+            "practice_best",
+            "qualifying_result",
+            "race_start"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f02",
       "tapeChannels": [
@@ -108,7 +176,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -140,6 +208,56 @@
         "rewind_to_q1",
         "later_r1"
       ],
+      "modelRules": [
+        {
+          "emit": "ordered_r0_end_q1_start",
+          "whenAll": [
+            "lineage_p0_q0_r0",
+            "rewind_to_q1",
+            "later_r1"
+          ]
+        },
+        {
+          "emit": "no_session_rewound_command",
+          "whenAll": [
+            "lineage_p0_q0_r0",
+            "rewind_to_q1",
+            "later_r1"
+          ]
+        },
+        {
+          "emit": "lineage_p0_q1",
+          "whenAll": [
+            "lineage_p0_q0_r0",
+            "rewind_to_q1",
+            "later_r1"
+          ]
+        },
+        {
+          "emit": "persistent_downstream",
+          "whenAll": [
+            "lineage_p0_q0_r0",
+            "rewind_to_q1",
+            "later_r1"
+          ]
+        },
+        {
+          "emit": "cancel_old_speech",
+          "whenAll": [
+            "lineage_p0_q0_r0",
+            "rewind_to_q1",
+            "later_r1"
+          ]
+        },
+        {
+          "emit": "lineage_p0_q1_r1",
+          "whenAll": [
+            "lineage_p0_q0_r0",
+            "rewind_to_q1",
+            "later_r1"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f03",
       "tapeChannels": [
@@ -155,7 +273,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -184,6 +302,48 @@
         "same_ref_rewind_gt_5s",
         "confirm_100ms",
         "single_unconfirmed_sample"
+      ],
+      "modelRules": [
+        {
+          "emit": "one_session_restarted",
+          "whenAll": [
+            "same_ref_rewind_gt_5s",
+            "confirm_100ms",
+            "single_unconfirmed_sample"
+          ]
+        },
+        {
+          "emit": "new_occurrence",
+          "whenAll": [
+            "same_ref_rewind_gt_5s",
+            "confirm_100ms",
+            "single_unconfirmed_sample"
+          ]
+        },
+        {
+          "emit": "archive_by_scope",
+          "whenAll": [
+            "same_ref_rewind_gt_5s",
+            "confirm_100ms",
+            "single_unconfirmed_sample"
+          ]
+        },
+        {
+          "emit": "invalidate_old_opportunities",
+          "whenAll": [
+            "same_ref_rewind_gt_5s",
+            "confirm_100ms",
+            "single_unconfirmed_sample"
+          ]
+        },
+        {
+          "emit": "no_false_restart",
+          "whenAll": [
+            "same_ref_rewind_gt_5s",
+            "confirm_100ms",
+            "single_unconfirmed_sample"
+          ]
+        }
       ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f04",
@@ -215,7 +375,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -242,6 +402,36 @@
       "inputs": [
         "battle_pursuit",
         "material_band"
+      ],
+      "modelRules": [
+        {
+          "emit": "score_70",
+          "whenAll": [
+            "battle_pursuit",
+            "material_band"
+          ]
+        },
+        {
+          "emit": "threshold_pass",
+          "whenAll": [
+            "battle_pursuit",
+            "material_band"
+          ]
+        },
+        {
+          "emit": "opens_correlated_episode",
+          "whenAll": [
+            "battle_pursuit",
+            "material_band"
+          ]
+        },
+        {
+          "emit": "no_v4_priority_term",
+          "whenAll": [
+            "battle_pursuit",
+            "material_band"
+          ]
+        }
       ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f05",
@@ -275,7 +465,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -303,6 +493,40 @@
         "focused_pursuit",
         "related_approach",
         "independent_weather"
+      ],
+      "modelRules": [
+        {
+          "emit": "deduplicate_event_successor",
+          "whenAll": [
+            "focused_pursuit",
+            "related_approach",
+            "independent_weather"
+          ]
+        },
+        {
+          "emit": "score_76",
+          "whenAll": [
+            "focused_pursuit",
+            "related_approach",
+            "independent_weather"
+          ]
+        },
+        {
+          "emit": "select_related_event_update",
+          "whenAll": [
+            "focused_pursuit",
+            "related_approach",
+            "independent_weather"
+          ]
+        },
+        {
+          "emit": "weather_pending_ttl",
+          "whenAll": [
+            "focused_pursuit",
+            "related_approach",
+            "independent_weather"
+          ]
+        }
       ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f06",
@@ -334,7 +558,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -364,6 +588,44 @@
         "challenger_84",
         "margin_8"
       ],
+      "modelRules": [
+        {
+          "emit": "82_does_not_switch",
+          "whenAll": [
+            "focused_76",
+            "challenger_82",
+            "challenger_84",
+            "margin_8"
+          ]
+        },
+        {
+          "emit": "84_switches_inclusive",
+          "whenAll": [
+            "focused_76",
+            "challenger_82",
+            "challenger_84",
+            "margin_8"
+          ]
+        },
+        {
+          "emit": "switch_margin_met",
+          "whenAll": [
+            "focused_76",
+            "challenger_82",
+            "challenger_84",
+            "margin_8"
+          ]
+        },
+        {
+          "emit": "breakdown_recorded",
+          "whenAll": [
+            "focused_76",
+            "challenger_82",
+            "challenger_84",
+            "margin_8"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f07",
       "tapeChannels": [
@@ -379,7 +641,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -411,6 +673,53 @@
         "ttl_45",
         "terminal"
       ],
+      "modelRules": [
+        {
+          "emit": "no_interrupt",
+          "whenAll": [
+            "speaking_approach",
+            "critical_pass",
+            "ttl_45",
+            "terminal"
+          ]
+        },
+        {
+          "emit": "no_prepared_queue",
+          "whenAll": [
+            "speaking_approach",
+            "critical_pass",
+            "ttl_45",
+            "terminal"
+          ]
+        },
+        {
+          "emit": "truth_updates_immediately",
+          "whenAll": [
+            "speaking_approach",
+            "critical_pass",
+            "ttl_45",
+            "terminal"
+          ]
+        },
+        {
+          "emit": "terminal_replans_live",
+          "whenAll": [
+            "speaking_approach",
+            "critical_pass",
+            "ttl_45",
+            "terminal"
+          ]
+        },
+        {
+          "emit": "expired_never_narrated",
+          "whenAll": [
+            "speaking_approach",
+            "critical_pass",
+            "ttl_45",
+            "terminal"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f08",
       "tapeChannels": [
@@ -427,7 +736,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -455,6 +764,43 @@
       "inputs": [
         "qwen_actor_reversed",
         "context_score_46"
+      ],
+      "modelRules": [
+        {
+          "emit": "suppress_revision",
+          "whenAll": [
+            "qwen_actor_reversed",
+            "context_score_46"
+          ]
+        },
+        {
+          "emit": "release_reservation",
+          "whenAll": [
+            "qwen_actor_reversed",
+            "context_score_46"
+          ]
+        },
+        {
+          "emit": "no_retry_or_fallback",
+          "whenAll": [
+            "qwen_actor_reversed",
+            "context_score_46"
+          ]
+        },
+        {
+          "emit": "distinct_attempt_2",
+          "whenAll": [
+            "qwen_actor_reversed",
+            "context_score_46"
+          ]
+        },
+        {
+          "emit": "cycle_exhausted_after_second",
+          "whenAll": [
+            "qwen_actor_reversed",
+            "context_score_46"
+          ]
+        }
       ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f09",
@@ -486,7 +832,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -515,6 +861,40 @@
         "out_lap_fact",
         "threshold_35"
       ],
+      "modelRules": [
+        {
+          "emit": "score_36",
+          "whenAll": [
+            "silence_elapsed",
+            "out_lap_fact",
+            "threshold_35"
+          ]
+        },
+        {
+          "emit": "filler_selected",
+          "whenAll": [
+            "silence_elapsed",
+            "out_lap_fact",
+            "threshold_35"
+          ]
+        },
+        {
+          "emit": "missing_fact_silence",
+          "whenAll": [
+            "silence_elapsed",
+            "out_lap_fact",
+            "threshold_35"
+          ]
+        },
+        {
+          "emit": "normal_rearm",
+          "whenAll": [
+            "silence_elapsed",
+            "out_lap_fact",
+            "threshold_35"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f10",
       "tapeChannels": [
@@ -530,7 +910,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -559,6 +939,40 @@
         "qwen_candidate",
         "authored_candidate"
       ],
+      "modelRules": [
+        {
+          "emit": "qwen_hard_ineligible",
+          "whenAll": [
+            "warmup_failed",
+            "qwen_candidate",
+            "authored_candidate"
+          ]
+        },
+        {
+          "emit": "no_cold_timeout",
+          "whenAll": [
+            "warmup_failed",
+            "qwen_candidate",
+            "authored_candidate"
+          ]
+        },
+        {
+          "emit": "authored_may_win",
+          "whenAll": [
+            "warmup_failed",
+            "qwen_candidate",
+            "authored_candidate"
+          ]
+        },
+        {
+          "emit": "no_backend_fallback",
+          "whenAll": [
+            "warmup_failed",
+            "qwen_candidate",
+            "authored_candidate"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f11",
       "tapeChannels": [],
@@ -572,7 +986,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -602,6 +1016,44 @@
         "second_manual",
         "race_event"
       ],
+      "modelRules": [
+        {
+          "emit": "manual_202_after_dispatch",
+          "whenAll": [
+            "commentary_disabled",
+            "idle_tts_ready",
+            "second_manual",
+            "race_event"
+          ]
+        },
+        {
+          "emit": "no_narrative_state",
+          "whenAll": [
+            "commentary_disabled",
+            "idle_tts_ready",
+            "second_manual",
+            "race_event"
+          ]
+        },
+        {
+          "emit": "second_busy",
+          "whenAll": [
+            "commentary_disabled",
+            "idle_tts_ready",
+            "second_manual",
+            "race_event"
+          ]
+        },
+        {
+          "emit": "race_truth_no_interrupt",
+          "whenAll": [
+            "commentary_disabled",
+            "idle_tts_ready",
+            "second_manual",
+            "race_event"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f12",
       "tapeChannels": [],
@@ -615,7 +1067,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -645,6 +1097,56 @@
         "protected_7",
         "protected_reset"
       ],
+      "modelRules": [
+        {
+          "emit": "ordinary_eviction_first",
+          "whenAll": [
+            "ordinary_56",
+            "protected_7",
+            "protected_reset"
+          ]
+        },
+        {
+          "emit": "emergency_recovery",
+          "whenAll": [
+            "ordinary_56",
+            "protected_7",
+            "protected_reset"
+          ]
+        },
+        {
+          "emit": "latest_projection",
+          "whenAll": [
+            "ordinary_56",
+            "protected_7",
+            "protected_reset"
+          ]
+        },
+        {
+          "emit": "history_incomplete",
+          "whenAll": [
+            "ordinary_56",
+            "protected_7",
+            "protected_reset"
+          ]
+        },
+        {
+          "emit": "no_lost_opportunities",
+          "whenAll": [
+            "ordinary_56",
+            "protected_7",
+            "protected_reset"
+          ]
+        },
+        {
+          "emit": "producer_nonblocking",
+          "whenAll": [
+            "ordinary_56",
+            "protected_7",
+            "protected_reset"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f13",
       "tapeChannels": [],
@@ -658,7 +1160,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -685,6 +1187,29 @@
         "reset_then_accept",
         "accept_then_reset"
       ],
+      "modelRules": [
+        {
+          "emit": "first_unconsumed_stale_accept",
+          "whenAll": [
+            "reset_then_accept",
+            "accept_then_reset"
+          ]
+        },
+        {
+          "emit": "second_consumed_exposed_interrupt",
+          "whenAll": [
+            "reset_then_accept",
+            "accept_then_reset"
+          ]
+        },
+        {
+          "emit": "reducer_sequence_authority",
+          "whenAll": [
+            "reset_then_accept",
+            "accept_then_reset"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f14",
       "tapeChannels": [],
@@ -698,7 +1223,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -729,6 +1254,50 @@
         "fact_only_batch",
         "closing_fact_expired"
       ],
+      "modelRules": [
+        {
+          "emit": "apply_new_view",
+          "whenAll": [
+            "fact_only_batch",
+            "closing_fact_expired"
+          ]
+        },
+        {
+          "emit": "close_episode",
+          "whenAll": [
+            "fact_only_batch",
+            "closing_fact_expired"
+          ]
+        },
+        {
+          "emit": "cancel_preaccept",
+          "whenAll": [
+            "fact_only_batch",
+            "closing_fact_expired"
+          ]
+        },
+        {
+          "emit": "no_opportunity",
+          "whenAll": [
+            "fact_only_batch",
+            "closing_fact_expired"
+          ]
+        },
+        {
+          "emit": "no_director_pass",
+          "whenAll": [
+            "fact_only_batch",
+            "closing_fact_expired"
+          ]
+        },
+        {
+          "emit": "later_cannot_continue",
+          "whenAll": [
+            "fact_only_batch",
+            "closing_fact_expired"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f15",
       "tapeChannels": [],
@@ -742,7 +1311,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -777,6 +1346,72 @@
         "disable",
         "reenable"
       ],
+      "modelRules": [
+        {
+          "emit": "close_run3",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "commentary_disabled",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "complete_trailer",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "manual_independent",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "allocate_run4",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "incomplete_history",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "one_enabled_mid_stream",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        },
+        {
+          "emit": "no_state_leak",
+          "whenAll": [
+            "run3_broadcast2",
+            "disable",
+            "reenable"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f16",
       "tapeChannels": [
@@ -792,7 +1427,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -823,6 +1458,53 @@
         "track_identity",
         "silence_elapsed"
       ],
+      "modelRules": [
+        {
+          "emit": "stream_scope_filler",
+          "whenAll": [
+            "lobby",
+            "no_session",
+            "track_identity",
+            "silence_elapsed"
+          ]
+        },
+        {
+          "emit": "null_occurrence",
+          "whenAll": [
+            "lobby",
+            "no_session",
+            "track_identity",
+            "silence_elapsed"
+          ]
+        },
+        {
+          "emit": "exact_two_facts",
+          "whenAll": [
+            "lobby",
+            "no_session",
+            "track_identity",
+            "silence_elapsed"
+          ]
+        },
+        {
+          "emit": "no_session_claim",
+          "whenAll": [
+            "lobby",
+            "no_session",
+            "track_identity",
+            "silence_elapsed"
+          ]
+        },
+        {
+          "emit": "missing_track_guard_rearm",
+          "whenAll": [
+            "lobby",
+            "no_session",
+            "track_identity",
+            "silence_elapsed"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f17",
       "tapeChannels": [
@@ -838,7 +1520,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -870,6 +1552,53 @@
         "event_view87",
         "factview89_event89"
       ],
+      "modelRules": [
+        {
+          "emit": "apply_88",
+          "whenAll": [
+            "timeline31",
+            "factview88",
+            "event_view87",
+            "factview89_event89"
+          ]
+        },
+        {
+          "emit": "reject_mismatch",
+          "whenAll": [
+            "timeline31",
+            "factview88",
+            "event_view87",
+            "factview89_event89"
+          ]
+        },
+        {
+          "emit": "no_old_view_lookup",
+          "whenAll": [
+            "timeline31",
+            "factview88",
+            "event_view87",
+            "factview89_event89"
+          ]
+        },
+        {
+          "emit": "no_batch_merge",
+          "whenAll": [
+            "timeline31",
+            "factview88",
+            "event_view87",
+            "factview89_event89"
+          ]
+        },
+        {
+          "emit": "apply_89_one_director",
+          "whenAll": [
+            "timeline31",
+            "factview88",
+            "event_view87",
+            "factview89_event89"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f18",
       "tapeChannels": [],
@@ -883,7 +1612,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -916,6 +1645,68 @@
         "queued_105_109",
         "revision111"
       ],
+      "modelRules": [
+        {
+          "emit": "jump_110",
+          "whenAll": [
+            "evict_101_104",
+            "barrier_seq20",
+            "refresh_110",
+            "queued_105_109",
+            "revision111"
+          ]
+        },
+        {
+          "emit": "full_loss_range",
+          "whenAll": [
+            "evict_101_104",
+            "barrier_seq20",
+            "refresh_110",
+            "queued_105_109",
+            "revision111"
+          ]
+        },
+        {
+          "emit": "no_invented_opportunities",
+          "whenAll": [
+            "evict_101_104",
+            "barrier_seq20",
+            "refresh_110",
+            "queued_105_109",
+            "revision111"
+          ]
+        },
+        {
+          "emit": "stale_105_109",
+          "whenAll": [
+            "evict_101_104",
+            "barrier_seq20",
+            "refresh_110",
+            "queued_105_109",
+            "revision111"
+          ]
+        },
+        {
+          "emit": "apply_111",
+          "whenAll": [
+            "evict_101_104",
+            "barrier_seq20",
+            "refresh_110",
+            "queued_105_109",
+            "revision111"
+          ]
+        },
+        {
+          "emit": "replay_equal",
+          "whenAll": [
+            "evict_101_104",
+            "barrier_seq20",
+            "refresh_110",
+            "queued_105_109",
+            "revision111"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f19",
       "tapeChannels": [],
@@ -929,7 +1720,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -961,6 +1752,53 @@
         "timeout_1000",
         "overrides_rejected"
       ],
+      "modelRules": [
+        {
+          "emit": "abandon_returns_503_no_audio",
+          "whenAll": [
+            "caller_abandon_first",
+            "actor_claim_first",
+            "timeout_1000",
+            "overrides_rejected"
+          ]
+        },
+        {
+          "emit": "claim_linearized_202_or_error",
+          "whenAll": [
+            "caller_abandon_first",
+            "actor_claim_first",
+            "timeout_1000",
+            "overrides_rejected"
+          ]
+        },
+        {
+          "emit": "no_narrative_state",
+          "whenAll": [
+            "caller_abandon_first",
+            "actor_claim_first",
+            "timeout_1000",
+            "overrides_rejected"
+          ]
+        },
+        {
+          "emit": "tape_terminal_decision",
+          "whenAll": [
+            "caller_abandon_first",
+            "actor_claim_first",
+            "timeout_1000",
+            "overrides_rejected"
+          ]
+        },
+        {
+          "emit": "manual_silence_only",
+          "whenAll": [
+            "caller_abandon_first",
+            "actor_claim_first",
+            "timeout_1000",
+            "overrides_rejected"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f20",
       "tapeChannels": [],
@@ -985,7 +1823,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1016,6 +1854,56 @@
         "result_at_64",
         "result_at_129"
       ],
+      "modelRules": [
+        {
+          "emit": "parts_64_64_2",
+          "whenAll": [
+            "publication_130",
+            "result_at_64",
+            "result_at_129"
+          ]
+        },
+        {
+          "emit": "first_two_protected",
+          "whenAll": [
+            "publication_130",
+            "result_at_64",
+            "result_at_129"
+          ]
+        },
+        {
+          "emit": "last_ordinary",
+          "whenAll": [
+            "publication_130",
+            "result_at_64",
+            "result_at_129"
+          ]
+        },
+        {
+          "emit": "same_revision_idempotent",
+          "whenAll": [
+            "publication_130",
+            "result_at_64",
+            "result_at_129"
+          ]
+        },
+        {
+          "emit": "source_order_preserved",
+          "whenAll": [
+            "publication_130",
+            "result_at_64",
+            "result_at_129"
+          ]
+        },
+        {
+          "emit": "three_impulses",
+          "whenAll": [
+            "publication_130",
+            "result_at_64",
+            "result_at_129"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f21",
       "tapeChannels": [],
@@ -1029,7 +1917,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1058,6 +1946,48 @@
         "process_recovery",
         "enable_mid_stream",
         "unknown_resume"
+      ],
+      "modelRules": [
+        {
+          "emit": "exclusive_start_reasons",
+          "whenAll": [
+            "normal_start",
+            "attach_live",
+            "process_recovery",
+            "enable_mid_stream",
+            "unknown_resume"
+          ]
+        },
+        {
+          "emit": "completeness_flags",
+          "whenAll": [
+            "normal_start",
+            "attach_live",
+            "process_recovery",
+            "enable_mid_stream",
+            "unknown_resume"
+          ]
+        },
+        {
+          "emit": "resume_keeps_epochs",
+          "whenAll": [
+            "normal_start",
+            "attach_live",
+            "process_recovery",
+            "enable_mid_stream",
+            "unknown_resume"
+          ]
+        },
+        {
+          "emit": "no_duplicate_stream_started",
+          "whenAll": [
+            "normal_start",
+            "attach_live",
+            "process_recovery",
+            "enable_mid_stream",
+            "unknown_resume"
+          ]
+        }
       ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f22",
@@ -1093,7 +2023,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1126,6 +2056,63 @@
         "story_cap2",
         "accepted2"
       ],
+      "modelRules": [
+        {
+          "emit": "fatigue_half_each",
+          "whenAll": [
+            "semantic_age90",
+            "pattern_age180",
+            "orders_40_3_40_4",
+            "public_cap3",
+            "story_cap2",
+            "accepted2"
+          ]
+        },
+        {
+          "emit": "stable_order_40_3",
+          "whenAll": [
+            "semantic_age90",
+            "pattern_age180",
+            "orders_40_3_40_4",
+            "public_cap3",
+            "story_cap2",
+            "accepted2"
+          ]
+        },
+        {
+          "emit": "effective_cap2",
+          "whenAll": [
+            "semantic_age90",
+            "pattern_age180",
+            "orders_40_3_40_4",
+            "public_cap3",
+            "story_cap2",
+            "accepted2"
+          ]
+        },
+        {
+          "emit": "nonclosing_ineligible",
+          "whenAll": [
+            "semantic_age90",
+            "pattern_age180",
+            "orders_40_3_40_4",
+            "public_cap3",
+            "story_cap2",
+            "accepted2"
+          ]
+        },
+        {
+          "emit": "closure_critical_eligible",
+          "whenAll": [
+            "semantic_age90",
+            "pattern_age180",
+            "orders_40_3_40_4",
+            "public_cap3",
+            "story_cap2",
+            "accepted2"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f23",
       "tapeChannels": [],
@@ -1147,7 +2134,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1180,6 +2167,71 @@
         "mailbox_full",
         "reduce_50001"
       ],
+      "modelRules": [
+        {
+          "emit": "half_open_invalid",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        },
+        {
+          "emit": "cancel_generation",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        },
+        {
+          "emit": "expired_ttl",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        },
+        {
+          "emit": "late_worker_stale",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        },
+        {
+          "emit": "no_director",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        },
+        {
+          "emit": "no_attempt2",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        },
+        {
+          "emit": "skipped_admission_sweep_equal",
+          "whenAll": [
+            "expires_50000",
+            "reduce_50000",
+            "mailbox_full",
+            "reduce_50001"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f24",
       "tapeChannels": [],
@@ -1193,7 +2245,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1223,6 +2275,48 @@
         "q0_to_r0",
         "invalid_reason_lists"
       ],
+      "modelRules": [
+        {
+          "emit": "ordered_broadcast_then_session",
+          "whenAll": [
+            "broadcast_and_race_start",
+            "q0_to_r0",
+            "invalid_reason_lists"
+          ]
+        },
+        {
+          "emit": "ordered_end_then_start",
+          "whenAll": [
+            "broadcast_and_race_start",
+            "q0_to_r0",
+            "invalid_reason_lists"
+          ]
+        },
+        {
+          "emit": "lineage_q0",
+          "whenAll": [
+            "broadcast_and_race_start",
+            "q0_to_r0",
+            "invalid_reason_lists"
+          ]
+        },
+        {
+          "emit": "exact_once",
+          "whenAll": [
+            "broadcast_and_race_start",
+            "q0_to_r0",
+            "invalid_reason_lists"
+          ]
+        },
+        {
+          "emit": "invalid_lists_rejected",
+          "whenAll": [
+            "broadcast_and_race_start",
+            "q0_to_r0",
+            "invalid_reason_lists"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f25",
       "tapeChannels": [],
@@ -1236,7 +2330,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1269,6 +2363,68 @@
         "stale_callbacks",
         "higher_generation_ready"
       ],
+      "modelRules": [
+        {
+          "emit": "start_timeout_unconsumed",
+          "whenAll": [
+            "stall_preaccept",
+            "stall_postaccept",
+            "stall_postcancel",
+            "stale_callbacks",
+            "higher_generation_ready"
+          ]
+        },
+        {
+          "emit": "playback_timeout_consumed",
+          "whenAll": [
+            "stall_preaccept",
+            "stall_postaccept",
+            "stall_postcancel",
+            "stale_callbacks",
+            "higher_generation_ready"
+          ]
+        },
+        {
+          "emit": "stop_timeout_quarantine",
+          "whenAll": [
+            "stall_preaccept",
+            "stall_postaccept",
+            "stall_postcancel",
+            "stale_callbacks",
+            "higher_generation_ready"
+          ]
+        },
+        {
+          "emit": "admission_blocked",
+          "whenAll": [
+            "stall_preaccept",
+            "stall_postaccept",
+            "stall_postcancel",
+            "stale_callbacks",
+            "higher_generation_ready"
+          ]
+        },
+        {
+          "emit": "late_noop",
+          "whenAll": [
+            "stall_preaccept",
+            "stall_postaccept",
+            "stall_postcancel",
+            "stale_callbacks",
+            "higher_generation_ready"
+          ]
+        },
+        {
+          "emit": "higher_generation_restores",
+          "whenAll": [
+            "stall_preaccept",
+            "stall_postaccept",
+            "stall_postcancel",
+            "stale_callbacks",
+            "higher_generation_ready"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f26",
       "tapeChannels": [],
@@ -1282,7 +2438,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1316,6 +2472,78 @@
         "critical_terminal",
         "required_window"
       ],
+      "modelRules": [
+        {
+          "emit": "evict_sample_then_normal",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        },
+        {
+          "emit": "fifo_equal",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        },
+        {
+          "emit": "bounded_loss_accumulator",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        },
+        {
+          "emit": "drop_notice",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        },
+        {
+          "emit": "trailer_counts",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        },
+        {
+          "emit": "capture_unavailable_one_detector",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        },
+        {
+          "emit": "main_loop_continues",
+          "whenAll": [
+            "sample_normal_full",
+            "all_critical",
+            "normal_arrival",
+            "critical_terminal",
+            "required_window"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f27",
       "tapeChannels": [],
@@ -1329,7 +2557,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1360,6 +2588,56 @@
         "lone_sample",
         "covered_buckets"
       ],
+      "modelRules": [
+        {
+          "emit": "reduce_10_12",
+          "whenAll": [
+            "frames_10_12_12_11",
+            "lone_sample",
+            "covered_buckets"
+          ]
+        },
+        {
+          "emit": "older_noop",
+          "whenAll": [
+            "frames_10_12_12_11",
+            "lone_sample",
+            "covered_buckets"
+          ]
+        },
+        {
+          "emit": "coverage_capped",
+          "whenAll": [
+            "frames_10_12_12_11",
+            "lone_sample",
+            "covered_buckets"
+          ]
+        },
+        {
+          "emit": "invalid_lone_sample",
+          "whenAll": [
+            "frames_10_12_12_11",
+            "lone_sample",
+            "covered_buckets"
+          ]
+        },
+        {
+          "emit": "ols_three_buckets",
+          "whenAll": [
+            "frames_10_12_12_11",
+            "lone_sample",
+            "covered_buckets"
+          ]
+        },
+        {
+          "emit": "identity_match",
+          "whenAll": [
+            "frames_10_12_12_11",
+            "lone_sample",
+            "covered_buckets"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f28",
       "tapeChannels": [],
@@ -1373,7 +2651,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1403,6 +2681,38 @@
         "alias_collision",
         "reversed_aliases"
       ],
+      "modelRules": [
+        {
+          "emit": "only_complete_parses",
+          "whenAll": [
+            "complete_binding",
+            "missing_target",
+            "unused_actor",
+            "alias_collision",
+            "reversed_aliases"
+          ]
+        },
+        {
+          "emit": "invalid_400_no_live_reads",
+          "whenAll": [
+            "complete_binding",
+            "missing_target",
+            "unused_actor",
+            "alias_collision",
+            "reversed_aliases"
+          ]
+        },
+        {
+          "emit": "reversal_actor_reversed",
+          "whenAll": [
+            "complete_binding",
+            "missing_target",
+            "unused_actor",
+            "alias_collision",
+            "reversed_aliases"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f29",
       "tapeChannels": [],
@@ -1416,7 +2726,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1446,6 +2756,44 @@
         "explicit_supertonic",
         "later_rebuild"
       ],
+      "modelRules": [
+        {
+          "emit": "snapshot_sapi",
+          "whenAll": [
+            "auto_sapi_espeak",
+            "sapi_failure",
+            "explicit_supertonic",
+            "later_rebuild"
+          ]
+        },
+        {
+          "emit": "no_same_text_fallback",
+          "whenAll": [
+            "auto_sapi_espeak",
+            "sapi_failure",
+            "explicit_supertonic",
+            "later_rebuild"
+          ]
+        },
+        {
+          "emit": "later_generation_only",
+          "whenAll": [
+            "auto_sapi_espeak",
+            "sapi_failure",
+            "explicit_supertonic",
+            "later_rebuild"
+          ]
+        },
+        {
+          "emit": "supertonic_explicit",
+          "whenAll": [
+            "auto_sapi_espeak",
+            "sapi_failure",
+            "explicit_supertonic",
+            "later_rebuild"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f30",
       "tapeChannels": [],
@@ -1473,7 +2821,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1506,6 +2854,78 @@
         "unsupported18",
         "frozen_pq_changes"
       ],
+      "modelRules": [
+        {
+          "emit": "seven_valid_ordered",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        },
+        {
+          "emit": "no_invented_stage",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        },
+        {
+          "emit": "conflict_empty_plan",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        },
+        {
+          "emit": "partial_suspends",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        },
+        {
+          "emit": "stable_revision",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        },
+        {
+          "emit": "append_future_only",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        },
+        {
+          "emit": "unsupported16_overflow2",
+          "whenAll": [
+            "seven_supported_subsets",
+            "invalid_inputs",
+            "partial_snapshot",
+            "unsupported18",
+            "frozen_pq_changes"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f31",
       "tapeChannels": [],
@@ -1519,7 +2939,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1554,6 +2974,85 @@
         "episodes_capacity",
         "pinned_episodes"
       ],
+      "modelRules": [
+        {
+          "emit": "update_no_growth",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        },
+        {
+          "emit": "deterministic_fact_evict",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        },
+        {
+          "emit": "unknown_not_false",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        },
+        {
+          "emit": "pinned_exhaustion_no_partial",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        },
+        {
+          "emit": "recover_degraded",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        },
+        {
+          "emit": "episode_eviction_order",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        },
+        {
+          "emit": "pinned_reject",
+          "whenAll": [
+            "facts512",
+            "semantic_update",
+            "new_unpinned",
+            "pinned_only",
+            "episodes_capacity",
+            "pinned_episodes"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f32",
       "tapeChannels": [],
@@ -1580,7 +3079,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1616,6 +3115,85 @@
         "repetition",
         "failure"
       ],
+      "modelRules": [
+        {
+          "emit": "closed_profiles",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        },
+        {
+          "emit": "least_permissive",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        },
+        {
+          "emit": "tight_baseline",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        },
+        {
+          "emit": "promoted_wider_if_safe",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        },
+        {
+          "emit": "canonical_seed",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        },
+        {
+          "emit": "card_choice_or_fatigue",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        },
+        {
+          "emit": "failure_no_widen",
+          "whenAll": [
+            "profile_product",
+            "loose_requests",
+            "confidence_0_89",
+            "promoted_context",
+            "repetition",
+            "failure"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f33",
       "tapeChannels": [],
@@ -1629,7 +3207,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1664,6 +3242,78 @@
         "lose209",
         "optional_repeat"
       ],
+      "modelRules": [
+        {
+          "emit": "manifest_snapshot_repeated",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        },
+        {
+          "emit": "typed_frames",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        },
+        {
+          "emit": "exact_hash",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        },
+        {
+          "emit": "range_across_rotation",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        },
+        {
+          "emit": "required_loss_disables",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        },
+        {
+          "emit": "optional_loss_degrades",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        },
+        {
+          "emit": "no_interpolation",
+          "whenAll": [
+            "frames_200_214",
+            "params7",
+            "rotation",
+            "lose209",
+            "optional_repeat"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f34",
       "tapeChannels": [],
@@ -1677,7 +3327,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1709,6 +3359,62 @@
         "lower_event",
         "verifier_fail"
       ],
+      "modelRules": [
+        {
+          "emit": "replace_without_suppression",
+          "whenAll": [
+            "cycle70_building",
+            "critical_pass",
+            "lower_event",
+            "verifier_fail"
+          ]
+        },
+        {
+          "emit": "close70",
+          "whenAll": [
+            "cycle70_building",
+            "critical_pass",
+            "lower_event",
+            "verifier_fail"
+          ]
+        },
+        {
+          "emit": "new_cycle71_attempt1",
+          "whenAll": [
+            "cycle70_building",
+            "critical_pass",
+            "lower_event",
+            "verifier_fail"
+          ]
+        },
+        {
+          "emit": "one_alternative",
+          "whenAll": [
+            "cycle70_building",
+            "critical_pass",
+            "lower_event",
+            "verifier_fail"
+          ]
+        },
+        {
+          "emit": "lower_event_no_replace",
+          "whenAll": [
+            "cycle70_building",
+            "critical_pass",
+            "lower_event",
+            "verifier_fail"
+          ]
+        },
+        {
+          "emit": "accepted_event_only",
+          "whenAll": [
+            "cycle70_building",
+            "critical_pass",
+            "lower_event",
+            "verifier_fail"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f35",
       "tapeChannels": [],
@@ -1722,7 +3428,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1761,6 +3467,112 @@
         "generation8_revert",
         "invalid_reload"
       ],
+      "modelRules": [
+        {
+          "emit": "old_plan_keeps_gen6",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "exact_boundary_groups",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "no_old_backend",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "manifest_snapshot",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "barrier_loss_explicit",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "pending_recomputed",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "invalid_no_generation",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        },
+        {
+          "emit": "atomic_disable",
+          "whenAll": [
+            "generation6_build",
+            "generation7_mixed",
+            "preflight_pending",
+            "boundaries",
+            "rotation",
+            "barrier_full",
+            "generation8_revert",
+            "invalid_reload"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f36",
       "tapeChannels": [],
@@ -1774,7 +3586,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1809,6 +3621,85 @@
         "filler100",
         "building70_challenger78"
       ],
+      "modelRules": [
+        {
+          "emit": "margin_switch",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        },
+        {
+          "emit": "lower_urgency_can_switch",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        },
+        {
+          "emit": "critical_priority",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        },
+        {
+          "emit": "filler_fallback_only",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        },
+        {
+          "emit": "replacement_inclusive_78",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        },
+        {
+          "emit": "no_non_event_replace",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        },
+        {
+          "emit": "full_breakdown",
+          "whenAll": [
+            "focused76",
+            "story84",
+            "context90",
+            "critical36",
+            "filler100",
+            "building70_challenger78"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f37",
       "tapeChannels": [],
@@ -1822,7 +3713,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1858,6 +3749,80 @@
         "alias_change",
         "missing_surface"
       ],
+      "modelRules": [
+        {
+          "emit": "bundle_frozen",
+          "whenAll": [
+            "factview90_r_g14",
+            "unrelated_change",
+            "equal_copies",
+            "g2_11",
+            "g_evicted",
+            "alias_change",
+            "missing_surface"
+          ]
+        },
+        {
+          "emit": "equal_facts_pass",
+          "whenAll": [
+            "factview90_r_g14",
+            "unrelated_change",
+            "equal_copies",
+            "g2_11",
+            "g_evicted",
+            "alias_change",
+            "missing_surface"
+          ]
+        },
+        {
+          "emit": "alias_immutable",
+          "whenAll": [
+            "factview90_r_g14",
+            "unrelated_change",
+            "equal_copies",
+            "g2_11",
+            "g_evicted",
+            "alias_change",
+            "missing_surface"
+          ]
+        },
+        {
+          "emit": "changed_missing_stale",
+          "whenAll": [
+            "factview90_r_g14",
+            "unrelated_change",
+            "equal_copies",
+            "g2_11",
+            "g_evicted",
+            "alias_change",
+            "missing_surface"
+          ]
+        },
+        {
+          "emit": "malformed_input_rejected",
+          "whenAll": [
+            "factview90_r_g14",
+            "unrelated_change",
+            "equal_copies",
+            "g2_11",
+            "g_evicted",
+            "alias_change",
+            "missing_surface"
+          ]
+        },
+        {
+          "emit": "hashes_recorded",
+          "whenAll": [
+            "factview90_r_g14",
+            "unrelated_change",
+            "equal_copies",
+            "g2_11",
+            "g_evicted",
+            "alias_change",
+            "missing_surface"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f38",
       "tapeChannels": [],
@@ -1871,7 +3836,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1910,6 +3875,112 @@
         "duck_fail",
         "later_manual"
       ],
+      "modelRules": [
+        {
+          "emit": "immutable_utterance",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "callback_sequence",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "consume_once",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "protocol_quarantine",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "reset_consumption_rules",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "one_restore",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "late_noop",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        },
+        {
+          "emit": "manual_new_token",
+          "whenAll": [
+            "normal",
+            "preaccept_fail",
+            "completion_before_accept",
+            "duplicate_accept",
+            "reset_orders",
+            "stop_timeout",
+            "duck_fail",
+            "later_manual"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f39",
       "tapeChannels": [],
@@ -1923,7 +3994,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -1965,6 +4036,125 @@
         "warmup_states",
         "mailbox_full"
       ],
+      "modelRules": [
+        {
+          "emit": "exact_prompt_projection",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "one_terminal_result",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "fail_closed_sse",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "deadline_authority",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "protected_deadline",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "no_request_queue",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "duplicate_protocol",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "warmup_no_retry",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        },
+        {
+          "emit": "exact_metrics",
+          "whenAll": [
+            "golden_request",
+            "split_sse",
+            "invalid_sse",
+            "deadline_orders",
+            "replacement",
+            "duplicate_results",
+            "warmup_states",
+            "mailbox_full"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f40",
       "tapeChannels": [],
@@ -1978,7 +4168,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -2015,6 +4205,92 @@
         "zero_exit",
         "watchdog_orders"
       ],
+      "modelRules": [
+        {
+          "emit": "exact_software_boundaries",
+          "whenAll": [
+            "sapi_default",
+            "sapi_waveout",
+            "espeak",
+            "supertonic",
+            "preboundary_fail",
+            "cancellation",
+            "duplicate",
+            "zero_exit",
+            "watchdog_orders"
+          ]
+        },
+        {
+          "emit": "no_early_consumption",
+          "whenAll": [
+            "sapi_default",
+            "sapi_waveout",
+            "espeak",
+            "supertonic",
+            "preboundary_fail",
+            "cancellation",
+            "duplicate",
+            "zero_exit",
+            "watchdog_orders"
+          ]
+        },
+        {
+          "emit": "ordered_callbacks",
+          "whenAll": [
+            "sapi_default",
+            "sapi_waveout",
+            "espeak",
+            "supertonic",
+            "preboundary_fail",
+            "cancellation",
+            "duplicate",
+            "zero_exit",
+            "watchdog_orders"
+          ]
+        },
+        {
+          "emit": "protocol_quarantine",
+          "whenAll": [
+            "sapi_default",
+            "sapi_waveout",
+            "espeak",
+            "supertonic",
+            "preboundary_fail",
+            "cancellation",
+            "duplicate",
+            "zero_exit",
+            "watchdog_orders"
+          ]
+        },
+        {
+          "emit": "watchdog_authority",
+          "whenAll": [
+            "sapi_default",
+            "sapi_waveout",
+            "espeak",
+            "supertonic",
+            "preboundary_fail",
+            "cancellation",
+            "duplicate",
+            "zero_exit",
+            "watchdog_orders"
+          ]
+        },
+        {
+          "emit": "no_backend_retry",
+          "whenAll": [
+            "sapi_default",
+            "sapi_waveout",
+            "espeak",
+            "supertonic",
+            "preboundary_fail",
+            "cancellation",
+            "duplicate",
+            "zero_exit",
+            "watchdog_orders"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f41",
       "tapeChannels": [],
@@ -2028,7 +4304,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -2066,6 +4342,92 @@
         "simultaneous",
         "config45"
       ],
+      "modelRules": [
+        {
+          "emit": "run_origin",
+          "whenAll": [
+            "opening33",
+            "accepted20",
+            "busy33",
+            "no_filler",
+            "obs_unknown_resume",
+            "disable_manual",
+            "reenable",
+            "simultaneous",
+            "config45"
+          ]
+        },
+        {
+          "emit": "acceptance_cancels",
+          "whenAll": [
+            "opening33",
+            "accepted20",
+            "busy33",
+            "no_filler",
+            "obs_unknown_resume",
+            "disable_manual",
+            "reenable",
+            "simultaneous",
+            "config45"
+          ]
+        },
+        {
+          "emit": "busy_rearms",
+          "whenAll": [
+            "opening33",
+            "accepted20",
+            "busy33",
+            "no_filler",
+            "obs_unknown_resume",
+            "disable_manual",
+            "reenable",
+            "simultaneous",
+            "config45"
+          ]
+        },
+        {
+          "emit": "inactive_no_credit",
+          "whenAll": [
+            "opening33",
+            "accepted20",
+            "busy33",
+            "no_filler",
+            "obs_unknown_resume",
+            "disable_manual",
+            "reenable",
+            "simultaneous",
+            "config45"
+          ]
+        },
+        {
+          "emit": "generation_stale",
+          "whenAll": [
+            "opening33",
+            "accepted20",
+            "busy33",
+            "no_filler",
+            "obs_unknown_resume",
+            "disable_manual",
+            "reenable",
+            "simultaneous",
+            "config45"
+          ]
+        },
+        {
+          "emit": "new_value_next_arm",
+          "whenAll": [
+            "opening33",
+            "accepted20",
+            "busy33",
+            "no_filler",
+            "obs_unknown_resume",
+            "disable_manual",
+            "reenable",
+            "simultaneous",
+            "config45"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f42",
       "tapeChannels": [],
@@ -2079,7 +4441,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -2121,6 +4483,120 @@
         "tape_disabled",
         "gap"
       ],
+      "modelRules": [
+        {
+          "emit": "candidate_protocol_identity",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        },
+        {
+          "emit": "exact_links",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        },
+        {
+          "emit": "once_only_counts",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        },
+        {
+          "emit": "terminal_stages",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        },
+        {
+          "emit": "live_counters_without_tape",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        },
+        {
+          "emit": "incomplete_replay",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        },
+        {
+          "emit": "valid_denominators",
+          "whenAll": [
+            "accepted_started",
+            "cooldown_reject",
+            "visual_accept",
+            "revised_expire",
+            "alternative",
+            "successor",
+            "filler",
+            "duplicate",
+            "changed_payload",
+            "tape_disabled",
+            "gap"
+          ]
+        }
+      ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f43",
       "tapeChannels": [],
@@ -2134,7 +4610,7 @@
         "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
-        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
         "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
       },
       "domains": [
@@ -2169,6 +4645,85 @@
         "duplicate_notices",
         "repair",
         "later_stream"
+      ],
+      "modelRules": [
+        {
+          "emit": "production_required_rejected",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        },
+        {
+          "emit": "optional_failsoft",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        },
+        {
+          "emit": "required_latch_disable_named",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        },
+        {
+          "emit": "atomic_health_context",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        },
+        {
+          "emit": "idempotent_notice",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        },
+        {
+          "emit": "no_same_run_reenable",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        },
+        {
+          "emit": "next_stream_restores",
+          "whenAll": [
+            "all_profile_policy_rows",
+            "required_losses",
+            "saturated_queues",
+            "duplicate_notices",
+            "repair",
+            "later_stream"
+          ]
+        }
       ],
       "schemaVersion": "vertical-slice-fixture/2",
       "source": "docs/v2.0.0/vertical-slice-fixtures.md#f44",

@@ -32,7 +32,7 @@
     "id": "missing_positive"
   },
   {
-    "errorContains": "counterexample accepted",
+    "errorContains": "corpus acceptance differs",
     "id": "accepted_forbidden"
   },
   {
@@ -48,8 +48,20 @@
     "id": "request_stream_false"
   },
   {
+    "errorContains": "common realization request hash differs",
+    "id": "common_request_hash_changed"
+  },
+  {
+    "errorContains": "common realization request deadline differs",
+    "id": "common_request_deadline_changed"
+  },
+  {
     "errorContains": "invalid SSE accepted",
     "id": "sse_missing_done_accepted"
+  },
+  {
+    "errorContains": "invalid SSE rejected for wrong reason",
+    "id": "sse_overflow_reason_changed"
   },
   {
     "errorContains": "deadline race terminal count differs",

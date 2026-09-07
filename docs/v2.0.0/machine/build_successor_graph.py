@@ -284,9 +284,9 @@ def build_graph() -> dict[str, Any]:
                 "beatId": beat_id,
                 "incomingEdgeCount": incoming[beat_id],
                 "outgoingEdgeCount": outgoing[beat_id],
-                "successorDisposition": "expand_explicit_edges"
-                if outgoing[beat_id]
-                else "no_implicit_continuation",
+                "successorDisposition": (
+                    "expand_explicit_edges" if outgoing[beat_id] else "no_implicit_continuation"
+                ),
             }
             for beat_id in beat_ids
         ],
