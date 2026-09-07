@@ -1,6 +1,6 @@
 # v2.0.0 branch-only vertical-slice decision fixtures
 
-**Status:** design-freeze candidate owned by issues #235 and #278
+**Status:** all F01–F44 scenarios machine-frozen for issues #235 and #278
 
 These fixtures choose expected decisions before runtime implementation. Times are monotonic milliseconds within one process. Unless overridden: selection threshold 35, switch margin 8, global interval already satisfied, no fatigue/channel pressure, current facts have confidence 1, Qwen is warm, TTS is available and catalog/config hashes are fixed.
 
@@ -476,3 +476,5 @@ context_applied → narrative_event → fact/episode/opportunity change
 ```
 
 Every row carries catalog/config/policy hashes, source refs and the expected `tapeChannel`. Rejected candidates include hard/source gate or arbitration reason. Tests compare structured records, not prose logs.
+
+The branch-only executable projection is `machine/vertical-slice-fixtures.json`, generated and checked by `machine/build_vertical_slice_fixtures.py`. Every F01–F44 row has explicit input symbols, expected invariant IDs, known tape channels, ordered tape stages and hashes of seven owning contracts. Fourteen boundary calculations execute the frozen scoring, inclusive margin, publication partition, half-life, half-open expiry, session-plan subset and deterministic seed equations; fifteen mutations prove missing coverage, stale hashes, order drift and changed boundary math fail closed. Runtime pytest fixtures must consume this projection rather than reinterpret the prose.

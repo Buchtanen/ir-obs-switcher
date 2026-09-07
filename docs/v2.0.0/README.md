@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** design-freeze in progress; runtime gate closed by #235
+**Status:** branch design-freeze complete; runtime gate awaits #235 evidence review
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -13,7 +13,7 @@
 **Detector catalog:** [Temporal math, estimated parameter ranges, hysteresis and two-front contract](detector-catalog-freeze.md)
 **Realization/verifier:** [Controlled EN, all 37 families, rejects and promotion gates](realization-verifier-contract.md)
 **Qwen transport:** [Exact prompt, request/result, SSE, timeout and latency contract](qwen-transport-contract.md)
-**Machine freeze artifacts:** [Generated registries, DTO/beat/detector/graph/loader/config/API/actor/realization contracts, corpora, goldens, mutation fixtures, checkers and V4 wire golden](machine/README.md)
+**Machine freeze artifacts:** [Generated registries, DTO/beat/detector/graph/loader/config/API/actor/realization contracts, F01–F44 fixtures, corpora, goldens, mutations, checkers and V4 wire golden](machine/README.md)
 **Frozen slice fixtures:** [Forty-four expected reducer/director/speech/config/realization/TTS scenarios](vertical-slice-fixtures.md)
 **Final-PR exclusions:** [Planning and temporary mechanism removal gate](final-pr-exclusion-manifest.md)
 **Baseline:** `master@0ce75d4`

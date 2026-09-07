@@ -1,0 +1,62 @@
+[
+  {
+    "errorContains": "fixture ID coverage differs",
+    "id": "missing_f44"
+  },
+  {
+    "errorContains": "fixture ID coverage differs",
+    "id": "duplicate_f01"
+  },
+  {
+    "errorContains": "unknown tape channel",
+    "id": "unknown_channel"
+  },
+  {
+    "errorContains": "contract hashes differ",
+    "id": "stale_contract_hash"
+  },
+  {
+    "errorContains": "fixture fields are empty",
+    "id": "missing_expectation"
+  },
+  {
+    "errorContains": "tape order differs",
+    "id": "tape_order_reversed"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f05_score_69"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f07_exclusive_margin"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f21_partition_loss"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f23_wrong_decay"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f24_closed_interval"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f31_six_subsets"
+  },
+  {
+    "errorContains": "calculation differs",
+    "id": "f33_wrong_seed"
+  },
+  {
+    "errorContains": "required fixture coverage differs",
+    "id": "f40_missing_qwen_domain"
+  },
+  {
+    "errorContains": "required fixture coverage differs",
+    "id": "f44_missing_capture_assertion"
+  }
+]

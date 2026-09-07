@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — pre-implementation design-freeze audit
 
-**Status:** runtime implementation gate is closed until the checklist in this document and issue #235 is complete
+**Status:** branch design-freeze checklist complete; issue #235 review/closure remains the administrative runtime gate
 **Baseline:** `master@0ce75d4`
 **Development branch:** `codex/commentary-story-flow-spec`
 **Baseline evidence:** 1,364 pytest tests passed on 2026-09-07 using the existing project virtualenv
@@ -11,7 +11,7 @@ This is a planning artifact for the v2 branch. It must not be included in the fi
 
 ## Current gate verdict
 
-**NOT READY FOR RUNTIME EDITS.** The architecture is feasible, but the final unchecked artifact below is a real blocker, not an implementation detail. The exact beat/detector catalogs, successor DAG, integrated loader, public contracts, DTO schemas, actor model, controlled-English grammars/corpora and Qwen wire/deadline goldens are materialized. The forty-four end-to-end executable fixtures remain open. Issue #235 must remain open until that artifact is reviewed, committed and pushed.
+**BRANCH DESIGN FREEZE COMPLETE.** All nineteen pre-implementation artifacts are now reviewed and machine-checkable: exact beat/detector catalogs, successor DAG, integrated loader, public contracts, DTO schemas, actor model, controlled-English grammars/corpora, Qwen wire/deadline goldens and structured F01–F44 fixtures. Runtime edits may begin only after this commit is pushed and issue #235 records/accepts the evidence; production gates below remain intentionally post-implementation.
 
 Master cross-checks that changed or sharpened the design:
 
@@ -228,7 +228,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; the machine catalog covers FSM, sign, hysteresis, unknown, correlation and registry-reference fixtures.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; 37 grammars, 256 cards and 148 positive/counterexample cases are machine-frozen.
 - The exact Qwen prompt projection, request/result schemas, SSE subset, one-worker deadline/cancellation and monotonic latency equations live in `qwen-transport-contract.md`; wire/parser/model evidence remains blocking.
-- Forty-four ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, immutable realization input/freshness, Qwen streaming/deadlines/latency, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, backend acknowledgement, tape-channel funnel/counters, required-capture safety, TTS request/callback identity and liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Forty-four ordered expected scenarios covering lineage/session plans, scoring/switch tiers, no-queue behavior, invalid Qwen, prompt-profile clamps, immutable realization input/freshness, Qwen streaming/deadlines/latency, silence, mailbox/tape/fact/episode overflow and detector-window/config replay, callback/reset/replacement races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, backend acknowledgement, tape-channel funnel/counters, required-capture safety, TTS request/callback identity and liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; every row is materialized with owning contract hashes and machine assertions.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -250,7 +250,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [x] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [x] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [x] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`, plus the literal/compiler/wire/deadline contract in `qwen-transport-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the forty-four expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [x] Review the forty-four expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.

@@ -1,0 +1,2181 @@
+{
+  "defaultEnvironment": {
+    "fatiguePressure": false,
+    "globalIntervalSatisfied": true,
+    "qwenResidency": "warmup_succeeded",
+    "selectionThreshold": 35,
+    "switchMargin": 8,
+    "ttsAvailable": true
+  },
+  "fixtures": [
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "timeline",
+        "facts",
+        "director",
+        "speech",
+        "silence"
+      ],
+      "expectations": [
+        "stream_scope_identity_null",
+        "authored_stream_start",
+        "no_session_invented",
+        "silence_after_terminal"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F01",
+      "inputs": [
+        "stream_started",
+        "no_session_ref",
+        "playback_terminal"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f01",
+      "tapeChannels": [
+        "stream.lifecycle"
+      ],
+      "title": "stream starts before iRacing session"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "timeline",
+        "facts",
+        "lineage",
+        "verifier"
+      ],
+      "expectations": [
+        "lineage_p0_q0_r0",
+        "current_facts_r0",
+        "historical_requires_past_marker",
+        "no_absent_stage"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F02",
+      "inputs": [
+        "practice_best",
+        "qualifying_result",
+        "race_start"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f02",
+      "tapeChannels": [
+        "session.lifecycle",
+        "session.qualifying.recap"
+      ],
+      "title": "canonical stage progression with inheritance"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "timeline",
+        "lineage",
+        "facts",
+        "speech"
+      ],
+      "expectations": [
+        "ordered_r0_end_q1_start",
+        "no_session_rewound_command",
+        "lineage_p0_q1",
+        "persistent_downstream",
+        "cancel_old_speech",
+        "lineage_p0_q1_r1"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F03",
+      "inputs": [
+        "lineage_p0_q0_r0",
+        "rewind_to_q1",
+        "later_r1"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f03",
+      "tapeChannels": [
+        "session.lifecycle"
+      ],
+      "title": "rewind Race to Qualifying"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "timeline",
+        "facts",
+        "opportunity"
+      ],
+      "expectations": [
+        "one_session_restarted",
+        "new_occurrence",
+        "archive_by_scope",
+        "invalidate_old_opportunities",
+        "no_false_restart"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F04",
+      "inputs": [
+        "same_ref_rewind_gt_5s",
+        "confirm_100ms",
+        "single_unconfirmed_sample"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f04",
+      "tapeChannels": [
+        "session.lifecycle"
+      ],
+      "title": "same-session confirmed restart"
+    },
+    {
+      "calculations": [
+        {
+          "expected": 70,
+          "op": "sum",
+          "values": [
+            64,
+            6
+          ]
+        },
+        {
+          "expected": true,
+          "left": 70,
+          "op": "gte",
+          "right": 35
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "director",
+        "scoring",
+        "episode"
+      ],
+      "expectations": [
+        "score_70",
+        "threshold_pass",
+        "opens_correlated_episode",
+        "no_v4_priority_term"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F05",
+      "inputs": [
+        "battle_pursuit",
+        "material_band"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f05",
+      "tapeChannels": [
+        "race.battle.closing"
+      ],
+      "title": "first pursuit and controlled score"
+    },
+    {
+      "calculations": [
+        {
+          "expected": 76,
+          "op": "sum",
+          "values": [
+            58,
+            6,
+            6,
+            6
+          ]
+        },
+        {
+          "expected": true,
+          "left": 76,
+          "op": "gt",
+          "right": 52
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "director",
+        "successor",
+        "scoring"
+      ],
+      "expectations": [
+        "deduplicate_event_successor",
+        "score_76",
+        "select_related_event_update",
+        "weather_pending_ttl"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F06",
+      "inputs": [
+        "focused_pursuit",
+        "related_approach",
+        "independent_weather"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f06",
+      "tapeChannels": [
+        "race.battle.closing",
+        "session.context.weather"
+      ],
+      "title": "related continuation beats unrelated context"
+    },
+    {
+      "calculations": [
+        {
+          "challengers": [
+            82,
+            84
+          ],
+          "expected": [
+            false,
+            true
+          ],
+          "incumbent": 76,
+          "margin": 8,
+          "op": "margin"
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "director",
+        "switching",
+        "scoring"
+      ],
+      "expectations": [
+        "82_does_not_switch",
+        "84_switches_inclusive",
+        "switch_margin_met",
+        "breakdown_recorded"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F07",
+      "inputs": [
+        "focused_76",
+        "challenger_82",
+        "challenger_84",
+        "margin_8"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f07",
+      "tapeChannels": [
+        "race.battle.closing"
+      ],
+      "title": "equal-urgency story switch uses margin"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "speech",
+        "opportunity",
+        "episode",
+        "director"
+      ],
+      "expectations": [
+        "no_interrupt",
+        "no_prepared_queue",
+        "truth_updates_immediately",
+        "terminal_replans_live",
+        "expired_never_narrated"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F08",
+      "inputs": [
+        "speaking_approach",
+        "critical_pass",
+        "ttl_45",
+        "terminal"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f08",
+      "tapeChannels": [
+        "race.battle.closing",
+        "race.position.pass"
+      ],
+      "title": "event during speech, no prepared queue"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "realization",
+        "verifier",
+        "planning_cycle"
+      ],
+      "expectations": [
+        "suppress_revision",
+        "release_reservation",
+        "no_retry_or_fallback",
+        "distinct_attempt_2",
+        "cycle_exhausted_after_second"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F09",
+      "inputs": [
+        "qwen_actor_reversed",
+        "context_score_46"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f09",
+      "tapeChannels": [
+        "race.battle.closing"
+      ],
+      "title": "invalid Qwen output chooses a different beat"
+    },
+    {
+      "calculations": [
+        {
+          "expected": 36,
+          "op": "sum",
+          "values": [
+            24,
+            12
+          ]
+        },
+        {
+          "expected": true,
+          "left": 36,
+          "op": "gte",
+          "right": 35
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "silence",
+        "director",
+        "scoring"
+      ],
+      "expectations": [
+        "score_36",
+        "filler_selected",
+        "missing_fact_silence",
+        "normal_rearm"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F10",
+      "inputs": [
+        "silence_elapsed",
+        "out_lap_fact",
+        "threshold_35"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f10",
+      "tapeChannels": [
+        "filler.track_state"
+      ],
+      "title": "long silence filler threshold"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "qwen",
+        "health",
+        "director"
+      ],
+      "expectations": [
+        "qwen_hard_ineligible",
+        "no_cold_timeout",
+        "authored_may_win",
+        "no_backend_fallback"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F11",
+      "inputs": [
+        "warmup_failed",
+        "qwen_candidate",
+        "authored_candidate"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f11",
+      "tapeChannels": [],
+      "title": "Qwen cold/unavailable"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "api",
+        "manual",
+        "speech"
+      ],
+      "expectations": [
+        "manual_202_after_dispatch",
+        "no_narrative_state",
+        "second_busy",
+        "race_truth_no_interrupt"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F12",
+      "inputs": [
+        "commentary_disabled",
+        "idle_tts_ready",
+        "second_manual",
+        "race_event"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f12",
+      "tapeChannels": [],
+      "title": "manual speech while automatic commentary disabled"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "mailbox",
+        "recovery"
+      ],
+      "expectations": [
+        "ordinary_eviction_first",
+        "emergency_recovery",
+        "latest_projection",
+        "history_incomplete",
+        "no_lost_opportunities",
+        "producer_nonblocking"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F13",
+      "inputs": [
+        "ordinary_56",
+        "protected_7",
+        "protected_reset"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f13",
+      "tapeChannels": [],
+      "title": "protected mailbox overflow"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "speech",
+        "ordering",
+        "replay"
+      ],
+      "expectations": [
+        "first_unconsumed_stale_accept",
+        "second_consumed_exposed_interrupt",
+        "reducer_sequence_authority"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F14",
+      "inputs": [
+        "reset_then_accept",
+        "accept_then_reset"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f14",
+      "tapeChannels": [],
+      "title": "playback acknowledgement races reset"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "facts",
+        "episode",
+        "director",
+        "speech"
+      ],
+      "expectations": [
+        "apply_new_view",
+        "close_episode",
+        "cancel_preaccept",
+        "no_opportunity",
+        "no_director_pass",
+        "later_cannot_continue"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F15",
+      "inputs": [
+        "fact_only_batch",
+        "closing_fact_expired"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f15",
+      "tapeChannels": [],
+      "title": "fact-only invalidation is not a speech trigger"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "config",
+        "timeline",
+        "run",
+        "speech",
+        "tape"
+      ],
+      "expectations": [
+        "close_run3",
+        "commentary_disabled",
+        "complete_trailer",
+        "manual_independent",
+        "allocate_run4",
+        "incomplete_history",
+        "one_enabled_mid_stream",
+        "no_state_leak"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F16",
+      "inputs": [
+        "run3_broadcast2",
+        "disable",
+        "reenable"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f16",
+      "tapeChannels": [
+        "stream.lifecycle"
+      ],
+      "title": "disable and re-enable within one OBS broadcast"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "silence",
+        "facts",
+        "verifier"
+      ],
+      "expectations": [
+        "stream_scope_filler",
+        "null_occurrence",
+        "exact_two_facts",
+        "no_session_claim",
+        "missing_track_guard_rearm"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F17",
+      "inputs": [
+        "lobby",
+        "no_session",
+        "track_identity",
+        "silence_elapsed"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f17",
+      "tapeChannels": [
+        "filler.track_state"
+      ],
+      "title": "pre-session lobby filler uses stream facts only"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "context",
+        "facts",
+        "event",
+        "ordering"
+      ],
+      "expectations": [
+        "apply_88",
+        "reject_mismatch",
+        "no_old_view_lookup",
+        "no_batch_merge",
+        "apply_89_one_director"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F18",
+      "inputs": [
+        "timeline31",
+        "factview88",
+        "event_view87",
+        "factview89_event89"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f18",
+      "tapeChannels": [],
+      "title": "context batch is a coherent fact/event cut"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "mailbox",
+        "recovery",
+        "replay"
+      ],
+      "expectations": [
+        "jump_110",
+        "full_loss_range",
+        "no_invented_opportunities",
+        "stale_105_109",
+        "apply_111",
+        "replay_equal"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F19",
+      "inputs": [
+        "evict_101_104",
+        "barrier_seq20",
+        "refresh_110",
+        "queued_105_109",
+        "revision111"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f19",
+      "tapeChannels": [],
+      "title": "refreshed recovery barrier jumps over stale queued context"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "api",
+        "manual",
+        "latch",
+        "silence"
+      ],
+      "expectations": [
+        "abandon_returns_503_no_audio",
+        "claim_linearized_202_or_error",
+        "no_narrative_state",
+        "tape_terminal_decision",
+        "manual_silence_only"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F20",
+      "inputs": [
+        "caller_abandon_first",
+        "actor_claim_first",
+        "timeout_1000",
+        "overrides_rejected"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f20",
+      "tapeChannels": [],
+      "title": "manual admission timeout cannot produce delayed audio"
+    },
+    {
+      "calculations": [
+        {
+          "expected": [
+            64,
+            64,
+            2
+          ],
+          "maximum": 64,
+          "op": "partition",
+          "total": 130
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "fanout",
+        "context",
+        "ordering"
+      ],
+      "expectations": [
+        "parts_64_64_2",
+        "first_two_protected",
+        "last_ordinary",
+        "same_revision_idempotent",
+        "source_order_preserved",
+        "three_impulses"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F21",
+      "inputs": [
+        "publication_130",
+        "result_at_64",
+        "result_at_129"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f21",
+      "tapeChannels": [],
+      "title": "oversized accepted publication is losslessly partitioned"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "timeline",
+        "run"
+      ],
+      "expectations": [
+        "exclusive_start_reasons",
+        "completeness_flags",
+        "resume_keeps_epochs",
+        "no_duplicate_stream_started"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F22",
+      "inputs": [
+        "normal_start",
+        "attach_live",
+        "process_recovery",
+        "enable_mid_stream",
+        "unknown_resume"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f22",
+      "tapeChannels": [],
+      "title": "stream-run start reasons are exclusive"
+    },
+    {
+      "calculations": [
+        {
+          "age": 90,
+          "expected": 0.5,
+          "halfLife": 90,
+          "op": "half_life"
+        },
+        {
+          "age": 180,
+          "expected": 0.5,
+          "halfLife": 180,
+          "op": "half_life"
+        },
+        {
+          "expected": 2,
+          "op": "minimum",
+          "values": [
+            3,
+            2
+          ]
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "scoring",
+        "ordering",
+        "story_cap"
+      ],
+      "expectations": [
+        "fatigue_half_each",
+        "stable_order_40_3",
+        "effective_cap2",
+        "nonclosing_ineligible",
+        "closure_critical_eligible"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F23",
+      "inputs": [
+        "semantic_age90",
+        "pattern_age180",
+        "orders_40_3_40_4",
+        "public_cap3",
+        "story_cap2",
+        "accepted2"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f23",
+      "tapeChannels": [],
+      "title": "scoring decay, order and story cap use one formula"
+    },
+    {
+      "calculations": [
+        {
+          "at": 50000,
+          "end": 50000,
+          "expected": false,
+          "op": "half_open",
+          "start": 40000
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "validity",
+        "planning_cycle",
+        "mailbox"
+      ],
+      "expectations": [
+        "half_open_invalid",
+        "cancel_generation",
+        "expired_ttl",
+        "late_worker_stale",
+        "no_director",
+        "no_attempt2",
+        "skipped_admission_sweep_equal"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F24",
+      "inputs": [
+        "expires_50000",
+        "reduce_50000",
+        "mailbox_full",
+        "reduce_50001"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f24",
+      "tapeChannels": [],
+      "title": "validity deadline expires a building beat without fallback"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "timeline",
+        "schema",
+        "ordering"
+      ],
+      "expectations": [
+        "ordered_broadcast_then_session",
+        "ordered_end_then_start",
+        "lineage_q0",
+        "exact_once",
+        "invalid_lists_rejected"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F25",
+      "inputs": [
+        "broadcast_and_race_start",
+        "q0_to_r0",
+        "invalid_reason_lists"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f25",
+      "tapeChannels": [],
+      "title": "simultaneous timeline boundaries retain every effect"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "speech",
+        "watchdog",
+        "health"
+      ],
+      "expectations": [
+        "start_timeout_unconsumed",
+        "playback_timeout_consumed",
+        "stop_timeout_quarantine",
+        "admission_blocked",
+        "late_noop",
+        "higher_generation_restores"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F26",
+      "inputs": [
+        "stall_preaccept",
+        "stall_postaccept",
+        "stall_postcancel",
+        "stale_callbacks",
+        "higher_generation_ready"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f26",
+      "tapeChannels": [],
+      "title": "unresponsive TTS cannot strand or overlap the lane"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "tape",
+        "overflow",
+        "capture"
+      ],
+      "expectations": [
+        "evict_sample_then_normal",
+        "fifo_equal",
+        "bounded_loss_accumulator",
+        "drop_notice",
+        "trailer_counts",
+        "capture_unavailable_one_detector",
+        "main_loop_continues"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F27",
+      "inputs": [
+        "sample_normal_full",
+        "all_critical",
+        "normal_arrival",
+        "critical_terminal",
+        "required_window"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f27",
+      "tapeChannels": [],
+      "title": "tape overload has deterministic loss accounting"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "features",
+        "detector",
+        "ordering"
+      ],
+      "expectations": [
+        "reduce_10_12",
+        "older_noop",
+        "coverage_capped",
+        "invalid_lone_sample",
+        "ols_three_buckets",
+        "identity_match"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F28",
+      "inputs": [
+        "frames_10_12_12_11",
+        "lone_sample",
+        "covered_buckets"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f28",
+      "tapeChannels": [],
+      "title": "feature ordering and bucket coverage are upstream-owned"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "api",
+        "verifier",
+        "actors"
+      ],
+      "expectations": [
+        "only_complete_parses",
+        "invalid_400_no_live_reads",
+        "reversal_actor_reversed"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F29",
+      "inputs": [
+        "complete_binding",
+        "missing_target",
+        "unused_actor",
+        "alias_collision",
+        "reversed_aliases"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f29",
+      "tapeChannels": [],
+      "title": "offline validation has a self-contained actor lexicon"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "tts",
+        "config",
+        "speech"
+      ],
+      "expectations": [
+        "snapshot_sapi",
+        "no_same_text_fallback",
+        "later_generation_only",
+        "supertonic_explicit"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F30",
+      "inputs": [
+        "auto_sapi_espeak",
+        "sapi_failure",
+        "explicit_supertonic",
+        "later_rebuild"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f30",
+      "tapeChannels": [],
+      "title": "TTS auto resolution never retries an utterance"
+    },
+    {
+      "calculations": [
+        {
+          "expected": 7,
+          "op": "count",
+          "values": [
+            "P",
+            "Q",
+            "R",
+            "PQ",
+            "PR",
+            "QR",
+            "PQR"
+          ]
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "session_plan",
+        "timeline"
+      ],
+      "expectations": [
+        "seven_valid_ordered",
+        "no_invented_stage",
+        "conflict_empty_plan",
+        "partial_suspends",
+        "stable_revision",
+        "append_future_only",
+        "unsupported16_overflow2"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F31",
+      "inputs": [
+        "seven_supported_subsets",
+        "invalid_inputs",
+        "partial_snapshot",
+        "unsupported18",
+        "frozen_pq_changes"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f31",
+      "tapeChannels": [],
+      "title": "session plan is explicit, ordered and stable"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "facts",
+        "episodes",
+        "capacity"
+      ],
+      "expectations": [
+        "update_no_growth",
+        "deterministic_fact_evict",
+        "unknown_not_false",
+        "pinned_exhaustion_no_partial",
+        "recover_degraded",
+        "episode_eviction_order",
+        "pinned_reject"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F32",
+      "inputs": [
+        "facts512",
+        "semantic_update",
+        "new_unpinned",
+        "pinned_only",
+        "episodes_capacity",
+        "pinned_episodes"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f32",
+      "tapeChannels": [],
+      "title": "bounded facts and episodes fail unknown, never false"
+    },
+    {
+      "calculations": [
+        {
+          "expected": 16041955996680716084,
+          "material": {
+            "beatId": "battle.approach",
+            "cycleAttemptOrdinal": 1,
+            "episodeId": "battle-ahead:3:17:22:4",
+            "episodeRevision": 4,
+            "opportunityId": "opp:401",
+            "streamEpoch": 3
+          },
+          "op": "seed"
+        }
+      ],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "prompt",
+        "freedom",
+        "seed",
+        "fatigue"
+      ],
+      "expectations": [
+        "closed_profiles",
+        "least_permissive",
+        "tight_baseline",
+        "promoted_wider_if_safe",
+        "canonical_seed",
+        "card_choice_or_fatigue",
+        "failure_no_widen"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F33",
+      "inputs": [
+        "profile_product",
+        "loose_requests",
+        "confidence_0_89",
+        "promoted_context",
+        "repetition",
+        "failure"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f33",
+      "tapeChannels": [],
+      "title": "prompt freedom is a deterministic safety clamp"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "detector",
+        "tape",
+        "replay",
+        "capture"
+      ],
+      "expectations": [
+        "manifest_snapshot_repeated",
+        "typed_frames",
+        "exact_hash",
+        "range_across_rotation",
+        "required_loss_disables",
+        "optional_loss_degrades",
+        "no_interpolation"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F34",
+      "inputs": [
+        "frames_200_214",
+        "params7",
+        "rotation",
+        "lose209",
+        "optional_repeat"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f34",
+      "tapeChannels": [],
+      "title": "detector tuning windows are fully replay-addressable"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "director",
+        "planning_cycle",
+        "replacement"
+      ],
+      "expectations": [
+        "replace_without_suppression",
+        "close70",
+        "new_cycle71_attempt1",
+        "one_alternative",
+        "lower_event_no_replace",
+        "accepted_event_only"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F35",
+      "inputs": [
+        "cycle70_building",
+        "critical_pass",
+        "lower_event",
+        "verifier_fail"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f35",
+      "tapeChannels": [],
+      "title": "a real new event replaces into a new planning cycle"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "config",
+        "ledger",
+        "tape",
+        "actor"
+      ],
+      "expectations": [
+        "old_plan_keeps_gen6",
+        "exact_boundary_groups",
+        "no_old_backend",
+        "manifest_snapshot",
+        "barrier_loss_explicit",
+        "pending_recomputed",
+        "invalid_no_generation",
+        "atomic_disable"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F36",
+      "inputs": [
+        "generation6_build",
+        "generation7_mixed",
+        "preflight_pending",
+        "boundaries",
+        "rotation",
+        "barrier_full",
+        "generation8_revert",
+        "invalid_reload"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f36",
+      "tapeChannels": [],
+      "title": "mixed-boundary config is explicit and replayable"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "director",
+        "switching",
+        "replacement"
+      ],
+      "expectations": [
+        "margin_switch",
+        "lower_urgency_can_switch",
+        "critical_priority",
+        "filler_fallback_only",
+        "replacement_inclusive_78",
+        "no_non_event_replace",
+        "full_breakdown"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F37",
+      "inputs": [
+        "focused76",
+        "story84",
+        "context90",
+        "critical36",
+        "filler100",
+        "building70_challenger78"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f37",
+      "tapeChannels": [],
+      "title": "switch policy cannot be undone by urgency sort or filler"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "realization",
+        "facts",
+        "freshness",
+        "tape"
+      ],
+      "expectations": [
+        "bundle_frozen",
+        "equal_facts_pass",
+        "alias_immutable",
+        "changed_missing_stale",
+        "malformed_input_rejected",
+        "hashes_recorded"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F38",
+      "inputs": [
+        "factview90_r_g14",
+        "unrelated_change",
+        "equal_copies",
+        "g2_11",
+        "g_evicted",
+        "alias_change",
+        "missing_surface"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f38",
+      "tapeChannels": [],
+      "title": "realization input is frozen and freshness compares exact facts"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "tts",
+        "callback",
+        "speech",
+        "duck"
+      ],
+      "expectations": [
+        "immutable_utterance",
+        "callback_sequence",
+        "consume_once",
+        "protocol_quarantine",
+        "reset_consumption_rules",
+        "one_restore",
+        "late_noop",
+        "manual_new_token"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F39",
+      "inputs": [
+        "normal",
+        "preaccept_fail",
+        "completion_before_accept",
+        "duplicate_accept",
+        "reset_orders",
+        "stop_timeout",
+        "duck_fail",
+        "later_manual"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f39",
+      "tapeChannels": [],
+      "title": "TTS request and callback protocol is one-shot and ordered"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "qwen",
+        "prompt",
+        "sse",
+        "deadline",
+        "mailbox",
+        "tape"
+      ],
+      "expectations": [
+        "exact_prompt_projection",
+        "one_terminal_result",
+        "fail_closed_sse",
+        "deadline_authority",
+        "protected_deadline",
+        "no_request_queue",
+        "duplicate_protocol",
+        "warmup_no_retry",
+        "exact_metrics"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F40",
+      "inputs": [
+        "golden_request",
+        "split_sse",
+        "invalid_sse",
+        "deadline_orders",
+        "replacement",
+        "duplicate_results",
+        "warmup_states",
+        "mailbox_full"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f40",
+      "tapeChannels": [],
+      "title": "Qwen request, streaming result and deadline have one authority"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "tts",
+        "adapters",
+        "acknowledgement"
+      ],
+      "expectations": [
+        "exact_software_boundaries",
+        "no_early_consumption",
+        "ordered_callbacks",
+        "protocol_quarantine",
+        "watchdog_authority",
+        "no_backend_retry"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F41",
+      "inputs": [
+        "sapi_default",
+        "sapi_waveout",
+        "espeak",
+        "supertonic",
+        "preboundary_fail",
+        "cancellation",
+        "duplicate",
+        "zero_exit",
+        "watchdog_orders"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f41",
+      "tapeChannels": [],
+      "title": "every TTS backend acknowledges one auditable software boundary"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "silence",
+        "timeline",
+        "config",
+        "speech"
+      ],
+      "expectations": [
+        "run_origin",
+        "acceptance_cancels",
+        "busy_rearms",
+        "inactive_no_credit",
+        "generation_stale",
+        "new_value_next_arm"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F42",
+      "inputs": [
+        "opening33",
+        "accepted20",
+        "busy33",
+        "no_filler",
+        "obs_unknown_resume",
+        "disable_manual",
+        "reenable",
+        "simultaneous",
+        "config45"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f42",
+      "tapeChannels": [],
+      "title": "silence has one origin across opening, busy and inactive states"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "tape",
+        "funnel",
+        "event",
+        "director",
+        "replay"
+      ],
+      "expectations": [
+        "candidate_protocol_identity",
+        "exact_links",
+        "once_only_counts",
+        "terminal_stages",
+        "live_counters_without_tape",
+        "incomplete_replay",
+        "valid_denominators"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F43",
+      "inputs": [
+        "accepted_started",
+        "cooldown_reject",
+        "visual_accept",
+        "revised_expire",
+        "alternative",
+        "successor",
+        "filler",
+        "duplicate",
+        "changed_payload",
+        "tape_disabled",
+        "gap"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f43",
+      "tapeChannels": [],
+      "title": "tape-channel funnel preserves identity and valid denominators"
+    },
+    {
+      "calculations": [],
+      "contractHashes": {
+        "actor-transition-model.json": "sha256:418c55edc2404cfd2e2519240bb834daded94170590bcfe172b4f06f341fec21",
+        "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
+        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
+        "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
+        "realization-contract.json": "sha256:a6dfd97d777c4d7624cada8e0ecb4e1debf1545e8f5ac79dfb52fa16ff929b4c",
+        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+      },
+      "domains": [
+        "capture",
+        "detector",
+        "mailbox",
+        "tape"
+      ],
+      "expectations": [
+        "production_required_rejected",
+        "optional_failsoft",
+        "required_latch_disable_named",
+        "atomic_health_context",
+        "idempotent_notice",
+        "no_same_run_reenable",
+        "next_stream_restores"
+      ],
+      "expectedTapeOrder": [
+        "context_applied",
+        "narrative_event",
+        "fact_episode_opportunity_change",
+        "director_decision",
+        "llm_attempt",
+        "playback_accepted",
+        "speech_exposure_terminal"
+      ],
+      "id": "F44",
+      "inputs": [
+        "all_profile_policy_rows",
+        "required_losses",
+        "saturated_queues",
+        "duplicate_notices",
+        "repair",
+        "later_stream"
+      ],
+      "schemaVersion": "vertical-slice-fixture/2",
+      "source": "docs/v2.0.0/vertical-slice-fixtures.md#f44",
+      "tapeChannels": [],
+      "title": "required capture loss disables upstream truth coherently"
+    }
+  ],
+  "schemaVersion": "vertical-slice-fixtures/2",
+  "sourceBaseline": "master@0ce75d4"
+}
