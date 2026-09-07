@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #239 implementation — coverage buckets and redactionPolicy derived and typed, pending push
+**Phase:** #239 implementation — coverage/redactionPolicy CI green; funnel replay and TapeWriter remain later issues
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237) and [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), active [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -55,8 +55,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent until the coverage/redactionPolicy checkpoint is pushed and green in CI.
-- Dirty scope: `schema-contracts.md`, DTO builder/goldens/schema, packaged `dto-contracts.schema.json`, `tests/test_narrative_tape_schema.py` and this handover.
+- Editing owner: current cloud agent after green coverage/redactionPolicy CI. No further #239 schema objects remain to invent.
+- Dirty scope: this handover only.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -71,7 +71,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #239 loss/trailer DTO SHA: `7b98840653c01c8d79a844c9fcd6d3214c1049bd` (`feat: define narrative tape loss framing (#239)`); [CI run 34167346863](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167346863) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
 - #239 loss/trailer golden SHA: `bfb4187637cb81d50113ce321f94e6b50ac6cc0d` (`feat: add narrative tape loss goldens (#239)`); [CI run 34167795931](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167795931) is green across 14/14 checks.
 - #239 remaining-payload SHA: `7484487afa3c0da1fa87a9828dcbac8f5069fcde` (`feat: close remaining narrative tape payloads (#239)`); [CI run 34168334293](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34168334293) is green across 14/14 checks (frozen contracts, Python 3.11–3.13, lint, format, type, security). Runtime `taxonomyHash` is `sha256:720769b0a1dfb234c69529eab9e1818e37944eead1de6e41499e6cbb56baa26b`.
-- TDD phase: `GREEN` for derived `CoverageBucket` and `RedactionPolicy`. Coverage is the newest 16 detector buckets `{bucketStartMonoMs,bucketDurationS,coveredDurationS,sampleCount,usable}` from the shared directional algorithm/F28; window-level coverage stays `gap.trend.coverage`. Redaction policy is `{sensitiveValues=marker_only,prompt=none|hash|full,completion}` — capturePolicy plus the frozen marker-only sensitive rule. Do not invent allowlists here; they remain effective-config projection.
+- #239 coverage/redaction SHA: `eb0f1670f601abba56c37852c664901233029eaf` (`feat: derive coverage buckets and tape redaction policy (#239)`); [CI run 34170887655](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34170887655) is green across 14/14 checks. DTO builder 50 definitions, 24 valid + 23 invalid goldens; local pytest **1537** passed.
 - #239 nested-row SHA: `1b73fcff5df6f6f6e511e504f78339dc6dc0f636` (`feat: type feature-frame and observation rows (#239)`); [CI run 34169039942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34169039942) is green across 14/14 checks. DTO builder 48 definitions, 24 valid + 21 invalid goldens; local pytest **1536** passed.
 - Docs-only SHA `71a6f97` failed Python 3.12 on unrelated wall-clock flake `test_full_queue_500_batch_publication_meets_n12_deadline` (66ms > 50ms) after 14/14 green parent `7484487`; the nested-row SHA recovered CI without changing that test.
 - V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
@@ -82,9 +82,9 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. Push this coverage/redaction checkpoint and require green CI.
-2. Executable kick→accepted→queued→selected→started aggregation stays #242. Rotation/frame-range persistence stays #240.
-3. Close #239 on this branch only when remaining AC/checkboxes are actually proven. Start #240 TapeWriter only after that. Do not activate TapeWriter or NarrativeRuntime.
+1. Executable kick→accepted→queued→selected→started aggregation stays #242. Rotation/frame-range persistence stays #240.
+2. Close #239 on this branch only when remaining AC/checkboxes are actually proven. The tape DTO `any_obj` leftovers named for #239 are gone.
+3. Start #240 TapeWriter only after #239 is closed. Do not activate TapeWriter or NarrativeRuntime.
 
 ## Resume commands
 
