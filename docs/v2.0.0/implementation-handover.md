@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-07
-**Phase:** #236 implementation complete — acceptance evidence GREEN; next implementation package is #237
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), acceptance-ready [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), next [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
+**Phase:** #237 implementation — first NarrativeEvent/admission checkpoint GREEN, pending push
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235) and [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), active [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -19,8 +19,10 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Final #236 implementation SHA: `4493615cce6b92842f7e5a0741c5bb8df71e5435` (`feat: complete v2 primitive contracts (#236)`)
 - Green CI: [first checkpoint run 34148330942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34148330942), [final acceptance run 34149625428](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34149625428)
 - First #236 [dev diary checkpoint](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5574070160)
-- Expected working tree after this closing metadata commit: clean and synchronized with upstream
-- Runtime behavior edits so far: new dependency-neutral v2 primitive contract layer only; it is not yet wired into live producers or commentary
+- Final #236 [dated dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5566224409); every checklist item is complete and the issue is closed.
+- #236 closing metadata SHA: `935fb02eec07dccd94113f3cba0b0312edafff2d`
+- Expected working tree before the first #237 push: only the files listed in the ownership section are dirty.
+- Runtime behavior edits so far: dependency-neutral v2 primitives plus a stateless accepted-V4-to-NarrativeEvent adapter; no live producer or actor wiring yet.
 
 Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
 
@@ -35,22 +37,22 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: none after this closing metadata is pushed; claim #237 before its first edit.
-- Dirty scope: this handover/index closing metadata only; implementation commit `4493615` is already pushed and clean.
-- Completed #236 scope: the first primitive/schema checkpoint plus bounded serializable valid/conflict `SessionPlan`, exact unsupported-row overflow, safe packaged-schema resource loading, strict JSON-value hashing and the frozen deterministic planning seed.
-- TDD phase: `GREEN` — SessionPlan began with a missing-import RED; strict JSON-key validation began with an assertion RED; both are now green.
-- Verification: 74 focused tests pass; affected Ruff, Ruff format, Black and Mypy pass; all 11 freeze builders pass; full regression passes with 1,438 tests outside the socket-restricted sandbox.
-- Packaging evidence: a locally built wheel contains both JSON artifacts with frozen SHA-256 values `cab0aaf8...fd8db2b` and `9aaeeb4f...338145`.
-- Config impact: packaging metadata only; no commentary configuration key or example change.
-- API impact: none; no live/public endpoint is wired in this checkpoint.
+- Editing owner: current root agent until the first #237 checkpoint is pushed, green in CI and recorded.
+- Dirty scope: `src/irswitch/contracts/{__init__,narrative}.py`, `src/irswitch/events/{narrative,taxonomy}.py`, `tests/test_narrative_event_contract.py` and this handover record.
+- Completed #237 scope: immutable exact NarrativeEvent/source-order/funnel DTOs, derived delivery class, package-registry-backed event policy/tape-channel lookup and a stateless adapter from frozen accepted V4 events.
+- TDD phase: `GREEN` — the focused suite began with an import-collection RED for the missing NarrativeEvent/FunnelIdentity contracts.
+- Verification: 10 new focused tests and 84 combined contract tests pass; affected Ruff, Ruff format, Black and Mypy pass; full regression passes with 1,448 tests outside the socket-restricted sandbox.
+- V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
+- Config impact: none.
+- API impact: none; the existing V4 envelope/overlay wire remains unchanged and the adapter is not live-wired yet.
 
 ## Exact next implementation slice
 
-After the #236 closing diary and issue state are published:
+After the first #237 checkpoint is pushed and CI is green:
 
-1. Re-verify a clean HEAD equal to upstream and confirm #236 is closed.
-2. Read the exact #237 issue contract and frozen schema before editing.
-3. Begin #237 with a focused failing test for the smallest ordered-event-stream slice. Preserve the V4 overlay wire and do not implement timeline ownership from #243/#244 early.
+1. Record the first #237 SHA, RED/GREEN evidence and CI run in issue #237 without closing it.
+2. Add the coherent `APPLY_CONTEXT_BATCH` partition/order contract and deterministic duplicate identity tests before implementation.
+3. Implement the bounded single NarrativeMailbox admission/overflow/recovery behavior without creating a second worker-result queue. Preserve V4 overlay wire and defer timeline ownership to #243/#244.
 
 ## Resume commands
 
@@ -62,7 +64,7 @@ git rev-parse HEAD
 git rev-parse @{upstream}
 ```
 
-Expected before #237 implementation: correct worktree and branch, clean tree, local HEAD equal to upstream, and #235/#236 closed. Any mismatch is a blocker until its ownership is understood.
+Expected before resuming #237: correct worktree and branch, local HEAD/upstream relationship understood, #235/#236 closed, and dirty files matching the ownership section. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 

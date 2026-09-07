@@ -5,6 +5,13 @@ commentary, replay and tape code may depend on it; it must not depend on those
 owning domains.
 """
 
+from .narrative import (
+    FunnelIdentity,
+    NarrativeEvent,
+    NarrativeSourceEnvelope,
+    NarrativeSourceOrder,
+    derived_delivery_class,
+)
 from .primitives import (
     MAX_SIGNED_INT64,
     BroadcastContext,
@@ -49,9 +56,13 @@ __all__ = [
     "CorrelationId",
     "CycleAttemptOrdinal",
     "FactQuality",
+    "FunnelIdentity",
     "Identifier",
     "LineageId",
     "MonotonicMs",
+    "NarrativeEvent",
+    "NarrativeSourceEnvelope",
+    "NarrativeSourceOrder",
     "OccurrenceId",
     "PlanningSeedMaterial",
     "ProcessInstanceId",
@@ -73,6 +84,7 @@ __all__ = [
     "canonical_json",
     "canonical_sha256",
     "deterministic_planning_seed",
+    "derived_delivery_class",
     "packaged_schema_bytes",
     "validate_occurrence_lineage",
     "validate_scalar",
