@@ -36,6 +36,7 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
 - `subagents` také řídí trvalý handover při předání, delší pauze nebo riziku vyčerpání kontextu/kvóty
+- `source-command-handover` — Codex wrapper pro kanonický `/handover` command a povinný recovery kontrakt
 
 ### Doporučené workflow
 - `/hotfix` → repro → minimální diff → test → restart (bez issue/PR)
