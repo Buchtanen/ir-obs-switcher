@@ -59,6 +59,8 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 
 `llm.enabled=false` means only beats whose catalog-selected realization mode is authored are eligible. An unavailable or rejected Qwen realization does not switch the same beat to authored mode; the attempt is discarded and the director chooses another eligible beat or silence.
 
+`tts.backend=auto` resolves once per backend generation in the existing compatibility order `sapi` then `espeak`; SuperTonic remains explicit because loading it has material model/device cost. The resolved backend ID is snapshotted into each utterance/tape record. Once an utterance is dispatched, start/failure/timeout never falls through to another TTS backend for that text; recovery requires a new explicit backend generation/preflight, preventing duplicate late audio.
+
 `llm.base_url` is accepted only when all of these conditions hold: scheme is `http` or `https`; userinfo, query and fragment are absent; port is in `1..65535`; path is empty, `/v1` or ends in `/v1` after slash normalization; and host is exactly `localhost` or an IP literal classified as loopback, RFC1918 private, IPv6 unique-local or link-local. Other DNS names and public IP addresses are rejected, so validation never performs DNS resolution and cannot be changed by DNS rebinding. The transport appends exactly `/chat/completions`. This is a new v2 validation requirement; the v1 scheme-only check is not sufficient evidence.
 
 ### Detectors and tape
@@ -141,7 +143,7 @@ All registered commentary JSON responses use `Content-Type: application/json` an
 }
 ~~~
 
-Error codes are stable enums: `invalid_json` (400), `invalid_request` (400), `forbidden` (403), `not_found` (404), `speech_busy` (409), `validation_failed` (422), `component_unavailable` (503). Internal exception strings and filesystem/model secrets are never returned.
+Error codes are stable enums: `invalid_json` (400), `invalid_request` (400), `forbidden` (403), `not_found` (404), `speech_busy` (409), `validation_failed` (422), `component_unavailable` (503), `mailbox_overloaded` (503), `admission_timeout` (503). Internal exception strings and filesystem/model secrets are never returned.
 
 ### `GET /api/commentary/status`
 
@@ -159,6 +161,7 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
     "narrativeRunActive": true,
     "streamActive": true,
     "streamState": "active",
+    "sessionPlan": {"revision": 4, "valid": true, "reason": null, "stages": ["practice", "qualifying", "race"]},
     "sessionRef": {"subSessionId": "123", "sessionNum": 2},
     "occurrenceId": "3:race:2",
     "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
@@ -201,10 +204,10 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
     "restartRequiredKeys": []
   },
   "components": {
-    "llm": {"status": "ready", "model": "qwen3:4b-instruct-2507-q4_K_M", "lastTtftMs": 130, "lastTotalMs": 530},
-    "tts": {"status": "ready", "backend": "supertonic", "voice": "M1"},
-    "tape": {"status": "disabled", "path": null, "drops": 0},
-    "detectors": {"status": "ready", "disabled": []}
+    "llm": {"status": "ready", "reason": null, "generation": 2, "model": "qwen3:4b-instruct-2507-q4_K_M", "lastTtftMs": 130, "lastTotalMs": 530},
+    "tts": {"status": "ready", "reason": null, "backend": "supertonic", "backendGeneration": 4, "quarantinedGeneration": null, "voice": "M1"},
+    "tape": {"status": "disabled", "reason": null, "path": null, "drops": 0, "dropsByPriority": {"sample": 0, "normal": 0, "critical": 0}},
+    "detectors": {"status": "ready", "reason": null, "disabled": []}
   },
   "byTapeChannel": {
     "race.battle.closing": {"kick": 3, "accepted": 2, "queued": 2, "selected": 1, "started": 1, "expired": 1}
@@ -212,9 +215,9 @@ Always returns 200 when the HTTP service is alive, including when commentary is 
 }
 ~~~
 
-Enums: status is `disabled|starting|ready|degraded|stopping`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
+Enums: status is `disabled|starting|ready|degraded|stopping|stopped`; streamState is `inactive|active|unknown`; `streamActive` is its lossless OBS projection `false|true|null`; `narrativeRunActive` is a required boolean. Speech state is `idle|building|committed|speaking|stopping`. Current utterance fields are null in `idle`; `lastTerminal` is null before the first terminal result and thereafter retains one bounded `{utteranceId,reason,atMonoMs}` record. Episode `retainedCurrentCapacity` applies to the sum of candidate+active+suspended entries. Before the first observed output, `broadcastEpoch=0`; before the first admitted narrative run, `streamEpoch=0`. After a run closes, `streamEpoch` retains the last allocated value while `narrativeRunActive=false`; the next run increments it. `sessionPlan` is null before first plan publication; otherwise it is the exact bounded status projection `{revision,valid,reason,stages}`. Revision is nonnegative, stages has 0–3 unique values in canonical order, a valid plan has 1–3 stages and null reason, and an invalid plan has no stages plus `session_plan_conflict`. Whenever there is no coherent supported current session, `sessionRef`, `occurrenceId`, `lineageId` and `stage` are `null` and `historyComplete=false`, but the independently published session plan remains visible. Otherwise stage is `practice|qualifying|race`; unsupported/identity-conflict detail belongs in `reason`, not a fabricated stage. `byTapeChannel` contains known channels with nonzero counters only and is capped at 128 entries sorted by channel ID.
 
-Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
+Component status is `disabled|starting|ready|degraded|unavailable`; component `reason` values and all terminal/decision reasons are IDs from the frozen reason registry, never exception messages. LLM/TTS generations are nonnegative integers. TTS quarantined generation is null or no greater than the current backend generation; while equal, TTS must be unavailable and admit no speech. `drops` equals the sum of the three nonnegative `dropsByPriority` counters. `detectors.disabled` is capped at 128 entries of `{id, reason}` sorted by detector ID. Model/voice/path strings are bounded to their config maxima; tape path is relative to the configured recording root and never exposes an absolute host path.
 
 ### `GET /api/commentary/decisions?limit=N`
 
@@ -235,6 +238,7 @@ Component status is `disabled|starting|ready|degraded|unavailable`; component `r
       "opportunityId": "opp:401",
       "tapeChannel": "race.battle.closing",
       "candidateSource": "event_opportunity",
+      "candidateOrder": {"reducerSequence": 417, "sourceOrdinal": 0},
       "relation": "updates_active_episode",
       "urgency": "story",
       "score": 68.5,
@@ -246,7 +250,7 @@ Component status is `disabled|starting|ready|degraded|unavailable`; component `r
 }
 ~~~
 
-Decision is `selected|silence|discarded|replaced|expired|invalidated`; candidateSource is `event_opportunity|story_successor|episode_beat|filler`; relation is a stable ID from the frozen relation registry or `null`. The endpoint does not return prompt/completion content; that belongs to explicitly enabled tape capture.
+Decision is `selected|silence|discarded|replaced|expired|invalidated`; candidateSource is `event_opportunity|story_successor|episode_beat|filler`; candidateOrder uses the exact actor-assigned pair from the planning contract; relation is a stable ID from the frozen relation registry or `null`. The endpoint does not return prompt/completion content; that belongs to explicitly enabled tape capture.
 
 ### `POST /api/commentary/validate`
 
@@ -258,6 +262,10 @@ The endpoint is offline with respect to live state: it validates supplied EN tex
   "text": "He is closing on Morgan, the gap at one point four seconds.",
   "beatId": "battle.approach",
   "evaluationAtMonoMs": 90231,
+  "actorBindings": [
+    {"actorId": "hero", "aliases": ["he", "the driver"]},
+    {"actorId": "car:22", "aliases": ["Morgan", "the car ahead"]}
+  ],
   "factBindings": [
     {
       "schemaVersion": "atomic-fact/2",
@@ -296,7 +304,9 @@ The endpoint is offline with respect to live state: it validates supplied EN tex
 }
 ~~~
 
-Syntactically valid requests return 200 even when `valid=false`. Unknown beat or malformed binding schema is 400. `text` is 1–512 normalized Unicode characters, `beatId` is 1–128 ASCII ID characters, `factBindings` contains 1–32 unique fact IDs, every attributes object has at most 32 registry keys and every evidenceRefs array has 1–16 unique IDs. Every binding contains exactly the AtomicFact fields shown; `subjectId`, `objectId` and `validUntilMonoMs` are generally nullable. `occurrenceId` and `lineageId` are nullable only together and only for stream-scope bindings admitted by the selected beat: `stream.started`, or `broadcast.context`/`context.track_identity` in the stream form of `filler.lobby`. All other beat bindings require both. Predicate/attribute IDs, scalar types and implied units come from the frozen fact registry. `polarity` is `positive|negative`, confidence is finite `0..1`, scope is `occurrence|downstream|stream|revalidate|historical_only`, status is `active|expired|superseded|historical|provisional|rejected|unknown`, revisions and millisecond times are nonnegative integers and all strings reject control characters. Only the EN catalog/tokenizer is used. Issues contain stable `code`, `severity` (`error|warning`) and a message capped at 256 characters.
+Syntactically valid requests return 200 even when `valid=false`. Unknown beat or malformed binding schema is 400. `text` is 1–512 normalized Unicode characters, `beatId` is 1–128 ASCII ID characters, `factBindings` contains 1–32 unique fact IDs, every attributes object has at most 32 registry keys and every evidenceRefs array has 1–16 unique IDs. `actorBindings` contains 0–16 unique actor IDs with 1–8 unique aliases of 1–64 normalized characters each; it must bind every non-null subject/object actor in the facts and may contain no unused actor. Alias comparison uses Unicode casefold after whitespace normalization; collisions across actor IDs are invalid because direction would be ambiguous. Actor-free beats require an empty list. This is the endpoint's complete actor lexicon—it never reads the live roster or driver config. Numeric/unit surfaces are still generated by the shared deterministic SurfaceValueSet functions from the supplied facts.
+
+Every fact binding contains exactly the AtomicFact fields shown; `subjectId`, `objectId` and `validUntilMonoMs` are generally nullable. `occurrenceId` and `lineageId` are nullable only together and only for stream-scope bindings admitted by the selected beat: `stream.started`, or `broadcast.context`/`context.track_identity` in the stream form of `filler.lobby`. All other beat bindings require both. Predicate/attribute IDs, scalar types and implied units come from the frozen fact registry. `polarity` is `positive|negative`, confidence is finite `0..1`, scope is `occurrence|downstream|stream|revalidate|historical_only`, status is `active|expired|superseded|historical|provisional|rejected|unknown`, revisions and millisecond times are nonnegative integers and all strings reject control characters. Only the EN catalog/tokenizer is used. Issues contain stable `code`, `severity` (`error|warning`) and a message capped at 256 characters.
 
 Validation is available while automatic commentary is disabled, provided the v2 catalog/registries loaded successfully. Otherwise it returns `component_unavailable`/503; it never calls Qwen or reads live runtime facts.
 

@@ -276,6 +276,37 @@ Expected:
 - the lone sample contributes at most `sample_interval_s` coverage and cannot make its bucket/window valid;
 - the covered window can compute median buckets, OLS slope and net closing only with at least three valid buckets and matching stream/occurrence/lineage/relation identity.
 
+## F29 — offline validation has a self-contained actor lexicon
+
+Input: validate a directional hero→car:22 beat whose text uses “Morgan”. Test a complete binding (`hero→he`, `car:22→Morgan`), a missing target binding, an unused third actor and the same case-folded alias assigned to both actors.
+
+Expected:
+
+- only the complete collision-free binding reaches semantic parsing and can accept the ordered claim;
+- missing, unused or colliding bindings return `invalid_request`/400 before parsing, with no live roster/config/fact read and no Qwen call;
+- reversing the two valid aliases remains `actor_reversed`, proving that caller-supplied display strings do not weaken direction.
+
+## F30 — TTS auto resolution never retries an utterance
+
+Input: with both SAPI and eSpeak available, admit one `backend=auto` utterance and force its resolved SAPI generation to fail or time out after dispatch. Separately configure explicit SuperTonic.
+
+Expected:
+
+- auto snapshots SAPI and its generation into the utterance; failure follows normal terminal/quarantine behavior and never submits the same text to eSpeak;
+- a future explicit config rebuild may choose another backend only for later utterances and uses a higher generation;
+- SuperTonic is selected only when explicitly configured, never merely because auto probes find it installed.
+
+## F31 — session plan is explicit, ordered and stable
+
+Input: build coherent SessionInfo plans for each nonempty supported subset P, Q, R, P→Q, P→R, Q→R and P→Q→R. Separately provide duplicate, decreasing-rank and incomplete-identity supported rows. Finally freeze P→Q while Q is current, then test adding future R versus removing/retyping P or Q.
+
+Expected:
+
+- all seven subsets produce valid plans in exact increasing `sessionNum`/stage-rank order without inventing a missing stage, and every later TimelineSnapshot carries the matching `sessionPlanRevision` even before a supported session becomes current;
+- duplicate, decreasing or incomplete supported input produces an invalid empty plan with `session_plan_conflict`, no occurrence/lineage allocation and no session-scoped speech;
+- exact repetition keeps the revision; appending previously unseen future R advances it without changing P/Q identity, while insertion, removal, reordering, retyping or identity replacement latches the conflict and suspends new session-scoped state until a new broadcast/run;
+- unsupported rows remain bounded audit metadata and never become a supported stage or lineage node.
+
 ## Required tape assertions per fixture
 
 Each implementation fixture asserts the ordered subset that applies:

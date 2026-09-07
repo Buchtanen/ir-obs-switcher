@@ -138,7 +138,9 @@ Konfigurace nebo skutečnost určí podmnožinu kanonického pořadí:
 
 ~~~text
 Practice
+Qualifying
 Race
+Practice → Qualifying
 Practice → Race
 Qualifying → Race
 Practice → Qualifying → Race
@@ -153,17 +155,14 @@ Navržený kontrakt:
 ~~~python
 @dataclass(frozen=True)
 class SessionOccurrenceId:
-    broadcast_epoch: int
     stream_epoch: int
     stage: Literal["practice", "qualifying", "race"]
     occurrence: int
-    session_ref: tuple[str, int]
 ~~~
 
-- `broadcast_epoch` je debounced OBS output identita vlastněná `BroadcastClock`;
 - `stream_epoch` je identita jednoho nepřerušeného narrative runu pod daným broadcastem; mění se při novém OBS streamu, process attach/recovery a po disable→enable automatic commentary;
 - `occurrence` monotonicky roste pro danou stage v rámci streamu;
-- `session_ref` je přesně `(SubSessionID, SessionNum)`; TrackID zůstává pouze metadata;
+- canonical serialized ID je přesně `<stream_epoch>:<stage>:<occurrence>`; `session_ref` a `broadcast_epoch` patří k `SessionOccurrence`, ne do encoded identity;
 - nový `stream_epoch` vždy vytvoří novou occurrence projection i tehdy, když upstream iRSDK session pokračuje. Staré narrative identity se nesmějí znovu aktivovat.
 
 ### 5.3 Normální průchod
@@ -225,6 +224,8 @@ Návrat do Practice vytvoří novou kořenovou větev `P2`; všechny předchozí
 @dataclass(frozen=True)
 class SessionOccurrence:
     id: SessionOccurrenceId
+    broadcast_epoch: int
+    session_ref: tuple[str, int]
     parent_id: SessionOccurrenceId | None
     started_at: float
     ended_at: float | None
@@ -245,6 +246,8 @@ Canonical `SessionRef` je dvojice `(SubSessionID, SessionNum)`. Obě hodnoty mus
 5. Při stejném ref bez potvrzeného rewind jde o reconnect/jitter a occurrence zůstává.
 
 Stage se čte výhradně z řádku `SessionInfo.Sessions[SessionNum]`. `unsupported/unknown → supported` při stejném ref je jednorázové doplnění dosud neznámé klasifikace. Změna jednoho supported stage na jiný supported stage při stejném ref je `session_identity_conflict`: runtime suspenduje nové session-scoped opportunities, zachová poslední potvrzenou stage a čeká na změnu ref nebo návrat konzistentních dat. Nikdy z toho nevytvoří fiktivní přechod.
+
+`SessionPlan` filtruje podporované řádky podle úplné identity a připouští libovolnou neprázdnou podmnožinu `{practice, qualifying, race}`, vždy nejvýše jednou a ve vzestupném ranku Practice→Qualifying→Race. Tím jsou korektní i P, Q, R, P→Q, P→R, Q→R a P→Q→R; chybějící stage se nikdy nedoplňuje. Duplicitní supported stage, klesající pořadí nebo neúplná identita vytvoří `session_plan_conflict`, prázdný supported plan a suspend nového session-scoped stavu, nikoli odhad. První coherent plan narrative runu je neměnný prefix. Další plán musí obsahovat všechny jeho položky beze změny a smí pouze appendnout dosud neznámou stage s vyšším `SessionNum` i rankem. Insertion, odebrání, reorder, retype či změna identity konflikt latchne do nového broadcast/runu; historie posledního přijatého prefixu zůstane interně zachována, ale nesmí založit current speech.
 
 Při návratu na starší ref/stage vzniká vždy nový occurrence. Parent je poslední aktivní occurrence nejbližší dřívější přítomné stage; pozdější active occurrences se stanou `superseded`. Tím `Race → Qualifying` zachová Practice ancestor, pokud existoval, a další Race dědí z nové Qualifying occurrence.
 
@@ -1217,6 +1220,7 @@ class PromptOptions:
     max_sentences: Literal[1, 2]
     temperature: float
     top_p: float
+    seed: int
 ~~~
 
 Profily:
@@ -1411,7 +1415,7 @@ Automatická extrakce smí pouze navrhovat. Přijetí do live katalogu vyžaduje
 ### 13.1 StreamTimeline
 
 Vstupy: stream edge, iRSDK session reference, session key, session type, session time, connected.
-Výstupy: stream epoch, occurrence, active lineage, transition/restart/rewind event.
+Výstupy: versioned SessionPlan, stream epoch, occurrence, active lineage, transition/restart/rewind event.
 Odpovědnost: jediný vlastník session identity a reset orchestrace.
 
 ### 13.2 FactLedger
@@ -2007,23 +2011,30 @@ Každé director rozhodnutí musí být vysvětlitelné minimálně těmito poli
 ~~~json
 {
   "streamEpoch": 3,
-  "occurrenceId": "race:2",
-  "lineageId": "P1/Q2/R2",
+  "occurrenceId": "3:race:2",
+  "lineageId": "3:practice:0>3:qualifying:1>3:race:2",
   "episodeId": "battle_ahead:hero:page:7",
   "episodeRevision": 4,
   "triggerEvent": "HUNTING",
   "tapeChannel": "race.battle.closing",
-  "candidateOrigin": "event_opportunity",
-  "relationToPreviousEpisode": "updates",
+  "candidateSource": "event_opportunity",
+  "candidateOrder": {"reducerSequence": 417, "sourceOrdinal": 0},
+  "relation": "updates_active_episode",
   "beatRole": "update",
   "eligible": true,
   "score": {
-    "base": 64,
-    "continuity": 6,
-    "material": 10,
-    "eventPenalty": -3,
-    "fatigue": -6,
-    "staleness": 0,
+    "basePriority": 64,
+    "continuityBonus": 6,
+    "edgePreference": 0,
+    "closureUrgency": 0,
+    "materialChangeBonus": 10,
+    "silencePressure": 0,
+    "semanticFatiguePenalty": 3,
+    "patternFatiguePenalty": 2,
+    "lexicalRepetitionPenalty": 1,
+    "stalenessPenalty": 0,
+    "replacementCost": 0,
+    "eventPenalty": 3,
     "final": 71
   },
   "requiredSwitchMargin": 8,
@@ -2037,7 +2048,8 @@ Každé director rozhodnutí musí být vysvětlitelné minimálně těmito poli
     "optionalClaimLimit": 0,
     "maxSentences": 1,
     "temperature": 0.2,
-    "topP": 0.8
+    "topP": 0.8,
+    "seed": 918273645
   },
   "generationMs": 530,
   "verification": "accepted",
@@ -2100,7 +2112,7 @@ Stávající route names mohou zůstat, jejich payload je breaking a vždy nese 
 
 - `GET /api/commentary/status`: runtime/health, fixed language `en`, timeline identity, speech state, queue depths, active/resolved counts, catalog/config hashes, recorder/model/detector status a per-`tape_channel` counters;
 - `GET /api/commentary/decisions?limit=N`: bounded newest-first decision records se score, relation, source opportunity/successor, terminal reason a tape channel;
-- `POST /api/commentary/validate`: localhost+CSRF offline validační request `{text, beatId, factBindings}`; nikdy nemění live state;
+- `POST /api/commentary/validate`: localhost+CSRF offline validační request `{text, beatId, evaluationAtMonoMs, actorBindings, factBindings}`; actor aliases jsou úplné, collision-free a endpoint nikdy nečte live roster/facts ani nemění live state;
 - `POST /api/commentary/speak`: localhost+CSRF manual EN TTS test přes stejnou speech lane, nikdy nepreemptuje live utterance a nezapisuje narrative exposure; actor admission používá pouze process-local one-shot latch s pevným 1 000ms timeoutem a atomic abandon, takže zamítnutý/timeout request později nepromluví;
 - `GET /api/commentary/assignments` se ve v2 odstraní; planning/text-assignment endpoint není runtime contract.
 
@@ -2120,7 +2132,7 @@ Stávající route names mohou zůstat, jejich payload je breaking a vždy nese 
 - `docs/v2.0.0/fact-feature-registry.md` — uzavřený branch-only registr faktových predikátů, skalárů/jednotek, feature IDs, claim allowlistů a `tape_channel` taxonomie;
 - `docs/v2.0.0/detector-catalog-freeze.md` — přesný branch-only katalog temporal/composite matematiky, odhadnutých rozsahů, hystereze a two-front identity;
 - `docs/v2.0.0/realization-verifier-contract.md` — přesný branch-only controlled-EN/verifier kontrakt pro všech 37 realizačních rodin;
-- `docs/v2.0.0/vertical-slice-fixtures.md` — dvacet osm branch-only očekávaných decision/reducer/speech scénářů;
+- `docs/v2.0.0/vertical-slice-fixtures.md` — třicet jedna branch-only očekávaných decision/reducer/speech scénářů;
 - `docs/v2.0.0/final-pr-exclusion-manifest.md` — povinný seznam planning/temporary položek odstraněných před PR do masteru;
 - `README.md` — odkaz na v2.0.0 implementační index;
 - `COMMENTARY_ENGINE.md` — odkaz na návrh, současný engine zůstává current-behavior autoritou.

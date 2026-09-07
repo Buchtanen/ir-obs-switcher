@@ -27,6 +27,7 @@ Implementation placement is one neutral `irswitch/contracts/narrative.py` module
 | feature frame | `feature-frame/2` |
 | detector observation | `detector-observation/2` |
 | timeline snapshot | `timeline-snapshot/2` |
+| session plan | `session-plan/2` |
 | atomic fact | `atomic-fact/2` |
 | fact view | `fact-view/2` |
 | episode instance/summary | `episode/2` |
@@ -54,8 +55,8 @@ The narrative adapter may read the immutable frozen envelope plus upstream proje
 | `broadcastEpoch` | positive debounced BroadcastClock output epoch; 0 means no observed output yet | one observed OBS output run in this process |
 | `streamEpoch` | positive StreamTimeline narrative-run epoch, allocated on commentary admission to an active `broadcastEpoch`; 0 means none has yet been allocated in this process | one uninterrupted automatic-commentary run |
 | `sessionRef` | exact `{subSessionId: string, sessionNum: int}` | iRacing session row |
-| `occurrenceId` | stable encoded stream epoch + stage + occurrence ordinal | one run of one session ref |
-| `lineageId` | ordered active ancestor occurrence IDs joined/encoded losslessly | active session branch |
+| `occurrenceId` | exact ASCII `<streamEpoch>:<stage>:<ordinal>` | one run of one session ref |
+| `lineageId` | 1–3 occurrence IDs joined by ASCII `>` in stage order | active session branch |
 | `eventId` | upstream accepted ID or deterministic internal lifecycle ID | stream |
 | `episodeId` | story definition + occurrence + correlation identity + episode ordinal | stream |
 | `opportunityId` | deterministic event/revision/route ID | stream |
@@ -63,6 +64,8 @@ The narrative adapter may read the immutable frozen envelope plus upstream proje
 | worker `token` | plan/manual ID + monotonically increasing dispatch generation | process |
 
 Display names are never identities. A target change creates a new correlation/relation epoch rather than mutating an old identity.
+
+`streamEpoch` and `ordinal` use canonical unsigned decimal with no leading zero except the value `0`; a live occurrence requires positive stream epoch, while ordinal starts at zero independently for each stage in the run. Stage is the full lower-case enum. Thus `3:race:2` and `3:practice:0>3:qualifying:1>3:race:2` are canonical; abbreviations, alternate separators and percent/Unicode lookalikes are invalid. `sessionRef` remains a separately validated field and the owner must prove that each encoded occurrence resolves to exactly one retained occurrence carrying that ref.
 
 ## NarrativeEvent
 
@@ -98,15 +101,27 @@ Metrics copied from a V4 envelope enter `payload` only through a kind-specific a
 
 ## TimelineSnapshot and ApplyContextBatch
 
+SessionPlan is exactly:
+
+```text
+schemaVersion, planRevision, capturedMonoMs, subSessionId,
+valid, reason?, entries[0..3], unsupportedEntries[0..16]
+```
+
+Each supported entry is exactly `{sessionRef,stage}`. A valid plan has null reason, one to three unique supported stages and strictly increasing `sessionNum` and stage rank `practice < qualifying < race`; therefore every nonempty subset is legal and canonical. Unsupported SessionInfo rows are retained only as `{sessionNum,externalType}` audit metadata and never aliased to a supported stage. Missing/invalid identity on a supported row, duplicate supported stage or decreasing rank produces `valid=false`, reason `session_plan_conflict`, and empty supported entries.
+
+The first coherent plan in a narrative run becomes an immutable accepted prefix. An unchanged observation retains `planRevision`. A later plan is accepted only when all existing entries are an exact prefix and every appended entry has a greater `sessionNum` and stage rank; acceptance increments `planRevision`. Insertion, removal, reorder, retype or identity replacement latches `session_plan_conflict` for the rest of that narrative run, publishes an invalid empty plan at a new revision, clears current session identity from snapshots and suspends new session-scoped state. The last accepted prefix remains internal historical evidence but cannot be used to admit current speech. A new broadcast/run clears the latch and may establish a different initial plan.
+
 TimelineSnapshot fields are exactly:
 
 ```text
 schemaVersion, timelineRevision, observedMonoMs, broadcastEpoch,
 streamEpoch, narrativeRunActive, obsState, sessionRef?, stage?,
-occurrenceId?, lineageId?, historyComplete, transitionReasons[0..8]
+sessionPlanRevision?, occurrenceId?, lineageId?, historyComplete,
+transitionReasons[0..8]
 ```
 
-`obsState` is `inactive|active|unknown`; `stage` is `practice|qualifying|race` or null. SessionRef, stage, occurrence and lineage are either all coherent/current or all null. `narrativeRunActive=false` permits a retained last nonzero stream epoch for status/audit but no active occurrence. `transitionReasons` is empty when no lifecycle boundary occurred; otherwise it contains unique registered reasons in reducer effect order.
+`obsState` is `inactive|active|unknown`; `stage` is `practice|qualifying|race` or null. SessionRef, stage, occurrence and lineage are either all coherent/current or all null. `sessionPlanRevision` is independent: it is null before the first plan publication and otherwise identifies the valid or invalid plan used by this snapshot, including pre-session and unsupported-session states. `narrativeRunActive=false` permits a retained last nonzero stream epoch for status/audit but no active occurrence. `transitionReasons` is empty when no lifecycle boundary occurred; otherwise it contains unique registered reasons in reducer effect order.
 
 When several boundaries share one observation, their canonical order is the filtered order of: `session_ended`, `session_superseded`, `session_suspended`, `narrative_disabled`, `broadcast_ended`, `broadcast_unknown`, `broadcast_started`, `attached_live`, `process_recovery`, `narrative_enabled`, `broadcast_resumed`, `session_started`, `session_restarted`, `session_resumed`. This closes child/old occurrence effects before parent/run closure and creates/resumes the run before its new/current occurrence. Mutually exclusive reasons (for example two stream-start reasons) remain a schema error.
 
@@ -278,7 +293,7 @@ Reason IDs are machine values; operator messages are separate and bounded. The i
 | detector transition | `enter_started`, `enter_confirmed`, `enter_lost`, `material_band_changed`, `material_delta_met`, `update_rate_limited`, `clear_started`, `clear_cancelled`, `clear_confirmed`, `target_changed`, `occurrence_reset`, `stream_reset`, `unsupported_stage`, `identity_conflict`, `feature_unknown`, `required_capture_lost` |
 | speech terminal | `completed`, `interrupted_stream_end`, `interrupted_occurrence_reset`, `interrupted_commentary_disabled`, `interrupted_truth_invalidated`, `interrupted_shutdown`, `tts_failed_after_acceptance`, `tts_start_timeout`, `tts_playback_watchdog`, `tts_stop_timeout` |
 | mailbox/tape health | `mailbox_overloaded`, `mailbox_evicted_update`, `mailbox_recovery`, `mailbox_history_incomplete`, `deadline_admission_skipped`, `tape_queue_drop`, `tape_write_failed`, `tape_flush_timeout`, `capture_unavailable` |
-| config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_unavailable`, `admission_timeout`, `session_identity_conflict`, `obs_state_unknown`, `history_incomplete` |
+| config/runtime health | `disabled_by_config`, `disabled_invalid_config`, `legacy_key`, `starting`, `ready`, `component_unavailable`, `admission_timeout`, `session_identity_conflict`, `session_plan_conflict`, `obs_state_unknown`, `history_incomplete` |
 
 Adding a diagnostic reason is additive only inside the same version when no consumer exhaustively switches on it; implementation code must still use a registry constant. Removing, renaming or changing terminal meaning requires a schema version change.
 

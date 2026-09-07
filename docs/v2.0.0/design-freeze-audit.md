@@ -64,6 +64,8 @@ Master cross-checks that changed or sharpened the design:
 | Story relation | Relevance could drift into embeddings/LLM | Relation is deterministic catalog routing plus occurrence/correlation identity |
 | Scene membership | Raw OBS scene names would couple commentary to deployment | Beat uses normalized `broadcast_context` with `ignore/prefer/require`; logic owns raw scene mapping |
 | Session vocabulary | Internal `qualifying` differs from iRSDK `Qualify` and overlay mode | One adapter maps external values; internal enum is lower-case; unsupported stages remain explicit |
+| Weekend plan | “Present stages in P→Q→R order” had no schema or invalid-plan/update behavior | Versioned SessionPlan accepts every nonempty unique subset in increasing rank; later observations may only append to the exact accepted prefix, while malformed or incompatible plans latch a session-scoped suspend without inference |
+| Narrative identity encoding | Examples used incompatible abbreviated occurrence/lineage strings | One canonical ASCII stream-epoch/stage/ordinal grammar is shared by schema, API, tape and replay |
 | Stream authority | iRacing and OBS could both own stream lifecycle | OBS output owns stream edges; iRSDK owns session identity/stage |
 | OBS disconnect | Disconnect could create a false stream end | Disconnect is `unknown`; only confirmed not-streaming ends a stream |
 | Process restart | History restoration was unspecified | Without a verified checkpoint, create a new narrative epoch and forbid pre-restart historical claims |
@@ -76,6 +78,7 @@ Master cross-checks that changed or sharpened the design:
 | Config reload | Mid-stream catalog/threshold changes could reinterpret state | Taxonomy/catalog/detectors/capacities freeze per stream; selected operational settings apply only at explicit generation boundaries |
 | Invalid config | Breaking config could crash the whole service | Disable commentary with explicit health reason; scene switching continues |
 | API impact | Spec called API optional despite required diagnostics | Commentary API payload becomes explicit `commentary-runtime/2`; API docs/tests are mandatory |
+| Offline verifier actors | Validate example used a display name but supplied only opaque actor IDs and forbade live-state reads | Request carries a bounded collision-free actor alias binding for exactly the referenced actors; numeric surfaces remain deterministic from facts |
 | Language | Overlay locale could silently drive speech | v2 speech/validation is fixed EN and independent of overlay locale |
 | LLM fallback | Failure policy could retry or repeat a topic | One attempt per beat/revision; discard and re-arbitrate; no repair or same-beat fallback |
 | Failure cascade | “Replan once” on every failure could recursively try the whole catalog for one event | One planning cycle dispatches at most two distinct BeatPlans (initial + one alternative), then waits for a new explicit impulse |
@@ -96,6 +99,7 @@ Master cross-checks that changed or sharpened the design:
 | TTL boundary | Expiry had no equality rule or owner while generation could outlive a beat | Half-open validity, upstream fact expiry and one actor-owned nearest deadline; expiry cancels stale preaccept work but is never a speech impulse |
 | TTS start | “First audio frame” is not observable uniformly for SAPI, eSpeak and SuperTonic | Each backend must acknowledge playback acceptance exactly once; physical speaker output is explicitly outside the contract |
 | TTS terminal liveness | Missing backend callback could leave the only lane permanently committed/stopping or permit overlapping audio | Tokenized start/playback/stop watchdogs; stop timeout quarantines TTS, invalidates callbacks and forbids more speech until backend recovery |
+| TTS auto fallback | Runtime backend fall-through after dispatch could speak the same text twice when the first callback arrives late | Resolve auto once as SAPI→eSpeak, keep SuperTonic explicit, snapshot concrete generation and never fail over an in-flight text |
 | Mid-speech priority | Critical-event interruption policy had no closed rule | Normal race events never interrupt an utterance; stream/session/reset invalidation, explicit commentary disable or shutdown may cancel it, and the new event then competes from its still-live opportunity |
 | Required tuning | Default-off tape plus `tuning.required` could disable production commentary unexpectedly | Released production detectors use `none` or `optional`; `required` is allowed only for an explicitly enabled experimental detector with successful recorder preflight |
 | Tape overload order | “Drop background first” did not classify records or guarantee a report when the queue itself was full | Derived sample/normal/critical classes, exact eviction order and a bounded out-of-queue loss accumulator flushed to drop notice/trailer |
@@ -195,7 +199,7 @@ The active story is not a lock. A related event can update or resolve it. An ind
 - Canonical fact predicates/attributes, scalar units, closed claim allowlists, feature IDs and `tape_channel` taxonomy live in `fact-feature-registry.md`; generated machine registries and referential tests remain blocking.
 - Exact `battle_ahead_v1`, `battle_behind_v1` and `battle_two_front_v1` math, estimated defaults/ranges, invariants and tuning promotion live in `detector-catalog-freeze.md`; replay/model fixtures remain blocking.
 - The controlled-EN acceptance function, all 37 realization-family boundaries, rejection IDs, Qwen timeout/warm-up rule and promotion gates live in `realization-verifier-contract.md`; grammars/corpora remain blocking.
-- Twenty-eight ordered expected scenarios covering lineage, scoring, no-queue behavior, invalid Qwen, silence, mailbox/tape overflow, callback/reset races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness and feature ordering/coverage live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
+- Thirty-one ordered expected scenarios covering lineage/session plans, scoring, no-queue behavior, invalid Qwen, silence, mailbox/tape overflow, callback/reset races, fact-only invalidation, re-enable identity, pre-session lobby, coherent batches, recovery, manual admission, oversized publication, stream-start precedence, score invariants, TTL boundaries, simultaneous timeline effects, TTS liveness/selection, feature ordering/coverage and offline actor bindings live in `vertical-slice-fixtures.md`; structured executable fixtures remain blocking.
 - `final-pr-exclusion-manifest.md` names every planning path, forbidden temporary mechanism and required final behavior document.
 
 ## Blocking artifacts before the first runtime behavior edit
@@ -217,7 +221,7 @@ All boxes below must be complete in branch planning commits and issue #235 befor
 - [ ] Review `detector-catalog-freeze.md`, materialize the three detector definitions and prove their sign, hysteresis, correlation and unknown-state fixtures.
 - [ ] Catalog loader checks for IDs, references, reachability, SCC exit barriers, ranges and cross-field invariants.
 - [ ] Review all 37 family rows and acceptance/promotion rules in `realization-verifier-contract.md`; materialize grammars and counterexample corpora before admitting authored/tight/balanced/loose paths.
-- [ ] Review the twenty-eight expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
+- [ ] Review the thirty-one expected scenarios in `vertical-slice-fixtures.md` and materialize structured executable fixtures without changing runtime.
 - [x] Final-PR exclusion manifest for planning files and temporary legacy/shadow code drafted in `final-pr-exclusion-manifest.md`.
 - [x] Master baseline test evidence captured: `1364 passed in 15.10s`.
 - [x] Master static baseline evidence captured: Ruff/Black/Mypy passed.
