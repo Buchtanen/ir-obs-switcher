@@ -26,6 +26,18 @@ python scripts/check_release_please_lock.py --github-event "$GITHUB_EVENT_PATH"
 
 **Status**: aktivní (CI job `version-lock` + Release Please tag guard).
 
+### `check_semver_label.py`
+
+Na PR do `master` vyžaduje přesně jeden `semver:*` (výjimka `autorelease: pending`).
+Na `opened`/`reopened` bez labelu znovu čte labely z API až ~60 s (race create_pr → label).
+
+```bash
+python scripts/check_semver_label.py --github-event "$GITHUB_EVENT_PATH"
+python scripts/check_semver_label.py --github-event event.json --no-fetch
+```
+
+**Status**: aktivní (CI job `semver-label`).
+
 ### `bump_version.py`
 
 Python skript pro automatické zvýšení verze podle commit message prefixu.
