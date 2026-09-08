@@ -28,9 +28,30 @@ When you change… you must review/update…
   - `VERSIONING.md` / `README_VERSIONING.md` (if relevant)
   - `.release-please-manifest.json` must stay in lockstep with `pyproject.toml`
 
-- **VR dashboards / RaceLab setup**
-  - `VR_SUPPORT.md`
-  - `RACELAB_VR_SETUP.md`
+- **CI / workflows / semver-label / release checks**
+  - `docs/dokumentace/domeny/testy-ci.md`
+  - `scripts/README.md` (`check_semver_label.py`, `check_release_please_lock.py`)
+  - `.github/workflows/ci.yml`, `.github/workflows/pr-policy.yml`
+  - skill `pr-semver-label`
+
+- **v2 narrative (this branch only)**
+  - `docs/v2.0.0/` + `implementation-handover.md`
+  - do not treat `docs/v2.0.0/machine/` hashes as master shipped docs
+
+- **Overlay HUD / V4 renderer / Pit Wall art**
+  - `docs/dokumentace/domeny/overlay.md`
+  - `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md`
+  - `assets/overlay/themes/docs/PIT_WALL.md` (theme packs)
+  - `src/irswitch/web/overlay/GOLDEN_V4.md` (golden fixtures)
+
+- **Commentary product / graph / TTS**
+  - `docs/dokumentace/domeny/commentary.md`
+  - `COMMENTARY_ENGINE.md`
+  - on this branch: `docs/v2.0.0/` beats master commentary pages
+
+- **Commentary LoRA / polish datasets / eval tapes**
+  - `docs/commentary_lora_dataset.md`
+  - private sibling `ir-commentary-lora` (`DATASETS.md`, not this public repo)
 
 - **Cursor automation (rules / skills / commands / agents)**
   - `.cursor/README.md`

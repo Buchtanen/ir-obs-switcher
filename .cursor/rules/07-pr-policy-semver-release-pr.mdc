@@ -11,6 +11,7 @@ Repo uses **Release PR model** (release-please). Key rules:
 - Default close of `/flow`: after handover, open a PR **to `master`**, unless the issue-set or a human prompt says otherwise (`10-task-flow-defaults.mdc`)
 - every normal PR to `master` must have **exactly one** semver label:
   - `semver:major` / `semver:minor` / `semver:patch` / `semver:none`
+- CI job `semver-label` on `opened`/`reopened` **waits up to ~60s** and refetches labels from the API (race: `create_pr` → label); `labeled` is fallback. Do not empty-commit to retrigger.
 - label is authoritative; conventional title is recommended for readability
 
 Breaking change rule:

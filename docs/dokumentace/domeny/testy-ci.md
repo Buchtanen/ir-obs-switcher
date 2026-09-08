@@ -9,4 +9,4 @@ Index testů je prefix `tests/test_<oblast>.py`, ne historický `tests.md` katal
 
 ## Related
 
-[RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.
+[RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.
