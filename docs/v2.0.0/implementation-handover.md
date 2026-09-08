@@ -16,7 +16,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
 - #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
 - #243 closing SHA: `493662a9c2783163a9e91a2c7e9f773b4d402faa` (`docs: close StreamTimeline checkpoint (#243)`)
-- #245 closing SHA: pending this commit (`docs: close AtomicFact ledger checkpoint (#245)`).
+- #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - First #245 ledger SHA: `a4afbf4e586cc21d776bde39991619adbd5a2bb8` (`feat: add typed AtomicFact ledger (#245)`); [CI run 34189938310](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34189938310) is green on QA HEAD `88fdd9c`.
 - #245 producer-order SHA: `d9bb8fc080c2b54ecdf221783cad863f8ef9253b` (`feat: apply AtomicFacts in producer order (#245)`).
 - #245 producer-order pin SHA: `32a351ccd28fb5fef784b5d274e373ed93e47cb6` (`docs: pin AtomicFact producer-order SHA (#245)`).
@@ -118,7 +118,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #245 is closed in its own scope: typed AtomicFact ledger, producer-order admission and timeline-fact compilation. QA CI [34190529734](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190529734) is green on `5b86dcb`.
+1. #245 is closed in its own scope: typed AtomicFact ledger, producer-order admission and timeline-fact compilation. Close CI [34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green on `d74211a`.
 2. #246 first slice: fact inheritance, supersession and compacted per-stage summaries. Do not start #246 unless the next owner claims it.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
