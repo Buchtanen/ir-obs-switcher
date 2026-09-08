@@ -20,6 +20,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
 - First #246 inheritance SHA: `abe4d1af7ab159c84914027fc87dd291922a7326` (`feat: inherit ancestor facts without copying (#246)`); [CI run 34276541133](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34276541133) is green across 14/14 checks.
+- #246 closing SHA: `97bcda52e6b530a2adf903b8d61df64ae26aa093` (`docs: close fact inheritance checkpoint (#246)`)
 - First #245 ledger SHA: `a4afbf4e586cc21d776bde39991619adbd5a2bb8` (`feat: add typed AtomicFact ledger (#245)`); [CI run 34189938310](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34189938310) is green on QA HEAD `88fdd9c`.
 - #245 producer-order SHA: `d9bb8fc080c2b54ecdf221783cad863f8ef9253b` (`feat: apply AtomicFacts in producer order (#245)`).
 - #245 producer-order pin SHA: `32a351ccd28fb5fef784b5d274e373ed93e47cb6` (`docs: pin AtomicFact producer-order SHA (#245)`).
