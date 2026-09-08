@@ -32,6 +32,7 @@ Není to náhrada kontraktů. INI, HTTP a release zůstanou v souborech dole.
 | YouTube title | [oauth](domeny/oauth-youtube.md) | scene switch |
 | HUD copy / overlay i18n | [i18n](domeny/i18n.md) | dashboard `i18n.py` |
 | Testy, CI, release | [testy-ci](domeny/testy-ci.md) | — |
+| Agent `/flow`, větev, PR, Cloud vs repo rules | [jak-cist](jak-cist.md), [Cursor README](../../.cursor/README.md), `.cursor/rules/10-task-flow-defaults.mdc` | Cloud `cursor/` prefix jako default |
 | Otevřená práce | [inflight](inflight/README.md) | jako by už bylo na master |
 
 ## Domény (`src/irswitch/`)

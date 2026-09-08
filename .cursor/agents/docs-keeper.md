@@ -27,7 +27,7 @@ Vždy začni `docs-map.mdc` + `docs/dokumentace/`:
 | Overlay V4 layout/motion | `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md` + `domeny/overlay.md` |
 | Pit Wall art | `assets/overlay/themes/docs/PIT_WALL.md` |
 | Commentary produkt | `COMMENTARY_ENGINE.md` + `domeny/commentary.md` |
-| Cursor rules/skills/commands | `.cursor/README.md` |
+| Cursor rules/skills/commands | `.cursor/README.md`; Cloud/flow defaults → `AGENTS.md` + `docs/dokumentace/jak-cist.md` |
 | Testy / CI gate | `docs/dokumentace/domeny/testy-ci.md` |
 
 VR/RaceLab `/vr-status` a TUI **neexistují**. Neobnovuj je.

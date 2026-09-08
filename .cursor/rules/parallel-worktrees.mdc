@@ -18,6 +18,6 @@ Use multiple agents and git worktrees only when tasks are **independent**:
 
 Do **not** parallelize overlapping edits. Stopped subagents, stash ping-pong, and surprise CI lint after a burst mean the work should have been sequential.
 
-After an agent finishes: return diff + evidence. Push/PR/merge only with user approval.
+After an agent finishes: return diff + evidence. Default close of `/flow` is a PR to `master` (`10-task-flow-defaults.mdc`). Merge the PR only when a human asks.
 
 Command: `/parallel-plan` to split a backlog before launching agents.

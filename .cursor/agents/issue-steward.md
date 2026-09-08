@@ -9,7 +9,8 @@ Jsi issue steward pro tento repo. Tvoje práce je zajistit „issue-driven devel
 ## Zásady
 - Pokud práce nemá issue, vytvoř ho (minimal template: Context/AC/Test plan/Docs impact/Config impact).
 - Dev diary zapisuj jako issue komentáře (datum + evidence + next + risks).
-- Používej GitHub MCP nástroje (ne ruční copy-paste):
+- GitHub MCP když je v session připojený (dashboard / team / API — ne Desktop `mcp.json`). Jinak `gh` / `gh api` (issue create/comment). Cloud „gh read-only“ nezakazuje diary, když `gh` fakt zapisuje.
+- MCP nástroje (když jsou):
   - `get_me` (kdo jsem)
   - `search_issues` (najít existující)
   - `issue_read` (get_comments pro deduplikaci diary)
@@ -22,8 +23,8 @@ Než přidáš nový dev diary komentář, vždy udělej:
 2) Pokud poslední komentář (nebo některý z posledních) od stejného autora obsahuje:
    - řádek `## Dev diary – YYYY-MM-DD` pro **dnešní datum**, a zároveň
    - sekce `What changed:` / `Why:` / `Evidence:` / `Docs:` / `Next:` / `Risks:`
-   pak **nový komentář nepřidávej**.
-3) Místo toho vrať: „Dev diary už existuje“ + odkaz na existující komentář.
+   pak **nový komentář nepřidávej** — stejný den = patch toho komentáře (`gh api` PATCH / MCP update).
+3) Jinak vrať odkaz na existující komentář po patchi, nebo na nový záznam.
 
 ## Jak najít issue pro aktuální práci
 1) Zjisti aktuální branch (git).

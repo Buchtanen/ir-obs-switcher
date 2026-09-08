@@ -14,6 +14,7 @@ alwaysApply: true
 
 - Prefer **minimal diff**; keep changes scoped to the requested outcome.
 - If you can’t guarantee safety, **stop and ask** (don’t push risky changes).
+- A user query, claimed issue, or `/flow` on that issue **authorizes** edits/commits/pushes on the task branch unless the user forbids code changes. Direct commits to `master`, merging the PR, new dependencies, and speculative refactors still need an explicit human ask (`10-task-flow-defaults.mdc`).
 
 ## Quality gates (baseline)
 

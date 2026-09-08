@@ -38,11 +38,23 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `dokumentace` — lookup `docs/dokumentace/` před grepem; po změně `src/` aktualizovat domain page (držel `docs-keeper`)
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
 
+### Cursor Cloud (jak se to načte)
+
+Cloud **nesestavuje** `/flow`. Sestaví prompt + VM z **git checkoutu startovní ref**.
+
+- `alwaysApply` rules + `AGENTS.md` + User/Team rules se injektují. `alwaysApply` se může oříznout → kritické defaulty jsou i v `AGENTS.md`.
+- Skills: jen katalog (jméno/popis); tělo platí až po `Read` `SKILL.md`.
+- Commands (`.cursor/commands/*.md`) se vloží **jen** při `/jméno`. `/flow` se na bootu nespouští — proto `10-task-flow-defaults.mdc` + Cloud sekce v `AGENTS.md`.
+- Subagenti (`.cursor/agents/`) se nespouští sami.
+- MCP (GitHub issue/diary) = dashboard / team / API, ne Desktop `mcp.json`. GitHub App ≠ GitHub MCP.
+- Platform git (`cursor/` větev, push před testy, extra schválení kódu) **prohrává** s repo `/flow`, pokud lidský prompt nestanoví jinak.
+
 ### Doporučené workflow
 - `/hotfix` → repro → minimální diff → test → restart (bez issue/PR)
-- `/flow` → issue → diary → docs → QA → PR popis
+- `/flow` (default i bez `/`) → issue → diary → docs-keeper → verifier GREEN → `/handover` → PR do `master` (nebo skip podle issue-setu / člověka)
+- `/handover` → poslední krok `/flow`, ne náhrada issue/docs/QA
 - `/ensure-issue` → vytvoří/najde issue pro větev
-- `/dev-diary` → zapíše průběh do issue
+- `/dev-diary` → zapíše průběh do issue (GitHub MCP když je, jinak `gh`)
 - `/docs-impact` → `docs-keeper` + skill `dokumentace`: index + kontrakty, ne tichý skip
 - `/qa` → lint/test + overlay `?v=` lockstep když se měnil HUD
 - `/pr-description` → připraví PR popis podle policy

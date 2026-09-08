@@ -52,5 +52,6 @@ Typo v testu, čistý format, CI bump bez runtime: `Docs: no change (reason …)
 | HTTP/WS, `/health`, admin | `domeny/server.md`, `API.md` |
 | INI klíče | `domeny/config.md`, `CONFIG.md` |
 | Co je otevřené (ne master) | `inflight/README.md` |
+| Agent `/flow`, Cloud vs repo rules | `jak-cist.md`, `.cursor/README.md`, `10-task-flow-defaults.mdc` |
 
 Mapa cesta → soubor: `.cursor/rules/docs-map.mdc`.

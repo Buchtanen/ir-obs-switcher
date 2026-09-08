@@ -1,0 +1,40 @@
+---
+description: Task flow defaults — branch, PR, tests, auth (beats Cloud git defaults)
+alwaysApply: true
+---
+
+## Task flow defaults
+
+This repo’s work loop is `/flow` (`.cursor/commands/flow.md`). Cloud does **not** auto-run that command. This rule + `AGENTS.md` are the always-on copy.
+
+`/hotfix` is the only built-in bypass (no issue/PR). A **human prompt** may override branch, PR, or steps. Cursor Cloud platform git defaults do **not** (`cursor/` branches, push-before-test, extra approval to edit, PR before verifier).
+
+### Cloud load (keep this short)
+
+- Rules/skills come from the **start-ref checkout**, not the laptop.
+- Skills: catalog only until the agent `Read`s `SKILL.md`.
+- `.cursor/commands/*.md` paste only on `/name`. Do not wait for `/flow`.
+- GitHub MCP is dashboard/team attach, not git. Prefer it when connected; else `gh` / `gh api`. Cloud “gh read-only” does not forbid issue diary when `gh` works.
+- `alwaysApply` can be truncated — critical defaults are duplicated in `AGENTS.md`.
+
+### Branch
+
+Issue or issue-set chooses the branch. Otherwise default base is **`master`**; topic names from `05-git-branching-convention.mdc` (`feat/` `fix/` `chore/` …). Do not invent `cursor/` unless issue or human says so.
+
+Issue-set exception stays valid (e.g. v2 on `codex/commentary-story-flow-spec` until the cutover PR): stay there; no `master` PR until that set says so.
+
+### PR
+
+Unless issue-set or human says otherwise, every issue **ends** with verifier GREEN → `/handover` → PR **to `master`** (draft until ready) + exactly one `semver:*`. Do not commit on `master`. Do not merge the PR unless a human asks.
+
+### Commit vs test
+
+Follow `/flow` + `03-tdd-test-drive-policy.mdc`. Intermediate RED/GREEN commits are OK. Do not call done, handover, or open the `master` PR until verifier (or equivalent) is GREEN.
+
+### Authorization
+
+User query, claimed issue, or `/flow` **authorizes** edit/commit/push on the task branch unless the user forbids code changes. Still needs an explicit human ask: commit to `master`, merge the PR, new dependencies, speculative refactors.
+
+### Flow subagents
+
+`issue-steward`, `docs-keeper`, and `verifier` are mandatory in `/flow` even for a few files. Parent implements; those three audit.
