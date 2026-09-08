@@ -263,7 +263,7 @@ No shutdown timeout raises into the main application loop. Worker tasks are owne
 
 ## Closure checks
 
-Issues #235/#284 cannot close until tests or model-based transition enumeration prove:
+Issues #235/#284 cannot close until tests or model-based transition enumeration prove (**#235 closed**; **#284 open**):
 
 - every `(lane state, command kind)` is accepted, ignored with a reason, or rejected—never unspecified;
 - token mismatch and duplicate callbacks are idempotent;

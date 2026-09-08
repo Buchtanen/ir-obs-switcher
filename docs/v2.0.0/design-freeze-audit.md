@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — pre-implementation design-freeze audit
 
-**Status:** branch design-freeze checklist complete after independent verification; issue #235 review/closure remains the administrative runtime gate
+**Status:** branch design-freeze checklist complete after independent verification; issue **#235 is closed** (2026-09-07). Closure-check prose below remains normative for later issues (#284 etc.), not a reopen of #235.
 **Baseline:** `master@0ce75d4`
 **Development branch:** `codex/commentary-story-flow-spec`
 **Baseline evidence:** 1,364 pytest tests passed in 13.43 seconds on 2026-09-07 using the existing project virtualenv

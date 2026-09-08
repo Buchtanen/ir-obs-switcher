@@ -217,7 +217,7 @@ An optional unavailable source only suppresses dependent facts/beats. It never b
 
 `machine/build_beat_catalog.py` now proves every required beat predicate, attribute, literal enum constraint, repeated-claim cardinality and allowlist reference resolves through this registry. `machine/build_successor_graph.py` separately proves the closed edge/reference/SCC contract. Neither implements runtime predicate evaluation; executing those invariants remains the production catalog-loader gate.
 
-Issue #236/#245/#247 cannot close until generated machine registries prove:
+Issue #236/#245/#247 cannot close until generated machine registries prove (**#236/#245 closed**; **#247 open**):
 
 - every predicate/attribute/enum/feature/channel ID above is unique and case-exact;
 - every attribute has one scalar type/unit and every fact has a legal scope/producer;

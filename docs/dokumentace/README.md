@@ -2,6 +2,8 @@
 
 **Čti tohle dřív, než začneš grepovat `src/`.** Po změně kódu **stejnou složku zase aktualizuj** (skill `dokumentace`, agent `docs-keeper`). Tichý skip není OK — buď page, nebo `Docs: no change (reason …)`.
 
+> **Větev `codex/commentary-story-flow-spec`:** tato složka je **tenký index** (README, [jak-cist.md](jak-cist.md), [domeny/testy-ci.md](domeny/testy-ci.md), [inflight/](inflight/README.md)). Řádky tabulky níže, které odkazují na `architektura.md`, `stav.md`, `mapa-souboru.md` nebo většinu `domeny/*.md`, **na této větvi neexistují** — to není shipped drift, ale záměr. v2 narrative moduly (#239–#244 atd.) hledej v [inflight/](inflight/README.md) a [docs/v2.0.0/](../v2.0.0/README.md); nepiš je do `domeny/commentary.md` jako master pravdu.
+
 Tato složka je **architektonický index** aktuálního `master`: co který modul dělá, kde končí jeho pravomoc, kam tečou data. Otevřená práce je jen v [inflight/](inflight/README.md).
 
 Není to náhrada kontraktů. INI, HTTP a release zůstanou v souborech dole.

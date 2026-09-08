@@ -127,14 +127,15 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Resume commands
 
 ```bash
-cd /home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec
+cd /workspace   # or the linked local worktree: /home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec
 pwd
 git status --short --branch
 git rev-parse HEAD
 git rev-parse @{upstream}
+git branch --show-current   # must be codex/commentary-story-flow-spec
 ```
 
-Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, #235–#238 closed, #239 open, and dirty files matching the ownership section. Any mismatch is a blocker until its ownership is understood.
+Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, **#235–#245 closed**, **#246 unclaimed** (do not start #246 until human accepts docs-keeper close-gates for #239–#244), clean or intentionally scoped dirty files matching the ownership section, and **no master PR**. Do not resume #239–#244 — those checkpoints are complete. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 
