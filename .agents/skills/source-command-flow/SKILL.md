@@ -1,11 +1,13 @@
 ---
 name: "source-command-flow"
-description: "Migrated source command `flow`"
+description: "Issue-driven work loop: issue → diary → docs-keeper → verifier → handover → PR to master. Use for any issue/task implementation, not only when the user types /flow. Hot-fix without PR: /hotfix."
 ---
 
 # source-command-flow
 
-Use this skill when the user asks to run the migrated source command `flow`. Canonical: `.cursor/commands/flow.md`. Hot-fix without PR: `/hotfix`.
+Canonical: `.cursor/commands/flow.md`. This is the **default work loop** for issue-driven changes (Cloud and Cursor). Do not wait for the user to type `/flow`.
+
+Hot-fix without PR → `/hotfix`. A human prompt may bypass. Cloud git defaults (forced `cursor/` branch, PR before tests, extra approval to edit) do **not** override this file or `.cursor/rules/10-task-flow-defaults.mdc`.
 
 ## Command Template
 
@@ -13,23 +15,23 @@ Use this skill when the user asks to run the migrated source command `flow`. Can
 
 Proveď kompletní workflow pro aktuální změny v repu (bez zbytečných refactorů).
 
-Hot-fix bez PR → `/hotfix` (repro, test, restart). Tento command je na issue → QA → PR popis.
-
 ## Pravidla
+- Větev z issue / issue-setu, jinak z `master`.
+- Query/claimed issue opravňuje edit na task větvi, pokud uživatel nezakáže kód.
+- Verifier GREEN před handover a před defaultním PR do `master`.
 - Bez nových závislostí (instalace jen po explicitním souhlasu).
-- Pokud je behavior change bez testů: explicitní TDD-exception + alternativní verifikace.
-- Docs jsou součást kontraktu: pokud se mění chování/config/CI, docs musí být aktualizované.
+- Behavior change bez testů: TDD-exception + alternativní verifikace.
+- Docs jsou součást kontraktu.
 
 ## Kroky
-1) **Issue**
-   - Použij subagenta `/issue-steward`
+1) **Issue** — subagent `/issue-steward`
 2) **Dev diary** — nezdvojovat dnešní záznam
-3) **Docs impact** — subagent `/docs-keeper`
-4) **QA** — `/verifier`; overlay JS: `?v=` lockstep (`/qa`)
-5) **Handover** — `/handover`; zapiš worktree, SHA, TDD fázi, ownership a next
-6) **PR popis** — přesně jeden `semver:*` label
+3) **Docs impact** — subagent `/docs-keeper` + skill `dokumentace`
+4) **QA** — `/verifier`; overlay JS: `?v=` lockstep (`/qa`); close až GREEN
+5) **Handover** — `/handover` (až teď); na v2 i `docs/v2.0.0/implementation-handover.md`
+6) **PR do `master`** — pokud issue-set nebo člověk nestanoví jinak; přesně jeden `semver:*`. v2 do cutoveru PR do `master` není.
 7) Po merge na master (když se má jet na tomhle stroji) — `/restart-service`
 
 ## Výstup
-- issue, dev diary, docs, qa PASS/BAD, handover, pr text, restart optional
----
+- issue, dev diary, docs, qa PASS/BAD, handover SHA, pr URL nebo důvod skip, restart optional
+

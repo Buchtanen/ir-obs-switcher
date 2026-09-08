@@ -8,6 +8,7 @@ alwaysApply: true
 Repo uses **Release PR model** (release-please). Key rules:
 
 - `master` is protected → changes only via **PR + human review**
+- Default close of `/flow`: after handover, open a PR **to `master`**, unless the issue-set or a human prompt says otherwise (`10-task-flow-defaults.mdc`)
 - every normal PR to `master` must have **exactly one** semver label:
   - `semver:major` / `semver:minor` / `semver:patch` / `semver:none`
 - label is authoritative; conventional title is recommended for readability

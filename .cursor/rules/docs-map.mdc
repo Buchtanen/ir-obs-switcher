@@ -34,6 +34,8 @@ When you change… you must review/update…
 
 - **Cursor automation (rules / skills / commands / agents)**
   - `.cursor/README.md`
+  - `AGENTS.md` / `.cursorrules` when Cloud/flow defaults change
+  - `docs/dokumentace/README.md` + `jak-cist.md` lookup row for agent flow
 
 PRs must include a “Docs impact” checklist (see `02-work-item-definition.mdc`).
 

@@ -9,6 +9,9 @@ Authoritative rules live in:
 Task skills (start/restart, YouTube OAuth) live in:
 - `.cursor/skills/*/SKILL.md`
 
+## Cursor Cloud
+Repo `/flow` beats Cloud git defaults. Canonical: `.cursor/rules/10-task-flow-defaults.mdc` (same text as `AGENTS.md` Cloud section).
+
 ## Core expectations (summary)
 - **PRs to `master`:** always add exactly one `semver:*` label immediately after create — see `.cursor/skills/pr-semver-label/SKILL.md`.
 - Stability > elegance; determinism > cleverness.

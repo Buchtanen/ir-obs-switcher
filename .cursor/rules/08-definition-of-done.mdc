@@ -5,6 +5,8 @@ alwaysApply: true
 
 ## Definition of Done (PR gate)
 
+`/flow` reaches this gate via verifier GREEN → `/handover` → PR to `master` (unless the issue-set or a human prompt skips the PR).
+
 Before merge:
 
 - **AC**: all acceptance criteria checked and verified
