@@ -12,6 +12,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Worktree: `/workspace` for this cloud-agent continuation; the original linked worktree remains `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec`
 - Branch: `codex/commentary-story-flow-spec`
 - Upstream: `origin/codex/commentary-story-flow-spec`
+- First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`)
 - First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`)
 - Last pushed design-freeze SHA: `b0cab18cba23c3acc96aecad7ac527793d22d4b0`
 - Control-plane evidence SHA: `2d2f014592d5728f0eebe49afae73424ff44c35d` (`ci: enforce v2 checkpoints and agent handover (#235)`)
