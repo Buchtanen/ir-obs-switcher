@@ -108,7 +108,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Exact next implementation slice
 
 1. #243 is closed in its own scope: StreamTimeline reducer, hash-pinned snapshots and SessionPlan compiler. Pin CI [34177350244](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177350244) is green on `53f0b36`. Closing SHA `493662a`.
-2. #244 first slice: retained `SessionOccurrence` records, parent linkage, abandoned/superseded branches and exact `<streamEpoch>:<stage>:<ordinal>` / `>` lineage encoding. Each ID must resolve to one occurrence + SessionRef.
+2. #244 first slice is implemented: retained `SessionOccurrence` records, parent linkage, abandoned/superseded branches and exact `<streamEpoch>:<stage>:<ordinal>` / `>` lineage encoding. Each ID resolves to one occurrence + SessionRef. Local pytest `tests/test_session_occurrence.py` + timeline/plan **49** passed. Wait for CI, then mark issue checkboxes.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR. Do not start #245 unless claimed.
 
 ## Resume commands
