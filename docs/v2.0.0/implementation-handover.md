@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #240 in progress — queue slice is CI-green; next is NDJSON TapeFileSession
+**Phase:** #240 in progress — queue and TapeFileSession landed; async rotation/shutdown remain
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238) and [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), active [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -57,7 +57,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Current checkpoint ownership
 
 - Editing owner: current cloud agent implementing #240 TapeWriter on this same branch.
-- Dirty scope: CI evidence for the queue slice, then `src/irswitch/commentary/tape_writer.py` for the file-session slice.
+- Dirty scope: this handover plus the Wave A status line after the file-session SHA.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -73,6 +73,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #239 loss/trailer golden SHA: `bfb4187637cb81d50113ce321f94e6b50ac6cc0d` (`feat: add narrative tape loss goldens (#239)`); [CI run 34167795931](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167795931) is green across 14/14 checks.
 - #239 remaining-payload SHA: `7484487afa3c0da1fa87a9828dcbac8f5069fcde` (`feat: close remaining narrative tape payloads (#239)`); [CI run 34168334293](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34168334293) is green across 14/14 checks (frozen contracts, Python 3.11–3.13, lint, format, type, security). Runtime `taxonomyHash` is `sha256:720769b0a1dfb234c69529eab9e1818e37944eead1de6e41499e6cbb56baa26b`.
 - #239 coverage/redaction SHA: `eb0f1670f601abba56c37852c664901233029eaf` (`feat: derive coverage buckets and tape redaction policy (#239)`); [CI run 34170887655](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34170887655) is green across 14/14 checks. DTO builder 50 definitions, 24 valid + 23 invalid goldens; local pytest **1537** passed.
+- First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`). Local pytest: `tests/test_narrative_tape_writer.py` **8** passed; queue+writer+schema **28** passed.
 - First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`). Handover SHA `67cbe196ed7ca23eb0289e0790539b930a1c1693`. Local pytest: `tests/test_narrative_tape_queue.py` **10** passed. [CI run 34173579819](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34173579819) is green across 14/14 checks.
 - #239 nested-row SHA: `1b73fcff5df6f6f6e511e504f78339dc6dc0f636` (`feat: type feature-frame and observation rows (#239)`); [CI run 34169039942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34169039942) is green across 14/14 checks. DTO builder 48 definitions, 24 valid + 21 invalid goldens; local pytest **1536** passed.
 - Docs-only SHA `71a6f97` failed Python 3.12 on unrelated wall-clock flake `test_full_queue_500_batch_publication_meets_n12_deadline` (66ms > 50ms) after 14/14 green parent `7484487`; the nested-row SHA recovered CI without changing that test.
@@ -86,9 +87,10 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 1. #239 is closed in its own scope: versioned records and manifest sufficient to persist and later replay detector, story, LLM and speech decisions.
 2. #240 first slice (this checkpoint): in-memory `TapeRecordQueue` in `src/irswitch/commentary/tape_queue.py` with exact sample-then-normal eviction, FIFO within class, registry-bounded `TapeLossAccumulator`, out-of-queue `CaptureHealthLatch`, config-barrier `config_transition_lost`, and `drop-notice/2` flush. Evidence: `tests/test_narrative_tape_queue.py` (F27 queue/loss/notice subset). No disk I/O, no async writer task, no NarrativeRuntime/DetectorBank import, no V4 overlay tape mixing.
-3. Next #240 slice: `TapeFileSession` writes one NDJSON file (manifest, body, trailer), enforces `(processInstanceId, streamEpoch-or-null)`, computes `fileHash` from exact UTF-8 pre-trailer bytes, fail-softs unwritable disk, and opens a new file on re-enable even when `broadcastEpoch` is unchanged. Async task, rotation/gzip, retention and composition `TAPE_HEALTH_CHANGED` remain after that.
-4. Do not close #240 until writer I/O, lifecycle close and fail-soft disk AC are proven.
-5. #242 owns reading/aggregating the funnel from a written tape. Do not start it here. Do not activate NarrativeRuntime.
+3. #240 file-session slice: `TapeFileSession` in `src/irswitch/commentary/tape_writer.py` writes one NDJSON file (manifest, body, trailer), enforces `(processInstanceId, streamEpoch-or-null)`, hashes exact UTF-8 pre-trailer bytes, fail-softs disk errors, writes pending loss as `drop_notice` on close, and requires a new file on re-enable. Evidence: `tests/test_narrative_tape_writer.py`.
+4. Remaining #240: owned cancellable async writer task, rotation/retention/stdlib gzip, bounded `shutdown_flush_timeout_s`, and composition-owned `TAPE_HEALTH_CHANGED` bundle.
+5. Do not close #240 until the async writer, rotation and bounded shutdown AC are proven.
+6. #242 owns reading/aggregating the funnel from a written tape. Do not start it here. Do not activate NarrativeRuntime.
 
 ## Resume commands
 
