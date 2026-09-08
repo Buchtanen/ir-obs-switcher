@@ -12,6 +12,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Worktree: `/workspace` for this cloud-agent continuation; the original linked worktree remains `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec`
 - Branch: `codex/commentary-story-flow-spec`
 - Upstream: `origin/codex/commentary-story-flow-spec`
+- First #240 async-writer SHA: `23abfdefdde8db2f037311b6345b5af03c658e58` (`feat: add async narrative tape writer and rotation (#240)`)
 - First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`)
 - First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`)
 - Last pushed design-freeze SHA: `b0cab18cba23c3acc96aecad7ac527793d22d4b0`
@@ -58,7 +59,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Current checkpoint ownership
 
 - Editing owner: current cloud agent implementing #240 TapeWriter on this same branch.
-- Dirty scope: `tape_writer.py`, `tape_queue.py`, `tape_safety.py`, writer/queue tests, this handover and the Wave A status line.
+- Dirty scope: this handover plus the Wave A status line after the async-writer SHA.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
