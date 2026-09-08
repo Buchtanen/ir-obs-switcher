@@ -16,6 +16,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
 - #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
 - #243 closing SHA: `493662a9c2783163a9e91a2c7e9f773b4d402faa` (`docs: close StreamTimeline checkpoint (#243)`)
+- First #244 occurrence SHA: `d6e87998aa79289278deab43871a8e266a937e05` (`feat: add SessionOccurrence lineage records (#244)`).
 - First #243 timeline SHA: `fdaa2b8b41289b098cbbffb078e9396916157401` (`feat: add StreamTimeline lifecycle reducer (#243)`); [CI run 34177334667](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177334667) is green.
 - #243 pin SHA: `53f0b3643d4600868b0cfae112ceafa811a205a4` (`docs: pin StreamTimeline reducer SHA (#243)`); [CI run 34177350244](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177350244) is green across 14/14 checks.
 - First #242 replay SHA: `320fff19fea4877e11295433233e92f76583b1be` (`feat: add narrative tape replay reader (#242)`); [CI run 34176400529](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176400529) is green.
@@ -69,8 +70,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent claiming #244 occurrence/lineage on `codex/commentary-story-flow-spec`.
-- Dirty scope: #244 SessionOccurrence records, parent lineage and resolver on top of `logic.StreamTimeline`.
+- Editing owner: current cloud agent implementing #244 occurrence/lineage on `codex/commentary-story-flow-spec`.
+- Dirty scope: none after the pin commit; next is CI on the occurrence SHA then remaining #244 checkboxes.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
