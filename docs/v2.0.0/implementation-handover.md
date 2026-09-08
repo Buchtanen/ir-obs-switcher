@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #243 claimed; StreamTimeline reducer in progress
+**Phase:** #243 implementation complete locally; waiting CI before close
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241) and [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), active [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -15,7 +15,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #240 closing SHA: `a22beee84b4ed14d3912958f07fffbd39eabde9c` (`docs: close narrative tape writer checkpoint (#240)`)
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
 - #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
-- First #243 timeline SHA: pending this commit
+- First #243 timeline SHA: `fdaa2b8b41289b098cbbffb078e9396916157401` (`feat: add StreamTimeline lifecycle reducer (#243)`); local pytest `tests/test_stream_timeline.py` **19** passed.
 - First #242 replay SHA: `320fff19fea4877e11295433233e92f76583b1be` (`feat: add narrative tape replay reader (#242)`); [CI run 34176400529](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176400529) is green.
 - #242 pin SHA: `d22d4840e09d9ba3c944df619a38237af843bee5` (`docs: pin narrative tape replay SHA (#242)`); [CI run 34176510811](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176510811) is green across 14/14 checks.
 - First #241 compiler SHA: `6af884ef51a3501d6ef31fe92010acdecc1613c0` (`feat: compile immutable narrative CapturePlan (#241)`); [CI run 34175034084](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175034084) is green.
