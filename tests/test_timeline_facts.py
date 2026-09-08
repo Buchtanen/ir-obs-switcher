@@ -135,11 +135,20 @@ def test_forward_transition_ends_old_session_without_opening_speech() -> None:
     started_ids = {
         str(fact.occurrence_id) for fact in step.view.facts if fact.predicate == "session.started"
     }
-    assert started_ids == {"1:practice:0", "1:qualifying:0"}
-    assert any(
-        fact.predicate == "session.ended" and str(fact.occurrence_id) == "1:practice:0"
-        for fact in step.view.facts
+    assert started_ids == {"1:qualifying:0"}
+    prior = ledger.historical(
+        "session.started",
+        occurrence_id="1:practice:0",
+        framing="historical",
     )
+    assert prior is not None
+    ended = ledger.historical(
+        "session.ended",
+        occurrence_id="1:practice:0",
+        framing="historical",
+    )
+    assert ended is not None
+    assert dict(ended.attributes)["reason"] == "forward_transition"
 
 
 def test_rewind_and_same_stage_restart_keep_origin_identity() -> None:

@@ -83,6 +83,7 @@ class FactLedger:
     _exhausted: bool = False
     _unknown_ordinal: int = 0
     _projection: FactProjection | None = None
+    _summaries: dict[tuple[str, str], tuple[int, int, int]] = field(default_factory=dict)
 
     def latest_view(self) -> FactView | None:
         return None if self._exhausted else self._view
@@ -115,6 +116,67 @@ class FactLedger:
             ):
                 return fact
         return None
+
+    def inherited_facts(self) -> tuple[AtomicFact, ...]:
+        """Downstream facts from active ancestors in the published view. No copies."""
+
+        view = self.latest_view()
+        if view is None or view.occurrence_id is None:
+            return ()
+        current = str(view.occurrence_id)
+        return tuple(
+            fact
+            for fact in view.facts
+            if fact.scope is FactScope.DOWNSTREAM
+            and fact.occurrence_id is not None
+            and str(fact.occurrence_id) != current
+        )
+
+    def historical(
+        self,
+        predicate: str,
+        *,
+        occurrence_id: str,
+        subject_id: str | None = None,
+        object_id: str | None = None,
+        framing: str | None = None,
+    ) -> AtomicFact | None:
+        """Return a superseded/archived fact only with explicit historical|recap framing."""
+
+        if framing not in {"historical", "recap"}:
+            raise ContractViolation("historical facts require explicit historical|recap framing")
+        occurrence = str(OccurrenceId.parse(occurrence_id))
+        matches = [
+            fact
+            for fact in (*self._historical.values(), *self._active.values())
+            if fact.predicate == predicate
+            and fact.subject_id == subject_id
+            and fact.object_id == object_id
+            and fact.occurrence_id is not None
+            and str(fact.occurrence_id) == occurrence
+            and fact.status is not FactStatus.UNKNOWN
+        ]
+        if not matches:
+            return None
+        matches.sort(
+            key=lambda fact: (fact.revision, int(fact.observed_at_mono_ms), str(fact.fact_id))
+        )
+        return matches[-1]
+
+    def occurrence_summary(self, occurrence_id: str) -> tuple[AtomicFact, ...]:
+        """Self-contained downstream/historical_only summaries for one occurrence."""
+
+        occurrence = str(OccurrenceId.parse(occurrence_id))
+        newest: dict[tuple[object, ...], AtomicFact] = {}
+        for fact in (*self._active.values(), *self._historical.values()):
+            if fact.occurrence_id is None or str(fact.occurrence_id) != occurrence:
+                continue
+            if fact.scope not in {FactScope.DOWNSTREAM, FactScope.HISTORICAL_ONLY}:
+                continue
+            if fact.status is FactStatus.UNKNOWN:
+                continue
+            newest[semantic_key(fact)] = fact
+        return tuple(sorted(newest.values(), key=lambda fact: str(fact.fact_id)))
 
     def apply_sources(
         self,
@@ -155,9 +217,13 @@ class FactLedger:
         self._align_run(projection)
         changed = False
         diagnostics: list[str] = []
+        if self._archive_incompatible(projection, diagnostics):
+            changed = True
         for fact in facts:
             if self._admit_one(fact, now_ms=now_ms, projection=projection, diagnostics=diagnostics):
                 changed = True
+        if self._archive_incompatible(projection, diagnostics):
+            changed = True
         expired = self._expire(now_ms)
         if expired:
             changed = True
@@ -188,6 +254,7 @@ class FactLedger:
             self._history_complete = projection.history_complete
             self._exhausted = False
             self._unknown_ordinal = 0
+            self._summaries.clear()
         self._projection = projection
 
     def _admit_one(
@@ -225,7 +292,7 @@ class FactLedger:
             self._active[str(admitted.fact_id)] = admitted
         else:
             self._historical[str(admitted.fact_id)] = admitted
-        self._compact_inactive()
+        self._compact_inactive(projection)
         return True
 
     def _expire(self, now_ms: int) -> bool:
@@ -239,7 +306,44 @@ class FactLedger:
             self._historical[fact_id] = replace(fact, status=FactStatus.EXPIRED)
             changed = True
         if changed:
-            self._compact_inactive()
+            projection = self._projection
+            if projection is not None:
+                self._compact_inactive(projection)
+        return changed
+
+    @staticmethod
+    def _occurrence_key(fact: AtomicFact) -> str | None:
+        return None if fact.occurrence_id is None else str(fact.occurrence_id)
+
+    def _is_speakable(self, fact: AtomicFact, now_ms: int, projection: FactProjection) -> bool:
+        if fact.status is FactStatus.UNKNOWN:
+            return True
+        if not fact.is_current(now_ms):
+            return False
+        return self._belongs_in_view(fact, projection)
+
+    def _belongs_in_view(self, fact: AtomicFact, projection: FactProjection) -> bool:
+        occurrence = self._occurrence_key(fact)
+        members = _lineage_members(projection.lineage_id)
+        if fact.scope is FactScope.STREAM:
+            return True
+        if fact.scope is FactScope.DOWNSTREAM:
+            return occurrence in members
+        if fact.scope in {FactScope.OCCURRENCE, FactScope.REVALIDATE}:
+            return occurrence == projection.occurrence_id
+        return False
+
+    def _archive_incompatible(self, projection: FactProjection, diagnostics: list[str]) -> bool:
+        changed = False
+        for fact_id, fact in list(self._active.items()):
+            if self._belongs_in_view(fact, projection):
+                continue
+            self._active.pop(fact_id)
+            self._historical[fact_id] = replace(fact, status=FactStatus.HISTORICAL)
+            changed = True
+            diagnostics.append("fact_archived")
+        if changed:
+            self._compact_inactive(projection)
         return changed
 
     def _is_pinned(self, fact: AtomicFact, projection: FactProjection) -> bool:
@@ -279,18 +383,52 @@ class FactLedger:
             self._history_complete = False
             diagnostics.append("fact_capacity_evicted")
 
-    def _compact_inactive(self) -> None:
+    def _compact_inactive(self, projection: FactProjection | None = None) -> None:
         if len(self._historical) <= self.historical_capacity:
             return
-        removable = [fact for fact in self._historical.values() if fact.status in _TERMINAL]
+        members = _lineage_members(None if projection is None else projection.lineage_id)
+        removable = [
+            fact
+            for fact in self._historical.values()
+            if fact.status in _TERMINAL
+            and not (fact.scope is FactScope.DOWNSTREAM and self._occurrence_key(fact) in members)
+        ]
         removable.sort(
             key=lambda fact: (int(fact.observed_at_mono_ms), fact.revision, str(fact.fact_id))
         )
         while len(self._historical) > self.historical_capacity and removable:
             fact = removable.pop(0)
+            self._merge_summary(fact)
             self._historical.pop(str(fact.fact_id), None)
             if self._keys.get(semantic_key(fact)) == str(fact.fact_id):
                 self._keys.pop(semantic_key(fact), None)
+            self._history_complete = False
+
+    def _merge_summary(self, fact: AtomicFact) -> None:
+        occurrence = fact.occurrence_id
+        if occurrence is None:
+            return
+        key = (occurrence.stage.value, fact.predicate)
+        observed = int(fact.observed_at_mono_ms)
+        previous = self._summaries.get(key)
+        if previous is None:
+            self._summaries[key] = (observed, observed, 1)
+            return
+        start, end, count = previous
+        self._summaries[key] = (min(start, observed), max(end, observed), count + 1)
+
+    def _compacted_refs(self) -> tuple[Identifier, ...]:
+        rows = [
+            (stage, predicate, start, end, count)
+            for (stage, predicate), (start, end, count) in self._summaries.items()
+        ]
+        rows.sort(key=lambda item: (-item[3], item[0], item[1], item[2]))
+        newest = rows[:64]
+        newest.sort(key=lambda item: (item[0], item[1], item[2]))
+        return tuple(
+            Identifier(f"summary:{stage}:{predicate}:{start}")
+            for stage, predicate, start, _end, _count in newest
+        )
 
     def _publish(
         self,
@@ -316,7 +454,9 @@ class FactLedger:
                 view=None, diagnostics=tuple(dict.fromkeys(diagnostics)), exhausted=True
             )
         self._exhausted = False
-        published = [fact for fact in self._active.values() if fact.is_current(now_ms)]
+        published = [
+            fact for fact in self._active.values() if self._is_speakable(fact, now_ms, projection)
+        ]
         published.extend(
             fact for fact in self._historical.values() if fact.status is FactStatus.UNKNOWN
         )
@@ -337,7 +477,7 @@ class FactLedger:
             lineage_id=lineage,
             history_complete=self._history_complete,
             facts=tuple(published),
-            compacted_summary_refs=(),
+            compacted_summary_refs=self._compacted_refs(),
         )
         return FactLedgerStep(
             view=self._view,
