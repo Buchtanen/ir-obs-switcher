@@ -17,6 +17,15 @@ from .fact import (
     load_fact_registry,
     semantic_key,
 )
+from .feature import (
+    FIRST_SLICE_FEATURE_ID,
+    FeatureDefinition,
+    FeatureFrame,
+    FeatureRegistry,
+    FeatureValue,
+    load_feature_registry,
+    validate_detector_feature_units,
+)
 from .narrative import (
     FunnelIdentity,
     NarrativeEvent,
@@ -83,6 +92,11 @@ __all__ = [
     "FactScope",
     "FactStatus",
     "FactView",
+    "FIRST_SLICE_FEATURE_ID",
+    "FeatureDefinition",
+    "FeatureFrame",
+    "FeatureRegistry",
+    "FeatureValue",
     "ExternalOrder",
     "FunnelIdentity",
     "Identifier",
@@ -117,7 +131,9 @@ __all__ = [
     "derived_delivery_class",
     "fact_producer",
     "load_fact_registry",
+    "load_feature_registry",
     "packaged_schema_bytes",
+    "validate_detector_feature_units",
     "semantic_key",
     "validate_occurrence_lineage",
     "validate_scalar",
