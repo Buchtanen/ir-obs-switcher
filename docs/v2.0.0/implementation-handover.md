@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #247 FeatureEngine claimed and implemented; #246 closed. Process-only land of #285+#287 is on this branch; **no master PR**.
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244), [#245](https://github.com/Buchtanen/ir-obs-switcher/issues/245), [#246](https://github.com/Buchtanen/ir-obs-switcher/issues/246) and current [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
+**Phase:** #247 FeatureEngine closed; next implementation package is #248/#249 (unclaimed). Process-only land of #285+#287 is on this branch; **no master PR**.
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244), [#245](https://github.com/Buchtanen/ir-obs-switcher/issues/245), [#246](https://github.com/Buchtanen/ir-obs-switcher/issues/246), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247), next [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -83,8 +83,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: this cloud agent; #247 FeatureEngine first SHA `6240283`.
-- Dirty scope: none after the docs-keeper lookup commit; runtime FeatureEngine remains at first SHA `6240283`.
+- Editing owner: unclaimed; next owner starts #248/#249 unless claimed otherwise.
+- Dirty scope: none after the #247 close docs SHA.
 - GitHub native `blockedBy` is now set for #239–#247 to match `docs/v2.0.0/README.md`.
 - issue-steward close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591500416), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591500587), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591500721), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591500870), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591501016), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591501184), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591501315).
 - docs-keeper close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591525282), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591525412), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591525563), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591525718), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591525837), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591526009), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591526188).
@@ -126,11 +126,12 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #245 is closed in its own scope: frozen 57-predicate registry, semantic-key supersession, half-open expiry, producer-order admission, timeline-command compilation, stale-view rejection and pinned-capacity fail-soft. Live FeatureEngine/DetectorBank wiring remains #247/#250/#252/#284.
 - #246 inheritance scope: published FactView is Current(o) ∪ Inherited(o,L) ∪ stream, without copying AtomicFact records. Occurrence/revalidate facts archive off the current occurrence. Downstream inherits only from active-lineage ancestors (R2 after rewind = P1+Q2). Superseded branches require `historical(..., framing="historical"|"recap")`. `occurrence_summary` keeps self-contained downstream/historical_only facts. Overflow historical detail merges into per-stage `compactedSummaryRefs`. Docs: no public CONFIG/API/README change; NarrativeRuntime remains inactive.
 - #247 FeatureEngine scope: dependency-neutral `contracts/feature.py` owns `FeatureDefinition`/`FeatureFrame`/`FeatureValue` and the frozen 21-ID registry. `events/feature_engine.py` owns bounded per-correlation windows and publishes immutable `feature-frame/2` with process-global `frameSequence`. First slice binds `gap.relation.seconds.estimated_v1` only (`est_time_v1` / `hybrid_v1` stay registered, not substituted). Catalog `definition` strings are docs only. Duplicate/older samples are audited no-ops. Docs: no public CONFIG/API/README change; `FeatureEngine` is not exported from `events/__init__.py` and is not wired into the live loop.
+- #247 is closed in its own scope: 21-ID registry, FeatureFrame identity/sort contract, bounded windows, `estimated_v1` first slice, detector unit validation, fail-soft unknown (pit/tow/teleport/wrap/target-swap/missing lap ref), duplicate/stale no-ops. Live DetectorBank wiring, later estimators and NarrativeRuntime remain #248/#249/#250/#284.
 
 ## Exact next implementation slice
 
-1. Pin #247 close CI on the docs-keeper lookup SHA, post steward + docs-keeper close-gates, then close the issue in its own scope. First SHA `6240283`; verifier GREEN.
-2. Do not start #248 gap estimators or #249 predicate AST unless the next owner claims them.
+1. #247 is closed in its own scope: typed FeatureEngine registry and bounded windows. First SHA `6240283`; lookup SHA `40ae7f6`; verifier GREEN (33 passed). Feat CI [34278586793](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34278586793) and docs checkpoint CI [34278665678](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34278665678) are green.
+2. #248 first slice: versioned gap estimator and validity rules. Do not start #248/#249 unless the next owner claims them.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
 ## Resume commands
@@ -144,7 +145,7 @@ git rev-parse @{upstream}
 git branch --show-current   # must be codex/commentary-story-flow-spec
 ```
 
-Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, **#235–#246 closed**, **#247 claimed** (first SHA `6240283`), clean or intentionally scoped dirty files matching the ownership section, and **no master PR**. Do not resume #239–#246 — those checkpoints are complete. Any mismatch is a blocker until its ownership is understood.
+Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, **#235–#247 closed**, **#248/#249 unclaimed**, clean or intentionally scoped dirty files matching the ownership section, and **no master PR**. Do not resume #239–#247 — those checkpoints are complete. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 

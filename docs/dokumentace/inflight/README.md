@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) closed on this branch; Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247) FeatureEngine is claimed and implemented here; **not shipped on `master`**. Next after #247 close is [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) / [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247) FeatureEngine are closed on this branch; **not shipped on `master`**. Next implementation package is [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) / [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) (unclaimed).
 
 ## Where to look on this branch
 
@@ -31,7 +31,7 @@
 - **Engine (`events/feature_engine.py`):** `FeatureEngine`, `FeatureSample`, `FeatureStep`; per-correlation windows **32** / **64**; process-global monotonic `frameSequence`; duplicate or stale samples are audited no-ops.
 - **First slice:** computes `gap.relation.seconds.estimated_v1` only (`est_time_v1` / `hybrid_v1` stay registered, not substituted).
 - **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, DetectorBank, overlay tape or commentary; not wired into the live loop. Scope prose: [handover § #247](../../v2.0.0/implementation-handover.md).
-- **Evidence:** first implementation SHA `62402838432dc8676be79b6c295b2e73513c6d6d`; issue open until verifier + CI close-gate.
+- **Evidence:** first implementation SHA `62402838432dc8676be79b6c295b2e73513c6d6d`; lookup SHA `40ae7f63257cf70e94684a74c414c1e5f97cc129`; verifier GREEN (33 passed).
 
 `NarrativeRuntime`, live `DetectorBank` wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 

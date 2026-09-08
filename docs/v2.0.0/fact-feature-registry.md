@@ -219,7 +219,7 @@ An optional unavailable source only suppresses dependent facts/beats. It never b
 
 Runtime on this branch (does not rewrite `machine/` hashes): `src/irswitch/contracts/feature.py` loads the packaged 21-ID registry via `load_feature_registry()` and rejects incompatible detector parameter units via `validate_detector_feature_units()`.
 
-Issue #236/#245/#247 cannot close until generated machine registries prove (**#236/#245 closed**; **#247 open**):
+Issue #236/#245/#247 cannot close until generated machine registries prove (**#236/#245/#247 closed**):
 
 - every predicate/attribute/enum/feature/channel ID above is unique and case-exact;
 - every attribute has one scalar type/unit and every fact has a legal scope/producer;
