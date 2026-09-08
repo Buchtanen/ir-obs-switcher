@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #244 claimed; session occurrence and lineage branching
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242) and [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243), current [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244)
+**Phase:** #244 closed; next implementation package is #245
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243) and [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244), next [#245](https://github.com/Buchtanen/ir-obs-switcher/issues/245)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -16,7 +16,9 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
 - #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
 - #243 closing SHA: `493662a9c2783163a9e91a2c7e9f773b4d402faa` (`docs: close StreamTimeline checkpoint (#243)`)
+- #244 closing SHA: pending this commit (`docs: close session occurrence checkpoint (#244)`)
 - First #244 occurrence SHA: `d6e87998aa79289278deab43871a8e266a937e05` (`feat: add SessionOccurrence lineage records (#244)`).
+- #244 pin/QA SHA: `f2fd52e47fdba8df8958f798d426688c4f100327` (`docs: record SessionOccurrence local QA (#244)`); [CI run 34178122353](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178122353) is green across 14/14 checks.
 - First #243 timeline SHA: `fdaa2b8b41289b098cbbffb078e9396916157401` (`feat: add StreamTimeline lifecycle reducer (#243)`); [CI run 34177334667](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177334667) is green.
 - #243 pin SHA: `53f0b3643d4600868b0cfae112ceafa811a205a4` (`docs: pin StreamTimeline reducer SHA (#243)`); [CI run 34177350244](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177350244) is green across 14/14 checks.
 - First #242 replay SHA: `320fff19fea4877e11295433233e92f76583b1be` (`feat: add narrative tape replay reader (#242)`); [CI run 34176400529](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176400529) is green.
@@ -70,8 +72,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent implementing #244 occurrence/lineage on `codex/commentary-story-flow-spec`.
-- Dirty scope: none after the pin commit; next is CI on the occurrence SHA then remaining #244 checkboxes.
+- Editing owner: current cloud agent closing #244. Next owner starts #245 AtomicFact ledger on this same branch unless claimed otherwise.
+- Dirty scope: this closing handover plus the Wave B index mirror.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -104,12 +106,14 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #242 is closed in its own scope: versioned NDJSON/`.ndjson.gz` reader, file/catalog/config hash checks, FeatureFrame reconstruction across rotation without live config or interpolation, immutable `narrative-label-sidecar/2` bound to `fileHash`, and a deterministic evaluation report that splits `upstream_fact_error` from `realization_error`. Live NarrativeRuntime, DetectorBank and V4 overlay tape remain out of scope.
 - #243 timeline scope: `logic.StreamTimeline` is the sole `streamEpoch` owner. It consumes debounced BroadcastClock epochs plus iRSDK session observations, publishes `timeline-snapshot/2`, compiles `session-plan/2`, and emits fail-soft lifecycle commands.
 - #243 is closed in its own scope: SessionRef identity, §5.7 precedence, exclusive start reasons, ordered `transitionReasons`, SessionPlan prefix/latch, confirmed rewind, and fail-soft RESET. Mailbox `CONFIG_UPDATE`+context admission and NarrativeRuntime activation remain #284.
+- #244 occurrence scope: retained `SessionOccurrence` records carry exact `<streamEpoch>:<stage>:<ordinal>` IDs, `>`-joined lineage, parent linkage and status `active|completed|restarted|superseded|abandoned`. `StreamTimeline.resolve()` maps each encoded ID to one occurrence + SessionRef.
+- #244 is closed in its own scope: monotonic per-stage ordinals, same-stage restart, R→Q / R→P / Q→P rewind, abandoned current tail on stream/narrative end, and historical superseded branches. FactLedger inheritance and AtomicFact provenance remain #245.
 
 ## Exact next implementation slice
 
-1. #243 is closed in its own scope: StreamTimeline reducer, hash-pinned snapshots and SessionPlan compiler. Pin CI [34177350244](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177350244) is green on `53f0b36`. Closing SHA `493662a`.
-2. #244 first slice is implemented: retained `SessionOccurrence` records, parent linkage, abandoned/superseded branches and exact `<streamEpoch>:<stage>:<ordinal>` / `>` lineage encoding. Each ID resolves to one occurrence + SessionRef. Local pytest `tests/test_session_occurrence.py` + timeline/plan **49** passed. Wait for CI, then mark issue checkboxes.
-3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR. Do not start #245 unless claimed.
+1. #244 is closed in its own scope: SessionOccurrence records, parent lineage and unique ID→ref resolution. QA CI [34178122353](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178122353) is green on `f2fd52e`.
+2. #245 first slice: typed AtomicFact ledger and provenance. Do not start #245 unless the next owner claims it.
+3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
 ## Resume commands
 

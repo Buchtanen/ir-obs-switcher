@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave B implementing #244 session occurrence/lineage; #243 StreamTimeline is closed
+**Status:** Wave B complete through #244 session occurrence/lineage; next implementation package is #245
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -53,7 +53,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 ## Wave B — timeline and factual state
 
 - [x] [#243 — v2: authoritative StreamTimeline lifecycle reducer](https://github.com/Buchtanen/ir-obs-switcher/issues/243) — depends on #235–#237; owns exact `(SubSessionID, SessionNum)` identity and transition precedence.
-- [ ] [#244 — v2: session occurrence and lineage branching](https://github.com/Buchtanen/ir-obs-switcher/issues/244) — depends on #243.
+- [x] [#244 — v2: session occurrence and lineage branching](https://github.com/Buchtanen/ir-obs-switcher/issues/244) — depends on #243.
 - [ ] [#245 — v2: typed AtomicFact ledger and provenance](https://github.com/Buchtanen/ir-obs-switcher/issues/245) — depends on #236, #244.
 - [ ] [#246 — v2: fact inheritance, supersession and summaries](https://github.com/Buchtanen/ir-obs-switcher/issues/246) — depends on #245.
 
