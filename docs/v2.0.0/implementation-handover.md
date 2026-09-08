@@ -17,6 +17,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
 - #243 closing SHA: `493662a9c2783163a9e91a2c7e9f773b4d402faa` (`docs: close StreamTimeline checkpoint (#243)`)
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
+- #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
 - First #245 ledger SHA: `a4afbf4e586cc21d776bde39991619adbd5a2bb8` (`feat: add typed AtomicFact ledger (#245)`); [CI run 34189938310](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34189938310) is green on QA HEAD `88fdd9c`.
 - #245 producer-order SHA: `d9bb8fc080c2b54ecdf221783cad863f8ef9253b` (`feat: apply AtomicFacts in producer order (#245)`).
 - #245 producer-order pin SHA: `32a351ccd28fb5fef784b5d274e373ed93e47cb6` (`docs: pin AtomicFact producer-order SHA (#245)`).
@@ -77,8 +78,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent closing #245. Next owner starts #246 fact inheritance/summaries on this same branch unless claimed otherwise.
-- Dirty scope: this closing handover plus the Wave B index mirror.
+- Editing owner: unclaimed; next owner starts #246 fact inheritance/summaries on this branch unless claimed otherwise.
+- Dirty scope: none at HEAD after the #245 checkpoint audit unless a new owner opens #246.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -114,7 +115,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #244 occurrence scope: retained `SessionOccurrence` records carry exact `<streamEpoch>:<stage>:<ordinal>` IDs, `>`-joined lineage, parent linkage and status `active|completed|restarted|superseded|abandoned`. `StreamTimeline.resolve()` maps each encoded ID to one occurrence + SessionRef.
 - #244 is closed in its own scope: monotonic per-stage ordinals, same-stage restart, R→Q / R→P / Q→P rewind, abandoned current tail on stream/narrative end, and historical superseded branches. FactLedger inheritance and AtomicFact provenance remain #245.
 - #245 ledger scope: `events.FactLedger` is the sole writer of immutable `atomic-fact/2` / `fact-view/2` projections. Stream-scope facts may omit occurrence/lineage; every other scope requires both. Eviction publishes `unknown`, never zero/false.
-- #245 is closed in its own scope: frozen 57-predicate registry, semantic-key supersession, half-open expiry, producer-order admission, timeline-command compilation, stale-view rejection and pinned-capacity fail-soft. Live FeatureEngine/DetectorBank wiring remains #247/#250/#252/#284. Inheritance view and compacted summaries remain #246.
+- #245 is closed in its own scope: frozen 57-predicate registry, semantic-key supersession, half-open expiry, producer-order admission, timeline-command compilation, stale-view rejection and pinned-capacity fail-soft. Live FeatureEngine/DetectorBank wiring remains #247/#250/#252/#284. Inheritance view and compacted summaries remain #246. Docs: no public CONFIG/API/README change; branch-only handover/index; NarrativeRuntime remains inactive.
 
 ## Exact next implementation slice
 
