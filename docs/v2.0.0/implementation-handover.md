@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #242 claimed; replay reader slice in progress
+**Phase:** #242 implementation complete locally; waiting CI before close
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240) and [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), active [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -14,7 +14,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Upstream: `origin/codex/commentary-story-flow-spec`
 - #240 closing SHA: `a22beee84b4ed14d3912958f07fffbd39eabde9c` (`docs: close narrative tape writer checkpoint (#240)`)
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
-- First #242 replay SHA: pending this commit (`feat: add narrative tape replay reader (#242)`)
+- First #242 replay SHA: `320fff19fea4877e11295433233e92f76583b1be` (`feat: add narrative tape replay reader (#242)`); local pytest `tests/test_narrative_tape_replay.py` **10** passed.
 - First #241 compiler SHA: `6af884ef51a3501d6ef31fe92010acdecc1613c0` (`feat: compile immutable narrative CapturePlan (#241)`); [CI run 34175034084](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175034084) is green.
 - First #241 safety SHA: `fe68fa047d834a94a815aa44d74fb3b039146bcd` (`feat: add capture preflight completeness and safety coordinator (#241)`); [CI run 34175163311](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175163311) is green.
 - #241 pin SHA: `e57796055ecc0d8013392157df9b4f098e7ca698` (`docs: pin capture safety SHA in handover (#241)`); [CI run 34175254457](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175254457) is green across 14/14 checks.
