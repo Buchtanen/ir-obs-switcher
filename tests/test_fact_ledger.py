@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -9,9 +10,11 @@ import pytest
 from irswitch.contracts import (
     AtomicFact,
     ContractViolation,
+    FactProducer,
     FactScope,
     FactStatus,
     FactView,
+    fact_producer,
     load_fact_registry,
     semantic_key,
 )
@@ -334,6 +337,108 @@ def test_new_stream_epoch_resets_and_does_not_reuse_old_revision() -> None:
     assert step.view.stream_epoch == 2
     assert step.view.view_revision == 1
     assert [str(fact.fact_id) for fact in step.view.facts] == ["fact:battle:9"]
+
+
+def test_registry_assigns_closed_producer_families() -> None:
+    registry = load_fact_registry()
+    families = {name: spec.producer_class for name, spec in registry.predicates.items()}
+    assert len(families) == 57
+    assert families["stream.started"] is FactProducer.TIMELINE
+    assert families["session.next_present_stage"] is FactProducer.TIMELINE
+    assert families["broadcast.context"] is FactProducer.SNAPSHOT
+    assert families["context.track_identity"] is FactProducer.SNAPSHOT
+    assert families["battle.closing"] is FactProducer.DETECTOR
+    assert families["battle.approaching"] is FactProducer.DETECTOR
+    assert families["timing.pace_target"] is FactProducer.DETECTOR
+    assert fact_producer("bio.hr_state") is FactProducer.DETECTOR
+    assert sum(1 for item in families.values() if item is FactProducer.TIMELINE) == 5
+    assert sum(1 for item in families.values() if item is FactProducer.DETECTOR) == 9
+    assert sum(1 for item in families.values() if item is FactProducer.SNAPSHOT) == 43
+
+
+def test_apply_sources_uses_timeline_then_snapshot_then_detector() -> None:
+    ledger = FactLedger()
+    timeline = _fact(
+        "fact:stream:1",
+        predicate="stream.started",
+        subject_id=None,
+        object_id=None,
+        scope="stream",
+        occurrence_id=None,
+        lineage_id=None,
+        valid_until=None,
+    )
+    snapshot = _fact(
+        "fact:ctx:1",
+        predicate="broadcast.context",
+        subject_id=None,
+        object_id=None,
+        scope="stream",
+        occurrence_id=None,
+        lineage_id=None,
+        valid_until=None,
+        observed_at=1_100,
+        valid_from=1_100,
+    )
+    detector = _fact("fact:battle:1", observed_at=1_200, valid_from=1_200)
+    misplaced = ledger.apply_sources
+    with pytest.raises(ContractViolation, match="not detector"):
+        misplaced(
+            now_ms=1_200,
+            projection=_projection(),
+            detector=(timeline,),
+        )
+    first = _fact(
+        "fact:ctx:old",
+        predicate="broadcast.context",
+        subject_id=None,
+        object_id=None,
+        scope="stream",
+        occurrence_id=None,
+        lineage_id=None,
+        valid_until=None,
+        observed_at=900,
+        valid_from=900,
+    )
+    step = ledger.apply_sources(
+        now_ms=1_200,
+        projection=_projection(),
+        timeline=(timeline,),
+        snapshot=(first, snapshot),
+        detector=(detector,),
+    )
+    assert step.view is not None
+    assert step.view.view_revision == 1
+    assert [str(fact.fact_id) for fact in step.view.facts] == [
+        "fact:battle:1",
+        "fact:ctx:1",
+        "fact:stream:1",
+    ]
+    assert ledger.current("broadcast.context") is not None
+    assert str(ledger.current("broadcast.context").fact_id) == "fact:ctx:1"
+
+
+def test_validate_bindings_reuse_atomic_fact_schema() -> None:
+    dto = json.loads(
+        (ROOT / "src/irswitch/contracts/schemas/v2/dto-contracts.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    api = json.loads(
+        (ROOT / "docs/v2.0.0/machine/api-contracts.schema.json").read_text(encoding="utf-8")
+    )
+    assert dto["$defs"]["AtomicFact"] == api["$defs"]["AtomicFact"]
+    payload = _fact(
+        "fact:stream:1",
+        predicate="stream.started",
+        subject_id=None,
+        object_id=None,
+        scope="stream",
+        occurrence_id=None,
+        lineage_id=None,
+        valid_until=None,
+    ).to_dict()
+    assert AtomicFact.from_dict(payload).to_dict() == payload
 
 
 def test_fact_view_rejects_unsorted_or_future_observations() -> None:

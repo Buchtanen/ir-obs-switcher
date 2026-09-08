@@ -7,7 +7,16 @@ owning domains.
 
 from .command import COMMAND_KINDS, NarrativeCommand
 from .context import ApplyContextBatch, ContextBatchPart, ContextRevision, ExternalOrder
-from .fact import AtomicFact, FactScope, FactStatus, FactView, load_fact_registry, semantic_key
+from .fact import (
+    AtomicFact,
+    FactProducer,
+    FactScope,
+    FactStatus,
+    FactView,
+    fact_producer,
+    load_fact_registry,
+    semantic_key,
+)
 from .narrative import (
     FunnelIdentity,
     NarrativeEvent,
@@ -69,6 +78,7 @@ __all__ = [
     "ContextRevision",
     "CorrelationId",
     "CycleAttemptOrdinal",
+    "FactProducer",
     "FactQuality",
     "FactScope",
     "FactStatus",
@@ -105,6 +115,7 @@ __all__ = [
     "canonical_sha256",
     "deterministic_planning_seed",
     "derived_delivery_class",
+    "fact_producer",
     "load_fact_registry",
     "packaged_schema_bytes",
     "semantic_key",

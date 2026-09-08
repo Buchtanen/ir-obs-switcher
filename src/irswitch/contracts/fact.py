@@ -43,6 +43,27 @@ class FactStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class FactProducer(StrEnum):
+    TIMELINE = "timeline"
+    SNAPSHOT = "snapshot"
+    DETECTOR = "detector"
+
+
+PRODUCER_ORDER = (
+    FactProducer.TIMELINE,
+    FactProducer.SNAPSHOT,
+    FactProducer.DETECTOR,
+)
+_DETECTOR_PREFIXES = ("battle.",)
+_DETECTOR_PREDICATES = frozenset(
+    {
+        "timing.target_locked",
+        "timing.pace_target",
+        "bio.hr_state",
+    }
+)
+
+
 _ACTIVE_CLAIM_STATUSES = frozenset({FactStatus.PROVISIONAL, FactStatus.ACTIVE})
 
 
@@ -79,6 +100,8 @@ class FactPredicateSpec:
     scope: FactScope
     attributes: tuple[tuple[str, str, bool], ...]
     minimum_attribute_count: int
+    producer: str
+    producer_class: FactProducer
 
     def attribute_ids(self) -> frozenset[str]:
         return frozenset(item[0] for item in self.attributes)
@@ -111,11 +134,34 @@ def load_fact_registry() -> FactRegistry:
                 for item in row["attributes"]
             ),
             minimum_attribute_count=int(row["minimumAttributeCount"]),
+            producer=str(row["producer"]),
+            producer_class=_classify_producer(row["id"], str(row["producer"])),
         )
         for row in raw["factPredicates"]
     }
     enums = {name: frozenset(values) for name, values in raw["enums"].items()}
     return FactRegistry(predicates, enums)
+
+
+def _classify_producer(predicate: str, producer: str) -> FactProducer:
+    text = producer.lower()
+    if "streamtimeline" in text or "broadcastclock" in text or "sessioninfo.sessions" in text:
+        return FactProducer.TIMELINE
+    if (
+        predicate in _DETECTOR_PREDICATES
+        or predicate.startswith(_DETECTOR_PREFIXES)
+        or "detector" in text
+        or "pace_hunt" in text
+        or "ble provider" in text
+    ):
+        return FactProducer.DETECTOR
+    return FactProducer.SNAPSHOT
+
+
+def fact_producer(predicate: str) -> FactProducer:
+    """Return the frozen producer family for one registered predicate."""
+
+    return load_fact_registry().require(predicate).producer_class
 
 
 def validate_fact_attribute(scalar_type: str, value: object) -> object:

@@ -10,9 +10,11 @@ from dataclasses import dataclass, field, replace
 
 from irswitch.contracts.fact import (
     AtomicFact,
+    FactProducer,
     FactScope,
     FactStatus,
     FactView,
+    fact_producer,
     semantic_key,
 )
 from irswitch.contracts.primitives import (
@@ -113,6 +115,35 @@ class FactLedger:
             ):
                 return fact
         return None
+
+    def apply_sources(
+        self,
+        *,
+        now_ms: int,
+        projection: FactProjection,
+        timeline: tuple[AtomicFact, ...] = (),
+        snapshot: tuple[AtomicFact, ...] = (),
+        detector: tuple[AtomicFact, ...] = (),
+    ) -> FactLedgerStep:
+        """Admit timeline, then normalized snapshot, then detector evidence."""
+
+        self._require_producer(timeline, FactProducer.TIMELINE)
+        self._require_producer(snapshot, FactProducer.SNAPSHOT)
+        self._require_producer(detector, FactProducer.DETECTOR)
+        return self.apply(
+            (*timeline, *snapshot, *detector),
+            now_ms=now_ms,
+            projection=projection,
+        )
+
+    @staticmethod
+    def _require_producer(facts: tuple[AtomicFact, ...], expected: FactProducer) -> None:
+        for fact in facts:
+            actual = fact_producer(fact.predicate)
+            if actual is not expected:
+                raise ContractViolation(
+                    f"predicate {fact.predicate} is {actual.value}, not {expected.value}"
+                )
 
     def apply(
         self,
