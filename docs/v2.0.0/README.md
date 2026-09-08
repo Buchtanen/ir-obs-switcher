@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave A complete through #241 CapturePlan; next implementation package is #242
+**Status:** Wave A complete through #242 replay reader; next implementation package is #243
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -48,7 +48,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [x] [#239 — v2: NarrativeTape schema and stream manifest](https://github.com/Buchtanen/ir-obs-switcher/issues/239) — depends on #236, #237; includes pre-arbitration DetectorObservation/EventCandidateTap and fixed funnel identities/boundaries.
 - [x] [#240 — v2: bounded asynchronous NarrativeTape writer](https://github.com/Buchtanen/ir-obs-switcher/issues/240) — depends on #239.
 - [x] [#241 — v2: trigger-driven CapturePlan compiler](https://github.com/Buchtanen/ir-obs-switcher/issues/241) — depends on #238–#240.
-- [ ] [#242 — v2: replay reader, label sidecars and evaluation reports](https://github.com/Buchtanen/ir-obs-switcher/issues/242) — depends on #239, #240.
+- [x] [#242 — v2: replay reader, label sidecars and evaluation reports](https://github.com/Buchtanen/ir-obs-switcher/issues/242) — depends on #239, #240.
 
 ## Wave B — timeline and factual state
 
