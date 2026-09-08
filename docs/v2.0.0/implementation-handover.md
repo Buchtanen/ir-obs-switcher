@@ -113,7 +113,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Exact next implementation slice
 
 1. #244 is closed in its own scope: SessionOccurrence records, parent lineage and unique ID→ref resolution. Close CI [34178428939](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178428939) is green on `ecea626`.
-2. #245 first slice: typed AtomicFact/FactView DTOs and an `events.FactLedger` that is the sole writer of immutable FactViews. Inheritance/summaries stay #246. Do not activate NarrativeRuntime.
+2. #245 first slice is implemented: typed AtomicFact/FactView DTOs and `events.FactLedger`. Local pytest `tests/test_fact_ledger.py` **13** passed. Inheritance/summaries stay #246. Wait for CI before closing. Do not activate NarrativeRuntime.
 3. Do not mix V4 overlay tape. Do not open a master PR. Do not start #246 unless claimed.
 
 ## Resume commands
