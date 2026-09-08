@@ -290,6 +290,41 @@ class TapeLossAccumulator:
         self._config_transitions.clear()
         return payload
 
+    def import_snapshot(self, loss: dict[str, Any]) -> None:
+        for bucket in loss.get("buckets") or ():
+            self.record(
+                record_type=str(bucket["recordType"]),
+                record_priority=str(bucket["recordPriority"]),
+                reason=str(bucket["reason"]),
+                recorded_mono_ms=int(loss["firstLostMonoMs"]),
+                reducer_sequence=loss.get("firstLostReducerSequence"),
+            )
+            extra = int(bucket["count"]) - 1
+            if extra > 0:
+                key = (
+                    str(bucket["recordType"]),
+                    str(bucket["recordPriority"]),
+                    str(bucket["reason"]),
+                )
+                self._buckets[key] = self._buckets.get(key, 0) + extra
+        if loss.get("lastLostMonoMs") is not None:
+            self._last_lost_mono_ms = (
+                int(loss["lastLostMonoMs"])
+                if self._last_lost_mono_ms is None
+                else max(self._last_lost_mono_ms, int(loss["lastLostMonoMs"]))
+            )
+        if loss.get("lastLostReducerSequence") is not None:
+            last = int(loss["lastLostReducerSequence"])
+            self._last_lost_reducer = (
+                last if self._last_lost_reducer is None else max(self._last_lost_reducer, last)
+            )
+        for row in loss.get("configTransitions") or ():
+            self._add_transition(
+                int(row["applySequence"]),
+                str(row["oldEffectiveHash"]),
+                str(row["newEffectiveHash"]),
+            )
+
     def _add_transition(self, apply_sequence: int, old_hash: str, new_hash: str) -> None:
         sequence = _positive(apply_sequence, "applySequence")
         row = (str(Sha256Hash(old_hash)), str(Sha256Hash(new_hash)))
@@ -349,6 +384,22 @@ class TapeRecordQueue:
             if not self._items:
                 return None
             return self._items.pop(0)
+
+    def mark_degraded(self) -> None:
+        with self._lock:
+            self._health = "degraded"
+
+    def drain_lost(self, reason: LossReason) -> tuple[QueuedTapeRecord, ...]:
+        """Move every queued record into the accumulator. Never blocks."""
+
+        if reason not in LOSS_REASONS:
+            raise ContractViolation(f"unknown tape loss reason: {reason!r}")
+        with self._lock:
+            items = tuple(self._items)
+            self._items.clear()
+            for item in items:
+                self._lose(item, reason)
+            return items
 
     def flush_drop_notice(self, notice_id: str) -> dict[str, Any] | None:
         notice = str(Identifier(notice_id))

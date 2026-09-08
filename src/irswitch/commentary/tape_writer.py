@@ -6,13 +6,22 @@ NarrativeRuntime, or the V4 overlay HUD tape. Disk failures are fail-soft.
 
 from __future__ import annotations
 
+import asyncio
+import copy
+import gzip
 import hashlib
 from collections.abc import Callable
 from pathlib import Path
 from threading import Lock
 from typing import Any, BinaryIO, Literal
 
-from irswitch.commentary.tape_queue import TapeLossAccumulator
+from irswitch.commentary.tape_queue import (
+    CaptureHealthLatch,
+    QueueAdmitResult,
+    QueuedTapeRecord,
+    TapeLossAccumulator,
+    TapeRecordQueue,
+)
 from irswitch.contracts.primitives import (
     ContractViolation,
     Identifier,
@@ -97,6 +106,22 @@ class TapeFileSession:
     def health(self) -> WriterHealth:
         with self._lock:
             return self._health
+
+    @property
+    def byte_size(self) -> int:
+        with self._lock:
+            return len(self._pre_trailer)
+
+    @property
+    def file_hash(self) -> str | None:
+        with self._lock:
+            if self._trailer is None:
+                return None
+            return str(self._trailer["payload"]["fileHash"])
+
+    def import_loss(self, loss: dict[str, Any]) -> None:
+        with self._lock:
+            self._loss.import_snapshot(loss)
 
     def note_queue_loss(
         self,
@@ -345,3 +370,252 @@ def _last_reducer(rows: list[dict[str, Any]]) -> int | None:
         and not isinstance(row["reducerSequence"], bool)
     ]
     return max(sequences) if sequences else None
+
+
+def queued_from_record(
+    record: dict[str, Any],
+    *,
+    required_capture: bool = False,
+    detector_ids: tuple[str, ...] = (),
+) -> QueuedTapeRecord:
+    raw_payload = record.get("payload")
+    payload: dict[str, Any] = raw_payload if isinstance(raw_payload, dict) else {}
+    apply_sequence = None
+    old_hash = None
+    new_hash = None
+    if record.get("recordType") == "config_applied":
+        apply_sequence = payload.get("applySequence")
+        old_hash = payload.get("oldEffectiveHash")
+        new_hash = payload.get("newEffectiveHash")
+    return QueuedTapeRecord(
+        record_id=str(record["recordId"]),
+        record_type=str(record["recordType"]),
+        record_priority=str(record["recordPriority"]),
+        recorded_mono_ms=int(record["recordedMonoMs"]),
+        reducer_sequence=record.get("reducerSequence"),
+        required_capture=required_capture,
+        detector_ids=detector_ids,
+        apply_sequence=apply_sequence,
+        old_effective_hash=old_hash,
+        new_effective_hash=new_hash,
+    )
+
+
+class NarrativeTapeWriter:
+    """Owned cancellable writer: nonblocking submit, disk I/O only in run()."""
+
+    def __init__(
+        self,
+        output_dir: Path,
+        manifest: dict[str, Any],
+        *,
+        capacity: int = 4096,
+        rotate_bytes: int = 64 * 1024 * 1024,
+        keep_files: int = 8,
+        compress_rotated: bool = True,
+        flush_interval_ms: int = 500,
+        shutdown_flush_timeout_s: float = 2.0,
+        recorder_generation: int = 0,
+        health_latch: CaptureHealthLatch | None = None,
+        sink: Sink | None = None,
+    ) -> None:
+        if rotate_bytes < 1 or keep_files < 1:
+            raise ContractViolation("rotate_bytes and keep_files must be positive")
+        self._output_dir = Path(output_dir)
+        self._manifest = copy.deepcopy(manifest)
+        self._rotate_bytes = rotate_bytes
+        self._keep_files = keep_files
+        self._compress_rotated = compress_rotated
+        self._flush_interval_s = flush_interval_ms / 1000.0
+        self._shutdown_s = float(shutdown_flush_timeout_s)
+        self._queue = TapeRecordQueue(
+            capacity, recorder_generation=recorder_generation, health_latch=health_latch
+        )
+        self._envelopes: dict[str, dict[str, Any]] = {}
+        self._sink = sink
+        self._session: TapeFileSession | None = None
+        self._task: asyncio.Task[None] | None = None
+        self._wake: asyncio.Event | None = None
+        self._stop = False
+        self._close_reason: str = "shutdown"
+        self._last_mono_ms = 0
+        self._lock = Lock()
+
+    @property
+    def task(self) -> asyncio.Task[None] | None:
+        return self._task
+
+    @property
+    def health_latch(self) -> CaptureHealthLatch:
+        return self._queue.health_latch
+
+    @property
+    def health(self) -> WriterHealth:
+        session = self._session
+        if session is not None and session.health == "degraded":
+            return "degraded"
+        return self._queue.health
+
+    def submit(
+        self,
+        record: dict[str, Any],
+        *,
+        required_capture: bool = False,
+        detector_ids: tuple[str, ...] = (),
+    ) -> QueueAdmitResult:
+        queued = queued_from_record(
+            record, required_capture=required_capture, detector_ids=detector_ids
+        )
+        result = self._queue.admit(queued)
+        with self._lock:
+            self._last_mono_ms = max(self._last_mono_ms, queued.recorded_mono_ms)
+            if result.accepted:
+                self._envelopes[queued.record_id] = record
+            for evicted in result.evicted:
+                self._envelopes.pop(evicted.record_id, None)
+            if not result.accepted:
+                self._envelopes.pop(queued.record_id, None)
+        self._signal()
+        return result
+
+    def start(self) -> asyncio.Task[None]:
+        if self._task is not None and not self._task.done():
+            raise ContractViolation("narrative tape writer task is already running")
+        self._stop = False
+        self._task = asyncio.create_task(self.run(), name="narrative_tape_writer")
+        return self._task
+
+    async def run(self) -> None:
+        self._wake = asyncio.Event()
+        try:
+            await asyncio.to_thread(self._ensure_session)
+            while not self._stop:
+                try:
+                    await asyncio.wait_for(self._wake.wait(), timeout=self._flush_interval_s)
+                except TimeoutError:
+                    pass
+                if self._wake is not None:
+                    self._wake.clear()
+                await asyncio.to_thread(self._pump)
+            await asyncio.to_thread(self._pump)
+            await asyncio.to_thread(self._finish, self._close_reason)
+        except asyncio.CancelledError:
+            self._queue.drain_lost("tape_flush_timeout")
+            self._queue.mark_degraded()
+            raise
+
+    async def aclose(self, reason: str = "shutdown") -> None:
+        if reason not in CLOSE_REASONS:
+            raise ContractViolation(f"unknown tape closeReason: {reason!r}")
+        self._close_reason = reason
+        self._stop = True
+        self._signal()
+        task = self._task
+        if task is None:
+            self._ensure_session()
+            self._pump()
+            self._finish(reason)
+            return
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=self._shutdown_s)
+        except TimeoutError:
+            self._queue.drain_lost("tape_flush_timeout")
+            self._queue.mark_degraded()
+            self._session = None
+            task.cancel()
+        except asyncio.CancelledError:
+            self._queue.drain_lost("tape_flush_timeout")
+            self._queue.mark_degraded()
+            self._session = None
+        except Exception:
+            self._queue.drain_lost("tape_write_failed")
+            self._queue.mark_degraded()
+            self._finish("write_failed")
+
+    def _signal(self) -> None:
+        wake = self._wake
+        if wake is not None:
+            wake.set()
+
+    def _ensure_session(self) -> None:
+        if self._session is not None:
+            return
+        path = self._output_dir / narrative_tape_filename(
+            str(self._manifest["processInstanceId"]),
+            self._manifest.get("streamEpoch"),
+            int(self._manifest["fileOrdinal"]),
+        )
+        session = TapeFileSession(path, sink=self._sink)
+        if not session.open(self._manifest):
+            return
+        self._session = session
+
+    def _pump(self) -> None:
+        self._ensure_session()
+        while True:
+            item = self._queue.dequeue()
+            if item is None:
+                break
+            with self._lock:
+                envelope = self._envelopes.pop(item.record_id, None)
+            if envelope is None:
+                continue
+            session = self._session
+            if session is None or not session.append(envelope):
+                continue
+            if session.byte_size >= self._rotate_bytes:
+                self._rotate()
+
+    def _rotate(self) -> None:
+        self._finish("rotation_size")
+        self._manifest["fileOrdinal"] = int(self._manifest["fileOrdinal"]) + 1
+        self._ensure_session()
+
+    def _finish(self, reason: str) -> None:
+        session = self._session
+        if session is None:
+            return
+        loss = self._queue.loss_snapshot()
+        if loss is not None:
+            session.import_loss(loss)
+            self._queue.flush_drop_notice(f"notice:import:{self._manifest['fileOrdinal']}")
+        trailer = session.close(
+            reason=reason,
+            recorded_mono_ms=self._last_mono_ms or 0,
+            record_id=f"record:trailer:{self._manifest['fileOrdinal']}:{reason}",
+        )
+        if trailer is not None:
+            self._manifest["previousFileHash"] = trailer["payload"]["fileHash"]
+        if reason == "rotation_size" and self._compress_rotated:
+            self._compress(session.path)
+        self._retain()
+        self._session = None
+
+    def _compress(self, path: Path) -> None:
+        if not path.is_file():
+            return
+        gz_path = Path(str(path) + ".gz")
+        try:
+            with path.open("rb") as src, gzip.open(gz_path, "wb") as dst:
+                dst.write(src.read())
+            path.unlink()
+        except OSError:
+            return
+
+    def _retain(self) -> None:
+        files = sorted(
+            list(self._output_dir.glob("narrative-*.ndjson"))
+            + list(self._output_dir.glob("narrative-*.ndjson.gz"))
+        )
+        extra = len(files) - self._keep_files
+        current = None if self._session is None else self._session.path
+        for path in files:
+            if extra <= 0:
+                break
+            if current is not None and path.resolve() == current.resolve():
+                continue
+            try:
+                path.unlink()
+                extra -= 1
+            except OSError:
+                continue

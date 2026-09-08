@@ -397,6 +397,32 @@ def test_framing_records_never_enter_the_queue() -> None:
     assert len(queue) == 0
 
 
+def test_drain_lost_marks_remaining_as_flush_timeout() -> None:
+    queue = TapeRecordQueue(capacity=2)
+    _fill(
+        queue,
+        _record("speech:1", "speech_exposure", "critical", reducer_sequence=4),
+        _record("speech:2", "speech_exposure", "critical", reducer_sequence=5),
+    )
+
+    lost = queue.drain_lost("tape_flush_timeout")
+
+    assert [item.record_id for item in lost] == ["speech:1", "speech:2"]
+    assert len(queue) == 0
+    assert queue.health == "degraded"
+    loss = queue.loss_snapshot()
+    assert loss["buckets"] == [
+        {
+            "recordType": "speech_exposure",
+            "recordPriority": "critical",
+            "reason": "tape_flush_timeout",
+            "count": 2,
+        }
+    ]
+    assert loss["firstLostReducerSequence"] == 4
+    assert loss["lastLostReducerSequence"] == 5
+
+
 def test_queue_rejects_unknown_type_and_priority() -> None:
     queue = TapeRecordQueue(capacity=2)
     with pytest.raises(ContractViolation, match="recordType"):
