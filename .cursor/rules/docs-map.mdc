@@ -35,6 +35,12 @@ When you change… you must review/update…
   - `VERSIONING.md` / `README_VERSIONING.md` (if relevant)
   - `.release-please-manifest.json` must stay in lockstep with `pyproject.toml`
 
+- **CI / workflows / semver-label / release checks**
+  - `docs/dokumentace/domeny/testy-ci.md`
+  - `scripts/README.md` (`check_semver_label.py`, `check_release_please_lock.py`)
+  - `.github/workflows/ci.yml`, `.github/workflows/pr-policy.yml`
+  - skill `pr-semver-label`
+
 - **Overlay HUD / V4 renderer / Pit Wall art**
   - `docs/dokumentace/domeny/overlay.md`
   - `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md`
