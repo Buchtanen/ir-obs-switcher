@@ -79,8 +79,11 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: unclaimed; next owner starts #246 fact inheritance/summaries on this branch unless claimed otherwise. The #285/#287 process land does not claim #246.
-- Dirty scope: none at HEAD after the process land unless a new owner opens #246.
+- Editing owner: unclaimed. This slice is the retrospective docs-keeper + issue-steward close-gate for #239–#244. **Do not start #246** until a human accepts those gates.
+- Dirty scope: docs-only (`docs/dokumentace/`, `docs/v2.0.0/` prose). No `src/` and no `docs/v2.0.0/machine/` hash edits.
+- GitHub native `blockedBy` is now set for #239–#246 to match `docs/v2.0.0/README.md` (was empty).
+- issue-steward close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591500416), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591500587), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591500721), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591500870), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591501016), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591501184), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591501315).
+- docs-keeper close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591525282), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591525412), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591525563), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591525718), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591525837), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591526009), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591526188).
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -121,7 +124,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 ## Exact next implementation slice
 
 1. #245 is closed in its own scope: typed AtomicFact ledger, producer-order admission and timeline-fact compilation. Close CI [34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green on `d74211a`.
-2. #246 first slice: fact inheritance, supersession and compacted per-stage summaries. Do not start #246 unless the next owner claims it.
+2. #246 first slice remains unclaimed: fact inheritance, supersession and compacted per-stage summaries. Do not start it in this slice.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
 ## Resume commands

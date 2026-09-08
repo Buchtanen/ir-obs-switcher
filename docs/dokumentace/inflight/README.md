@@ -15,7 +15,7 @@
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
-| #239 NarrativeTape schema | contracts + commentary queue framing | `src/irswitch/contracts/schemas/v2/dto-contracts.schema.json`, `commentary/tape_queue.py` | `tests/test_narrative_tape_schema.py` |
+| #239 NarrativeTape schema | contracts / DTO freeze (no writer) | `src/irswitch/contracts/schemas/v2/dto-contracts.schema.json`, `docs/v2.0.0/schema-contracts.md` | `tests/test_narrative_tape_schema.py` |
 | #240 Tape writer | commentary | `commentary/tape_writer.py`, `commentary/tape_queue.py` | `tests/test_narrative_tape_queue.py`, `tests/test_narrative_tape_writer.py` |
 | #241 CapturePlan | commentary | `commentary/capture_plan.py`, `capture_safety.py`, `tape_safety.py` | `tests/test_narrative_capture_plan.py`, `tests/test_narrative_capture_safety.py` |
 | #242 Replay / labels | commentary | `commentary/tape_replay.py` | `tests/test_narrative_tape_replay.py` |
