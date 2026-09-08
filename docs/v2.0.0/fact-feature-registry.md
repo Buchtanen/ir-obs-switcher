@@ -217,6 +217,8 @@ An optional unavailable source only suppresses dependent facts/beats. It never b
 
 `machine/build_beat_catalog.py` now proves every required beat predicate, attribute, literal enum constraint, repeated-claim cardinality and allowlist reference resolves through this registry. `machine/build_successor_graph.py` separately proves the closed edge/reference/SCC contract. Neither implements runtime predicate evaluation; executing those invariants remains the production catalog-loader gate.
 
+Runtime on this branch (does not rewrite `machine/` hashes): `src/irswitch/contracts/feature.py` loads the packaged 21-ID registry via `load_feature_registry()` and rejects incompatible detector parameter units via `validate_detector_feature_units()`.
+
 Issue #236/#245/#247 cannot close until generated machine registries prove (**#236/#245 closed**; **#247 open**):
 
 - every predicate/attribute/enum/feature/channel ID above is unique and case-exact;
