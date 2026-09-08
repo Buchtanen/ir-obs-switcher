@@ -14,7 +14,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Upstream: `origin/codex/commentary-story-flow-spec`
 - #240 closing SHA: `a22beee84b4ed14d3912958f07fffbd39eabde9c` (`docs: close narrative tape writer checkpoint (#240)`)
 - First #241 compiler SHA: `6af884ef51a3501d6ef31fe92010acdecc1613c0` (`feat: compile immutable narrative CapturePlan (#241)`)
-- First #241 safety SHA: pending this commit (`feat: add capture preflight completeness and safety coordinator (#241)`)
+- First #241 safety SHA: `fe68fa047d834a94a815aa44d74fb3b039146bcd` (`feat: add capture preflight completeness and safety coordinator (#241)`)
 - First #240 async-writer SHA: `23abfdefdde8db2f037311b6345b5af03c658e58` (`feat: add async narrative tape writer and rotation (#240)`)
 - First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`)
 - First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`)
