@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #245 closed; next implementation package is #246 (unclaimed). Process-only land of #285+#287 is on this branch; **no master PR**.
+**Phase:** #245 closed; next implementation package is #246 (**unclaimed; blocked** until docs-keeper close-gates for #239–#244 accepted). Process-only land of #285+#287 is on this branch; **no master PR**.
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244) and [#245](https://github.com/Buchtanen/ir-obs-switcher/issues/245), next [#246](https://github.com/Buchtanen/ir-obs-switcher/issues/246). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
