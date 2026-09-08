@@ -8,9 +8,11 @@ the effective capture policy for every catalog detector.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal, cast
 
@@ -173,6 +175,18 @@ class StreamCapturePlan:
                 "evidenceCompleteness": item.evidence_completeness,
             }
             for item in self.detectors
+        )
+
+    def runtime_status(
+        self, *, disabled_for_run: Sequence[str] = ()
+    ) -> tuple[dict[str, object], ...]:
+        disabled = frozenset(disabled_for_run)
+        return tuple(
+            {
+                **row,
+                "disabledForRun": row["detectorId"] in disabled,
+            }
+            for row in self.startup_status()
         )
 
 
@@ -480,4 +494,109 @@ def compile_capture_plan(
         plan_hash=canonical_sha256(projection),
         detectors=tuple(detectors),
         diagnostics=tuple(diagnostics),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class CapturePreflight:
+    ready: bool
+    reason: str | None = None
+
+
+def probe_writable_capture(
+    output_dir: Path | str,
+    *,
+    working_directory: Path | None = None,
+) -> CapturePreflight:
+    """Fail-soft writable-path probe. Never raises into the race loop."""
+
+    if not isinstance(output_dir, (Path, str)) or str(output_dir).strip() == "":
+        raise ContractViolation("capture output_dir is required")
+    workdir = (working_directory or Path.cwd()).resolve(strict=False)
+    try:
+        path = Path(output_dir).expanduser()
+        resolved = (workdir / path if not path.is_absolute() else path).resolve(strict=False)
+        if resolved == Path(resolved.anchor).resolve(strict=False):
+            return CapturePreflight(False, "unsafe_root_path")
+        existing = resolved
+        while not existing.exists() and existing != existing.parent:
+            existing = existing.parent
+        if not existing.is_dir() or not os.access(existing, os.W_OK):
+            return CapturePreflight(False, "destination_parent_not_writable")
+        if resolved.exists() and not resolved.is_dir():
+            return CapturePreflight(False, "output_dir_is_not_a_directory")
+        probe_dir = resolved if resolved.exists() else existing
+        probe = probe_dir / ".narrative-capture-preflight"
+        probe.write_bytes(b"ok")
+        probe.unlink()
+    except OSError:
+        return CapturePreflight(False, "writable_probe_failed")
+    return CapturePreflight(True, None)
+
+
+@dataclass(frozen=True, slots=True)
+class WindowFrameRange:
+    first_frame_sequence: int
+    last_frame_sequence: int
+    post_window_complete: bool
+
+    def __post_init__(self) -> None:
+        first = self.first_frame_sequence
+        last = self.last_frame_sequence
+        if isinstance(first, bool) or isinstance(last, bool):
+            raise ContractViolation("window frame sequences must be positive ints")
+        if not isinstance(first, int) or not isinstance(last, int) or first < 1 or last < first:
+            raise ContractViolation("windowFrameRange endpoints must be positive and ordered")
+        if not isinstance(self.post_window_complete, bool):
+            raise ContractViolation("postWindowComplete must be a bool")
+
+    def expected_sequences(self) -> tuple[int, ...]:
+        return tuple(range(self.first_frame_sequence, self.last_frame_sequence + 1))
+
+
+@dataclass(frozen=True, slots=True)
+class CaptureCompleteness:
+    detector_id: str
+    complete: bool
+    capture_loss: bool
+    missing_frame_sequences: tuple[int, ...]
+    parameter_snapshot_mismatch: bool
+    post_window_incomplete: bool
+
+
+def evaluate_capture_completeness(
+    entry: DetectorCapturePlan,
+    *,
+    parameter_snapshot_id: str | None,
+    window: WindowFrameRange | None,
+    present_frame_sequences: Sequence[int],
+) -> CaptureCompleteness:
+    """Compare a declared FeatureFrame range to the frames actually retained."""
+
+    if not entry.capture_active or entry.effective_policy == "none":
+        return CaptureCompleteness(
+            detector_id=entry.detector_id,
+            complete=True,
+            capture_loss=False,
+            missing_frame_sequences=(),
+            parameter_snapshot_mismatch=False,
+            post_window_incomplete=False,
+        )
+    present = {int(item) for item in present_frame_sequences}
+    expected = window.expected_sequences() if window is not None else ()
+    missing = tuple(item for item in expected if item not in present)
+    snapshot_mismatch = (
+        entry.parameter_snapshot_id is not None
+        and parameter_snapshot_id != entry.parameter_snapshot_id
+    )
+    post_incomplete = window is None or not window.post_window_complete
+    incomplete = bool(missing) or snapshot_mismatch or post_incomplete
+    capture_loss = incomplete and entry.effective_policy == "required"
+    return CaptureCompleteness(
+        detector_id=entry.detector_id,
+        complete=not incomplete,
+        capture_loss=capture_loss,
+        missing_frame_sequences=missing,
+        parameter_snapshot_mismatch=snapshot_mismatch,
+        post_window_incomplete=post_incomplete,
     )

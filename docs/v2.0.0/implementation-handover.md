@@ -1,7 +1,7 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #241 claimed; CapturePlan compiler slice in progress
+**Phase:** #241 implementation complete locally; waiting CI before close
 **Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239) and [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), active [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), later [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
@@ -13,7 +13,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Branch: `codex/commentary-story-flow-spec`
 - Upstream: `origin/codex/commentary-story-flow-spec`
 - #240 closing SHA: `a22beee84b4ed14d3912958f07fffbd39eabde9c` (`docs: close narrative tape writer checkpoint (#240)`)
-- First #241 compiler SHA: pending this commit (`feat: compile immutable narrative CapturePlan (#241)`)
+- First #241 compiler SHA: `6af884ef51a3501d6ef31fe92010acdecc1613c0` (`feat: compile immutable narrative CapturePlan (#241)`)
+- First #241 safety SHA: pending this commit (`feat: add capture preflight completeness and safety coordinator (#241)`)
 - First #240 async-writer SHA: `23abfdefdde8db2f037311b6345b5af03c658e58` (`feat: add async narrative tape writer and rotation (#240)`)
 - First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`)
 - First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`)
@@ -60,8 +61,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent implementing #241. Do not start #242 unless the next owner claims it.
-- Dirty scope: CapturePlan compiler plus this handover.
+- Editing owner: current cloud agent finishing #241. Do not start #242 unless the next owner claims it.
+- Dirty scope: capture preflight/completeness/safety coordinator plus this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -87,14 +88,15 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
 - API impact: additive `commentary_config` projection on the existing `POST /config/reload` success response. Invalid commentary returns `installed=false` and diagnostics while the endpoint remains successful for unrelated config. Frozen `/api/v2/commentary/*` routes remain deferred to #273.
 - Docs impact: branch-only schema-contract prose now states that `payloadSchemaVersion` is a schema-version token, not a generic ID. No public CONFIG/API/README change; TapeWriter/NarrativeRuntime remain inactive.
-- #241 compiler scope (this checkpoint): `compile_capture_plan` assigns every catalog detector an explicit effective `none|optional|required` policy, keeps released none/optional enabled when tape is default-off, rejects production or non-experimental required, activates experimental required only after calibration + detector_tuning + allowlist + windows + preflight, and keeps purpose channels disjoint from catalog `tape_channel`. Startup status is a per-detector projection. Docs: no public CONFIG/API/README change.
+- #241 compiler scope: `compile_capture_plan` assigns every catalog detector an explicit effective `none|optional|required` policy, keeps released none/optional enabled when tape is default-off, rejects production or non-experimental required, activates experimental required only after calibration + detector_tuning + allowlist + windows + preflight, and keeps purpose channels disjoint from catalog `tape_channel`. Startup/runtime status is a per-detector projection. Docs: no public CONFIG/API/README change.
+- #241 safety scope (this checkpoint): fail-soft writable preflight, exact FeatureFrame-range completeness against the plan's parameter snapshot, and composition-owned capture-loss fanout. TapeWriter still does not import DetectorBank or NarrativeRuntime.
 
 ## Exact next implementation slice
 
 1. #240 is closed: queue, NDJSON session, async writer/rotation/shutdown, and composition-owned `tape_health_command`. Closing SHA `a22beee84b4ed14d3912958f07fffbd39eabde9c`.
-2. #241 first slice (this checkpoint): `TapePolicyCompiler` in `src/irswitch/commentary/capture_plan.py` compiles an immutable per-stream `CapturePlan` from catalog `tuning.policy` plus tape purpose channels. Evidence: `tests/test_narrative_capture_plan.py` (F44 compiler-pure matrix). No NarrativeRuntime/DetectorBank import, no packaged-catalog detector invention.
-3. Remaining #241: writable-path recorder preflight, FeatureFrame-range completeness against manifest parameter snapshots, and the composition coordinator that consumes `CaptureHealthLatch` + `tape_health_command`, disables only named experimental detectors through a narrow protocol, and closes FSMs/facts/candidates as `required_capture_lost`. Recovery never re-enables in the current run.
-4. Do not activate NarrativeRuntime. Do not start #242 unless claimed.
+2. #241 compiler slice: `compile_capture_plan` in `src/irswitch/commentary/capture_plan.py`. SHA `6af884ef51a3501d6ef31fe92010acdecc1613c0`. Local pytest `tests/test_narrative_capture_plan.py` **11** passed on that commit.
+3. #241 remaining slice (this checkpoint): writable `probe_writable_capture`, FeatureFrame-range `evaluate_capture_completeness` (required missing frame/snapshot/post-window is capture loss for only that detector; optional is incomplete without loss), and `CaptureSafetyCoordinator` in `src/irswitch/commentary/capture_safety.py`. The coordinator disables only named experimental required detectors through `DetectorControl.disable_for_run`, closes truth as `required_capture_lost`, then admits `TAPE_HEALTH_CHANGED` plus `APPLY_CONTEXT_BATCH`. Duplicate/stale notices and mid-run recorder repair are no-ops; `begin_stream` plus a new preflighted plan is required to admit the detector again. Evidence: `tests/test_narrative_capture_plan.py` + `tests/test_narrative_capture_safety.py` (**17** passed).
+4. Do not activate NarrativeRuntime or a concrete DetectorBank. Do not start #242 unless claimed. Do not close #241 until CI on this SHA is green.
 
 ## Resume commands
 

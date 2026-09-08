@@ -7,7 +7,10 @@ from pathlib import Path
 
 from irswitch.commentary.capture_plan import (
     PURPOSE_CHANNELS,
+    WindowFrameRange,
     compile_capture_plan,
+    evaluate_capture_completeness,
+    probe_writable_capture,
 )
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.resources import packaged_schema_bytes
@@ -290,6 +293,67 @@ def test_capture_plan_is_immutable_and_does_not_import_runtime() -> None:
     else:
         raise AssertionError("StreamCapturePlan must be frozen")
     assert plan.entry("battle_ahead_v1").effective_policy == "required"
+
+
+def test_writable_preflight_is_fail_soft(tmp_path: Path) -> None:
+    file_path = tmp_path / "not-a-dir"
+    file_path.write_text("nope", encoding="utf-8")
+    ready = probe_writable_capture(tmp_path / "tape")
+    blocked = probe_writable_capture(file_path)
+
+    assert ready.ready is True
+    assert blocked.ready is False
+    assert blocked.reason is not None
+
+
+def test_required_missing_frame_is_capture_loss_for_only_that_detector() -> None:
+    catalog = _catalog_with(
+        {"id": "optional_pace_v1", "experimental": False, "tuningPolicy": "optional"}
+    )
+    required = compile_capture_plan(_required_enablement(), preflight_ready=True)
+    optional = compile_capture_plan(
+        {
+            "commentary.detector.optional_pace_v1.enabled": True,
+            "commentary.tape.enabled": True,
+            "commentary.tape.channels": ("flow", "detector_tuning"),
+            "commentary.tape.detector_tuning.trigger_allowlist": ("optional_pace_v1",),
+        },
+        catalog=catalog,
+    )
+    window = WindowFrameRange(10, 12, True)
+    lost = evaluate_capture_completeness(
+        required.entry("battle_ahead_v1"),
+        parameter_snapshot_id=required.entry("battle_ahead_v1").parameter_snapshot_id,
+        window=window,
+        present_frame_sequences=(10, 12),
+    )
+    incomplete = evaluate_capture_completeness(
+        optional.entry("optional_pace_v1"),
+        parameter_snapshot_id=optional.entry("optional_pace_v1").parameter_snapshot_id,
+        window=window,
+        present_frame_sequences=(10, 12),
+    )
+    stale = evaluate_capture_completeness(
+        required.entry("battle_ahead_v1"),
+        parameter_snapshot_id="params:other:1",
+        window=window,
+        present_frame_sequences=(10, 11, 12),
+    )
+    untouched = evaluate_capture_completeness(
+        required.entry("battle_behind_v1"),
+        parameter_snapshot_id=None,
+        window=None,
+        present_frame_sequences=(),
+    )
+
+    assert lost.capture_loss is True
+    assert lost.missing_frame_sequences == (11,)
+    assert incomplete.complete is False
+    assert incomplete.capture_loss is False
+    assert stale.capture_loss is True
+    assert stale.parameter_snapshot_mismatch is True
+    assert untouched.capture_loss is False
+    assert untouched.complete is True
 
 
 def test_unknown_detector_lookup_is_a_contract_violation() -> None:
