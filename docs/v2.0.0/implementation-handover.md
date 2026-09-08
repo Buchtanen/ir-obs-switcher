@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-08
-**Phase:** #242 closed; next implementation package is #243
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241) and [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), next [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243)
+**Phase:** #243 claimed; StreamTimeline reducer in progress
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241) and [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), active [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243)
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -14,7 +14,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Upstream: `origin/codex/commentary-story-flow-spec`
 - #240 closing SHA: `a22beee84b4ed14d3912958f07fffbd39eabde9c` (`docs: close narrative tape writer checkpoint (#240)`)
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
-- #242 closing SHA: pending this commit (`docs: close narrative tape replay checkpoint (#242)`)
+- #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
+- First #243 timeline SHA: pending this commit
 - First #242 replay SHA: `320fff19fea4877e11295433233e92f76583b1be` (`feat: add narrative tape replay reader (#242)`); [CI run 34176400529](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176400529) is green.
 - #242 pin SHA: `d22d4840e09d9ba3c944df619a38237af843bee5` (`docs: pin narrative tape replay SHA (#242)`); [CI run 34176510811](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176510811) is green across 14/14 checks.
 - First #241 compiler SHA: `6af884ef51a3501d6ef31fe92010acdecc1613c0` (`feat: compile immutable narrative CapturePlan (#241)`); [CI run 34175034084](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175034084) is green.
@@ -66,8 +67,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent closing #242. Next owner starts #243 StreamTimeline on this same branch unless claimed otherwise.
-- Dirty scope: this closing handover plus the Wave A index mirror.
+- Editing owner: current cloud agent implementing #243. Do not start later Wave B packages unless claimed.
+- Dirty scope: StreamTimeline reducer plus this handover.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
@@ -98,12 +99,13 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #241 is closed in its own scope: immutable CapturePlan, purpose/tape_channel split, writable preflight, FeatureFrame completeness, and composition-owned required-capture disable. Live DetectorBank wiring and NarrativeRuntime activation remain #284.
 - #242 replay scope: offline reader for written NarrativeTape. Labels never mutate source bytes. Missing required frames stay incomplete and are capture-loss only when the tape already recorded `TAPE_HEALTH_CHANGED(unavailable)`. Docs: no public CONFIG/API/README change.
 - #242 is closed in its own scope: versioned NDJSON/`.ndjson.gz` reader, file/catalog/config hash checks, FeatureFrame reconstruction across rotation without live config or interpolation, immutable `narrative-label-sidecar/2` bound to `fileHash`, and a deterministic evaluation report that splits `upstream_fact_error` from `realization_error`. Live NarrativeRuntime, DetectorBank and V4 overlay tape remain out of scope.
+- #243 timeline scope (this checkpoint): `logic.StreamTimeline` is the sole `streamEpoch` owner. It consumes debounced BroadcastClock epochs plus iRSDK session observations, publishes `timeline-snapshot/2`, compiles `session-plan/2`, and emits fail-soft lifecycle commands. It does not admit mailbox bundles or activate NarrativeRuntime.
 
 ## Exact next implementation slice
 
-1. #242 is closed in its own scope: offline NarrativeTape reader, hash-bound label sidecars and evaluation reports. Pin CI [34176510811](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176510811) is green on `d22d484`.
-2. #243 first slice: authoritative StreamTimeline lifecycle reducer. Do not start #243 unless the next owner claims it.
-3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
+1. #242 is closed. Closing SHA `c396246cbde8cadff60f3f9a655c9ea9a26c6258`.
+2. #243 first slice (this checkpoint): `src/irswitch/logic/stream_timeline.py` owns `(SubSessionID, SessionNum)` identity, §5.7 precedence, exclusive start reasons, ordered `transitionReasons`, SessionPlan prefix/latch, and confirmed `>5 s` / `>=100 ms` rewind. Evidence: `tests/test_stream_timeline.py`.
+3. Do not activate NarrativeRuntime or mix V4 overlay tape. Mailbox `CONFIG_UPDATE`+context admission remains #284. Do not open a master PR.
 
 ## Resume commands
 
