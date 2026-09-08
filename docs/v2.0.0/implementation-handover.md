@@ -16,6 +16,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
 - #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
 - #243 closing SHA: `493662a9c2783163a9e91a2c7e9f773b4d402faa` (`docs: close StreamTimeline checkpoint (#243)`)
+- First #245 ledger SHA: `a4afbf4e586cc21d776bde39991619adbd5a2bb8` (`feat: add typed AtomicFact ledger (#245)`).
 - #244 closing SHA: `ecea6261c1da823d34fff48b4bf547f74b5319e8` (`docs: close session occurrence checkpoint (#244)`); [CI run 34178428939](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178428939) is green.
 - First #244 occurrence SHA: `d6e87998aa79289278deab43871a8e266a937e05` (`feat: add SessionOccurrence lineage records (#244)`).
 - #244 pin/QA SHA: `f2fd52e47fdba8df8958f798d426688c4f100327` (`docs: record SessionOccurrence local QA (#244)`); [CI run 34178122353](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178122353) is green across 14/14 checks.
@@ -72,8 +73,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: current cloud agent claiming #245 AtomicFact ledger on `codex/commentary-story-flow-spec`.
-- Dirty scope: #245 AtomicFact/FactView contracts and `events.FactLedger` writer.
+- Editing owner: current cloud agent implementing #245 AtomicFact ledger on `codex/commentary-story-flow-spec`.
+- Dirty scope: none after the pin commit; next is CI on the ledger SHA. Inheritance/summaries remain #246.
 - Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
 - Deferred by explicit ownership, not incomplete #237 work: live EventSubscription replacement and producer wiring, reducer-sequence assignment/state replay, async actor effects, integrated loop liveness and shutdown execution belong to #284 after its dependencies.
 - Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
