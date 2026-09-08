@@ -19,6 +19,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
+- #247 close-CI pin SHA: `3ed6298778a8072daa7a22b4be4d2135b08d2bc3` (`docs: pin FeatureEngine close SHA (#247)`); [CI run 34279302006](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34279302006) is green across 14/14 checks.
 - #247 closing SHA: `9c2ed439dae08bd52e47e79bbd710ec9ad156c22` (`docs: close FeatureEngine checkpoint (#247)`)
 - First #247 FeatureEngine SHA: `62402838432dc8676be79b6c295b2e73513c6d6d` (`feat: add typed FeatureEngine registry (#247)`). Local pytest: `tests/test_feature_engine.py` **10** passed.
 - #247 verifier: GREEN — `tests/test_feature_engine.py` + `test_fact_ledger.py` + `test_fact_inheritance.py` **33** passed; ruff/black/mypy clean; `FeatureEngine` not exported from `events/__init__.py`; no eval/exec/compile; no pyproject/machine edits.
@@ -131,7 +132,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #247 is closed in its own scope: typed FeatureEngine registry and bounded windows. First SHA `6240283`; lookup SHA `40ae7f6`; close docs SHA `9c2ed43`; verifier GREEN (33 passed). Feat CI [34278586793](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34278586793) and docs checkpoint CI [34278665678](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34278665678) are green.
+1. #247 is closed in its own scope: typed FeatureEngine registry and bounded windows. First SHA `6240283`; lookup SHA `40ae7f6`; close docs SHA `9c2ed43`; pin SHA `3ed6298`; verifier GREEN (33 passed). Feat CI [34278586793](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34278586793), docs checkpoint CI [34278665678](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34278665678) and pin CI [34279302006](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34279302006) are green.
 2. #248 first slice: versioned gap estimator and validity rules. Do not start #248/#249 unless the next owner claims them.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
