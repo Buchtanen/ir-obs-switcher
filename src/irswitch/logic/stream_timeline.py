@@ -6,16 +6,22 @@ Does not import NarrativeRuntime, DetectorBank, mailbox or overlay tape.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from irswitch.contracts.primitives import (
+    BroadcastEpoch,
+    ContractViolation,
     LineageId,
+    MonotonicMs,
     OccurrenceId,
     Stage,
     StreamEpoch,
 )
 from irswitch.contracts.session import (
+    OccurrenceStatus,
+    SessionEndReason,
+    SessionOccurrence,
     SessionPlan,
     SessionPlanEntry,
     SessionRef,
@@ -114,6 +120,7 @@ class TimelineStep:
     plan: SessionPlan | None
     commands: tuple[TimelineCommand, ...]
     diagnostics: tuple[str, ...] = ()
+    occurrences: tuple[SessionOccurrence, ...] = ()
 
 
 def observe_broadcast_clock(
@@ -268,9 +275,24 @@ class StreamTimeline:
     _suspended: bool = False
     _ordinals: dict[Stage, int] = field(default_factory=dict)
     _active: dict[Stage, OccurrenceId] = field(default_factory=dict)
+    _records: dict[str, SessionOccurrence] = field(default_factory=dict)
     _quarantined_ref: SessionRef | None = None
     _ever_allocated: bool = False
     _seen_obs: bool = False
+
+    def resolve(self, occurrence_id: OccurrenceId | str) -> SessionOccurrence:
+        key = str(
+            occurrence_id
+            if isinstance(occurrence_id, OccurrenceId)
+            else OccurrenceId.parse(occurrence_id)
+        )
+        try:
+            return self._records[key]
+        except KeyError as exc:
+            raise ContractViolation(f"unknown occurrenceId: {key}") from exc
+
+    def retained_occurrences(self) -> tuple[SessionOccurrence, ...]:
+        return tuple(self._records.values())
 
     def observe(self, tick: TimelineTick) -> TimelineStep:
         reasons: list[str] = []
@@ -283,7 +305,7 @@ class StreamTimeline:
 
         if not tick.commentary_enabled and self._narrative_run_active:
             reasons.append("narrative_disabled")
-            self._close_run(retain_session=False)
+            self._close_run(retain_session=False, now_ms=tick.now_ms)
 
         self._broadcast_epoch = broadcast.epoch
         if broadcast.state == "unknown":
@@ -294,7 +316,7 @@ class StreamTimeline:
             if self._narrative_run_active:
                 reasons.append("broadcast_ended")
                 commands.append(TimelineCommand(kind="STREAM_ENDED"))
-                self._close_run(retain_session=False)
+                self._close_run(retain_session=False, now_ms=tick.now_ms)
             self._obs_state = "inactive"
         else:
             if prev_state == "unknown" and self._narrative_run_active and tick.commentary_enabled:
@@ -329,6 +351,7 @@ class StreamTimeline:
             plan=self._plan,
             commands=tuple(commands),
             diagnostics=tuple(dict.fromkeys(diagnostics)),
+            occurrences=self.retained_occurrences(),
         )
 
     def _allocate_start_reason(self, *, prev_state: ObsState | None) -> str:
@@ -361,7 +384,14 @@ class StreamTimeline:
         self._rewind_since_ms = None
         self._suspended = False
 
-    def _close_run(self, *, retain_session: bool) -> None:
+    def _close_run(self, *, retain_session: bool, now_ms: int) -> None:
+        if self._occurrence is not None:
+            self._close_record(
+                self._occurrence,
+                now_ms=now_ms,
+                status="abandoned",
+                end_reason="stream_ended",
+            )
         self._narrative_run_active = False
         if not retain_session:
             self._clear_current_session()
@@ -528,7 +558,7 @@ class StreamTimeline:
             return
 
         if self._session_ref is None:
-            self._start_occurrence(ref, stage, reasons, commands)
+            self._start_occurrence(ref, stage, reasons, commands, now_ms=tick.now_ms)
             self._last_session_time = session.session_time_s
             self._connected = True
             self._suspended = False
@@ -536,8 +566,8 @@ class StreamTimeline:
 
         if self._session_ref is not None and ref != self._session_ref:
             backward = _STAGE_RANK[stage] < _STAGE_RANK[self._stage] if self._stage else False
-            self._end_occurrence(reasons, commands, superseded=backward)
-            self._start_occurrence(ref, stage, reasons, commands)
+            self._end_occurrence(reasons, commands, superseded=backward, now_ms=tick.now_ms)
+            self._start_occurrence(ref, stage, reasons, commands, now_ms=tick.now_ms)
             self._last_session_time = session.session_time_s
             self._rewind_since_ms = None
             self._connected = True
@@ -573,7 +603,9 @@ class StreamTimeline:
             if tick.now_ms - self._rewind_since_ms < REWIND_CONFIRM_MS:
                 return
             assert self._stage is not None
-            self._restart_occurrence(self._session_ref, self._stage, reasons, commands)
+            self._restart_occurrence(
+                self._session_ref, self._stage, reasons, commands, now_ms=tick.now_ms
+            )
             self._last_session_time = current
             self._rewind_since_ms = None
             return
@@ -586,8 +618,10 @@ class StreamTimeline:
         stage: Stage,
         reasons: list[str],
         commands: list[TimelineCommand],
+        *,
+        now_ms: int,
     ) -> None:
-        occurrence, lineage = self._allocate(stage)
+        occurrence, lineage = self._allocate(stage, ref, now_ms=now_ms)
         self._session_ref = ref
         self._stage = stage
         self._occurrence = occurrence
@@ -604,7 +638,12 @@ class StreamTimeline:
         )
 
     def _end_occurrence(
-        self, reasons: list[str], commands: list[TimelineCommand], *, superseded: bool
+        self,
+        reasons: list[str],
+        commands: list[TimelineCommand],
+        *,
+        superseded: bool,
+        now_ms: int,
     ) -> None:
         if self._occurrence is None or self._session_ref is None:
             return
@@ -619,14 +658,33 @@ class StreamTimeline:
         )
         if superseded:
             reasons.append("session_superseded")
+            self._close_record(
+                self._occurrence,
+                now_ms=now_ms,
+                status="superseded",
+                end_reason="rewind_superseded",
+            )
             dropped = [
                 stage
                 for stage in self._active
                 if _STAGE_RANK[stage] >= _STAGE_RANK[self._stage or stage]
             ]
             for stage in dropped:
-                self._active.pop(stage, None)
+                item = self._active.pop(stage, None)
+                if item is not None:
+                    self._close_record(
+                        item,
+                        now_ms=now_ms,
+                        status="superseded",
+                        end_reason="rewind_superseded",
+                    )
         else:
+            self._close_record(
+                self._occurrence,
+                now_ms=now_ms,
+                status="completed",
+                end_reason="forward_transition",
+            )
             if self._stage is not None:
                 self._active[self._stage] = self._occurrence
 
@@ -636,8 +694,18 @@ class StreamTimeline:
         stage: Stage,
         reasons: list[str],
         commands: list[TimelineCommand],
+        *,
+        now_ms: int,
     ) -> None:
-        occurrence, lineage = self._allocate(stage)
+        if self._occurrence is not None:
+            self._close_record(
+                self._occurrence,
+                now_ms=now_ms,
+                status="restarted",
+                end_reason="same_ref_restart",
+            )
+            self._active.pop(stage, None)
+        occurrence, lineage = self._allocate(stage, ref, now_ms=now_ms)
         self._session_ref = ref
         self._stage = stage
         self._occurrence = occurrence
@@ -652,25 +720,61 @@ class StreamTimeline:
             )
         )
 
-    def _allocate(self, stage: Stage) -> tuple[OccurrenceId, LineageId]:
+    def _allocate(
+        self, stage: Stage, ref: SessionRef, *, now_ms: int
+    ) -> tuple[OccurrenceId, LineageId]:
         ordinal = self._ordinals.get(stage, 0)
         self._ordinals[stage] = ordinal + 1
         occurrence = OccurrenceId(StreamEpoch(self._stream_epoch), stage, ordinal)
-        kept = {
-            item_stage: item
-            for item_stage, item in self._active.items()
-            if _STAGE_RANK[item_stage] < _STAGE_RANK[stage]
-        }
-        kept[stage] = occurrence
-        self._active = kept
-        lineage = LineageId(
-            tuple(
-                kept[item]
-                for item in (Stage.PRACTICE, Stage.QUALIFYING, Stage.RACE)
-                if item in kept
-            )
+        for item_stage, item in list(self._active.items()):
+            if _STAGE_RANK[item_stage] >= _STAGE_RANK[stage]:
+                self._close_record(
+                    item,
+                    now_ms=now_ms,
+                    status="superseded",
+                    end_reason="rewind_superseded",
+                )
+                self._active.pop(item_stage, None)
+        parent: OccurrenceId | None = None
+        ancestors: list[OccurrenceId] = []
+        for item_stage in (Stage.PRACTICE, Stage.QUALIFYING, Stage.RACE):
+            if item_stage in self._active and _STAGE_RANK[item_stage] < _STAGE_RANK[stage]:
+                parent = self._active[item_stage]
+                ancestors.append(parent)
+        ancestors.append(occurrence)
+        lineage = LineageId(tuple(ancestors))
+        self._records[str(occurrence)] = SessionOccurrence(
+            occurrence_id=occurrence,
+            broadcast_epoch=BroadcastEpoch(self._broadcast_epoch),
+            session_ref=ref,
+            parent_id=parent,
+            lineage_id=lineage,
+            started_at_mono_ms=MonotonicMs(now_ms),
+            ended_at_mono_ms=None,
+            end_reason=None,
+            status="active",
         )
+        self._active[stage] = occurrence
         return occurrence, lineage
+
+    def _close_record(
+        self,
+        occurrence: OccurrenceId,
+        *,
+        now_ms: int,
+        status: OccurrenceStatus,
+        end_reason: SessionEndReason,
+    ) -> None:
+        key = str(occurrence)
+        current = self._records.get(key)
+        if current is None or current.status in {"superseded", "restarted", "abandoned"}:
+            return
+        self._records[key] = replace(
+            current,
+            ended_at_mono_ms=MonotonicMs(now_ms),
+            end_reason=end_reason,
+            status=status,
+        )
 
     def _order_commands(
         self, commands: list[TimelineCommand], reasons: list[str]

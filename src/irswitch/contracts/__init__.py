@@ -47,7 +47,13 @@ from .primitives import (
     validate_scalar,
 )
 from .resources import packaged_schema_bytes
-from .session import SessionPlan, SessionPlanEntry, SessionRef, UnsupportedSessionEntry
+from .session import (
+    SessionOccurrence,
+    SessionPlan,
+    SessionPlanEntry,
+    SessionRef,
+    UnsupportedSessionEntry,
+)
 
 __all__ = [
     "MAX_SIGNED_INT64",
@@ -72,6 +78,7 @@ __all__ = [
     "NarrativeSourceEnvelope",
     "NarrativeSourceOrder",
     "OccurrenceId",
+    "SessionOccurrence",
     "PlanningSeedMaterial",
     "ProcessInstanceId",
     "ProcessMonotonicTime",

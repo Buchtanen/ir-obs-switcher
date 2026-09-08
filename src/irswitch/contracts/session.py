@@ -1,21 +1,41 @@
-"""Immutable session-plan DTOs from the frozen v2 schema contract."""
+"""Immutable session-plan and occurrence DTOs from the frozen v2 contract."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar, Literal, Self
 
 from .primitives import (
     MAX_SIGNED_INT64,
+    BroadcastEpoch,
     ContractViolation,
+    LineageId,
     MonotonicMs,
+    OccurrenceId,
     ScalarType,
     SchemaVersion,
     Stage,
+    validate_occurrence_lineage,
     validate_scalar,
 )
 
 _STAGE_RANK = {Stage.PRACTICE: 0, Stage.QUALIFYING: 1, Stage.RACE: 2}
+
+OccurrenceStatus = Literal["active", "completed", "restarted", "superseded", "abandoned"]
+SessionEndReason = Literal[
+    "completed",
+    "forward_transition",
+    "rewind_superseded",
+    "same_ref_restart",
+    "stream_ended",
+]
+_OCCURRENCE_STATUSES = frozenset({"active", "completed", "restarted", "superseded", "abandoned"})
+_STATUS_REASONS: dict[str, frozenset[str]] = {
+    "completed": frozenset({"completed", "forward_transition"}),
+    "restarted": frozenset({"same_ref_restart"}),
+    "superseded": frozenset({"rewind_superseded"}),
+    "abandoned": frozenset({"stream_ended"}),
+}
 
 
 def _nonnegative_int(value: object, field: str) -> int:
@@ -82,6 +102,112 @@ class SessionPlanEntry:
     def from_dict(cls, value: object) -> Self:
         data = _exact_object(value, cls._FIELDS, "SessionPlan entry")
         return cls(SessionRef.from_dict(data["sessionRef"]), data["stage"])
+
+
+@dataclass(frozen=True, slots=True)
+class SessionOccurrence:
+    """One retained run of one SessionRef. Encoded identity excludes the ref."""
+
+    occurrence_id: OccurrenceId
+    broadcast_epoch: BroadcastEpoch
+    session_ref: SessionRef
+    parent_id: OccurrenceId | None
+    lineage_id: LineageId
+    started_at_mono_ms: MonotonicMs
+    ended_at_mono_ms: MonotonicMs | None
+    end_reason: SessionEndReason | None
+    status: OccurrenceStatus
+
+    _FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "occurrenceId",
+            "broadcastEpoch",
+            "sessionRef",
+            "parentId",
+            "lineageId",
+            "startedAtMonoMs",
+            "endedAtMonoMs",
+            "endReason",
+            "status",
+        }
+    )
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.occurrence_id, OccurrenceId):
+            raise ContractViolation("occurrenceId must be an OccurrenceId")
+        object.__setattr__(
+            self, "broadcast_epoch", BroadcastEpoch(self.broadcast_epoch).require_active()
+        )
+        if not isinstance(self.session_ref, SessionRef):
+            raise ContractViolation("sessionRef must be a SessionRef")
+        if self.parent_id is not None and not isinstance(self.parent_id, OccurrenceId):
+            raise ContractViolation("parentId must be an OccurrenceId or null")
+        if not isinstance(self.lineage_id, LineageId):
+            raise ContractViolation("lineageId must be a LineageId")
+        object.__setattr__(self, "started_at_mono_ms", MonotonicMs(self.started_at_mono_ms))
+        if self.ended_at_mono_ms is not None:
+            object.__setattr__(self, "ended_at_mono_ms", MonotonicMs(self.ended_at_mono_ms))
+        if self.status not in _OCCURRENCE_STATUSES:
+            raise ContractViolation(f"invalid occurrence status: {self.status!r}")
+        validate_occurrence_lineage(self.occurrence_id, self.lineage_id)
+        self._validate_parent()
+        self._validate_terminal()
+
+    def _validate_parent(self) -> None:
+        occurrences = self.lineage_id.occurrences
+        if self.parent_id is None:
+            if occurrences != (self.occurrence_id,):
+                raise ContractViolation("root occurrence lineage must be exactly itself")
+            return
+        if self.parent_id.stream_epoch != self.occurrence_id.stream_epoch:
+            raise ContractViolation("parentId must share streamEpoch")
+        if _STAGE_RANK[self.parent_id.stage] >= _STAGE_RANK[self.occurrence_id.stage]:
+            raise ContractViolation("parentId must be an earlier canonical stage")
+        if len(occurrences) < 2 or occurrences[-2] != self.parent_id:
+            raise ContractViolation("parentId must be the immediate lineage ancestor")
+
+    def _validate_terminal(self) -> None:
+        if self.status == "active":
+            if self.ended_at_mono_ms is not None or self.end_reason is not None:
+                raise ContractViolation("active occurrence cannot carry an end")
+            return
+        if self.ended_at_mono_ms is None or self.end_reason is None:
+            raise ContractViolation("closed occurrence requires endedAtMonoMs and endReason")
+        allowed = _STATUS_REASONS[self.status]
+        if self.end_reason not in allowed:
+            raise ContractViolation(
+                f"endReason {self.end_reason!r} is not valid for status {self.status!r}"
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "occurrenceId": str(self.occurrence_id),
+            "broadcastEpoch": int(self.broadcast_epoch),
+            "sessionRef": self.session_ref.to_dict(),
+            "parentId": None if self.parent_id is None else str(self.parent_id),
+            "lineageId": str(self.lineage_id),
+            "startedAtMonoMs": int(self.started_at_mono_ms),
+            "endedAtMonoMs": (
+                None if self.ended_at_mono_ms is None else int(self.ended_at_mono_ms)
+            ),
+            "endReason": self.end_reason,
+            "status": self.status,
+        }
+
+    @classmethod
+    def from_dict(cls, value: object) -> Self:
+        data = _exact_object(value, cls._FIELDS, "SessionOccurrence")
+        return cls(
+            occurrence_id=OccurrenceId.parse(data["occurrenceId"]),
+            broadcast_epoch=data["broadcastEpoch"],
+            session_ref=SessionRef.from_dict(data["sessionRef"]),
+            parent_id=(None if data["parentId"] is None else OccurrenceId.parse(data["parentId"])),
+            lineage_id=LineageId.parse(data["lineageId"]),
+            started_at_mono_ms=data["startedAtMonoMs"],
+            ended_at_mono_ms=data["endedAtMonoMs"],
+            end_reason=data["endReason"],
+            status=data["status"],
+        )
 
 
 @dataclass(frozen=True, slots=True)
