@@ -1,6 +1,6 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (closed); SpeechLane by [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) (closed); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (closed); SpeechLane by [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) (closed); FreshnessGate by [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (implemented); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
@@ -11,7 +11,8 @@
 **Opportunity:** `irswitch.events.opportunity_queue.OpportunityQueue`
 **Director:** `irswitch.events.story_director.StoryDirector`
 **Speech lane:** `irswitch.events.speech_lane.SpeechLane`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**) + `tests/test_speech_lane.py` (**14**)
+**Freshness:** `irswitch.events.freshness_commit.FreshnessGate`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**) + `tests/test_speech_lane.py` (**14**) + `tests/test_freshness_commit.py` (**14**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -130,10 +131,16 @@ Frozen knobs (already in public contract): `selection_threshold` **35**, `switch
 
 Narrative `idle→building→committed`; manual skips building. `PLAYBACK_ACCEPTED` maps to public `SPEECH_STARTED` only at the frozen adapter boundary. Consume opportunity exactly once on accept; pre-accept failure releases; later failure stays consumed. Race events do not preempt committed/speaking. Allowed cancel is reset/disable/truth/shutdown; disable does not cancel manual. `auto` backend is SAPI then eSpeak; SuperTonic explicit-only; no post-dispatch failover. Start/stop watchdogs quarantine an unresponsive generation; restore only from newer ready preflight.
 
-Frozen knobs (already in public contract): `tts.backend` **auto**, `start_timeout_s` **5**, `stop_timeout_s` **1**, `max_utterance_s` **14**. Replay fixtures: `tests/fixtures/speech_lane/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement #265 freshness commit. Module lookup: [inflight § #264](../dokumentace/inflight/README.md#264-speech-lane-lookup).
+Frozen knobs (already in public contract): `tts.backend` **auto**, `start_timeout_s` **5**, `stop_timeout_s` **1**, `max_utterance_s` **14**. Replay fixtures: `tests/fixtures/speech_lane/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Module lookup: [inflight § #264](../dokumentace/inflight/README.md#264-speech-lane-lookup).
+
+## FreshnessGate (#265)
+
+`FreshnessGate` owns the immutable commit token and pre-TTS freshness verdict. Schema `commit-token/2`. Types: `FreshnessGate`, `CommitToken`, `CommitWorld`, `BoundFactCopy`, `CommitStep`. Verdicts `current|freshness_stale|invalidated|not_reached`. Selected AtomicFact copies must remain canonical-equal and current in the newest FactView with matching occurrence/lineage/episode revision; unrelated FactView revisions may pass. Old lineage, changed target, dead episode, or critical conflict → `invalidated`. Missing, changed, expired, or superseded selected facts, or invalid reservation → `freshness_stale`. Wrong lane → `not_reached` (no suppress, no release). Failure suppresses `(beat_id, episode_revision)` and may release a reserved opportunity. `rebuilt_surfaces` is always false.
+
+Replay fixtures: `tests/fixtures/freshness_commit/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement RealizationBundle. Module lookup: [inflight § #265](../dokumentace/inflight/README.md#265-freshness-commit-lookup).
 
 ## Out of scope
 
-- #265 freshness commit gate and RealizationBundle (next; not started)
+- #266 RealizationCatalog / RealizationBundle (next; not started)
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts

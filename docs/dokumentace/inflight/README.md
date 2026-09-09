@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; **not shipped on `master`**. Next implementation package is [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **implemented**; **not shipped on `master`**. Next implementation package is [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) (do not start unless a human says so).
 
 ## Where to look on this branch
 
@@ -11,7 +11,7 @@
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#264, branch-only)
+## Implementation lookup (#239–#265, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -42,6 +42,7 @@
 | #283 expiring EventOpportunity queue | events | `src/irswitch/events/opportunity_queue.py` — [§ lookup](#283-expiring-event-opportunities-lookup) | `tests/test_opportunity_queue.py` (**15**) |
 | #262 StoryDirector eligibility / scoring | events | `src/irswitch/events/story_director.py` — [§ lookup](#262-storydirector-eligibility-lookup) | `tests/test_story_director.py` (**11**) |
 | #264 single in-flight speech lane | events | `src/irswitch/events/speech_lane.py` — [§ lookup](#264-speech-lane-lookup) | `tests/test_speech_lane.py` (**14**) |
+| #265 freshness commit gate | events | `src/irswitch/events/freshness_commit.py` — [§ lookup](#265-freshness-commit-lookup) | `tests/test_freshness_commit.py` (**14**) |
 
 ### #247 FeatureEngine lookup
 
@@ -251,12 +252,24 @@
 - **Watchdogs:** `start_timeout_s=5` in committed; `stop_timeout_s=1` after cancel; playback uses `max_utterance_s=14`. Stop timeout quarantines that backend generation; restore only from `ready` health with a strictly newer generation.
 - **Manual latch:** process-local `pending|actor_claimed|caller_abandoned`. Abandoned request cannot later speak. Timeout constant `MANUAL_LATCH_TIMEOUT_MS=1000`.
 - **Replay fixtures:** `tests/fixtures/speech_lane/{transition,counterfactual_identity,expiry}.json`.
-- **Exports / boundaries:** **not** exported from `events/__init__.py`. Optional one-way `OpportunityQueue` for reserve/consume/release. Does not import commentary or overlay packages; not live-wired. No eval/exec/compile. No live SAPI/eSpeak/SuperTonic process. Does not implement #265 freshness commit or RealizationBundle.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Optional one-way `OpportunityQueue` for reserve/consume/release. Does not import commentary or overlay packages; not live-wired. No eval/exec/compile. No live SAPI/eSpeak/SuperTonic process. Does not implement RealizationBundle.
 - **Tests:** `tests/test_speech_lane.py` (**14**). First implementation SHA `330fd45188b17aad7cd4e30856ac1b309ee509f1`. Related regression **228** passed.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change (TTS knobs already frozen); `machine/` hashes unchanged. First SHA `330fd45`; docs checkpoint `2a90b81`; close `9d40800`; pin `3b66f0f`; handover audit `30824ae`; feat CI [34342772096](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34342772096) green.
-- **Still out of scope:** #265 freshness commit, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #265 freshness-commit lookup
+
+- **Gate (`events/freshness_commit.py`):** `FreshnessGate`, `CommitToken`, `CommitWorld`, `BoundFactCopy`, `CommitStep`. Schema `commit-token/2`. Verdicts `current|freshness_stale|invalidated|not_reached`.
+- **Token:** immutable snapshot of plan/episode/occurrence/lineage/target plus frozen selected-fact copies and optional reservation. Newer FactView revisions may pass when selected copies stay canonical-equal and current.
+- **Fail closed:** old lineage / changed target / dead episode / critical conflict → `invalidated`. Missing, superseded, changed, expired facts, or invalid/expired/superseded reservation → `freshness_stale`. Wrong lane → `not_reached` (no suppress, no release).
+- **Effects:** failure suppresses `(beat_id, episode_revision)` so the same revision cannot retry; optional `OpportunityQueue.reject_attempt` releases the reservation. `rebuilt_surfaces` is always false; newer G2 never rebuilds the 1.4-second surfaces.
+- **Replay fixtures:** `tests/fixtures/freshness_commit/{transition,counterfactual_identity,expiry}.json`.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Optional one-way queue release. Does not import commentary or overlay packages; not live-wired. No eval/exec/compile. Does not implement RealizationBundle or SemanticVerifier.
+- **Tests:** `tests/test_freshness_commit.py` (**14**). First implementation SHA `63674e33638b59d7fb2db897b8be09b59a1cd794`. Related regression **242** passed.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/`; no public CONFIG/API/README change; `machine/` hashes unchanged.
+- **Still out of scope:** #266 RealizationCatalog, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
