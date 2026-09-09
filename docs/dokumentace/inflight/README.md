@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) are closed on this branch; **not shipped on `master`**. Next implementation package is [#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) are closed on this branch; **not shipped on `master`**. [#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) direct lap/sector edges are implemented on this branch (first SHA `5a61be3`).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#250) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#251) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#250, branch-only)
+## Implementation lookup (#239–#251, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -27,6 +27,7 @@
 | #248 gap estimators | events | `events/gap_estimators.py`, `events/feature_engine.py` (integration) — detail below | `tests/test_gap_estimators.py` (**13**) + `tests/test_feature_engine.py` (**10**) |
 | #249 predicate AST | contracts + events | `contracts/predicate.py`, `events/predicate_ast.py` — detail below | `tests/test_predicate_ast.py` (**14**) |
 | #250 DetectorBank FSM | events | `events/detector_bank.py` — detail below | `tests/test_detector_bank.py` (**19**) |
+| #251 direct lap/sector edges | events | `events/direct_edges.py` — detail below | `tests/test_direct_edges.py` (**13**) |
 
 ### #247 FeatureEngine lookup
 
@@ -65,7 +66,16 @@
 - **Tests:** `tests/test_detector_bank.py` (**19**), including the seven directional goldens. First implementation SHA `e41ffb42f5e83236a4db58194dd4c5903fbc0899`; docs checkpoint SHA `0a44978d2468f30bb343100c8b8731bd9850fb9b`.
 - **Still out of scope:** live EventManager/NarrativeRuntime wiring, CLOSING/UNDER_PRESSURE product detectors, two-front composite, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #251 direct lap/sector edges lookup
+
+- **Bank (`events/direct_edges.py`):** `DirectEdgeBank` / `DirectEdgeSample` / `DirectEdgeIdentity`. `sourceClass=direct` (null `detectorObservationId`). Identity is `(kind, streamEpoch, occurrenceId, heroId, lap[, sectorId])`. Duplicate/older `sampleSequence` is an audited no-op. Restart uses a new occurrence so the same lap number is a new identity; a same-occurrence lap reset cannot reuse a prior key.
+- **Eligibility:** lap edges (`LAP_COMPLETE` → `timing.lap_completed` / `race.timing.lap`) require `overlay_mode` in `PRACTICE|QUALIFYING|RACE`. Sector edges (`SECTOR_SPLIT` / `SECTOR_BEST`) require `PRACTICE|QUALIFYING` only. `GENERIC`, disconnected, missing occurrence, missing sector metadata, or invalid sector ids emit nothing. `session_finished` / `player_finished` is a completed race, not a lap edge.
+- **Current emitters:** `events/lap.py` and `events/sector_split.py` stay on master wiring. This slice characterizes them and does not live-replace them. DetectorBank thresholds are not reused (`tuning.policy=none`).
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import DetectorBank, NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
+- **Tests:** `tests/test_direct_edges.py` (**13**). First implementation SHA `5a61be3aae3b8c8b3bac91c1361f6f7c53e10278`.
+- **Still out of scope:** live EventManager wiring, stream/session lifecycle edges (#252), lap/sector family migration (#275), NarrativeRuntime.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
