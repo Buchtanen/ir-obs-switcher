@@ -890,3 +890,104 @@ def test_status_reason_codes_for_recovery_health_and_tape() -> None:
     runtime.reduce_next()
     status = runtime.status()
     assert "component_unavailable" in status.reason_codes
+
+
+@pytest.mark.asyncio
+async def test_silence_and_validity_deadline_timers_admit_commands_only() -> None:
+    runtime = NarrativeRuntime(
+        silence_deadline_delay_s=0.02,
+        validity_deadline_delay_s=0.02,
+    )
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.config_update(
+            "deadline:arm", 9000, valid=False, ledger=None, diagnostics=()
+        )
+    )
+    armed = runtime.reduce_next()
+    assert armed is not None
+    assert "effect:arm_silence_deadline" in armed.effects
+    assert "effect:arm_validity_deadline" in armed.effects
+    await runtime.apply_effects(armed.effects)
+    assert runtime.silence_deadline_task_active()
+    assert runtime.validity_deadline_task_active()
+
+    await runtime.wait_deadline_timers_idle()
+    assert not runtime.silence_deadline_task_active()
+    assert not runtime.validity_deadline_task_active()
+
+    first = runtime.reduce_next()
+    second = runtime.reduce_next()
+    assert first is not None and second is not None
+    kinds = {first.kind, second.kind}
+    assert kinds == {"LONG_SILENCE_ELAPSED", "VALIDITY_DEADLINE_ELAPSED"}
+    assert first.disposition == "handled"
+    assert second.disposition == "handled"
+    assert runtime.mailbox_empty()
+
+
+@pytest.mark.asyncio
+async def test_deadline_timer_cancel_drops_stale_generation() -> None:
+    runtime = NarrativeRuntime(
+        silence_deadline_delay_s=0.05,
+        validity_deadline_delay_s=3600.0,
+    )
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.config_update(
+            "deadline:first", 9100, valid=False, ledger=None, diagnostics=()
+        )
+    )
+    first = runtime.reduce_next()
+    assert first is not None
+    await runtime.apply_effects(first.effects)
+    assert runtime.silence_deadline_task_active()
+    first_generation = runtime._silence_generation  # noqa: SLF001
+
+    runtime.admit(
+        NarrativeCommand.config_update(
+            "deadline:rearm", 9110, valid=False, ledger=None, diagnostics=()
+        )
+    )
+    rearmed = runtime.reduce_next()
+    assert rearmed is not None
+    assert "effect:cancel_silence_deadline" in rearmed.effects
+    assert "effect:arm_silence_deadline" in rearmed.effects
+    await runtime.apply_effects(rearmed.effects)
+    assert runtime.silence_deadline_task_active()
+    assert runtime._silence_generation == first_generation + 1  # noqa: SLF001
+
+    for _ in range(50):
+        if not runtime.silence_deadline_task_active():
+            break
+        await asyncio.sleep(0.01)
+    assert not runtime.silence_deadline_task_active()
+    elapsed = runtime.reduce_next()
+    assert elapsed is not None
+    assert elapsed.kind == "LONG_SILENCE_ELAPSED"
+    assert elapsed.disposition == "handled"
+    # Cancelled first generation must not leave a second silence command.
+    assert runtime.reduce_next() is None
+    await runtime.apply_effects(("effect:cancel_validity_deadline",))
+
+
+@pytest.mark.asyncio
+async def test_run_loop_fires_silence_deadline_when_idle() -> None:
+    runtime = NarrativeRuntime(silence_deadline_delay_s=0.02, validity_deadline_delay_s=3600.0)
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.config_update(
+            "run:deadline", 9200, valid=False, ledger=None, diagnostics=()
+        )
+    )
+
+    task = asyncio.create_task(runtime.run())
+    for _ in range(100):
+        if runtime.status().lane == "building" and runtime.status().reducer_sequence >= 2:
+            break
+        await asyncio.sleep(0.01)
+    assert runtime.status().lane == "building"
+    assert runtime.status().reducer_sequence >= 2
+    runtime.admit(NarrativeCommand.shutdown("run:deadline-stop", 9300, "application_exit"))
+    await asyncio.wait_for(task, timeout=2.0)
+    assert runtime.status().runtime_state == "stopped"

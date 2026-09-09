@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-09
-**Phase:** #271 eval corpus closed; #284 NarrativeRuntime **library effect-executor + diagnostics slice landed (not closed)**. Process-only land of #285+#287 is on this branch; **no master PR**.
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235)–[#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271) as previously recorded, completed [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283), completed [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262), in-progress [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) (library effect-executor + diagnostics on branch; live wiring AC still open). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
+**Phase:** #271 eval corpus closed; #284 NarrativeRuntime **library deadline-timer slice landed (not closed)**. Process-only land of #285+#287 is on this branch; **no master PR**.
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235)–[#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271) as previously recorded, completed [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283), completed [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262), in-progress [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) (library deadline timers on branch; live wiring AC still open). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -341,8 +341,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #284 NarrativeRuntime **library effect-executor + diagnostics slice is on this branch** (`events/narrative_runtime.py` + `tests/test_narrative_runtime.py`, **101** tests): prior 85-row matrix + speech races remain; owned cancellable realization/TTS tasks admit commands only; overflow/coalesce admission diagnostics and freeze-registry `reason_codes` on `RuntimeStatus`. **Issue stays OPEN** — live EventSubscription replacement, fanout wiring, deadline timer tasks, live health/API schema and master cutover remain deferred.
-2. Next #284 slice (still library-only unless a human says otherwise): own silence/validity deadline timer tasks that admit deadline commands only; optionally deepen mailbox recovery diagnostics. Still no live consumer/server activation.
+1. #284 NarrativeRuntime **library deadline-timer slice is on this branch** (`events/narrative_runtime.py` + `tests/test_narrative_runtime.py`, **104** tests): prior matrix/effect-executor/diagnostics remain; owned cancellable silence/validity deadline timers admit deadline commands only (`wait_deadline_timers_idle` separate from worker `wait_effects_idle`). **Issue stays OPEN** — live EventSubscription replacement, fanout wiring, live health/API schema and master cutover remain deferred.
+2. Next #284 slice (still library-only unless a human says otherwise): deepen mailbox recovery diagnostics / status projection; optional realization/speech deadline timer ownership. Still no live consumer/server activation.
 3. Do not activate NarrativeRuntime in the live service loop.
 
 ## Resume commands

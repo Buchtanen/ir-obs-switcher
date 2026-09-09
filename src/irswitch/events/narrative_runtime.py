@@ -8,6 +8,7 @@ consumer, overlay, or server loops. Owns mailbox dequeue order,
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Awaitable, Callable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -73,6 +74,8 @@ class NarrativeRuntime:
         *,
         realization_effect: EffectWorker | None = None,
         tts_effect: EffectWorker | None = None,
+        silence_deadline_delay_s: float = 3600.0,
+        validity_deadline_delay_s: float = 3600.0,
     ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
@@ -95,6 +98,10 @@ class NarrativeRuntime:
         self._tts_effect = tts_effect
         self._realization_task: asyncio.Task[None] | None = None
         self._tts_task: asyncio.Task[None] | None = None
+        self._silence_deadline_task: asyncio.Task[None] | None = None
+        self._validity_deadline_task: asyncio.Task[None] | None = None
+        self._silence_deadline_delay_s = float(silence_deadline_delay_s)
+        self._validity_deadline_delay_s = float(validity_deadline_delay_s)
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -194,8 +201,24 @@ class NarrativeRuntime:
     def tts_task_active(self) -> bool:
         return self._tts_task is not None and not self._tts_task.done()
 
+    def silence_deadline_task_active(self) -> bool:
+        return self._silence_deadline_task is not None and not self._silence_deadline_task.done()
+
+    def validity_deadline_task_active(self) -> bool:
+        return self._validity_deadline_task is not None and not self._validity_deadline_task.done()
+
     async def wait_effects_idle(self) -> None:
+        # Realization/TTS workers only. Deadline timers are long-lived arms.
         tasks = [task for task in (self._realization_task, self._tts_task) if task is not None]
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def wait_deadline_timers_idle(self) -> None:
+        tasks = [
+            task
+            for task in (self._silence_deadline_task, self._validity_deadline_task)
+            if task is not None
+        ]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -205,6 +228,10 @@ class NarrativeRuntime:
                 await self._cancel_task("_realization_task")
             elif effect == "effect:cancel_tts":
                 await self._cancel_task("_tts_task")
+            elif effect == "effect:cancel_silence_deadline":
+                await self._cancel_task("_silence_deadline_task")
+            elif effect == "effect:cancel_validity_deadline":
+                await self._cancel_task("_validity_deadline_task")
             elif effect == "effect:dispatch_realization":
                 await self._cancel_task("_realization_task")
                 token = self.current_realization_token()
@@ -223,8 +250,58 @@ class NarrativeRuntime:
                     self._run_worker(self._tts_effect, token, "_tts_task"),
                     name="narrative-tts",
                 )
+            elif effect == "effect:arm_silence_deadline":
+                await self._cancel_task("_silence_deadline_task")
+                generation = self._silence_generation
+                self._silence_deadline_task = asyncio.create_task(
+                    self._run_deadline_timer(
+                        kind="LONG_SILENCE_ELAPSED",
+                        generation=generation,
+                        delay_s=self._silence_deadline_delay_s,
+                        attr="_silence_deadline_task",
+                    ),
+                    name=f"narrative-silence-{generation}",
+                )
+            elif effect == "effect:arm_validity_deadline":
+                await self._cancel_task("_validity_deadline_task")
+                generation = self._validity_generation
+                self._validity_deadline_task = asyncio.create_task(
+                    self._run_deadline_timer(
+                        kind="VALIDITY_DEADLINE_ELAPSED",
+                        generation=generation,
+                        delay_s=self._validity_deadline_delay_s,
+                        attr="_validity_deadline_task",
+                    ),
+                    name=f"narrative-validity-{generation}",
+                )
         # Yield so newly created workers observe dispatch before the caller continues.
         await asyncio.sleep(0)
+
+    async def _run_deadline_timer(
+        self,
+        *,
+        kind: Literal["LONG_SILENCE_ELAPSED", "VALIDITY_DEADLINE_ELAPSED"],
+        generation: int,
+        delay_s: float,
+        attr: str,
+    ) -> None:
+        try:
+            await asyncio.sleep(delay_s)
+            now_ms = int(time.monotonic() * 1000)
+            self.admit(
+                NarrativeCommand.deadline(
+                    f"deadline:{kind}:{generation}:{now_ms}",
+                    kind,
+                    now_ms,
+                    generation=generation,
+                    deadline_mono_ms=now_ms,
+                )
+            )
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if getattr(self, attr) is asyncio.current_task():
+                setattr(self, attr, None)
 
     async def _cancel_task(self, attr: str) -> None:
         task: asyncio.Task[None] | None = getattr(self, attr)
