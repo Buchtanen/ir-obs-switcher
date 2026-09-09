@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) is **closed**; [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) is **closed**; **not shipped on `master`**. Next implementation package is [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) is **closed**; [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) is **closed**; [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) is **implemented** (not closed); **not shipped on `master`**. Next implementation package after close is [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269) (do not start unless a human says so).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#267) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#268) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#267, branch-only)
+## Implementation lookup (#239–#268, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -45,6 +45,7 @@
 | #265 freshness commit gate | events | `src/irswitch/events/freshness_commit.py` — [§ lookup](#265-freshness-commit-lookup) | `tests/test_freshness_commit.py` (**14**) |
 | #266 EN-only RealizationCatalog | contracts | `src/irswitch/contracts/realization_catalog.py` — [§ lookup](#266-realization-catalog-lookup) | `tests/test_realization_catalog.py` (**13**) |
 | #267 authored critical/lifecycle pack | contracts | `src/irswitch/contracts/authored_pack.py` — [§ lookup](#267-authored-pack-lookup) | `tests/test_authored_pack.py` (**11**) |
+| #268 compiled PromptOptions / prompt profiles | events | `src/irswitch/events/prompt_compiler.py` — [§ lookup](#268-prompt-compiler-lookup) | `tests/test_prompt_compiler.py` (**12**) |
 
 ### #247 FeatureEngine lookup
 
@@ -290,12 +291,27 @@
 - **Surface lexicon:** `render_surface_forms` is the shared finite EN number/unit/ordinal/band helper. Spoken numbers come from the bundle lexicon, never live telemetry.
 - **Anti-repeat:** among the four cards for the beat, unused first; requested `pattern_id` preferred when unused; if all spoken, reuse the requested card. Does not invent a fifth line.
 - **Fixtures:** `tests/fixtures/authored_pack/{transition,counterfactual_identity,expiry}.json`.
-- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay or events; not live-wired. No `eval`/`exec`/`compile`. Does not implement the live RealizationBundle compiler, PromptOptions (#268), Qwen transport (#269), or SemanticVerifier (#270).
+- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay or events; not live-wired. No `eval`/`exec`/`compile`. Does not implement the live RealizationBundle compiler from current facts/roster, Qwen transport (#269), or SemanticVerifier (#270). PromptOptions compilation is #268.
 - **Tests:** `tests/test_authored_pack.py` (**11**). First implementation SHA `6886d83b7a4093156a3d80604f035f297d57faed`. Related regression **281** passed.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `6886d83`; docs checkpoint `815ef46`; docs-keeper audit `a31840f`; close `f326cb0`; pin `ef51557`; feat CI [34347147521](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34347147521) green.
-- **Still out of scope:** live RealizationBundle compiler from current facts/roster, #268 PromptOptions, #269 Qwen transport, #270 SemanticVerifier, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live RealizationBundle compiler from current facts/roster, #269 Qwen transport, #270 SemanticVerifier, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #268 prompt-compiler lookup
+
+- **Compiler (`src/irswitch/events/prompt_compiler.py`):** `prompt_options_for`, `PromptCompiler.realize`, `PromptWorld`, `CompiledPrompt`, `PromptStep`. Reuses `#261` `PromptOptions` (`prompt-options/2`) from `events/beat_plan.py` — does not duplicate the type. Compiled prompt schema `compiled-prompt/2`. Lives in `events/` because contracts must not import `irswitch.events`. **Not** exported from `events/__init__.py`; **not** re-exported from `contracts/__init__.py`.
+- **Closed tuples (`PROFILES`):** `tight` = `(tight, fixed, 0, false, 1, 0.15, 0.75)`; `balanced` = `(balanced, family_pool, 1, false, 1, 0.35, 0.85)`; `loose` = `(loose, family_pool, 2, true, 2, 0.55, 0.90)`. Fields are not freely combinable.
+- **Clamp:** least permissive of `operator_max_profile` (`commentary.llm.max_profile`), BeatDefinition `maxFreedom`, family `promotedMaxFreedom`, family `preferredFreedom`. Further cap to **tight** when policy is `critical`, mapped role is `outcome|transition`, `history_complete=False`, or `min_selected_fact_confidence < 0.90`. Default `enabled_profiles={"tight"}` hard-disables balanced/loose for the first production slice. `widen_for_repetition` / `widen_for_failure` never widen (force tight). Family-pool with fewer than two enabled cards is `realization_input_invalid` (not silently converted to fixed).
+- **Prompt text:** `realize()` compiles only the controlled-EN SurfaceLexicon and family grammar. Tight is one sentence. Contract `qwen-surface-en-tight/1` is legal only for tight. System text order: literal BASE block + `FAMILY GRAMMAR` + canonical family JSON + `PATTERN CARD` + one card + OUTPUT LIMITS. Family grammar is built from packaged `beat-catalog.json` `realizationFamilies` (does not load `docs/v2.0.0/machine/realization-contract.json`). userText is `canonical_json` of a frozen DATA projection. Hashes via `canonical_sha256`; `promptId` = `prompt:` + first 32 hex of promptHash. Byte limits: system 12288, user 20480, sum 32768 → `realization_input_invalid`.
+- **Seed:** canonical JSON plus SHA-256 first-eight-byte big-endian via existing `deterministic_planning_seed`. Frozen F33 material `{streamEpoch:3, opportunityId:"opp:401", episodeId:"battle-ahead:3:17:22:4", episodeRevision:4, beatId:"battle.approach", cycleAttemptOrdinal:1}` → seed `16041955996680716084`.
+- **Realize vs options:** `prompt_options_for` may return a wider closed tuple when overrides allow. `realize()` of the prompt text fails `profile_not_promoted` when realized freedom is not tight (no reviewed contract version for balanced/loose). Method is `realize`, not `compile` — product source must not contain the `compile(` substring (eval/exec/compile ban).
+- **Flags:** `used_live_view` / `used_roster` / `used_config` always False. Timeout/cancel fail closed. Stale `expected_catalog_hash` → `realization_input_invalid`. Does not open a Qwen socket.
+- **Fixtures:** `tests/fixtures/prompt_compiler/{transition,counterfactual_identity,expiry}.json`.
+- **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import NarrativeRuntime, overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not implement Qwen transport (#269) or SemanticVerifier (#270).
+- **Tests:** `tests/test_prompt_compiler.py` (**12**). First implementation SHA `a3bab698e2f2732afb6d96e69e1637f2d733bd04`. Related regression **293** passed.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged.
+- **Still out of scope:** #269 Qwen transport / RealizationRequest / SSE / HTTP, #270 SemanticVerifier, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 

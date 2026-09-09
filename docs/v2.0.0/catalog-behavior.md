@@ -1,6 +1,6 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (closed); SpeechLane by [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) (closed); FreshnessGate by [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (closed); RealizationCatalog by [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) (closed); authored pack by [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) (closed); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (closed); SpeechLane by [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) (closed); FreshnessGate by [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (closed); RealizationCatalog by [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) (closed); authored pack by [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) (closed); PromptCompiler by [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) (implemented, not closed); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
@@ -14,7 +14,8 @@
 **Freshness:** `irswitch.events.freshness_commit.FreshnessGate`
 **Realization:** `irswitch.contracts.realization_catalog.load_realization_catalog`
 **Authored pack:** `irswitch.contracts.authored_pack.load_authored_pack`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**) + `tests/test_speech_lane.py` (**14**) + `tests/test_freshness_commit.py` (**14**) + `tests/test_realization_catalog.py` (**13**) + `tests/test_authored_pack.py` (**11**)
+**Prompt compiler:** `irswitch.events.prompt_compiler.PromptCompiler`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**) + `tests/test_speech_lane.py` (**14**) + `tests/test_freshness_commit.py` (**14**) + `tests/test_realization_catalog.py` (**13**) + `tests/test_authored_pack.py` (**11**) + `tests/test_prompt_compiler.py` (**12**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -155,11 +156,17 @@ Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not liv
 
 Fail-closed reasons: `authored_fallback_forbidden`, `authored_backend_required`, `realization_cancelled`, `realization_timeout`, `realization_input_invalid`, `unknown_authored_beat`, `forbidden_claim`, `realization_output_oversize`. Anti-repeat uses only the four existing cards. Replay fixtures: `tests/fixtures/authored_pack/{transition,counterfactual_identity,expiry}.json`.
 
-Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. Does not implement the live RealizationBundle compiler, PromptOptions, Qwen transport or SemanticVerifier. Module lookup: [inflight § #267](../dokumentace/inflight/README.md#267-authored-pack-lookup).
+Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. Does not implement the live RealizationBundle compiler from current facts/roster, Qwen transport or SemanticVerifier. PromptOptions compilation is #268. Module lookup: [inflight § #267](../dokumentace/inflight/README.md#267-authored-pack-lookup).
+
+## Prompt compiler (#268)
+
+`PromptCompiler` compiles closed `PromptOptions` tuples and one tight `compiled-prompt/2` from a frozen `PromptWorld`. Reuses `#261` `PromptOptions` (`prompt-options/2`); does not duplicate the type. Types: `PromptCompiler`, `PromptWorld`, `CompiledPrompt`, `PromptStep`. Closed tuples `tight|balanced|loose` are not freely combinable. Clamp is the least permissive of operator / beat / family / runtime safety; first production `enabled_profiles={"tight"}`. Repetition and failure never widen. `realize()` of prompt text is legal only for tight (`qwen-surface-en-tight/1`); wider tuples from `prompt_options_for` fail `profile_not_promoted` at realize. Tight system text is BASE + one family grammar + one pattern card + OUTPUT LIMITS — no unrelated family examples. Seed uses `deterministic_planning_seed` (F33 golden `16041955996680716084`). Method is `realize`, not `compile`.
+
+Replay fixtures: `tests/fixtures/prompt_compiler/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; not live-wired. Does not implement Qwen transport or SemanticVerifier. Module lookup: [inflight § #268](../dokumentace/inflight/README.md#268-prompt-compiler-lookup).
 
 ## Out of scope
 
 - live RealizationBundle compiler from current facts/roster
-- #268 PromptOptions / #269 Qwen transport / #270 SemanticVerifier (next; do not start unless a human says so)
+- #269 Qwen transport / #270 SemanticVerifier (next after #268 close; do not start unless a human says so)
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts
