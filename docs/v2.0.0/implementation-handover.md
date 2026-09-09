@@ -117,6 +117,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - First #269 Qwen transport SHA: `89f89beee8a73a3ee1cc857b83c57fa5121c2ba6` (`feat: add bounded Qwen transport and warm-up (#269)`). Local pytest: `tests/test_qwen_transport.py` **13** passed. Related regression: qwen_transport + prompt_compiler + authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **306** passed. Feat CI [34351003627](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34351003627) is green.
 - #269 docs checkpoint SHA: `e2f2edac4f3d439854db5d88f7e07b5eae5e1d5d` (`docs: record Qwen transport implementation checkpoint (#269)`)
 - #269 docs-keeper audit SHA: `4c84ec421f002b4a15b18ad1a7f162a5f9345bb7` (`docs: apply Qwen transport docs-keeper audit (#269)`)
+- #269 closing SHA: `7eb5e3fc3cb263c01f85f27accbb5ab272e7d007` (`docs: close Qwen transport checkpoint (#269)`)
 - #269 verifier: GREEN — `tests/test_qwen_transport.py` **13** passed; related **306** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; no NarrativeRuntime/overlay/commentary/FactView imports; no pyproject/machine JSON edits; transport failure never authored fallback.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -319,7 +320,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #269 is closed in its own scope: bounded Qwen transport. First SHA `89f89beee8a73a3ee1cc857b83c57fa5121c2ba6`; docs checkpoint `e2f2edac4f3d439854db5d88f7e07b5eae5e1d5d`; docs-keeper audit `4c84ec421f002b4a15b18ad1a7f162a5f9345bb7`; local pytest **13**; related **306** passed; verifier GREEN; feat CI [34351003627](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34351003627) green.
+1. #269 is closed in its own scope: bounded Qwen transport. First SHA `89f89beee8a73a3ee1cc857b83c57fa5121c2ba6`; docs checkpoint `e2f2edac4f3d439854db5d88f7e07b5eae5e1d5d`; docs-keeper audit `4c84ec421f002b4a15b18ad1a7f162a5f9345bb7`; closing SHA `7eb5e3fc3cb263c01f85f27accbb5ab272e7d007`; local pytest **13**; related **306** passed; verifier GREEN; feat CI [34351003627](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34351003627) green.
 2. Next: #270 SemanticVerifier. Do not start #270 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
