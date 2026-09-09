@@ -110,6 +110,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - First #268 PromptCompiler SHA: `a3bab698e2f2732afb6d96e69e1637f2d733bd04` (`feat: add compiled PromptOptions and prompt profiles (#268)`). Local pytest: `tests/test_prompt_compiler.py` **12** passed. Related regression: prompt_compiler + authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **293** passed. Feat CI [34349254777](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34349254777) is green.
 - #268 docs checkpoint SHA: `f4a3cf2248d13326f6631665d3863a5e97f61025` (`docs: record PromptCompiler implementation checkpoint (#268)`)
 - #268 docs-keeper audit SHA: `ccaadbcd93dae02a5f6269329a65ab59821c06a8` (`docs: apply PromptCompiler docs-keeper audit (#268)`)
+- #268 closing SHA: `633c74536e74c8c07d044993535fc22ff845261b` (`docs: close PromptCompiler checkpoint (#268)`)
 - #268 verifier: GREEN — `tests/test_prompt_compiler.py` **12** passed; related **293** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; no NarrativeRuntime/overlay/commentary/FactView imports; no pyproject/machine JSON edits; tight is the only realized prompt contract.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -310,7 +311,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #268 is closed in its own scope: PromptCompiler. First SHA `a3bab698e2f2732afb6d96e69e1637f2d733bd04`; docs checkpoint `f4a3cf2248d13326f6631665d3863a5e97f61025`; docs-keeper audit `ccaadbcd93dae02a5f6269329a65ab59821c06a8`; local pytest **12**; related **293** passed; verifier GREEN; feat CI [34349254777](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34349254777) green.
+1. #268 is closed in its own scope: PromptCompiler. First SHA `a3bab698e2f2732afb6d96e69e1637f2d733bd04`; docs checkpoint `f4a3cf2248d13326f6631665d3863a5e97f61025`; docs-keeper audit `ccaadbcd93dae02a5f6269329a65ab59821c06a8`; closing SHA `633c74536e74c8c07d044993535fc22ff845261b`; local pytest **12**; related **293** passed; verifier GREEN; feat CI [34349254777](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34349254777) green.
 2. Next: #269 bounded Qwen transport. Do not start #269 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
