@@ -1,11 +1,12 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (implemented); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
 **Retention:** `irswitch.events.episode_retention.EpisodeRetention`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**)
+**Silence:** `irswitch.events.silence_clock.SilenceClock`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -80,9 +81,13 @@ Invalid packaged catalogs disable commentary without raising: `outcome=commentar
 
 `EpisodeRetention` stores bounded resolved-outcome metadata without a prepared-speech queue. Schema `episode-retention/2`. Policy TTL/salience come from frozen catalog families (`critical` 45s/90, `result` 30s/78, `live_story` 10s/64, `transient` 6s/56, `context` 20s/46, `filler` 12s/24). `speakable_until_ms = resolvedMonoMs + ttlMs`; half-open validity `now < speakable_until`. Self-contained `critical`/`result` outcomes remain selectable after speech complete; intermediate `live_story`/`transient` revisions supersede same `(occurrenceId, definitionId, semanticIdentity)` and are `skipped` after speech. `on_speech_complete` re-evaluates `expired_ttl` / `skipped` / remaining self-contained by `(-salience, speakable_until_ms, episodeId)`. Default `resolved_capacity=256` matches the frozen public contract. No BeatPlan / TtsUtterance storage. Not exported from `events/__init__.py`; not live-wired. Module lookup: [inflight § #259](../dokumentace/inflight/README.md#259-resolved-episode-retention-lookup).
 
+## SilenceClock (#260)
+
+`SilenceClock` owns the one-shot audience silence deadline and fact-grounded filler selection via `evaluate_filler`. Default interval `LONG_SILENCE_MS=33_000` (`commentary.director.long_silence_s`, already frozen). Fire at `now >= deadline`; stale generation is a no-op; rearm is exactly `now + interval` when no playback is accepted. Playback accepted cancels without credit. Building/committed and race events do not move the origin. Busy lane `building|committed|speaking|stopping` selects no filler and still rearms. OBS unknown pauses without elapsed credit; disable/shutdown cancel. Pre-session admits only stream-scope `filler.lobby` plus fresh stream `context.track_identity`. Phase fillers need fresh `vehicle.phase` plus one `W_filler_phase` companion; other occurrence fillers need matching context plus one `W_filler_off_track` or `W_quiet_track` fact. Empty allowlist, forecast weather and invented race predicates fail `source_guard`; a live race opportunity yields `no_candidate`; race candidates replace an uncommitted filler without moving the origin. Story id `filler_single`. Not exported from `events/__init__.py`; not live-wired. Module lookup: [inflight § #260](../dokumentace/inflight/README.md#260-long-silence-lifecycle-lookup).
+
 ## Out of scope
 
-- #260 long-silence lifecycle and filler opportunities
 - #261 BeatPlan and just-in-time planner
+- #283 opportunity TTL / arbitration
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts
