@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C next is #255; #254 UNDER_PRESSURE temporal detector is closed
+**Status:** #255 composite two-front battle detector is implemented on this branch (issue still open); next after close is #256; #254 UNDER_PRESSURE temporal detector is closed
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)

@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) are closed on this branch; **not shipped on `master`**. Next implementation package is [#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) are closed on this branch; [#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255) composite two-front is **implemented on this branch, issue still open**; **not shipped on `master`**. Next after #255 close is [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#254) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#255) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#254, branch-only)
+## Implementation lookup (#239–#255, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -31,6 +31,7 @@
 | #252 stream/session lifecycle edges | events | `events/lifecycle_edges.py` — detail below | `tests/test_lifecycle_edges.py` (**13**) |
 | #253 CLOSING temporal detector | events | `events/closing.py` — detail below | `tests/test_closing.py` (**19**) |
 | #254 UNDER_PRESSURE temporal detector | events | `events/pressure.py` — detail below | `tests/test_pressure.py` (**14**) |
+| #255 composite two-front battle detector | events | `events/two_front.py` — detail below | `tests/test_two_front.py` (**18**) |
 
 ### #247 FeatureEngine lookup
 
@@ -64,10 +65,10 @@
 
 - **FSM (`events/detector_bank.py`):** `reduce_lifecycle` matches frozen `reduce_directional` goldens (`inactive|candidate|active|clearing`). `DetectorBank` keys instances by `(detectorId, detectorVersion, streamEpoch, occurrenceId, orderedCorrelationKey)`, evaluates compiled `enter_signal` / `clear` / `immediate` / `material_update` trees, and owns confirm/clear/update holds. Unknown never satisfies enter; unknown/stale clear starts the clear hold. Duplicate or older `frameSequence` is an audited no-op.
 - **Emissions:** detector `STARTED`/`UPDATED`/`ENDED` only. Ahead maps to existing V4 `HUNTING`, behind to `HUNTED`. `endedEvent` stays null — no `HUNTING_ENDED`. Material revisions compare to the last emitted net-closing/band and are rate-limited by `update_min_interval_s`. Close expires `battle.closing` as a recorded fact predicate; FactLedger is not called.
-- **Scope:** directional catalog detectors only. Band projection (`reduce_band`) is implemented in #253; two-front (`reduce_composite` / `BATTLE_FOR_POSITION`) stays #255. `disable_for_run(..., required_capture_lost)` is the narrow capture-loss control; it does not import commentary.
+- **Scope:** directional catalog detectors only. Band projection (`reduce_band`) is implemented in #253; two-front composite (`reduce_composite` / `BATTLE_FOR_POSITION`) is implemented in #255 (issue still open). `disable_for_run(..., required_capture_lost)` is the narrow capture-loss control; it does not import commentary.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_detector_bank.py` (**19**), including the seven directional goldens. First implementation SHA `e41ffb42f5e83236a4db58194dd4c5903fbc0899`; docs checkpoint SHA `0a44978d2468f30bb343100c8b8731bd9850fb9b`.
-- **Still out of scope:** live EventManager/NarrativeRuntime wiring, two-front composite (#255), V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 ### #251 direct lap/sector edges lookup
 
@@ -87,27 +88,39 @@
 - **Live paths unchanged:** live `STREAM_START` commentary path, `SessionEndTracker`, and V4 overlay wire stay on master wiring. Does not import StreamTimeline, DetectorBank, DirectEdgeBank, NarrativeRuntime, overlay tape or commentary.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Not wired into the live loop.
 - **Tests:** `tests/test_lifecycle_edges.py` (**13**). First implementation SHA `c4688a40a43e40d47e2698114bcb06a245b97914`; docs checkpoint SHA `d3c1934c90e7f920059672c12e2eeb9a3c5193f6`.
-- **Still out of scope:** live EventManager wiring, two-front composite (#255), NarrativeRuntime (#284).
+- **Still out of scope:** live EventManager wiring, NarrativeRuntime (#284).
 
 ### #253 CLOSING temporal detector lookup
 
 - **Band reducer (`events/closing.py`):** `reduce_band` matches frozen machine `bandBoundaries` goldens (`closing|approach|attack|overlap`). Hysteretic enter/exit thresholds from catalog defaults (`approach_enter_s` … `overlap_confirm_s`).
-- **Product detector:** `ClosingDetector` / `ClosingTrace` / `ClosingCandidate` / `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). UNDER_PRESSURE / `battle_behind_v1` is #254.
+- **Product detector:** `ClosingDetector` / `ClosingTrace` / `ClosingCandidate` / `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (implemented in #255, issue still open). UNDER_PRESSURE / `battle_behind_v1` is #254.
 - **V4 mapping:** `closing`→`HUNTING`, `approach`→`APPROACH`, `attack`→`ATTACK_RANGE`, `overlap`→`SIDE_BY_SIDE`. Close expires `battle.closing` plus band facts; no new V4 `*_ENDED`. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_closing.py` (**19**), including eight `bandBoundaries` goldens. First implementation SHA `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06`; docs checkpoint SHA `630bd19aa4400e38d10ef75b2b1b5f1228641854`.
-- **Still out of scope:** live EventManager/NarrativeRuntime wiring, two-front composite (#255), V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 ### #254 UNDER_PRESSURE temporal detector lookup
 
 - **Band reducer:** reuses `reduce_band` from `events/closing.py` (matches frozen `bandBoundaries` goldens; no duplicate goldens in `tests/test_pressure.py`).
-- **Product detector:** `PressureDetector` / `PressureTrace` / `PressureCandidate` / `PressureStep`. Uses `DetectorBank` for `battle_behind_v1` only (`detector_ids=("battle_behind_v1",)`); does not drive `battle_two_front_v1` or `reduce_composite` (#255).
+- **Product detector:** `PressureDetector` / `PressureTrace` / `PressureCandidate` / `PressureStep`. Uses `DetectorBank` for `battle_behind_v1` only (`detector_ids=("battle_behind_v1",)`); does not drive `battle_two_front_v1` or `reduce_composite` (implemented in #255, issue still open).
 - **V4 mapping:** `closing`→`HUNTED` / `battle.pressure_behind` / `race.battle.pressure`; inward bands `approach|attack|overlap`→`RIVAL_THREAT` / `battle.rival_threat` / `race.battle.pressure`. Facts: catalog `battle.closing` on the FSM; inward bands publish registered `battle.position_threat` (do not invent `battle.pressure_behind.band`, `UNDER_PRESSURE` V4 id / boolean / `*_ENDED`). Close expires `battle.closing` plus `battle.position_threat`; no new V4 end type. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_pressure.py` (**14**); related regression `tests/test_pressure.py` + `tests/test_closing.py` + `tests/test_detector_bank.py` = **52** passed. First implementation SHA `13e01ef94481420e06be0859c76b7d0f427ae212`; docs checkpoint SHA `9f69d9110afdccdd39ae97863f9729c79009b0ad`.
-- **Still out of scope:** live EventManager/NarrativeRuntime wiring, two-front composite (#255), V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #255 composite two-front battle detector lookup
+
+- **Composite reducer (`events/two_front.py`):** `reduce_composite` matches frozen machine `compositeScenarios` goldens in `docs/v2.0.0/machine/detector-catalog-goldens.json`.
+- **Product detector:** `TwoFrontDetector` / `TwoFrontTrace` / `TwoFrontCandidate` / `TwoFrontStep`. Uses compiled `battle_two_front_v1` predicates plus `reduce_lifecycle` from `events/detector_bank.py`; does **not** extend `DetectorBank` (bank stays directional-only; `detector_ids=("battle_two_front_v1",)` still emits nothing).
+- **Correlation key:** `(streamEpoch, occurrenceId, frontRelationEpoch, rearRelationEpoch)` — target/epoch replacement force-closes the old instance under a new key; the old key is never mutated.
+- **Open guards:** both parent relations active, same hero/occurrence, distinct targets, **and** both parent `battle.closing` truths supplied via `front_closing` / `rear_closing`. Composite never invents missing parent facts.
+- **V4 mapping:** `BATTLE_FOR_POSITION` / `battle.two_front` / `race.battle.two_front` **once on confirmed entry only** (no UPDATED). Target/epoch replacement force-closes without a V4 end.
+- **Features/facts:** publishes registered `battle.two_front_active` on STARTED; clears on ENDED. Catalog `factPredicate` is null — no two-front AtomicFact, no `*_ENDED`. One-side loss starts `two_front_clear_s`; restore of the same epochs cancels clearing without a new STARTED; remaining parent facts are not expired.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not live-wired.
+- **Tests:** `tests/test_two_front.py` (**18**), including six `compositeScenarios` goldens; related regression `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` = **70** passed. First implementation SHA `ad9d092778e07982e3377fcc911a60de55b48990`.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape. Close-gate / issue close awaits human review.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
