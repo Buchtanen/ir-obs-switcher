@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** #255 composite two-front battle detector is implemented on this branch (issue still open); next after close is #256; #254 UNDER_PRESSURE temporal detector is closed
+**Status:** Wave C next is #256; #255 composite two-front battle detector is closed
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -67,7 +67,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [x] [#252 — v2: stream and session lifecycle triggers](https://github.com/Buchtanen/ir-obs-switcher/issues/252) — depends on #243, #244, #250.
 - [x] [#253 — v2: CLOSING temporal detector](https://github.com/Buchtanen/ir-obs-switcher/issues/253) — depends on #241, #248–#250.
 - [x] [#254 — v2: UNDER_PRESSURE temporal detector](https://github.com/Buchtanen/ir-obs-switcher/issues/254) — depends on #241, #248–#250.
-- [ ] [#255 — v2: composite two-front battle detector](https://github.com/Buchtanen/ir-obs-switcher/issues/255) — depends on #253, #254.
+- [x] [#255 — v2: composite two-front battle detector](https://github.com/Buchtanen/ir-obs-switcher/issues/255) — depends on #253, #254.
 - [ ] [#256 — v2: v2 event-family coverage matrix](https://github.com/Buchtanen/ir-obs-switcher/issues/256) — depends on #235, #236; audits all 60 identifiers and the 64-beat baseline.
 
 ## Wave D — episodes, beats and direction

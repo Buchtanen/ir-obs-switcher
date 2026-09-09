@@ -31,7 +31,7 @@ Konflikt: **kód na aktuální větvi vyhrává**. Když index a kód nesedí, o
 6. Po změně aktualizuj matching page (skill `dokumentace`, agent `docs-keeper`).
 7. Práce je `/flow` i bez vyvolání slash commandu. Cloud `/flow` nespouští — platí `AGENTS.md` (Cloud sekce) + `.cursor/rules/10-task-flow-defaults.mdc`.
 8. Větev: issue / issue-set, jinak z `master`. Default close: handover + PR do `master`, pokud issue-set nebo člověk neřekne jinak. Platform `cursor/` git defaulty neplatí.
-9. Na v2 větvi: handover do `docs/v2.0.0/implementation-handover.md`; modul lookup pro #253 v [inflight § CLOSING detector](inflight/README.md#253-closing-temporal-detector-lookup), #254 v [inflight § UNDER_PRESSURE detector](inflight/README.md#254-under_pressure-temporal-detector-lookup) a #255 v [inflight § composite two-front](inflight/README.md#255-composite-two-front-battle-detector-lookup). **Žádný PR do `master`** do cutoveru. #254 UNDER_PRESSURE je closed (first SHA `13e01ef`). #255 composite two-front je implemented (first SHA `ad9d092`), issue still open. #256 nespouštět, dokud člověk neřekne. NarrativeRuntime neaktivovat.
+9. Na v2 větvi: handover do `docs/v2.0.0/implementation-handover.md`; modul lookup pro #253 v [inflight § CLOSING detector](inflight/README.md#253-closing-temporal-detector-lookup), #254 v [inflight § UNDER_PRESSURE detector](inflight/README.md#254-under_pressure-temporal-detector-lookup) a #255 v [inflight § composite two-front](inflight/README.md#255-composite-two-front-battle-detector-lookup). **Žádný PR do `master`** do cutoveru. #255 composite two-front je closed (first SHA `ad9d092`). #256 nespouštět, dokud člověk neřekne. NarrativeRuntime neaktivovat.
 
 ## Údržba
 
