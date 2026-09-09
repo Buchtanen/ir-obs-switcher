@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #248 gap estimators are claimed/implemented on this branch; #247 FeatureEngine is closed
+**Status:** Wave C next is #249; #248 gap estimators are closed
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -60,7 +60,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 ## Wave C — features and triggers
 
 - [x] [#247 — v2: typed FeatureEngine registry and bounded windows](https://github.com/Buchtanen/ir-obs-switcher/issues/247) — depends on #236, #237, #245.
-- [ ] [#248 — v2: versioned gap estimator and validity rules](https://github.com/Buchtanen/ir-obs-switcher/issues/248) — depends on #247.
+- [x] [#248 — v2: versioned gap estimator and validity rules](https://github.com/Buchtanen/ir-obs-switcher/issues/248) — depends on #247.
 - [ ] [#249 — v2: safe typed predicate AST](https://github.com/Buchtanen/ir-obs-switcher/issues/249) — depends on #236, #247.
 - [ ] [#250 — v2: generic correlated detector lifecycle FSM](https://github.com/Buchtanen/ir-obs-switcher/issues/250) — depends on #241, #247, #249.
 - [ ] [#251 — v2: direct lap and sector edge triggers](https://github.com/Buchtanen/ir-obs-switcher/issues/251) — depends on #237, #243, #250.

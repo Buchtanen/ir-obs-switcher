@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247) FeatureEngine are closed on this branch; [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) gap estimators are claimed and implemented here; **not shipped on `master`**. Next after #248 close is [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) are closed on this branch; **not shipped on `master`**. Next implementation package is [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) (unclaimed).
 
 ## Where to look on this branch
 
