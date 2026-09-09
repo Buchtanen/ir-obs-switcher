@@ -1,0 +1,10 @@
+{
+  "family": "battle.closing",
+  "text": "Alex is closing on Morgan.",
+  "subjectSurface": "Alex",
+  "requiredClaimSurface": "is closing on Morgan",
+  "nowMs": 20000,
+  "deadlineMonoMs": 15000,
+  "expectOutcome": "failed",
+  "expectReason": "realization_timeout"
+}
