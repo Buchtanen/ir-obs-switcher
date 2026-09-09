@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) is **closed** on this branch; **not shipped on `master`**. Next implementation package is [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) is **closed** on this branch; [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) is **implemented** on this branch (issue still open until close-gate); **not shipped on `master`**. Next implementation package is [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (do not start unless a human says so).
 
 ## Where to look on this branch
 
@@ -11,7 +11,7 @@
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#260, branch-only)
+## Implementation lookup (#239–#261, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -37,6 +37,7 @@
 | #258 lineage-aware EpisodeRegistry | events | `src/irswitch/events/episode_registry.py` — [§ lookup](#258-lineage-aware-episoderegistry-lookup) | `tests/test_episode_registry.py` (**13**) |
 | #259 resolved-episode retention | events | `src/irswitch/events/episode_retention.py` — [§ lookup](#259-resolved-episode-retention-lookup) | `tests/test_episode_retention.py` (**9**) |
 | #260 long-silence / filler opportunities | events | `src/irswitch/events/silence_clock.py` — [§ lookup](#260-long-silence-lifecycle-lookup) | `tests/test_silence_clock.py` (**14**) |
+| #261 immutable BeatPlan / just-in-time planner | events | `src/irswitch/events/beat_plan.py` — [§ lookup](#261-immutable-beatplan-lookup) | `tests/test_beat_plan.py` (**14**) |
 
 ### #247 FeatureEngine lookup
 
@@ -167,9 +168,9 @@
 - **Self-contained families:** `critical` + `result` (pass/finish). Intermediate (`live_story`/`transient`) supersede same `(occurrenceId, definitionId, semanticIdentity)` and are `skipped` after speech complete (not narrated later).
 - **`on_speech_complete`:** re-evaluates `expired_ttl` / `skipped` / remaining self-contained; selection order `(-salience, speakable_until_ms, episodeId)`. No prepared-speech queue.
 - **Capacity:** default `resolved_capacity=256` (same frozen public contract as #258). Overflow drops oldest `(resolvedMonoMs, episodeId)`.
-- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. No eval/exec/compile. #260 fillers are implemented separately; does not implement #261 BeatPlan or NarrativeRuntime.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. No eval/exec/compile. #260 fillers are implemented separately; does not implement NarrativeRuntime.
 - **Tests:** `tests/test_episode_retention.py` (**9**). First implementation SHA `af72b73ddc36281be3e8b7088189738409ede659`. Related regression: episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **85** passed.
-- **Still out of scope:** #261 BeatPlan, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** #283 opportunity TTL/arbitration, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 ### #260 long-silence lifecycle lookup
 
@@ -178,11 +179,25 @@
 - **Audience window:** `runtime status=ready|degraded`, `commentary_enabled=true`, `narrative_run_active=true`, OBS `active`. OBS unknown/inactive **pauses** (no elapsed credit); resume rearms a full interval. Disable / stream end / shutdown cancel without credit.
 - **Elapsed:** one-shot `LONG_SILENCE_ELAPSED` `{generation, deadlineMonoMs}`; if no playback is accepted, rearm exactly `now + interval` (no shorter retry). Busy lane `building|committed|speaking|stopping` selects no filler and still rearms.
 - **Filler guards:** pre-session (no SessionRef) admits only stream-scope `filler.lobby` with fresh stream `context.track_identity`. Phase fillers need fresh `vehicle.phase` plus exactly one fresh `W_filler_phase` companion; garage/lobby/on_track need matching `broadcast.context` plus exactly one fresh `W_filler_off_track` or `W_quiet_track` fact. Empty allowlist, forecast weather, and invented race predicates (`position.passed`) fail `source_guard`. A live race opportunity returns `no_candidate` (director may pick silence). Race candidates replace an uncommitted filler without moving the silence origin. Story id `filler_single`.
-- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import commentary or overlay; not live-wired. No BeatPlan / EventOpportunity queue / utterance emit. Does not implement #261 or #283, or activate NarrativeRuntime.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import commentary or overlay; not live-wired. No EventOpportunity queue / utterance emit. Does not implement #283 or activate NarrativeRuntime.
 - **Tests:** `tests/test_silence_clock.py` (**14**). First implementation SHA `754f21e7a4ec54d3cc61726f4bf8f70854a6de50`. Related regression: silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **99** passed.
-- **Still out of scope:** #261 BeatPlan, #283 opportunity TTL/arbitration, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** #283 opportunity TTL/arbitration, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #261 immutable BeatPlan lookup
+
+- **Planner (`events/beat_plan.py`):** `BeatPlanner`, `BeatPlan`, `PlanIntent`, `PlanStep`, `BoundClaim`, `PromptOptions`, `FunnelLink`, `CandidateOrder`, `tight_prompt_options`. Schemas `beat-plan/2` + `prompt-options/2`. `BeatPlanner.plan(intent, lane=..., planning_cycle_id=...)` → `PlanStep(reason, plan, opportunity_consumed=False)`.
+- **Reasons:** `planned` / `lane_busy` / `source_guard_failed` / `future_successor_forbidden` / `ledger_dump_forbidden` / `consecutive_cap` / `not_self_contained` / `deduped` / `planning_cycle_exhausted`. Busy lanes `building|committed|speaking|stopping` → no plan.
+- **Dedup:** key `(beat_id, episode_id, episode_revision)` merges source refs. Same `planningCycleId`: ordinal `1|2` then `planning_cycle_exhausted`. `candidateOrder={reducerSequence,sourceOrdinal}` is the stable age/tie-break authority.
+- **Expiry:** half-open `plannedMonoMs <= now < expiresMonoMs`. Null occurrence/lineage only for `stream.started` and stream-scope `filler.lobby`.
+- **PromptOptions baseline:** `tight_prompt_options` — freedom `tight`, patternChoice `fixed`, optionalClaimLimit 0, maxSentences 1, temperature 0.15, topP 0.75; seed from `deterministic_planning_seed(PlanningSeedMaterial)`. First production catalog `promotedMaxFreedom=tight` — no widen documented.
+- **Role map:** catalog `result`→`outcome`, `single`→`filler`. Self-contained after speech: closing / critical / catalog policy `critical|result`. Consecutive cap: min(public `GLOBAL_CONSECUTIVE_CAP=3`, story `max_consecutive_non_closing_beats`); closing/critical spared.
+- **Guards:** ledger dump forbidden — `selected_fact_ids` must equal the claim-fact union (no extra ledger dump). Future successor plans forbidden (`future_beat_ids` nonempty → reject). Every selected claim has fact/evidence refs; empty `fact_ids` → `source_guard_failed`. G0 forbidden claim types attached on the plan. Language constant `en`.
+- **Replay fixtures:** `tests/fixtures/beat_plan/{transition,counterfactual_identity,expiry}.json`.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import `irswitch.commentary`, `irswitch.overlay`, or NarrativeRuntime; not live-wired. No eval/exec/compile. Does not consume the source opportunity; does not emit utterance. Does not implement #283 EventOpportunity queue, #262 director, #263 ExposureStore, #264 speech lane, or RealizationBundle.
+- **Tests:** `tests/test_beat_plan.py` (**14**). First implementation SHA `fef616aeb34fb35631c327438a99ad6b41c7170a`. Related regression: beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **175** passed.
+- **Still out of scope:** #283 opportunity TTL/arbitration, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 

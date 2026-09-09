@@ -1,6 +1,6 @@
 # v2.0.0 narrative schemas, IDs and reason registry freeze
 
-**Status:** design-freeze candidate owned by issues #235–#239, #245 and #261 (**#235–#239 and #245 closed** on branch; **#261 open**)
+**Status:** design-freeze candidate owned by issues #235–#239, #245 and #261 (**#235–#239 and #245 closed** on branch; **#261 implemented on this branch**)
 
 This branch-only artifact freezes the semantic DTO boundary. Field names below are the canonical lower-camel-case JSON/tape representation; Python may use snake_case internally but round-trips must be lossless. Core DTO, beat, detector, successor-graph, integrated loader, public-config and public-API projections are materialized under `machine/`; controlled-English and executable scenario fixtures remain separate design-freeze gates.
 
