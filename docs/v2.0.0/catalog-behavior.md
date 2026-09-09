@@ -167,6 +167,6 @@ Replay fixtures: `tests/fixtures/prompt_compiler/{transition,counterfactual_iden
 ## Out of scope
 
 - live RealizationBundle compiler from current facts/roster
-- #269 Qwen transport / #270 SemanticVerifier (next after #268 close; do not start unless a human says so)
+- #269 Qwen transport / #270 SemanticVerifier (next; do not start unless a human says so)
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts
