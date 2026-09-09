@@ -103,6 +103,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - First #267 authored-pack SHA: `6886d83b7a4093156a3d80604f035f297d57faed` (`feat: add authored critical and lifecycle realization pack (#267)`). Local pytest: `tests/test_authored_pack.py` **11** passed. Related regression: authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **281** passed. Feat CI [34347147521](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34347147521) is green.
 - #267 docs checkpoint SHA: `815ef46a336b8d0dc29c339b40c15cb44ea1c5e0` (`docs: record authored pack implementation checkpoint (#267)`)
 - #267 docs-keeper audit SHA: `a31840f56e6647c3a5308db76aa00b1b2c75e386` (`docs: apply authored pack docs-keeper audit (#267)`)
+- #267 closing SHA: `f326cb0f6526072e7ab77ffd749fed397b6a4edb` (`docs: close authored pack checkpoint (#267)`)
 - #267 verifier: GREEN — `tests/test_authored_pack.py` **11** passed; related **281** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/events imports; no pyproject/machine JSON edits; authored mode never a Qwen fallback.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -301,7 +302,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #267 is closed in its own scope: authored pack. First SHA `6886d83b7a4093156a3d80604f035f297d57faed`; docs checkpoint `815ef46a336b8d0dc29c339b40c15cb44ea1c5e0`; docs-keeper audit `a31840f56e6647c3a5308db76aa00b1b2c75e386`; local pytest **11**; related **281** passed; verifier GREEN; feat CI [34347147521](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34347147521) green.
+1. #267 is closed in its own scope: authored pack. First SHA `6886d83b7a4093156a3d80604f035f297d57faed`; docs checkpoint `815ef46a336b8d0dc29c339b40c15cb44ea1c5e0`; docs-keeper audit `a31840f56e6647c3a5308db76aa00b1b2c75e386`; closing SHA `f326cb0f6526072e7ab77ffd749fed397b6a4edb`; local pytest **11**; related **281** passed; verifier GREEN; feat CI [34347147521](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34347147521) green.
 2. Next: #268 dynamic compiled PromptOptions. Do not start #268 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
