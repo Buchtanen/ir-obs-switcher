@@ -1,10 +1,11 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (implemented, not closed); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**)
+**Retention:** `irswitch.events.episode_retention.EpisodeRetention`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -75,8 +76,13 @@ Invalid packaged catalogs disable commentary without raising: `outcome=commentar
 
 `EpisodeRegistry` owns runtime episode instances independently of speech. Schema `episode/2`; states `candidate|active|suspended|resolved|invalidated`. Occurrence scope requires occurrence + lineage; stream-only `stream_lifecycle` (and optional stream `filler_single`) may omit both. Semantic identity locates one live instance; distinct identities run concurrently. Exclusive battle group suspends overlapping live instances. Capacity defaults `active_capacity=64`, `resolved_capacity=256` match the frozen public contract. Not exported from `events/__init__.py`; not live-wired. Module lookup: [inflight § #258](../dokumentace/inflight/README.md#258-lineage-aware-episoderegistry-lookup).
 
+## EpisodeRetention (#259)
+
+`EpisodeRetention` stores bounded resolved-outcome metadata without a prepared-speech queue. Schema `episode-retention/2`. Policy TTL/salience come from frozen catalog families (`critical` 45s/90, `result` 30s/78, `live_story` 10s/64, `transient` 6s/56, `context` 20s/46, `filler` 12s/24). `speakable_until_ms = resolvedMonoMs + ttlMs`; half-open validity `now < speakable_until`. Self-contained `critical`/`result` outcomes remain selectable after speech complete; intermediate `live_story`/`transient` revisions supersede same `(occurrenceId, definitionId, semanticIdentity)` and are `skipped` after speech. `on_speech_complete` re-evaluates `expired_ttl` / `skipped` / remaining self-contained by `(-salience, speakable_until_ms, episodeId)`. Default `resolved_capacity=256` matches the frozen public contract. No BeatPlan / TtsUtterance storage. Not exported from `events/__init__.py`; not live-wired. Module lookup: [inflight § #259](../dokumentace/inflight/README.md#259-resolved-episode-retention-lookup).
+
 ## Out of scope
 
-- #259 resolved-episode retention queue
+- #260 long-silence lifecycle and filler opportunities
+- #261 BeatPlan and just-in-time planner
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts

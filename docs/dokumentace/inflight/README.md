@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) is **closed** on this branch; **not shipped on `master`**. Next implementation package is [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) is **closed** on this branch; [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) is **implemented** (not closed); **not shipped on `master`**. Next implementation package is [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (unclaimed).
 
 ## Where to look on this branch
 
@@ -11,7 +11,7 @@
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#258, branch-only)
+## Implementation lookup (#239–#259, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -35,6 +35,7 @@
 | #256 event-family coverage matrix | contracts | `src/irswitch/contracts/coverage_matrix.py` — [§ lookup](#256-event-family-coverage-matrix-lookup) | `tests/test_coverage_matrix.py` (**15**) |
 | #257 StoryDefinition catalog loader | contracts | `src/irswitch/contracts/catalog_loader.py` — [§ lookup](#257-storydefinition-catalog-loader-lookup) | `tests/test_catalog_loader.py` (**29**) |
 | #258 lineage-aware EpisodeRegistry | events | `src/irswitch/events/episode_registry.py` — [§ lookup](#258-lineage-aware-episoderegistry-lookup) | `tests/test_episode_registry.py` (**13**) |
+| #259 resolved-episode retention | events | `src/irswitch/events/episode_retention.py` — [§ lookup](#259-resolved-episode-retention-lookup) | `tests/test_episode_retention.py` (**9**) |
 
 ### #247 FeatureEngine lookup
 
@@ -154,9 +155,20 @@
 - **Transitions:** every transition carries `reason` + `source_refs`.
 - **Capacity:** defaults `active_capacity=64`, `resolved_capacity=256` (match frozen public contract). Eviction order: stale/unpinned suspended (oldest), then candidate (oldest), then lowest `continuationPriority` active; ties `materialOrder` then `episodeId`. Terminal reason `capacity_evicted`. Pin kinds `reserved|building|committed|speaking`. If all current instances are pinned, new open returns `decision=episode_capacity_rejected` and does not create an episode (accepted facts/events stay recorded — registry never writes FactLedger). Resolved overflow drops oldest `(resolvedMonoMs, episodeId)` and latches `historyComplete=false`.
 - **Definition IDs:** must be frozen StoryDefinition ids from #257 catalog (`load_narrative_catalog`).
-- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. Does not implement #259 retention queue or NarrativeRuntime.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. Complements #259 `EpisodeRetention`; does not implement NarrativeRuntime.
 - **Tests:** `tests/test_episode_registry.py` (**13**). First implementation SHA `dc4ef4079d9cbcd2cb417ba7fb2cb4747d9e69f4`. Related regression: episode + catalog_loader + session_occurrence + fact_ledger **76** passed.
-- **Still out of scope:** #259 resolved-episode retention queue, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+### #259 resolved-episode retention lookup
+
+- **Retention (`events/episode_retention.py`):** `EpisodeRetention`, `RetentionIntent`, `RetentionRecord`, `RetentionDecision`, `RetentionStep`. Schema `episode-retention/2`. Bounded resolved-outcome store; no prepared-speech queue, no BeatPlan / TtsUtterance storage.
+- **Policy TTL/salience:** frozen catalog policy families — `critical` 45s/90, `result` 30s/78, `live_story` 10s/64, `transient` 6s/56, `context` 20s/46, `filler` 12s/24. `speakable_until_ms = resolvedMonoMs + ttlMs`; half-open validity `now < speakable_until`.
+- **Self-contained families:** `critical` + `result` (pass/finish). Intermediate (`live_story`/`transient`) supersede same `(occurrenceId, definitionId, semanticIdentity)` and are `skipped` after speech complete (not narrated later).
+- **`on_speech_complete`:** re-evaluates `expired_ttl` / `skipped` / remaining self-contained; selection order `(-salience, speakable_until_ms, episodeId)`. No prepared-speech queue.
+- **Capacity:** default `resolved_capacity=256` (same frozen public contract as #258). Overflow drops oldest `(resolvedMonoMs, episodeId)`.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. No eval/exec/compile. Does not implement #260 fillers, #261 BeatPlan, or NarrativeRuntime.
+- **Tests:** `tests/test_episode_retention.py` (**9**). First implementation SHA `af72b73ddc36281be3e8b7088189738409ede659`. Related regression: episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **85** passed.
+- **Still out of scope:** #260 long-silence lifecycle, #261 BeatPlan, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
