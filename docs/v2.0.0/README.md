@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #247–#256 and Wave D #257–#262 plus #263 and #283 closed on this branch; #264 closed; #265 closed; #266 closed; #267 closed; #268 closed; #269 closed; #270 closed; #271 closed. [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) **OPEN** — library effect-executor + diagnostics slice on branch `cursor/narrative-runtime-284-matrix-cad3` (`events/narrative_runtime.py`, **101** tests); live wiring deferred. Not shipped on `master`.
+**Status:** Wave C #247–#256 and Wave D #257–#262 plus #263 and #283 closed on this branch; #264 closed; #265 closed; #266 closed; #267 closed; #268 closed; #269 closed; #270 closed; #271 closed. [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) **OPEN** — library deadline-timer slice landed on branch `cursor/narrative-runtime-284-matrix-cad3` (`events/narrative_runtime.py`, **104** tests: matrix + effect executor + silence/validity deadline timers); live wiring deferred. Not shipped on `master`.
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -95,7 +95,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 
 ## Wave F — integration and operation
 
-- [ ] [#284 — v2: single-owner NarrativeRuntime actor and command lifecycle](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — owns mailbox ordering, effects, recovery and shutdown; depends on #237, #238, #240, #243, #245, #258, #262, #264, #265 and #269. **Branch library slice (OPEN):** reducer matrix + owned realization/TTS effect tasks + `RuntimeStatus` diagnostics — [inflight § #284](../dokumentace/inflight/README.md#284-narrative-runtime-lookup); not live-wired.
+- [ ] [#284 — v2: single-owner NarrativeRuntime actor and command lifecycle](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — owns mailbox ordering, effects, recovery and shutdown; depends on #237, #238, #240, #243, #245, #258, #262, #264, #265 and #269. **Branch library slice (OPEN):** reducer matrix + owned realization/TTS effect tasks + silence/validity deadline timers + `RuntimeStatus` diagnostics — [inflight § #284](../dokumentace/inflight/README.md#284-narrative-runtime-lookup); not live-wired.
 - [ ] [#272 — v2: legacy-to-v2 adapter and shadow comparison](https://github.com/Buchtanen/ir-obs-switcher/issues/272) — temporary branch-only harness after #284, removed before final PR.
 - [ ] [#273 — v2: v2 health, observability and operator configuration](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — depends on #238–#241, #269, #272, #283 and #284; owns exact public golden payloads.
 

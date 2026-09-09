@@ -369,7 +369,7 @@
 - **Director slice (library):** pure-fact context skips director (`director_skipped_pure_fact`); event impulse dispatches plan when lane idle and cycle cap allows; committed/speaking ignore truth updates without barge-in; stopping ignores new impulses.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Imports `commentary.mailbox` + `contracts.command` only — **not** `irswitch.commentary.consumer`, overlay, server, or live SpeechLane / RealizerService. Not live-wired. No `eval`/`exec`/`compile`. Does not compose EpisodeRegistry, StoryDirector, OpportunityQueue, or FreshnessGate yet.
 - **Tests:** `tests/test_narrative_runtime.py` (**104**: 85 matrix rows + 19 focused, including effect-task ownership, deadline timers, cancel-drop, overflow/coalesce diagnostics, reason codes). Matrix loader reads packaged `actor-transition-model.json`; `machine/` hashes were not rewritten.
-- **Evidence:** effect-executor + diagnostics SHA `5075c98`; deadline-timer SHA `56555f2` on branch `cursor/narrative-runtime-284-matrix-cad3`; local pytest **104** passed.
+- **Evidence:** effect-executor + diagnostics SHA `5075c98`; deadline-timer SHA `56555f2`; docs audit SHA `cff4a40` on branch `cursor/narrative-runtime-284-matrix-cad3`; local pytest **104** passed.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README product change; `machine/` hashes unchanged.
 - **Still out of scope (issue OPEN):** live EventSubscription replacement, fanout/producer wiring, live health/API schema cutover, master cutover, V4 overlay tape, composing downstream library slices into one live loop.
 
