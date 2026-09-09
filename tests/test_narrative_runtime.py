@@ -13,14 +13,14 @@ from test_narrative_context_batch import _event, _fact_view, _timeline
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
-from irswitch.events.narrative import partition_context_batches
-from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
     CommitToken,
     CommitWorld,
     FreshnessGate,
 )
+from irswitch.events.narrative import partition_context_batches
+from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_runtime.py"
