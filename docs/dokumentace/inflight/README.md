@@ -327,7 +327,7 @@
 - **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. SemanticVerifier is #270.
 - **Tests:** `tests/test_qwen_transport.py` (**13**). First implementation SHA `89f89beee8a73a3ee1cc857b83c57fa5121c2ba6`. Related regression **306** passed.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `89f89be`; docs checkpoint `e2f2eda`; docs-keeper audit `4c84ec4`; close `7eb5e3f`; pin `1ad9a6a`; feat CI [34351003627](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34351003627) green.
-- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape, target-machine latency corpus (#271) (#270 SemanticVerifier is implemented separately).
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape, live Qwen target-machine rerun (#271 offline eval corpus is implemented separately).
 
 ### #270 semantic-verifier lookup
 
@@ -353,7 +353,7 @@
 - **Fixtures:** `tests/fixtures/eval_corpus/{transition,counterfactual_identity,expiry}.json`.
 - **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not activate NarrativeRuntime (#284). Default tests do not open a live Qwen socket.
 - **Tests:** `tests/test_eval_corpus.py` (**12**). First implementation SHA `4d62fedaf8e319903345fcfbdfbdd92c06733ebe`. Related regression **330** passed. Feat CI [34363936037](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34363936037) green.
-- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `4d62fed`.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `4d62fed`; docs checkpoint SHA `822878d2dad4a08c4f0396afd402a6d826f501ec`.
 - **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape, target-machine live Qwen rerun.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler / RealizerService / SemanticVerifier / CorpusEvaluator wiring, and V4 overlay tape remain out of scope until #284 and later issues.
