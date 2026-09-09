@@ -1,0 +1,6 @@
+{
+  "nowMs": 20000,
+  "expiresMonoMs": 15000,
+  "expectVerdict": "freshness_stale",
+  "expectReason": "freshness_stale"
+}

@@ -1,0 +1,5 @@
+{
+  "otherFactId": "fact:gap-2",
+  "expectVerdict": "freshness_stale",
+  "expectReason": "freshness_stale"
+}
