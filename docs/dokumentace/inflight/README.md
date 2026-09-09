@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **implemented**; **not shipped on `master`**. Next implementation package is [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; **not shipped on `master`**. Next implementation package is [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) (do not start unless a human says so).
 
 ## Where to look on this branch
 
@@ -266,7 +266,7 @@
 - **Replay fixtures:** `tests/fixtures/freshness_commit/{transition,counterfactual_identity,expiry}.json`.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Optional one-way queue release. Does not import commentary or overlay packages; not live-wired. No eval/exec/compile. Does not implement RealizationBundle or SemanticVerifier.
 - **Tests:** `tests/test_freshness_commit.py` (**14**). First implementation SHA `63674e33638b59d7fb2db897b8be09b59a1cd794`. Related regression **242** passed.
-- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/`; no public CONFIG/API/README change; `machine/` hashes unchanged.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `63674e3`; docs checkpoint `7bb4fce`; feat CI [34344295746](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34344295746) green.
 - **Still out of scope:** #266 RealizationCatalog, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate wiring, and V4 overlay tape remain out of scope until #284 and later issues.
