@@ -15,6 +15,12 @@ from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
 from irswitch.events.narrative import partition_context_batches
 from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
+from irswitch.events.freshness_commit import (
+    SCHEMA_VERSION,
+    CommitToken,
+    CommitWorld,
+    FreshnessGate,
+)
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_runtime.py"
@@ -76,6 +82,54 @@ def _result_for(token: dict[str, object], **overrides: object) -> dict[str, obje
     }
     payload.update(overrides)
     return payload
+
+
+def _minimal_commit_pair(
+    *,
+    episode_revision: int = 1,
+    world_episode_revision: int | None = None,
+    lane: str = "building",
+) -> tuple[CommitToken, CommitWorld]:
+    token = CommitToken(
+        schema_version=SCHEMA_VERSION,
+        token_id="commit:test",
+        plan_id="plan:test",
+        beat_id="beat:test",
+        episode_id="episode:test",
+        episode_revision=episode_revision,
+        stream_epoch=1,
+        occurrence_id=None,
+        lineage_id=None,
+        target_identity=(),
+        selected_facts=(),
+        opportunity_id=None,
+        reservation_token=None,
+        opportunity_material_revision=None,
+        opportunity_expires_mono_ms=None,
+        planned_mono_ms=0,
+        fact_view_revision=1,
+    )
+    world = CommitWorld(
+        now_ms=100,
+        lane=lane,
+        stream_epoch=1,
+        occurrence_id=None,
+        lineage_id=None,
+        episode_id="episode:test",
+        episode_revision=(
+            episode_revision if world_episode_revision is None else world_episode_revision
+        ),
+        episode_state="active",
+        target_identity=(),
+        facts=(),
+        fact_view_revision=1,
+        opportunity_state=None,
+        opportunity_material_revision=None,
+        opportunity_expires_mono_ms=None,
+        reservation_token=None,
+        critical_conflict=False,
+    )
+    return token, world
 
 
 def test_not_exported_and_not_live_wired() -> None:
@@ -1245,3 +1299,99 @@ async def test_playback_accepted_rearms_speech_deadline_to_playback_stage() -> N
     assert playback_elapsed.lane_after == "stopping"
     await runtime.apply_effects(playback_elapsed.effects)
     await runtime.apply_effects(("effect:cancel_speech_deadline",))
+
+
+def test_freshness_gate_absent_keeps_legacy_commit_path() -> None:
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "fresh:legacy",
+            "REALIZATION_SUCCEEDED",
+            9900,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert "effect:dispatch_tts" in committed.effects
+    assert "realization_freshness_rejected" not in committed.effects
+
+
+def test_freshness_gate_current_allows_tts_dispatch() -> None:
+    gate = FreshnessGate()
+    token, world = _minimal_commit_pair()
+    runtime = NarrativeRuntime(
+        freshness_gate=gate,
+        commit_world_provider=lambda: world,
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("fresh:pass", revision=40, fanout=40))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    # Runtime-owned commit token is armed with the plan; tests may override via seed.
+    runtime.seed_commit_token_for_test(token)
+    rz = runtime.current_realization_token()
+    assert rz is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "fresh:pass:ok",
+            "REALIZATION_SUCCEEDED",
+            9910,
+            request_id=str(rz["requestId"]),
+            request_ordinal=int(rz["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(rz["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(rz),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert "realization_committed" in committed.effects
+    assert "effect:dispatch_tts" in committed.effects
+    assert "freshness_verdict:current" in committed.effects
+    assert gate.evaluate_count == 1
+    assert gate.pass_count == 1
+
+
+def test_freshness_gate_stale_rejects_without_tts() -> None:
+    gate = FreshnessGate()
+    token, world = _minimal_commit_pair(episode_revision=1, world_episode_revision=99)
+    runtime = NarrativeRuntime(
+        freshness_gate=gate,
+        commit_world_provider=lambda: world,
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("fresh:stale", revision=41, fanout=41))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    runtime.seed_commit_token_for_test(token)
+    rz = runtime.current_realization_token()
+    assert rz is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "fresh:stale:ok",
+            "REALIZATION_SUCCEEDED",
+            9920,
+            request_id=str(rz["requestId"]),
+            request_ordinal=int(rz["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(rz["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(rz),
+        )
+    )
+    rejected = runtime.reduce_next()
+    assert rejected is not None
+    assert rejected.lane_after == "idle"
+    assert "realization_freshness_rejected" in rejected.effects
+    assert "freshness_verdict:freshness_stale" in rejected.effects
+    assert "freshness_evidence:episode_revision" in rejected.effects
+    assert "effect:dispatch_tts" not in rejected.effects
+    assert "effect:cancel_realization_deadline" in rejected.effects
+    assert runtime.current_realization_token() is None
+    assert runtime.current_utterance_token() is None
+    assert gate.fail_count == 1

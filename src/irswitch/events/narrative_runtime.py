@@ -16,12 +16,23 @@ from typing import Any, Literal
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
+from irswitch.events.freshness_commit import (
+    SCHEMA_VERSION,
+    CommitToken,
+    CommitWorld,
+    FreshnessGate,
+)
 
 RuntimeState = Literal["disabled", "starting", "ready", "degraded", "stopping", "stopped"]
 LaneState = Literal["idle", "building", "committed", "speaking", "stopping"]
 Disposition = Literal["handled", "ignored_stale_or_inapplicable", "rejected_busy"]
 
 MAX_PLANS_PER_CYCLE = 2
+
+EffectWorker = Callable[
+    [dict[str, Any]], Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None]
+]
+CommitWorldProvider = Callable[[], CommitWorld]
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,11 +48,6 @@ class ReduceResult:
     planning_cycle_id: int
     plans_dispatched: int
     effects: tuple[str, ...]
-
-
-EffectWorker = Callable[
-    [dict[str, Any]], Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None]
-]
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +89,8 @@ class NarrativeRuntime:
         validity_deadline_delay_s: float = 3600.0,
         realization_deadline_delay_s: float = 3600.0,
         speech_deadline_delay_s: float = 3600.0,
+        freshness_gate: FreshnessGate | None = None,
+        commit_world_provider: CommitWorldProvider | None = None,
     ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
@@ -114,6 +122,9 @@ class NarrativeRuntime:
         self._realization_deadline_delay_s = float(realization_deadline_delay_s)
         self._speech_deadline_delay_s = float(speech_deadline_delay_s)
         self._speech_deadline_stage: Literal["start", "playback", "stop"] | None = None
+        self._freshness_gate = freshness_gate
+        self._commit_world_provider = commit_world_provider
+        self._commit_token: CommitToken | None = None
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -211,6 +222,9 @@ class NarrativeRuntime:
 
     def current_utterance_token(self) -> dict[str, Any] | None:
         return None if self._utterance is None else dict(self._utterance)
+
+    def seed_commit_token_for_test(self, token: CommitToken) -> None:
+        self._commit_token = token
 
     def fail_current_realization_for_test(self) -> None:
         self._realization = None
@@ -522,6 +536,7 @@ class NarrativeRuntime:
         if self._lane != "building":
             return
         self._realization = None
+        self._commit_token = None
         self._lane = "idle"
         effects.append(reason)
         effects.append("effect:cancel_realization")
@@ -551,9 +566,54 @@ class NarrativeRuntime:
             "dispatchGeneration": self._planning_cycle_id,
         }
         self._utterance = None
+        if self._freshness_gate is not None:
+            self._commit_token = self._default_commit_token()
+        else:
+            self._commit_token = None
         effects.append("plan_dispatched")
         effects.append("effect:dispatch_realization")
         effects.append("effect:arm_realization_deadline")
+
+    def _default_commit_token(self) -> CommitToken:
+        return CommitToken(
+            schema_version=SCHEMA_VERSION,
+            token_id=f"commit:{self._reducer_sequence}",
+            plan_id=f"plan:{self._reducer_sequence}",
+            beat_id=f"beat:{self._plans_in_cycle}",
+            episode_id=f"episode:{max(1, self._planning_cycle_id)}",
+            episode_revision=max(1, self._plans_in_cycle),
+            stream_epoch=int(self._timeline_revision or 0),
+            occurrence_id=None,
+            lineage_id=None,
+            target_identity=(),
+            selected_facts=(),
+            opportunity_id=None,
+            reservation_token=None,
+            opportunity_material_revision=None,
+            opportunity_expires_mono_ms=None,
+            planned_mono_ms=0,
+            fact_view_revision=int(self._fact_view_revision or 0),
+        )
+
+    def _default_commit_world(self, token: CommitToken) -> CommitWorld:
+        return CommitWorld(
+            now_ms=int(token.planned_mono_ms),
+            lane="building",
+            stream_epoch=token.stream_epoch,
+            occurrence_id=token.occurrence_id,
+            lineage_id=token.lineage_id,
+            episode_id=token.episode_id,
+            episode_revision=token.episode_revision,
+            episode_state="active",
+            target_identity=token.target_identity,
+            facts=token.selected_facts,
+            fact_view_revision=token.fact_view_revision,
+            opportunity_state=None,
+            opportunity_material_revision=token.opportunity_material_revision,
+            opportunity_expires_mono_ms=token.opportunity_expires_mono_ms,
+            reservation_token=token.reservation_token,
+            critical_conflict=False,
+        )
 
     def _on_context(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         part = command.context_part
@@ -645,6 +705,33 @@ class NarrativeRuntime:
         if command.payload.get("outcome") != "succeeded":
             return "ignored_stale_or_inapplicable", ["realization_outcome_mismatch"]
         assert self._realization is not None
+        if self._freshness_gate is not None:
+            token = self._commit_token
+            if token is None:
+                self._realization = None
+                self._lane = "idle"
+                return "handled", [
+                    "realization_freshness_rejected",
+                    "freshness_verdict:not_reached",
+                    "effect:cancel_realization_deadline",
+                ]
+            world = (
+                self._commit_world_provider()
+                if self._commit_world_provider is not None
+                else self._default_commit_world(token)
+            )
+            step = self._freshness_gate.evaluate(token, world)
+            if step.verdict != "current":
+                self._realization = None
+                self._commit_token = None
+                self._lane = "idle"
+                effects = [
+                    "realization_freshness_rejected",
+                    f"freshness_verdict:{step.verdict}",
+                    "effect:cancel_realization_deadline",
+                ]
+                effects.extend(f"freshness_evidence:{item}" for item in step.evidence)
+                return "handled", effects
         self._lane = "committed"
         self._utterance = {
             "utteranceId": f"utterance:{self._reducer_sequence}",
@@ -653,18 +740,23 @@ class NarrativeRuntime:
             "dispatchGeneration": int(self._realization["dispatchGeneration"]),
         }
         self._realization = None
+        self._commit_token = None
         self._speech_deadline_stage = "start"
-        return "handled", [
+        effects = [
             "realization_committed",
             "effect:cancel_realization_deadline",
             "effect:dispatch_tts",
             "effect:arm_speech_deadline",
         ]
+        if self._freshness_gate is not None:
+            effects.insert(1, "freshness_verdict:current")
+        return "handled", effects
 
     def _on_realization_failed(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
             return "ignored_stale_or_inapplicable", ["stale_realization_token"]
         self._realization = None
+        self._commit_token = None
         self._lane = "idle"
         return "handled", ["realization_failed", "effect:cancel_realization_deadline"]
 
@@ -672,6 +764,7 @@ class NarrativeRuntime:
         if self._lane != "building" or not self._matches_realization(command):
             return "ignored_stale_or_inapplicable", ["stale_realization_deadline"]
         self._realization = None
+        self._commit_token = None
         self._lane = "idle"
         return "handled", ["realization_deadline", "effect:cancel_realization_deadline"]
 
