@@ -1,6 +1,6 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (implemented; close pending); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
@@ -9,7 +9,8 @@
 **Planner:** `irswitch.events.beat_plan.BeatPlanner`
 **Exposure:** `irswitch.events.exposure_store.ExposureStore`
 **Opportunity:** `irswitch.events.opportunity_queue.OpportunityQueue`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**)
+**Director:** `irswitch.events.story_director.StoryDirector`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -102,7 +103,7 @@ Tight baseline PromptOptions: freedom `tight`, patternChoice `fixed`, optionalCl
 
 Record gate: only `phase=speaking` + `source_kind=narrative`; planned/rejected/stale/building/committed/manual add no fatigue. Weight 1.0 at PLAYBACK_ACCEPTED / SPEAKING. Decay `0.5 ** (age/half_life)` = `2^(-(t-spoken_at)/half_life)`; rejects `exp(-age/half_life)`. Semantic half-life 90_000 ms; pattern 180_000 ms (F23 goldens from `machine/vertical-slice-fixtures.json`). Channel pressure `6 * min(3, Σ decay)` on accepted exposures of that `tape_channel`. `event_penalty = policy.penalty_coefficient * channel_pressure`. `cadence_half_life = max(global_min_interval 4s, numeric profile cadence)`; null cadence uses TTL; filler uses `LONG_SILENCE_MS=33_000` not TTL.
 
-Lexical Jaccard on EN-stopword content tokens; lexical-tail MVP = last 4 content tokens. Embedding adapter optional; `embedding_is_gate` always False. Family/role/filler histories are cadence/guard audit only (`cadence_audit`), not score terms. Capacity default 128 (`commentary.director.decision_capacity`, already frozen); evict oldest `(acceptedMonoMs, utteranceId)`; stream reset clears. Replay fixtures: `tests/fixtures/exposure_store/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement #262 director eligibility or #264 speech lane. Module lookup: [inflight § #263](../dokumentace/inflight/README.md#263-exposure-store-lookup).
+Lexical Jaccard on EN-stopword content tokens; lexical-tail MVP = last 4 content tokens. Embedding adapter optional; `embedding_is_gate` always False. Family/role/filler histories are cadence/guard audit only (`cadence_audit`), not score terms. Capacity default 128 (`commentary.director.decision_capacity`, already frozen); evict oldest `(acceptedMonoMs, utteranceId)`; stream reset clears. Replay fixtures: `tests/fixtures/exposure_store/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement #264 speech lane. Module lookup: [inflight § #263](../dokumentace/inflight/README.md#263-exposure-store-lookup).
 
 ## EventOpportunityQueue (#283)
 
@@ -112,10 +113,18 @@ Immutable `EventOpportunity`: identity + snapshot TTL/priority/urgency/penalty, 
 
 Natural successors from last spoken beat + catalog edges; score `58 + 6` same-story + edge bonus + `6` material − `penaltyCoefficient * channel_pressure`. Event score: `basePriority − penaltyCoefficient * channel_pressure`. Switch: higher urgency always; equal/lower needs inclusive `switch_margin` **8** (frozen). No event/successor → `SILENCE` (`no_candidate`); filler only on silence impulse. Overflow evicts oldest pending by `candidateOrder`; fail-soft. Per-`tape_channel` counters: kick/queued/selected/consumed/expired/superseded/spoken/evicted. Six policy profiles + cadence scopes from [event-beat-disposition.md](event-beat-disposition.md). Expiry cancels reserved preaccept work; never starts a fallback impulse.
 
-Frozen knobs (already in public contract): `opportunity_capacity` **128**, `switch_margin` **8**, `selection_threshold` **35**. Reads immutable `ChannelPressureView` from `ExposureStore` one-way. Replay fixtures: `tests/fixtures/opportunity_queue/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement #262 director eligibility or #264 speech lane. Module lookup: [inflight § #283](../dokumentace/inflight/README.md#283-expiring-event-opportunities-lookup).
+Frozen knobs (already in public contract): `opportunity_capacity` **128**, `switch_margin` **8**, `selection_threshold` **35**. Reads immutable `ChannelPressureView` from `ExposureStore` one-way. Replay fixtures: `tests/fixtures/opportunity_queue/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement #264 speech lane. Module lookup: [inflight § #283](../dokumentace/inflight/README.md#283-expiring-event-opportunities-lookup).
+
+## StoryDirector (#262)
+
+`StoryDirector` owns hard eligibility before scoring and one deterministic H-then-M pass over event, successor and filler candidates. Schema `director-decision/2` (internal decision; full tape record is later wiring). Types: `StoryDirector`, `DirectorCandidate`, `DirectorWorld`, `EligibilityGates`, `FatigueTerms`, `ScoreTerms`, `CandidateRecord`, `DirectorDecision`.
+
+Hard conjunction from spec §23.3 plus `source_guard`, half-open snapshot TTL, consecutive non-closing successor cap `min(3, story cap)`, and `(beat_id, episode_revision)` suppression. Score cannot revive an invalid fact or lineage. Named §9.2 terms only; V4 `wire_priority` never enters the score; no family/role hidden penalties. EffectiveScore is EventScore / ContinuationScore / Score by source. `P` is the focused continuation; higher urgency switches immediately; equal/lower needs inclusive `switch_margin=8`. Filler only when no story choice. Below `selection_threshold=35` → SILENCE. Building replace only from a newly accepted event after `replacement_cost`; winner starts attempt 1 of a new cycle. Attempt 2 is a distinct beat after `note_failure`; second failure exhausts the cycle.
+
+Frozen knobs (already in public contract): `selection_threshold` **35**, `switch_margin` **8**, `max_consecutive_story_beats` **3**, `decision_capacity` **128**, `long_silence_s` **33**. Replay fixtures: `tests/fixtures/story_director/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement #264 speech lane. Module lookup: [inflight § #262](../dokumentace/inflight/README.md#262-storydirector-eligibility-lookup).
 
 ## Out of scope
 
-- #262 director eligibility and deterministic arbitration (next; not started)
+- #264 speech lane and RealizationBundle (next; not started)
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts
