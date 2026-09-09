@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) are closed on this branch; [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) CLOSING temporal detector is **implemented (checkpoint, not closed yet)**; **not shipped on `master`**. Next implementation package is [#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) are closed on this branch; **not shipped on `master`**. Next implementation package is [#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) (unclaimed).
 
 ## Where to look on this branch
 
@@ -94,7 +94,7 @@
 - **Product detector:** `ClosingDetector` / `ClosingTrace` / `ClosingCandidate` / `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). UNDER_PRESSURE / `battle_behind_v1` stay #254.
 - **V4 mapping:** `closing`→`HUNTING`, `approach`→`APPROACH`, `attack`→`ATTACK_RANGE`, `overlap`→`SIDE_BY_SIDE`. Close expires `battle.closing` plus band facts; no new V4 `*_ENDED`. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
-- **Tests:** `tests/test_closing.py` (**19**), including eight `bandBoundaries` goldens. First implementation SHA `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06`.
+- **Tests:** `tests/test_closing.py` (**19**), including eight `bandBoundaries` goldens. First implementation SHA `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06`; docs checkpoint SHA `630bd19aa4400e38d10ef75b2b1b5f1228641854`.
 - **Still out of scope:** live EventManager/NarrativeRuntime wiring, UNDER_PRESSURE (#254), two-front composite (#255), V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
