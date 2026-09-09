@@ -1,0 +1,6 @@
+{
+  "text": "Morgan is closing on Alex.",
+  "family": "battle.closing",
+  "expectAccepted": false,
+  "expectReasons": ["actor_reversed"]
+}
