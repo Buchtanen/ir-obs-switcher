@@ -19,7 +19,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
-- #249 closing SHA: pending this close-docs commit
+- #249 closing SHA: `4bdb0dd874d83d851b48ba77b1702789d9b75dc0` (`docs: close predicate AST checkpoint (#249)`)
 - #249 docs checkpoint SHA: `83a12eb3a0cc1e3f74c75d87d48a1fde9c22c924` (`docs: record predicate AST implementation checkpoint (#249)`)
 - First #249 predicate-AST SHA: `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c` (`feat: add safe typed predicate AST (#249)`). Local pytest: `tests/test_predicate_ast.py` **14** passed.
 - #249 verifier: GREEN — predicate + FeatureEngine + gap + ledger/inheritance **60** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
