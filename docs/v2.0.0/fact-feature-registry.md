@@ -1,6 +1,6 @@
 # v2.0.0 fact, feature and tape-channel registry freeze
 
-**Status:** design-freeze candidate owned by issues #236, #245, #247 and #256
+**Status:** design-freeze candidate owned by issues #236, #245, #247 and #256; #256 auditor confirmed packaged counts (57 predicates, 21 features, 36 channels) with no hash rewrite
 
 This branch-only artifact removes placeholder claims such as “one selected fact”. It is the human-readable source for the generated machine registries and 64-beat claim projection under `machine/`.
 

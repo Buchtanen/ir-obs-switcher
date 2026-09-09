@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255) are closed on this branch; **not shipped on `master`**. Next implementation package is [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) are implemented on this branch; **not shipped on `master`**. Next implementation package is [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257) (unclaimed).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#255) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#256) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#255, branch-only)
+## Implementation lookup (#239–#256, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -32,6 +32,7 @@
 | #253 CLOSING temporal detector | events | `events/closing.py` — detail below | `tests/test_closing.py` (**19**) |
 | #254 UNDER_PRESSURE temporal detector | events | `events/pressure.py` — detail below | `tests/test_pressure.py` (**14**) |
 | #255 composite two-front battle detector | events | `events/two_front.py` — detail below | `tests/test_two_front.py` (**18**) |
+| #256 event-family coverage matrix | contracts | `src/irswitch/contracts/coverage_matrix.py` — [§ lookup](#256-event-family-coverage-matrix-lookup) | `tests/test_coverage_matrix.py` (**15**) |
 
 ### #247 FeatureEngine lookup
 
@@ -119,6 +120,16 @@
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not live-wired.
 - **Tests:** `tests/test_two_front.py` (**18**), including six `compositeScenarios` goldens; related regression `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` = **70** passed. First implementation SHA `ad9d092778e07982e3377fcc911a60de55b48990`; docs checkpoint SHA `5bb48f30f43e0d05ac257b7ee810f70bd6dbd5d3`.
 - **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+### #256 event-family coverage matrix lookup
+
+- **Auditor (`src/irswitch/contracts/coverage_matrix.py`):** `audit_coverage_matrix` / `load_coverage_matrix` / `can_create_event_opportunity`. Re-exported from `contracts/__init__.py` as `irswitch.contracts.coverage_matrix`. Reads packaged `freeze-registry.json`, `beat-catalog.json`, `successor-graph.json`, `realization-pattern-cards.json`, `detector-catalog.json` and `coverage-matrix-replay-refs.json`. Catalog `definition` strings are never evaluated (`eval`/`exec`/`compile` forbidden).
+- **Frozen proof:** 60 identifiers (52 speakable / 4 visual / 4 alias), 64 beats, 37 families, 6 policies, 36 channels, 256 EN cards, 50 successor edges, 11 stories, DAG SCC (28 nonterminal). Speakable rows resolve to beats; aliases and visual-only never create EventOpportunity. Replaced `STREAM_START` / `SESSION_INTRO_*` / `SESSION_WRAP` cannot be triggers. Stage/context/vehicle axes use normalized enums only.
+- **Replay refs:** transition F01/F02/F03/F04/F22/F25; identity F17/F31/F43; expiry F08/F15/F24; counterfactual F09/F15/F33/F37. Pointers only — no NarrativeRuntime.
+- **Review:** [fact-feature-registry.md](../../v2.0.0/fact-feature-registry.md) and [detector-catalog-freeze.md](../../v2.0.0/detector-catalog-freeze.md) match the packaged catalogs. `machine/` hashes were not rewritten. Behavior projection: [catalog-behavior.md](../../v2.0.0/catalog-behavior.md).
+- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape, commentary or events; not live-wired. Does not implement the StoryDefinition loader (#257).
+- **Tests:** `tests/test_coverage_matrix.py` (**15**). First implementation SHA `b061ba2499a73d0a215ed2277ea6dd66a161211d`.
+- **Still out of scope:** StoryDefinition catalog loader (#257), live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 

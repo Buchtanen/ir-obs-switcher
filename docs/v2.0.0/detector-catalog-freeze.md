@@ -1,6 +1,6 @@
 # v2.0.0 detector catalog and parameter freeze
 
-**Status:** detector catalog machine-frozen for issues #241, #247–#255 and #256
+**Status:** detector catalog machine-frozen for issues #241, #247–#256; #256 auditor confirmed three experimental `tuning.required` detectors and rejected released `required` capture
 
 This branch-only artifact freezes what the first temporal/composite detectors mean and which values may be tuned after replay testing. Defaults are conservative estimates, not measured truth. Tuning may change a default inside its frozen range without changing architecture; changing an algorithm, unit, predicate, correlation key, lifecycle or range requires a new detector version and a return to the design gate.
 

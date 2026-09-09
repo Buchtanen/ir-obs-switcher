@@ -1,8 +1,8 @@
 # v2.0.0 event and beat disposition freeze
 
-**Status:** 64-beat inventory, closed successor DAG and loader contract reviewed and machine-frozen; runtime implementation remains owned by issue #257
+**Status:** 64-beat inventory, closed successor DAG and 256 EN pattern cards are machine-frozen; #256 implementation-time auditor proves the matrix. StoryDefinition loader remains owned by issue #257.
 
-This branch-only artifact closes the inventory gap between the current V4 event surface, the legacy commentary graph and the target narrative catalog. It is not shipped to `master`; the final v2 behavior documentation is generated from the implemented catalogs.
+This branch-only artifact closes the inventory gap between the current V4 event surface, the legacy commentary graph and the target narrative catalog. It is not shipped to `master`. Implemented catalog behavior is projected in [catalog-behavior.md](catalog-behavior.md).
 
 ## Audited source inventory
 
@@ -473,9 +473,9 @@ During branch calibration, a changed temporal/composite detector may be marked `
 
 The exact beat projection is generated as `machine/beat-catalog.json` with its Draft 2020-12 schema, invalid-mutation fixtures and standard-library checker. It cross-validates all 64 beat IDs against the 57-predicate/five-allowlist fact registry, all 37 realization families, six policies and 36 `tape_channel` values. Required predicates retain actor direction, exact claim cardinality, required/optional attributes and literal enum constraints; per-beat forbidden additions remain exact catalog strings under the closed global forbidden-claim list. Replaced `STREAM_START`, `SESSION_INTRO_*` and `SESSION_WRAP` identifiers are disposition/migration evidence only and cannot appear as v2 beat triggers; the canonical lifecycle kinds are used instead.
 
-This checkpoint reserves four audited EN cards per beat but does not claim those 256 cards or verifier corpora already exist. Their materialization remains the controlled-English gate. The 50 natural successor edges and SCC/dead-end proof are materialized in `machine/successor-graph.json`; `machine/catalog-loader-contract.json` and its mutation goldens freeze the checks that the later production loader must reproduce.
+Four audited EN cards per beat are materialized in `machine/realization-pattern-cards.json` (256 enabled cards). The 50 natural successor edges and SCC/dead-end proof are materialized in `machine/successor-graph.json`; `machine/catalog-loader-contract.json` and its mutation goldens freeze the checks that the later production loader must reproduce. `irswitch.contracts.coverage_matrix.audit_coverage_matrix` is the implementation-time CI proof for issue #256; `tests/test_coverage_matrix.py` executes it.
 
-Issue #256 cannot close until CI or a catalog audit script proves:
+`irswitch.contracts.coverage_matrix.audit_coverage_matrix` (via `tests/test_coverage_matrix.py`) proves:
 
 - exactly 60 current identifiers appear once in the disposition table;
 - every identifier is one of speakable, visual/operator-only or compatibility alias;
