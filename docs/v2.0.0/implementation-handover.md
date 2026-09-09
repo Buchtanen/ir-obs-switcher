@@ -96,6 +96,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #266 docs checkpoint SHA: `8df6da447e3678ac80b03ca94397ad44c318a612` (`docs: record RealizationCatalog implementation checkpoint (#266)`)
 - #266 v2 index follow-up SHA: `6892ac633d0e8b315050ed930fd5fa759296d34f` (`docs: mark #266 implemented in the v2 index`)
 - #266 docs-keeper audit SHA: `a493f826ccce3ae285d3981af2e441fe249f0244` (`docs: apply RealizationCatalog docs-keeper audit (#266)`)
+- #266 closing SHA: `371f1ed8aad0b2a96035e984bcb8762a38534a5d` (`docs: close RealizationCatalog checkpoint (#266)`)
 - #266 verifier: GREEN — `tests/test_realization_catalog.py` **13** passed; related **270** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; CS cannot enter v2 routing; pattern_count and beat_count stay separate.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -292,7 +293,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #266 is closed in its own scope: `RealizationCatalog`. First SHA `10e5b70cff8f8a2d738c30b0d40ebd79798d9b97`; docs checkpoint `8df6da447e3678ac80b03ca94397ad44c318a612`; index follow-up `6892ac633d0e8b315050ed930fd5fa759296d34f`; docs-keeper audit `a493f826ccce3ae285d3981af2e441fe249f0244`; local pytest **13**; related **270** passed; verifier GREEN; feat CI [34346027549](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34346027549) green.
+1. #266 is closed in its own scope: `RealizationCatalog`. First SHA `10e5b70cff8f8a2d738c30b0d40ebd79798d9b97`; docs checkpoint `8df6da447e3678ac80b03ca94397ad44c318a612`; index follow-up `6892ac633d0e8b315050ed930fd5fa759296d34f`; docs-keeper audit `a493f826ccce3ae285d3981af2e441fe249f0244`; closing SHA `371f1ed8aad0b2a96035e984bcb8762a38534a5d`; local pytest **13**; related **270** passed; verifier GREEN; feat CI [34346027549](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34346027549) green.
 2. Next: #267 authored critical/lifecycle pack. Do not start #267 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
