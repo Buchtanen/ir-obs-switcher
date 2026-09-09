@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) are closed on this branch; **not shipped on `master`**. [#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) direct lap/sector edges are implemented on this branch (first SHA `5a61be3`).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) are closed on this branch; **not shipped on `master`**. Next implementation package is [#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) (unclaimed).
 
 ## Where to look on this branch
 
@@ -72,7 +72,7 @@
 - **Eligibility:** lap edges (`LAP_COMPLETE` → `timing.lap_completed` / `race.timing.lap`) require `overlay_mode` in `PRACTICE|QUALIFYING|RACE`. Sector edges (`SECTOR_SPLIT` / `SECTOR_BEST`) require `PRACTICE|QUALIFYING` only. `GENERIC`, disconnected, missing occurrence, missing sector metadata, or invalid sector ids emit nothing. `session_finished` / `player_finished` is a completed race, not a lap edge.
 - **Current emitters:** `events/lap.py` and `events/sector_split.py` stay on master wiring. This slice characterizes them and does not live-replace them. DetectorBank thresholds are not reused (`tuning.policy=none`).
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import DetectorBank, NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
-- **Tests:** `tests/test_direct_edges.py` (**13**). First implementation SHA `5a61be3aae3b8c8b3bac91c1361f6f7c53e10278`.
+- **Tests:** `tests/test_direct_edges.py` (**13**). First implementation SHA `5a61be3aae3b8c8b3bac91c1361f6f7c53e10278`; docs checkpoint SHA `f8eb07f`.
 - **Still out of scope:** live EventManager wiring, stream/session lifecycle edges (#252), lap/sector family migration (#275), NarrativeRuntime.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.

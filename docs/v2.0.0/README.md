@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #251 direct lap/sector edges are implemented on this branch; #250 DetectorBank FSM is closed
+**Status:** Wave C next is #252; #251 direct lap/sector edges are closed
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -63,7 +63,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [x] [#248 — v2: versioned gap estimator and validity rules](https://github.com/Buchtanen/ir-obs-switcher/issues/248) — depends on #247.
 - [x] [#249 — v2: safe typed predicate AST](https://github.com/Buchtanen/ir-obs-switcher/issues/249) — depends on #236, #247.
 - [x] [#250 — v2: generic correlated detector lifecycle FSM](https://github.com/Buchtanen/ir-obs-switcher/issues/250) — depends on #241, #247, #249.
-- [ ] [#251 — v2: direct lap and sector edge triggers](https://github.com/Buchtanen/ir-obs-switcher/issues/251) — depends on #237, #243, #250.
+- [x] [#251 — v2: direct lap and sector edge triggers](https://github.com/Buchtanen/ir-obs-switcher/issues/251) — depends on #237, #243, #250.
 - [ ] [#252 — v2: stream and session lifecycle triggers](https://github.com/Buchtanen/ir-obs-switcher/issues/252) — depends on #243, #244, #250.
 - [ ] [#253 — v2: CLOSING temporal detector](https://github.com/Buchtanen/ir-obs-switcher/issues/253) — depends on #241, #248–#250.
 - [ ] [#254 — v2: UNDER_PRESSURE temporal detector](https://github.com/Buchtanen/ir-obs-switcher/issues/254) — depends on #241, #248–#250.
