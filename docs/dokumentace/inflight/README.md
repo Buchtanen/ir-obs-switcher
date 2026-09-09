@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) is **closed**; [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) is **closed**; [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) is **closed**; [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269) is **closed**; [#270](https://github.com/Buchtanen/ir-obs-switcher/issues/270) is **closed**; **not shipped on `master`**. Next implementation package is [#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) is **closed**; [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) is **closed**; [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) is **closed**; [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269) is **closed**; [#270](https://github.com/Buchtanen/ir-obs-switcher/issues/270) is **closed**; [#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271) is **implemented** (not closed); **not shipped on `master`**. Next implementation package after close is [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) (do not start unless a human says so).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#270) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#271) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#270, branch-only)
+## Implementation lookup (#239–#271, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -48,6 +48,7 @@
 | #268 compiled PromptOptions / prompt profiles | events | `src/irswitch/events/prompt_compiler.py` — [§ lookup](#268-prompt-compiler-lookup) | `tests/test_prompt_compiler.py` (**12**) |
 | #269 bounded Qwen transport / warm-up | events | `src/irswitch/events/qwen_transport.py` — [§ lookup](#269-qwen-transport-lookup) | `tests/test_qwen_transport.py` (**13**) |
 | #270 family-specific SemanticVerifier | events | `src/irswitch/events/semantic_verifier.py` — [§ lookup](#270-semantic-verifier-lookup) | `tests/test_semantic_verifier.py` (**12**) |
+| #271 LLM evaluation corpus / latency report | events | `src/irswitch/events/eval_corpus.py` — [§ lookup](#271-eval-corpus-lookup) | `tests/test_eval_corpus.py` (**12**) |
 
 ### #247 FeatureEngine lookup
 
@@ -339,9 +340,23 @@
 - **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not implement the latency corpus (#271).
 - **Tests:** `tests/test_semantic_verifier.py` (**12**). First implementation SHA `72d12f3ae1f4a4adbacae26497c0944ffbefe4eb`; docs checkpoint SHA `acb832f68c8dab8ccdbb2e76392871a4c060b909`; docs-keeper audit SHA `b08b9b7b79d53885007ade7bb3f7668b1d78f056`. Related regression **318** passed. Feat CI [34352429399](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34352429399) green.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `72d12f3`; docs checkpoint `acb832f`; docs-keeper audit `b08b9b7`; close `a85e6ba`; pin `c8d4db0`; feat CI [34352429399](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34352429399) green. Close-gate: steward https://github.com/Buchtanen/ir-obs-switcher/issues/270#issuecomment-5602933368 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/270#issuecomment-5603036196
-- **Still out of scope:** #271 latency corpus, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape (#271 eval corpus is implemented separately).
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler / RealizerService / SemanticVerifier wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #271 eval-corpus lookup
+
+- **Evaluator (`src/irswitch/events/eval_corpus.py`):** `load_eval_contract()`, `load_eval_corpus()`, `load_eval_model()`, `classify_verdict`, `profile_gate`, `token_usage`, `aggregate_latency`, `replay_config`, `attribute_attempt`, `CorpusEvaluator.evaluate`. Schema `evaluation-report/2` plus recorded `qwen-latency-report/2`. Reads frozen `machine/realization-contract.json` / `machine/realization-corpus.json` (read-only) and composes `#270` SemanticVerifier. **Not** exported from `events/__init__.py`; **not** re-exported from `contracts/__init__.py`.
+- **Corpus:** 222 cases, 37 families, 6 axes. Release 185 (positive + actor/polarity + value/unit + temporal + forbidden); holdout 37 (`unknown_fragment`). Tight scores the frozen Accept(x,C,f) path; hard semantic is separated from style and ShapeEn.
+- **Gates:** `tight` enables only when material false accepts are 0 on release and holdout. `balanced` / `loose` stay `holdout_not_promoted` even at zero false accepts.
+- **Latency:** recorded samples only. Warm requires `warmup_succeeded`; cold requires `not_requested`; mixed residency returns no report. Missing milestones stay null. `retries=0`. Server token usage is all-or-none and never estimated.
+- **Config replay:** starts from manifest `desiredHash` / `effectiveHash` / `configApplySequence`. Reduces `config_applied` in apply-sequence order. Gaps and `config_transition_lost` refuse deterministic claims. Redacted keys are non-regenerable.
+- **Attribution:** each scored completion binds to exactly one `bundleHash` via `attribute_attempt`.
+- **Fixtures:** `tests/fixtures/eval_corpus/{transition,counterfactual_identity,expiry}.json`.
+- **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not activate NarrativeRuntime (#284). Default tests do not open a live Qwen socket.
+- **Tests:** `tests/test_eval_corpus.py` (**12**). First implementation SHA `4d62fedaf8e319903345fcfbdfbdd92c06733ebe`. Related regression **330** passed. Feat CI [34363936037](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34363936037) green.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `4d62fed`.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape, target-machine live Qwen rerun.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler / RealizerService / SemanticVerifier / CorpusEvaluator wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
