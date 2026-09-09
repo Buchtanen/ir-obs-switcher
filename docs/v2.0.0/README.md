@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #247–#256 and Wave D #257–#260 closed on this branch; **#261 implemented** (not yet closed). Next is #263. Not shipped on `master`.
+**Status:** Wave C #247–#256 and Wave D #257–#261 closed on this branch. Next is #263. Not shipped on `master`.
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
