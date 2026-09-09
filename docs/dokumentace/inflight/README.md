@@ -308,6 +308,7 @@
 - **Fixtures:** `tests/fixtures/prompt_compiler/{transition,counterfactual_identity,expiry}.json`.
 - **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import NarrativeRuntime, overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not implement Qwen transport (#269) or SemanticVerifier (#270).
 - **Tests:** `tests/test_prompt_compiler.py` (**12**). First implementation SHA `a3bab698e2f2732afb6d96e69e1637f2d733bd04`. Related regression **293** passed.
+- **Docs checkpoint SHA:** `f4a3cf2248d13326f6631665d3863a5e97f61025` (`docs: record PromptCompiler implementation checkpoint (#268)`).
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged.
 - **Still out of scope:** #269 Qwen transport / RealizationRequest / SSE / HTTP, #270 SemanticVerifier, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
