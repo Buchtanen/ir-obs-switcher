@@ -19,7 +19,8 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
-- #251 docs checkpoint SHA: `f8eb07f` (`docs: record DirectEdgeBank implementation checkpoint (#251)`)
+- #251 closing SHA: `fcf12e6fd378cee40957a7add29b2efc45e903e2` (`docs: close DirectEdgeBank checkpoint (#251)`)
+- #251 docs checkpoint SHA: `f8eb07f534db48974e1d74c28e91c9c3b44451ad` (`docs: record DirectEdgeBank implementation checkpoint (#251)`)
 - First #251 DirectEdgeBank SHA: `5a61be3aae3b8c8b3bac91c1361f6f7c53e10278` (`feat: add direct lap and sector edge triggers (#251)`). Local pytest: `tests/test_direct_edges.py` **13** passed.
 - #251 verifier: GREEN — direct edges + DetectorBank + lap/sector emitters + timeline/occurrence + predicate **92** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
 - #250 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/250#issuecomment-5596439899 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/250#issuecomment-5596444674
