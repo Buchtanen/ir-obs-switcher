@@ -19,6 +19,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
+- #250 closing SHA: `f22bee421102847a42cb5b5b6218b0a7f42e2de1` (`docs: close DetectorBank checkpoint (#250)`)
 - #250 docs checkpoint SHA: `0a44978d2468f30bb343100c8b8731bd9850fb9b` (`docs: record DetectorBank implementation checkpoint (#250)`)
 - First #250 DetectorBank SHA: `e41ffb42f5e83236a4db58194dd4c5903fbc0899` (`feat: add generic correlated detector lifecycle FSM (#250)`). Local pytest: `tests/test_detector_bank.py` **19** passed.
 - #250 verifier: GREEN — DetectorBank + predicate + FeatureEngine + gap + ledger/inheritance + capture-safety **83** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
