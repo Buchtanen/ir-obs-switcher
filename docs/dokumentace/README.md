@@ -35,7 +35,7 @@ Není to náhrada kontraktů. INI, HTTP a release zůstanou v souborech dole.
 | HUD copy / overlay i18n | [i18n](domeny/i18n.md) | dashboard `i18n.py` |
 | Testy, CI, release | [testy-ci](domeny/testy-ci.md) | — |
 | Agent `/flow`, větev, PR, Cloud vs repo rules | [jak-cist](jak-cist.md), [Cursor README](../../.cursor/README.md), `.cursor/rules/10-task-flow-defaults.mdc` | Cloud `cursor/` prefix jako default |
-| v2 narrative runtime (tato větev) | [v2.0.0](../v2.0.0/README.md), [implementation-handover](../v2.0.0/implementation-handover.md), [inflight § #265 FreshnessGate](inflight/README.md#265-freshness-commit-lookup) ([lookup table #239–#265](inflight/README.md#implementation-lookup-239265-branch-only)) | master `domeny/commentary.md` jako shipped v2 |
+| v2 narrative runtime (tato větev) | [v2.0.0](../v2.0.0/README.md), [implementation-handover](../v2.0.0/implementation-handover.md), [inflight § #266 RealizationCatalog](inflight/README.md#266-realization-catalog-lookup) ([lookup table #239–#266](inflight/README.md#implementation-lookup-239266-branch-only)) | master `domeny/commentary.md` jako shipped v2 |
 | Otevřená práce | [inflight](inflight/README.md) | jako by už bylo na master |
 
 ## Domény (`src/irswitch/`)

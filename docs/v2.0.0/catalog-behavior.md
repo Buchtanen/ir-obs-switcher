@@ -1,6 +1,6 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (closed); SpeechLane by [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) (closed); FreshnessGate by [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (closed); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); long-silence clock by [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) (closed); immutable BeatPlan by [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (closed); ExposureStore by [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (closed); EventOpportunity queue by [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (closed); StoryDirector by [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (closed); SpeechLane by [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) (closed); FreshnessGate by [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (closed); RealizationCatalog by [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) (implemented); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
@@ -12,7 +12,8 @@
 **Director:** `irswitch.events.story_director.StoryDirector`
 **Speech lane:** `irswitch.events.speech_lane.SpeechLane`
 **Freshness:** `irswitch.events.freshness_commit.FreshnessGate`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**) + `tests/test_speech_lane.py` (**14**) + `tests/test_freshness_commit.py` (**14**)
+**Realization:** `irswitch.contracts.realization_catalog.load_realization_catalog`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**) + `tests/test_episode_retention.py` (**9**) + `tests/test_silence_clock.py` (**14**) + `tests/test_beat_plan.py` (**14**) + `tests/test_exposure_store.py` (**13**) + `tests/test_opportunity_queue.py` (**15**) + `tests/test_story_director.py` (**11**) + `tests/test_speech_lane.py` (**14**) + `tests/test_freshness_commit.py` (**14**) + `tests/test_realization_catalog.py` (**13**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -139,8 +140,16 @@ Frozen knobs (already in public contract): `tts.backend` **auto**, `start_timeou
 
 Replay fixtures: `tests/fixtures/freshness_commit/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement RealizationBundle. Module lookup: [inflight § #265](../dokumentace/inflight/README.md#265-freshness-commit-lookup).
 
+## RealizationCatalog (#266)
+
+`RealizationCatalog` owns the EN-only audited pattern cards and the offline legacy-variant classifier. Schema `realization-catalog/2`. Types: `RealizationCatalog`, `PatternCard`, `MigrationClassifier`, `LegacyVariant`, `Classification`, `MigrationReport`. Composes `#256` coverage-matrix proof and `#257` typed catalog load. Frozen metrics stay separate: **256** enabled EN `tight` cards and **64** BeatDefinitions (37 families). Cards annotate required/forbidden claims from the beat catalog; catalog hash is `canonical_sha256` of packaged `realization-pattern-cards.json`.
+
+The classifier inventories all **2,128 EN** master variants (plus 2,128 CS) from raw sequence-graph JSON. Every text gets a proposition-level disposition `audited_pattern|authored_line|style_fragment|reject|cs_excluded`. Tooling **proposes**; `accept()` or an explicit accept-set is required before `v2_reachable`. CS cannot enter v2 routing. Unsafe legacy text is rejected rather than migrated blindly.
+
+Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. Does not implement RealizationBundle. Module lookup: [inflight § #266](../dokumentace/inflight/README.md#266-realization-catalog-lookup).
+
 ## Out of scope
 
-- #266 RealizationCatalog / RealizationBundle (next; not started)
+- #267 authored critical/lifecycle pack / RealizationBundle compiler (next; not started)
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts
