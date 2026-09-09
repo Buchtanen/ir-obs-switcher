@@ -13,7 +13,7 @@ Only `NarrativeRuntime.run()` mutates:
 - ExposureStore and bounded decision records;
 - automatic/manual speech-lane state and worker tokens;
 - the last applied immutable ConfigLedger snapshot used by narrative decisions;
-- silence/validity deadline generations and commentary component health;
+- silence/validity/realization/speech deadline generations and commentary component health;
 - current planning-cycle ID, dispatched-plan count (`0..2`) and source impulse.
 
 StreamTimeline, FeatureEngine, FactLedger and DetectorBank remain upstream owners. Qwen, TTS and tape workers perform I/O but cannot mutate actor state. Server handlers post commands and read immutable status snapshots.
