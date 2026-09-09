@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) are closed on this branch; **not shipped on `master`**. Next implementation package is [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) are closed on this branch; **not shipped on `master`**. [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) predicate AST is implemented on this branch (not closed until diary + close-gate).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#248) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#249) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#248, branch-only)
+## Implementation lookup (#239–#249, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -25,6 +25,7 @@
 | #246 inheritance / summaries | events FactLedger | `events/fact_ledger.py` (`inherited_facts`, `historical`, `occurrence_summary`, `compactedSummaryRefs`) | `tests/test_fact_inheritance.py` |
 | #247 FeatureEngine | contracts + events | `contracts/feature.py`, `events/feature_engine.py` — detail below | `tests/test_feature_engine.py` (**10**) |
 | #248 gap estimators | events | `events/gap_estimators.py`, `events/feature_engine.py` (integration) — detail below | `tests/test_gap_estimators.py` (**13**) + `tests/test_feature_engine.py` (**10**) |
+| #249 predicate AST | contracts + events | `contracts/predicate.py`, `events/predicate_ast.py` — detail below | `tests/test_predicate_ast.py` (**14**) |
 
 ### #247 FeatureEngine lookup
 
@@ -44,6 +45,15 @@
 - **Trend:** duration per bucket capped at `sample_interval_s`; a lone sample cannot fill a bucket. Slope/net-closing require three usable bucket medians; coverage is summed bucket duration / `trend_window_s` (capped at 1.0). Target swap clears usable trend history for the correlation.
 - **Tests:** `tests/test_gap_estimators.py` (**13**); existing `tests/test_feature_engine.py` (**10**, first sample still only `estimated_v1`). First implementation SHA `4aa2e680ef76b6aa37ce993cbc37bef32e93db46`; docs checkpoint SHA `72067e31e66f3a2d39fc51cf47d7e5138ee3a500`.
 - **Still out of scope:** DetectorBank / NarrativeRuntime / `gap.trend.confidence` / `gap.target_stable` live wiring.
+
+### #249 predicate AST lookup
+
+- **Compile (`contracts/predicate.py`):** `compile_detector_catalog` / `load_compiled_detector_catalog` turn packaged `detector-catalog.json` named atoms + frozen invariant strings into `all`/`any`/`not`/compare/`held_for` trees. `compile_predicate` also accepts structured nodes (`changed`, `changed_by`, `crossed`, `rising_edge`, `falling_edge`, `within`, `since`, `count`, `sequence`, `unknown`, `unusable`). Compile caps: `MAX_DEPTH=16`, `MAX_NODES=128`; evaluation cap `MAX_EVAL_STEPS=512`. Catalog `definition` / invariant prose is never executed (`eval`/`exec`/`compile` forbidden).
+- **Atoms:** directional enter/clear/immediate/material IDs plus two-front atoms from `detector-catalog-freeze.md`. Unknown atom or invariant string fails catalog load. `unknownSatisfies` must be `false`. Undeclared feature/parameter or incompatible units fail compile.
+- **Evaluate (`events/predicate_ast.py`):** `PredicateEvaluator` returns `PredicateResult` (`verdict` + reason tree; `satisfies` is false for unknown on enter/`held_for`). Missing/`quality=unknown` feature values are unknown; `feature_stale_or_unknown` is true on clear when the gap feature is missing or unusable.
+- **Exports / boundaries:** compile/result DTOs re-exported from `contracts/__init__.py`; evaluator **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, DetectorBank, overlay tape or commentary; not wired into the live loop.
+- **Tests:** `tests/test_predicate_ast.py` (**14**). First implementation SHA `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c`.
+- **Still out of scope:** DetectorBank FSM (#250), StoryDefinition loader (#257), NarrativeRuntime activation.
 
 `NarrativeRuntime`, live `DetectorBank` wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
