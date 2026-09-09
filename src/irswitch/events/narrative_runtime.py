@@ -190,6 +190,29 @@ class NarrativeRuntime:
         self._timeline_revision = int(part.batch.timeline["timelineRevision"])
         self._fact_view_revision = int(part.batch.fact_view["viewRevision"])
 
+    def _bump_deadline_generations(self, effects: list[str]) -> None:
+        self._silence_generation += 1
+        self._validity_generation += 1
+        effects.append("effect:cancel_silence_deadline")
+        effects.append("effect:cancel_validity_deadline")
+        effects.append("effect:arm_silence_deadline")
+        effects.append("effect:arm_validity_deadline")
+
+    def _cancel_building(self, effects: list[str], *, reason: str) -> None:
+        if self._lane != "building":
+            return
+        self._realization = None
+        self._lane = "idle"
+        effects.append(reason)
+        effects.append("effect:cancel_realization")
+
+    def _request_speech_cancel(self, effects: list[str], *, reason: str) -> None:
+        if self._lane not in {"committed", "speaking"}:
+            return
+        self._lane = "stopping"
+        effects.append(reason)
+        effects.append("effect:cancel_tts")
+
     def _dispatch_plan(self, effects: list[str]) -> None:
         if self._planning_cycle_id == 0:
             self._planning_cycle_id = 1
@@ -205,18 +228,21 @@ class NarrativeRuntime:
         }
         self._utterance = None
         effects.append("plan_dispatched")
+        effects.append("effect:dispatch_realization")
 
     def _on_context(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         part = command.context_part
         assert part is not None
         self._apply_context_projection(part)
         effects = ["context_applied"]
+        if part.batch.has_timeline_transition:
+            self._bump_deadline_generations(effects)
+            self._cancel_building(effects, reason="building_cancelled")
+            self._request_speech_cancel(effects, reason="speech_cancel_requested")
         if not part.planning_impulse:
             effects.append("director_skipped_pure_fact")
             if self._lane == "building":
-                self._realization = None
-                self._lane = "idle"
-                effects.append("building_invalidated")
+                self._cancel_building(effects, reason="building_invalidated")
             return "handled", effects
         if self._lane in {"committed", "speaking"}:
             effects.append("truth_updated_without_barge_in")
@@ -227,15 +253,18 @@ class NarrativeRuntime:
         if self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
             effects.append("planning_cycle_exhausted")
             if self._lane == "building":
-                self._realization = None
-                self._lane = "idle"
+                self._cancel_building(effects, reason="building_invalidated")
             return "handled", effects
         self._dispatch_plan(effects)
         return "handled", effects
 
     def _on_config(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         self._config_valid = bool(command.payload["valid"])
-        return "handled", ["config_cached"]
+        effects = ["config_cached"]
+        # Config caches ledger + rearms deadline generations; speech/building
+        # cancellation waits for the following coherent context batch (matrix).
+        self._bump_deadline_generations(effects)
+        return "handled", effects
 
     def _on_silence(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         generation = int((command.token or {})["generation"])
@@ -257,12 +286,9 @@ class NarrativeRuntime:
         self._validity_generation = generation
         effects = ["validity_swept"]
         if self._lane == "building":
-            self._realization = None
-            self._lane = "idle"
-            effects.append("building_cancelled")
+            self._cancel_building(effects, reason="building_cancelled")
         elif self._lane == "committed":
-            self._lane = "stopping"
-            effects.append("committed_cancel_requested")
+            self._request_speech_cancel(effects, reason="committed_cancel_requested")
         return "handled", effects
 
     def _matches_realization(self, command: NarrativeCommand) -> bool:
@@ -302,7 +328,7 @@ class NarrativeRuntime:
             "dispatchGeneration": int(self._realization["dispatchGeneration"]),
         }
         self._realization = None
-        return "handled", ["realization_committed"]
+        return "handled", ["realization_committed", "effect:dispatch_tts"]
 
     def _on_realization_failed(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
@@ -319,10 +345,16 @@ class NarrativeRuntime:
         return "handled", ["realization_deadline"]
 
     def _on_playback_accepted(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
-        if self._lane != "committed" or not self._matches_utterance(command):
+        if not self._matches_utterance(command):
             return "ignored_stale_or_inapplicable", ["stale_playback_token"]
-        self._lane = "speaking"
-        return "handled", ["playback_accepted"]
+        if self._lane == "committed":
+            self._lane = "speaking"
+            return "handled", ["playback_accepted"]
+        if self._lane == "speaking":
+            # Duplicate acceptance while speaking requests stop; never a second utterance.
+            self._lane = "stopping"
+            return "handled", ["playback_accepted_duplicate_stopping", "effect:cancel_tts"]
+        return "ignored_stale_or_inapplicable", ["stale_playback_token"]
 
     def _on_speech_terminal(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if not self._matches_utterance(command):
@@ -330,6 +362,12 @@ class NarrativeRuntime:
         if self._lane not in {"committed", "speaking", "stopping"}:
             return "ignored_stale_or_inapplicable", ["lane_inapplicable"]
         effects = [f"speech_terminal:{command.kind}"]
+        if self._lane == "committed" and command.kind in {"SPEECH_COMPLETED", "SPEECH_INTERRUPTED"}:
+            # Pre-accept terminal: enter stopping with token retained for stop watchdog.
+            self._lane = "stopping"
+            effects.append("speech_cancel_requested")
+            effects.append("effect:cancel_tts")
+            return "handled", effects
         self._utterance = None
         self._realization = None
         self._lane = "idle"
@@ -345,7 +383,7 @@ class NarrativeRuntime:
             return "ignored_stale_or_inapplicable", ["lane_inapplicable"]
         if self._lane in {"committed", "speaking"}:
             self._lane = "stopping"
-            return "handled", ["speech_deadline_stopping"]
+            return "handled", ["speech_deadline_stopping", "effect:cancel_tts"]
         self._utterance = None
         self._lane = "idle"
         return "handled", ["speech_deadline_stopped"]
@@ -363,7 +401,7 @@ class NarrativeRuntime:
             "backendGeneration": 1,
             "dispatchGeneration": max(1, self._planning_cycle_id),
         }
-        return "handled", ["manual_committed"]
+        return "handled", ["manual_committed", "effect:dispatch_tts"]
 
     def _on_tape_health(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         status = str(command.payload["status"])
@@ -395,30 +433,27 @@ class NarrativeRuntime:
                 self._fact_view_revision = int(fact_view["viewRevision"])
         self._history_complete = False
         effects = ["recovery_applied", "history_incomplete"]
+        self._bump_deadline_generations(effects)
         if self._lane == "building":
-            self._realization = None
-            self._lane = "idle"
-            effects.append("building_cancelled")
-        elif self._lane == "committed":
-            self._lane = "stopping"
-            effects.append("committed_cancel_requested")
+            self._cancel_building(effects, reason="building_cancelled")
+        elif self._lane in {"committed", "speaking"}:
+            self._request_speech_cancel(effects, reason="committed_cancel_requested")
         return "handled", effects
 
     def _on_shutdown(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         del command
         effects = ["shutdown_started"]
         self._runtime = "stopping"
+        self._bump_deadline_generations(effects)
         if self._lane == "building":
-            self._realization = None
-            self._lane = "idle"
-            effects.append("building_cancelled")
+            self._cancel_building(effects, reason="building_cancelled")
         elif self._lane in {"committed", "speaking"}:
-            self._lane = "stopping"
-            effects.append("speech_cancel_requested")
+            self._request_speech_cancel(effects, reason="speech_cancel_requested")
         if self.mailbox_empty():
             self._runtime = "stopped"
-            self._lane = "idle"
-            self._utterance = None
+            # Keep stopping visible only while a cancel token remains; otherwise idle.
+            if self._utterance is None:
+                self._lane = "idle"
             effects.append("shutdown_complete")
         self._wake.set()
         return "handled", effects
