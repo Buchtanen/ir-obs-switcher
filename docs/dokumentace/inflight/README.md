@@ -278,7 +278,7 @@
 - **Fixture:** `tests/fixtures/realization_catalog/legacy_graph.json`.
 - **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay, commentary, or events; not live-wired. No `eval`/`exec`/`compile`. Does not implement RealizationBundle (#267 authored pack / compiler continuation).
 - **Tests:** `tests/test_realization_catalog.py` (**13**). First implementation SHA `10e5b70cff8f8a2d738c30b0d40ebd79798d9b97`. Related regression **270** passed.
-- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `10e5b70`; docs checkpoint `8df6da4`; index follow-up `6892ac6`.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `10e5b70`; docs checkpoint `8df6da4`; index follow-up `6892ac6`; close `371f1ed`; pin `fd8a04b`; feat CI [34346027549](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34346027549) green.
 - **Still out of scope:** #267 authored critical/lifecycle pack, RealizationBundle compiler, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog wiring, and V4 overlay tape remain out of scope until #284 and later issues.
