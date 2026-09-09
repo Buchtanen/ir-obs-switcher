@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) are closed on this branch; [#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) UNDER_PRESSURE is **implemented on this branch, issue still open**; **not shipped on `master`**. Next implementation package after #254 close is [#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) are closed on this branch; **not shipped on `master`**. Next implementation package is [#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255) (unclaimed).
 
 ## Where to look on this branch
 
@@ -92,7 +92,7 @@
 ### #253 CLOSING temporal detector lookup
 
 - **Band reducer (`events/closing.py`):** `reduce_band` matches frozen machine `bandBoundaries` goldens (`closing|approach|attack|overlap`). Hysteretic enter/exit thresholds from catalog defaults (`approach_enter_s` … `overlap_confirm_s`).
-- **Product detector:** `ClosingDetector` / `ClosingTrace` / `ClosingCandidate` / `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). UNDER_PRESSURE / `battle_behind_v1` is implemented in #254 (issue still open).
+- **Product detector:** `ClosingDetector` / `ClosingTrace` / `ClosingCandidate` / `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). UNDER_PRESSURE / `battle_behind_v1` is #254.
 - **V4 mapping:** `closing`→`HUNTING`, `approach`→`APPROACH`, `attack`→`ATTACK_RANGE`, `overlap`→`SIDE_BY_SIDE`. Close expires `battle.closing` plus band facts; no new V4 `*_ENDED`. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_closing.py` (**19**), including eight `bandBoundaries` goldens. First implementation SHA `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06`; docs checkpoint SHA `630bd19aa4400e38d10ef75b2b1b5f1228641854`.
@@ -104,8 +104,8 @@
 - **Product detector:** `PressureDetector` / `PressureTrace` / `PressureCandidate` / `PressureStep`. Uses `DetectorBank` for `battle_behind_v1` only (`detector_ids=("battle_behind_v1",)`); does not drive `battle_two_front_v1` or `reduce_composite` (#255).
 - **V4 mapping:** `closing`→`HUNTED` / `battle.pressure_behind` / `race.battle.pressure`; inward bands `approach|attack|overlap`→`RIVAL_THREAT` / `battle.rival_threat` / `race.battle.pressure`. Facts: catalog `battle.closing` on the FSM; inward bands publish registered `battle.position_threat` (do not invent `battle.pressure_behind.band`, `UNDER_PRESSURE` V4 id / boolean / `*_ENDED`). Close expires `battle.closing` plus `battle.position_threat`; no new V4 end type. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
-- **Tests:** `tests/test_pressure.py` (**14**); related regression `tests/test_pressure.py` + `tests/test_closing.py` + `tests/test_detector_bank.py` = **52** passed. First implementation SHA `13e01ef94481420e06be0859c76b7d0f427ae212`.
-- **Still out of scope:** live EventManager/NarrativeRuntime wiring, two-front composite (#255), V4 overlay tape. Close-gate / issue close awaits human review.
+- **Tests:** `tests/test_pressure.py` (**14**); related regression `tests/test_pressure.py` + `tests/test_closing.py` + `tests/test_detector_bank.py` = **52** passed. First implementation SHA `13e01ef94481420e06be0859c76b7d0f427ae212`; docs checkpoint SHA `9f69d9110afdccdd39ae97863f9729c79009b0ad`.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, two-front composite (#255), V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
