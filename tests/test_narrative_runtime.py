@@ -618,3 +618,275 @@ def test_shutdown_while_building_cancels_realization_effect() -> None:
     assert result.lane_after == "idle"
     assert runtime.status().runtime_state == "stopped"
     assert runtime.status().lane == "idle"
+
+
+@pytest.mark.asyncio
+async def test_realization_effect_task_admits_command_only() -> None:
+    seen: list[dict[str, object]] = []
+
+    async def realize(token: dict[str, object]) -> NarrativeCommand:
+        seen.append(dict(token))
+        await asyncio.sleep(0)
+        return NarrativeCommand.realization_result(
+            "effect:rz:ok",
+            "REALIZATION_SUCCEEDED",
+            6000,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+
+    runtime = NarrativeRuntime(realization_effect=realize)
+    runtime.enable()
+    assert runtime.admit(_event_impulse("effect:plan", revision=5, fanout=5)).accepted
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "effect:dispatch_realization" in planned.effects
+    await runtime.apply_effects(planned.effects)
+    assert runtime.realization_task_active()
+    await runtime.wait_effects_idle()
+    assert not runtime.realization_task_active()
+    assert seen and str(seen[0]["requestId"]).startswith("request:")
+    completed = runtime.reduce_next()
+    assert completed is not None
+    assert completed.kind == "REALIZATION_SUCCEEDED"
+    assert completed.disposition == "handled"
+    assert completed.lane_after == "committed"
+    assert "effect:dispatch_tts" in completed.effects
+
+
+@pytest.mark.asyncio
+async def test_cancel_realization_drops_stale_completion() -> None:
+    release = asyncio.Event()
+
+    async def slow_realize(token: dict[str, object]) -> NarrativeCommand:
+        await release.wait()
+        return NarrativeCommand.realization_result(
+            "effect:rz:stale",
+            "REALIZATION_SUCCEEDED",
+            6100,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+
+    runtime = NarrativeRuntime(realization_effect=slow_realize)
+    runtime.enable()
+    runtime.admit(_event_impulse("effect:cancel-plan", revision=6, fanout=6))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    await runtime.apply_effects(planned.effects)
+    assert runtime.realization_task_active()
+
+    runtime.admit(NarrativeCommand.shutdown("effect:cancel-shutdown", 6200, "application_exit"))
+    shutdown = runtime.reduce_next()
+    assert shutdown is not None
+    assert "effect:cancel_realization" in shutdown.effects
+    await runtime.apply_effects(shutdown.effects)
+    release.set()
+    await runtime.wait_effects_idle()
+    assert runtime.mailbox_empty()
+    assert runtime.reduce_next() is None
+    assert runtime.status().runtime_state == "stopped"
+
+
+@pytest.mark.asyncio
+async def test_at_most_one_realization_and_one_tts_task() -> None:
+    rz_starts = 0
+    tts_starts = 0
+    gate = asyncio.Event()
+
+    async def realize(token: dict[str, object]) -> NarrativeCommand:
+        nonlocal rz_starts
+        rz_starts += 1
+        await gate.wait()
+        return NarrativeCommand.realization_result(
+            f"effect:rz:{rz_starts}",
+            "REALIZATION_FAILED",
+            6300,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(
+                token,
+                outcome="failed",
+                text=None,
+                textHash=None,
+                failureReason="library_test",
+            ),
+        )
+
+    async def speak(token: dict[str, object]) -> NarrativeCommand:
+        nonlocal tts_starts
+        tts_starts += 1
+        await gate.wait()
+        return _tts_callback("SPEECH_COMPLETED", token, command_id=f"effect:tts:{tts_starts}")
+
+    runtime = NarrativeRuntime(realization_effect=realize, tts_effect=speak)
+    runtime.enable()
+    runtime.admit(_event_impulse("effect:one-rz", revision=7, fanout=7))
+    first = runtime.reduce_next()
+    assert first is not None
+    await runtime.apply_effects(first.effects)
+    runtime.fail_current_realization_for_test()
+    runtime.admit(_event_impulse("effect:two-rz", revision=8, fanout=8))
+    second = runtime.reduce_next()
+    assert second is not None
+    await runtime.apply_effects(second.effects)
+    assert runtime.realization_task_active()
+    assert rz_starts == 2
+
+    runtime = NarrativeRuntime(tts_effect=speak)
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak("effect:tts-a", 6500, text="One.", admission_ordinal=1)
+    )
+    manual = runtime.reduce_next()
+    assert manual is not None
+    await runtime.apply_effects(manual.effects)
+    assert runtime.tts_task_active()
+    rejected = runtime.admit(
+        NarrativeCommand.manual_speak("effect:tts-b", 6510, text="Two.", admission_ordinal=2)
+    )
+    assert rejected.accepted
+    busy = runtime.reduce_next()
+    assert busy is not None
+    assert busy.disposition == "rejected_busy"
+    assert "effect:dispatch_tts" not in busy.effects
+    assert tts_starts == 1
+    gate.set()
+    await runtime.wait_effects_idle()
+
+
+@pytest.mark.asyncio
+async def test_run_loop_applies_effects_through_commit() -> None:
+    async def realize(token: dict[str, object]) -> NarrativeCommand:
+        await asyncio.sleep(0)
+        return NarrativeCommand.realization_result(
+            "run:rz",
+            "REALIZATION_SUCCEEDED",
+            7000,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+
+    runtime = NarrativeRuntime(realization_effect=realize)
+    runtime.enable()
+    runtime.admit(_event_impulse("run:plan", revision=9, fanout=9))
+
+    task = asyncio.create_task(runtime.run())
+    for _ in range(50):
+        if runtime.status().lane == "committed" and runtime.status().reducer_sequence >= 2:
+            break
+        await asyncio.sleep(0.01)
+    assert runtime.status().lane == "committed"
+    runtime.admit(NarrativeCommand.shutdown("run:stop", 7100, "application_exit"))
+    await asyncio.wait_for(task, timeout=2.0)
+    assert runtime.status().runtime_state == "stopped"
+    assert runtime.status().reducer_sequence >= 2
+
+
+def test_admission_diagnostics_surface_coalesce_and_overflow_reasons() -> None:
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    first = NarrativeCommand.deadline(
+        "diag:silence:1", "LONG_SILENCE_ELAPSED", 8000, generation=1, deadline_mono_ms=8000
+    )
+    second = NarrativeCommand.deadline(
+        "diag:silence:2", "LONG_SILENCE_ELAPSED", 8010, generation=1, deadline_mono_ms=8010
+    )
+    assert runtime.admit(first).reason == "accepted"
+    coalesced = runtime.admit(second)
+    assert coalesced.reason == "coalesced"
+    status = runtime.status()
+    assert status.last_admission_reason == "coalesced"
+    assert status.mailbox_depth == 1
+    assert status.mailbox_capacity == NarrativeMailbox.TOTAL_CAPACITY
+    assert "coalesced" in status.admission_diagnostics
+    assert status.mailbox_overflows == 0
+
+    for index in range(NarrativeMailbox.ORDINARY_CELLS - 1):
+        runtime.admit(
+            NarrativeCommand.deadline(
+                f"diag:fill:{index}",
+                "LONG_SILENCE_ELAPSED",
+                8100 + index,
+                generation=2 + index,
+                deadline_mono_ms=8100 + index,
+            )
+        )
+    runtime.admit(
+        NarrativeCommand.deadline(
+            "diag:fill:last",
+            "LONG_SILENCE_ELAPSED",
+            8200,
+            generation=100,
+            deadline_mono_ms=8200,
+        )
+    )
+    assert len(runtime._mailbox) == NarrativeMailbox.ORDINARY_CELLS  # noqa: SLF001
+    evict = runtime.admit(_event_impulse("diag:evict", revision=50, fanout=50))
+    assert evict.reason == "mailbox_evicted_update"
+    status = runtime.status()
+    assert status.last_admission_reason == "mailbox_evicted_update"
+    assert "mailbox_evicted_update" in status.admission_diagnostics
+    assert status.mailbox_overflows >= 1
+
+
+def test_status_reason_codes_for_recovery_health_and_tape() -> None:
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert runtime.status().reason_codes == ()
+
+    latest = _pure_fact("reason:latest", revision=60, fanout=60)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "reason:recovery",
+            9000,
+            latest_context=latest.context_part,
+            loss_first_sequence=1,
+            loss_last_sequence=2,
+            safety_effects=(latest.safety_effect(),),
+        )
+    )
+    recovered = runtime.reduce_next()
+    assert recovered is not None
+    status = runtime.status()
+    assert status.history_complete is False
+    assert "history_incomplete" in status.reason_codes
+    assert "mailbox_history_incomplete" in status.reason_codes
+    assert "mailbox_recovery" in status.reason_codes
+
+    runtime.admit(
+        NarrativeCommand.tape_health(
+            "reason:tape",
+            9010,
+            recorder_generation=1,
+            status="unavailable",
+            affected_detector_ids=("battle",),
+            first_lost_sequence=1,
+            last_lost_sequence=1,
+        )
+    )
+    runtime.reduce_next()
+    status = runtime.status()
+    assert "capture_unavailable" in status.reason_codes
+    assert status.runtime_state == "degraded"
+
+    runtime.admit(
+        NarrativeCommand.component_health(
+            "reason:llm",
+            9020,
+            component="llm",
+            generation=1,
+            status="unavailable",
+            reason=None,
+        )
+    )
+    runtime.reduce_next()
+    status = runtime.status()
+    assert "component_unavailable" in status.reason_codes

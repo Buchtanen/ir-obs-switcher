@@ -8,7 +8,7 @@ consumer, overlay, or server loops. Owns mailbox dequeue order,
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterator
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -38,6 +38,11 @@ class ReduceResult:
     effects: tuple[str, ...]
 
 
+EffectWorker = Callable[
+    [dict[str, Any]], Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None]
+]
+
+
 @dataclass(frozen=True, slots=True)
 class RuntimeStatus:
     runtime_state: RuntimeState
@@ -51,12 +56,24 @@ class RuntimeStatus:
     config_valid: bool | None
     component_health: dict[str, str]
     tape_status: str | None
+    last_admission_reason: str | None
+    mailbox_depth: int
+    mailbox_capacity: int
+    admission_diagnostics: tuple[str, ...]
+    mailbox_overflows: int
+    reason_codes: tuple[str, ...]
 
 
 class NarrativeRuntime:
     """Reduce admitted commands in mailbox order and assign reducer_sequence."""
 
-    def __init__(self, mailbox: NarrativeMailbox | None = None) -> None:
+    def __init__(
+        self,
+        mailbox: NarrativeMailbox | None = None,
+        *,
+        realization_effect: EffectWorker | None = None,
+        tts_effect: EffectWorker | None = None,
+    ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
         self._lane: LaneState = "idle"
@@ -74,6 +91,14 @@ class NarrativeRuntime:
         self._realization: dict[str, Any] | None = None
         self._utterance: dict[str, Any] | None = None
         self._wake = asyncio.Event()
+        self._realization_effect = realization_effect
+        self._tts_effect = tts_effect
+        self._realization_task: asyncio.Task[None] | None = None
+        self._tts_task: asyncio.Task[None] | None = None
+        self._last_admission_reason: str | None = None
+        self._admission_diagnostics: list[str] = []
+        self._mailbox_overflows = 0
+        self._recovery_seen = False
 
     def enable(self) -> None:
         if self._runtime in {"stopped", "stopping"}:
@@ -93,10 +118,23 @@ class NarrativeRuntime:
             config_valid=self._config_valid,
             component_health=dict(self._component_health),
             tape_status=self._tape_status,
+            last_admission_reason=self._last_admission_reason,
+            mailbox_depth=len(self._mailbox),
+            mailbox_capacity=NarrativeMailbox.TOTAL_CAPACITY,
+            admission_diagnostics=tuple(self._admission_diagnostics),
+            mailbox_overflows=self._mailbox_overflows,
+            reason_codes=self._reason_codes(),
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:
         result = self._mailbox.admit(command)
+        self._last_admission_reason = result.reason
+        if result.reason not in self._admission_diagnostics:
+            self._admission_diagnostics.append(result.reason)
+        if result.reason in {"mailbox_evicted_update", "mailbox_recovery", "mailbox_overloaded"}:
+            self._mailbox_overflows += 1
+        if result.reason == "mailbox_recovery":
+            self._recovery_seen = True
         if result.accepted:
             self._wake.set()
         return result
@@ -131,6 +169,7 @@ class NarrativeRuntime:
                 except TimeoutError:
                     continue
                 continue
+            await self.apply_effects(result.effects)
             if result.kind == "SHUTDOWN" and self.mailbox_empty():
                 self._runtime = "stopped"
                 break
@@ -148,6 +187,103 @@ class NarrativeRuntime:
         self._realization = None
         if self._lane == "building":
             self._lane = "idle"
+
+    def realization_task_active(self) -> bool:
+        return self._realization_task is not None and not self._realization_task.done()
+
+    def tts_task_active(self) -> bool:
+        return self._tts_task is not None and not self._tts_task.done()
+
+    async def wait_effects_idle(self) -> None:
+        tasks = [task for task in (self._realization_task, self._tts_task) if task is not None]
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def apply_effects(self, effects: Sequence[str]) -> None:
+        for effect in effects:
+            if effect == "effect:cancel_realization":
+                await self._cancel_task("_realization_task")
+            elif effect == "effect:cancel_tts":
+                await self._cancel_task("_tts_task")
+            elif effect == "effect:dispatch_realization":
+                await self._cancel_task("_realization_task")
+                token = self.current_realization_token()
+                if token is None or self._realization_effect is None:
+                    continue
+                self._realization_task = asyncio.create_task(
+                    self._run_worker(self._realization_effect, token, "_realization_task"),
+                    name="narrative-realization",
+                )
+            elif effect == "effect:dispatch_tts":
+                await self._cancel_task("_tts_task")
+                token = self.current_utterance_token()
+                if token is None or self._tts_effect is None:
+                    continue
+                self._tts_task = asyncio.create_task(
+                    self._run_worker(self._tts_effect, token, "_tts_task"),
+                    name="narrative-tts",
+                )
+        # Yield so newly created workers observe dispatch before the caller continues.
+        await asyncio.sleep(0)
+
+    async def _cancel_task(self, attr: str) -> None:
+        task: asyncio.Task[None] | None = getattr(self, attr)
+        if task is None:
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass
+        if getattr(self, attr) is task:
+            setattr(self, attr, None)
+
+    async def _run_worker(
+        self,
+        worker: EffectWorker,
+        token: dict[str, Any],
+        attr: str,
+    ) -> None:
+        try:
+            produced = await worker(dict(token))
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            return
+        else:
+            if produced is None:
+                return
+            commands = (
+                produced
+                if isinstance(produced, Sequence)
+                and not isinstance(produced, (str, bytes))
+                and not hasattr(produced, "kind")
+                else (produced,)
+            )
+            # NarrativeCommand is not a Sequence of commands; treat single command as one-item.
+            if hasattr(produced, "kind"):
+                commands = (produced,)
+            for command in commands:
+                self.admit(command)
+        finally:
+            if getattr(self, attr) is asyncio.current_task():
+                setattr(self, attr, None)
+
+    def _reason_codes(self) -> tuple[str, ...]:
+        codes: list[str] = []
+        if not self._history_complete:
+            codes.append("history_incomplete")
+            codes.append("mailbox_history_incomplete")
+        if self._recovery_seen:
+            codes.append("mailbox_recovery")
+        if self._tape_status == "unavailable":
+            codes.append("capture_unavailable")
+        if any(status == "unavailable" for status in self._component_health.values()):
+            codes.append("component_unavailable")
+        # stable unique
+        return tuple(dict.fromkeys(codes))
 
     def _reduce(self, command: NarrativeCommand) -> ReduceResult:
         self._reducer_sequence += 1
@@ -432,6 +568,7 @@ class NarrativeRuntime:
             if "viewRevision" in fact_view:
                 self._fact_view_revision = int(fact_view["viewRevision"])
         self._history_complete = False
+        self._recovery_seen = True
         effects = ["recovery_applied", "history_incomplete"]
         self._bump_deadline_generations(effects)
         if self._lane == "building":
