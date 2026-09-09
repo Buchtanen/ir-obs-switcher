@@ -1,0 +1,6 @@
+{
+  "createdMonoMs": 10000,
+  "expireAtMs": 20000,
+  "arbitrateAtMs": 20000,
+  "expectDecision": "no_candidate"
+}

@@ -1,0 +1,5 @@
+{
+  "challengerId": "opp:other",
+  "otherEpisodeId": "episode:other",
+  "otherCorrelation": ["hero", "car.99"]
+}
