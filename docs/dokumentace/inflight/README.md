@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) are closed on this branch; **not shipped on `master`**. [#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) DetectorBank FSM is implemented on this branch (first SHA `e41ffb4`).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) are closed on this branch; **not shipped on `master`**. Next implementation package is [#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) (unclaimed).
 
 ## Where to look on this branch
 
@@ -62,7 +62,7 @@
 - **Emissions:** detector `STARTED`/`UPDATED`/`ENDED` only. Ahead maps to existing V4 `HUNTING`, behind to `HUNTED`. `endedEvent` stays null — no `HUNTING_ENDED`. Material revisions compare to the last emitted net-closing/band and are rate-limited by `update_min_interval_s`. Close expires `battle.closing` as a recorded fact predicate; FactLedger is not called.
 - **Scope:** directional catalog detectors only. Band projection (`reduce_band`) and two-front (`reduce_composite` / `BATTLE_FOR_POSITION`) stay #253–#255. `disable_for_run(..., required_capture_lost)` is the narrow capture-loss control; it does not import commentary.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
-- **Tests:** `tests/test_detector_bank.py` (**19**), including the seven directional goldens. First implementation SHA `e41ffb42f5e83236a4db58194dd4c5903fbc0899`.
+- **Tests:** `tests/test_detector_bank.py` (**19**), including the seven directional goldens. First implementation SHA `e41ffb42f5e83236a4db58194dd4c5903fbc0899`; docs checkpoint SHA `0a44978d2468f30bb343100c8b8731bd9850fb9b`.
 - **Still out of scope:** live EventManager/NarrativeRuntime wiring, CLOSING/UNDER_PRESSURE product detectors, two-front composite, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
