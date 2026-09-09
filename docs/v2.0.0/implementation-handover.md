@@ -268,7 +268,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #262 is closed in its own scope: `StoryDirector`. First SHA `0aca193e4ebef2aa3defdb79c638129549a00699`; docs checkpoint `fdd75df9e58cbb78e0685fe07f9c7ff3b844b59c`; closing SHA `0b4d09895605dbbfe07262d11d0aafab4b73d1e2`; feat CI 34340873454 green; local pytest **11**; related **214** passed; verifier GREEN.
+1. #262 is closed in its own scope: `StoryDirector`. First SHA `0aca193e4ebef2aa3defdb79c638129549a00699`; docs checkpoint `fdd75df9e58cbb78e0685fe07f9c7ff3b844b59c`; closing SHA `0b4d09895605dbbfe07262d11d0aafab4b73d1e2`; pin `2476c964a24a54d9d1e8a478ac52b5b5e58dd154`; feat CI 34340873454 green; local pytest **11**; related **214** passed; verifier GREEN.
 2. Next: #264 speech lane. Do not start #264 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
