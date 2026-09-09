@@ -408,7 +408,6 @@ class NarrativeRuntime:
             if self._speech_deadline_task is asyncio.current_task():
                 self._speech_deadline_task = None
 
-
     async def _cancel_task(self, attr: str) -> None:
         task: asyncio.Task[None] | None = getattr(self, attr)
         if task is None:
@@ -449,6 +448,8 @@ class NarrativeRuntime:
             if hasattr(produced, "kind"):
                 commands = (produced,)
             for command in commands:
+                if not isinstance(command, NarrativeCommand):
+                    continue
                 self.admit(command)
         finally:
             if getattr(self, attr) is asyncio.current_task():

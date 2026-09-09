@@ -1100,7 +1100,6 @@ def test_recovery_diagnostics_record_cancelled_speech_lane() -> None:
     assert status.last_recovery_cancelled_lane == "committed"
 
 
-
 @pytest.mark.asyncio
 async def test_realization_deadline_timer_admits_matching_token() -> None:
     runtime = NarrativeRuntime(realization_deadline_delay_s=0.02)
@@ -1228,7 +1227,9 @@ async def test_playback_accepted_rearms_speech_deadline_to_playback_stage() -> N
     utterance = runtime.current_utterance_token()
     assert utterance is not None
 
-    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="speech-deadline:accept"))
+    runtime.admit(
+        _tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="speech-deadline:accept")
+    )
     accepted = runtime.reduce_next()
     assert accepted is not None
     assert accepted.lane_after == "speaking"
