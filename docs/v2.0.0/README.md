@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C next is #254; #253 CLOSING temporal detector is closed
+**Status:** Wave C #254 UNDER_PRESSURE is implemented on this branch (issue still open); #253 CLOSING temporal detector is closed; next after #254 close is #255
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
