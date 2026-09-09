@@ -47,6 +47,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #259 verifier: GREEN — episode retention + episode registry + catalog loader + session occurrence + fact ledger **85** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; no BeatPlan/TtsUtterance storage.
 - First #260 SilenceClock SHA: `754f21e7a4ec54d3cc61726f4bf8f70854a6de50` (`feat: add long-silence clock and filler opportunities (#260)`). Local pytest: `tests/test_silence_clock.py` **14** passed. Related regression: silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **99** passed.
 - #260 docs checkpoint SHA: `272df5be57a49a6f8ca0caec1ffedcf59d1579db` (`docs: record SilenceClock implementation checkpoint (#260)`)
+- #260 closing SHA: `e7c32262ad21474ca3c4e037762882fbe75b32b3` (`docs: close long-silence lifecycle checkpoint (#260)`)
 - #260 verifier: GREEN — `tests/test_silence_clock.py` **14** passed; related **99** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; no BeatPlan/EventOpportunity queue.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -229,7 +230,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #260 is closed in its own scope: `SilenceClock`. First SHA `754f21e`; docs checkpoint `272df5b`; local pytest **14**; related **99** passed; verifier GREEN.
+1. #260 is closed in its own scope: `SilenceClock`. First SHA `754f21e`; docs checkpoint `272df5b`; closing SHA `e7c3226`; local pytest **14**; related **99** passed; verifier GREEN.
 2. #261 first slice: immutable BeatPlan and just-in-time planner. Do not start #261 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
