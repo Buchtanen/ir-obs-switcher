@@ -1,8 +1,8 @@
 # v2 narrative runtime — implementation handover
 
 **Updated:** 2026-09-09
-**Phase:** #249 predicate AST implemented (first SHA `b24e3da`); close pending diary/close-gate. Process-only land of #285+#287 is on this branch; **no master PR**.
-**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244), [#245](https://github.com/Buchtanen/ir-obs-switcher/issues/245), [#246](https://github.com/Buchtanen/ir-obs-switcher/issues/246), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247), [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248), claimed [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
+**Phase:** #249 predicate AST closed; next implementation package is #250 (unclaimed). Process-only land of #285+#287 is on this branch; **no master PR**.
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235), [#236](https://github.com/Buchtanen/ir-obs-switcher/issues/236), [#237](https://github.com/Buchtanen/ir-obs-switcher/issues/237), [#238](https://github.com/Buchtanen/ir-obs-switcher/issues/238), [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244), [#245](https://github.com/Buchtanen/ir-obs-switcher/issues/245), [#246](https://github.com/Buchtanen/ir-obs-switcher/issues/246), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247), [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248), [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249), next [#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
 
 This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
 
@@ -19,7 +19,10 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
+- #249 closing SHA: pending this close-docs commit
+- #249 docs checkpoint SHA: `83a12eb3a0cc1e3f74c75d87d48a1fde9c22c924` (`docs: record predicate AST implementation checkpoint (#249)`)
 - First #249 predicate-AST SHA: `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c` (`feat: add safe typed predicate AST (#249)`). Local pytest: `tests/test_predicate_ast.py` **14** passed.
+- #249 verifier: GREEN — predicate + FeatureEngine + gap + ledger/inheritance **60** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
 - #248 closing SHA: `a5f446ba9403e189edbf4930c0cfd6728270985b` (`docs: close gap estimator checkpoint (#248)`)
 - First #248 gap-estimator SHA: `4aa2e680ef76b6aa37ce993cbc37bef32e93db46` (`feat: add versioned gap estimators and coverage (#248)`). Local pytest: `tests/test_gap_estimators.py` **13** + `tests/test_feature_engine.py` **10** = **23** passed.
 - #248 docs checkpoint SHA: `72067e31e66f3a2d39fc51cf47d7e5138ee3a500` (`docs: record gap estimator implementation checkpoint (#248)`).
@@ -90,8 +93,8 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Current checkpoint ownership
 
-- Editing owner: #249 claimed on this branch; first SHA `b24e3da`.
-- Dirty scope: this handover + inflight/jak-cist docs for the #249 checkpoint.
+- Editing owner: unclaimed; next owner starts #250 unless claimed otherwise.
+- Dirty scope: none after the #249 close docs SHA.
 - GitHub native `blockedBy` is now set for #239–#248 to match `docs/v2.0.0/README.md`.
 - issue-steward close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591500416), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591500587), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591500721), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591500870), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591501016), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591501184), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247#issuecomment-5591933090), [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248#issuecomment-5593964317), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591501315).
 - docs-keeper close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591525282), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591525412), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591525563), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591525718), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591525837), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591526009), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247#issuecomment-5591937527), [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248#issuecomment-5593967050), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591526188).
@@ -137,11 +140,13 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 - #248 estimator scope: `events/gap_estimators.py` owns `estimated_v1` / `est_time_v1` / `hybrid_v1` plus bucket coverage/OLS/net-closing; `events/feature_engine.py` integrates them (extra sample fields, trend tunables, per-window gap history). Hybrid emits only on agreement (`HYBRID_MAX_DISAGREEMENT_S=0.5`); `est_time_v1` never replaces `estimated_v1`. Algorithm IDs are in `evidenceRefs`. A lone sample cannot fill a bucket; slope/net-closing need three usable medians. `gap.trend.confidence` and `gap.target_stable` stay registry-only. Docs: no public CONFIG/API/README change; not live-wired.
 - #248 is closed in its own scope: versioned estimators, lap-down/wrap/pit validity, hybrid disagreement, bucket coverage, OLS/net-closing after three usable medians. Live DetectorBank FSM and NarrativeRuntime remain #250/#284.
 - #249 compile scope: `contracts/predicate.py` owns the closed AST, named catalog atoms, frozen invariant map and catalog-load type/unit/`unknownSatisfies` gate. `events/predicate_ast.py` owns ternary evaluation plus temporal memory. Catalog strings are never executed. Evaluator is not exported from `events/__init__.py` and is not live-wired. Docs: no public CONFIG/API/README change.
+- #249 is closed in its own scope: packaged catalog compile, ternary unknown, held_for/changed/crossed/within/since/count/sequence, unit/ref load failures, invariant map, bounded recursion/cost. Live DetectorBank FSM and NarrativeRuntime remain #250/#284.
 
 ## Exact next implementation slice
 
-1. #249 first SHA `b24e3da` is on the branch. Finish docs-keeper + verifier + close-gate; do not start #250 until the human says so.
-2. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
+1. #249 is closed in its own scope: safe typed predicate AST. First SHA `b24e3da`; docs checkpoint SHA `83a12eb`; verifier GREEN (60 passed).
+2. #250 first slice: generic correlated detector lifecycle FSM. Do not start #250 unless the next owner claims it.
+3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
 ## Resume commands
 
@@ -154,7 +159,7 @@ git rev-parse @{upstream}
 git branch --show-current   # must be codex/commentary-story-flow-spec
 ```
 
-Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, **#235–#248 closed**, **#249 first SHA `b24e3da` on the branch**, clean or intentionally scoped dirty files matching the ownership section, and **no master PR**. Do not resume #239–#248 — those checkpoints are complete. Any mismatch is a blocker until its ownership is understood.
+Expected before resuming: correct worktree and branch, local HEAD/upstream relationship understood, **#235–#249 closed**, **#250 unclaimed**, clean or intentionally scoped dirty files matching the ownership section, and **no master PR**. Do not resume #239–#249 — those checkpoints are complete. Any mismatch is a blocker until its ownership is understood.
 
 ## Known risks
 
