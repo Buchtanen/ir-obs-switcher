@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C next is #250; #249 predicate AST is closed
+**Status:** Wave C #250 DetectorBank FSM is implemented on this branch; #249 predicate AST is closed
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)

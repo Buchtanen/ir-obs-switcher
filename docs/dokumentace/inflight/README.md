@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) are closed on this branch; **not shipped on `master`**. Next implementation package is [#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) are closed on this branch; **not shipped on `master`**. [#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250) DetectorBank FSM is implemented on this branch (first SHA `e41ffb4`).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#249) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#250) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#249, branch-only)
+## Implementation lookup (#239–#250, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -26,6 +26,7 @@
 | #247 FeatureEngine | contracts + events | `contracts/feature.py`, `events/feature_engine.py` — detail below | `tests/test_feature_engine.py` (**10**) |
 | #248 gap estimators | events | `events/gap_estimators.py`, `events/feature_engine.py` (integration) — detail below | `tests/test_gap_estimators.py` (**13**) + `tests/test_feature_engine.py` (**10**) |
 | #249 predicate AST | contracts + events | `contracts/predicate.py`, `events/predicate_ast.py` — detail below | `tests/test_predicate_ast.py` (**14**) |
+| #250 DetectorBank FSM | events | `events/detector_bank.py` — detail below | `tests/test_detector_bank.py` (**19**) |
 
 ### #247 FeatureEngine lookup
 
@@ -44,7 +45,7 @@
 - **Evidence:** each `FeatureValue` includes its algorithm/feature ID in `evidenceRefs`; hybrid cites both parent estimator IDs.
 - **Trend:** duration per bucket capped at `sample_interval_s`; a lone sample cannot fill a bucket. Slope/net-closing require three usable bucket medians; coverage is summed bucket duration / `trend_window_s` (capped at 1.0). Target swap clears usable trend history for the correlation.
 - **Tests:** `tests/test_gap_estimators.py` (**13**); existing `tests/test_feature_engine.py` (**10**, first sample still only `estimated_v1`). First implementation SHA `4aa2e680ef76b6aa37ce993cbc37bef32e93db46`; docs checkpoint SHA `72067e31e66f3a2d39fc51cf47d7e5138ee3a500`.
-- **Still out of scope:** DetectorBank / NarrativeRuntime / `gap.trend.confidence` / `gap.target_stable` live wiring.
+- **Still out of scope:** live DetectorBank / NarrativeRuntime wiring; `gap.trend.confidence` / `gap.target_stable` remain registry-only.
 
 ### #249 predicate AST lookup
 
@@ -53,9 +54,18 @@
 - **Evaluate (`events/predicate_ast.py`):** `PredicateEvaluator` returns `PredicateResult` (`verdict` + reason tree; `satisfies` is false for unknown on enter/`held_for`). Missing/`quality=unknown` feature values are unknown; `feature_stale_or_unknown` is true on clear when the gap feature is missing or unusable.
 - **Exports / boundaries:** compile/result DTOs re-exported from `contracts/__init__.py`; evaluator **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, DetectorBank, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_predicate_ast.py` (**14**). First implementation SHA `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c`; docs checkpoint SHA `83a12eb3a0cc1e3f74c75d87d48a1fde9c22c924`; close docs SHA `4bdb0dd874d83d851b48ba77b1702789d9b75dc0`.
-- **Still out of scope:** DetectorBank FSM (#250), StoryDefinition loader (#257), NarrativeRuntime activation.
+- **Still out of scope:** live DetectorBank wiring, StoryDefinition loader (#257), NarrativeRuntime activation.
 
-`NarrativeRuntime`, live `DetectorBank` wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #250 DetectorBank lookup
+
+- **FSM (`events/detector_bank.py`):** `reduce_lifecycle` matches frozen `reduce_directional` goldens (`inactive|candidate|active|clearing`). `DetectorBank` keys instances by `(detectorId, detectorVersion, streamEpoch, occurrenceId, orderedCorrelationKey)`, evaluates compiled `enter_signal` / `clear` / `immediate` / `material_update` trees, and owns confirm/clear/update holds. Unknown never satisfies enter; unknown/stale clear starts the clear hold. Duplicate or older `frameSequence` is an audited no-op.
+- **Emissions:** detector `STARTED`/`UPDATED`/`ENDED` only. Ahead maps to existing V4 `HUNTING`, behind to `HUNTED`. `endedEvent` stays null — no `HUNTING_ENDED`. Material revisions compare to the last emitted net-closing/band and are rate-limited by `update_min_interval_s`. Close expires `battle.closing` as a recorded fact predicate; FactLedger is not called.
+- **Scope:** directional catalog detectors only. Band projection (`reduce_band`) and two-front (`reduce_composite` / `BATTLE_FOR_POSITION`) stay #253–#255. `disable_for_run(..., required_capture_lost)` is the narrow capture-loss control; it does not import commentary.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
+- **Tests:** `tests/test_detector_bank.py` (**19**), including the seven directional goldens. First implementation SHA `e41ffb42f5e83236a4db58194dd4c5903fbc0899`.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, CLOSING/UNDER_PRESSURE product detectors, two-front composite, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
