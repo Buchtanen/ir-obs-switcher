@@ -7,7 +7,7 @@
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#257) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#266) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
@@ -275,9 +275,10 @@
 - **Catalog (`src/irswitch/contracts/realization_catalog.py`):** `load_realization_catalog`, `inventory_legacy_variants`, `migrate_legacy_graph`, `RealizationCatalog`, `PatternCard`, `MigrationClassifier`, `LegacyVariant`, `Classification`, `MigrationReport`. Schema `realization-catalog/2`. Re-exported from `contracts/__init__.py` as `irswitch.contracts.realization_catalog`.
 - **Frozen cards:** composes `#256` `audit_coverage_matrix` and `#257` `load_narrative_catalog`. 64 beats, 37 families, **256** enabled EN `tight` cards (4 per beat). `pattern_count` and `beat_count` are separate reported fields and are never conflated. Catalog hash = `canonical_sha256` of packaged `realization-pattern-cards.json`. Each card annotates required claims, `forbiddenAddition`, and `globalForbiddenClaimTypes` from the beat catalog. Balanced/loose stay disabled.
 - **Classifier:** reads raw sequence-graph JSON (no commentary package import). Inventories **2,128 EN** and **2,128 CS** variants with source provenance `legacy:{nodeId}:{locale}:{bucket}:{ordinal}`. Dispositions `audited_pattern|authored_line|style_fragment|reject|cs_excluded` are **proposed** (`accepted=False`) until `accept()` or an explicit accept-set. CS is `cs_excluded` and cannot enter v2 routing. Exact card-pattern text → `audited_pattern`; unsafe legacy (question, first person, emotion, multi-sentence) → `reject`. `v2_reachable` only for accepted EN `audited_pattern`/`authored_line` with mapped beats.
+- **Fixture:** `tests/fixtures/realization_catalog/legacy_graph.json`.
 - **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay, commentary, or events; not live-wired. No `eval`/`exec`/`compile`. Does not implement RealizationBundle (#267 authored pack / compiler continuation).
 - **Tests:** `tests/test_realization_catalog.py` (**13**). First implementation SHA `10e5b70cff8f8a2d738c30b0d40ebd79798d9b97`. Related regression **270** passed.
-- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `10e5b70`; docs checkpoint `8df6da4`; index follow-up `6892ac6`.
 - **Still out of scope:** #267 authored critical/lifecycle pack, RealizationBundle compiler, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog wiring, and V4 overlay tape remain out of scope until #284 and later issues.
