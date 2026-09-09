@@ -1,0 +1,1501 @@
+{
+  "analysis": {
+    "cyclicComponents": [],
+    "edgeCount": 50,
+    "isDirectedAcyclic": true,
+    "nodeCount": 64,
+    "nonterminalComponentPolicy": "every expansion is bounded by explicit edge progress, validity, cadence, material exposure and story cap",
+    "strongComponentCount": 64
+  },
+  "edges": [
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "stream.started",
+      "guardProfileId": "current_confirmed_practice_occurrence",
+      "id": "stream.started->session.intro.practice",
+      "ordinal": 1,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.intro.practice"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "stream.started",
+      "guardProfileId": "current_confirmed_qualifying_occurrence",
+      "id": "stream.started->session.intro.qualifying",
+      "ordinal": 2,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.intro.qualifying"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "stream.started",
+      "guardProfileId": "current_confirmed_race_occurrence",
+      "id": "stream.started->session.intro.race",
+      "ordinal": 3,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.intro.race"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.lap.hot",
+      "guardProfileId": "same_attempt_revision_projection_valid",
+      "id": "timing.lap.hot->timing.lap.projected",
+      "ordinal": 4,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "timing.lap.projected"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.lap.hot",
+      "guardProfileId": "same_attempt_target_valid",
+      "id": "timing.lap.hot->timing.target.locked",
+      "ordinal": 5,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "timing.target.locked"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.lap.projected",
+      "guardProfileId": "same_attempt_qualifying_position_target",
+      "id": "timing.lap.projected->timing.position.attack",
+      "ordinal": 6,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "timing.position.attack"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.target.locked",
+      "guardProfileId": "same_attempt_material_gain",
+      "id": "timing.target.locked->timing.pace.gain",
+      "ordinal": 7,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "timing.pace.gain"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.target.locked",
+      "guardProfileId": "same_attempt_material_loss",
+      "id": "timing.target.locked->timing.pace.loss",
+      "ordinal": 8,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "timing.pace.loss"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.sector.split",
+      "guardProfileId": "same_sector_result_explicitly_best",
+      "id": "timing.sector.split->timing.sector.best",
+      "ordinal": 9,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "timing.sector.best"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.lap.projected",
+      "guardProfileId": "same_lap_completed",
+      "id": "timing.lap.projected->timing.lap.completed",
+      "ordinal": 10,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "timing.lap.completed"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.target.locked",
+      "guardProfileId": "same_lap_completed",
+      "id": "timing.target.locked->timing.lap.completed",
+      "ordinal": 11,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "timing.lap.completed"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "timing.lap.hot",
+      "guardProfileId": "same_attempt_invalidated",
+      "id": "timing.lap.hot->incident.invalid_lap",
+      "ordinal": 12,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "incident.invalid_lap"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.pursuit",
+      "guardProfileId": "same_target_relation_approach_claims_true",
+      "id": "battle.pursuit->battle.approach",
+      "ordinal": 13,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "battle.approach"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.pursuit",
+      "guardProfileId": "same_front_relation_plus_valid_rear_relation",
+      "id": "battle.pursuit->battle.two_front",
+      "ordinal": 14,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "battle.two_front"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.approach",
+      "guardProfileId": "same_target_relation_attack_band_true",
+      "id": "battle.approach->battle.attack_range",
+      "ordinal": 15,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "battle.attack_range"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.attack_range",
+      "guardProfileId": "same_target_relation_overlap_true",
+      "id": "battle.attack_range->battle.side_by_side",
+      "ordinal": 16,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "battle.side_by_side"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.pursuit",
+      "guardProfileId": "same_target_ordered_pass_result",
+      "id": "battle.pursuit->position.pass",
+      "ordinal": 17,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "position.pass"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.approach",
+      "guardProfileId": "same_target_ordered_pass_result",
+      "id": "battle.approach->position.pass",
+      "ordinal": 18,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "position.pass"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.attack_range",
+      "guardProfileId": "same_target_ordered_pass_result",
+      "id": "battle.attack_range->position.pass",
+      "ordinal": 19,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "position.pass"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.side_by_side",
+      "guardProfileId": "same_target_ordered_pass_result",
+      "id": "battle.side_by_side->position.pass",
+      "ordinal": 20,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "position.pass"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.side_by_side",
+      "guardProfileId": "same_target_battle_outcome_without_pass_claim",
+      "id": "battle.side_by_side->battle.won",
+      "ordinal": 21,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "battle.won"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.pressure_behind",
+      "guardProfileId": "same_rear_target_relation_threat_claims_true",
+      "id": "battle.pressure_behind->battle.rival_threat",
+      "ordinal": 22,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "battle.rival_threat"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.pressure_behind",
+      "guardProfileId": "same_rear_relation_plus_valid_front_relation",
+      "id": "battle.pressure_behind->battle.two_front",
+      "ordinal": 23,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "battle.two_front"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.rival_threat",
+      "guardProfileId": "correlated_position_loss_result",
+      "id": "battle.rival_threat->position.lost",
+      "ordinal": 24,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "position.lost"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.two_front",
+      "guardProfileId": "one_declared_relation_becomes_overlap",
+      "id": "battle.two_front->battle.side_by_side",
+      "ordinal": 25,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "battle.side_by_side"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.two_front",
+      "guardProfileId": "correlated_front_relation_result",
+      "id": "battle.two_front->position.pass",
+      "ordinal": 26,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "position.pass"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "battle.two_front",
+      "guardProfileId": "correlated_rear_relation_result",
+      "id": "battle.two_front->position.lost",
+      "ordinal": 27,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "position.lost"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.entry",
+      "guardProfileId": "same_pit_cycle_lane_fact_active",
+      "id": "pit.entry->pit.lane",
+      "ordinal": 28,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "pit.lane"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.lane",
+      "guardProfileId": "same_pit_cycle_stopped_fact_active",
+      "id": "pit.lane->pit.stopped",
+      "ordinal": 29,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "pit.stopped"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.lane",
+      "guardProfileId": "same_cycle_no_stop_observed_released_fact_active",
+      "id": "pit.lane->pit.released",
+      "ordinal": 30,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "pit.released"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.stopped",
+      "guardProfileId": "same_pit_cycle_released_fact_active",
+      "id": "pit.stopped->pit.released",
+      "ordinal": 31,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "pit.released"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.released",
+      "guardProfileId": "same_pit_cycle_exit_fact_active",
+      "id": "pit.released->pit.exit",
+      "ordinal": 32,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "pit.exit"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.lane",
+      "guardProfileId": "same_cycle_exit_without_observed_stop_release",
+      "id": "pit.lane->pit.exit",
+      "ordinal": 33,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "pit.exit"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "pit.exit",
+      "guardProfileId": "same_cycle_comparison_fact_valid",
+      "id": "pit.exit->pit.outcome",
+      "ordinal": 34,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "pit.outcome"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "incident.off_track",
+      "guardProfileId": "same_incident_aftermath_revision_valid",
+      "id": "incident.off_track->incident.aftermath",
+      "ordinal": 35,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "incident.aftermath"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "incident.unclassified",
+      "guardProfileId": "same_incident_aftermath_revision_valid",
+      "id": "incident.unclassified->incident.aftermath",
+      "ordinal": 36,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "incident.aftermath"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "incident.off_track",
+      "guardProfileId": "same_occurrence_lap_invalid_result",
+      "id": "incident.off_track->incident.invalid_lap",
+      "ordinal": 37,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "incident.invalid_lap"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "incident.aftermath",
+      "guardProfileId": "same_incident_recovery_evidence_valid",
+      "id": "incident.aftermath->incident.recovery",
+      "ordinal": 38,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "incident.recovery"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.final_lap",
+      "guardProfileId": "same_race_occurrence_checkered_active",
+      "id": "session.final_lap->session.checkered",
+      "ordinal": 39,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.checkered"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.final_lap",
+      "guardProfileId": "same_race_occurrence_hero_finished",
+      "id": "session.final_lap->session.hero_finish",
+      "ordinal": 40,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.hero_finish"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.checkered",
+      "guardProfileId": "same_occurrence_hero_finish_observed",
+      "id": "session.checkered->session.hero_finish",
+      "ordinal": 41,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.hero_finish"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.checkered",
+      "guardProfileId": "same_occurrence_ended_finish_may_be_unknown",
+      "id": "session.checkered->session.wrap.race",
+      "ordinal": 42,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.wrap.race"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.intro.practice",
+      "guardProfileId": "same_occurrence_fact_fresh_and_not_exposed",
+      "id": "session.intro.practice->session.sof_brief",
+      "ordinal": 43,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.sof_brief"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.intro.practice",
+      "guardProfileId": "same_occurrence_fact_fresh_and_not_exposed",
+      "id": "session.intro.practice->session.weather_brief",
+      "ordinal": 44,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.weather_brief"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.intro.qualifying",
+      "guardProfileId": "same_occurrence_fact_fresh_and_not_exposed",
+      "id": "session.intro.qualifying->session.weather_brief",
+      "ordinal": 45,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.weather_brief"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.intro.race",
+      "guardProfileId": "same_occurrence_fact_fresh_and_not_exposed",
+      "id": "session.intro.race->session.sof_brief",
+      "ordinal": 46,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.sof_brief"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.intro.race",
+      "guardProfileId": "same_occurrence_fact_fresh_and_not_exposed",
+      "id": "session.intro.race->session.weather_brief",
+      "ordinal": 47,
+      "preference": "allowed",
+      "scoreBonus": 0,
+      "toBeatId": "session.weather_brief"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.wrap.practice",
+      "guardProfileId": "next_present_stage_known",
+      "id": "session.wrap.practice->session.preview.next",
+      "ordinal": 48,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.preview.next"
+    },
+    {
+      "edgeClass": "non-closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.wrap.qualifying",
+      "guardProfileId": "qualifying_result_facts_valid",
+      "id": "session.wrap.qualifying->session.qualifying_recap",
+      "ordinal": 49,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.qualifying_recap"
+    },
+    {
+      "edgeClass": "closing",
+      "episodeTruthEffect": "none",
+      "fromBeatId": "session.qualifying_recap",
+      "guardProfileId": "next_present_stage_known",
+      "id": "session.qualifying_recap->session.preview.next",
+      "ordinal": 50,
+      "preference": "preferred",
+      "scoreBonus": 6,
+      "toBeatId": "session.preview.next"
+    }
+  ],
+  "globalGuards": [
+    "source_is_last_playback_accepted_beat",
+    "same_narrative_stream_epoch",
+    "target_required_claims_true_not_unknown",
+    "target_hard_context_true_not_unknown",
+    "target_material_not_previously_exposed",
+    "target_within_half_open_validity",
+    "story_cadence_open",
+    "nonclosing_story_cap_open"
+  ],
+  "graphProjectionVersion": 1,
+  "guardProfiles": [
+    {
+      "conditions": [
+        "front_result_true"
+      ],
+      "id": "correlated_front_relation_result",
+      "identityBindings": [
+        "front_relation"
+      ],
+      "normativeText": "correlated front relation result",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "position_loss_result_true"
+      ],
+      "id": "correlated_position_loss_result",
+      "identityBindings": [
+        "rear_relation"
+      ],
+      "normativeText": "correlated position-loss result",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "rear_result_true"
+      ],
+      "id": "correlated_rear_relation_result",
+      "identityBindings": [
+        "rear_relation"
+      ],
+      "normativeText": "correlated rear relation result",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "stage_practice"
+      ],
+      "id": "current_confirmed_practice_occurrence",
+      "identityBindings": [
+        "current_occurrence"
+      ],
+      "normativeText": "current confirmed practice occurrence",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "stage_qualifying"
+      ],
+      "id": "current_confirmed_qualifying_occurrence",
+      "identityBindings": [
+        "current_occurrence"
+      ],
+      "normativeText": "current confirmed qualifying occurrence",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "stage_race"
+      ],
+      "id": "current_confirmed_race_occurrence",
+      "identityBindings": [
+        "current_occurrence"
+      ],
+      "normativeText": "current confirmed race occurrence",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "next_present_stage_known"
+      ],
+      "id": "next_present_stage_known",
+      "identityBindings": [
+        "next_present_stage"
+      ],
+      "normativeText": "next present stage known",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "overlap_true"
+      ],
+      "id": "one_declared_relation_becomes_overlap",
+      "identityBindings": [
+        "front_relation"
+      ],
+      "normativeText": "one declared relation becomes overlap",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "qualifying_result_valid"
+      ],
+      "id": "qualifying_result_facts_valid",
+      "identityBindings": [
+        "session_occurrence"
+      ],
+      "normativeText": "qualifying result facts valid",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "attempt_invalidated"
+      ],
+      "id": "same_attempt_invalidated",
+      "identityBindings": [
+        "attempt"
+      ],
+      "normativeText": "same attempt invalidated",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "projection_valid"
+      ],
+      "id": "same_attempt_revision_projection_valid",
+      "identityBindings": [
+        "attempt",
+        "attempt_revision"
+      ],
+      "normativeText": "same attempt revision; projection valid",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "material_gain_true"
+      ],
+      "id": "same_attempt_material_gain",
+      "identityBindings": [
+        "attempt"
+      ],
+      "normativeText": "same attempt; material gain",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "material_loss_true"
+      ],
+      "id": "same_attempt_material_loss",
+      "identityBindings": [
+        "attempt"
+      ],
+      "normativeText": "same attempt; material loss",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "qualifying_position_target_true"
+      ],
+      "id": "same_attempt_qualifying_position_target",
+      "identityBindings": [
+        "attempt"
+      ],
+      "normativeText": "same attempt; qualifying position target",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "target_valid"
+      ],
+      "id": "same_attempt_target_valid",
+      "identityBindings": [
+        "attempt"
+      ],
+      "normativeText": "same attempt; target valid",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "comparison_valid"
+      ],
+      "id": "same_cycle_comparison_fact_valid",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same cycle; comparison fact valid",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "no_stop_or_release_observed",
+        "exit_active"
+      ],
+      "id": "same_cycle_exit_without_observed_stop_release",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same cycle; exit without observed stop/release",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "no_stop_observed",
+        "released_active"
+      ],
+      "id": "same_cycle_no_stop_observed_released_fact_active",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same cycle; no stop observed; released fact active",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "rear_relation_valid"
+      ],
+      "id": "same_front_relation_plus_valid_rear_relation",
+      "identityBindings": [
+        "front_relation"
+      ],
+      "normativeText": "same front relation plus valid rear relation",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "aftermath_revision_valid"
+      ],
+      "id": "same_incident_aftermath_revision_valid",
+      "identityBindings": [
+        "incident"
+      ],
+      "normativeText": "same incident; aftermath revision valid",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "recovery_true"
+      ],
+      "id": "same_incident_recovery_evidence_valid",
+      "identityBindings": [
+        "incident"
+      ],
+      "normativeText": "same incident; recovery evidence valid",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "lap_completed"
+      ],
+      "id": "same_lap_completed",
+      "identityBindings": [
+        "attempt",
+        "lap"
+      ],
+      "normativeText": "same lap completed",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "occurrence_ended"
+      ],
+      "id": "same_occurrence_ended_finish_may_be_unknown",
+      "identityBindings": [
+        "session_occurrence"
+      ],
+      "normativeText": "same occurrence ended; finish may be unknown",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "invalid_lap_result_true"
+      ],
+      "id": "same_occurrence_lap_invalid_result",
+      "identityBindings": [
+        "current_occurrence",
+        "lap"
+      ],
+      "normativeText": "same occurrence/lap; invalid result",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "fresh_unexposed_fact"
+      ],
+      "id": "same_occurrence_fact_fresh_and_not_exposed",
+      "identityBindings": [
+        "session_occurrence"
+      ],
+      "normativeText": "same occurrence; fact fresh and not exposed",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "hero_finished"
+      ],
+      "id": "same_occurrence_hero_finish_observed",
+      "identityBindings": [
+        "session_occurrence"
+      ],
+      "normativeText": "same occurrence; hero finish observed",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "exit_active"
+      ],
+      "id": "same_pit_cycle_exit_fact_active",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same pit cycle; exit fact active",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "lane_active"
+      ],
+      "id": "same_pit_cycle_lane_fact_active",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same pit cycle; lane fact active",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "released_active"
+      ],
+      "id": "same_pit_cycle_released_fact_active",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same pit cycle; released fact active",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "stopped_active"
+      ],
+      "id": "same_pit_cycle_stopped_fact_active",
+      "identityBindings": [
+        "pit_cycle"
+      ],
+      "normativeText": "same pit cycle; stopped fact active",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "stage_race",
+        "checkered_active"
+      ],
+      "id": "same_race_occurrence_checkered_active",
+      "identityBindings": [
+        "session_occurrence"
+      ],
+      "normativeText": "same race occurrence; checkered active",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "stage_race",
+        "hero_finished"
+      ],
+      "id": "same_race_occurrence_hero_finished",
+      "identityBindings": [
+        "session_occurrence"
+      ],
+      "normativeText": "same race occurrence; hero finished",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "front_relation_valid"
+      ],
+      "id": "same_rear_relation_plus_valid_front_relation",
+      "identityBindings": [
+        "rear_relation"
+      ],
+      "normativeText": "same rear relation plus valid front relation",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "threat_claims_true"
+      ],
+      "id": "same_rear_target_relation_threat_claims_true",
+      "identityBindings": [
+        "rear_relation"
+      ],
+      "normativeText": "same rear target/relation; threat claims true",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "sector_best_true"
+      ],
+      "id": "same_sector_result_explicitly_best",
+      "identityBindings": [
+        "sector_result"
+      ],
+      "normativeText": "same sector result explicitly best",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "approach_claims_true"
+      ],
+      "id": "same_target_relation_approach_claims_true",
+      "identityBindings": [
+        "target_relation"
+      ],
+      "normativeText": "same target/relation; approach claims true",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "attack_band_true"
+      ],
+      "id": "same_target_relation_attack_band_true",
+      "identityBindings": [
+        "target_relation"
+      ],
+      "normativeText": "same target/relation; attack band true",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "overlap_true"
+      ],
+      "id": "same_target_relation_overlap_true",
+      "identityBindings": [
+        "target_relation"
+      ],
+      "normativeText": "same target/relation; overlap true",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "battle_won_without_pass_true"
+      ],
+      "id": "same_target_battle_outcome_without_pass_claim",
+      "identityBindings": [
+        "target_relation"
+      ],
+      "normativeText": "same target; battle outcome without pass claim",
+      "unknownVerdict": "ineligible"
+    },
+    {
+      "conditions": [
+        "ordered_pass_result_true"
+      ],
+      "id": "same_target_ordered_pass_result",
+      "identityBindings": [
+        "target_relation"
+      ],
+      "normativeText": "same target; ordered pass result",
+      "unknownVerdict": "ineligible"
+    }
+  ],
+  "language": "en",
+  "nodePolicies": [
+    {
+      "beatId": "timing.lap.completed",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.lap.personal_best",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.pace.gain",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.pace.loss",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.sector.split",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "timing.sector.best",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.target.locked",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 3,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "timing.lap.projected",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "timing.lap.hot",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 3,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "timing.position.attack",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.clean_streak",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "timing.pace.hunt",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "battle.pursuit",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 3,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.approach",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.attack_range",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.side_by_side",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.pressure_behind",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.rival_threat",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.two_front",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 3,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "battle.won",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "position.pass",
+      "incomingEdgeCount": 5,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "position.gained",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "position.lost",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "position.leader_change",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "incident.off_track",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "incident.unclassified",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "incident.invalid_lap",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "incident.aftermath",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "incident.recovery",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "pit.entry",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "pit.lane",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 3,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "pit.stopped",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "pit.released",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "pit.exit",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "pit.outcome",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "stream.started",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 3,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.intro.practice",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.intro.qualifying",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.intro.race",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.restart",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.wrap.practice",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.wrap.qualifying",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.wrap.race",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.preview.next",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.checkered",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.final_lap",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 2,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.hero_finish",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.qualifying_recap",
+      "incomingEdgeCount": 1,
+      "outgoingEdgeCount": 1,
+      "successorDisposition": "expand_explicit_edges"
+    },
+    {
+      "beatId": "session.sof_brief",
+      "incomingEdgeCount": 2,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.weather_brief",
+      "incomingEdgeCount": 3,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.weather_change",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.field_fact",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.flag.yellow",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.flag.green",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.enter_car.practice",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.enter_car.qualifying",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "session.enter_car.race",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "bio.pressure",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "filler.out_lap",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "filler.in_lap",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "filler.parade_lap",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "filler.garage",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "filler.lobby",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    },
+    {
+      "beatId": "filler.quiet_track",
+      "incomingEdgeCount": 0,
+      "outgoingEdgeCount": 0,
+      "successorDisposition": "no_implicit_continuation"
+    }
+  ],
+  "schemaVersion": "successor-graph/2",
+  "selectionContract": {
+    "allowedEdgeBonus": 0,
+    "closingBypassesConsecutiveCap": true,
+    "closingMutatesEpisodeTruth": false,
+    "continuationBasePriority": 58,
+    "continuityBonus": 6,
+    "deduplicateEventAndSuccessor": true,
+    "edgeSet": "closed_explicit_only",
+    "materialRevisionBonus": 6,
+    "noEligibleSuccessor": "return_to_normal_arbitration",
+    "preferredEdgeBonus": 6,
+    "tieBreak": [
+      "urgency_desc",
+      "effective_score_desc",
+      "candidate_order_asc",
+      "stable_ids_asc"
+    ]
+  },
+  "sourceBaseline": {
+    "beatCatalogSha256": "7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+    "document": "docs/v2.0.0/event-beat-disposition.md",
+    "heading": "Natural successor edges"
+  },
+  "storyDefinitions": [
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "timing_attempt",
+      "maxConsecutiveNonClosingBeats": 2,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "battle_ahead",
+      "maxConsecutiveNonClosingBeats": 3,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "battle_behind",
+      "maxConsecutiveNonClosingBeats": 2,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "battle_two_front",
+      "maxConsecutiveNonClosingBeats": 2,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "pit_cycle",
+      "maxConsecutiveNonClosingBeats": 3,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "incident",
+      "maxConsecutiveNonClosingBeats": 2,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 8000,
+      "id": "session_occurrence",
+      "maxConsecutiveNonClosingBeats": 3,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 0,
+      "id": "stream_lifecycle",
+      "maxConsecutiveNonClosingBeats": 1,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 0,
+      "id": "bio_pressure",
+      "maxConsecutiveNonClosingBeats": 1,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 0,
+      "id": "single_result",
+      "maxConsecutiveNonClosingBeats": 1,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    },
+    {
+      "cadenceMinimumMs": 0,
+      "id": "filler_single",
+      "maxConsecutiveNonClosingBeats": 1,
+      "onNoEligibleSuccessor": "remain_truth_owned_and_return_to_arbitration"
+    }
+  ]
+}

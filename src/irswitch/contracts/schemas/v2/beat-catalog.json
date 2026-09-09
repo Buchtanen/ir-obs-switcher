@@ -1,0 +1,5091 @@
+{
+  "beats": [
+    {
+      "claims": {
+        "forbiddenAddition": "PB or pace judgement without comparison fact",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.lap_completed(hero; lap[, lapTime])",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.lap_completed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [
+              "lapTime"
+            ],
+            "requiredAttributes": [
+              "lap"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; completed lap fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.lap.completed",
+      "lifecycleText": "lap edge / self-contained terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "timing.lap_result",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.lap",
+      "triggers": [
+        {
+          "id": "LAP_COMPLETE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "session/field best unless explicitly bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.personal_best(hero; lapTime, referenceTime, improvement)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.personal_best",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "lapTime",
+              "referenceTime",
+              "improvement"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; PB comparison valid",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.lap.personal_best",
+      "lifecycleText": "PB edge / self-contained terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "timing.lap_result",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.lap",
+      "triggers": [
+        {
+          "id": "PERSONAL_BEST",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "completed result or guaranteed target",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.delta_improved(hero; delta, referenceId, segmentId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.delta_improved",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "delta",
+              "referenceId",
+              "segmentId"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; valid delta",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.pace.gain",
+      "lifecycleText": "material gain / lap/reset",
+      "policyId": "transient",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.delta",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.delta",
+      "triggers": [
+        {
+          "id": "GAIN_FOUND",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "cause of loss",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.delta_worsened(hero; delta, referenceId, segmentId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.delta_worsened",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "delta",
+              "referenceId",
+              "segmentId"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; valid delta",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.pace.loss",
+      "lifecycleText": "material loss / lap/reset",
+      "policyId": "transient",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.delta",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.delta",
+      "triggers": [
+        {
+          "id": "TIME_LOST",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "sector-best claim",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.sector_completed(hero; sectorId, segmentTime[, delta])",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.sector_completed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [
+              "delta"
+            ],
+            "requiredAttributes": [
+              "sectorId",
+              "segmentTime"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; sector identity",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.sector.split",
+      "lifecycleText": "sector edge / next sector/lap",
+      "policyId": "transient",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.sector",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.sector",
+      "triggers": [
+        {
+          "id": "SECTOR_SPLIT",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "lap/PB claim",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.sector_best(hero; sectorId, segmentTime, referenceTime, improvement)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.sector_best",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "sectorId",
+              "segmentTime",
+              "referenceTime",
+              "improvement"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; comparison provenance",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.sector.best",
+      "lifecycleText": "sector-best edge / self-contained",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "timing.sector",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.sector",
+      "triggers": [
+        {
+          "id": "SECTOR_BEST",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "achievement or prediction certainty",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.target_locked(hero; targetPosition, gap, referenceId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.target_locked",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "targetPosition",
+              "gap",
+              "referenceId"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; stable target",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.target.locked",
+      "lifecycleText": "target edge / target/lap/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.target",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.target",
+      "triggers": [
+        {
+          "id": "TARGET_LOCKED",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "completed result; certainty wording",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.lap_projection(hero; projectedTime, estimatorVersion, quality)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.lap_projection",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "projectedTime",
+              "estimatorVersion",
+              "quality"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; estimate quality",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.lap.projected",
+      "lifecycleText": "projection band / lap/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.projection",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.attempt",
+      "triggers": [
+        {
+          "id": "PROJECTED_LAP",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "eventual result",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.active_attempt(hero; attemptId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.active_attempt",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "attemptId"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; valid attempt",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.lap.hot",
+      "lifecycleText": "hot-lap enter / lap/invalid/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.attempt",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.attempt",
+      "triggers": [
+        {
+          "id": "HOT_LAP",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "actual position gained",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.position_projection(hero; targetPosition, projectedTime, referenceTime)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.position_projection",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "targetPosition",
+              "projectedTime",
+              "referenceTime"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "qualifying; target position fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.position.attack",
+      "lifecycleText": "attack band / lap/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.projection",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.attempt",
+      "triggers": [
+        {
+          "id": "POSITION_ATTACK",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "whole-session incident-free claim",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.clean_lap_streak(hero; count)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.clean_lap_streak",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "count"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; completed clean-lap count",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.clean_streak",
+      "lifecycleText": "material count / incident/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.consistency",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "context",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.consistency",
+      "triggers": [
+        {
+          "id": "CLEAN_STREAK",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "pass/position outcome",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "timing.pace_target(hero; targetPosition, gap, referenceId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "timing.pace_target",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "targetPosition",
+              "gap",
+              "referenceId"
+            ]
+          }
+        ]
+      },
+      "group": "timing",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; stable target",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "timing.pace.hunt",
+      "lifecycleText": "target band / target/lap/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "timing.target",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "context",
+      "storyRoutes": [
+        "timing_attempt",
+        "single_result"
+      ],
+      "tapeChannel": "race.timing.target",
+      "triggers": [
+        {
+          "id": "PACE_HUNT",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "side-by-side/pass certainty",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.closing(hero→target; gap, netClosing, slope, targetEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→target",
+            "attributeEquals": {},
+            "id": "battle.closing",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "gap",
+              "netClosing",
+              "slope",
+              "targetEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "prefer",
+          "values": [
+            "on_track"
+          ]
+        },
+        "normativeText": "race, racing, green, on_track preferred",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": [
+          "racing"
+        ]
+      },
+      "id": "battle.pursuit",
+      "lifecycleText": "closing enter / battle close",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "battle.closing",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "battle_ahead",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.closing",
+      "triggers": [
+        {
+          "id": "HUNTING",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "contact/pass/outcome",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.approaching(hero→target; materialBand, gap, targetEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→target",
+            "attributeEquals": {},
+            "id": "battle.approaching",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "materialBand",
+              "gap",
+              "targetEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "prefer",
+          "values": [
+            "on_track"
+          ]
+        },
+        "normativeText": "race, same target, on_track preferred",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.approach",
+      "lifecycleText": "approach band / battle close",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "battle.closing",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "battle_ahead",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.closing",
+      "triggers": [
+        {
+          "id": "APPROACH",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "pass completed",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.attack_range(hero→target; gapBand, gap, targetEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→target",
+            "attributeEquals": {},
+            "id": "battle.attack_range",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "gapBand",
+              "gap",
+              "targetEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "prefer",
+          "values": [
+            "on_track"
+          ]
+        },
+        "normativeText": "race, same target, on_track preferred",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.attack_range",
+      "lifecycleText": "attack band / battle close",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "battle.attack",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "escalation",
+      "storyRoutes": [
+        "battle_ahead",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.attack",
+      "triggers": [
+        {
+          "id": "ATTACK_RANGE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "winner/outcome before result",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.side_by_side(hero→target; relationEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→target",
+            "attributeEquals": {},
+            "id": "battle.side_by_side",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "relationEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "require",
+          "values": [
+            "on_track"
+          ]
+        },
+        "normativeText": "race, same target, on_track",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.side_by_side",
+      "lifecycleText": "overlap enter / separation/outcome",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "battle.overlap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "climax",
+      "storyRoutes": [
+        "battle_ahead",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.side_by_side",
+      "triggers": [
+        {
+          "id": "SIDE_BY_SIDE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "reverse actor roles; inevitable loss",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.closing(target→hero; gap, netClosing, slope, targetEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "target→hero",
+            "attributeEquals": {},
+            "id": "battle.closing",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "gap",
+              "netClosing",
+              "slope",
+              "targetEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race, stable rear target, green",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.pressure_behind",
+      "lifecycleText": "pressure enter / rear battle close",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "battle.pressure",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "battle_behind",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.pressure",
+      "triggers": [
+        {
+          "id": "HUNTED",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "overtake already completed",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.position_threat(target→hero; positionAtRisk, relationEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "target→hero",
+            "attributeEquals": {},
+            "id": "battle.position_threat",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "positionAtRisk",
+              "relationEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race, position-at-risk fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.rival_threat",
+      "lifecycleText": "threat enter / loss/clear",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "battle.pressure",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "escalation",
+      "storyRoutes": [
+        "battle_behind",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.pressure",
+      "triggers": [
+        {
+          "id": "RIVAL_THREAT",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "collapsing actors into one target",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.closing(hero→front; …) + battle.closing(rear→hero; …)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→front",
+            "attributeEquals": {},
+            "id": "battle.closing",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "gap",
+              "netClosing",
+              "slope",
+              "targetEpoch"
+            ]
+          },
+          {
+            "actorFrame": "rear→hero",
+            "attributeEquals": {},
+            "id": "battle.closing",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "gap",
+              "netClosing",
+              "slope",
+              "targetEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race, stable front and rear identities",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.two_front",
+      "lifecycleText": "composite enter / identity/exit",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "battle.two_front",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "composite",
+      "storyRoutes": [
+        "battle_two_front",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.two_front",
+      "triggers": [
+        {
+          "id": "BATTLE_FOR_POSITION",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "pass mechanism unless evidenced",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "battle.outcome(hero→target; outcome=won, relationEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→target",
+            "attributeEquals": {
+              "outcome": "won"
+            },
+            "id": "battle.outcome",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "outcome",
+              "relationEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "battle",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; correlated outcome evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "battle.won",
+      "lifecycleText": "result / self-contained terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "battle.outcome",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "outcome",
+      "storyRoutes": [
+        "battle_ahead",
+        "single_result"
+      ],
+      "tapeChannel": "race.battle.outcome",
+      "triggers": [
+        {
+          "id": "BATTLE_WON",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "contact/cause; leader claim unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "position.passed(hero→target; oldPasserPosition, newPasserPosition, oldTargetPosition, newTargetPosition)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero→target",
+            "attributeEquals": {},
+            "id": "position.passed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "oldPasserPosition",
+              "newPasserPosition",
+              "oldTargetPosition",
+              "newTargetPosition"
+            ]
+          }
+        ]
+      },
+      "group": "position",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; ordered actor/target evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "position.pass",
+      "lifecycleText": "pass result / terminal",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "position.pass",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "outcome",
+      "storyRoutes": [
+        "battle_ahead",
+        "battle_two_front",
+        "single_result"
+      ],
+      "tapeChannel": "race.position.pass",
+      "triggers": [
+        {
+          "id": "OVERTAKE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "named passed target unless evidenced",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "position.changed(hero; oldPosition, newPosition, direction=gained)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "direction": "gained"
+            },
+            "id": "position.changed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "oldPosition",
+              "newPosition",
+              "direction"
+            ]
+          }
+        ]
+      },
+      "group": "position",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; old/new position",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "position.gained",
+      "lifecycleText": "change result / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "position.change",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "single_result"
+      ],
+      "tapeChannel": "race.position.change",
+      "triggers": [
+        {
+          "id": "POSITION_GAINED",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "named overtaker/cause unless evidenced",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "position.changed(hero; oldPosition, newPosition, direction=lost)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "direction": "lost"
+            },
+            "id": "position.changed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "oldPosition",
+              "newPosition",
+              "direction"
+            ]
+          }
+        ]
+      },
+      "group": "position",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; old/new position",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "position.lost",
+      "lifecycleText": "change result / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "position.change",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "battle_behind",
+        "battle_two_front",
+        "single_result"
+      ],
+      "tapeChannel": "race.position.change",
+      "triggers": [
+        {
+          "id": "POSITION_LOST",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "hero involvement unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "position.leader_changed(oldLeader→newLeader; oldCarId, newCarId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "oldLeader→newLeader",
+            "attributeEquals": {},
+            "id": "position.leader_changed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "oldCarId",
+              "newCarId"
+            ]
+          }
+        ]
+      },
+      "group": "position",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; leader identity evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "position.leader_change",
+      "lifecycleText": "leader edge / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "position.leader",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "single_result"
+      ],
+      "tapeChannel": "race.position.leader",
+      "triggers": [
+        {
+          "id": "LEADER_CHANGE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "cause, damage or blame",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "incident.occurred(hero; incidentOrdinal, incidentDelta) + incident.off_track(hero; incidentOrdinal, surface)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "incident.occurred",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "incidentOrdinal",
+              "incidentDelta"
+            ]
+          },
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "incident.off_track",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "incidentOrdinal",
+              "surface"
+            ]
+          }
+        ]
+      },
+      "group": "incident",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; explicit off-track branch",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "incident.off_track",
+      "lifecycleText": "incident edge / recovery/reset",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "incident.event",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "incident",
+        "single_result"
+      ],
+      "tapeChannel": "race.incident.event",
+      "triggers": [
+        {
+          "id": "INCIDENT",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "off-track/contact/damage classification",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "incident.occurred(hero; incidentOrdinal, incidentDelta)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "incident.occurred",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "incidentOrdinal",
+              "incidentDelta"
+            ]
+          }
+        ]
+      },
+      "group": "incident",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; branch unknown, no invented cause",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "incident.unclassified",
+      "lifecycleText": "incident edge / recovery/reset",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "incident.event",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "incident",
+        "single_result"
+      ],
+      "tapeChannel": "race.incident.event",
+      "triggers": [
+        {
+          "id": "INCIDENT",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "incident cause unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "incident.lap_invalid(hero; lap, attemptId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "incident.lap_invalid",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "lap",
+              "attemptId"
+            ]
+          }
+        ]
+      },
+      "group": "incident",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice or qualifying; invalid fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "incident.invalid_lap",
+      "lifecycleText": "invalid edge / next attempt/reset",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "incident.invalid_lap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "result",
+      "storyRoutes": [
+        "incident",
+        "single_result"
+      ],
+      "tapeChannel": "race.incident.invalid_lap",
+      "triggers": [
+        {
+          "id": "INVALID_LAP",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "recovery or damage outcome",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "incident.state(hero; incidentOrdinal, state)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "incident.state",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "incidentOrdinal",
+              "state"
+            ]
+          }
+        ]
+      },
+      "group": "incident",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same incident; stable aftermath fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "incident.aftermath",
+      "lifecycleText": "aftermath edge / recovery/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "incident.aftermath",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "incident",
+        "single_result"
+      ],
+      "tapeChannel": "race.incident.aftermath",
+      "triggers": [
+        {
+          "id": "INCIDENT_AFTERMATH",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "“no damage” or full recovery claim",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "incident.recovered_motion(hero; incidentOrdinal, heldFor) + vehicle.surface(hero; surface=on_track)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "incident.recovered_motion",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "incidentOrdinal",
+              "heldFor"
+            ]
+          },
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "surface": "on_track"
+            },
+            "id": "vehicle.surface",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "surface"
+            ]
+          }
+        ]
+      },
+      "group": "incident",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same incident; moving/on-track evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "incident.recovery",
+      "lifecycleText": "recovery edge / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "incident.recovery",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "closure",
+      "storyRoutes": [
+        "incident",
+        "single_result"
+      ],
+      "tapeChannel": "race.incident.recovery",
+      "triggers": [
+        {
+          "id": "BACK_UNDER_WAY",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "strategy reason",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "pit.phase(hero; phase=entry, cycleOrdinal)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "entry"
+            },
+            "id": "pit.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase",
+              "cycleOrdinal"
+            ]
+          }
+        ]
+      },
+      "group": "pit",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "any-stage; pit entry edge",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "pit.entry",
+      "lifecycleText": "entry / outcome/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "pit.lifecycle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "pit_cycle",
+        "single_result"
+      ],
+      "tapeChannel": "race.pit.cycle",
+      "triggers": [
+        {
+          "id": "PIT_ENTRY",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "stop/release outcome",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "pit.phase(hero; phase=lane, cycleOrdinal)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "lane"
+            },
+            "id": "pit.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase",
+              "cycleOrdinal"
+            ]
+          }
+        ]
+      },
+      "group": "pit",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same pit cycle; in-lane fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "pit.lane",
+      "lifecycleText": "lane enter / exit/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "pit.lifecycle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "pit_cycle",
+        "single_result"
+      ],
+      "tapeChannel": "race.pit.cycle",
+      "triggers": [
+        {
+          "id": "PIT_LANE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "service performed unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "pit.phase(hero; phase=stopped, cycleOrdinal)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "stopped"
+            },
+            "id": "pit.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase",
+              "cycleOrdinal"
+            ]
+          }
+        ]
+      },
+      "group": "pit",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same pit cycle; stopped evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "pit.stopped",
+      "lifecycleText": "stopped / release/exit",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "pit.lifecycle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "pit_cycle",
+        "single_result"
+      ],
+      "tapeChannel": "race.pit.cycle",
+      "triggers": [
+        {
+          "id": "PIT_STOPPED",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "pit exit completed",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "pit.phase(hero; phase=released, cycleOrdinal)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "released"
+            },
+            "id": "pit.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase",
+              "cycleOrdinal"
+            ]
+          }
+        ]
+      },
+      "group": "pit",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same pit cycle; moving evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "pit.released",
+      "lifecycleText": "release / exit/reset",
+      "policyId": "live_story",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "pit.lifecycle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "pit_cycle",
+        "single_result"
+      ],
+      "tapeChannel": "race.pit.cycle",
+      "triggers": [
+        {
+          "id": "PIT_RELEASED",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "position gain/loss without comparison",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "pit.phase(hero; phase=exit, cycleOrdinal)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "exit"
+            },
+            "id": "pit.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase",
+              "cycleOrdinal"
+            ]
+          }
+        ]
+      },
+      "group": "pit",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same pit cycle; pit-exit edge",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "pit.exit",
+      "lifecycleText": "exit / outcome or terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "pit.lifecycle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "closure",
+      "storyRoutes": [
+        "pit_cycle",
+        "single_result"
+      ],
+      "tapeChannel": "race.pit.cycle",
+      "triggers": [
+        {
+          "id": "PIT_EXIT",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "strategy/cause judgement",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "pit.outcome(hero; cycleOrdinal, entryPosition, exitPosition, positionDelta, direction)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "pit.outcome",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "cycleOrdinal",
+              "entryPosition",
+              "exitPosition",
+              "positionDelta",
+              "direction"
+            ]
+          }
+        ]
+      },
+      "group": "pit",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "same pit cycle; entry/exit comparison",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "pit.outcome",
+      "lifecycleText": "outcome result / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "pit.outcome",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "outcome",
+      "storyRoutes": [
+        "pit_cycle",
+        "single_result"
+      ],
+      "tapeChannel": "race.pit.outcome",
+      "triggers": [
+        {
+          "id": "PIT_OUTCOME",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "prior stream/session history when incomplete",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "stream.started(startReason) with common broadcastEpoch/streamEpoch",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {},
+            "id": "stream.started",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "startReason"
+            ]
+          }
+        ]
+      },
+      "group": "stream",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "new narrative streamEpoch bound to confirmed active broadcastEpoch",
+        "scopeModes": [
+          "stream"
+        ],
+        "stageAnyOf": [],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "stream.started",
+      "lifecycleText": "STREAM_STARTED / OBS end, commentary disable or shutdown",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "stream.lifecycle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "stream_lifecycle"
+      ],
+      "tapeChannel": "stream.lifecycle",
+      "triggers": [
+        {
+          "id": "STREAM_STARTED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "qualifying/race facts as current",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.started(stage=practice, startReason)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "stage": "practice"
+            },
+            "id": "session.started",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "startReason"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice occurrence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.intro.practice",
+      "lifecycleText": "SESSION_STARTED / occurrence end",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.intro",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_STARTED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "practice/race facts as current",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.started(stage=qualifying, startReason)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "stage": "qualifying"
+            },
+            "id": "session.started",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "startReason"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "qualifying occurrence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.intro.qualifying",
+      "lifecycleText": "SESSION_STARTED / occurrence end",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.intro",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_STARTED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "practice/quali facts unless inherited and marked past",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.started(stage=race, startReason)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "stage": "race"
+            },
+            "id": "session.started",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "startReason"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race occurrence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.intro.race",
+      "lifecycleText": "SESSION_STARTED / occurrence end",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.intro",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_STARTED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "claim that stream restarted",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.restarted(stage, predecessorOccurrenceId)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {},
+            "id": "session.restarted",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "predecessorOccurrenceId"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "confirmed same-ref rewind",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.restart",
+      "lifecycleText": "SESSION_RESTARTED / new occurrence end",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "session.restart",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "opening",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_RESTARTED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "unsupported result facts",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.ended(stage=practice, reason)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "stage": "practice"
+            },
+            "id": "session.ended",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "reason"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "completed/superseded practice facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.wrap.practice",
+      "lifecycleText": "SESSION_ENDED / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "session.wrap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "closure",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_ENDED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "race outcome; unbound grid position",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.ended(stage=qualifying, reason)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "stage": "qualifying"
+            },
+            "id": "session.ended",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "reason"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "completed/superseded qualifying facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.wrap.qualifying",
+      "lifecycleText": "SESSION_ENDED / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "session.wrap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "closure",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_ENDED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "hero finish if not observed",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.ended(stage=race, reason)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "stage": "race"
+            },
+            "id": "session.ended",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "reason"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "completed/superseded race facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.wrap.race",
+      "lifecycleText": "SESSION_ENDED / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "session.wrap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "closure",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_ENDED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "absent/skipped stage; scheduled certainty",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.next_present_stage(stage, sourceSubSessionId, sourceSessionNum)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {},
+            "id": "session.next_present_stage",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage",
+              "sourceSubSessionId",
+              "sourceSessionNum"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "next present stage known",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.preview.next",
+      "lifecycleText": "prior wrap / next session start",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.preview",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "bridge",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.lifecycle",
+      "triggers": [
+        {
+          "id": "SESSION_PREVIEW",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "SESSION_ENDED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "hero finished or final position",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "race.checkered_active()",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {},
+            "id": "race.checkered_active",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "explicit checkered evidence",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.checkered",
+      "lifecycleText": "flag/session edge / occurrence end",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "session.flag",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "outcome",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "race.control.flag",
+      "triggers": [
+        {
+          "id": "SESSION_CHECKERED",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "SESSION_FLAG",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "finish result",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "race.final_lap(hero; lap)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "race.final_lap",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "lap"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; final-lap identity",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.final_lap",
+      "lifecycleText": "final-lap edge / finish/reset",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "session.final_lap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "escalation",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "race.session.final_lap",
+      "triggers": [
+        {
+          "id": "FINAL_LAP",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "official classification",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "race.hero_finished(hero; position[, classPosition, classificationStatus])",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "race.hero_finished",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "position",
+              "classPosition",
+              "classificationStatus"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; hero finish position",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.hero_finish",
+      "lifecycleText": "FINISH / terminal",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "session.finish",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "outcome",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "race.session.finish",
+      "triggers": [
+        {
+          "id": "FINISH",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "race/grid certainty not evidenced",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "session.qualifying_result(hero; position[, bestLapTime])",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "session.qualifying_result",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [
+              "bestLapTime"
+            ],
+            "requiredAttributes": [
+              "position"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "qualifying completed facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.qualifying_recap",
+      "lifecycleText": "qualifying end / terminal",
+      "policyId": "result",
+      "realization": {
+        "backend": "authored",
+        "family": "session.recap",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "outcome",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.qualifying.recap",
+      "triggers": [
+        {
+          "id": "QUALI_RECAP",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "SESSION_ENDED",
+          "kind": "lifecycle_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "quality judgement or result prediction",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "field.strength(value, fieldScope, sampleCount, official)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {},
+            "id": "field.strength",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "value",
+              "fieldScope",
+              "sampleCount",
+              "official"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "confirmed field/SoF facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.sof_brief",
+      "lifecycleText": "intro/silence / occurrence end",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "session.context",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "context",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.context.field",
+      "triggers": [
+        {
+          "id": "SOF_BRIEF",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "forecast/cause; dry→sunny inference",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "W_weather",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_weather",
+            "kind": "allowlist",
+            "maxClaims": 3,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "confirmed weather facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.weather_brief",
+      "lifecycleText": "intro/silence / superseded",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "session.weather",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "context",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.context.weather",
+      "triggers": [
+        {
+          "id": "WEATHER_BRIEF",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "unobserved track effect",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "weather.changed(metric, oldFactId, newFactId, materialRevision) + referenced new weather fact",
+        "referenceRequirements": [
+          "weather.changed.newFactId"
+        ],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {},
+            "id": "weather.changed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "metric",
+              "oldFactId",
+              "newFactId",
+              "materialRevision"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "material weather revision",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.weather_change",
+      "lifecycleText": "weather edge / superseded",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "session.weather",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "update",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.context.weather",
+      "triggers": [
+        {
+          "id": "WEATHER_CHANGE",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "extrapolation beyond selected fact",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "W_field",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_field",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "confirmed field fact revision",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.field_fact",
+      "lifecycleText": "intro/silence / superseded",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "session.context",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "context",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.context.field",
+      "triggers": [
+        {
+          "id": "FIELD_FACT",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "cause/incident identity unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "race.flag_changed(flag=yellow, scope)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "flag": "yellow"
+            },
+            "id": "race.flag_changed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "flag",
+              "scope"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; explicit yellow flag",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.flag.yellow",
+      "lifecycleText": "flag edge / green/checkered",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "session.flag",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "control",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "race.control.flag",
+      "triggers": [
+        {
+          "id": "SESSION_FLAG",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "“race start” unless start transition bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "race.flag_changed(flag=green, scope)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "flag": "green"
+            },
+            "id": "race.flag_changed",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "flag",
+              "scope"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race; explicit green after non-green",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.flag.green",
+      "lifecycleText": "flag edge / yellow/checkered",
+      "policyId": "critical",
+      "realization": {
+        "backend": "authored",
+        "family": "session.flag",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "control",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "race.control.flag",
+      "triggers": [
+        {
+          "id": "SESSION_FLAG",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "lap/pace outcome",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "vehicle.entered_car(hero; stage=practice)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "stage": "practice"
+            },
+            "id": "vehicle.entered_car",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "practice + enter-car edge",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.enter_car.practice",
+      "lifecycleText": "ENTER_CAR / exit/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.vehicle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "vehicle",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.vehicle",
+      "triggers": [
+        {
+          "id": "ENTER_CAR",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "valid attempt/result before observed",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "vehicle.entered_car(hero; stage=qualifying)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "stage": "qualifying"
+            },
+            "id": "vehicle.entered_car",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "qualifying + enter-car edge",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "qualifying"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.enter_car.qualifying",
+      "lifecycleText": "ENTER_CAR / exit/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.vehicle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "vehicle",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.vehicle",
+      "triggers": [
+        {
+          "id": "ENTER_CAR",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "green/start state unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "vehicle.entered_car(hero; stage=race)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "stage": "race"
+            },
+            "id": "vehicle.entered_car",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "stage"
+            ]
+          }
+        ]
+      },
+      "group": "session",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "race + enter-car edge",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "session.enter_car.race",
+      "lifecycleText": "ENTER_CAR / exit/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "authored",
+        "family": "session.vehicle",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "vehicle",
+      "storyRoutes": [
+        "session_occurrence",
+        "single_result"
+      ],
+      "tapeChannel": "session.vehicle",
+      "triggers": [
+        {
+          "id": "ENTER_CAR",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "medical, emotion, cause or performance claim",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "bio.hr_state(hero; band, bpm, sampleAge, sensorEpoch)",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {},
+            "id": "bio.hr_state",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "band",
+              "bpm",
+              "sampleAge",
+              "sensorEpoch"
+            ]
+          }
+        ]
+      },
+      "group": "bio",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "fresh HR evidence; no medical/cause claim",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "bio.pressure",
+      "lifecycleText": "material HR state / clear/reset",
+      "policyId": "context",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "bio.context",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "context",
+      "storyRoutes": [
+        "bio_pressure",
+        "single_result"
+      ],
+      "tapeChannel": "bio.pressure",
+      "triggers": [
+        {
+          "id": "HR_PRESSURE_RISING",
+          "kind": "accepted_event"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "hot-lap/result prediction",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "vehicle.phase(hero; phase=out_lap) + W_filler_phase",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "out_lap"
+            },
+            "id": "vehicle.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase"
+            ]
+          },
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_filler_phase",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "filler",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "long silence + out-lap + fresh facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": [
+          "out_lap"
+        ]
+      },
+      "id": "filler.out_lap",
+      "lifecycleText": "silence impulse / selected or invalid",
+      "policyId": "filler",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "filler.track_state",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "single",
+      "storyRoutes": [
+        "filler_single"
+      ],
+      "tapeChannel": "filler.track_state",
+      "triggers": [
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "pit intent unless bound",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "vehicle.phase(hero; phase=in_lap) + W_filler_phase",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "in_lap"
+            },
+            "id": "vehicle.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase"
+            ]
+          },
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_filler_phase",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "filler",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "long silence + in-lap + fresh facts",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": [
+          "in_lap"
+        ]
+      },
+      "id": "filler.in_lap",
+      "lifecycleText": "silence impulse / selected or invalid",
+      "policyId": "filler",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "filler.track_state",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "single",
+      "storyRoutes": [
+        "filler_single"
+      ],
+      "tapeChannel": "filler.track_state",
+      "triggers": [
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "green/race-start timing prediction",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "vehicle.phase(hero; phase=parade_lap) + W_filler_phase",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "hero",
+            "attributeEquals": {
+              "phase": "parade_lap"
+            },
+            "id": "vehicle.phase",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "phase"
+            ]
+          },
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_filler_phase",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "filler",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "ignore",
+          "values": []
+        },
+        "normativeText": "long silence/parade impulse + parade fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": [
+          "parade_lap"
+        ]
+      },
+      "id": "filler.parade_lap",
+      "lifecycleText": "impulse / selected or invalid",
+      "policyId": "filler",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "filler.track_state",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "single",
+      "storyRoutes": [
+        "filler_single"
+      ],
+      "tapeChannel": "filler.track_state",
+      "triggers": [
+        {
+          "id": "PARADE_PAD",
+          "kind": "accepted_event"
+        },
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "on-track action",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "broadcast.context(context=garage) + W_filler_off_track",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "context": "garage"
+            },
+            "id": "broadcast.context",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "context"
+            ]
+          },
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_filler_off_track",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "filler",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "require",
+          "values": [
+            "garage"
+          ]
+        },
+        "normativeText": "long silence + garage context + fresh fact",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "filler.garage",
+      "lifecycleText": "silence impulse / selected or invalid",
+      "policyId": "filler",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "filler.off_track",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "single",
+      "storyRoutes": [
+        "filler_single"
+      ],
+      "tapeChannel": "filler.track_state",
+      "triggers": [
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "active session action",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "broadcast.context(context=lobby) + W_filler_off_track",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "context": "lobby"
+            },
+            "id": "broadcast.context",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "context"
+            ]
+          },
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_filler_off_track",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "filler",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "require",
+          "values": [
+            "lobby"
+          ]
+        },
+        "normativeText": "long silence + lobby context + fresh fact; stream form only with track identity",
+        "scopeModes": [
+          "occurrence",
+          "stream"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "filler.lobby",
+      "lifecycleText": "silence impulse / selected or invalid",
+      "policyId": "filler",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "filler.off_track",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "single",
+      "storyRoutes": [
+        "filler_single"
+      ],
+      "tapeChannel": "filler.track_state",
+      "triggers": [
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    },
+    {
+      "claims": {
+        "forbiddenAddition": "fabricated race event or urgency",
+        "globalForbiddenClaimTypes": [
+          "unbound.cause",
+          "unbound.intent",
+          "unbound.emotion",
+          "unsupported.certainty",
+          "unsupported.future_outcome",
+          "unsupported.weather_inference",
+          "unsupported.medical_inference",
+          "unbound.entity",
+          "unbound.number",
+          "unbound.unit"
+        ],
+        "normativeSignature": "broadcast.context(context=on_track) + W_quiet_track",
+        "referenceRequirements": [],
+        "required": [
+          {
+            "actorFrame": "none",
+            "attributeEquals": {
+              "context": "on_track"
+            },
+            "id": "broadcast.context",
+            "kind": "predicate",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": [
+              "context"
+            ]
+          },
+          {
+            "actorFrame": "defined_by_allowlist",
+            "attributeEquals": {},
+            "id": "W_quiet_track",
+            "kind": "allowlist",
+            "maxClaims": 1,
+            "minClaims": 1,
+            "optionalAttributes": [],
+            "requiredAttributes": []
+          }
+        ]
+      },
+      "group": "filler",
+      "hardContext": {
+        "broadcastContext": {
+          "mode": "require",
+          "values": [
+            "on_track"
+          ]
+        },
+        "normativeText": "long silence + on-track + no live race opportunity",
+        "scopeModes": [
+          "occurrence"
+        ],
+        "stageAnyOf": [
+          "practice",
+          "qualifying",
+          "race"
+        ],
+        "vehiclePhaseAnyOf": []
+      },
+      "id": "filler.quiet_track",
+      "lifecycleText": "silence impulse / selected or invalid",
+      "policyId": "filler",
+      "realization": {
+        "backend": "qwen_compiled",
+        "family": "filler.track_state",
+        "maxFreedom": "tight",
+        "requiredPatternCardCount": 4
+      },
+      "role": "single",
+      "storyRoutes": [
+        "filler_single"
+      ],
+      "tapeChannel": "filler.track_state",
+      "triggers": [
+        {
+          "id": "LONG_SILENCE_ELAPSED",
+          "kind": "silence"
+        }
+      ]
+    }
+  ],
+  "catalogProjectionVersion": "beat-catalog-freeze/1",
+  "globalForbiddenClaimTypes": [
+    "unbound.cause",
+    "unbound.intent",
+    "unbound.emotion",
+    "unsupported.certainty",
+    "unsupported.future_outcome",
+    "unsupported.weather_inference",
+    "unsupported.medical_inference",
+    "unbound.entity",
+    "unbound.number",
+    "unbound.unit"
+  ],
+  "language": "en",
+  "policies": [
+    {
+      "basePriority": 90,
+      "cadenceMinimumMs": null,
+      "cadenceRule": "once per semantic outcome revision",
+      "id": "critical",
+      "penaltyCoefficient": 0.25,
+      "ttlMs": 45000,
+      "urgency": "critical"
+    },
+    {
+      "basePriority": 78,
+      "cadenceMinimumMs": 8000,
+      "cadenceRule": "semantic identity / 8 s",
+      "id": "result",
+      "penaltyCoefficient": 0.5,
+      "ttlMs": 30000,
+      "urgency": "story"
+    },
+    {
+      "basePriority": 64,
+      "cadenceMinimumMs": 8000,
+      "cadenceRule": "episode / 8 s",
+      "id": "live_story",
+      "penaltyCoefficient": 0.8,
+      "ttlMs": 10000,
+      "urgency": "story"
+    },
+    {
+      "basePriority": 56,
+      "cadenceMinimumMs": 12000,
+      "cadenceRule": "semantic identity / 12 s",
+      "id": "transient",
+      "penaltyCoefficient": 1.0,
+      "ttlMs": 6000,
+      "urgency": "story"
+    },
+    {
+      "basePriority": 46,
+      "cadenceMinimumMs": 45000,
+      "cadenceRule": "tape_channel / 45 s",
+      "id": "context",
+      "penaltyCoefficient": 1.0,
+      "ttlMs": 20000,
+      "urgency": "context"
+    },
+    {
+      "basePriority": 24,
+      "cadenceMinimumMs": null,
+      "cadenceRule": "silence impulse / long_silence_s",
+      "id": "filler",
+      "penaltyCoefficient": 1.4,
+      "ttlMs": 12000,
+      "urgency": "background"
+    }
+  ],
+  "realizationFamilies": [
+    {
+      "additionalHardRejects": "session/field best, invented improvement",
+      "id": "timing.lap_result",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + completed/PB result; bound lap/time/reference only when selected"
+    },
+    {
+      "additionalHardRejects": "cause, reversed gain/loss, finished result",
+      "id": "timing.delta",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + improved/worsened polarity + bound delta/reference"
+    },
+    {
+      "additionalHardRejects": "lap/PB substitution, wrong sector",
+      "id": "timing.sector",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + sector identity + split/best polarity"
+    },
+    {
+      "additionalHardRejects": "achieved result, named race pass",
+      "id": "timing.target",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero pursuing timing/position target with bound gap"
+    },
+    {
+      "additionalHardRejects": "completed-result grammar, certainty",
+      "id": "timing.projection",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + explicit projected modality + projected time/position"
+    },
+    {
+      "additionalHardRejects": "predicted or completed result",
+      "id": "timing.attempt",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + current active attempt"
+    },
+    {
+      "additionalHardRejects": "whole-session cleanliness, psychological judgement",
+      "id": "timing.consistency",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + exact clean-lap count"
+    },
+    {
+      "additionalHardRejects": "pass/contact/outcome, reversed actors",
+      "id": "battle.closing",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "ordered closer→target + trend/material band; gap if selected"
+    },
+    {
+      "additionalHardRejects": "completed pass or inevitability",
+      "id": "battle.attack",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "ordered hero→target + current attack-range band"
+    },
+    {
+      "additionalHardRejects": "winner, contact or result",
+      "id": "battle.overlap",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "ordered hero/target pair + simultaneous side-by-side state"
+    },
+    {
+      "additionalHardRejects": "hero as hunter, inevitable loss",
+      "id": "battle.pressure",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "ordered rear target→hero + threat/closing relation"
+    },
+    {
+      "additionalHardRejects": "actor collapse, one-sided claim presented as both",
+      "id": "battle.two_front",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero→front and rear→hero as two distinct relations"
+    },
+    {
+      "additionalHardRejects": "pass mechanism unless selected",
+      "id": "battle.outcome",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero/target + won outcome"
+    },
+    {
+      "additionalHardRejects": "contact/cause, leader claim unless selected",
+      "id": "position.pass",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "ordered passer→passed + old/new order"
+    },
+    {
+      "additionalHardRejects": "named opponent or mechanism unless selected",
+      "id": "position.change",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + old/new ordinal + gained/lost polarity"
+    },
+    {
+      "additionalHardRejects": "hero involvement unless one bound actor is hero",
+      "id": "position.leader",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "old leader→new leader"
+    },
+    {
+      "additionalHardRejects": "contact, damage, blame or cause",
+      "id": "incident.event",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero incident; optional off-track only for classified branch"
+    },
+    {
+      "additionalHardRejects": "incident cause or penalty consequence",
+      "id": "incident.invalid_lap",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + invalid current lap"
+    },
+    {
+      "additionalHardRejects": "recovery/damage conclusion",
+      "id": "incident.aftermath",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + exact current aftermath state"
+    },
+    {
+      "additionalHardRejects": "no-damage/full-recovery claim",
+      "id": "incident.recovery",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + resumed motion + known surface state"
+    },
+    {
+      "additionalHardRejects": "skipped future phase, service/strategy inference",
+      "id": "pit.lifecycle",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + exact phase + pit-cycle identity"
+    },
+    {
+      "additionalHardRejects": "strategy/cause judgement",
+      "id": "pit.outcome",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + entry/exit comparison and polarity"
+    },
+    {
+      "additionalHardRejects": "invented prior history/session stage",
+      "id": "stream.lifecycle",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "stream epoch + started reason"
+    },
+    {
+      "additionalHardRejects": "other stage as current; inherited fact without past marker",
+      "id": "session.intro",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "current occurrence + exact stage"
+    },
+    {
+      "additionalHardRejects": "stream restart, cause",
+      "id": "session.restart",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "stage + old/new occurrence relation"
+    },
+    {
+      "additionalHardRejects": "unsupported result or future-stage certainty",
+      "id": "session.wrap",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "ended occurrence + exact stage/reason"
+    },
+    {
+      "additionalHardRejects": "absent/skipped stage, schedule certainty",
+      "id": "session.preview",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "next actually present stage"
+    },
+    {
+      "additionalHardRejects": "incident cause, start/finish result unless selected",
+      "id": "session.flag",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "exact flag transition/scope or checkered state"
+    },
+    {
+      "additionalHardRejects": "finish position/result",
+      "id": "session.final_lap",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + exact final-lap identity"
+    },
+    {
+      "additionalHardRejects": "official/final classification without final fact",
+      "id": "session.finish",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + observed finish position; class position only if selected"
+    },
+    {
+      "additionalHardRejects": "race/grid certainty",
+      "id": "session.recap",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "past qualifying occurrence + selected result/time"
+    },
+    {
+      "additionalHardRejects": "quality/result prediction",
+      "id": "session.context",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "exactly one selected field/SoF fact and scope"
+    },
+    {
+      "additionalHardRejects": "forecast, cause, unobserved track effect",
+      "id": "session.weather",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "selected current/change weather predicates with temporal polarity"
+    },
+    {
+      "additionalHardRejects": "lap/pace/start result",
+      "id": "session.vehicle",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero entered car + exact current stage/occurrence"
+    },
+    {
+      "additionalHardRejects": "emotion, stress, health, cause or performance effect",
+      "id": "bio.context",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "hero + measured HR band/freshness only"
+    },
+    {
+      "additionalHardRejects": "invented event, urgency, prediction",
+      "id": "filler.track_state",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "exact vehicle/broadcast phase + one selected stable fact"
+    },
+    {
+      "additionalHardRejects": "on-track action or active-session claim",
+      "id": "filler.off_track",
+      "preferredFreedom": "tight",
+      "promotedMaxFreedom": "tight",
+      "requiredParseFrame": "exact lobby/garage context + one selected stable fact"
+    }
+  ],
+  "schemaVersion": "narrative-catalog/2",
+  "sourceBaseline": "master@0ce75d4"
+}

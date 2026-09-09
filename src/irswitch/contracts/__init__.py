@@ -7,6 +7,12 @@ owning domains.
 
 from .command import COMMAND_KINDS, NarrativeCommand
 from .context import ApplyContextBatch, ContextBatchPart, ContextRevision, ExternalOrder
+from .coverage_matrix import (
+    CoverageMatrixReport,
+    audit_coverage_matrix,
+    can_create_event_opportunity,
+    load_coverage_matrix,
+)
 from .fact import (
     AtomicFact,
     FactProducer,
@@ -95,6 +101,7 @@ __all__ = [
     "AtomicFact",
     "Confidence",
     "ContractViolation",
+    "CoverageMatrixReport",
     "ContextBatchPart",
     "ContextRevision",
     "CorrelationId",
@@ -140,10 +147,13 @@ __all__ = [
     "VehiclePhase",
     "Verdict",
     "UnsupportedSessionEntry",
+    "audit_coverage_matrix",
+    "can_create_event_opportunity",
     "canonical_json",
+    "canonical_sha256",
     "compile_detector_catalog",
     "compile_predicate",
-    "canonical_sha256",
+    "load_coverage_matrix",
     "deterministic_planning_seed",
     "derived_delivery_class",
     "fact_producer",

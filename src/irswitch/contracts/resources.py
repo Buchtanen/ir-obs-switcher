@@ -8,10 +8,14 @@ from .primitives import ContractViolation
 
 _PACKAGED_SCHEMAS = frozenset(
     {
+        "beat-catalog.json",
         "config-contract.json",
+        "coverage-matrix-replay-refs.json",
         "detector-catalog.json",
         "dto-contracts.schema.json",
         "freeze-registry.json",
+        "realization-pattern-cards.json",
+        "successor-graph.json",
     }
 )
 
