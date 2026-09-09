@@ -1,12 +1,12 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #247–#256 and Wave D #257–#261 closed on this branch. Next is #263. Not shipped on `master`.
+**Status:** Wave C #247–#256 and Wave D #257–#261 closed on this branch; #263 ExposureStore implemented (issue open until close-gate). Next is #283. Not shipped on `master`.
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
 **Design-freeze audit:** [Pre-implementation contract gate](design-freeze-audit.md)
 **Event/beat disposition:** [60 identifiers → 64 BeatDefinitions](event-beat-disposition.md)
-**Catalog behavior:** [Implementation-time 60/64 matrix, DAG and replay refs](catalog-behavior.md) — auditor `src/irswitch/contracts/coverage_matrix.py`, loader `src/irswitch/contracts/catalog_loader.py`, registry `src/irswitch/events/episode_registry.py`, retention `src/irswitch/events/episode_retention.py`, silence `src/irswitch/events/silence_clock.py`, planner `src/irswitch/events/beat_plan.py`; module lookup [inflight § #261](../dokumentace/inflight/README.md#261-immutable-beatplan-lookup) (#260: [SilenceClock](../dokumentace/inflight/README.md#260-long-silence-lifecycle-lookup); #259: [EpisodeRetention](../dokumentace/inflight/README.md#259-resolved-episode-retention-lookup); #258: [EpisodeRegistry](../dokumentace/inflight/README.md#258-lineage-aware-episoderegistry-lookup); #257: [catalog loader](../dokumentace/inflight/README.md#257-storydefinition-catalog-loader-lookup); #256: [coverage matrix](../dokumentace/inflight/README.md#256-event-family-coverage-matrix-lookup))
+**Catalog behavior:** [Implementation-time 60/64 matrix, DAG and replay refs](catalog-behavior.md) — auditor `src/irswitch/contracts/coverage_matrix.py`, loader `src/irswitch/contracts/catalog_loader.py`, registry `src/irswitch/events/episode_registry.py`, retention `src/irswitch/events/episode_retention.py`, silence `src/irswitch/events/silence_clock.py`, planner `src/irswitch/events/beat_plan.py`, exposure `src/irswitch/events/exposure_store.py`; module lookup [inflight § #263](../dokumentace/inflight/README.md#263-exposure-store-lookup) (#261: [BeatPlan](../dokumentace/inflight/README.md#261-immutable-beatplan-lookup); #260: [SilenceClock](../dokumentace/inflight/README.md#260-long-silence-lifecycle-lookup); #259: [EpisodeRetention](../dokumentace/inflight/README.md#259-resolved-episode-retention-lookup); #258: [EpisodeRegistry](../dokumentace/inflight/README.md#258-lineage-aware-episoderegistry-lookup); #257: [catalog loader](../dokumentace/inflight/README.md#257-storydefinition-catalog-loader-lookup); #256: [coverage matrix](../dokumentace/inflight/README.md#256-event-family-coverage-matrix-lookup))
 **Public contracts:** [Exact v2 config, migration and HTTP shapes](public-contracts.md)
 **Actor transitions:** [Single mailbox, lane, overflow, reset and shutdown contract](actor-transition-contract.md)
 **Schemas and IDs:** [DTO fields, versions, identity/nullability and reason registry](schema-contracts.md)
@@ -78,7 +78,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [x] [#259 — v2: resolved-episode retention without speech queue](https://github.com/Buchtanen/ir-obs-switcher/issues/259) — depends on #258.
 - [x] [#260 — v2: long-silence lifecycle and filler opportunities](https://github.com/Buchtanen/ir-obs-switcher/issues/260) — depends on #237, #245, #252, #257.
 - [x] [#261 — v2: immutable BeatPlan and just-in-time planner](https://github.com/Buchtanen/ir-obs-switcher/issues/261) — depends on #246, #258–#260.
-- [ ] [#263 — v2: ExposureStore and decay-based fatigue](https://github.com/Buchtanen/ir-obs-switcher/issues/263) — depends on #236, #237, #258 and precedes #283/#262 to avoid a dependency cycle.
+- [x] [#263 — v2: ExposureStore and decay-based fatigue](https://github.com/Buchtanen/ir-obs-switcher/issues/263) — depends on #236, #237, #258 and precedes #283/#262 to avoid a dependency cycle.
 - [ ] [#283 — v2: expiring event opportunities and post-beat arbitration](https://github.com/Buchtanen/ir-obs-switcher/issues/283) — depends on #237, #239, #241, #257–#259, #261 and #263; owns TTL/priority/penalty, `tape_channel` and event-versus-successor policy.
 - [ ] [#262 — v2: StoryDirector eligibility and deterministic arbitration](https://github.com/Buchtanen/ir-obs-switcher/issues/262) — depends on #261, #283.
 

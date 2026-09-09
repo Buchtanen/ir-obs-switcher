@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) is **closed** on this branch; **not shipped on `master`**. Next implementation package is [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) is **closed** on this branch; [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) ExposureStore is **implemented** (issue open until close-gate); **not shipped on `master`**. Next implementation package is [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) (do not start unless a human says so).
 
 ## Where to look on this branch
 
@@ -11,7 +11,7 @@
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#261, branch-only)
+## Implementation lookup (#239–#263, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -38,6 +38,7 @@
 | #259 resolved-episode retention | events | `src/irswitch/events/episode_retention.py` — [§ lookup](#259-resolved-episode-retention-lookup) | `tests/test_episode_retention.py` (**9**) |
 | #260 long-silence / filler opportunities | events | `src/irswitch/events/silence_clock.py` — [§ lookup](#260-long-silence-lifecycle-lookup) | `tests/test_silence_clock.py` (**14**) |
 | #261 immutable BeatPlan / just-in-time planner | events | `src/irswitch/events/beat_plan.py` — [§ lookup](#261-immutable-beatplan-lookup) | `tests/test_beat_plan.py` (**14**) |
+| #263 ExposureStore / base-2 fatigue | events | `src/irswitch/events/exposure_store.py` — [§ lookup](#263-exposure-store-lookup) | `tests/test_exposure_store.py` (**13**) |
 
 ### #247 FeatureEngine lookup
 
@@ -193,11 +194,23 @@
 - **Role map:** catalog `result`→`outcome`, `single`→`filler`. Self-contained after speech: closing / critical / catalog policy `critical|result`. Consecutive cap: min(public `GLOBAL_CONSECUTIVE_CAP=3`, story `max_consecutive_non_closing_beats`); closing/critical spared.
 - **Guards:** ledger dump forbidden — `selected_fact_ids` must equal the claim-fact union (no extra ledger dump). Future successor plans forbidden (`future_beat_ids` nonempty → reject). Every selected claim has fact/evidence refs; empty `fact_ids` → `source_guard_failed`. G0 forbidden claim types attached on the plan. Language constant `en`.
 - **Replay fixtures:** `tests/fixtures/beat_plan/{transition,counterfactual_identity,expiry}.json`.
-- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import `irswitch.commentary`, `irswitch.overlay`, or NarrativeRuntime; not live-wired. No eval/exec/compile. Does not consume the source opportunity; does not emit utterance. Does not implement #283 EventOpportunity queue, #262 director, #263 ExposureStore, #264 speech lane, or RealizationBundle.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import `irswitch.commentary`, `irswitch.overlay`, or NarrativeRuntime; not live-wired. No eval/exec/compile. Does not consume the source opportunity; does not emit utterance. Does not implement #283 EventOpportunity queue, #262 director, #264 speech lane, or RealizationBundle.
 - **Tests:** `tests/test_beat_plan.py` (**14**). First implementation SHA `fef616aeb34fb35631c327438a99ad6b41c7170a`. Related regression: beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **175** passed.
 - **Still out of scope:** #283 opportunity TTL/arbitration, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #263 exposure-store lookup
+
+- **Store (`events/exposure_store.py`):** `ExposureStore`, `ExposureIntent`, `SpokenExposure`, `FatigueView`, `ChannelPressureView`, `CadenceAudit`, `ExposureStep`, `EmbeddingAdapter`, `half_life_decay`, `content_tokens`, `lexical_tail`, `jaccard`. Schema `exposure-view/2`. Decay `0.5 ** (age/half_life)` = `2^(-(t-spoken_at)/half_life)`; rejects `exp(-age/half_life)`. No `eval`/`exec`/`compile`/`math.exp`.
+- **Record gate:** only `phase=speaking` + `source_kind=narrative`; planned/rejected/stale/building/committed/manual add no fatigue. Weight 1.0 at PLAYBACK_ACCEPTED / SPEAKING. Semantic half-life 90_000 ms; pattern 180_000 ms (F23 goldens from `docs/v2.0.0/machine/vertical-slice-fixtures.json`).
+- **Channel pressure:** `6 * min(3, Σ decay)` on accepted exposures of that `tape_channel`. `event_penalty = policy.penalty_coefficient * channel_pressure`. `cadence_half_life = max(global_min_interval 4s, numeric profile cadence)`; null cadence uses TTL; filler uses `LONG_SILENCE_MS=33_000` not TTL.
+- **Lexical:** EN-stopword Jaccard on content tokens; lexical-tail MVP = last 4 content tokens. Embedding adapter optional; `embedding_is_gate` always False. Family/role/filler histories are cadence/guard audit only (`cadence_audit`), not score terms.
+- **Capacity:** default 128 (`commentary.director.decision_capacity`, already frozen); evict oldest `(acceptedMonoMs, utteranceId)`; stream reset clears.
+- **Replay fixtures:** `tests/fixtures/exposure_store/{transition,counterfactual_identity,expiry}.json`.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import commentary, overlay, StoryDirector, or NarrativeRuntime; not live-wired. Does not implement #283, #262, or #264.
+- **Tests:** `tests/test_exposure_store.py` (**13**). First implementation SHA `8b610e1848f7b8ac17e6844664bb72d47b8d8c4c`. Related regression: exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **188** passed.
+- **Still out of scope:** #283 opportunity TTL/arbitration, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
