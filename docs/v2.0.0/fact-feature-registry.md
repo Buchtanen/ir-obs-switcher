@@ -158,7 +158,7 @@ Features are immutable values for one frame/correlation. The registry implementa
 | `field.strength` | count | rounded eligible roster mean with sample count | empty/ambiguous roster |
 | `bio.hr_band` | hr_band | provider sample plus versioned baseline/freshness bands | disconnected/stale/no baseline |
 
-Only `estimated_v1` is required for the first slice. `est_time_v1`/`hybrid_v1` are later versions, not silent algorithm replacements. Predicate AST compares these named outputs; it cannot embed new arithmetic.
+At #247 close only `estimated_v1` was wired into `FeatureEngine`. #248 adds `est_time_v1`, `hybrid_v1`, and the three trend features above without silent algorithm replacement — each ID stays a distinct named output. Predicate AST compares these named outputs; it cannot embed new arithmetic.
 
 ## Tape-channel registry
 
@@ -217,7 +217,7 @@ An optional unavailable source only suppresses dependent facts/beats. It never b
 
 `machine/build_beat_catalog.py` now proves every required beat predicate, attribute, literal enum constraint, repeated-claim cardinality and allowlist reference resolves through this registry. `machine/build_successor_graph.py` separately proves the closed edge/reference/SCC contract. Neither implements runtime predicate evaluation; executing those invariants remains the production catalog-loader gate.
 
-Runtime on this branch (does not rewrite `machine/` hashes): `src/irswitch/contracts/feature.py` loads the packaged 21-ID registry via `load_feature_registry()` and rejects incompatible detector parameter units via `validate_detector_feature_units()`.
+Runtime on this branch (does not rewrite `machine/` hashes): `src/irswitch/contracts/feature.py` loads the packaged 21-ID registry via `load_feature_registry()` and rejects incompatible detector parameter units via `validate_detector_feature_units()`. `src/irswitch/events/gap_estimators.py` implements the versioned gap and trend math; `src/irswitch/events/feature_engine.py` calls it on each accepted sample and publishes up to six gap/trend `FeatureValue`s with algorithm IDs in `evidenceRefs`. Registry-only on this branch: `gap.trend.confidence`, `gap.target_stable`. Not live-wired; #248 remains open until verifier + CI close-gate.
 
 Issue #236/#245/#247 cannot close until generated machine registries prove (**#236/#245/#247 closed**):
 
