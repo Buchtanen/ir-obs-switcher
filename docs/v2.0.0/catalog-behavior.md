@@ -1,9 +1,10 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
-**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**)
+**Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**) + `tests/test_episode_registry.py` (**13**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -70,8 +71,12 @@ Packaged `coverage-matrix-replay-refs.json` points at existing F01–F44 fixture
 
 Invalid packaged catalogs disable commentary without raising: `outcome=commentary_disabled`, `CatalogLoadFailure` with `commentaryEnabled=false`, `mainLoopRaises=false`, `partialCatalogPublished=false`, `reason=catalog_invalid`, `runtimeStatus=disabled`. Same-beat authored fallback is forbidden (`same_beat_authored_fallback=False`). No sequence-graph v1 fallback.
 
+## EpisodeRegistry (#258)
+
+`EpisodeRegistry` owns runtime episode instances independently of speech. Schema `episode/2`; states `candidate|active|suspended|resolved|invalidated`. Occurrence scope requires occurrence + lineage; stream-only `stream_lifecycle` (and optional stream `filler_single`) may omit both. Semantic identity locates one live instance; distinct identities run concurrently. Exclusive battle group suspends overlapping live instances. Capacity defaults `active_capacity=64`, `resolved_capacity=256` match the frozen public contract. Not exported from `events/__init__.py`; not live-wired. Module lookup: [inflight § #258](../dokumentace/inflight/README.md#258-lineage-aware-episoderegistry-lookup).
+
 ## Out of scope
 
-- EpisodeRegistry ([#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258))
+- #259 resolved-episode retention queue
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts

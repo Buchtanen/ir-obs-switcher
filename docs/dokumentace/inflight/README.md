@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257) is **implemented** on this branch (not unclaimed); **not shipped on `master`**. Next implementation package is [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257) is **closed** and [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) is **implemented** on this branch; **not shipped on `master`**. Next implementation package is [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (unclaimed).
 
 ## Where to look on this branch
 
@@ -11,7 +11,7 @@
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#257, branch-only)
+## Implementation lookup (#239–#258, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -34,6 +34,7 @@
 | #255 composite two-front battle detector | events | `events/two_front.py` — detail below | `tests/test_two_front.py` (**18**) |
 | #256 event-family coverage matrix | contracts | `src/irswitch/contracts/coverage_matrix.py` — [§ lookup](#256-event-family-coverage-matrix-lookup) | `tests/test_coverage_matrix.py` (**15**) |
 | #257 StoryDefinition catalog loader | contracts | `src/irswitch/contracts/catalog_loader.py` — [§ lookup](#257-storydefinition-catalog-loader-lookup) | `tests/test_catalog_loader.py` (**29**) |
+| #258 lineage-aware EpisodeRegistry | events | `src/irswitch/events/episode_registry.py` — [§ lookup](#258-lineage-aware-episoderegistry-lookup) | `tests/test_episode_registry.py` (**13**) |
 
 ### #247 FeatureEngine lookup
 
@@ -140,11 +141,24 @@
 - **Event routing:** `LAP_COMPLETE` → beat `timing.lap.completed`, stories `timing_attempt`+`single_result`, channel `race.timing.lap`. Aliases/visual (`BATTLE_LOST`, `BLE_LOST`) and legacy `STREAM_START` / `SESSION_INTRO_*` / `SESSION_WRAP` do not create routes. Same-beat authored fallback is forbidden (`same_beat_authored_fallback=False`). No sequence-graph v1 fallback (`sequence_graph_fallback=False`).
 - **Detector IDs:** stay on the catalog (`battle_ahead_v1`, `battle_behind_v1`, `battle_two_front_v1`); beats have `detector_id=None`.
 - **Review:** complements [#256 coverage matrix](#256-event-family-coverage-matrix-lookup). Behavior projection: [catalog-behavior.md](../../v2.0.0/catalog-behavior.md). `machine/` hashes were not rewritten.
-- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape, commentary or events; not live-wired. Does not implement EpisodeRegistry (#258).
+- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape, commentary or events; not live-wired.
 - **Tests:** `tests/test_catalog_loader.py` (**29**: 6 packaged artifacts + 8 named + 15 invalid goldens). First implementation SHA `3fd54d21363d2bf971e6d60fdd1e841f5a1dc7eb`.
-- **Still out of scope:** EpisodeRegistry (#258), live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, EpisodeRegistry (#258), live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #258 lineage-aware EpisodeRegistry lookup
+
+- **Registry (`events/episode_registry.py`):** `EpisodeRegistry`, `Episode`, `EpisodeIntent`, `EpisodeStep`, `EpisodeTransition`, `MaterialOrder`. Owns runtime episode instances independently of speech; opening/resolving works with empty `spokenBeatIds`. Schema `episode/2`. States: `candidate|active|suspended|resolved|invalidated`; dormant is absence.
+- **Scope:** `stream|occurrence`. Stream-only `stream_lifecycle` (and optional stream `filler_single`) may omit occurrence/lineage; occurrence scope requires both (validated via `validate_occurrence_lineage`).
+- **Semantic identity:** locates/updates one live instance (`material_revision`++). Distinct identities run concurrently. Exclusive group `battle` (`battle_ahead` / `battle_behind` / `battle_two_front`) with overlapping `correlationIds` suspends the other live instance (`target_changed`).
+- **Reset:** `reset_occurrences` invalidates only episodes whose `occurrenceId` is in the affected set; other occurrences and stream-scoped episodes stay.
+- **Transitions:** every transition carries `reason` + `source_refs`.
+- **Capacity:** defaults `active_capacity=64`, `resolved_capacity=256` (match frozen public contract). Eviction order: stale/unpinned suspended (oldest), then candidate (oldest), then lowest `continuationPriority` active; ties `materialOrder` then `episodeId`. Terminal reason `capacity_evicted`. Pin kinds `reserved|building|committed|speaking`. If all current instances are pinned, new open returns `decision=episode_capacity_rejected` and does not create an episode (accepted facts/events stay recorded — registry never writes FactLedger). Resolved overflow drops oldest `(resolvedMonoMs, episodeId)` and latches `historyComplete=false`.
+- **Definition IDs:** must be frozen StoryDefinition ids from #257 catalog (`load_narrative_catalog`).
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. Does not implement #259 retention queue or NarrativeRuntime.
+- **Tests:** `tests/test_episode_registry.py` (**13**). First implementation SHA `dc4ef4079d9cbcd2cb417ba7fb2cb4747d9e69f4`. Related regression: episode + catalog_loader + session_occurrence + fact_ledger **76** passed.
+- **Still out of scope:** #259 resolved-episode retention queue, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
