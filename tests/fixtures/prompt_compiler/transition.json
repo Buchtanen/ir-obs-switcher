@@ -1,0 +1,8 @@
+{
+  "beatId": "battle.approach",
+  "nowMs": 10000,
+  "deadlineMonoMs": 20000,
+  "expectOutcome": "succeeded",
+  "expectFreedom": "tight",
+  "expectContractVersion": "qwen-surface-en-tight/1"
+}
