@@ -19,6 +19,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
 - #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
+- #253 closing SHA: `216d8947a6c1e922f6b6f7efead8ea7b2458bbef` (`docs: close CLOSING temporal detector checkpoint (#253)`)
 - #253 docs checkpoint SHA: `630bd19aa4400e38d10ef75b2b1b5f1228641854` (`docs: record CLOSING temporal detector implementation checkpoint (#253)`)
 - First #253 CLOSING SHA: `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06` (`feat: add CLOSING temporal detector (#253)`). Local pytest: `tests/test_closing.py` **19** passed (eight `bandBoundaries` goldens).
 - #253 verifier: GREEN — closing + DetectorBank + gap + FeatureEngine + predicate **75** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
