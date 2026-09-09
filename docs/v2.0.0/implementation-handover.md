@@ -29,6 +29,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #256 verifier: GREEN — coverage matrix + session-plan + contract primitives **89** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary/events imports; no pyproject/machine JSON edits.
 - First #257 catalog-loader SHA: `3fd54d21363d2bf971e6d60fdd1e841f5a1dc7eb` (`feat: add StoryDefinition schema and catalog loader (#257)`). Local pytest: `tests/test_catalog_loader.py` **29** passed. Related regression: `tests/test_catalog_loader.py` + `tests/test_coverage_matrix.py` + `tests/test_session_plan_contract.py` + `tests/test_contract_primitives.py` + `tests/test_predicate_ast.py` **132** passed.
 - #257 docs checkpoint SHA: `2fe0c67b54ff8fe95933d3b291d79deb20f459a8` (`docs: record catalog loader implementation checkpoint (#257)`)
+- #257 closing SHA: `44743d41d3e577b266b7bda59578014af511f1f7` (`docs: close StoryDefinition catalog loader checkpoint (#257)`)
 - #257 verifier: GREEN — catalog loader + coverage matrix + session-plan + contract primitives + predicate **132** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary/events imports; no pyproject/machine JSON edits.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -205,7 +206,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #257 is closed in its own scope: v2 StoryDefinition schema and catalog loader. First SHA `3fd54d2`; docs checkpoint SHA `2fe0c67`; verifier GREEN (**29** / related **132** passed).
+1. #257 is closed in its own scope: v2 StoryDefinition schema and catalog loader. First SHA `3fd54d2`; docs checkpoint SHA `2fe0c67`; closing SHA `44743d4`; verifier GREEN (**29** / related **132** passed).
 2. #258 first slice: lineage-aware EpisodeRegistry. Do not start #258 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
