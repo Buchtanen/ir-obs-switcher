@@ -1,0 +1,25 @@
+{
+  "locales": ["en", "cs"],
+  "nodes": {
+    "lap_complete": {
+      "family": "timing",
+      "event_types": ["LAP_COMPLETE"],
+      "variants": {
+        "en": {
+          "neutral": [
+            "{subjectSurface} {requiredClaimSurface}.",
+            "That's a lap for him.",
+            "now.",
+            "How did he do that?",
+            "I think he is pushing.",
+            "He looks nervous and frustrated.",
+            "He crosses the line. The lap is banked and the picture is clear."
+          ]
+        },
+        "cs": {
+          "neutral": ["To je kolo."]
+        }
+      }
+    }
+  }
+}

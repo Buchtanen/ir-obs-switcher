@@ -91,6 +91,17 @@ from .primitives import (
     validate_occurrence_lineage,
     validate_scalar,
 )
+from .realization_catalog import (
+    Classification,
+    LegacyVariant,
+    MigrationClassifier,
+    MigrationReport,
+    PatternCard,
+    RealizationCatalog,
+    inventory_legacy_variants,
+    load_realization_catalog,
+    migrate_legacy_graph,
+)
 from .resources import packaged_schema_bytes
 from .session import (
     SessionOccurrence,
@@ -136,6 +147,12 @@ __all__ = [
     "MonotonicMs",
     "NarrativeCatalog",
     "NarrativeCommand",
+    "Classification",
+    "LegacyVariant",
+    "MigrationClassifier",
+    "MigrationReport",
+    "PatternCard",
+    "RealizationCatalog",
     "NarrativeEvent",
     "NarrativeSourceEnvelope",
     "NarrativeSourceOrder",
@@ -170,8 +187,11 @@ __all__ = [
     "canonical_sha256",
     "compile_detector_catalog",
     "compile_predicate",
+    "inventory_legacy_variants",
     "load_coverage_matrix",
     "load_narrative_catalog",
+    "load_realization_catalog",
+    "migrate_legacy_graph",
     "deterministic_planning_seed",
     "derived_delivery_class",
     "fact_producer",
