@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #247–#256 and Wave D #257–#261 plus #263 closed on this branch; #283 implemented (not closed). Next is #262. Not shipped on `master`.
+**Status:** Wave C #247–#256 and Wave D #257–#261 plus #263 and #283 closed on this branch. Next is #262. Not shipped on `master`.
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -79,7 +79,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 - [x] [#260 — v2: long-silence lifecycle and filler opportunities](https://github.com/Buchtanen/ir-obs-switcher/issues/260) — depends on #237, #245, #252, #257.
 - [x] [#261 — v2: immutable BeatPlan and just-in-time planner](https://github.com/Buchtanen/ir-obs-switcher/issues/261) — depends on #246, #258–#260.
 - [x] [#263 — v2: ExposureStore and decay-based fatigue](https://github.com/Buchtanen/ir-obs-switcher/issues/263) — depends on #236, #237, #258 and precedes #283/#262 to avoid a dependency cycle.
-- [x] [#283 — v2: expiring event opportunities and post-beat arbitration](https://github.com/Buchtanen/ir-obs-switcher/issues/283) — depends on #237, #239, #241, #257–#259, #261 and #263; owns TTL/priority/penalty, `tape_channel` and event-versus-successor policy. Implemented on branch (not closed).
+- [x] [#283 — v2: expiring event opportunities and post-beat arbitration](https://github.com/Buchtanen/ir-obs-switcher/issues/283) — depends on #237, #239, #241, #257–#259, #261 and #263; owns TTL/priority/penalty, `tape_channel` and event-versus-successor policy.
 - [ ] [#262 — v2: StoryDirector eligibility and deterministic arbitration](https://github.com/Buchtanen/ir-obs-switcher/issues/262) — depends on #261, #283.
 
 ## Wave E — speech, realization and verification

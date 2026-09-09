@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) are **closed** on this branch; [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) is **implemented (not closed)**; **not shipped on `master`**. Next implementation package is [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; **not shipped on `master`**. Next implementation package is [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) (do not start unless a human says so).
 
 ## Where to look on this branch
 
