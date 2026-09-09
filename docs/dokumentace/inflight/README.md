@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) are closed on this branch; [#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) lifecycle triggers are **implemented** (checkpoint, not closed). **Not shipped on `master`**. Next implementation package is [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) are closed on this branch; **not shipped on `master`**. Next implementation package is [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) (unclaimed).
 
 ## Where to look on this branch
 
@@ -84,7 +84,7 @@
 - **Reason codes:** `attached_live` / `process_recovery` / `enabled_mid_stream` are `STREAM_STARTED` reason codes, not extra events. `broadcast_unknown` / `broadcast_resumed` without commands emit nothing. Previous/current occurrence+lineage attached on candidates.
 - **Live paths unchanged:** live `STREAM_START` commentary path, `SessionEndTracker`, and V4 overlay wire stay on master wiring. Does not import StreamTimeline, DetectorBank, DirectEdgeBank, NarrativeRuntime, overlay tape or commentary.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Not wired into the live loop.
-- **Tests:** `tests/test_lifecycle_edges.py` (**13**). First implementation SHA `c4688a40a43e40d47e2698114bcb06a245b97914`.
+- **Tests:** `tests/test_lifecycle_edges.py` (**13**). First implementation SHA `c4688a40a43e40d47e2698114bcb06a245b97914`; docs checkpoint SHA `d3c1934c90e7f920059672c12e2eeb9a3c5193f6`.
 - **Still out of scope:** live EventManager wiring, CLOSING/UNDER_PRESSURE detectors (#253–#255), NarrativeRuntime (#284).
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
