@@ -60,6 +60,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #261 verifier: GREEN — `tests/test_beat_plan.py` **14** passed; related **175** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; no opportunity consume / utterance emit.
 - First #263 ExposureStore SHA: `8b610e1848f7b8ac17e6844664bb72d47b8d8c4c` (`feat: add ExposureStore and base-2 fatigue (#263)`). Local pytest: `tests/test_exposure_store.py` **13** passed. Related regression: exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **188** passed.
 - #263 docs checkpoint SHA: `bdf5e25a60ea2e4aabff3501046d609f140997f2` (`docs: record ExposureStore implementation checkpoint (#263)`)
+- #263 closing SHA: `2cc4bd526eccf81174b1d07d37a713ef1cff5961` (`docs: close ExposureStore checkpoint (#263)`)
 - #263 verifier: GREEN — `tests/test_exposure_store.py` **13** passed; related **188** passed; ruff/black/mypy clean; no eval/exec/compile/math.exp; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; embeddings never a gate.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -246,7 +247,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #263 is closed in its own scope: `ExposureStore`. First SHA `8b610e1`; docs checkpoint `bdf5e25`; local pytest **13**; related **188** passed; verifier GREEN.
+1. #263 is closed in its own scope: `ExposureStore`. First SHA `8b610e1`; docs checkpoint `bdf5e25`; closing SHA `2cc4bd5`; local pytest **13**; related **188** passed; verifier GREEN.
 2. Next: #283 expiring event opportunities and post-beat arbitration. Do not start #283/#262 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
