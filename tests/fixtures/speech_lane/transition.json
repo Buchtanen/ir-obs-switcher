@@ -1,0 +1,6 @@
+{
+  "nowMs": 10000,
+  "utteranceId": "utt:1",
+  "expectReason": "started_building",
+  "expectLane": "building"
+}

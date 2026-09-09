@@ -1,0 +1,6 @@
+{
+  "nowMs": 16000,
+  "dispatchedMonoMs": 10000,
+  "startTimeoutMs": 5000,
+  "expectReason": "watchdog_start"
+}
