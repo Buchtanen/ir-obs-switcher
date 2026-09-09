@@ -1,0 +1,9 @@
+{
+  "name": "transition",
+  "spokenAtMs": 10000,
+  "queryAtMs": 100000,
+  "semanticHalfLifeMs": 90000,
+  "expectedSemantic": 0.5,
+  "patternHalfLifeMs": 180000,
+  "expectedPatternAtSpokenPlus180s": 0.5
+}

@@ -1,0 +1,6 @@
+{
+  "name": "expiry",
+  "spokenAtMs": 10000,
+  "resetAtMs": 20000,
+  "queryAtMs": 20000
+}
