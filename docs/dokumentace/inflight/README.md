@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247) FeatureEngine are closed on this branch; **not shipped on `master`**. Next implementation package is [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) / [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247) FeatureEngine are closed on this branch; [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248) gap estimators are claimed and implemented here; **not shipped on `master`**. Next after #248 close is [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249) (unclaimed).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#247) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#248) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#247, branch-only)
+## Implementation lookup (#239–#248, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -32,6 +32,15 @@
 - **First slice:** computes `gap.relation.seconds.estimated_v1` only (`est_time_v1` / `hybrid_v1` stay registered, not substituted).
 - **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, DetectorBank, overlay tape or commentary; not wired into the live loop. Scope prose: [handover § #247](../../v2.0.0/implementation-handover.md).
 - **Evidence:** first implementation SHA `62402838432dc8676be79b6c295b2e73513c6d6d`; lookup SHA `40ae7f63257cf70e94684a74c414c1e5f97cc129`; verifier GREEN (33 passed).
+
+### #248 gap estimators lookup
+
+- **Algorithms (`events/gap_estimators.py`):** `estimate_distance_v1`, `estimate_est_time_v1`, `choose_hybrid_v1`, `compute_trend`. Distinct IDs: `gap.relation.seconds.estimated_v1`, `est_time_v1`, `hybrid_v1`. Hybrid emits only when both estimators agree within `HYBRID_MAX_DISAGREEMENT_S` (0.5 s); disagreement is unknown, never a silent substitution.
+- **Validity:** explicit unknown for wrap ambiguity, lap-down, pit/tow/teleport/`not_in_world`, target swap, missing lap reference / est time. S/F wrap (closer 0.98 / target 0.02) is valid.
+- **Evidence:** each FeatureValue includes its algorithm/feature ID in `evidenceRefs`.
+- **Trend:** duration coverage capped at `sample_interval_s`; a lone sample cannot fill a bucket. `gap.trend.slope` / `gap.trend.net_closing` require three usable bucket medians; `gap.trend.coverage` is usable-bucket time / `trend_window_s`.
+- **Tests:** `tests/test_gap_estimators.py` plus existing `tests/test_feature_engine.py`. First SHA `4aa2e680ef76b6aa37ce993cbc37bef32e93db46`.
+- **Still out of scope:** DetectorBank / NarrativeRuntime / `gap.trend.confidence` / `gap.target_stable` live wiring.
 
 `NarrativeRuntime`, live `DetectorBank` wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 

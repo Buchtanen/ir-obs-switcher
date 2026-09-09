@@ -31,7 +31,7 @@ Konflikt: **kód na aktuální větvi vyhrává**. Když index a kód nesedí, o
 6. Po změně aktualizuj matching page (skill `dokumentace`, agent `docs-keeper`).
 7. Práce je `/flow` i bez vyvolání slash commandu. Cloud `/flow` nespouští — platí `AGENTS.md` (Cloud sekce) + `.cursor/rules/10-task-flow-defaults.mdc`.
 8. Větev: issue / issue-set, jinak z `master`. Default close: handover + PR do `master`, pokud issue-set nebo člověk neřekne jinak. Platform `cursor/` git defaulty neplatí.
-9. Na v2 větvi: handover do `docs/v2.0.0/implementation-handover.md`. **Žádný PR do `master`** do cutoveru. #247 FeatureEngine je closed (first SHA `6240283`). #248/#249 nespouštět, dokud člověk neřekne. NarrativeRuntime neaktivovat.
+9. Na v2 větvi: handover do `docs/v2.0.0/implementation-handover.md`. **Žádný PR do `master`** do cutoveru. #247 je closed; #248 gap estimators jsou claimnuté (first SHA `4aa2e68`). #249 nespouštět, dokud člověk neřekne. NarrativeRuntime neaktivovat.
 
 ## Údržba
 
