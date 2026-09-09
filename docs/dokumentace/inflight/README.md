@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **implemented**; **not shipped on `master`**. Next implementation package is [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; **not shipped on `master`**. Next implementation package is [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) (do not start unless a human says so).
 
 ## Where to look on this branch
 
@@ -253,7 +253,7 @@
 - **Replay fixtures:** `tests/fixtures/speech_lane/{transition,counterfactual_identity,expiry}.json`.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Optional one-way `OpportunityQueue` for reserve/consume/release. Does not import commentary or overlay packages; not live-wired. No eval/exec/compile. No live SAPI/eSpeak/SuperTonic process. Does not implement #265 freshness commit or RealizationBundle.
 - **Tests:** `tests/test_speech_lane.py` (**14**). First implementation SHA `330fd45188b17aad7cd4e30856ac1b309ee509f1`. Related regression **228** passed.
-- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/`; no public CONFIG/API/README change (TTS knobs already frozen); `machine/` hashes unchanged.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change (TTS knobs already frozen); `machine/` hashes unchanged. First SHA `330fd45`; docs checkpoint `2a90b81`; handover audit `30824ae`; feat CI [34342772096](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34342772096) green.
 - **Still out of scope:** #265 freshness commit, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane wiring, and V4 overlay tape remain out of scope until #284 and later issues.
