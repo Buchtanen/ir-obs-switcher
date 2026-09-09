@@ -1,0 +1,7 @@
+{
+  "name": "expiry",
+  "plannedMonoMs": 40000,
+  "expiresMonoMs": 50000,
+  "validAt": [40000, 49999],
+  "invalidAt": [39999, 50000]
+}

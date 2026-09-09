@@ -1,0 +1,38 @@
+{
+  "name": "transition",
+  "lane": "idle",
+  "planningCycleId": "cycle-transition",
+  "intent": {
+    "beatId": "timing.lap.completed",
+    "episodeId": "episode:lap-1",
+    "episodeRevision": 1,
+    "streamEpoch": 1,
+    "occurrenceId": "3:race:0",
+    "lineageId": "3:practice:0>3:race:0",
+    "candidateSource": "event_opportunity",
+    "opportunityId": "opp:lap-1",
+    "storyId": "timing_attempt",
+    "speechComplete": false,
+    "isClosing": true,
+    "consecutiveAccepted": 0,
+    "futureBeatIds": [],
+    "sourceRefs": ["event:lap-1"],
+    "requiredClaims": [
+      {
+        "claimId": "claim:lap",
+        "predicate": "timing.lap_completed",
+        "subjectId": "hero",
+        "objectId": null,
+        "polarity": "positive",
+        "temporalFrame": "current",
+        "attributes": ["lap"],
+        "factIds": ["fact:lap-1"]
+      }
+    ]
+  },
+  "expect": {
+    "reason": "planned",
+    "cycleAttemptOrdinal": 1,
+    "opportunityConsumed": false
+  }
+}
