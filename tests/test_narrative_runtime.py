@@ -11,10 +11,13 @@ import pytest
 from test_episode_registry import _intent as _episode_intent
 from test_narrative_context_batch import _event, _fact_view, _timeline
 from test_opportunity_queue import _intent as _opportunity_intent
+from test_story_director import _cand as _director_cand
+from test_story_director import _world as _director_world
 
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
+from irswitch.events.beat_plan import CandidateOrder
 from irswitch.events.episode_registry import EpisodeRegistry
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
@@ -25,6 +28,7 @@ from irswitch.events.freshness_commit import (
 from irswitch.events.narrative import partition_context_batches
 from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
 from irswitch.events.opportunity_queue import OpportunityQueue
+from irswitch.events.story_director import StoryDirector
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_runtime.py"
@@ -1640,3 +1644,133 @@ def test_episode_mark_spoken_and_resolve_on_speech_completed() -> None:
     assert resolved is not None
     assert resolved.state == "resolved"
     assert resolved.resolution_reason == "natural_exit"
+
+
+def test_story_director_absent_keeps_legacy_dispatch() -> None:
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime.admit(_event_impulse("dir:legacy", revision=70, fanout=70))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "plan_dispatched" in planned.effects
+    assert "effect:dispatch_realization" in planned.effects
+    assert not any(
+        effect.startswith("director_") and effect != "director_skipped_pure_fact"
+        for effect in planned.effects
+    )
+
+
+def test_story_director_selects_and_dispatches_plan() -> None:
+    director = StoryDirector()
+    runtime = NarrativeRuntime(story_director=director)
+    runtime.enable()
+    runtime.seed_director_for_test(world=_director_world(), candidates=(_director_cand(),))
+    runtime.admit(_event_impulse("dir:select", revision=71, fanout=71))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "director_evaluated" in planned.effects
+    assert "director_selected" in planned.effects
+    assert "director_step:active_story_continuation" in planned.effects
+    assert "plan_dispatched" in planned.effects
+    assert "effect:dispatch_realization" in planned.effects
+    assert planned.lane_after == "building"
+    assert runtime.director_selected_beat_for_test() == "battle.approach"
+
+
+def test_story_director_silence_skips_dispatch() -> None:
+    director = StoryDirector()
+    runtime = NarrativeRuntime(story_director=director)
+    runtime.enable()
+    runtime.seed_director_for_test(
+        world=_director_world(lane="building", impulse="timer"),
+        candidates=(_director_cand(),),
+    )
+    runtime.admit(_event_impulse("dir:silence", revision=72, fanout=72))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "director_evaluated" in planned.effects
+    assert "director_silenced" in planned.effects
+    assert "director_step:incumbent_held" in planned.effects
+    assert "plan_dispatched" not in planned.effects
+    assert "effect:dispatch_realization" not in planned.effects
+    assert planned.lane_after == "idle"
+    assert runtime.director_selected_beat_for_test() is None
+    assert runtime.current_realization_token() is None
+
+
+def test_story_director_notes_failure_on_realization_failed() -> None:
+    director = StoryDirector()
+    runtime = NarrativeRuntime(story_director=director)
+    runtime.enable()
+    runtime.seed_director_for_test(world=_director_world(), candidates=(_director_cand(),))
+    runtime.admit(_event_impulse("dir:fail", revision=73, fanout=73))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "director_selected" in planned.effects
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "dir:fail-rz",
+            "REALIZATION_FAILED",
+            12_200,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(
+                token,
+                outcome="failed",
+                text=None,
+                textHash=None,
+                failureReason="realization_transport",
+            ),
+        )
+    )
+    failed = runtime.reduce_next()
+    assert failed is not None
+    assert failed.lane_after == "idle"
+    assert "director_failure_noted" in failed.effects
+    assert runtime.director_selected_beat_for_test() is None
+
+    runtime.seed_director_for_test(
+        world=_director_world(),
+        candidates=(
+            _director_cand(
+                beat_id="battle.pursuit",
+                candidate_order=CandidateOrder(41, 4),
+            ),
+        ),
+    )
+    runtime.admit(_event_impulse("dir:fail-2", revision=74, fanout=74))
+    second = runtime.reduce_next()
+    assert second is not None
+    assert "director_selected" in second.effects
+    assert runtime.director_selected_beat_for_test() == "battle.pursuit"
+    token2 = runtime.current_realization_token()
+    assert token2 is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "dir:fail-rz-2",
+            "REALIZATION_FAILED",
+            12_300,
+            request_id=str(token2["requestId"]),
+            request_ordinal=int(token2["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token2["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(
+                token2,
+                outcome="failed",
+                text=None,
+                textHash=None,
+                failureReason="realization_transport",
+            ),
+        )
+    )
+    failed2 = runtime.reduce_next()
+    assert failed2 is not None
+    assert "director_failure_noted" in failed2.effects
+
+    # Runtime planning-cycle cap is already 2 after two dispatches; prove the
+    # shared StoryDirector instance itself is exhausted for a further consult.
+    exhausted = director.evaluate(_director_world(), (_director_cand(),))
+    assert exhausted.speech == "silence"
+    assert exhausted.reason == "planning_cycle_exhausted"

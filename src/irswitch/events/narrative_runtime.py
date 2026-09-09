@@ -24,6 +24,11 @@ from irswitch.events.freshness_commit import (
     FreshnessGate,
 )
 from irswitch.events.opportunity_queue import OpportunityQueue
+from irswitch.events.story_director import (
+    DirectorCandidate,
+    DirectorWorld,
+    StoryDirector,
+)
 
 RuntimeState = Literal["disabled", "starting", "ready", "degraded", "stopping", "stopped"]
 LaneState = Literal["idle", "building", "committed", "speaking", "stopping"]
@@ -95,6 +100,7 @@ class NarrativeRuntime:
         commit_world_provider: CommitWorldProvider | None = None,
         opportunity_queue: OpportunityQueue | None = None,
         episode_registry: EpisodeRegistry | None = None,
+        story_director: StoryDirector | None = None,
     ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
@@ -139,6 +145,11 @@ class NarrativeRuntime:
         self._episode_id: str | None = None
         self._episode_beat_id: str | None = None
         self._episode_now_ms: int = 0
+        self._story_director = story_director
+        self._director_world: DirectorWorld | None = None
+        self._director_candidates: tuple[DirectorCandidate, ...] = ()
+        self._director_selected_beat_id: str | None = None
+        self._director_selected_episode_revision: int | None = None
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -259,6 +270,18 @@ class NarrativeRuntime:
 
     def episode_id_for_test(self) -> str | None:
         return self._episode_id
+
+    def seed_director_for_test(
+        self,
+        *,
+        world: DirectorWorld,
+        candidates: tuple[DirectorCandidate, ...],
+    ) -> None:
+        self._director_world = world
+        self._director_candidates = candidates
+
+    def director_selected_beat_for_test(self) -> str | None:
+        return self._director_selected_beat_id
 
     def fail_current_realization_for_test(self) -> None:
         self._realization = None
@@ -642,6 +665,32 @@ class NarrativeRuntime:
         effects.append("episode_resolved")
         self._clear_episode_binding()
 
+    def _consult_director(self, effects: list[str]) -> bool:
+        """Return True when plan dispatch may proceed."""
+        if self._story_director is None or self._director_world is None:
+            return True
+        decision = self._story_director.evaluate(self._director_world, self._director_candidates)
+        effects.append("director_evaluated")
+        effects.append(f"director_step:{decision.reason}")
+        if decision.selected is not None and decision.speech == "speak":
+            effects.append("director_selected")
+            self._director_selected_beat_id = decision.selected.beat_id
+            self._director_selected_episode_revision = decision.selected.episode_revision
+            return True
+        effects.append("director_silenced")
+        self._director_selected_beat_id = None
+        self._director_selected_episode_revision = None
+        return False
+
+    def _note_director_failure(self, effects: list[str]) -> None:
+        if self._story_director is None or self._director_selected_beat_id is None:
+            return
+        revision = int(self._director_selected_episode_revision or 0)
+        self._story_director.note_failure(self._director_selected_beat_id, revision)
+        effects.append("director_failure_noted")
+        self._director_selected_beat_id = None
+        self._director_selected_episode_revision = None
+
     def _reserve_opportunity(self, effects: list[str]) -> None:
         if self._opportunity_queue is None or self._opportunity_id is None:
             return
@@ -694,6 +743,7 @@ class NarrativeRuntime:
         effects.append("effect:cancel_realization_deadline")
         self._release_opportunity_attempt(effects)
         self._invalidate_episode(effects)
+        self._note_director_failure(effects)
 
     def _request_speech_cancel(self, effects: list[str], *, reason: str) -> None:
         if self._lane not in {"committed", "speaking"}:
@@ -710,6 +760,8 @@ class NarrativeRuntime:
             self._planning_cycle_id = 1
         if self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
             effects.append("planning_cycle_exhausted")
+            return
+        if not self._consult_director(effects):
             return
         self._plans_in_cycle += 1
         self._lane = "building"
@@ -865,11 +917,13 @@ class NarrativeRuntime:
             if token is None:
                 self._realization = None
                 self._lane = "idle"
-                return "handled", [
+                effects = [
                     "realization_freshness_rejected",
                     "freshness_verdict:not_reached",
                     "effect:cancel_realization_deadline",
                 ]
+                self._note_director_failure(effects)
+                return "handled", effects
             world = (
                 self._commit_world_provider()
                 if self._commit_world_provider is not None
@@ -888,6 +942,7 @@ class NarrativeRuntime:
                 effects.extend(f"freshness_evidence:{item}" for item in step.evidence)
                 self._release_opportunity_attempt(effects)
                 self._invalidate_episode(effects)
+                self._note_director_failure(effects)
                 return "handled", effects
         self._lane = "committed"
         self._utterance = {
@@ -918,6 +973,7 @@ class NarrativeRuntime:
         effects = ["realization_failed", "effect:cancel_realization_deadline"]
         self._release_opportunity_attempt(effects)
         self._invalidate_episode(effects)
+        self._note_director_failure(effects)
         return "handled", effects
 
     def _on_realization_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -929,6 +985,7 @@ class NarrativeRuntime:
         effects = ["realization_deadline", "effect:cancel_realization_deadline"]
         self._release_opportunity_attempt(effects)
         self._invalidate_episode(effects)
+        self._note_director_failure(effects)
         return "handled", effects
 
     def _on_playback_accepted(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
