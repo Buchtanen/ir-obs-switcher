@@ -337,8 +337,8 @@
 - **TTS:** technical TTS validation stays on #264 SpeechLane. This slice is semantic only. `used_live_view` / `used_roster` / `used_config` stay false. Embedding / second LLM are not a fact gate.
 - **Fixtures:** `tests/fixtures/semantic_verifier/{transition,counterfactual_identity,expiry}.json`.
 - **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not implement the latency corpus (#271).
-- **Tests:** `tests/test_semantic_verifier.py` (**12**). First implementation SHA `72d12f3ae1f4a4adbacae26497c0944ffbefe4eb`. Related regression **318** passed.
-- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged.
+- **Tests:** `tests/test_semantic_verifier.py` (**12**). First implementation SHA `72d12f3ae1f4a4adbacae26497c0944ffbefe4eb`; docs checkpoint SHA `acb832f68c8dab8ccdbb2e76392871a4c060b909`. Related regression **318** passed. Feat CI [34352429399](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34352429399) in progress.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. Docs checkpoint `acb832f`.
 - **Still out of scope:** #271 latency corpus, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 `NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler / RealizerService / SemanticVerifier wiring, and V4 overlay tape remain out of scope until #284 and later issues.
