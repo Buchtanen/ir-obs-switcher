@@ -5,6 +5,16 @@ commentary, replay and tape code may depend on it; it must not depend on those
 owning domains.
 """
 
+from .catalog_loader import (
+    BeatDefinition,
+    CatalogLoadFailure,
+    CatalogLoadResult,
+    NarrativeCatalog,
+    StoryDefinition,
+    SuccessorEdge,
+    apply_catalog_mutation,
+    load_narrative_catalog,
+)
 from .command import COMMAND_KINDS, NarrativeCommand
 from .context import ApplyContextBatch, ContextBatchPart, ContextRevision, ExternalOrder
 from .coverage_matrix import (
@@ -99,6 +109,9 @@ __all__ = [
     "COMMAND_KINDS",
     "ApplyContextBatch",
     "AtomicFact",
+    "BeatDefinition",
+    "CatalogLoadFailure",
+    "CatalogLoadResult",
     "Confidence",
     "ContractViolation",
     "CoverageMatrixReport",
@@ -121,6 +134,7 @@ __all__ = [
     "Identifier",
     "LineageId",
     "MonotonicMs",
+    "NarrativeCatalog",
     "NarrativeCommand",
     "NarrativeEvent",
     "NarrativeSourceEnvelope",
@@ -141,12 +155,15 @@ __all__ = [
     "SessionClock",
     "SourceSequence",
     "Stage",
+    "StoryDefinition",
     "StreamEpoch",
+    "SuccessorEdge",
     "StreamClock",
     "ValidityWindow",
     "VehiclePhase",
     "Verdict",
     "UnsupportedSessionEntry",
+    "apply_catalog_mutation",
     "audit_coverage_matrix",
     "can_create_event_opportunity",
     "canonical_json",
@@ -154,6 +171,7 @@ __all__ = [
     "compile_detector_catalog",
     "compile_predicate",
     "load_coverage_matrix",
+    "load_narrative_catalog",
     "deterministic_planning_seed",
     "derived_delivery_class",
     "fact_producer",
