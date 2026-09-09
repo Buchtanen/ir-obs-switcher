@@ -1,6 +1,6 @@
 # v2.0.0 narrative runtime — issue index
 
-**Status:** Wave C #247–#256 and Wave D #257–#262 plus #263 and #283 closed on this branch; #264 closed; #265 closed; #266 implemented (close-gate pending). Next is #267. Not shipped on `master`.
+**Status:** Wave C #247–#256 and Wave D #257–#262 plus #263 and #283 closed on this branch; #264 closed; #265 closed; #266 closed. Next is #267. Not shipped on `master`.
 **Umbrella:** [#234 — v2: narrative runtime master plan](https://github.com/Buchtanen/ir-obs-switcher/issues/234)
 **Milestone:** [v2.0.0](https://github.com/Buchtanen/ir-obs-switcher/milestone/2)
 **Specification:** [Commentary narrative runtime](../commentary_narrative_runtime_spec.md)
@@ -86,7 +86,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 
 - [x] [#264 — v2: single in-flight speech lane with no prepared waiter](https://github.com/Buchtanen/ir-obs-switcher/issues/264) — depends on #237, #259, #261, #283; owns backend acknowledgement and non-preemptive race-event policy.
 - [x] [#265 — v2: freshness commit gate v2](https://github.com/Buchtanen/ir-obs-switcher/issues/265) — depends on #244, #245, #258, #261, #264, #283.
-- [ ] [#266 — v2: EN-only RealizationCatalog and migration classifier](https://github.com/Buchtanen/ir-obs-switcher/issues/266) — depends on #236, #256, #257.
+- [x] [#266 — v2: EN-only RealizationCatalog and migration classifier](https://github.com/Buchtanen/ir-obs-switcher/issues/266) — depends on #236, #256, #257.
 - [ ] [#267 — v2: authored critical and lifecycle realization pack](https://github.com/Buchtanen/ir-obs-switcher/issues/267) — depends on #261, #266.
 - [ ] [#268 — v2: dynamic compiled PromptOptions and prompt profiles](https://github.com/Buchtanen/ir-obs-switcher/issues/268) — depends on #261, #266.
 - [ ] [#269 — v2: bounded Qwen transport and warm-up](https://github.com/Buchtanen/ir-obs-switcher/issues/269) — depends on #238, #264, #268.
