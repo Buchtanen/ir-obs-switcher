@@ -21,7 +21,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
 - #249 closing SHA: `4bdb0dd874d83d851b48ba77b1702789d9b75dc0` (`docs: close predicate AST checkpoint (#249)`)
 - #249 docs checkpoint SHA: `83a12eb3a0cc1e3f74c75d87d48a1fde9c22c924` (`docs: record predicate AST implementation checkpoint (#249)`)
-- First #249 predicate-AST SHA: `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c` (`feat: add safe typed predicate AST (#249)`). Local pytest: `tests/test_predicate_ast.py` **14** passed.
+- First #249 predicate-AST SHA: `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c` (`feat: add safe typed predicate AST (#249)`). Local pytest: `tests/test_predicate_ast.py` **14** passed. Feat CI [34300365024](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34300365024) is green.
 - #249 verifier: GREEN — predicate + FeatureEngine + gap + ledger/inheritance **60** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
 - #248 closing SHA: `a5f446ba9403e189edbf4930c0cfd6728270985b` (`docs: close gap estimator checkpoint (#248)`)
 - First #248 gap-estimator SHA: `4aa2e680ef76b6aa37ce993cbc37bef32e93db46` (`feat: add versioned gap estimators and coverage (#248)`). Local pytest: `tests/test_gap_estimators.py` **13** + `tests/test_feature_engine.py` **10** = **23** passed.
