@@ -1,6 +1,6 @@
 # v2.0.0 event and beat disposition freeze
 
-**Status:** 64-beat inventory, closed successor DAG and 256 EN pattern cards are machine-frozen; #256 implementation-time auditor proves the matrix. StoryDefinition loader remains owned by issue #257.
+**Status:** 64-beat inventory, closed successor DAG and 256 EN pattern cards are machine-frozen; #256 implementation-time auditor proves the matrix; #257 typed catalog loader is implemented. EpisodeRegistry remains owned by issue #258.
 
 This branch-only artifact closes the inventory gap between the current V4 event surface, the legacy commentary graph and the target narrative catalog. It is not shipped to `master`. Implemented catalog behavior is projected in [catalog-behavior.md](catalog-behavior.md).
 

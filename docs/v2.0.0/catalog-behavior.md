@@ -1,8 +1,9 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
-**Tests:** `tests/test_coverage_matrix.py` (**15**)
+**Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
+**Tests:** `tests/test_catalog_loader.py` (**29**) + `tests/test_coverage_matrix.py` (**15**)
 
 This page is the implementation-time behavior contract for the frozen event-family matrix. Human design prose stays in [event-beat-disposition.md](event-beat-disposition.md), [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md). Machine hashes under `machine/` were reviewed and left unchanged.
 
@@ -65,8 +66,12 @@ Packaged `coverage-matrix-replay-refs.json` points at existing F01–F44 fixture
 
 #256 re-read [fact-feature-registry.md](fact-feature-registry.md) and [detector-catalog-freeze.md](detector-catalog-freeze.md) against the packaged freeze registry, beat catalog, successor graph, pattern cards and detector catalog. Counts and references match. No `machine/` hash was rewritten.
 
+## Loader fail-soft contract (#257)
+
+Invalid packaged catalogs disable commentary without raising: `outcome=commentary_disabled`, `CatalogLoadFailure` with `commentaryEnabled=false`, `mainLoopRaises=false`, `partialCatalogPublished=false`, `reason=catalog_invalid`, `runtimeStatus=disabled`. Same-beat authored fallback is forbidden (`same_beat_authored_fallback=False`). No sequence-graph v1 fallback.
+
 ## Out of scope
 
-- StoryDefinition production loader ([#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257))
+- EpisodeRegistry ([#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258))
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts

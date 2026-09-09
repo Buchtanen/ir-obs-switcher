@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) are implemented on this branch; **not shipped on `master`**. Next implementation package is [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257) is **implemented** on this branch (not unclaimed); **not shipped on `master`**. Next implementation package is [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) (unclaimed).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#256) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#257) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#256, branch-only)
+## Implementation lookup (#239–#257, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -33,6 +33,7 @@
 | #254 UNDER_PRESSURE temporal detector | events | `events/pressure.py` — detail below | `tests/test_pressure.py` (**14**) |
 | #255 composite two-front battle detector | events | `events/two_front.py` — detail below | `tests/test_two_front.py` (**18**) |
 | #256 event-family coverage matrix | contracts | `src/irswitch/contracts/coverage_matrix.py` — [§ lookup](#256-event-family-coverage-matrix-lookup) | `tests/test_coverage_matrix.py` (**15**) |
+| #257 StoryDefinition catalog loader | contracts | `src/irswitch/contracts/catalog_loader.py` — [§ lookup](#257-storydefinition-catalog-loader-lookup) | `tests/test_catalog_loader.py` (**29**) |
 
 ### #247 FeatureEngine lookup
 
@@ -60,7 +61,7 @@
 - **Evaluate (`events/predicate_ast.py`):** `PredicateEvaluator` returns `PredicateResult` (`verdict` + reason tree; `satisfies` is false for unknown on enter/`held_for`). Missing/`quality=unknown` feature values are unknown; `feature_stale_or_unknown` is true on clear when the gap feature is missing or unusable.
 - **Exports / boundaries:** compile/result DTOs re-exported from `contracts/__init__.py`; evaluator **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, DetectorBank, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_predicate_ast.py` (**14**). First implementation SHA `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c`; docs checkpoint SHA `83a12eb3a0cc1e3f74c75d87d48a1fde9c22c924`; close docs SHA `4bdb0dd874d83d851b48ba77b1702789d9b75dc0`.
-- **Still out of scope:** live DetectorBank wiring, StoryDefinition loader (#257), NarrativeRuntime activation.
+- **Still out of scope:** live DetectorBank wiring, NarrativeRuntime activation.
 
 ### #250 DetectorBank lookup
 
@@ -127,11 +128,23 @@
 - **Frozen proof:** 60 identifiers (52 speakable / 4 visual / 4 alias), 64 beats, 37 families, 6 policies, 36 channels, 256 EN cards, 50 successor edges, 11 stories, DAG SCC (28 nonterminal). Speakable rows resolve to beats; aliases and visual-only never create EventOpportunity. Replaced `STREAM_START` / `SESSION_INTRO_*` / `SESSION_WRAP` cannot be triggers. Stage/context/vehicle axes use normalized enums only.
 - **Replay refs:** transition F01/F02/F03/F04/F22/F25; identity F17/F31/F43; expiry F08/F15/F24; counterfactual F09/F15/F33/F37. Pointers only — no NarrativeRuntime.
 - **Review:** [fact-feature-registry.md](../../v2.0.0/fact-feature-registry.md) and [detector-catalog-freeze.md](../../v2.0.0/detector-catalog-freeze.md) match the packaged catalogs. `machine/` hashes were not rewritten. Behavior projection: [catalog-behavior.md](../../v2.0.0/catalog-behavior.md).
-- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape, commentary or events; not live-wired. Does not implement the StoryDefinition loader (#257).
+- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape, commentary or events; not live-wired. Complements the StoryDefinition catalog loader (#257); does not load typed beats/stories itself.
 - **Tests:** `tests/test_coverage_matrix.py` (**15**). First implementation SHA `b061ba2499a73d0a215ed2277ea6dd66a161211d`.
-- **Still out of scope:** StoryDefinition catalog loader (#257), live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #257 StoryDefinition catalog loader lookup
+
+- **Loader (`src/irswitch/contracts/catalog_loader.py`):** `load_narrative_catalog` / `apply_catalog_mutation` / `NarrativeCatalog` / `StoryDefinition` / `BeatDefinition` / `CatalogLoadResult` / `CatalogLoadFailure`. Re-exported from `contracts/__init__.py` as `irswitch.contracts.catalog_loader`. Reads packaged `freeze-registry.json`, `beat-catalog.json`, `successor-graph.json`, `detector-catalog.json`, `config-contract.json` plus schemas `beat-catalog.schema.json`, `successor-graph.schema.json`, `catalog-loader-contract.json` (byte-equal copies under `contracts/schemas/v2/`). Catalog `definition` strings are never evaluated (`eval`/`exec`/`compile` forbidden).
+- **Fail-soft contract:** invalid catalog returns `outcome=commentary_disabled` + `CatalogLoadFailure` (`commentaryEnabled=false`, `mainLoopRaises=false`, `partialCatalogPublished=false`, `reason=catalog_invalid`, `runtimeStatus=disabled`). Never raises into the main loop.
+- **Frozen load:** 64 beats, 11 stories, 50 edges, 37 families, 6 policies, 60 events, 5 lifecycle events, 3 detectors. Schema version `narrative-catalog/2`. Catalog hash = `canonical_sha256(beat_doc)`. Executes all 7 beat + 8 graph `x-irswitch-invariants` and all 12 `mandatoryChecks`.
+- **Event routing:** `LAP_COMPLETE` → beat `timing.lap.completed`, stories `timing_attempt`+`single_result`, channel `race.timing.lap`. Aliases/visual (`BATTLE_LOST`, `BLE_LOST`) and legacy `STREAM_START` / `SESSION_INTRO_*` / `SESSION_WRAP` do not create routes. Same-beat authored fallback is forbidden (`same_beat_authored_fallback=False`). No sequence-graph v1 fallback (`sequence_graph_fallback=False`).
+- **Detector IDs:** stay on the catalog (`battle_ahead_v1`, `battle_behind_v1`, `battle_two_front_v1`); beats have `detector_id=None`.
+- **Review:** complements [#256 coverage matrix](#256-event-family-coverage-matrix-lookup). Behavior projection: [catalog-behavior.md](../../v2.0.0/catalog-behavior.md). `machine/` hashes were not rewritten.
+- **Exports / boundaries:** re-exported from `contracts/__init__.py`; **not** from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape, commentary or events; not live-wired. Does not implement EpisodeRegistry (#258).
+- **Tests:** `tests/test_catalog_loader.py` (**29**: 6 packaged artifacts + 8 named + 15 invalid goldens). First implementation SHA `3fd54d21363d2bf971e6d60fdd1e841f5a1dc7eb`.
+- **Still out of scope:** EpisodeRegistry (#258), live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, EpisodeRegistry (#258), live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 

@@ -31,7 +31,7 @@ Konflikt: **kód na aktuální větvi vyhrává**. Když index a kód nesedí, o
 6. Po změně aktualizuj matching page (skill `dokumentace`, agent `docs-keeper`).
 7. Práce je `/flow` i bez vyvolání slash commandu. Cloud `/flow` nespouští — platí `AGENTS.md` (Cloud sekce) + `.cursor/rules/10-task-flow-defaults.mdc`.
 8. Větev: issue / issue-set, jinak z `master`. Default close: handover + PR do `master`, pokud issue-set nebo člověk neřekne jinak. Platform `cursor/` git defaulty neplatí.
-9. Na v2 větvi: handover do `docs/v2.0.0/implementation-handover.md`; modul lookup pro #256 v [inflight § coverage matrix](inflight/README.md#256-event-family-coverage-matrix-lookup). **Žádný PR do `master`** do cutoveru. #256 coverage matrix je implemented (first SHA `b061ba2`). #257 nespouštět, dokud člověk neřekne. NarrativeRuntime neaktivovat.
+9. Na v2 větvi: handover do `docs/v2.0.0/implementation-handover.md`; modul lookup pro #257 v [inflight § catalog loader](inflight/README.md#257-storydefinition-catalog-loader-lookup) (#256: [coverage matrix](inflight/README.md#256-event-family-coverage-matrix-lookup)). **Žádný PR do `master`** do cutoveru. #257 catalog loader je implemented (first SHA `3fd54d2`). #258 nespouštět, dokud člověk neřekne. NarrativeRuntime neaktivovat.
 
 ## Údržba
 
