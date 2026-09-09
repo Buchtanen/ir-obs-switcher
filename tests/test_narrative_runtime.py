@@ -1098,3 +1098,149 @@ def test_recovery_diagnostics_record_cancelled_speech_lane() -> None:
     status = runtime.status()
     assert status.recovery_count == 1
     assert status.last_recovery_cancelled_lane == "committed"
+
+
+
+@pytest.mark.asyncio
+async def test_realization_deadline_timer_admits_matching_token() -> None:
+    runtime = NarrativeRuntime(realization_deadline_delay_s=0.02)
+    runtime.enable()
+    runtime.admit(_event_impulse("rz-deadline:plan", revision=30, fanout=30))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "effect:dispatch_realization" in planned.effects
+    assert "effect:arm_realization_deadline" in planned.effects
+    token = runtime.current_realization_token()
+    assert token is not None
+    await runtime.apply_effects(planned.effects)
+    assert runtime.realization_deadline_task_active()
+
+    await runtime.wait_deadline_timers_idle()
+    assert not runtime.realization_deadline_task_active()
+    elapsed = runtime.reduce_next()
+    assert elapsed is not None
+    assert elapsed.kind == "REALIZATION_DEADLINE_ELAPSED"
+    assert elapsed.disposition == "handled"
+    assert elapsed.lane_after == "idle"
+    assert runtime.current_realization_token() is None
+    assert runtime.mailbox_empty()
+
+
+@pytest.mark.asyncio
+async def test_realization_success_cancels_deadline_before_stale_fire() -> None:
+    runtime = NarrativeRuntime(realization_deadline_delay_s=0.05)
+    runtime.enable()
+    runtime.admit(_event_impulse("rz-deadline:cancel", revision=31, fanout=31))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    await runtime.apply_effects(planned.effects)
+    assert runtime.realization_deadline_task_active()
+    token = runtime.current_realization_token()
+    assert token is not None
+
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "rz-deadline:ok",
+            "REALIZATION_SUCCEEDED",
+            9600,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert "effect:cancel_realization_deadline" in committed.effects
+    assert "effect:dispatch_tts" in committed.effects
+    assert "effect:arm_speech_deadline" in committed.effects
+    await runtime.apply_effects(committed.effects)
+    assert not runtime.realization_deadline_task_active()
+    assert runtime.speech_deadline_task_active()
+
+    for _ in range(20):
+        if not runtime.realization_deadline_task_active():
+            break
+        await asyncio.sleep(0.01)
+    kinds: list[str] = []
+    while True:
+        nxt = runtime.reduce_next()
+        if nxt is None:
+            break
+        kinds.append(nxt.kind)
+        await runtime.apply_effects(nxt.effects)
+    assert "REALIZATION_DEADLINE_ELAPSED" not in kinds
+    await runtime.apply_effects(("effect:cancel_speech_deadline",))
+
+
+@pytest.mark.asyncio
+async def test_speech_deadline_stages_start_then_stop() -> None:
+    runtime = NarrativeRuntime(speech_deadline_delay_s=0.02)
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "speech-deadline:manual", 9700, text="Watchdog line.", admission_ordinal=1
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert "effect:dispatch_tts" in committed.effects
+    assert "effect:arm_speech_deadline" in committed.effects
+    await runtime.apply_effects(committed.effects)
+    assert runtime.speech_deadline_task_active()
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+
+    await runtime.wait_deadline_timers_idle()
+    start_elapsed = runtime.reduce_next()
+    assert start_elapsed is not None
+    assert start_elapsed.kind == "SPEECH_DEADLINE_ELAPSED"
+    assert start_elapsed.lane_after == "stopping"
+    assert "effect:cancel_tts" in start_elapsed.effects
+    assert "effect:cancel_speech_deadline" in start_elapsed.effects
+    assert "effect:arm_speech_deadline" in start_elapsed.effects
+    await runtime.apply_effects(start_elapsed.effects)
+    assert runtime.speech_deadline_task_active()
+
+    await runtime.wait_deadline_timers_idle()
+    stop_elapsed = runtime.reduce_next()
+    assert stop_elapsed is not None
+    assert stop_elapsed.kind == "SPEECH_DEADLINE_ELAPSED"
+    assert stop_elapsed.lane_after == "idle"
+    assert runtime.current_utterance_token() is None
+    await runtime.apply_effects(stop_elapsed.effects)
+    assert not runtime.speech_deadline_task_active()
+
+
+@pytest.mark.asyncio
+async def test_playback_accepted_rearms_speech_deadline_to_playback_stage() -> None:
+    runtime = NarrativeRuntime(speech_deadline_delay_s=0.03)
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "speech-deadline:pb", 9800, text="Playback line.", admission_ordinal=2
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    await runtime.apply_effects(committed.effects)
+    assert runtime.speech_deadline_task_active()
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="speech-deadline:accept"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    assert "effect:cancel_speech_deadline" in accepted.effects
+    assert "effect:arm_speech_deadline" in accepted.effects
+    await runtime.apply_effects(accepted.effects)
+    assert runtime.speech_deadline_task_active()
+
+    await runtime.wait_deadline_timers_idle()
+    playback_elapsed = runtime.reduce_next()
+    assert playback_elapsed is not None
+    assert playback_elapsed.kind == "SPEECH_DEADLINE_ELAPSED"
+    assert playback_elapsed.lane_after == "stopping"
+    await runtime.apply_effects(playback_elapsed.effects)
+    await runtime.apply_effects(("effect:cancel_speech_deadline",))

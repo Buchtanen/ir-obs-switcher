@@ -81,6 +81,8 @@ class NarrativeRuntime:
         tts_effect: EffectWorker | None = None,
         silence_deadline_delay_s: float = 3600.0,
         validity_deadline_delay_s: float = 3600.0,
+        realization_deadline_delay_s: float = 3600.0,
+        speech_deadline_delay_s: float = 3600.0,
     ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
@@ -105,8 +107,13 @@ class NarrativeRuntime:
         self._tts_task: asyncio.Task[None] | None = None
         self._silence_deadline_task: asyncio.Task[None] | None = None
         self._validity_deadline_task: asyncio.Task[None] | None = None
+        self._realization_deadline_task: asyncio.Task[None] | None = None
+        self._speech_deadline_task: asyncio.Task[None] | None = None
         self._silence_deadline_delay_s = float(silence_deadline_delay_s)
         self._validity_deadline_delay_s = float(validity_deadline_delay_s)
+        self._realization_deadline_delay_s = float(realization_deadline_delay_s)
+        self._speech_deadline_delay_s = float(speech_deadline_delay_s)
+        self._speech_deadline_stage: Literal["start", "playback", "stop"] | None = None
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -222,6 +229,15 @@ class NarrativeRuntime:
     def validity_deadline_task_active(self) -> bool:
         return self._validity_deadline_task is not None and not self._validity_deadline_task.done()
 
+    def realization_deadline_task_active(self) -> bool:
+        return (
+            self._realization_deadline_task is not None
+            and not self._realization_deadline_task.done()
+        )
+
+    def speech_deadline_task_active(self) -> bool:
+        return self._speech_deadline_task is not None and not self._speech_deadline_task.done()
+
     async def wait_effects_idle(self) -> None:
         # Realization/TTS workers only. Deadline timers are long-lived arms.
         tasks = [task for task in (self._realization_task, self._tts_task) if task is not None]
@@ -231,7 +247,12 @@ class NarrativeRuntime:
     async def wait_deadline_timers_idle(self) -> None:
         tasks = [
             task
-            for task in (self._silence_deadline_task, self._validity_deadline_task)
+            for task in (
+                self._silence_deadline_task,
+                self._validity_deadline_task,
+                self._realization_deadline_task,
+                self._speech_deadline_task,
+            )
             if task is not None
         ]
         if tasks:
@@ -247,6 +268,10 @@ class NarrativeRuntime:
                 await self._cancel_task("_silence_deadline_task")
             elif effect == "effect:cancel_validity_deadline":
                 await self._cancel_task("_validity_deadline_task")
+            elif effect == "effect:cancel_realization_deadline":
+                await self._cancel_task("_realization_deadline_task")
+            elif effect == "effect:cancel_speech_deadline":
+                await self._cancel_task("_speech_deadline_task")
             elif effect == "effect:dispatch_realization":
                 await self._cancel_task("_realization_task")
                 token = self.current_realization_token()
@@ -289,6 +314,25 @@ class NarrativeRuntime:
                     ),
                     name=f"narrative-validity-{generation}",
                 )
+            elif effect == "effect:arm_realization_deadline":
+                await self._cancel_task("_realization_deadline_task")
+                token = self.current_realization_token()
+                if token is None:
+                    continue
+                self._realization_deadline_task = asyncio.create_task(
+                    self._run_realization_deadline_timer(dict(token)),
+                    name=f"narrative-realization-deadline-{token['requestId']}",
+                )
+            elif effect == "effect:arm_speech_deadline":
+                await self._cancel_task("_speech_deadline_task")
+                token = self.current_utterance_token()
+                stage = self._speech_deadline_stage
+                if token is None or stage is None:
+                    continue
+                self._speech_deadline_task = asyncio.create_task(
+                    self._run_speech_deadline_timer(dict(token), stage),
+                    name=f"narrative-speech-deadline-{stage}-{token['utteranceId']}",
+                )
         # Yield so newly created workers observe dispatch before the caller continues.
         await asyncio.sleep(0)
 
@@ -317,6 +361,53 @@ class NarrativeRuntime:
         finally:
             if getattr(self, attr) is asyncio.current_task():
                 setattr(self, attr, None)
+
+    async def _run_realization_deadline_timer(self, token: dict[str, Any]) -> None:
+        try:
+            await asyncio.sleep(self._realization_deadline_delay_s)
+            now_ms = int(time.monotonic() * 1000)
+            self.admit(
+                NarrativeCommand.realization_deadline(
+                    f"deadline:REALIZATION_DEADLINE_ELAPSED:{token['requestId']}:{now_ms}",
+                    now_ms,
+                    request_id=str(token["requestId"]),
+                    request_ordinal=int(token["requestOrdinal"]),
+                    dispatch_generation=int(token["dispatchGeneration"]),
+                    deadline_mono_ms=now_ms,
+                )
+            )
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if self._realization_deadline_task is asyncio.current_task():
+                self._realization_deadline_task = None
+
+    async def _run_speech_deadline_timer(
+        self,
+        token: dict[str, Any],
+        stage: Literal["start", "playback", "stop"],
+    ) -> None:
+        try:
+            await asyncio.sleep(self._speech_deadline_delay_s)
+            now_ms = int(time.monotonic() * 1000)
+            self.admit(
+                NarrativeCommand.speech_deadline(
+                    f"deadline:SPEECH_DEADLINE_ELAPSED:{stage}:{token['utteranceId']}:{now_ms}",
+                    now_ms,
+                    utterance_id=str(token["utteranceId"]),
+                    utterance_ordinal=int(token["utteranceOrdinal"]),
+                    backend_generation=int(token["backendGeneration"]),
+                    dispatch_generation=int(token["dispatchGeneration"]),
+                    stage=stage,
+                    deadline_mono_ms=now_ms,
+                )
+            )
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if self._speech_deadline_task is asyncio.current_task():
+                self._speech_deadline_task = None
+
 
     async def _cancel_task(self, attr: str) -> None:
         task: asyncio.Task[None] | None = getattr(self, attr)
@@ -433,6 +524,7 @@ class NarrativeRuntime:
         self._lane = "idle"
         effects.append(reason)
         effects.append("effect:cancel_realization")
+        effects.append("effect:cancel_realization_deadline")
 
     def _request_speech_cancel(self, effects: list[str], *, reason: str) -> None:
         if self._lane not in {"committed", "speaking"}:
@@ -440,6 +532,9 @@ class NarrativeRuntime:
         self._lane = "stopping"
         effects.append(reason)
         effects.append("effect:cancel_tts")
+        effects.append("effect:cancel_speech_deadline")
+        self._speech_deadline_stage = "stop"
+        effects.append("effect:arm_speech_deadline")
 
     def _dispatch_plan(self, effects: list[str]) -> None:
         if self._planning_cycle_id == 0:
@@ -457,6 +552,7 @@ class NarrativeRuntime:
         self._utterance = None
         effects.append("plan_dispatched")
         effects.append("effect:dispatch_realization")
+        effects.append("effect:arm_realization_deadline")
 
     def _on_context(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         part = command.context_part
@@ -556,32 +652,49 @@ class NarrativeRuntime:
             "dispatchGeneration": int(self._realization["dispatchGeneration"]),
         }
         self._realization = None
-        return "handled", ["realization_committed", "effect:dispatch_tts"]
+        self._speech_deadline_stage = "start"
+        return "handled", [
+            "realization_committed",
+            "effect:cancel_realization_deadline",
+            "effect:dispatch_tts",
+            "effect:arm_speech_deadline",
+        ]
 
     def _on_realization_failed(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
             return "ignored_stale_or_inapplicable", ["stale_realization_token"]
         self._realization = None
         self._lane = "idle"
-        return "handled", ["realization_failed"]
+        return "handled", ["realization_failed", "effect:cancel_realization_deadline"]
 
     def _on_realization_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
             return "ignored_stale_or_inapplicable", ["stale_realization_deadline"]
         self._realization = None
         self._lane = "idle"
-        return "handled", ["realization_deadline"]
+        return "handled", ["realization_deadline", "effect:cancel_realization_deadline"]
 
     def _on_playback_accepted(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if not self._matches_utterance(command):
             return "ignored_stale_or_inapplicable", ["stale_playback_token"]
         if self._lane == "committed":
             self._lane = "speaking"
-            return "handled", ["playback_accepted"]
+            self._speech_deadline_stage = "playback"
+            return "handled", [
+                "playback_accepted",
+                "effect:cancel_speech_deadline",
+                "effect:arm_speech_deadline",
+            ]
         if self._lane == "speaking":
             # Duplicate acceptance while speaking requests stop; never a second utterance.
             self._lane = "stopping"
-            return "handled", ["playback_accepted_duplicate_stopping", "effect:cancel_tts"]
+            self._speech_deadline_stage = "stop"
+            return "handled", [
+                "playback_accepted_duplicate_stopping",
+                "effect:cancel_tts",
+                "effect:cancel_speech_deadline",
+                "effect:arm_speech_deadline",
+            ]
         return "ignored_stale_or_inapplicable", ["stale_playback_token"]
 
     def _on_speech_terminal(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -595,11 +708,16 @@ class NarrativeRuntime:
             self._lane = "stopping"
             effects.append("speech_cancel_requested")
             effects.append("effect:cancel_tts")
+            effects.append("effect:cancel_speech_deadline")
+            self._speech_deadline_stage = "stop"
+            effects.append("effect:arm_speech_deadline")
             return "handled", effects
         self._utterance = None
         self._realization = None
         self._lane = "idle"
         self._plans_in_cycle = 0
+        effects.append("effect:cancel_speech_deadline")
+        self._speech_deadline_stage = None
         if command.kind == "SPEECH_COMPLETED":
             effects.append("director_reentry_eligible")
         return "handled", effects
@@ -611,10 +729,17 @@ class NarrativeRuntime:
             return "ignored_stale_or_inapplicable", ["lane_inapplicable"]
         if self._lane in {"committed", "speaking"}:
             self._lane = "stopping"
-            return "handled", ["speech_deadline_stopping", "effect:cancel_tts"]
+            self._speech_deadline_stage = "stop"
+            return "handled", [
+                "speech_deadline_stopping",
+                "effect:cancel_tts",
+                "effect:cancel_speech_deadline",
+                "effect:arm_speech_deadline",
+            ]
         self._utterance = None
         self._lane = "idle"
-        return "handled", ["speech_deadline_stopped"]
+        self._speech_deadline_stage = None
+        return "handled", ["speech_deadline_stopped", "effect:cancel_speech_deadline"]
 
     def _on_manual(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         del command
@@ -629,7 +754,12 @@ class NarrativeRuntime:
             "backendGeneration": 1,
             "dispatchGeneration": max(1, self._planning_cycle_id),
         }
-        return "handled", ["manual_committed", "effect:dispatch_tts"]
+        self._speech_deadline_stage = "start"
+        return "handled", [
+            "manual_committed",
+            "effect:dispatch_tts",
+            "effect:arm_speech_deadline",
+        ]
 
     def _on_tape_health(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         status = str(command.payload["status"])
