@@ -1,0 +1,5 @@
+{
+  "nowMs": 20000,
+  "expiresMonoMs": 15000,
+  "expectReason": "no_candidate"
+}
