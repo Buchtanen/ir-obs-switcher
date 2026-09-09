@@ -5,8 +5,10 @@ Library-adjacent adapter: partitions one accepted publication into
 preserving ``(fanout_stream_sequence, source_ordinal)`` external order.
 
 Not exported from ``events/__init__.py``. Not constructed by
-``race.runtime``, ``commentary.consumer``, or server health handlers.
-Production loops must opt in later behind an explicit cutover kick.
+``commentary.consumer`` or server health handlers. ``race.runtime`` may
+construct ``NarrativeShadowConsumer`` (which owns an ingress) only when
+``_narrative_shadow_enabled`` is explicitly True; that flag defaults False.
+Production EventSubscription cutover still needs an explicit kick.
 """
 
 from __future__ import annotations

@@ -23,6 +23,7 @@ from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
+from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
 from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.stream import (
     ConfigUpdate,
@@ -199,6 +200,24 @@ class RaceRuntime:
         self._commentary_supervisor = WorkerSupervisor(
             "commentary_consumer", self.commentary_consumer.run
         )
+        # #284: explicit opt-in for NarrativeShadowConsumer. Default off —
+        # do not enable without a cutover kick. No INI key in this slice.
+        self._narrative_shadow_enabled = False
+        self._narrative_shadow_subscription = None
+        self.narrative_shadow_consumer = None
+        self._narrative_shadow_supervisor = None
+        if self._narrative_shadow_enabled:
+            self._narrative_shadow_subscription = self._event_fanout.subscribe(
+                "narrative_shadow", capacity=64
+            )
+            self.narrative_shadow_consumer = NarrativeShadowConsumer(
+                self._narrative_shadow_subscription,
+                enabled=True,
+            )
+            self._narrative_shadow_supervisor = WorkerSupervisor(
+                "narrative_shadow_consumer",
+                self.narrative_shadow_consumer.run,
+            )
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
         self._weekend_track: str | None = None
@@ -769,6 +788,11 @@ class RaceRuntime:
         # Subscriptions and workers exist before the producer can publish.
         self._registry.spawn("overlay_consumer", self._overlay_supervisor.run())
         self._registry.spawn("commentary_consumer", self._commentary_supervisor.run())
+        if self._narrative_shadow_supervisor is not None:
+            self._registry.spawn(
+                "narrative_shadow_consumer",
+                self._narrative_shadow_supervisor.run(),
+            )
         self._registry.spawn(
             "race_producer", SamplingScheduler("race", self._race_hz, self._tick_race).run()
         )
@@ -796,6 +820,11 @@ class RaceRuntime:
             logger.info("N12 replay: %s", path)
             self._registry.spawn("overlay_consumer", self._overlay_supervisor.run())
             self._registry.spawn("commentary_consumer", self._commentary_supervisor.run())
+            if self._narrative_shadow_supervisor is not None:
+                self._registry.spawn(
+                    "narrative_shadow_consumer",
+                    self._narrative_shadow_supervisor.run(),
+                )
             try:
                 await load_n12_replay(path).replay(self._event_fanout)
                 await self._drain_consumer_queues()
@@ -814,7 +843,12 @@ class RaceRuntime:
         while time.monotonic() < deadline:
             overlay = self._overlay_subscription.snapshot(producer_stream_sequence=0)
             commentary = self._commentary_subscription.snapshot(producer_stream_sequence=0)
-            if overlay.depth == 0 and commentary.depth == 0:
+            shadow_depth = 0
+            if self._narrative_shadow_subscription is not None:
+                shadow_depth = self._narrative_shadow_subscription.snapshot(
+                    producer_stream_sequence=0
+                ).depth
+            if overlay.depth == 0 and commentary.depth == 0 and shadow_depth == 0:
                 await asyncio.sleep(0.05)
                 return
             await asyncio.sleep(0.02)
