@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 from test_narrative_context_batch import _event, _fact_view, _timeline
+from test_opportunity_queue import _intent as _opportunity_intent
 
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
@@ -21,6 +22,7 @@ from irswitch.events.freshness_commit import (
 )
 from irswitch.events.narrative import partition_context_batches
 from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
+from irswitch.events.opportunity_queue import OpportunityQueue
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_runtime.py"
@@ -1395,3 +1397,112 @@ def test_freshness_gate_stale_rejects_without_tts() -> None:
     assert runtime.current_realization_token() is None
     assert runtime.current_utterance_token() is None
     assert gate.fail_count == 1
+
+
+def test_opportunity_queue_absent_keeps_legacy_dispatch() -> None:
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "opp:legacy",
+            "REALIZATION_SUCCEEDED",
+            10_100,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert "effect:dispatch_tts" in committed.effects
+    assert not any(effect.startswith("opportunity_") for effect in committed.effects)
+
+
+def test_opportunity_reserve_on_dispatch_release_on_realization_failed() -> None:
+    queue = OpportunityQueue()
+    admitted = queue.admit(_opportunity_intent())
+    assert admitted.reason == "queued"
+    runtime = NarrativeRuntime(opportunity_queue=queue)
+    runtime.enable()
+    runtime.seed_opportunity_for_test(
+        opportunity_id="opp:1", beat_id="battle.pursuit", now_ms=10_000
+    )
+    runtime.admit(_event_impulse("opp:reserve", revision=50, fanout=50))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "plan_dispatched" in planned.effects
+    assert "opportunity_reserved" in planned.effects
+    assert "opportunity_step:reserved" in planned.effects
+    live = queue.live_ids()
+    assert "opp:1" in live
+    # reservation held
+    token = runtime.current_realization_token()
+    assert token is not None
+    assert runtime.reservation_token_for_test() == "res:opp:1"
+
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "opp:fail",
+            "REALIZATION_FAILED",
+            10_200,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(
+                token,
+                outcome="failed",
+                text=None,
+                textHash=None,
+                failureReason="realization_transport",
+            ),
+        )
+    )
+    failed = runtime.reduce_next()
+    assert failed is not None
+    assert failed.lane_after == "idle"
+    assert "opportunity_attempt_released" in failed.effects
+    assert "opportunity_step:attempt_released" in failed.effects
+    assert runtime.reservation_token_for_test() is None
+
+
+def test_opportunity_consume_on_playback_accepted() -> None:
+    queue = OpportunityQueue()
+    assert queue.admit(_opportunity_intent()).reason == "queued"
+    runtime = NarrativeRuntime(opportunity_queue=queue)
+    runtime.enable()
+    runtime.seed_opportunity_for_test(
+        opportunity_id="opp:1", beat_id="battle.pursuit", now_ms=10_000
+    )
+    runtime.admit(_event_impulse("opp:consume", revision=51, fanout=51))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "opportunity_reserved" in planned.effects
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "opp:ok",
+            "REALIZATION_SUCCEEDED",
+            10_300,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="opp:pb"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    assert "opportunity_consumed" in accepted.effects
+    assert "opportunity_step:consumed" in accepted.effects
+    assert runtime.reservation_token_for_test() is None
+    assert queue.live_ids() == ()

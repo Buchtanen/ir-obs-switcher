@@ -22,6 +22,7 @@ from irswitch.events.freshness_commit import (
     CommitWorld,
     FreshnessGate,
 )
+from irswitch.events.opportunity_queue import OpportunityQueue
 
 RuntimeState = Literal["disabled", "starting", "ready", "degraded", "stopping", "stopped"]
 LaneState = Literal["idle", "building", "committed", "speaking", "stopping"]
@@ -91,6 +92,7 @@ class NarrativeRuntime:
         speech_deadline_delay_s: float = 3600.0,
         freshness_gate: FreshnessGate | None = None,
         commit_world_provider: CommitWorldProvider | None = None,
+        opportunity_queue: OpportunityQueue | None = None,
     ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
@@ -125,6 +127,11 @@ class NarrativeRuntime:
         self._freshness_gate = freshness_gate
         self._commit_world_provider = commit_world_provider
         self._commit_token: CommitToken | None = None
+        self._opportunity_queue = opportunity_queue
+        self._opportunity_id: str | None = None
+        self._reservation_token: str | None = None
+        self._active_beat_id: str | None = None
+        self._opportunity_now_ms: int = 0
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -225,6 +232,16 @@ class NarrativeRuntime:
 
     def seed_commit_token_for_test(self, token: CommitToken) -> None:
         self._commit_token = token
+
+    def seed_opportunity_for_test(
+        self, *, opportunity_id: str, beat_id: str, now_ms: int = 10_000
+    ) -> None:
+        self._opportunity_id = opportunity_id
+        self._active_beat_id = beat_id
+        self._opportunity_now_ms = int(now_ms)
+
+    def reservation_token_for_test(self) -> str | None:
+        return self._reservation_token
 
     def fail_current_realization_for_test(self) -> None:
         self._realization = None
@@ -532,6 +549,52 @@ class NarrativeRuntime:
         effects.append("effect:arm_silence_deadline")
         effects.append("effect:arm_validity_deadline")
 
+    def _clear_opportunity_binding(self) -> None:
+        self._opportunity_id = None
+        self._reservation_token = None
+        self._active_beat_id = None
+
+    def _reserve_opportunity(self, effects: list[str]) -> None:
+        if self._opportunity_queue is None or self._opportunity_id is None:
+            return
+        step = self._opportunity_queue.reserve(
+            self._opportunity_id, now_ms=self._opportunity_now_ms
+        )
+        effects.append(f"opportunity_step:{step.reason}")
+        if step.reason == "reserved" and step.opportunity is not None:
+            self._reservation_token = step.opportunity.reservation_token
+            effects.append("opportunity_reserved")
+        else:
+            self._reservation_token = None
+            effects.append("opportunity_not_reservable")
+
+    def _release_opportunity_attempt(self, effects: list[str]) -> None:
+        if self._opportunity_queue is None or self._reservation_token is None:
+            self._clear_opportunity_binding()
+            return
+        beat_id = self._active_beat_id or "beat:unknown"
+        step = self._opportunity_queue.reject_attempt(
+            self._reservation_token,
+            beat_id=beat_id,
+            now_ms=self._opportunity_now_ms,
+        )
+        effects.append(f"opportunity_step:{step.reason}")
+        if step.reason == "attempt_released":
+            effects.append("opportunity_attempt_released")
+        self._clear_opportunity_binding()
+
+    def _consume_opportunity(self, effects: list[str]) -> None:
+        if self._opportunity_queue is None or self._reservation_token is None:
+            self._clear_opportunity_binding()
+            return
+        step = self._opportunity_queue.consume_speech_started(
+            self._reservation_token, now_ms=self._opportunity_now_ms
+        )
+        effects.append(f"opportunity_step:{step.reason}")
+        if step.reason == "consumed":
+            effects.append("opportunity_consumed")
+        self._clear_opportunity_binding()
+
     def _cancel_building(self, effects: list[str], *, reason: str) -> None:
         if self._lane != "building":
             return
@@ -541,6 +604,7 @@ class NarrativeRuntime:
         effects.append(reason)
         effects.append("effect:cancel_realization")
         effects.append("effect:cancel_realization_deadline")
+        self._release_opportunity_attempt(effects)
 
     def _request_speech_cancel(self, effects: list[str], *, reason: str) -> None:
         if self._lane not in {"committed", "speaking"}:
@@ -573,6 +637,7 @@ class NarrativeRuntime:
         effects.append("plan_dispatched")
         effects.append("effect:dispatch_realization")
         effects.append("effect:arm_realization_deadline")
+        self._reserve_opportunity(effects)
 
     def _default_commit_token(self) -> CommitToken:
         return CommitToken(
@@ -731,6 +796,7 @@ class NarrativeRuntime:
                     "effect:cancel_realization_deadline",
                 ]
                 effects.extend(f"freshness_evidence:{item}" for item in step.evidence)
+                self._release_opportunity_attempt(effects)
                 return "handled", effects
         self._lane = "committed"
         self._utterance = {
@@ -758,7 +824,9 @@ class NarrativeRuntime:
         self._realization = None
         self._commit_token = None
         self._lane = "idle"
-        return "handled", ["realization_failed", "effect:cancel_realization_deadline"]
+        effects = ["realization_failed", "effect:cancel_realization_deadline"]
+        self._release_opportunity_attempt(effects)
+        return "handled", effects
 
     def _on_realization_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
@@ -766,7 +834,9 @@ class NarrativeRuntime:
         self._realization = None
         self._commit_token = None
         self._lane = "idle"
-        return "handled", ["realization_deadline", "effect:cancel_realization_deadline"]
+        effects = ["realization_deadline", "effect:cancel_realization_deadline"]
+        self._release_opportunity_attempt(effects)
+        return "handled", effects
 
     def _on_playback_accepted(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if not self._matches_utterance(command):
@@ -774,11 +844,13 @@ class NarrativeRuntime:
         if self._lane == "committed":
             self._lane = "speaking"
             self._speech_deadline_stage = "playback"
-            return "handled", [
+            effects = [
                 "playback_accepted",
                 "effect:cancel_speech_deadline",
                 "effect:arm_speech_deadline",
             ]
+            self._consume_opportunity(effects)
+            return "handled", effects
         if self._lane == "speaking":
             # Duplicate acceptance while speaking requests stop; never a second utterance.
             self._lane = "stopping"
@@ -806,6 +878,9 @@ class NarrativeRuntime:
             self._speech_deadline_stage = "stop"
             effects.append("effect:arm_speech_deadline")
             return "handled", effects
+        # Pre-accept SPEECH_FAILED still holds a reservation — release it.
+        if command.kind == "SPEECH_FAILED" and self._reservation_token is not None:
+            self._release_opportunity_attempt(effects)
         self._utterance = None
         self._realization = None
         self._lane = "idle"
