@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) is **closed** on this branch; [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) long-silence clock is **implemented** (close path); **not shipped on `master`**. Next implementation package is [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260) is **closed** on this branch; **not shipped on `master`**. Next implementation package is [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261) (do not start unless a human says so).
 
 ## Where to look on this branch
 
@@ -167,9 +167,9 @@
 - **Self-contained families:** `critical` + `result` (pass/finish). Intermediate (`live_story`/`transient`) supersede same `(occurrenceId, definitionId, semanticIdentity)` and are `skipped` after speech complete (not narrated later).
 - **`on_speech_complete`:** re-evaluates `expired_ttl` / `skipped` / remaining self-contained; selection order `(-salience, speakable_until_ms, episodeId)`. No prepared-speech queue.
 - **Capacity:** default `resolved_capacity=256` (same frozen public contract as #258). Overflow drops oldest `(resolvedMonoMs, episodeId)`.
-- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. No eval/exec/compile. Does not implement #260 fillers, #261 BeatPlan, or NarrativeRuntime.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import narrative-actor, overlay tape or commentary; not live-wired. No eval/exec/compile. #260 fillers are implemented separately; does not implement #261 BeatPlan or NarrativeRuntime.
 - **Tests:** `tests/test_episode_retention.py` (**9**). First implementation SHA `af72b73ddc36281be3e8b7088189738409ede659`. Related regression: episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **85** passed.
-- **Still out of scope:** #260 long-silence lifecycle (implemented — see below), #261 BeatPlan, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** #261 BeatPlan, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
 
 ### #260 long-silence lifecycle lookup
 
