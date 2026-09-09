@@ -160,6 +160,6 @@ Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not liv
 ## Out of scope
 
 - live RealizationBundle compiler from current facts/roster
-- #268 PromptOptions / #269 Qwen transport / #270 SemanticVerifier (next after #267 close; do not start unless a human says so)
+- #268 PromptOptions / #269 Qwen transport / #270 SemanticVerifier (next; do not start unless a human says so)
 - live EventManager / NarrativeRuntime / V4 overlay tape
 - public CONFIG / API / README product contracts
