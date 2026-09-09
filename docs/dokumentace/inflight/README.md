@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) are closed on this branch; **not shipped on `master`**. Next implementation package is [#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251) are closed on this branch; [#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) lifecycle triggers are **implemented** (checkpoint, not closed). **Not shipped on `master`**. Next implementation package is [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) (unclaimed).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#251) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#252) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#251, branch-only)
+## Implementation lookup (#239–#252, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -28,6 +28,7 @@
 | #249 predicate AST | contracts + events | `contracts/predicate.py`, `events/predicate_ast.py` — detail below | `tests/test_predicate_ast.py` (**14**) |
 | #250 DetectorBank FSM | events | `events/detector_bank.py` — detail below | `tests/test_detector_bank.py` (**19**) |
 | #251 direct lap/sector edges | events | `events/direct_edges.py` — detail below | `tests/test_direct_edges.py` (**13**) |
+| #252 stream/session lifecycle edges | events | `events/lifecycle_edges.py` — detail below | `tests/test_lifecycle_edges.py` (**13**) |
 
 ### #247 FeatureEngine lookup
 
@@ -73,9 +74,20 @@
 - **Current emitters:** `events/lap.py` and `events/sector_split.py` stay on master wiring. This slice characterizes them and does not live-replace them. DetectorBank thresholds are not reused (`tuning.policy=none`).
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import DetectorBank, NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_direct_edges.py` (**13**). First implementation SHA `5a61be3aae3b8c8b3bac91c1361f6f7c53e10278`; docs checkpoint SHA `f8eb07f`.
-- **Still out of scope:** live EventManager wiring, stream/session lifecycle edges (#252), lap/sector family migration (#275), NarrativeRuntime.
+- **Still out of scope:** live EventManager wiring, lap/sector family migration (#275), NarrativeRuntime.
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #252 stream/session lifecycle edges lookup
+
+- **Bank (`events/lifecycle_edges.py`):** `LifecycleTriggerBank` / `LifecycleSample` / `LifecycleCommand` / `LifecycleIdentity` / `LifecycleCandidate` / `LifecycleStep`. `sourceClass=lifecycle` (null `detectorObservationId`). Canonical kinds: `STREAM_STARTED`, `STREAM_ENDED`, `SESSION_STARTED`, `SESSION_ENDED`, `SESSION_RESTARTED`, `SESSION_CHECKERED`, `FINISH`. `STREAM_START` is rejected (`legacy_stream_start_rejected`), never aliased. `RESET` / `SESSION_REWOUND` are not narrative kinds.
+- **Identity:** `(kind, streamEpoch[, occurrenceId][, heroId])`; `candidate_id` `lifecycle:{kind}:{streamEpoch}[:occurrence][:hero]`. Exact-once per confirmed transition; duplicate/stale `timelineRevision` is an audited no-op.
+- **Distinct edges:** checkered, session end, and hero finish are separate. `SESSION_CHECKERED` / `FINISH` only for race occurrences. Same-step order: `SESSION_ENDED`, `SESSION_CHECKERED`, `FINISH`, `STREAM_ENDED`, `STREAM_STARTED`, `SESSION_STARTED`, `SESSION_RESTARTED`. Stream-end follows session invalidation; `invalidate_speech` on `STREAM_ENDED`.
+- **Reason codes:** `attached_live` / `process_recovery` / `enabled_mid_stream` are `STREAM_STARTED` reason codes, not extra events. `broadcast_unknown` / `broadcast_resumed` without commands emit nothing. Previous/current occurrence+lineage attached on candidates.
+- **Live paths unchanged:** live `STREAM_START` commentary path, `SessionEndTracker`, and V4 overlay wire stay on master wiring. Does not import StreamTimeline, DetectorBank, DirectEdgeBank, NarrativeRuntime, overlay tape or commentary.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Not wired into the live loop.
+- **Tests:** `tests/test_lifecycle_edges.py` (**13**). First implementation SHA `c4688a40a43e40d47e2698114bcb06a245b97914`.
+- **Still out of scope:** live EventManager wiring, CLOSING/UNDER_PRESSURE detectors (#253–#255), NarrativeRuntime (#284).
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
