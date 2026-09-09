@@ -1,6 +1,6 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257) is **closed** and [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) is **implemented** on this branch; **not shipped on `master`**. Next implementation package is [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258) is **closed** on this branch; **not shipped on `master`**. Next implementation package is [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (unclaimed).
 
 ## Where to look on this branch
 
