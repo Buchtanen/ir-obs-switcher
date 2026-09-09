@@ -16,6 +16,7 @@ from typing import Any, Literal
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
+from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
     CommitToken,
@@ -93,6 +94,7 @@ class NarrativeRuntime:
         freshness_gate: FreshnessGate | None = None,
         commit_world_provider: CommitWorldProvider | None = None,
         opportunity_queue: OpportunityQueue | None = None,
+        episode_registry: EpisodeRegistry | None = None,
     ) -> None:
         self._mailbox = mailbox or NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
@@ -132,6 +134,11 @@ class NarrativeRuntime:
         self._reservation_token: str | None = None
         self._active_beat_id: str | None = None
         self._opportunity_now_ms: int = 0
+        self._episode_registry = episode_registry
+        self._seeded_episode_intent: EpisodeIntent | None = None
+        self._episode_id: str | None = None
+        self._episode_beat_id: str | None = None
+        self._episode_now_ms: int = 0
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -240,8 +247,18 @@ class NarrativeRuntime:
         self._active_beat_id = beat_id
         self._opportunity_now_ms = int(now_ms)
 
+    def seed_episode_for_test(
+        self, *, intent: EpisodeIntent, beat_id: str, now_ms: int = 10_000
+    ) -> None:
+        self._seeded_episode_intent = intent
+        self._episode_beat_id = beat_id
+        self._episode_now_ms = int(now_ms)
+
     def reservation_token_for_test(self) -> str | None:
         return self._reservation_token
+
+    def episode_id_for_test(self) -> str | None:
+        return self._episode_id
 
     def fail_current_realization_for_test(self) -> None:
         self._realization = None
@@ -554,6 +571,77 @@ class NarrativeRuntime:
         self._reservation_token = None
         self._active_beat_id = None
 
+    def _clear_episode_binding(self) -> None:
+        self._episode_id = None
+        self._episode_beat_id = None
+
+    def _open_and_activate_episode(self, effects: list[str]) -> None:
+        if self._episode_registry is None or self._seeded_episode_intent is None:
+            return
+        intent = self._seeded_episode_intent
+        opened = self._episode_registry.open(intent)
+        if opened.episode is None:
+            effects.append("episode_open_rejected")
+            return
+        for transition in opened.transitions:
+            effects.append(f"episode_step:{transition.reason}")
+            if transition.reason == "opened":
+                effects.append("episode_opened")
+        episode_id = opened.episode.episode_id
+        source_refs = intent.source_refs or ("runtime:dispatch",)
+        activated = self._episode_registry.activate(
+            episode_id,
+            now_ms=self._episode_now_ms,
+            source_refs=source_refs,
+        )
+        for transition in activated.transitions:
+            effects.append(f"episode_step:{transition.reason}")
+            if transition.reason == "activated":
+                effects.append("episode_activated")
+        self._episode_id = episode_id
+
+    def _invalidate_episode(self, effects: list[str]) -> None:
+        if self._episode_registry is None or self._episode_id is None:
+            self._clear_episode_binding()
+            return
+        step = self._episode_registry.invalidate(
+            self._episode_id,
+            now_ms=self._episode_now_ms,
+            reason="evidence_invalidated",
+        )
+        for transition in step.transitions:
+            effects.append(f"episode_step:{transition.reason}")
+        effects.append("episode_invalidated")
+        self._clear_episode_binding()
+
+    def _mark_episode_spoken(self, effects: list[str]) -> None:
+        if self._episode_registry is None or self._episode_id is None:
+            return
+        beat_id = self._episode_beat_id or "beat:unknown"
+        step = self._episode_registry.mark_spoken(
+            self._episode_id,
+            beat_id,
+            now_ms=self._episode_now_ms,
+            source_refs=("runtime:playback",),
+        )
+        for transition in step.transitions:
+            effects.append(f"episode_step:{transition.reason}")
+        effects.append("episode_spoken")
+
+    def _resolve_episode(self, effects: list[str]) -> None:
+        if self._episode_registry is None or self._episode_id is None:
+            self._clear_episode_binding()
+            return
+        step = self._episode_registry.resolve(
+            self._episode_id,
+            now_ms=self._episode_now_ms,
+            reason="natural_exit",
+        )
+        for transition in step.transitions:
+            effects.append(f"episode_step:{transition.reason}")
+        effects.append("episode_resolved")
+        self._clear_episode_binding()
+
     def _reserve_opportunity(self, effects: list[str]) -> None:
         if self._opportunity_queue is None or self._opportunity_id is None:
             return
@@ -605,6 +693,7 @@ class NarrativeRuntime:
         effects.append("effect:cancel_realization")
         effects.append("effect:cancel_realization_deadline")
         self._release_opportunity_attempt(effects)
+        self._invalidate_episode(effects)
 
     def _request_speech_cancel(self, effects: list[str], *, reason: str) -> None:
         if self._lane not in {"committed", "speaking"}:
@@ -638,6 +727,7 @@ class NarrativeRuntime:
         effects.append("effect:dispatch_realization")
         effects.append("effect:arm_realization_deadline")
         self._reserve_opportunity(effects)
+        self._open_and_activate_episode(effects)
 
     def _default_commit_token(self) -> CommitToken:
         return CommitToken(
@@ -797,6 +887,7 @@ class NarrativeRuntime:
                 ]
                 effects.extend(f"freshness_evidence:{item}" for item in step.evidence)
                 self._release_opportunity_attempt(effects)
+                self._invalidate_episode(effects)
                 return "handled", effects
         self._lane = "committed"
         self._utterance = {
@@ -826,6 +917,7 @@ class NarrativeRuntime:
         self._lane = "idle"
         effects = ["realization_failed", "effect:cancel_realization_deadline"]
         self._release_opportunity_attempt(effects)
+        self._invalidate_episode(effects)
         return "handled", effects
 
     def _on_realization_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -836,6 +928,7 @@ class NarrativeRuntime:
         self._lane = "idle"
         effects = ["realization_deadline", "effect:cancel_realization_deadline"]
         self._release_opportunity_attempt(effects)
+        self._invalidate_episode(effects)
         return "handled", effects
 
     def _on_playback_accepted(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -850,6 +943,7 @@ class NarrativeRuntime:
                 "effect:arm_speech_deadline",
             ]
             self._consume_opportunity(effects)
+            self._mark_episode_spoken(effects)
             return "handled", effects
         if self._lane == "speaking":
             # Duplicate acceptance while speaking requests stop; never a second utterance.
@@ -889,6 +983,9 @@ class NarrativeRuntime:
         self._speech_deadline_stage = None
         if command.kind == "SPEECH_COMPLETED":
             effects.append("director_reentry_eligible")
+            self._resolve_episode(effects)
+        else:
+            self._invalidate_episode(effects)
         return "handled", effects
 
     def _on_speech_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -908,7 +1005,9 @@ class NarrativeRuntime:
         self._utterance = None
         self._lane = "idle"
         self._speech_deadline_stage = None
-        return "handled", ["speech_deadline_stopped", "effect:cancel_speech_deadline"]
+        effects = ["speech_deadline_stopped", "effect:cancel_speech_deadline"]
+        self._invalidate_episode(effects)
+        return "handled", effects
 
     def _on_manual(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         del command

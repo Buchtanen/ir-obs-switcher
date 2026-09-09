@@ -8,12 +8,14 @@ import json
 from pathlib import Path
 
 import pytest
+from test_episode_registry import _intent as _episode_intent
 from test_narrative_context_batch import _event, _fact_view, _timeline
 from test_opportunity_queue import _intent as _opportunity_intent
 
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
+from irswitch.events.episode_registry import EpisodeRegistry
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
     CommitToken,
@@ -1506,3 +1508,135 @@ def test_opportunity_consume_on_playback_accepted() -> None:
     assert "opportunity_step:consumed" in accepted.effects
     assert runtime.reservation_token_for_test() is None
     assert queue.live_ids() == ()
+
+
+def test_episode_registry_absent_keeps_legacy_dispatch() -> None:
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "ep:legacy",
+            "REALIZATION_SUCCEEDED",
+            11_100,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert "effect:dispatch_tts" in committed.effects
+    assert not any(effect.startswith("episode_") for effect in committed.effects)
+
+
+def test_episode_open_activate_on_dispatch_invalidate_on_realization_failed() -> None:
+    registry = EpisodeRegistry()
+    runtime = NarrativeRuntime(episode_registry=registry)
+    runtime.enable()
+    runtime.seed_episode_for_test(
+        intent=_episode_intent(now_ms=10_000),
+        beat_id="battle.pursuit",
+        now_ms=10_000,
+    )
+    runtime.admit(_event_impulse("ep:open", revision=60, fanout=60))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "plan_dispatched" in planned.effects
+    assert "episode_opened" in planned.effects
+    assert "episode_activated" in planned.effects
+    assert "episode_step:opened" in planned.effects
+    assert "episode_step:activated" in planned.effects
+    episode_id = runtime.episode_id_for_test()
+    assert episode_id is not None
+    episode = registry.get(episode_id)
+    assert episode is not None
+    assert episode.state == "active"
+
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "ep:fail",
+            "REALIZATION_FAILED",
+            11_200,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(
+                token,
+                outcome="failed",
+                text=None,
+                textHash=None,
+                failureReason="realization_transport",
+            ),
+        )
+    )
+    failed = runtime.reduce_next()
+    assert failed is not None
+    assert failed.lane_after == "idle"
+    assert "episode_invalidated" in failed.effects
+    assert "episode_step:evidence_invalidated" in failed.effects
+    assert runtime.episode_id_for_test() is None
+    terminal = registry.get(episode_id)
+    assert terminal is not None
+    assert terminal.state == "invalidated"
+    assert terminal.resolution_reason == "evidence_invalidated"
+
+
+def test_episode_mark_spoken_and_resolve_on_speech_completed() -> None:
+    registry = EpisodeRegistry()
+    runtime = NarrativeRuntime(episode_registry=registry)
+    runtime.enable()
+    runtime.seed_episode_for_test(
+        intent=_episode_intent(now_ms=10_000),
+        beat_id="battle.pursuit",
+        now_ms=10_000,
+    )
+    runtime.admit(_event_impulse("ep:speak", revision=61, fanout=61))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "episode_activated" in planned.effects
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "ep:ok",
+            "REALIZATION_SUCCEEDED",
+            11_300,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    episode_id = runtime.episode_id_for_test()
+    assert episode_id is not None
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="ep:pb"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    assert "episode_spoken" in accepted.effects
+    assert "episode_step:spoken_beat" in accepted.effects
+    spoken = registry.get(episode_id)
+    assert spoken is not None
+    assert spoken.last_spoken_beat_id == "battle.pursuit"
+
+    runtime.admit(_tts_callback("SPEECH_COMPLETED", utterance, command_id="ep:done"))
+    done = runtime.reduce_next()
+    assert done is not None
+    assert done.lane_after == "idle"
+    assert "episode_resolved" in done.effects
+    assert "episode_step:natural_exit" in done.effects
+    assert runtime.episode_id_for_test() is None
+    resolved = registry.get(episode_id)
+    assert resolved is not None
+    assert resolved.state == "resolved"
+    assert resolved.resolution_reason == "natural_exit"
