@@ -118,8 +118,10 @@ class NarrativeIngress:
 def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     """Project RuntimeStatus into a commentary-runtime/2 status subset.
 
-    HTTP mount and full schema remain a later cutover slice. This helper only
-    shapes actor/recovery fields already owned by the library RuntimeStatus.
+    HTTP mount: ``GET /api/commentary/runtime`` via ``narrative_runtime_http``
+    (additive; does not start the actor loop). Full schema / live actor
+    attachment remain a later cutover slice. This helper only shapes
+    actor/recovery fields already owned by the library RuntimeStatus.
     """
 
     if not isinstance(status, RuntimeStatus):

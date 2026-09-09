@@ -252,3 +252,7 @@ def register_commentary_routes(app: web.Application) -> None:
     app.router.add_get("/api/commentary/assignments", handle_commentary_assignments)
     app.router.add_post("/api/commentary/validate", handle_commentary_validate)
     app.router.add_post("/api/commentary/speak", handle_commentary_speak)
+    # #284: additive commentary-runtime/2 mount; does not start NarrativeRuntime.
+    from irswitch.events.narrative_runtime_http import register_narrative_runtime_routes
+
+    register_narrative_runtime_routes(app)

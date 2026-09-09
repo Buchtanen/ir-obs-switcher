@@ -837,12 +837,51 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | Method | URL | Poznámka |
 | --- | --- | --- |
 | `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
+| `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no runtime attached; does not start NarrativeRuntime) |
 | `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
 | `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
 
-`speak` nejdřív pustí TTS validator. Neplatný řádek → 400, audio se nespustí.
+`speak` nejdřív pustí TTS validator.
+
+### GET /api/commentary/runtime
+
+`#284` read-only mount of the `commentary-runtime/2` status subset produced by `project_runtime_status`.
+
+**URL**: `http://127.0.0.1:17321/api/commentary/runtime`
+
+**Behavior**
+- Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
+- If no `NarrativeRuntime` is attached to the aiohttp app, returns a **disabled** library snapshot (no actor loop).
+- Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `EventSubscription`.
+- Full schema / live actor attachment remain a later #284 cutover slice.
+
+**Example (disabled / no provider)**
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "disabled",
+  "reason": null,
+  "speech": { "state": "idle" },
+  "queues": { "mailbox": { "depth": 0, "capacity": 64, "overflows": 0 } },
+  "timeline": { "historyComplete": true },
+  "recovery": {
+    "count": 0,
+    "lossFirst": null,
+    "lossLast": null,
+    "safetyEffectCount": 0,
+    "cancelledLane": null
+  },
+  "diagnostics": {
+    "lastAdmissionReason": null,
+    "admissionDiagnostics": [],
+    "reasonCodes": []
+  }
+}
+```
+ Neplatný řádek → 400, audio se nespustí.
 
 **Decision reason codes** (`action` = `spoken` \| `skipped`):
 
