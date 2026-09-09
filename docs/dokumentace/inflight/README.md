@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) is **closed**; [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) is **closed**; [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) is **closed**; [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269) is **closed**; **not shipped on `master`**. Next implementation package is [#270](https://github.com/Buchtanen/ir-obs-switcher/issues/270) (do not start unless a human says so).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256) remain implemented; Wave D [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257)–[#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262) plus [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263) and [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283) are **closed** on this branch; [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264) is **closed**; [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265) is **closed**; [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266) is **closed**; [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267) is **closed**; [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268) is **closed**; [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269) is **closed**; [#270](https://github.com/Buchtanen/ir-obs-switcher/issues/270) is **implemented** (not closed); **not shipped on `master`**. Next implementation package after close is [#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271) (do not start unless a human says so).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#269) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#270) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#269, branch-only)
+## Implementation lookup (#239–#270, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -47,6 +47,7 @@
 | #267 authored critical/lifecycle pack | contracts | `src/irswitch/contracts/authored_pack.py` — [§ lookup](#267-authored-pack-lookup) | `tests/test_authored_pack.py` (**11**) |
 | #268 compiled PromptOptions / prompt profiles | events | `src/irswitch/events/prompt_compiler.py` — [§ lookup](#268-prompt-compiler-lookup) | `tests/test_prompt_compiler.py` (**12**) |
 | #269 bounded Qwen transport / warm-up | events | `src/irswitch/events/qwen_transport.py` — [§ lookup](#269-qwen-transport-lookup) | `tests/test_qwen_transport.py` (**13**) |
+| #270 family-specific SemanticVerifier | events | `src/irswitch/events/semantic_verifier.py` — [§ lookup](#270-semantic-verifier-lookup) | `tests/test_semantic_verifier.py` (**12**) |
 
 ### #247 FeatureEngine lookup
 
@@ -310,7 +311,7 @@
 - **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import NarrativeRuntime, overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Qwen transport is #269. Does not implement SemanticVerifier (#270).
 - **Tests:** `tests/test_prompt_compiler.py` (**12**). First implementation SHA `a3bab698e2f2732afb6d96e69e1637f2d733bd04`. Related regression **293** passed.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `a3bab69`; docs checkpoint `f4a3cf2`; docs-keeper audit `ccaadbc`; close `633c745`; pin `60ad695`; feat CI [34349254777](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34349254777) green.
-- **Still out of scope:** #270 SemanticVerifier, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape (#270 SemanticVerifier is implemented separately).
 
 ### #269 qwen-transport lookup
 
@@ -322,12 +323,25 @@
 - **Latency:** `admissionMs` / `ttfbMs` / `ttftMs` / `generationMs` / `totalMs` / `reducerLagMs` / `planToResultMs` from same-process monotonic milestones. Deadline races (`result_first` / `deadline_first` / `reset_first` / `shutdown_first`) prove one terminal attempt without a live actor.
 - **HTTP:** no proxies, no redirects, `Content-Type: application/json`, `Accept: text/event-stream`. Stdlib urllib only — no new dependency.
 - **Fixtures:** `tests/fixtures/qwen_transport/{transition,counterfactual_identity,expiry}.json`.
-- **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not implement SemanticVerifier (#270).
+- **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. SemanticVerifier is #270.
 - **Tests:** `tests/test_qwen_transport.py` (**13**). First implementation SHA `89f89beee8a73a3ee1cc857b83c57fa5121c2ba6`. Related regression **306** passed.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged. First SHA `89f89be`; docs checkpoint `e2f2eda`; docs-keeper audit `4c84ec4`; close `7eb5e3f`; pin `1ad9a6a`; feat CI [34351003627](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34351003627) green.
-- **Still out of scope:** #270 SemanticVerifier, live EventManager/NarrativeRuntime wiring, V4 overlay tape, target-machine latency corpus (#271).
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, V4 overlay tape, target-machine latency corpus (#271) (#270 SemanticVerifier is implemented separately).
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler / RealizerService wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #270 semantic-verifier lookup
+
+- **Verifier (`src/irswitch/events/semantic_verifier.py`):** `load_verifier_contract()`, `load_verifier_corpus()`, `semantic_reasons`, `surface_form_allowed`, `SemanticVerifier.verify`. Schema `verification-result/2`. Reads frozen `machine/realization-contract.json` and `machine/realization-corpus.json` (read-only). **Not** exported from `events/__init__.py`; **not** re-exported from `contracts/__init__.py`.
+- **Acceptance:** `Accept(x,C,f)` is ShapeEn ∧ empty unknown fragments ∧ required ⊆ parsed ⊆ family closure ∧ no forbidden predicates ∧ actors/surfaces/temporal match. Tight positives are the four frozen `{subjectSurface,requiredClaimSurface}` patterns. Corpus **222** cases (37 families × 6 axes) match `semantic_reasons` exactly.
+- **Before parse:** thinking/reasoning/tool/multiple → `realization_invalid_response`; truncated/oversized → `realization_output_oversize`. Missing, unused or casefold-colliding actor aliases → `realization_input_invalid` (no live roster/config). Timeout / cancel / stale bundle / external failure fail closed with `repair_attempts=0`.
+- **A/B vs B/A:** reversing bound aliases is `actor_reversed`; both directions cannot accept. Ambiguous lexicon never reaches semantic parsing and never repairs.
+- **TTS:** technical TTS validation stays on #264 SpeechLane. This slice is semantic only. `used_live_view` / `used_roster` / `used_config` stay false. Embedding / second LLM are not a fact gate.
+- **Fixtures:** `tests/fixtures/semantic_verifier/{transition,counterfactual_identity,expiry}.json`.
+- **Exports / boundaries:** not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Does not import overlay, commentary, or `FactView`; not live-wired. No `eval`/`exec`/`compile`. Does not implement the latency corpus (#271).
+- **Tests:** `tests/test_semantic_verifier.py` (**12**). First implementation SHA `72d12f3ae1f4a4adbacae26497c0944ffbefe4eb`. Related regression **318** passed.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/` (`README`, `catalog-behavior`, `event-beat-disposition`, `implementation-handover`, `jak-cist`); no public CONFIG/API/README change; `machine/` hashes unchanged.
+- **Still out of scope:** #271 latency corpus, live EventManager/NarrativeRuntime wiring, V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / PressureDetector / TwoFrontDetector / SilenceClock / BeatPlanner / ExposureStore / OpportunityQueue / StoryDirector / SpeechLane / FreshnessGate / RealizationCatalog / AuthoredRealizer / PromptCompiler / RealizerService / SemanticVerifier wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
