@@ -1,17 +1,17 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
-**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) are closed on this branch; **not shipped on `master`**. Next implementation package is [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) (unclaimed).
+**Status:** v2 narrative runtime Wave A–B (#235–#246) and Wave C [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247)–[#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252) are closed on this branch; [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253) CLOSING temporal detector is **implemented (checkpoint, not closed yet)**; **not shipped on `master`**. Next implementation package is [#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254) (unclaimed).
 
 ## Where to look on this branch
 
 | Need | Authority on this branch | Not shipped here |
 | --- | --- | --- |
 | Issue index, waves, dependencies | [docs/v2.0.0/README.md](../../v2.0.0/README.md) | `domeny/commentary.md` as master truth |
-| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#252) |
+| Resume identity, closing SHAs, scope boundaries | [docs/v2.0.0/implementation-handover.md](../../v2.0.0/implementation-handover.md) | Public CONFIG/API/README product contracts (unchanged for #239–#253) |
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#252, branch-only)
+## Implementation lookup (#239–#253, branch-only)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -29,6 +29,7 @@
 | #250 DetectorBank FSM | events | `events/detector_bank.py` — detail below | `tests/test_detector_bank.py` (**19**) |
 | #251 direct lap/sector edges | events | `events/direct_edges.py` — detail below | `tests/test_direct_edges.py` (**13**) |
 | #252 stream/session lifecycle edges | events | `events/lifecycle_edges.py` — detail below | `tests/test_lifecycle_edges.py` (**13**) |
+| #253 CLOSING temporal detector | events | `events/closing.py` — detail below | `tests/test_closing.py` (**19**) |
 
 ### #247 FeatureEngine lookup
 
@@ -62,10 +63,10 @@
 
 - **FSM (`events/detector_bank.py`):** `reduce_lifecycle` matches frozen `reduce_directional` goldens (`inactive|candidate|active|clearing`). `DetectorBank` keys instances by `(detectorId, detectorVersion, streamEpoch, occurrenceId, orderedCorrelationKey)`, evaluates compiled `enter_signal` / `clear` / `immediate` / `material_update` trees, and owns confirm/clear/update holds. Unknown never satisfies enter; unknown/stale clear starts the clear hold. Duplicate or older `frameSequence` is an audited no-op.
 - **Emissions:** detector `STARTED`/`UPDATED`/`ENDED` only. Ahead maps to existing V4 `HUNTING`, behind to `HUNTED`. `endedEvent` stays null — no `HUNTING_ENDED`. Material revisions compare to the last emitted net-closing/band and are rate-limited by `update_min_interval_s`. Close expires `battle.closing` as a recorded fact predicate; FactLedger is not called.
-- **Scope:** directional catalog detectors only. Band projection (`reduce_band`) and two-front (`reduce_composite` / `BATTLE_FOR_POSITION`) stay #253–#255. `disable_for_run(..., required_capture_lost)` is the narrow capture-loss control; it does not import commentary.
+- **Scope:** directional catalog detectors only. Band projection (`reduce_band`) is implemented in #253; two-front (`reduce_composite` / `BATTLE_FOR_POSITION`) stays #255. `disable_for_run(..., required_capture_lost)` is the narrow capture-loss control; it does not import commentary.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
 - **Tests:** `tests/test_detector_bank.py` (**19**), including the seven directional goldens. First implementation SHA `e41ffb42f5e83236a4db58194dd4c5903fbc0899`; docs checkpoint SHA `0a44978d2468f30bb343100c8b8731bd9850fb9b`.
-- **Still out of scope:** live EventManager/NarrativeRuntime wiring, CLOSING/UNDER_PRESSURE product detectors, two-front composite, V4 overlay tape.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, UNDER_PRESSURE product detector (#254), two-front composite (#255), V4 overlay tape.
 
 ### #251 direct lap/sector edges lookup
 
@@ -85,9 +86,18 @@
 - **Live paths unchanged:** live `STREAM_START` commentary path, `SessionEndTracker`, and V4 overlay wire stay on master wiring. Does not import StreamTimeline, DetectorBank, DirectEdgeBank, NarrativeRuntime, overlay tape or commentary.
 - **Exports / boundaries:** **not** exported from `events/__init__.py`. Not wired into the live loop.
 - **Tests:** `tests/test_lifecycle_edges.py` (**13**). First implementation SHA `c4688a40a43e40d47e2698114bcb06a245b97914`; docs checkpoint SHA `d3c1934c90e7f920059672c12e2eeb9a3c5193f6`.
-- **Still out of scope:** live EventManager wiring, CLOSING/UNDER_PRESSURE detectors (#253–#255), NarrativeRuntime (#284).
+- **Still out of scope:** live EventManager wiring, UNDER_PRESSURE detector (#254), two-front composite (#255), NarrativeRuntime (#284).
 
-`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank wiring, and V4 overlay tape remain out of scope until #284 and later issues.
+### #253 CLOSING temporal detector lookup
+
+- **Band reducer (`events/closing.py`):** `reduce_band` matches frozen machine `bandBoundaries` goldens (`closing|approach|attack|overlap`). Hysteretic enter/exit thresholds from catalog defaults (`approach_enter_s` … `overlap_confirm_s`).
+- **Product detector:** `ClosingDetector` / `ClosingTrace` / `ClosingCandidate` / `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). UNDER_PRESSURE / `battle_behind_v1` stay #254.
+- **V4 mapping:** `closing`→`HUNTING`, `approach`→`APPROACH`, `attack`→`ATTACK_RANGE`, `overlap`→`SIDE_BY_SIDE`. Close expires `battle.closing` plus band facts; no new V4 `*_ENDED`. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs.
+- **Exports / boundaries:** **not** exported from `events/__init__.py`. Does not import NarrativeRuntime, overlay tape or commentary; not wired into the live loop.
+- **Tests:** `tests/test_closing.py` (**19**), including eight `bandBoundaries` goldens. First implementation SHA `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06`.
+- **Still out of scope:** live EventManager/NarrativeRuntime wiring, UNDER_PRESSURE (#254), two-front composite (#255), V4 overlay tape.
+
+`NarrativeRuntime`, live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector wiring, and V4 overlay tape remain out of scope until #284 and later issues.
 
 ## Index drift note
 
