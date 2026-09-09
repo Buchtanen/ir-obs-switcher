@@ -23,6 +23,7 @@ This is the branch-local recovery record. GitHub issue comments remain authorita
 - #255 pin SHA: `ed8a2816b60b112353f5b6a88ccb283701f89fda` (`docs: pin composite two-front close SHA (#255)`)
 - First #256 coverage-matrix SHA: `b061ba2499a73d0a215ed2277ea6dd66a161211d` (`feat: add event-family coverage matrix audit (#256)`). Local pytest: `tests/test_coverage_matrix.py` **15** passed. Related regression: `tests/test_coverage_matrix.py` + `tests/test_session_plan_contract.py` + `tests/test_contract_primitives.py` **89** passed.
 - #256 docs checkpoint SHA: `09a0ffbb6f69887999a93d1c06e7b2df6fe20d9e` (`docs: close #256 coverage matrix lookup and resume drift`)
+- #256 closing SHA: `cbc727d586bdb91ac8c458076338d078c98ba9d7` (`docs: close event-family coverage matrix checkpoint (#256)`)
 - #256 verifier: GREEN — coverage matrix + session-plan + contract primitives **89** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary/events imports; no pyproject/machine JSON edits.
 - First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
 - #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
@@ -197,7 +198,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 ## Exact next implementation slice
 
-1. #256 is closed in its own scope: v2 event-family coverage matrix. First SHA `b061ba2`; docs checkpoint SHA `09a0ffb`; verifier GREEN (**15** / related **89** passed).
+1. #256 is closed in its own scope: v2 event-family coverage matrix. First SHA `b061ba2`; docs checkpoint SHA `09a0ffb`; closing SHA `cbc727d`; verifier GREEN (**15** / related **89** passed).
 2. #257 first slice: StoryDefinition schema and catalog loader. Do not start #257 unless a human says so.
 3. Do not activate NarrativeRuntime or mix V4 overlay tape. Do not open a master PR.
 
