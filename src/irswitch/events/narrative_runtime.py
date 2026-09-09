@@ -63,6 +63,11 @@ class RuntimeStatus:
     admission_diagnostics: tuple[str, ...]
     mailbox_overflows: int
     reason_codes: tuple[str, ...]
+    recovery_count: int
+    last_recovery_loss_first: int | None
+    last_recovery_loss_last: int | None
+    last_recovery_safety_effect_count: int
+    last_recovery_cancelled_lane: LaneState | None
 
 
 class NarrativeRuntime:
@@ -106,6 +111,11 @@ class NarrativeRuntime:
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
         self._recovery_seen = False
+        self._recovery_count = 0
+        self._last_recovery_loss_first: int | None = None
+        self._last_recovery_loss_last: int | None = None
+        self._last_recovery_safety_effect_count = 0
+        self._last_recovery_cancelled_lane: LaneState | None = None
 
     def enable(self) -> None:
         if self._runtime in {"stopped", "stopping"}:
@@ -131,6 +141,11 @@ class NarrativeRuntime:
             admission_diagnostics=tuple(self._admission_diagnostics),
             mailbox_overflows=self._mailbox_overflows,
             reason_codes=self._reason_codes(),
+            recovery_count=self._recovery_count,
+            last_recovery_loss_first=self._last_recovery_loss_first,
+            last_recovery_loss_last=self._last_recovery_loss_last,
+            last_recovery_safety_effect_count=self._last_recovery_safety_effect_count,
+            last_recovery_cancelled_lane=self._last_recovery_cancelled_lane,
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:
@@ -644,14 +659,25 @@ class NarrativeRuntime:
                 self._timeline_revision = int(timeline["timelineRevision"])
             if "viewRevision" in fact_view:
                 self._fact_view_revision = int(fact_view["viewRevision"])
+        lane_before_cancel = self._lane
         self._history_complete = False
         self._recovery_seen = True
+        self._recovery_count += 1
+        payload = command.payload
+        self._last_recovery_loss_first = int(payload["lossFirstMailboxSequence"])
+        self._last_recovery_loss_last = int(payload["lossLastMailboxSequence"])
+        safety_effects = payload.get("safetyEffects") or ()
+        self._last_recovery_safety_effect_count = len(safety_effects)
         effects = ["recovery_applied", "history_incomplete"]
         self._bump_deadline_generations(effects)
         if self._lane == "building":
             self._cancel_building(effects, reason="building_cancelled")
+            self._last_recovery_cancelled_lane = lane_before_cancel
         elif self._lane in {"committed", "speaking"}:
             self._request_speech_cancel(effects, reason="committed_cancel_requested")
+            self._last_recovery_cancelled_lane = lane_before_cancel
+        else:
+            self._last_recovery_cancelled_lane = None
         return "handled", effects
 
     def _on_shutdown(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:

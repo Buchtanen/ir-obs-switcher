@@ -991,3 +991,110 @@ async def test_run_loop_fires_silence_deadline_when_idle() -> None:
     runtime.admit(NarrativeCommand.shutdown("run:deadline-stop", 9300, "application_exit"))
     await asyncio.wait_for(task, timeout=2.0)
     assert runtime.status().runtime_state == "stopped"
+
+
+def test_recovery_diagnostics_project_loss_range_and_counts() -> None:
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    status = runtime.status()
+    assert status.recovery_count == 0
+    assert status.last_recovery_loss_first is None
+    assert status.last_recovery_loss_last is None
+    assert status.last_recovery_safety_effect_count == 0
+    assert status.last_recovery_cancelled_lane is None
+
+    first = _pure_fact("recovery:ctx:1", revision=10, fanout=10)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "recovery:diag:1",
+            9400,
+            latest_context=first.context_part,
+            loss_first_sequence=3,
+            loss_last_sequence=7,
+            safety_effects=(first.safety_effect(),),
+        )
+    )
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+    assert reduced.disposition == "handled"
+    status = runtime.status()
+    assert status.history_complete is False
+    assert status.recovery_count == 1
+    assert status.last_recovery_loss_first == 3
+    assert status.last_recovery_loss_last == 7
+    assert status.last_recovery_safety_effect_count == 1
+    assert status.last_recovery_cancelled_lane is None
+    assert status.timeline_revision == 10
+    assert "mailbox_recovery" in status.reason_codes
+
+    second = _pure_fact("recovery:ctx:2", revision=12, fanout=12)
+    effect_a = second.safety_effect()
+    effect_b = {
+        **effect_a,
+        "identity": "recovery:extra",
+        "payloadHash": "sha256:" + "a" * 64,
+    }
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "recovery:diag:2",
+            9410,
+            latest_context=second.context_part,
+            loss_first_sequence=8,
+            loss_last_sequence=11,
+            safety_effects=(effect_a, effect_b),
+        )
+    )
+    runtime.reduce_next()
+    status = runtime.status()
+    assert status.recovery_count == 2
+    assert status.last_recovery_loss_first == 8
+    assert status.last_recovery_loss_last == 11
+    assert status.last_recovery_safety_effect_count == 2
+    assert status.timeline_revision == 12
+
+
+def test_recovery_diagnostics_record_cancelled_building_lane() -> None:
+    runtime = _drive_to("building")
+    assert runtime.status().lane == "building"
+    latest = _pure_fact("recovery:cancel:ctx", revision=20, fanout=20)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "recovery:cancel:building",
+            9500,
+            latest_context=latest.context_part,
+            loss_first_sequence=1,
+            loss_last_sequence=4,
+            safety_effects=(latest.safety_effect(),),
+        )
+    )
+    result = runtime.reduce_next()
+    assert result is not None
+    assert "building_cancelled" in result.effects
+    assert result.lane_after == "idle"
+    status = runtime.status()
+    assert status.recovery_count == 1
+    assert status.last_recovery_cancelled_lane == "building"
+    assert status.last_recovery_loss_first == 1
+    assert status.last_recovery_loss_last == 4
+
+
+def test_recovery_diagnostics_record_cancelled_speech_lane() -> None:
+    runtime = _drive_to("committed")
+    assert runtime.status().lane == "committed"
+    latest = _pure_fact("recovery:speech:ctx", revision=21, fanout=21)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "recovery:cancel:speech",
+            9510,
+            latest_context=latest.context_part,
+            loss_first_sequence=5,
+            loss_last_sequence=6,
+            safety_effects=(latest.safety_effect(),),
+        )
+    )
+    result = runtime.reduce_next()
+    assert result is not None
+    assert result.lane_after == "stopping"
+    status = runtime.status()
+    assert status.recovery_count == 1
+    assert status.last_recovery_cancelled_lane == "committed"
