@@ -1,6 +1,6 @@
 # v2 catalog behavior (implementation projection)
 
-**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (implemented, not closed); branch-only, not shipped to `master`.
+**Status:** generated from the packaged catalogs by [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256); typed loader by [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257); lineage-aware EpisodeRegistry by [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258); resolved-episode retention by [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259) (closed); branch-only, not shipped to `master`.
 **Auditor:** `irswitch.contracts.coverage_matrix.audit_coverage_matrix`
 **Loader:** `irswitch.contracts.catalog_loader.load_narrative_catalog`
 **Registry:** `irswitch.events.episode_registry.EpisodeRegistry`
