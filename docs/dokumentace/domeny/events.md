@@ -61,7 +61,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 ## Validate projection (`events/narrative_validate_projection.py`)
 
 - `project_validate_response` — offline `ValidateRequest`→`ValidateResponse` (`commentary-runtime/2`); caller-supplied EN text + `beatId` + `actorBindings` / `factBindings`; nečte live runtime. **Not** exported z `events/__init__.py`.
-- HTTP mount: `POST /api/commentary/runtime/validate` v `events/narrative_runtime_http.py` (200 i když `valid=false`; 400 malformed).
+- HTTP mount: `POST /api/commentary/runtime/validate` + public `POST /api/commentary/validate` v `events/narrative_runtime_http.py` / `commentary/http.py` (200 i když `valid=false`; 400 malformed; cutover feat `f2c1f1b`).
 
 ## Manual admission latch (`events/narrative_manual_latch.py`)
 
@@ -86,11 +86,11 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**26** = prior **23** + **3** live config/episodes/byTapeChannel rows). `tests/test_narrative_runtime.py` latch rows (**3**). Related **228** (= prior **225** + **3**). Ingress+http **40** (= prior **37** + **3**).
+`tests/test_narrative_ingress.py` (**26** = prior **23** + **3** live config/episodes/byTapeChannel rows). `tests/test_narrative_runtime.py` latch rows (**3**). `tests/test_narrative_runtime_http.py` (**16** incl. **2** public-path cutover rows). `tests/test_commentary_http.py` (**7**). Related **237** (= prior **228** + **9**). Ingress+http **42** (= prior **40** + **2** cutover rows).
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: live llm/tts transport/residency wiring; live detectors/facts (beyond ready stubs); final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); status_ready stub slice landed (feat SHA `03c34b2`); live catalog/config/episodes/byTapeChannel status projection landed (feat SHA `bdb9633`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
+Full #273 schema: live llm/tts transport/residency wiring; live detectors/facts (beyond ready stubs); integrated loop liveness; master cutover. Legacy validate/speak public-path cutover landed (feat `f2c1f1b`); thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); status_ready stub slice landed (feat SHA `03c34b2`); live catalog/config/episodes/byTapeChannel status projection landed (feat SHA `bdb9633`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
 
 ## Related
 

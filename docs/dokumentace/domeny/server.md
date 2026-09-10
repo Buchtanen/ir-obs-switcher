@@ -30,7 +30,7 @@
 
 ## Testy
 
-`tests/test_api.py` — `/health` obsahuje `commentary`; `tests/test_narrative_runtime_http.py` — decisions + validate/speak + admission-timeout mounts (**14** rows); related suite **228** s narrative ingress identity + timeline session identity (null + live) + speech + decision + validate + status_ready (stub + live config/episodes/byTapeChannel) + llm/tts components + latch rows; ingress+http **40** (= prior **37** + **3** live status projection rows).
+`tests/test_api.py` — `/health` obsahuje `commentary`; `tests/test_narrative_runtime_http.py` — decisions + validate/speak/cutover + admission-timeout mounts (**16** rows); `tests/test_commentary_http.py` (**7** cutover rows); related suite **237** s narrative ingress identity + timeline session identity (null + live) + speech + decision + validate + status_ready (stub + live config/episodes/byTapeChannel) + llm/tts components + latch + public validate/speak cutover rows; ingress+http **42** (= prior **40** + **2** public-path cutover rows).
 
 ## Related
 
