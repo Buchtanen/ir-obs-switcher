@@ -1,6 +1,6 @@
 # Events — branch delta (#273/#284 runtime status)
 
-> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup).
+> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup).
 
 ## NarrativeRuntime identity (`events/narrative_runtime.py`)
 
@@ -44,19 +44,31 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 - `build_runtime_decision_entry`, `project_runtime_decisions` — pure projection helpers; **not** exported z `events/__init__.py`.
 - `NarrativeRuntime`: bounded deque `DECISION_CAPACITY=128`; každý `_consult_director` append (`selected` / `silence` / `replaced`); `decisions(limit)` newest-first.
 
+## Validate projection (`events/narrative_validate_projection.py`)
+
+- `project_validate_response` — offline `ValidateRequest`→`ValidateResponse` (`commentary-runtime/2`); caller-supplied EN text + `beatId` + `actorBindings` / `factBindings`; nečte live runtime. **Not** exported z `events/__init__.py`.
+- HTTP mount: `POST /api/commentary/runtime/validate` v `events/narrative_runtime_http.py` (200 i když `valid=false`; 400 malformed).
+
+## Manual speak (`events/narrative_runtime.py`)
+
+- `ManualSpeakOutcome`, `NarrativeRuntime.try_manual_speak` — sync admit + reduce pro manual speak (bez plného `ManualAdmissionLatch` / 1s await; ten zůstává deferred).
+- HTTP mount: `POST /api/commentary/runtime/speak` (202 / 409 / 422 / 503). Legacy `POST /api/commentary/speak` beze změny.
+
 ## Goldens
 
 - Identity: `tests/fixtures/commentary_runtime/status_identity_disabled.json`, `status_identity_after_context.json`
 - Speech idle: `tests/fixtures/commentary_runtime/status_speech_idle.json` (`language`, idle `speech`, bounded `components`)
 - Decisions selected: `tests/fixtures/commentary_runtime/decisions_selected.json`
+- Validate: `validate_request.json`, `validate_supported.json`, `validate_rejected.json`
+- Speak: `speak_request.json`, `speak_accepted.json`
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**14** = prior **7** + **3** speech + **3** decision + **1** replaced rows). Related **207**.
+`tests/test_narrative_ingress.py` (**17** = prior **14** + **3** validate rows). Related **215**.
 
-## Still deferred (#284 OPEN)
+## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: validate/speak goldens + handlers, full components (detectors/facts), catalog/config/episodes/byTapeChannel; integrated loop liveness; master cutover.
+Full #273 schema: full components (detectors/facts), catalog/config/episodes/byTapeChannel; full `ManualAdmissionLatch`; final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`).
 
 ## Related
 
