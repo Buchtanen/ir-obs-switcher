@@ -279,6 +279,7 @@ class LlmComponent:
         self.applied_generation = 0
         self.status = "idle"
         self.residency: str | None = None
+        self.model: str | None = None
 
     @property
     def qwen_ready(self) -> bool:

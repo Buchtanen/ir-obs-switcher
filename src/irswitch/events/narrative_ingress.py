@@ -180,35 +180,65 @@ def _timeline_session_identity(status: RuntimeStatus) -> dict[str, Any]:
     }
 
 
-def _llm_component_projection(status: str) -> dict[str, Any]:
-    """Thin #273 llm block — schema-complete defaults, no live transport wiring."""
+def _config_desired_generation(status: RuntimeStatus) -> int:
+    """Best-effort desiredGeneration from CONFIG_UPDATE ledger; else 0."""
 
+    ledger = status.config_ledger
+    if not isinstance(ledger, dict):
+        return 0
+    desired = ledger.get("desiredGeneration")
+    if isinstance(desired, bool) or not isinstance(desired, int) or desired < 0:
+        return 0
+    return int(desired)
+
+
+def _llm_component_projection(status: RuntimeStatus) -> dict[str, Any]:
+    """#273 llm block — live transport/residency when LlmComponent is attached."""
+
+    config_generation = _config_desired_generation(status)
+    if not status.llm_attached:
+        health = str(status.component_health.get("llm", "ready"))
+        return {
+            "status": health,
+            "reason": None,
+            "generation": 0,
+            "configGeneration": config_generation,
+            "model": _LLM_MODEL_UNCONFIGURED,
+            "residencyEvidence": "not_requested",
+            "lastAttempt": None,
+        }
+    health = str(status.component_health.get("llm", "ready"))
+    model = status.llm_model if status.llm_model else _LLM_MODEL_UNCONFIGURED
+    evidence = status.llm_residency_evidence
+    if evidence not in {"warmup_succeeded", "not_requested"}:
+        evidence = "not_requested"
     return {
-        "status": status,
-        "reason": None,
-        "generation": 0,
-        "configGeneration": 0,
-        "model": _LLM_MODEL_UNCONFIGURED,
-        "residencyEvidence": "not_requested",
+        "status": health,
+        "reason": status.llm_reason,
+        "generation": int(status.llm_generation),
+        "configGeneration": config_generation,
+        "model": model,
+        "residencyEvidence": evidence,
         "lastAttempt": None,
     }
 
 
 def _tts_component_projection(
-    status: str,
+    status: RuntimeStatus,
     *,
-    backend: str | None,
-    backend_generation: int | None,
+    component_status: str,
 ) -> dict[str, Any]:
-    """Thin #273 tts block — schema-complete defaults; backend from speech lane when known."""
+    """#273 tts block — speech-lane backend plus configGeneration from ledger."""
 
-    mapped_backend = backend if backend in _TTS_BACKENDS else None
+    mapped_backend = (
+        status.speech_backend if status.speech_backend in _TTS_BACKENDS else None
+    )
     return {
-        "status": status,
+        "status": component_status,
         "reason": None,
         "backend": mapped_backend,
-        "backendGeneration": int(backend_generation or 0),
-        "configGeneration": 0,
+        "backendGeneration": int(status.speech_backend_generation or 0),
+        "configGeneration": _config_desired_generation(status),
         "quarantinedGeneration": None,
         "voice": None,
     }
@@ -317,8 +347,8 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     thin #273 catalog/config/episodes/byTapeChannel projection (packaged
     catalog hash; CONFIG_UPDATE ledger when cached; EpisodeRegistry /
     OpportunityQueue counters when injected; otherwise unloaded/empty
-    stubs), schema-complete llm/tts component stubs (no live
-    transport/residency wiring), and null-or-live timeline
+    stubs), schema-complete llm/tts components (live transport/residency when an
+    LlmComponent is attached; otherwise stubs), and null-or-live timeline
     session-identity fields (sessionPlan/sessionRef/occurrenceId/
     lineageId/stage — all-or-none; filled from APPLY_CONTEXT timeline
     when complete).
@@ -336,7 +366,6 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     }
     if tape_status == "unavailable":
         tape_component["status"] = "unavailable"
-    llm_status = str(status.component_health.get("llm", "ready"))
     tts_status = str(status.component_health.get("tts", "ready"))
     last_terminal = status.speech_last_terminal
     history_complete = bool(status.history_complete)
@@ -387,11 +416,10 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "historyComplete": history_complete,
         },
         "components": {
-            "llm": _llm_component_projection(llm_status),
+            "llm": _llm_component_projection(status),
             "tts": _tts_component_projection(
-                tts_status,
-                backend=status.speech_backend,
-                backend_generation=status.speech_backend_generation,
+                status,
+                component_status=tts_status,
             ),
             "tape": tape_component,
             "detectors": {"status": "ready", "reason": None, "disabled": []},

@@ -292,6 +292,7 @@ class RaceRuntime:
                 opportunity_queue=opportunity_queue,
                 episode_registry=EpisodeRegistry(),
                 freshness_gate=FreshnessGate(opportunity_queue),
+                llm_component=llm_component,
             )
             runtime.enable()
             self.narrative_runtime = runtime

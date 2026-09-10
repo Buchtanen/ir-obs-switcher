@@ -293,6 +293,7 @@ def warmup_qwen_component(
     from irswitch.contracts.primitives import canonical_json
     from irswitch.events.qwen_transport import TransportError, warmup_request_body
 
+    component.model = str(model)
     component.start_preflight(desired_generation=int(generation), warmup=True)
     body = canonical_json(warmup_request_body(model)).encode("utf-8")
     try:

@@ -8,10 +8,10 @@ import pytest
 from test_narrative_context_batch import _event, _fact_view, _timeline
 
 from irswitch.commentary.mailbox import NarrativeMailbox
+from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
 from irswitch.events.narrative_ingress import NarrativeIngress, project_runtime_status
 from irswitch.events.narrative_runtime import NarrativeRuntime, RuntimeStatus
-from irswitch.contracts.command import NarrativeCommand
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_ingress.py"
@@ -349,7 +349,7 @@ def test_project_runtime_status_speech_idle_golden() -> None:
 
 
 def test_project_runtime_status_components_llm_tts_golden() -> None:
-    """#273 thin llm/tts schema-complete stubs (no live transport wiring)."""
+    """#273 llm/tts schema-complete defaults without an attached LlmComponent."""
     import json
     from pathlib import Path
 
@@ -367,6 +367,85 @@ def test_project_runtime_status_components_llm_tts_golden() -> None:
     assert projection["components"]["llm"] == expected["components"]["llm"]
     assert projection["components"]["tts"] == expected["components"]["tts"]
 
+
+
+def test_project_runtime_status_llm_live_after_warmup() -> None:
+    """#273/#284 live llm projection follows LlmComponent warmup residency/generation."""
+    from irswitch.events.narrative_realization_bridge import warmup_qwen_component
+    from irswitch.events.qwen_transport import FakeTransport, LlmComponent
+
+    component = LlmComponent()
+    assert warmup_qwen_component(component, FakeTransport(), generation=4) is True
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    projection = project_runtime_status(runtime.status())
+    assert projection["components"]["llm"] == {
+        "status": "ready",
+        "reason": None,
+        "generation": 4,
+        "configGeneration": 0,
+        "model": "qwen3:4b-instruct-2507-q4_K_M",
+        "residencyEvidence": "warmup_succeeded",
+        "lastAttempt": None,
+    }
+
+
+def test_project_runtime_status_llm_live_warmup_failed_maps_unavailable() -> None:
+    """Failed warmup stays schema-safe: unavailable + not_requested residency evidence."""
+    from irswitch.events.narrative_realization_bridge import warmup_qwen_component
+    from irswitch.events.qwen_transport import FakeTransport, LlmComponent
+
+    component = LlmComponent()
+    assert warmup_qwen_component(component, FakeTransport(fail=True), generation=2) is False
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    llm = project_runtime_status(runtime.status())["components"]["llm"]
+    assert llm["status"] == "unavailable"
+    assert llm["reason"] == "component_unavailable"
+    assert llm["generation"] == 2
+    assert llm["model"] == "qwen3:4b-instruct-2507-q4_K_M"
+    assert llm["residencyEvidence"] == "not_requested"
+    assert llm["lastAttempt"] is None
+
+
+def test_project_runtime_status_llm_tts_config_generation_from_ledger() -> None:
+    """Live llm/tts configGeneration tracks CONFIG_UPDATE desiredGeneration when present."""
+    from irswitch.events.narrative_realization_bridge import warmup_qwen_component
+    from irswitch.events.qwen_transport import FakeTransport, LlmComponent
+
+    component = LlmComponent()
+    assert warmup_qwen_component(component, FakeTransport(), generation=1) is True
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    # Reuse helper if present; otherwise inline a minimal ledger.
+    ledger = _config_ledger(desired_generation=7)
+    runtime._config_ledger = ledger  # library test seam for status projection
+    projection = project_runtime_status(runtime.status())
+    assert projection["components"]["llm"]["configGeneration"] == 7
+    assert projection["components"]["tts"]["configGeneration"] == 7
+
+
+def test_race_wires_llm_component_into_narrative_runtime() -> None:
+    """Race cutover passes the warmed LlmComponent into NarrativeRuntime for status."""
+    race_src = (
+        Path(__file__).resolve().parents[1] / "src" / "irswitch" / "race" / "runtime.py"
+    ).read_text(encoding="utf-8")
+    assert "NarrativeRuntime(" in race_src
+    # Must appear as NarrativeRuntime kwarg, not only realization_effect.
+    block_start = race_src.index("runtime = NarrativeRuntime(")
+    depth = 0
+    block_end = None
+    for index, char in enumerate(race_src[block_start:], start=block_start):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                block_end = index + 1
+                break
+    assert block_end is not None
+    block = race_src[block_start:block_end]
+    assert "llm_component=llm_component" in block
 
 def test_project_runtime_status_identity_follows_context_timeline() -> None:
     mailbox = NarrativeMailbox()

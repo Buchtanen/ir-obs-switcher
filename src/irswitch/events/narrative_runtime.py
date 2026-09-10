@@ -34,6 +34,7 @@ from irswitch.events.narrative_manual_latch import (
     ManualAdmissionLatch,
 )
 from irswitch.events.opportunity_queue import OpportunityQueue
+from irswitch.events.qwen_transport import LlmComponent
 from irswitch.events.story_director import (
     DECISION_CAPACITY,
     DirectorCandidate,
@@ -230,6 +231,12 @@ class RuntimeStatus:
     config_ledger: dict[str, object] | None
     episode_counts: dict[str, int] | None
     by_tape_channel: dict[str, dict[str, int]] | None
+    # #273 live llm transport/residency projection inputs (None model => stubs)
+    llm_attached: bool
+    llm_generation: int
+    llm_model: str | None
+    llm_residency_evidence: str
+    llm_reason: str | None
 
 
 class NarrativeRuntime:
@@ -250,6 +257,7 @@ class NarrativeRuntime:
         opportunity_queue: OpportunityQueue | None = None,
         episode_registry: EpisodeRegistry | None = None,
         story_director: StoryDirector | None = None,
+        llm_component: LlmComponent | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -318,6 +326,7 @@ class NarrativeRuntime:
         self._episode_beat_id: str | None = None
         self._episode_now_ms: int = 0
         self._story_director = story_director
+        self._llm_component = llm_component
         self._director_world: DirectorWorld | None = None
         self._director_candidates: tuple[DirectorCandidate, ...] = ()
         self._director_manual_seed = False
@@ -342,6 +351,31 @@ class NarrativeRuntime:
         self._runtime = "ready"
 
     def status(self) -> RuntimeStatus:
+        health = dict(self._component_health)
+        llm_attached = self._llm_component is not None
+        llm_generation = 0
+        llm_model: str | None = None
+        llm_residency_evidence = "not_requested"
+        llm_reason: str | None = None
+        if llm_attached:
+            component = self._llm_component
+            assert component is not None
+            llm_generation = int(component.applied_generation)
+            llm_model = component.model
+            residency = component.residency
+            if residency in {"warmup_succeeded", "not_requested"}:
+                llm_residency_evidence = residency
+            else:
+                llm_residency_evidence = "not_requested"
+            mapped = {
+                "idle": "ready",
+                "pending": "starting",
+                "ready": "ready",
+                "failed": "unavailable",
+            }.get(str(component.status), "degraded")
+            health["llm"] = mapped
+            if mapped == "unavailable":
+                llm_reason = "component_unavailable"
         return RuntimeStatus(
             runtime_state=self._runtime,
             lane=self._lane,
@@ -352,7 +386,7 @@ class NarrativeRuntime:
             timeline_revision=self._timeline_revision,
             fact_view_revision=self._fact_view_revision,
             config_valid=self._config_valid,
-            component_health=dict(self._component_health),
+            component_health=health,
             tape_status=self._tape_status,
             last_admission_reason=self._last_admission_reason,
             mailbox_depth=len(self._mailbox),
@@ -390,6 +424,11 @@ class NarrativeRuntime:
             config_ledger=(None if self._config_ledger is None else dict(self._config_ledger)),
             episode_counts=self._episode_counts_snapshot(),
             by_tape_channel=self._by_tape_channel_snapshot(),
+            llm_attached=llm_attached,
+            llm_generation=llm_generation,
+            llm_model=llm_model,
+            llm_residency_evidence=llm_residency_evidence,
+            llm_reason=llm_reason,
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:
