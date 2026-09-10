@@ -923,6 +923,48 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
   }
 }
 ```
+
+### GET /api/commentary/runtime/decisions
+
+`#284` / `#273` read-only mount of the `commentary-runtime/2` decisions ring recorded by `NarrativeRuntime` on each StoryDirector consult (selected / silence / replaced).
+
+**URL**: `http://127.0.0.1:17321/api/commentary/runtime/decisions?limit=20`
+
+**Behavior**
+- Additive to legacy `GET /api/commentary/decisions` (CommentaryDirector speak/skip log); does not replace it.
+- Provider resolution matches `GET /api/commentary/runtime` (`APP_NARRATIVE_RUNTIME` then process-level `set_narrative_runtime`). No provider → `{schemaVersion, runtime:false, decisions:[]}`.
+- `limit` defaults to 20 and clamps to 1–100; rows are newest-first; ring capacity is `DECISION_CAPACITY` (128).
+- Does **not** start the actor loop. Rows are projected by `build_runtime_decision_entry` / `project_runtime_decisions`.
+
+**Example (selected)**
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "runtime": true,
+  "decisions": [
+    {
+      "reducerSequence": 418,
+      "atMonoMs": 90231,
+      "decision": "selected",
+      "reason": "highest_valid_candidate",
+      "beatId": "battle.approach",
+      "episodeId": "battle-ahead:3:17:22:4",
+      "opportunityId": "opp:401",
+      "tapeChannel": "race.battle.closing",
+      "candidateSource": "event_opportunity",
+      "candidateOrder": {"reducerSequence": 417, "sourceOrdinal": 0},
+      "relation": "updates_active_episode",
+      "urgency": "story",
+      "score": 68.5,
+      "threshold": 35.0,
+      "runnerUp": {"beatId": "battle.pursuit", "score": 56.0},
+      "terminalReason": null
+    }
+  ]
+}
+```
+
  Neplatný řádek → 400, audio se nespustí.
 
 **Decision reason codes** (`action` = `spoken` \| `skipped`):
