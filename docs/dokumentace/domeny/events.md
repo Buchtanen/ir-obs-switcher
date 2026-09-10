@@ -90,7 +90,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: live llm/tts transport/residency wiring; live detectors/facts (beyond ready stubs); integrated loop liveness; master cutover. Legacy validate/speak public-path cutover landed (feat `f2c1f1b`); thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); status_ready stub slice landed (feat SHA `03c34b2`); live catalog/config/episodes/byTapeChannel status projection landed (feat SHA `bdb9633`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
+Full #273 schema: live llm/tts transport/residency wiring; live detectors/facts (beyond ready stubs); integrated loop liveness thin slice landed feat `c2e02d4` (loop.active); remaining master cutover / deeper service heartbeats; master cutover. Legacy validate/speak public-path cutover landed (feat `f2c1f1b`); thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); status_ready stub slice landed (feat SHA `03c34b2`); live catalog/config/episodes/byTapeChannel status projection landed (feat SHA `bdb9633`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
 
 ## Related
 
