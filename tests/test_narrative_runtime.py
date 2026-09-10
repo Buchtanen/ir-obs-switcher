@@ -2689,3 +2689,238 @@ async def test_live_template_verify_frame_attached_from_draft_cache() -> None:
     assert committed is not None
     assert "verify_frame_attached_live" in committed.effects
     assert "semantic_verdict:accepted" in committed.effects
+
+
+def test_narrative_runtime_same_time_external_before_callback_order() -> None:
+    """#284 AC: library evidence for orderingScenario same_time_external_before_callback."""
+
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    assert runtime.admit(
+        _context_with_timeline(
+            "order:external",
+            _timeline_run(
+                revision=210,
+                stream_epoch=1,
+                narrative_run_active=True,
+                transition_reasons=["session_restarted"],
+            ),
+            fanout=210,
+        )
+    ).accepted
+    assert runtime.admit(
+        NarrativeCommand.realization_result(
+            "order:callback",
+            "REALIZATION_SUCCEEDED",
+            9000,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    ).accepted
+    drained = list(runtime.drain())
+    assert [item.command_id for item in drained] == ["order:external", "order:callback"]
+    assert [item.reducer_sequence for item in drained] == [
+        drained[0].reducer_sequence,
+        drained[0].reducer_sequence + 1,
+    ]
+    assert drained[0].kind == "APPLY_CONTEXT_BATCH"
+    assert drained[0].disposition == "handled"
+    assert drained[1].kind == "REALIZATION_SUCCEEDED"
+    assert drained[1].disposition == "ignored_stale_or_inapplicable"
+    assert runtime.status().lane == "idle"
+
+
+def test_narrative_runtime_same_time_callback_before_reset_order() -> None:
+    """#284 AC: library evidence for orderingScenario same_time_callback_before_reset."""
+
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    assert runtime.admit(
+        NarrativeCommand.realization_result(
+            "order:callback-first",
+            "REALIZATION_SUCCEEDED",
+            9100,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    ).accepted
+    assert runtime.admit(
+        _context_with_timeline(
+            "order:reset",
+            _timeline_run(
+                revision=211,
+                stream_epoch=1,
+                narrative_run_active=True,
+                transition_reasons=["session_restarted"],
+            ),
+            fanout=211,
+        )
+    ).accepted
+    drained = list(runtime.drain())
+    assert [item.command_id for item in drained] == ["order:callback-first", "order:reset"]
+    assert drained[0].kind == "REALIZATION_SUCCEEDED"
+    assert drained[0].disposition == "handled"
+    assert drained[0].lane_after == "committed"
+    assert drained[1].kind == "APPLY_CONTEXT_BATCH"
+    assert drained[1].disposition == "handled"
+    assert runtime.status().lane in {"stopping", "idle", "building"}
+
+
+def test_narrative_runtime_deadline_before_result_race() -> None:
+    """#284 AC: library evidence for raceTrace deadline_before_result."""
+
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    assert runtime.admit(
+        NarrativeCommand.realization_deadline(
+            "race:deadline-first",
+            3200,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            deadline_mono_ms=3200,
+        )
+    ).accepted
+    timed_out = runtime.reduce_next()
+    assert timed_out is not None
+    assert timed_out.disposition == "handled"
+    assert "realization_deadline" in timed_out.effects
+    assert timed_out.lane_after == "idle"
+    assert runtime.admit(
+        NarrativeCommand.realization_result(
+            "race:late-result",
+            "REALIZATION_SUCCEEDED",
+            3300,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    ).accepted
+    late = runtime.reduce_next()
+    assert late is not None
+    assert late.disposition == "ignored_stale_or_inapplicable"
+    assert "stale_realization_token" in late.effects
+    assert late.lane_after == "idle"
+    assert runtime.status().lane == "idle"
+
+
+def test_narrative_runtime_reset_before_result_race() -> None:
+    """#284 AC: library evidence for raceTrace reset_before_result."""
+
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    assert runtime.admit(
+        _context_with_timeline(
+            "race:reset",
+            _timeline_run(
+                revision=220,
+                stream_epoch=1,
+                narrative_run_active=True,
+                transition_reasons=["session_restarted"],
+            ),
+            fanout=220,
+        )
+    ).accepted
+    reset = runtime.reduce_next()
+    assert reset is not None
+    assert reset.disposition == "handled"
+    assert "building_cancelled" in reset.effects
+    assert reset.lane_after == "idle"
+    assert runtime.admit(
+        NarrativeCommand.realization_result(
+            "race:old-occurrence-result",
+            "REALIZATION_SUCCEEDED",
+            3400,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    ).accepted
+    late = runtime.reduce_next()
+    assert late is not None
+    assert late.disposition == "ignored_stale_or_inapplicable"
+    assert "stale_realization_token" in late.effects
+    assert runtime.status().lane == "idle"
+
+
+def test_narrative_runtime_config_generation_then_completion_race() -> None:
+    """#284 AC: completion races config generation — config rearms only; result may still commit."""
+
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    stale_silence = runtime._silence_generation  # noqa: SLF001
+    assert runtime.admit(
+        NarrativeCommand.config_update(
+            "race:config-gen", 3500, valid=False, ledger=None, diagnostics=()
+        )
+    ).accepted
+    config = runtime.reduce_next()
+    assert config is not None
+    assert config.lane_after == "building"
+    assert "effect:cancel_realization" not in config.effects
+    assert runtime._silence_generation == stale_silence + 1  # noqa: SLF001
+    assert runtime.admit(
+        NarrativeCommand.realization_result(
+            "race:config-then-result",
+            "REALIZATION_SUCCEEDED",
+            3600,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    ).accepted
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.disposition == "handled"
+    assert committed.lane_after == "committed"
+    assert "effect:dispatch_tts" in committed.effects
+
+
+def test_narrative_runtime_validity_expiry_before_completion_race() -> None:
+    """#284 AC: validity expiry cancels building; late completion stays stale."""
+
+    runtime = _drive_to("building")
+    token = runtime.current_realization_token()
+    assert token is not None
+    generation = runtime._validity_generation  # noqa: SLF001
+    assert runtime.admit(
+        NarrativeCommand.deadline(
+            "race:validity-expiry",
+            "VALIDITY_DEADLINE_ELAPSED",
+            3700,
+            generation=generation,
+            deadline_mono_ms=3700,
+        )
+    ).accepted
+    expired = runtime.reduce_next()
+    assert expired is not None
+    assert expired.disposition == "handled"
+    assert "building_cancelled" in expired.effects or expired.lane_after == "idle"
+    assert runtime.admit(
+        NarrativeCommand.realization_result(
+            "race:after-validity",
+            "REALIZATION_SUCCEEDED",
+            3800,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    ).accepted
+    late = runtime.reduce_next()
+    assert late is not None
+    assert late.disposition == "ignored_stale_or_inapplicable"
+    assert "stale_realization_token" in late.effects
+    assert runtime.status().lane == "idle"
