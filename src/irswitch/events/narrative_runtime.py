@@ -102,7 +102,9 @@ class NarrativeRuntime:
         episode_registry: EpisodeRegistry | None = None,
         story_director: StoryDirector | None = None,
     ) -> None:
-        self._mailbox = mailbox or NarrativeMailbox()
+        # Empty NarrativeMailbox is falsy via __len__; only replace on None so
+        # ingress/shadow cutover can share one injected mailbox identity.
+        self._mailbox = mailbox if mailbox is not None else NarrativeMailbox()
         self._runtime: RuntimeState = "disabled"
         self._lane: LaneState = "idle"
         self._reducer_sequence = 0

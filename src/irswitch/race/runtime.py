@@ -15,6 +15,7 @@ from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_f
 from irswitch.commentary.consumer import CommentaryConsumer
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
+from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.commentary.session_briefs import SessionBriefsDetector
 from irswitch.commentary.tts import build_tts_sink
 from irswitch.config import AppConfig
@@ -23,6 +24,9 @@ from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
+from irswitch.events.narrative_ingress import NarrativeIngress
+from irswitch.events.narrative_runtime import NarrativeRuntime
+from irswitch.events.narrative_runtime_http import set_narrative_runtime
 from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
 from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.stream import (
@@ -200,19 +204,31 @@ class RaceRuntime:
         self._commentary_supervisor = WorkerSupervisor(
             "commentary_consumer", self.commentary_consumer.run
         )
-        # #284: explicit opt-in for NarrativeShadowConsumer. Default off —
-        # do not enable without a cutover kick. No INI key in this slice.
+        # #284: explicit opt-in for NarrativeShadowConsumer fanout cutover.
+        # Default off — do not enable without a cutover kick. No INI key.
+        # When enabled: fanout → ingress → mailbox → reduce_next (no run()),
+        # and attach NarrativeRuntime for GET /api/commentary/runtime status.
+        # Does not replace CommentaryConsumer EventSubscription / TTS.
         self._narrative_shadow_enabled = False
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
+        self.narrative_runtime = None
         if self._narrative_shadow_enabled:
             self._narrative_shadow_subscription = self._event_fanout.subscribe(
                 "narrative_shadow", capacity=64
             )
+            mailbox = NarrativeMailbox()
+            ingress = NarrativeIngress(mailbox)
+            runtime = NarrativeRuntime(mailbox=mailbox)
+            runtime.enable()
+            self.narrative_runtime = runtime
+            set_narrative_runtime(runtime)
             self.narrative_shadow_consumer = NarrativeShadowConsumer(
                 self._narrative_shadow_subscription,
                 enabled=True,
+                ingress=ingress,
+                runtime=runtime,
             )
             self._narrative_shadow_supervisor = WorkerSupervisor(
                 "narrative_shadow_consumer",

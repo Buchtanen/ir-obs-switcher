@@ -1,14 +1,16 @@
 """HTTP mount for NarrativeRuntime status projection (#284).
 
 Exposes ``GET /api/commentary/runtime`` as the ``commentary-runtime/2`` subset
-produced by ``project_runtime_status``. Optional ``APP_NARRATIVE_RUNTIME`` may
-point at a library ``NarrativeRuntime`` (or duck with ``status()`` returning
-``RuntimeStatus``). When absent, the handler projects a disabled library
-snapshot.
+produced by ``project_runtime_status``. Status providers may be attached via:
+
+- ``APP_NARRATIVE_RUNTIME`` on the aiohttp app (tests / explicit cutover), or
+- process-level ``set_narrative_runtime`` (race shadow fanout cutover).
+
+When neither is set, the handler projects a disabled library snapshot.
 
 This mount does not start the NarrativeRuntime actor loop, does not replace
-``GET /api/commentary/status``, and does not activate live EventSubscription
-cutover. Not exported from ``events/__init__.py``.
+``GET /api/commentary/status``, and does not replace live CommentaryConsumer
+EventSubscription. Not exported from ``events/__init__.py``.
 """
 
 from __future__ import annotations
@@ -24,6 +26,8 @@ from irswitch.events.narrative_runtime import NarrativeRuntime, RuntimeStatus
 
 logger = logging.getLogger(__name__)
 
+_process_narrative_runtime: NarrativeRuntimeStatusProvider | None = None
+
 
 class NarrativeRuntimeStatusProvider(Protocol):
     def status(self) -> RuntimeStatus: ...
@@ -32,9 +36,27 @@ class NarrativeRuntimeStatusProvider(Protocol):
 APP_NARRATIVE_RUNTIME: web.AppKey[NarrativeRuntimeStatusProvider] = web.AppKey("narrative_runtime")
 
 
+def set_narrative_runtime(runtime: NarrativeRuntimeStatusProvider | None) -> None:
+    """Attach or clear the process-level status provider (race cutover path)."""
+    global _process_narrative_runtime
+    _process_narrative_runtime = runtime
+
+
+def get_narrative_runtime() -> NarrativeRuntimeStatusProvider | None:
+    """Return the process-level status provider, if any."""
+    return _process_narrative_runtime
+
+
+def _resolve_provider(request: web.Request) -> NarrativeRuntimeStatusProvider | None:
+    provider = request.app.get(APP_NARRATIVE_RUNTIME)
+    if provider is not None:
+        return provider
+    return get_narrative_runtime()
+
+
 async def handle_commentary_runtime_status(request: web.Request) -> web.Response:
     """Return commentary-runtime/2 status subset for NarrativeRuntime."""
-    provider = request.app.get(APP_NARRATIVE_RUNTIME)
+    provider = _resolve_provider(request)
     try:
         if provider is None:
             status = NarrativeRuntime().status()
@@ -61,7 +83,7 @@ def register_narrative_runtime_routes(app: web.Application) -> None:
 def attach_narrative_runtime(
     app: web.Application, runtime: NarrativeRuntimeStatusProvider | None
 ) -> None:
-    """Attach or clear the optional status provider (tests / explicit cutover)."""
+    """Attach or clear the optional app-key status provider (tests / cutover)."""
     if runtime is None:
         app.pop(APP_NARRATIVE_RUNTIME, None)
         return
@@ -72,6 +94,8 @@ __all__ = [
     "APP_NARRATIVE_RUNTIME",
     "NarrativeRuntimeStatusProvider",
     "attach_narrative_runtime",
+    "get_narrative_runtime",
     "handle_commentary_runtime_status",
     "register_narrative_runtime_routes",
+    "set_narrative_runtime",
 ]
