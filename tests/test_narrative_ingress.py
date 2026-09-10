@@ -368,7 +368,6 @@ def test_project_runtime_status_components_llm_tts_golden() -> None:
     assert projection["components"]["tts"] == expected["components"]["tts"]
 
 
-
 def test_project_runtime_status_llm_live_after_warmup() -> None:
     """#273/#284 live llm projection follows LlmComponent warmup residency/generation."""
     from irswitch.events.narrative_realization_bridge import warmup_qwen_component
@@ -446,6 +445,7 @@ def test_race_wires_llm_component_into_narrative_runtime() -> None:
     assert block_end is not None
     block = race_src[block_start:block_end]
     assert "llm_component=llm_component" in block
+
 
 def test_project_runtime_status_identity_follows_context_timeline() -> None:
     mailbox = NarrativeMailbox()

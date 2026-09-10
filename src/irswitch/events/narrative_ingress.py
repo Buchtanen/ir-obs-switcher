@@ -230,9 +230,7 @@ def _tts_component_projection(
 ) -> dict[str, Any]:
     """#273 tts block — speech-lane backend plus configGeneration from ledger."""
 
-    mapped_backend = (
-        status.speech_backend if status.speech_backend in _TTS_BACKENDS else None
-    )
+    mapped_backend = status.speech_backend if status.speech_backend in _TTS_BACKENDS else None
     return {
         "status": component_status,
         "reason": None,
