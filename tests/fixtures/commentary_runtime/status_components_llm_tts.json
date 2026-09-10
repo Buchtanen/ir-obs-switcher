@@ -1,19 +1,6 @@
 {
   "schemaVersion": "commentary-runtime/2",
   "status": "disabled",
-  "language": "en",
-  "speech": {
-    "state": "idle",
-    "sourceKind": null,
-    "utteranceId": null,
-    "beatId": null,
-    "opportunityId": null,
-    "backend": null,
-    "backendGeneration": null,
-    "dispatchedAtMonoMs": null,
-    "acceptedAtMonoMs": null,
-    "lastTerminal": null
-  },
   "components": {
     "llm": {
       "status": "ready",
@@ -32,13 +19,6 @@
       "configGeneration": 0,
       "quarantinedGeneration": null,
       "voice": null
-    },
-    "tape": {
-      "status": "disabled",
-      "reason": null,
-      "path": null,
-      "drops": 0,
-      "dropsByPriority": { "sample": 0, "normal": 0, "critical": 0 }
     }
   }
 }

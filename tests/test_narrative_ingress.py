@@ -129,8 +129,24 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
         "streamState": "unknown",
         "historyComplete": True,
     }
-    assert projection["components"]["llm"]["status"] == "ready"
-    assert projection["components"]["tts"]["status"] == "ready"
+    assert projection["components"]["llm"] == {
+        "status": "ready",
+        "reason": None,
+        "generation": 0,
+        "configGeneration": 0,
+        "model": "unconfigured",
+        "residencyEvidence": "not_requested",
+        "lastAttempt": None,
+    }
+    assert projection["components"]["tts"] == {
+        "status": "ready",
+        "reason": None,
+        "backend": None,
+        "backendGeneration": 0,
+        "configGeneration": 0,
+        "quarantinedGeneration": None,
+        "voice": None,
+    }
     assert projection["components"]["tape"]["status"] == "disabled"
     assert projection["components"]["detectors"] == {
         "status": "ready",
@@ -285,9 +301,29 @@ def test_project_runtime_status_speech_idle_golden() -> None:
     expected = json.loads(golden_path.read_text(encoding="utf-8"))
     assert projection["language"] == expected["language"]
     assert projection["speech"] == expected["speech"]
-    assert projection["components"]["llm"]["status"] == expected["components"]["llm"]["status"]
-    assert projection["components"]["tts"]["status"] == expected["components"]["tts"]["status"]
+    assert projection["components"]["llm"] == expected["components"]["llm"]
+    assert projection["components"]["tts"] == expected["components"]["tts"]
     assert projection["components"]["tape"]["status"] == expected["components"]["tape"]["status"]
+
+
+def test_project_runtime_status_components_llm_tts_golden() -> None:
+    """#273 thin llm/tts schema-complete stubs (no live transport wiring)."""
+    import json
+    from pathlib import Path
+
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "status_components_llm_tts.json"
+    )
+    projection = project_runtime_status(NarrativeRuntime().status())
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert projection["schemaVersion"] == expected["schemaVersion"]
+    assert projection["status"] == expected["status"]
+    assert projection["components"]["llm"] == expected["components"]["llm"]
+    assert projection["components"]["tts"] == expected["components"]["tts"]
 
 
 def test_project_runtime_status_identity_follows_context_timeline() -> None:

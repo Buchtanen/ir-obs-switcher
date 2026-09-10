@@ -78,6 +78,44 @@ def _empty_episodes_projection() -> dict[str, Any]:
     }
 
 
+_TTS_BACKENDS = frozenset({"sapi", "espeak", "supertonic"})
+_LLM_MODEL_UNCONFIGURED = "unconfigured"
+
+
+def _llm_component_projection(status: str) -> dict[str, Any]:
+    """Thin #273 llm block — schema-complete defaults, no live transport wiring."""
+
+    return {
+        "status": status,
+        "reason": None,
+        "generation": 0,
+        "configGeneration": 0,
+        "model": _LLM_MODEL_UNCONFIGURED,
+        "residencyEvidence": "not_requested",
+        "lastAttempt": None,
+    }
+
+
+def _tts_component_projection(
+    status: str,
+    *,
+    backend: str | None,
+    backend_generation: int | None,
+) -> dict[str, Any]:
+    """Thin #273 tts block — schema-complete defaults; backend from speech lane when known."""
+
+    mapped_backend = backend if backend in _TTS_BACKENDS else None
+    return {
+        "status": status,
+        "reason": None,
+        "backend": mapped_backend,
+        "backendGeneration": int(backend_generation or 0),
+        "configGeneration": 0,
+        "quarantinedGeneration": None,
+        "voice": None,
+    }
+
+
 _LANE_TO_SPEECH = {
     "idle": "idle",
     "building": "building",
@@ -180,7 +218,8 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     actor/recovery fields already owned by the library RuntimeStatus plus
     thin #273 catalog/config/episodes/byTapeChannel defaults (packaged
     catalog hash; unloaded config; empty episode/tape-channel counters;
-    opportunities queue stub; detectors/facts stubs).
+    opportunities queue stub; detectors/facts stubs) plus schema-complete
+    llm/tts component stubs (no live transport/residency wiring).
     """
 
     if not isinstance(status, RuntimeStatus):
@@ -242,8 +281,12 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "historyComplete": history_complete,
         },
         "components": {
-            "llm": {"status": llm_status, "reason": None},
-            "tts": {"status": tts_status, "reason": None},
+            "llm": _llm_component_projection(llm_status),
+            "tts": _tts_component_projection(
+                tts_status,
+                backend=status.speech_backend,
+                backend_generation=status.speech_backend_generation,
+            ),
             "tape": tape_component,
             "detectors": {"status": "ready", "reason": None, "disabled": []},
             "facts": {
