@@ -345,7 +345,7 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     thin #273 catalog/config/episodes/byTapeChannel projection (packaged
     catalog hash; CONFIG_UPDATE ledger when cached; EpisodeRegistry /
     OpportunityQueue counters when injected; otherwise unloaded/empty
-    stubs), schema-complete llm/tts components (live transport/residency when an
+    stubs), schema-complete llm/tts/detectors/facts components (live transport/residency when an
     LlmComponent is attached; otherwise stubs), and null-or-live timeline
     session-identity fields (sessionPlan/sessionRef/occurrenceId/
     lineageId/stage — all-or-none; filled from APPLY_CONTEXT timeline
@@ -420,13 +420,17 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
                 component_status=tts_status,
             ),
             "tape": tape_component,
-            "detectors": {"status": "ready", "reason": None, "disabled": []},
+            "detectors": {
+                "status": "ready",
+                "reason": None,
+                "disabled": [dict(row) for row in status.detector_disabled],
+            },
             "facts": {
                 "status": "ready",
                 "reason": None,
-                "viewRevision": 0,
-                "active": 0,
-                "historicalSummaries": 0,
+                "viewRevision": int(status.fact_view_revision or 0),
+                "active": int(status.fact_active_count),
+                "historicalSummaries": int(status.fact_historical_summary_count),
                 "historyComplete": history_complete,
             },
         },

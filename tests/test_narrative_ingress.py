@@ -561,6 +561,66 @@ def test_project_runtime_status_llm_last_attempt_timeout_maps_timed_out() -> Non
     assert attempt["terminalReason"] == "realization_timeout"
 
 
+def test_project_runtime_status_facts_live_after_context() -> None:
+    """#273/#284 facts block tracks live viewRevision/active/historicalSummaries."""
+    from test_narrative_context_batch import _event, _fact_view, _timeline
+
+    from irswitch.commentary.mailbox import NarrativeMailbox
+    from irswitch.events.narrative_ingress import NarrativeIngress
+
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    fact_view = _fact_view(3, revision=11)
+    fact_view["compactedSummaryRefs"] = ["summary:a", "summary:b"]
+    result = ingress.admit_context_publication(
+        timeline=_timeline(),
+        fact_view=fact_view,
+        events=(_event(0, fanout=21, fact_revision=11),),
+        fanout_stream_sequence=21,
+        command_id_prefix="facts:live",
+        enqueued_mono_ms=5_000,
+    )
+    assert result.accepted
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+    facts = project_runtime_status(runtime.status())["components"]["facts"]
+    assert facts == {
+        "status": "ready",
+        "reason": None,
+        "viewRevision": 11,
+        "active": 3,
+        "historicalSummaries": 2,
+        "historyComplete": True,
+    }
+
+
+def test_project_runtime_status_detectors_disabled_from_bank() -> None:
+    """#273/#284 detectors.disabled mirrors DetectorBank disable_for_run reasons."""
+    from irswitch.events.detector_bank import DetectorBank
+
+    bank = DetectorBank()
+    bank.disable_for_run(("battle_ahead_v1",), reason="required_capture_lost")
+    runtime = NarrativeRuntime(detector_bank=bank)
+    runtime.enable()
+    detectors = project_runtime_status(runtime.status())["components"]["detectors"]
+    assert detectors["status"] == "ready"
+    assert detectors["reason"] is None
+    assert detectors["disabled"] == [{"id": "battle_ahead_v1", "reason": "required_capture_lost"}]
+
+
+def test_project_runtime_status_detectors_empty_without_bank() -> None:
+    """Without a DetectorBank, detectors stay the ready/empty stub."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert project_runtime_status(runtime.status())["components"]["detectors"] == {
+        "status": "ready",
+        "reason": None,
+        "disabled": [],
+    }
+
+
 def test_race_wires_llm_component_into_narrative_runtime() -> None:
     """Race cutover passes the warmed LlmComponent into NarrativeRuntime for status."""
     race_src = (

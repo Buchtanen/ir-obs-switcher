@@ -17,6 +17,7 @@ from typing import Any, Literal
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
+from irswitch.events.detector_bank import DetectorBank
 from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
@@ -190,6 +191,9 @@ class RuntimeStatus:
     plans_dispatched_in_cycle: int
     timeline_revision: int | None
     fact_view_revision: int | None
+    fact_active_count: int
+    fact_historical_summary_count: int
+    detector_disabled: tuple[dict[str, str], ...]
     config_valid: bool | None
     component_health: dict[str, str]
     tape_status: str | None
@@ -259,6 +263,7 @@ class NarrativeRuntime:
         episode_registry: EpisodeRegistry | None = None,
         story_director: StoryDirector | None = None,
         llm_component: LlmComponent | None = None,
+        detector_bank: DetectorBank | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -328,6 +333,9 @@ class NarrativeRuntime:
         self._episode_now_ms: int = 0
         self._story_director = story_director
         self._llm_component = llm_component
+        self._detector_bank = detector_bank
+        self._fact_active_count = 0
+        self._fact_historical_summary_count = 0
         self._director_world: DirectorWorld | None = None
         self._director_candidates: tuple[DirectorCandidate, ...] = ()
         self._director_manual_seed = False
@@ -345,6 +353,19 @@ class NarrativeRuntime:
         self._last_recovery_loss_last: int | None = None
         self._last_recovery_safety_effect_count = 0
         self._last_recovery_cancelled_lane: LaneState | None = None
+
+    def _detector_disabled_snapshot(self) -> tuple[dict[str, str], ...]:
+        if self._detector_bank is None:
+            return ()
+        return self._detector_bank.disabled_for_status()
+
+    def _ingest_fact_view_counts(self, fact_view: Mapping[str, object] | dict[str, object]) -> None:
+        facts = fact_view.get("facts")
+        refs = fact_view.get("compactedSummaryRefs")
+        self._fact_active_count = len(facts) if isinstance(facts, list) else 0
+        self._fact_historical_summary_count = len(refs) if isinstance(refs, list) else 0
+        if "historyComplete" in fact_view:
+            self._history_complete = bool(fact_view["historyComplete"])
 
     def enable(self) -> None:
         if self._runtime in {"stopped", "stopping"}:
@@ -392,6 +413,9 @@ class NarrativeRuntime:
             plans_dispatched_in_cycle=self._plans_in_cycle,
             timeline_revision=self._timeline_revision,
             fact_view_revision=self._fact_view_revision,
+            fact_active_count=int(self._fact_active_count),
+            fact_historical_summary_count=int(self._fact_historical_summary_count),
+            detector_disabled=self._detector_disabled_snapshot(),
             config_valid=self._config_valid,
             component_health=health,
             tape_status=self._tape_status,
@@ -967,7 +991,9 @@ class NarrativeRuntime:
     def _apply_context_projection(self, part: ContextBatchPart) -> None:
         timeline = part.batch.timeline
         self._timeline_revision = int(timeline["timelineRevision"])
-        self._fact_view_revision = int(part.batch.fact_view["viewRevision"])
+        fact_view = part.batch.fact_view
+        self._fact_view_revision = int(fact_view["viewRevision"])
+        self._ingest_fact_view_counts(fact_view)
         self._broadcast_epoch = int(timeline.get("broadcastEpoch", self._broadcast_epoch))
         self._stream_epoch = int(timeline.get("streamEpoch", self._stream_epoch))
         if "narrativeRunActive" in timeline:
@@ -1631,6 +1657,8 @@ class NarrativeRuntime:
                 self._timeline_revision = int(timeline["timelineRevision"])
             if "viewRevision" in fact_view:
                 self._fact_view_revision = int(fact_view["viewRevision"])
+            if fact_view:
+                self._ingest_fact_view_counts(fact_view)
         lane_before_cancel = self._lane
         self._history_complete = False
         self._recovery_seen = True
