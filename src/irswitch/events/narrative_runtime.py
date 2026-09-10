@@ -16,10 +16,12 @@ from pathlib import Path
 from typing import Any, Literal
 
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
+from irswitch.contracts.catalog_loader import load_narrative_catalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
 from irswitch.events.detector_bank import DetectorBank
 from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
+from irswitch.events.exposure_store import ExposureIntent, ExposureStore
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
     CommitToken,
@@ -270,6 +272,7 @@ class NarrativeRuntime:
         commit_world_provider: CommitWorldProvider | None = None,
         opportunity_queue: OpportunityQueue | None = None,
         episode_registry: EpisodeRegistry | None = None,
+        exposure_store: ExposureStore | None = None,
         story_director: StoryDirector | None = None,
         llm_component: LlmComponent | None = None,
         detector_bank: DetectorBank | None = None,
@@ -344,6 +347,8 @@ class NarrativeRuntime:
         self._active_beat_id: str | None = None
         self._opportunity_now_ms: int = 0
         self._episode_registry = episode_registry
+        self._exposure_store = exposure_store
+        self._pending_exposure: dict[str, object] | None = None
         self._seeded_episode_intent: EpisodeIntent | None = None
         self._episode_id: str | None = None
         self._episode_beat_id: str | None = None
@@ -622,6 +627,9 @@ class NarrativeRuntime:
 
     def episode_id_for_test(self) -> str | None:
         return self._episode_id
+
+    def exposure_store_for_test(self) -> ExposureStore | None:
+        return self._exposure_store
 
     def seed_director_for_test(
         self,
@@ -1094,6 +1102,7 @@ class NarrativeRuntime:
         self._speech_backend_generation = None
         self._speech_dispatched_at_mono_ms = None
         self._speech_accepted_at_mono_ms = None
+        self._pending_exposure = None
 
     def _begin_speech_projection(
         self,
@@ -1228,6 +1237,74 @@ class NarrativeRuntime:
             effects.append(f"episode_step:{transition.reason}")
         effects.append("episode_invalidated")
         self._clear_episode_binding()
+
+    def _arm_pending_exposure(self, *, text: str, beat_id: str | None) -> None:
+        """Snapshot exposure fields at commit; record only on PLAYBACK_ACCEPTED."""
+
+        self._pending_exposure = None
+        if self._exposure_store is None:
+            return
+        if self._speech_source_kind != "narrative":
+            return
+        utterance_id = self._speech_utterance_id
+        if not utterance_id:
+            return
+        resolved_beat = beat_id or self._episode_beat_id or self._active_beat_id
+        if not resolved_beat:
+            return
+        try:
+            catalog = load_narrative_catalog().require_catalog()
+            beat = catalog.beat(str(resolved_beat))
+        except Exception:
+            return
+        semantic_identity: tuple[str, ...] = ("narrative",)
+        if self._episode_registry is not None and self._episode_id is not None:
+            episode = self._episode_registry.get(self._episode_id)
+            if episode is not None and episode.semantic_identity:
+                semantic_identity = tuple(episode.semantic_identity)
+        self._pending_exposure = {
+            "utterance_id": str(utterance_id),
+            "semantic_identity": semantic_identity,
+            "family": str(beat.realization.family),
+            "pattern": f"{resolved_beat}:tight:1",
+            "text": str(text),
+            "tape_channel": str(beat.tape_channel),
+            "policy_id": str(beat.policy.id),
+            "episode_id": self._episode_id,
+            "beat_role": str(beat.role),
+        }
+
+    def _record_exposure(self, effects: list[str], *, now_ms: int) -> None:
+        """Sole writer hook: record spoken exposure at playback accept."""
+
+        pending = self._pending_exposure
+        self._pending_exposure = None
+        if self._exposure_store is None:
+            return
+        if self._speech_source_kind == "manual":
+            effects.append("exposure_skipped_manual")
+            return
+        if pending is None:
+            effects.append("exposure_skipped_no_pending")
+            return
+        intent = ExposureIntent(
+            phase="speaking",
+            utterance_id=str(pending["utterance_id"]),
+            semantic_identity=tuple(pending["semantic_identity"]),  # type: ignore[arg-type]
+            family=str(pending["family"]),
+            pattern=str(pending["pattern"]),
+            text=str(pending["text"]),
+            tape_channel=str(pending["tape_channel"]),
+            policy_id=str(pending["policy_id"]),
+            episode_id=None if pending["episode_id"] is None else str(pending["episode_id"]),
+            beat_role=None if pending["beat_role"] is None else str(pending["beat_role"]),
+            now_ms=int(now_ms),
+            source_kind="narrative",
+        )
+        step = self._exposure_store.record(intent)
+        effects.append(f"exposure_step:{step.reason}")
+        if step.reason == "recorded":
+            effects.append("exposure_recorded")
 
     def _mark_episode_spoken(self, effects: list[str]) -> None:
         if self._episode_registry is None or self._episode_id is None:
@@ -1739,6 +1816,10 @@ class NarrativeRuntime:
             backend_generation=1,
             dispatched_at_mono_ms=int(command.enqueued_mono_ms),
         )
+        self._arm_pending_exposure(
+            text=text,
+            beat_id=None if beat_id is None else str(beat_id),
+        )
         self._realization = None
         self._commit_token = None
         self._speech_deadline_stage = "start"
@@ -1792,6 +1873,7 @@ class NarrativeRuntime:
             ]
             self._consume_opportunity(effects)
             self._mark_episode_spoken(effects)
+            self._record_exposure(effects, now_ms=int(command.enqueued_mono_ms))
             return "handled", effects
         if self._lane == "speaking":
             # Duplicate acceptance while speaking requests stop; never a second utterance.

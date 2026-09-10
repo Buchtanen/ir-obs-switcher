@@ -20,6 +20,7 @@ from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
 from irswitch.events.beat_plan import CandidateOrder
 from irswitch.events.episode_registry import EpisodeRegistry
+from irswitch.events.exposure_store import ExposureStore
 from irswitch.events.freshness_commit import (
     SCHEMA_VERSION,
     CommitToken,
@@ -1838,6 +1839,114 @@ def test_episode_mark_spoken_and_resolve_on_speech_completed() -> None:
     assert resolved is not None
     assert resolved.state == "resolved"
     assert resolved.resolution_reason == "natural_exit"
+
+
+def test_exposure_recorded_on_playback_accepted_as_sole_writer() -> None:
+    registry = EpisodeRegistry()
+    store = ExposureStore()
+    runtime = NarrativeRuntime(episode_registry=registry, exposure_store=store)
+    runtime.enable()
+    runtime.seed_episode_for_test(
+        intent=_episode_intent(now_ms=10_000),
+        beat_id="battle.pursuit",
+        now_ms=10_000,
+    )
+    runtime.admit(_event_impulse("exp:speak", revision=62, fanout=62))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "exp:ok",
+            "REALIZATION_SUCCEEDED",
+            11_400,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert store.size == 0
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="exp:pb"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    assert "exposure_recorded" in accepted.effects
+    assert "exposure_step:recorded" in accepted.effects
+    assert store.size == 1
+    episode_id = runtime.episode_id_for_test()
+    assert episode_id is not None
+    episode = registry.get(episode_id)
+    assert episode is not None
+    view = store.query(
+        semantic_identity=tuple(episode.semantic_identity),
+        pattern="battle.pursuit:tight:1",
+        text=str(utterance["text"]),
+        tape_channel="race.battle.closing",
+        policy_id="live_story",
+        now_ms=11_400,
+    )
+    assert view.semantic_fatigue > 0.0
+    assert view.pattern_fatigue > 0.0
+    assert view.channel_pressure > 0.0
+
+
+def test_manual_playback_does_not_record_exposure() -> None:
+    store = ExposureStore()
+    runtime = NarrativeRuntime(exposure_store=store)
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "exp:manual", 12_000, text="Manual line.", admission_ordinal=1
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="exp:manual-pb"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    assert "exposure_recorded" not in accepted.effects
+    assert store.size == 0
+
+
+def test_exposure_store_absent_keeps_legacy_playback() -> None:
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime.admit(_event_impulse("exp:legacy", revision=63, fanout=63))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    token = runtime.current_realization_token()
+    assert token is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "exp:legacy-ok",
+            "REALIZATION_SUCCEEDED",
+            11_500,
+            request_id=str(token["requestId"]),
+            request_ordinal=int(token["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(token["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(token),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="exp:legacy-pb"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    assert not any(effect.startswith("exposure_") for effect in accepted.effects)
 
 
 def test_story_director_absent_keeps_legacy_dispatch() -> None:

@@ -24,6 +24,7 @@ from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.episode_registry import EpisodeRegistry
+from irswitch.events.exposure_store import ExposureStore
 from irswitch.events.freshness_commit import FreshnessGate
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
@@ -268,6 +269,7 @@ class RaceRuntime:
             )
             self._speech_draft_cache = SpeechDraftCache()
             opportunity_queue = OpportunityQueue()
+            exposure_store = ExposureStore()
             qwen_service = None
             llm_component = None
             if self._narrative_qwen_enabled:
@@ -320,6 +322,7 @@ class RaceRuntime:
                 story_director=StoryDirector(),
                 opportunity_queue=opportunity_queue,
                 episode_registry=EpisodeRegistry(),
+                exposure_store=exposure_store,
                 freshness_gate=FreshnessGate(opportunity_queue),
                 llm_component=llm_component,
                 command_journal_path=journal_dir / "narrative-command-journal.ndjson",
