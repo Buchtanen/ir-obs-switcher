@@ -47,13 +47,16 @@ class CommentaryConsumer:
         *,
         decision_hook: Callable[[dict[str, Any], float], None] | None = None,
         story_registry: MiniStoryRegistry | None = None,
+        idle_speech_enabled: bool = True,
     ) -> None:
         # subscription may be None under #284 EventSubscription cutover: race mirrors
-        # stream items via NarrativeShadowConsumer and this lane only idle-ticks.
+        # stream items via NarrativeShadowConsumer. When idle_speech_enabled is False,
+        # the lane keeps lifecycle/context cache only and never director.tick / filler.
         self.subscription = subscription
         self.director = director
         self._settings, self._language = get_settings()
         self._decision_hook = decision_hook
+        self.idle_speech_enabled = bool(idle_speech_enabled)
         self._filler_requests: asyncio.Queue[FillerRequest] = asyncio.Queue(maxsize=1)
         self._filler_results: asyncio.Queue[FillerResult] = asyncio.Queue(maxsize=1)
         self._outstanding_filler: FillerRequest | None = None
@@ -96,12 +99,14 @@ class CommentaryConsumer:
                 if self.subscription is None:
                     # Cutover idle lane: stream items arrive via mirror handle().
                     await asyncio.sleep(0.2)
-                    self._idle_tick()
+                    if self.idle_speech_enabled:
+                        self._idle_tick()
                     continue
                 try:
                     item = await asyncio.wait_for(self.subscription.get(), timeout=0.2)
                 except TimeoutError:
-                    self._idle_tick()
+                    if self.idle_speech_enabled:
+                        self._idle_tick()
                     continue
                 try:
                     await self.handle(item)
@@ -376,6 +381,8 @@ class CommentaryConsumer:
         envelope.metrics.setdefault(f"{prefix}_start_position", profile.get("start_position"))
 
     def _idle_tick(self) -> None:
+        if not self.idle_speech_enabled:
+            return
         latest_payload = self._latest_context_payload()
         if latest_payload is None:
             return

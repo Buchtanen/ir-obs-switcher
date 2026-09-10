@@ -194,6 +194,7 @@ class RaceRuntime:
             self._commentary_settings,
             decision_hook=self._record_commentary_decision,
             story_registry=self.story_registry,
+            idle_speech_enabled=False,
         )
         director.filler_formatter = lambda envelope: self.race_observer.format_filler_text(
             envelope, locale=self._overlay_settings().language
@@ -226,7 +227,8 @@ class RaceRuntime:
         # → NarrativeRuntime.run() (reduce_after_admit=False). Commentary has no
         # fanout subscription; shadow mirrors lifecycle/context only.
         # TTS via tts_effect; realization_effect + StoryDirector composition feed speakable
-        # drafts from shadow events. Idle lane still runs. No INI key.
+        # drafts from shadow events. Idle-lane speech disabled (idle_speech_enabled=False).
+        # No INI key.
         self._narrative_shadow_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None

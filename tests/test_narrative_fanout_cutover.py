@@ -126,9 +126,11 @@ def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
     assert "WorkerSupervisor" in race
     assert '"narrative_runtime"' in race or "'narrative_runtime'" in race
     assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race
-    # Commentary object + idle lane remain; EventSubscription ownership moved to shadow.
+    # Commentary object remains for SessionReset/ConfigUpdate mirror + context cache;
+    # idle-lane speech is disabled (NarrativeRuntime owns TTS).
     assert "CommentaryConsumer" in race
     assert "commentary_consumer" in race
+    assert "idle_speech_enabled=False" in race or "idle_speech_enabled = False" in race
 
 
 @pytest.mark.asyncio
