@@ -207,6 +207,7 @@ class RuntimeStatus:
     broadcast_epoch: int
     stream_epoch: int
     narrative_run_active: bool
+    loop_active: bool
     stream_active: bool | None
     stream_state: str
     # #273 session identity (all-or-none; null until context supplies a full set)
@@ -367,6 +368,7 @@ class NarrativeRuntime:
             broadcast_epoch=int(self._broadcast_epoch),
             stream_epoch=int(self._stream_epoch),
             narrative_run_active=bool(self._narrative_run_active),
+            loop_active=bool(self._run_active),
             stream_active=self._stream_active,
             stream_state=str(self._stream_state),
             session_plan=(None if self._session_plan is None else dict(self._session_plan)),

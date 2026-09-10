@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from test_narrative_context_batch import _event, _fact_view, _timeline
 
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.events import __all__ as events_exports
 from irswitch.events.narrative_ingress import NarrativeIngress, project_runtime_status
 from irswitch.events.narrative_runtime import NarrativeRuntime, RuntimeStatus
+from irswitch.contracts.command import NarrativeCommand
 
 SOURCE = (
     Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_ingress.py"
@@ -121,6 +123,7 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
     }
     assert projection["queues"]["mailbox"]["capacity"] == 64
     assert projection["queues"]["mailbox"]["depth"] == 0
+    assert projection["loop"] == {"active": False}
     assert projection["timeline"] == {
         "broadcastEpoch": 0,
         "streamEpoch": 0,
@@ -218,6 +221,40 @@ def test_project_runtime_status_ready_library_golden() -> None:
     assert projection["queues"]["opportunities"] == expected["queues"]["opportunities"]
     assert projection["components"]["detectors"] == expected["components"]["detectors"]
     assert projection["components"]["facts"] == expected["components"]["facts"]
+
+
+def test_project_runtime_status_loop_inactive_without_actor() -> None:
+    """#284 loop liveness: library status reports loop.active=false until run()."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert runtime.status().loop_active is False
+    projection = project_runtime_status(runtime.status())
+    assert projection["loop"] == {"active": False}
+
+
+@pytest.mark.asyncio
+async def test_project_runtime_status_loop_active_while_run_loop_owns_actor() -> None:
+    """#284 loop liveness: loop.active tracks NarrativeRuntime.run() ownership."""
+    import asyncio
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    task = asyncio.create_task(runtime.run())
+    try:
+        for _ in range(50):
+            if runtime.status().loop_active:
+                break
+            await asyncio.sleep(0)
+        assert runtime.status().loop_active is True
+        assert project_runtime_status(runtime.status())["loop"] == {"active": True}
+        runtime.admit(NarrativeCommand.shutdown("loop:stop", 1, "test_stop"))
+        await asyncio.wait_for(task, timeout=1.0)
+        assert runtime.status().loop_active is False
+        assert project_runtime_status(runtime.status())["loop"] == {"active": False}
+    finally:
+        if not task.done():
+            runtime.admit(NarrativeCommand.shutdown("loop:stop:force", 2, "test_stop"))
+            await asyncio.wait_for(task, timeout=1.0)
 
 
 def test_project_runtime_status_speech_retains_last_terminal_after_completion() -> None:

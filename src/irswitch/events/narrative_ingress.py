@@ -374,6 +374,9 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
         "catalog": dict(_packaged_catalog_projection()),
         "config": _config_projection(status),
         "byTapeChannel": _by_tape_channel_projection(status),
+        "loop": {
+            "active": bool(status.loop_active),
+        },
         "timeline": {
             "broadcastEpoch": int(status.broadcast_epoch),
             "streamEpoch": int(status.stream_epoch),

@@ -57,6 +57,7 @@ async def test_runtime_status_without_provider_returns_disabled_subset() -> None
             assert data["status"] == "disabled"
             assert data["speech"]["state"] == "idle"
             assert data["queues"]["mailbox"]["capacity"] == 64
+            assert data["loop"] == {"active": False}
             assert data["timeline"] == {
                 "broadcastEpoch": 0,
                 "streamEpoch": 0,
