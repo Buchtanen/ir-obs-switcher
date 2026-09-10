@@ -1,6 +1,6 @@
 # Events — branch delta (#273/#284 runtime status)
 
-> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup).
+> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup). Manual admission latch: [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup).
 
 ## NarrativeRuntime identity (`events/narrative_runtime.py`)
 
@@ -49,10 +49,15 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 - `project_validate_response` — offline `ValidateRequest`→`ValidateResponse` (`commentary-runtime/2`); caller-supplied EN text + `beatId` + `actorBindings` / `factBindings`; nečte live runtime. **Not** exported z `events/__init__.py`.
 - HTTP mount: `POST /api/commentary/runtime/validate` v `events/narrative_runtime_http.py` (200 i když `valid=false`; 400 malformed).
 
+## Manual admission latch (`events/narrative_manual_latch.py`)
+
+- `ManualAdmissionLatch` — one-shot rendezvous `pending | actor_claimed | caller_abandoned`; `ADMISSION_TIMEOUT_S=1.0`. **Not** exported z `events/__init__.py`.
+- `NarrativeRuntime.register_manual_latch` / `_pop_manual_latch` — process-local map keyed by `requestId`.
+
 ## Manual speak (`events/narrative_runtime.py`)
 
-- `ManualSpeakOutcome`, `NarrativeRuntime.try_manual_speak` — sync admit + reduce pro manual speak (bez plného `ManualAdmissionLatch` / 1s await; ten zůstává deferred).
-- HTTP mount: `POST /api/commentary/runtime/speak` (202 / 409 / 422 / 503). Legacy `POST /api/commentary/speak` beze změny.
+- `ManualSpeakOutcome`, `NarrativeRuntime.try_manual_speak` — alokuje latch, admitne `MANUAL_SPEAK_REQUEST`, awaitne resolution (default 1s; `timeout_s` / `reduce_inline` kwargs). Když actor loop neběží, sync inline reduce; jinak `_on_manual` claimne latch před lane mutate. Timeout → `admission_timeout`; abandoned latch zůstává registrovaný (`manual_abandoned`).
+- HTTP mount: `POST /api/commentary/runtime/speak` (202 / 409 / 422 / 503 incl. `admission_timeout`). Legacy `POST /api/commentary/speak` beze změny.
 
 ## Goldens
 
@@ -60,15 +65,15 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 - Speech idle: `tests/fixtures/commentary_runtime/status_speech_idle.json` (`language`, idle `speech`, bounded `components`)
 - Decisions selected: `tests/fixtures/commentary_runtime/decisions_selected.json`
 - Validate: `validate_request.json`, `validate_supported.json`, `validate_rejected.json`
-- Speak: `speak_request.json`, `speak_accepted.json`
+- Speak: `speak_request.json`, `speak_accepted.json`, `error_admission_timeout.json`
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**17** = prior **14** + **3** validate rows). Related **215**.
+`tests/test_narrative_ingress.py` (**17** = prior **14** + **3** validate rows). `tests/test_narrative_runtime.py` latch rows (**3**). Related **219** (= prior **215** + **4** latch/HTTP timeout rows).
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: full components (detectors/facts), catalog/config/episodes/byTapeChannel; full `ManualAdmissionLatch`; final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`).
+Full #273 schema: full components (detectors/facts), catalog/config/episodes/byTapeChannel; final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`).
 
 ## Related
 

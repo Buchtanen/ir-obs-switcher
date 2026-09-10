@@ -849,7 +849,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no provider; `APP_NARRATIVE_RUNTIME` or process-level `set_narrative_runtime`; does not start NarrativeRuntime) |
 | `GET` | `/api/commentary/runtime/decisions?limit=20` | `#284` / `#273` commentary-runtime/2 decisions ring from NarrativeRuntime (`limit` clamp 1–100; newest-first; capacity `DECISION_CAPACITY=128`; additive to legacy `/api/commentary/decisions`) |
 | `POST` | `/api/commentary/runtime/validate` | `#284` / `#273` offline validate against caller bindings (`commentary-runtime/2`; **200** even when `valid=false`; **400** malformed; no live runtime required) |
-| `POST` | `/api/commentary/runtime/speak` | `#284` / `#273` manual speak via `NarrativeRuntime.try_manual_speak` (**202** accepted / **409** `speech_busy` / **422** `validation_failed` / **503** `component_unavailable`\|`mailbox_overloaded`; additive to legacy `/api/commentary/speak`) |
+| `POST` | `/api/commentary/runtime/speak` | `#284` / `#273` manual speak via `NarrativeRuntime.try_manual_speak` + `ManualAdmissionLatch` (**202** accepted / **409** `speech_busy` / **422** `validation_failed` / **503** `component_unavailable`\|`mailbox_overloaded`\|`admission_timeout`; additive to legacy `/api/commentary/speak`) |
 | `GET` | `/api/commentary/decisions?limit=20` | legacy speak/skip decisions; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | legacy localhost + CSRF; `{text, nodeId}` — unchanged; final cutover to runtime validate deferred |
 | `POST` | `/api/commentary/speak` | legacy localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` — unchanged; final cutover to runtime speak deferred |
@@ -868,7 +868,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
 - `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`.
-- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; full `ManualAdmissionLatch` + legacy `/api/commentary/validate|speak` cutover deferred). Full catalog/components/detectors/facts remain later.
+- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; legacy `/api/commentary/validate|speak` cutover deferred). Full catalog/components/detectors/facts remain later.
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
@@ -1010,7 +1010,7 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 
 ### POST /api/commentary/runtime/speak
 
-`#284` / `#273` manual EN speak: admits one utterance through `NarrativeRuntime.try_manual_speak` (sync admit + reduce path; full `ManualAdmissionLatch` / 1s await remains deferred).
+`#284` / `#273` manual EN speak: admits one utterance through `NarrativeRuntime.try_manual_speak` with a one-shot `ManualAdmissionLatch` (`events/narrative_manual_latch.py`; default `ADMISSION_TIMEOUT_S=1.0`).
 
 **URL**: `http://127.0.0.1:17321/api/commentary/runtime/speak`
 
@@ -1022,7 +1022,9 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 - Additive to legacy `POST /api/commentary/speak` (TTS test page + CSRF + sequence-graph validator); does **not** replace it. Final legacy cutover deferred.
 - Provider resolution matches status mount (`APP_NARRATIVE_RUNTIME` then `get_narrative_runtime()`). Provider must expose `try_manual_speak`.
 - Requires `schemaVersion: commentary-runtime/2` and `language: en`. Does **not** use legacy CSRF middleware.
-- Does **not** start the actor loop by itself; when attached runtime is active, manual speak may enqueue through the reducer (do not call `try_manual_speak` concurrently with `run()` in library tests).
+- Allocates a latch per `requestId`, nonblocking-admits `MANUAL_SPEAK_REQUEST`, then awaits actor resolution (default 1s). `_on_manual` claims the latch before lane mutation and resolves `accepted` / `speech_busy` / `component_unavailable`. On timeout the caller abandons the latch and returns `admission_timeout`; the abandoned latch stays registered so a later reduce cannot speak (`ignored_stale_or_inapplicable` / `manual_abandoned`).
+- When the actor loop is **not** running, `try_manual_speak` reduces inline (`reduce_inline` default) so library/HTTP tests stay deterministic; when the actor loop **is** running, admission waits on the latch instead of inline reduce.
+- Does **not** start the actor loop by itself (do not call `try_manual_speak` concurrently with `run()` in library tests).
 
 **Request** (`commentary-runtime/2`): `schemaVersion`, `language` (`en` only), `text` (non-empty string).
 
@@ -1033,7 +1035,7 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 | **202** | `{schemaVersion, accepted: true, requestId, admittedState}` | Manual speak admitted (`admittedState` typically `committed`) |
 | **409** | `{schemaVersion, error: {code: speech_busy, …}}` | Speech lane busy |
 | **422** | `{schemaVersion, error: {code: validation_failed, …}}` | Missing/invalid `text` or command construction failed |
-| **503** | `{schemaVersion, error: {code: component_unavailable\|mailbox_overloaded, …}}` | No provider / no `try_manual_speak` / mailbox full / reduce miss |
+| **503** | `{schemaVersion, error: {code: component_unavailable\|mailbox_overloaded\|admission_timeout, …}}` | No provider / no `try_manual_speak` / mailbox full / reduce miss / latch await timed out |
 | **400** | `{schemaVersion, error: {code: invalid_json\|invalid_request, …}}` | Bad JSON or wrong `schemaVersion` / `language` |
 
 **Example (accepted)** — shape from golden `tests/fixtures/commentary_runtime/speak_accepted.json` (`requestId` is server-generated, e.g. `manual:7f5b`):
@@ -1044,6 +1046,19 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
   "accepted": true,
   "requestId": "manual:7f5b",
   "admittedState": "committed"
+}
+```
+
+**Example (admission timeout)** — golden `tests/fixtures/commentary_runtime/error_admission_timeout.json`:
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "error": {
+    "code": "admission_timeout",
+    "fields": {},
+    "message": "Bounded public detail."
+  }
 }
 ```
 
