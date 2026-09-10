@@ -40,6 +40,7 @@ from irswitch.events.narrative_tts_bridge import build_tts_effect
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.qwen_transport import LlmComponent, RealizerService, StdlibTransport
 from irswitch.events.replay import is_n12_replay, load_n12_replay
+from irswitch.events.semantic_verifier import SemanticVerifier
 from irswitch.events.story_director import StoryDirector
 from irswitch.events.stream import (
     ConfigUpdate,
@@ -299,6 +300,7 @@ class RaceRuntime:
                 freshness_gate=FreshnessGate(opportunity_queue),
                 llm_component=llm_component,
                 command_journal_path=journal_dir / "narrative-command-journal.ndjson",
+                semantic_verifier=SemanticVerifier(),
             )
             runtime.enable()
             self.narrative_runtime = runtime

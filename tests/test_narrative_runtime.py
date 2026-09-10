@@ -28,6 +28,7 @@ from irswitch.events.freshness_commit import (
 from irswitch.events.narrative import partition_context_batches
 from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
 from irswitch.events.opportunity_queue import OpportunityQueue
+from irswitch.events.semantic_verifier import SemanticVerifier
 from irswitch.events.story_director import StoryDirector
 
 SOURCE = (
@@ -1466,6 +1467,131 @@ def test_freshness_gate_stale_rejects_without_tts() -> None:
     assert runtime.current_realization_token() is None
     assert runtime.current_utterance_token() is None
     assert gate.fail_count == 1
+
+
+def test_semantic_verifier_accepts_then_dispatches_tts() -> None:
+    """#270/#284: after freshness, accepted verification still reaches TTS."""
+    gate = FreshnessGate()
+    token, world = _minimal_commit_pair()
+    runtime = NarrativeRuntime(
+        freshness_gate=gate,
+        commit_world_provider=lambda: world,
+        semantic_verifier=SemanticVerifier(),
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("verify:pass", revision=50, fanout=50))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    runtime.seed_commit_token_for_test(token)
+    runtime.seed_semantic_frame_for_test(
+        family="battle.closing",
+        subject_surface="Alex",
+        required_claim_surface="is closing on Morgan",
+        actor_bindings=(
+            ("hero", ("Alex", "the driver")),
+            ("car:22", ("Morgan", "the car ahead")),
+        ),
+        required_actors=frozenset({"hero", "car:22"}),
+    )
+    rz = runtime.current_realization_token()
+    assert rz is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "verify:pass:ok",
+            "REALIZATION_SUCCEEDED",
+            10_200,
+            request_id=str(rz["requestId"]),
+            request_ordinal=int(rz["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(rz["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(rz, text="Alex is closing on Morgan."),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert "realization_committed" in committed.effects
+    assert "effect:dispatch_tts" in committed.effects
+    assert "semantic_verdict:accepted" in committed.effects
+
+
+def test_semantic_verifier_rejects_without_tts() -> None:
+    """#270/#284: failed verification blocks TTS after freshness passes."""
+    gate = FreshnessGate()
+    token, world = _minimal_commit_pair()
+    runtime = NarrativeRuntime(
+        freshness_gate=gate,
+        commit_world_provider=lambda: world,
+        semantic_verifier=SemanticVerifier(),
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("verify:fail", revision=51, fanout=51))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    runtime.seed_commit_token_for_test(token)
+    runtime.seed_semantic_frame_for_test(
+        family="battle.closing",
+        subject_surface="Alex",
+        required_claim_surface="is closing on Morgan",
+        actor_bindings=(
+            ("hero", ("Alex", "the driver")),
+            ("car:22", ("Morgan", "the car ahead")),
+        ),
+        required_actors=frozenset({"hero", "car:22"}),
+    )
+    rz = runtime.current_realization_token()
+    assert rz is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "verify:fail:ok",
+            "REALIZATION_SUCCEEDED",
+            10_210,
+            request_id=str(rz["requestId"]),
+            request_ordinal=int(rz["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(rz["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(rz, text="I think Alex might be closing?"),
+        )
+    )
+    rejected = runtime.reduce_next()
+    assert rejected is not None
+    assert rejected.lane_after == "idle"
+    assert "realization_verify_rejected" in rejected.effects
+    assert "effect:dispatch_tts" not in rejected.effects
+    assert runtime.current_utterance_token() is None
+
+
+def test_semantic_verifier_skips_when_frame_missing() -> None:
+    """#270/#284: verifier without a frame still reaches TTS (skip, not reject)."""
+    gate = FreshnessGate()
+    token, world = _minimal_commit_pair()
+    runtime = NarrativeRuntime(
+        freshness_gate=gate,
+        commit_world_provider=lambda: world,
+        semantic_verifier=SemanticVerifier(),
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("verify:skip", revision=52, fanout=52))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    runtime.seed_commit_token_for_test(token)
+    rz = runtime.current_realization_token()
+    assert rz is not None
+    runtime.admit(
+        NarrativeCommand.realization_result(
+            "verify:skip:ok",
+            "REALIZATION_SUCCEEDED",
+            10_220,
+            request_id=str(rz["requestId"]),
+            request_ordinal=int(rz["requestOrdinal"]),  # type: ignore[arg-type]
+            dispatch_generation=int(rz["dispatchGeneration"]),  # type: ignore[arg-type]
+            result=_result_for(rz, text="Clear sentence."),
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.lane_after == "committed"
+    assert "realization_committed" in committed.effects
+    assert "effect:dispatch_tts" in committed.effects
+    assert "semantic_verdict:skipped_no_frame" in committed.effects
 
 
 def test_opportunity_queue_absent_keeps_legacy_dispatch() -> None:

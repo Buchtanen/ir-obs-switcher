@@ -37,6 +37,10 @@ from irswitch.events.narrative_manual_latch import (
 )
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.qwen_transport import LlmComponent
+from irswitch.events.semantic_verifier import (
+    SemanticVerifier,
+    VerifyIntent,
+)
 from irswitch.events.story_director import (
     DECISION_CAPACITY,
     DirectorCandidate,
@@ -270,6 +274,7 @@ class NarrativeRuntime:
         llm_component: LlmComponent | None = None,
         detector_bank: DetectorBank | None = None,
         command_journal_path: Path | str | None = None,
+        semantic_verifier: SemanticVerifier | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -344,6 +349,7 @@ class NarrativeRuntime:
         self._command_journal_path = (
             None if command_journal_path is None else Path(command_journal_path)
         )
+        self._semantic_verifier = semantic_verifier
         self._fact_active_count = 0
         self._fact_historical_summary_count = 0
         self._director_world: DirectorWorld | None = None
@@ -1457,6 +1463,79 @@ class NarrativeRuntime:
             == int(self._utterance["dispatchGeneration"])
         )
 
+    def seed_semantic_frame_for_test(
+        self,
+        *,
+        family: str,
+        subject_surface: str,
+        required_claim_surface: str,
+        actor_bindings: tuple[tuple[str, tuple[str, ...]], ...] = (),
+        required_actors: frozenset[str] | None = None,
+    ) -> None:
+        """Test seam: attach #270 verify frame onto the in-flight realization token."""
+
+        if self._realization is None:
+            raise RuntimeError("realization token required before seed_semantic_frame_for_test")
+        self._realization = {
+            **self._realization,
+            "verifyFamily": family,
+            "verifySubjectSurface": subject_surface,
+            "verifyRequiredClaimSurface": required_claim_surface,
+            "verifyActorBindings": [[name, list(forms)] for name, forms in actor_bindings],
+            "verifyRequiredActors": sorted(
+                required_actors
+                if required_actors is not None
+                else {name for name, _ in actor_bindings}
+            ),
+        }
+
+    def _verify_intent_from_realization(
+        self, command: NarrativeCommand, *, text: str
+    ) -> VerifyIntent | None:
+        """Build #270 intent from in-flight realization verify frame + result text."""
+
+        token = self._realization
+        if not isinstance(token, dict):
+            return None
+        family = token.get("verifyFamily")
+        subject = token.get("verifySubjectSurface")
+        claim = token.get("verifyRequiredClaimSurface")
+        if not isinstance(family, str) or not family.strip():
+            return None
+        if not isinstance(subject, str) or not subject.strip():
+            return None
+        if not isinstance(claim, str) or not claim.strip():
+            return None
+        raw_bindings = token.get("verifyActorBindings") or ()
+        bindings: list[tuple[str, tuple[str, ...]]] = []
+        if isinstance(raw_bindings, (list, tuple)):
+            for item in raw_bindings:
+                if (
+                    isinstance(item, (list, tuple))
+                    and len(item) == 2
+                    and isinstance(item[0], str)
+                    and isinstance(item[1], (list, tuple))
+                ):
+                    forms = tuple(str(form) for form in item[1] if str(form).strip())
+                    if forms:
+                        bindings.append((item[0], forms))
+        raw_required = token.get("verifyRequiredActors") or ()
+        required: set[str] = set()
+        if isinstance(raw_required, (list, tuple, set, frozenset)):
+            required = {str(item) for item in raw_required if str(item).strip()}
+        if not required and bindings:
+            required = {name for name, _ in bindings}
+        return VerifyIntent(
+            text=text,
+            family=family.strip(),
+            subject_surface=subject.strip(),
+            required_claim_surface=claim.strip(),
+            actor_bindings=tuple(bindings),
+            required_actors=frozenset(required),
+            now_ms=int(command.enqueued_mono_ms),
+            deadline_mono_ms=int(command.enqueued_mono_ms) + 60_000,
+        )
+
     def _on_realization_succeeded(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
             return "ignored_stale_or_inapplicable", ["stale_realization_token"]
@@ -1495,8 +1574,43 @@ class NarrativeRuntime:
                 self._invalidate_episode(effects)
                 self._note_director_failure(effects)
                 return "handled", effects
-        self._lane = "committed"
         text = str(command.payload.get("text") or "").strip()
+        semantic_verdict: str | None = None
+        if self._semantic_verifier is not None:
+            intent = self._verify_intent_from_realization(command, text=text)
+            if intent is None:
+                # Live template/authored paths may not yet attach a #270 frame.
+                # Skip rather than fail-closed so race can inject the verifier
+                # without silencing every unframed utterance.
+                semantic_verdict = "skipped_no_frame"
+            else:
+                step = self._semantic_verifier.verify(intent)
+                accepted = (
+                    step.outcome == "succeeded"
+                    and step.result is not None
+                    and bool(step.result.accepted)
+                )
+                if not accepted:
+                    self._realization = None
+                    self._commit_token = None
+                    self._lane = "idle"
+                    reasons = ()
+                    if step.result is not None:
+                        reasons = tuple(step.result.reasons)
+                    elif step.reason:
+                        reasons = (str(step.reason),)
+                    effects = [
+                        "realization_verify_rejected",
+                        "semantic_verdict:rejected",
+                        "effect:cancel_realization_deadline",
+                    ]
+                    effects.extend(f"semantic_reason:{reason}" for reason in reasons)
+                    self._release_opportunity_attempt(effects)
+                    self._invalidate_episode(effects)
+                    self._note_director_failure(effects)
+                    return "handled", effects
+                semantic_verdict = "accepted"
+        self._lane = "committed"
         self._utterance = {
             "utteranceId": f"utterance:{self._reducer_sequence}",
             "utteranceOrdinal": 1,
@@ -1525,6 +1639,8 @@ class NarrativeRuntime:
         ]
         if self._freshness_gate is not None:
             effects.insert(1, "freshness_verdict:current")
+        if semantic_verdict is not None:
+            effects.insert(1, f"semantic_verdict:{semantic_verdict}")
         return "handled", effects
 
     def _on_realization_failed(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
