@@ -454,7 +454,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 | Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
 | Master PR | **None** (v2 cutover gate) |
 
-**HEAD (resume gate):** `1e19d79` (docs; immutability test `78a1aeb`)
+**HEAD (resume gate):** `e782f8c` (docs; immutability test `78a1aeb`)
 
 **Working tree:** clean at docs tip `e782f8c` (immutability test `78a1aeb`)
 
