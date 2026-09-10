@@ -184,6 +184,11 @@ class CommentaryConsumer:
             return self.subscription.latest_context
         return self._mirrored_latest_context
 
+    def cache_mirrored_context(self, batch: FrozenAcceptedEventBatch) -> None:
+        """Update mirrored context without director.observe / speech (#284)."""
+        self.last_stream_sequence = int(batch.stream_sequence)
+        self._mirrored_latest_context = batch.context_payload
+
     def _observe_batch(self, batch: FrozenAcceptedEventBatch) -> None:
         now = time.monotonic()
         context = thaw_context(batch.context_payload)

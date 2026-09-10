@@ -947,11 +947,13 @@ class NarrativeRuntime:
                 self._note_director_failure(effects)
                 return "handled", effects
         self._lane = "committed"
+        text = str(command.payload.get("text") or "").strip()
         self._utterance = {
             "utteranceId": f"utterance:{self._reducer_sequence}",
             "utteranceOrdinal": 1,
             "backendGeneration": 1,
             "dispatchGeneration": int(self._realization["dispatchGeneration"]),
+            "text": text,
         }
         self._realization = None
         self._commit_token = None
@@ -1069,17 +1071,18 @@ class NarrativeRuntime:
         return "handled", effects
 
     def _on_manual(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
-        del command
         if self._lane != "idle":
             return "rejected_busy", ["manual_rejected_busy"]
         if self._component_health.get("tts") == "unavailable":
             return "ignored_stale_or_inapplicable", ["tts_unavailable"]
+        text = str(command.payload.get("text") or "").strip()
         self._lane = "committed"
         self._utterance = {
             "utteranceId": f"utterance:manual:{self._reducer_sequence}",
             "utteranceOrdinal": 1,
             "backendGeneration": 1,
             "dispatchGeneration": max(1, self._planning_cycle_id),
+            "text": text,
         }
         self._speech_deadline_stage = "start"
         return "handled", [

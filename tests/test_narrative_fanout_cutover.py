@@ -118,7 +118,8 @@ def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
     assert "adapt_batch_for_shadow" in race
     assert "runtime=self.narrative_runtime" in race or "runtime=runtime" in race
     assert "reduce_after_admit=False" in race
-    assert "legacy_stream_handler=self.commentary_consumer.handle" in race
+    assert "legacy_stream_handler=self._mirror_lifecycle_without_speech" in race
+    assert "build_tts_effect" in race
     assert "WorkerSupervisor" in race
     assert '"narrative_runtime"' in race or "'narrative_runtime'" in race
     assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race

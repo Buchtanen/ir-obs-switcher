@@ -29,6 +29,7 @@ from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import set_narrative_runtime
 from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
 from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
+from irswitch.events.narrative_tts_bridge import build_tts_effect
 from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.stream import (
     ConfigUpdate,
@@ -215,8 +216,8 @@ class RaceRuntime:
         # #284: shadow fanout cutover + actor run + EventSubscription cutover
         # (human kick). Path: fanout → adapt_batch_for_shadow → ingress → mailbox
         # → NarrativeRuntime.run() (reduce_after_admit=False). Commentary has no
-        # fanout subscription; shadow mirrors via legacy_stream_handler into
-        # CommentaryConsumer.handle (TTS). Idle lane still runs. No INI key.
+        # fanout subscription; shadow mirrors lifecycle/context only.
+        # TTS owned by NarrativeRuntime tts_effect. Idle lane still runs. No INI key.
         self._narrative_shadow_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
@@ -229,7 +230,17 @@ class RaceRuntime:
             )
             mailbox = NarrativeMailbox()
             ingress = NarrativeIngress(mailbox)
-            runtime = NarrativeRuntime(mailbox=mailbox)
+            locale = str(
+                getattr(
+                    self._overlay_settings().language, "value", self._overlay_settings().language
+                )
+                or "en"
+            )
+            tts_effect = build_tts_effect(
+                self.commentary_consumer.director.sink,
+                locale=locale,
+            )
+            runtime = NarrativeRuntime(mailbox=mailbox, tts_effect=tts_effect)
             runtime.enable()
             self.narrative_runtime = runtime
             set_narrative_runtime(runtime)
@@ -240,7 +251,7 @@ class RaceRuntime:
                 runtime=runtime,
                 publication_adapter=adapt_batch_for_shadow,
                 reduce_after_admit=False,
-                legacy_stream_handler=self.commentary_consumer.handle,
+                legacy_stream_handler=self._mirror_lifecycle_without_speech,
             )
             self._narrative_shadow_supervisor = WorkerSupervisor(
                 "narrative_shadow_consumer",
@@ -879,6 +890,17 @@ class RaceRuntime:
 
         logger.info("Overlay replay: %s", path)
         await OverlayReplayer(str(path), self.bus).run()
+
+    async def _mirror_lifecycle_without_speech(self, item: object) -> None:
+        """Session/config via CommentaryConsumer; batches cache context only (no speech)."""
+        from irswitch.events.stream import ConfigUpdate, FrozenAcceptedEventBatch, SessionReset
+
+        consumer = self.commentary_consumer
+        if isinstance(item, (SessionReset, ConfigUpdate)):
+            await consumer.handle(item)
+            return
+        if isinstance(item, FrozenAcceptedEventBatch):
+            consumer.cache_mirrored_context(item)
 
     async def _run_narrative_runtime_actor(self) -> None:
         """Own NarrativeRuntime.run(); re-arm if a prior SHUTDOWN stopped it."""
