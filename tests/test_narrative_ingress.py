@@ -123,7 +123,7 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
     }
     assert projection["queues"]["mailbox"]["capacity"] == 64
     assert projection["queues"]["mailbox"]["depth"] == 0
-    assert projection["loop"] == {"active": False}
+    assert projection["loop"]["active"] is False
     assert projection["timeline"] == {
         "broadcastEpoch": 0,
         "streamEpoch": 0,
@@ -229,7 +229,7 @@ def test_project_runtime_status_loop_inactive_without_actor() -> None:
     runtime.enable()
     assert runtime.status().loop_active is False
     projection = project_runtime_status(runtime.status())
-    assert projection["loop"] == {"active": False}
+    assert projection["loop"]["active"] is False
 
 
 @pytest.mark.asyncio
@@ -246,11 +246,11 @@ async def test_project_runtime_status_loop_active_while_run_loop_owns_actor() ->
                 break
             await asyncio.sleep(0)
         assert runtime.status().loop_active is True
-        assert project_runtime_status(runtime.status())["loop"] == {"active": True}
+        assert project_runtime_status(runtime.status())["loop"]["active"] is True
         runtime.admit(NarrativeCommand.shutdown("loop:stop", 1, "test_stop"))
         await asyncio.wait_for(task, timeout=1.0)
         assert runtime.status().loop_active is False
-        assert project_runtime_status(runtime.status())["loop"] == {"active": False}
+        assert project_runtime_status(runtime.status())["loop"]["active"] is False
     finally:
         if not task.done():
             runtime.admit(NarrativeCommand.shutdown("loop:stop:force", 2, "test_stop"))
@@ -619,6 +619,59 @@ def test_project_runtime_status_detectors_empty_without_bank() -> None:
         "reason": None,
         "disabled": [],
     }
+
+
+def test_project_runtime_status_loop_heartbeats_after_reduce() -> None:
+    """#284 loop heartbeats: reduceCount/lastReduceMonoMs advance on reduce_next."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    before = project_runtime_status(runtime.status())["loop"]
+    assert before == {
+        "active": False,
+        "lastReduceMonoMs": None,
+        "reduceCount": 0,
+        "supervisors": {},
+    }
+    from irswitch.contracts.command import NarrativeCommand
+
+    cmd = NarrativeCommand.shutdown("hb:1", 1, "test_stop")
+    assert runtime.admit(cmd).accepted
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+    after = project_runtime_status(runtime.status())["loop"]
+    assert after["active"] is False
+    assert after["reduceCount"] == 1
+    assert isinstance(after["lastReduceMonoMs"], int) and after["lastReduceMonoMs"] >= 0
+    assert after["supervisors"] == {}
+
+
+def test_project_runtime_status_loop_supervisors_from_attached_providers() -> None:
+    """#284 loop.supervisors mirrors attached WorkerSupervisor-style snapshots."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime.attach_supervisor_heartbeat(
+        "narrativeRuntime",
+        lambda: {"running": True, "restarts": 2, "lastError": None},
+    )
+    runtime.attach_supervisor_heartbeat(
+        "narrativeShadow",
+        lambda: {"running": False, "restarts": 0, "lastError": "boom"},
+    )
+    loop = project_runtime_status(runtime.status())["loop"]
+    assert loop["supervisors"] == {
+        "narrativeRuntime": {"running": True, "restarts": 2, "lastError": None},
+        "narrativeShadow": {"running": False, "restarts": 0, "lastError": "boom"},
+    }
+
+
+def test_race_attaches_narrative_supervisor_heartbeats() -> None:
+    """Race cutover attaches narrative runtime/shadow supervisor heartbeats."""
+    race_src = (
+        Path(__file__).resolve().parents[1] / "src" / "irswitch" / "race" / "runtime.py"
+    ).read_text(encoding="utf-8")
+    assert "attach_supervisor_heartbeat" in race_src
+    assert '"narrativeRuntime"' in race_src or "'narrativeRuntime'" in race_src
+    assert '"narrativeShadow"' in race_src or "'narrativeShadow'" in race_src
 
 
 def test_race_wires_llm_component_into_narrative_runtime() -> None:

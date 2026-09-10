@@ -213,6 +213,9 @@ class RuntimeStatus:
     stream_epoch: int
     narrative_run_active: bool
     loop_active: bool
+    loop_last_reduce_mono_ms: int | None
+    loop_reduce_count: int
+    loop_supervisors: dict[str, dict[str, object]]
     stream_active: bool | None
     stream_state: str
     # #273 session identity (all-or-none; null until context supplies a full set)
@@ -344,6 +347,9 @@ class NarrativeRuntime:
         self._decision_ring: deque[dict[str, Any]] = deque(maxlen=DECISION_CAPACITY)
         self._manual_latches: dict[str, ManualAdmissionLatch] = {}
         self._run_active = False
+        self._loop_last_reduce_mono_ms: int | None = None
+        self._loop_reduce_count = 0
+        self._supervisor_heartbeat_providers: dict[str, Callable[[], Mapping[str, object]]] = {}
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -366,6 +372,29 @@ class NarrativeRuntime:
         self._fact_historical_summary_count = len(refs) if isinstance(refs, list) else 0
         if "historyComplete" in fact_view:
             self._history_complete = bool(fact_view["historyComplete"])
+
+    def attach_supervisor_heartbeat(
+        self,
+        name: str,
+        provider: Callable[[], Mapping[str, object]],
+    ) -> None:
+        """Register a race/supervisor snapshot provider for loop.supervisors."""
+
+        key = str(name).strip()
+        if not key:
+            raise ValueError("supervisor heartbeat name must be non-empty")
+        self._supervisor_heartbeat_providers[key] = provider
+
+    def _supervisor_heartbeat_snapshot(self) -> dict[str, dict[str, object]]:
+        snapshot: dict[str, dict[str, object]] = {}
+        for name, provider in self._supervisor_heartbeat_providers.items():
+            try:
+                payload = provider()
+            except Exception:
+                continue
+            if isinstance(payload, Mapping):
+                snapshot[name] = dict(payload)
+        return snapshot
 
     def enable(self) -> None:
         if self._runtime in {"stopped", "stopping"}:
@@ -434,6 +463,9 @@ class NarrativeRuntime:
             stream_epoch=int(self._stream_epoch),
             narrative_run_active=bool(self._narrative_run_active),
             loop_active=bool(self._run_active),
+            loop_last_reduce_mono_ms=self._loop_last_reduce_mono_ms,
+            loop_reduce_count=int(self._loop_reduce_count),
+            loop_supervisors=self._supervisor_heartbeat_snapshot(),
             stream_active=self._stream_active,
             stream_state=str(self._stream_state),
             session_plan=(None if self._session_plan is None else dict(self._session_plan)),
@@ -482,7 +514,10 @@ class NarrativeRuntime:
         command = self._mailbox.dequeue()
         if command is None:
             return None
-        return self._reduce(command)
+        result = self._reduce(command)
+        self._loop_reduce_count += 1
+        self._loop_last_reduce_mono_ms = int(time.monotonic() * 1000)
+        return result
 
     def drain(self) -> Iterator[ReduceResult]:
         while True:

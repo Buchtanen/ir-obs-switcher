@@ -403,6 +403,11 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
         "byTapeChannel": _by_tape_channel_projection(status),
         "loop": {
             "active": bool(status.loop_active),
+            "lastReduceMonoMs": status.loop_last_reduce_mono_ms,
+            "reduceCount": int(status.loop_reduce_count),
+            "supervisors": {
+                name: dict(payload) for name, payload in status.loop_supervisors.items()
+            },
         },
         "timeline": {
             "broadcastEpoch": int(status.broadcast_epoch),

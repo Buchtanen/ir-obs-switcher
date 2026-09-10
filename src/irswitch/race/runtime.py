@@ -314,6 +314,14 @@ class RaceRuntime:
                 "narrative_runtime",
                 self._run_narrative_runtime_actor,
             )
+            runtime.attach_supervisor_heartbeat(
+                "narrativeRuntime",
+                self._narrative_runtime_supervisor.status_snapshot,
+            )
+            runtime.attach_supervisor_heartbeat(
+                "narrativeShadow",
+                self._narrative_shadow_supervisor.status_snapshot,
+            )
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
         self._weekend_track: str | None = None
