@@ -100,7 +100,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**33** = prior **30** + **3** lastAttempt rows). `tests/test_narrative_runtime.py` latch rows (**3**). `tests/test_narrative_runtime_http.py` (**16** incl. **2** public-path cutover rows). `tests/test_commentary_http.py` (**7**). Related **244** (= prior **241** + **3**). Ingress+http **42** (= prior **40** + **2** cutover rows).
+`tests/test_narrative_ingress.py` (**35** = prior **32** + **3** lastAttempt rows). `tests/test_narrative_runtime.py` latch rows (**3**). `tests/test_narrative_runtime_http.py` (**16** incl. **2** public-path cutover rows). `tests/test_commentary_http.py` (**7**). Related **246** (= prior **243** + **3**). Ingress+http **42** (= prior **40** + **2** cutover rows).
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
