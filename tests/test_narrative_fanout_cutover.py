@@ -113,7 +113,10 @@ def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
     assert "_narrative_shadow_enabled = True" in race
     assert "_narrative_subscription_cutover = True" in race
     assert "self._commentary_subscription = None" in race
-    assert "NarrativeRuntime(mailbox=" in race
+    assert "NarrativeRuntime(" in race
+    assert "mailbox=mailbox" in race
+    assert "realization_effect=realization_effect" in race
+    assert "story_director=StoryDirector()" in race
     assert "set_narrative_runtime" in race
     assert "adapt_batch_for_shadow" in race
     assert "runtime=self.narrative_runtime" in race or "runtime=runtime" in race

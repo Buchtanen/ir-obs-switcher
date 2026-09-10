@@ -22,15 +22,23 @@ from irswitch.config import AppConfig
 from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
+from irswitch.events.episode_registry import EpisodeRegistry
+from irswitch.events.freshness_commit import FreshnessGate
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.events.narrative_ingress import NarrativeIngress
+from irswitch.events.narrative_realization_bridge import (
+    SpeechDraftCache,
+    build_realization_effect,
+)
 from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import set_narrative_runtime
 from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
 from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
 from irswitch.events.narrative_tts_bridge import build_tts_effect
+from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.replay import is_n12_replay, load_n12_replay
+from irswitch.events.story_director import StoryDirector
 from irswitch.events.stream import (
     ConfigUpdate,
     FillerResult,
@@ -217,13 +225,15 @@ class RaceRuntime:
         # (human kick). Path: fanout → adapt_batch_for_shadow → ingress → mailbox
         # → NarrativeRuntime.run() (reduce_after_admit=False). Commentary has no
         # fanout subscription; shadow mirrors lifecycle/context only.
-        # TTS owned by NarrativeRuntime tts_effect. Idle lane still runs. No INI key.
+        # TTS via tts_effect; realization_effect + StoryDirector composition feed speakable
+        # drafts from shadow events. Idle lane still runs. No INI key.
         self._narrative_shadow_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
         self._narrative_runtime_supervisor = None
         self.narrative_runtime = None
+        self._speech_draft_cache = None
         if self._narrative_shadow_enabled:
             self._narrative_shadow_subscription = self._event_fanout.subscribe(
                 "narrative_shadow", capacity=64
@@ -240,7 +250,18 @@ class RaceRuntime:
                 self.commentary_consumer.director.sink,
                 locale=locale,
             )
-            runtime = NarrativeRuntime(mailbox=mailbox, tts_effect=tts_effect)
+            self._speech_draft_cache = SpeechDraftCache()
+            opportunity_queue = OpportunityQueue()
+            realization_effect = build_realization_effect(self._speech_draft_cache)
+            runtime = NarrativeRuntime(
+                mailbox=mailbox,
+                realization_effect=realization_effect,
+                tts_effect=tts_effect,
+                story_director=StoryDirector(),
+                opportunity_queue=opportunity_queue,
+                episode_registry=EpisodeRegistry(),
+                freshness_gate=FreshnessGate(opportunity_queue),
+            )
             runtime.enable()
             self.narrative_runtime = runtime
             set_narrative_runtime(runtime)
@@ -249,7 +270,7 @@ class RaceRuntime:
                 enabled=True,
                 ingress=ingress,
                 runtime=runtime,
-                publication_adapter=adapt_batch_for_shadow,
+                publication_adapter=self._adapt_batch_for_shadow_with_drafts,
                 reduce_after_admit=False,
                 legacy_stream_handler=self._mirror_lifecycle_without_speech,
             )
@@ -890,6 +911,13 @@ class RaceRuntime:
 
         logger.info("Overlay replay: %s", path)
         await OverlayReplayer(str(path), self.bus).run()
+
+    def _adapt_batch_for_shadow_with_drafts(self, batch: object):
+        """Adapt live batch for shadow and cache speakable drafts for realization."""
+        publication = adapt_batch_for_shadow(batch)  # type: ignore[arg-type]
+        if publication is not None and self._speech_draft_cache is not None:
+            self._speech_draft_cache.observe_publication(publication)
+        return publication
 
     async def _mirror_lifecycle_without_speech(self, item: object) -> None:
         """Session/config via CommentaryConsumer; batches cache context only (no speech)."""
