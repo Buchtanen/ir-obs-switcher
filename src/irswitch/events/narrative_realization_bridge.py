@@ -25,6 +25,12 @@ from irswitch.contracts.authored_pack import (
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.narrative import NarrativeEvent
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
+from irswitch.events.qwen_transport import (
+    LlmComponent,
+    RealizationIntent,
+    RealizerService,
+    load_transport_goldens,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +206,73 @@ def realize_authored_text(
     return " ".join(str(step.text).split())
 
 
+def realize_qwen_text(
+    *,
+    beat_id: str,
+    request_ordinal: int,
+    dispatch_generation: int,
+    service: RealizerService,
+    component: LlmComponent,
+    now_ms: int | None = None,
+    compiled_prompt: dict[str, Any] | None = None,
+    episode_revision: int = 1,
+) -> str | None:
+    """Attempt one #269 Qwen realization; never falls back to authored inside transport."""
+
+    if not component.qwen_ready:
+        return None
+    mono = int(now_ms if now_ms is not None else time.monotonic() * 1000)
+    prompt = compiled_prompt
+    if prompt is None:
+        try:
+            prompt = dict(load_transport_goldens()["compiledPrompt"])
+        except Exception:
+            logger.debug("qwen compiled prompt unavailable", exc_info=True)
+            return None
+    config_hash = "sha256:" + ("55" * 32)
+    bundle_hash = "sha256:" + ("88" * 32)
+    intent = RealizationIntent(
+        process_instance_id="narrative-runtime",
+        request_ordinal=int(request_ordinal),
+        dispatch_generation=int(dispatch_generation),
+        backend="qwen_compiled",
+        plan_id=f"plan:{beat_id}",
+        planning_cycle_id=f"cycle:{dispatch_generation}",
+        cycle_attempt_ordinal=1,
+        bundle_id=f"bundle:{beat_id}",
+        bundle_hash=bundle_hash,
+        compiled_prompt=prompt,
+        component_generation=int(component.applied_generation or 1),
+        config_generation=1,
+        effective_config_hash=config_hash,
+        config_apply_sequence=1,
+        capture_prompt="hash",
+        capture_completion=True,
+        dispatched_mono_ms=mono,
+        deadline_mono_ms=mono + 1_500,
+        beat_id=str(beat_id),
+        episode_revision=int(episode_revision),
+        model="qwen3:4b-instruct-2507-q4_K_M",
+        temperature=0.2,
+        top_p=0.8,
+        max_tokens=96,
+        seed=17,
+        pattern_id=f"{beat_id}:tight:1",
+        render_contract_version=2,
+        now_ms=mono,
+    )
+    try:
+        step = service.try_start(intent, component=component)
+        if step.outcome == "admitted":
+            step = service.finish(now_ms=mono + 1)
+        if step.outcome != "succeeded" or step.result is None or not step.result.text:
+            return None
+        return " ".join(str(step.result.text).split())
+    except Exception:
+        logger.debug("qwen realize failed for %s", beat_id, exc_info=True)
+        return None
+
+
 @dataclass(frozen=True, slots=True)
 class SpeechDraft:
     text: str
@@ -311,8 +384,17 @@ def build_realization_effect(
     *,
     fallback_text: str = "Race update.",
     prefer_authored: bool = True,
+    allow_qwen: bool = False,
+    qwen_service: RealizerService | None = None,
+    llm_component: LlmComponent | None = None,
 ) -> EffectWorker:
-    """Build a NarrativeRuntime ``realization_effect`` (authored-first when mapped)."""
+    """Build a NarrativeRuntime ``realization_effect``.
+
+    Order: authored pack (when preferred + mapped) → optional #269 Qwen
+    (when ``allow_qwen`` and component ready) → shadow draft / template fallback.
+    Qwen transport failure never invents authored fallback inside the transport;
+    this bridge may still speak a template draft after a Qwen miss.
+    """
 
     cache = draft_cache if draft_cache is not None else SpeechDraftCache()
 
@@ -321,13 +403,34 @@ def build_realization_effect(
         text: str | None = None
         backend = "authored"
         beat_id = token.get("beatId")
-        if prefer_authored and isinstance(beat_id, str) and beat_id:
+        resolved: str | None = None
+        if isinstance(beat_id, str) and beat_id:
             resolved = resolve_authored_beat_id(beat_id) or beat_id
+        if prefer_authored and resolved is not None:
             text = realize_authored_text(
                 resolved,
                 now_ms=mono_ms,
                 spoken_line_ids=cache.spoken_line_ids,
             )
+        if (
+            text is None
+            and allow_qwen
+            and qwen_service is not None
+            and llm_component is not None
+            and isinstance(beat_id, str)
+            and beat_id
+        ):
+            qwen_text = realize_qwen_text(
+                beat_id=str(beat_id),
+                request_ordinal=int(token["requestOrdinal"]),
+                dispatch_generation=int(token["dispatchGeneration"]),
+                service=qwen_service,
+                component=llm_component,
+                now_ms=mono_ms,
+            )
+            if qwen_text:
+                text = qwen_text
+                backend = "qwen_compiled"
         if text is None:
             draft = cache.consume(fallback=fallback_text)
             text = draft.text
@@ -340,6 +443,25 @@ def build_realization_effect(
                 )
                 if authored:
                     text = authored
+            if (
+                text == draft.text
+                and allow_qwen
+                and qwen_service is not None
+                and llm_component is not None
+                and draft.beat_id
+                and draft.source != "authored"
+            ):
+                qwen_text = realize_qwen_text(
+                    beat_id=str(draft.beat_id),
+                    request_ordinal=int(token["requestOrdinal"]),
+                    dispatch_generation=int(token["dispatchGeneration"]),
+                    service=qwen_service,
+                    component=llm_component,
+                    now_ms=mono_ms,
+                )
+                if qwen_text:
+                    text = qwen_text
+                    backend = "qwen_compiled"
         try:
             return NarrativeCommand.realization_result(
                 f"effect:rz:{token['requestId']}",

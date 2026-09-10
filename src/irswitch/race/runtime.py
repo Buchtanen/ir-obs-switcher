@@ -37,6 +37,7 @@ from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
 from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
 from irswitch.events.narrative_tts_bridge import build_tts_effect
 from irswitch.events.opportunity_queue import OpportunityQueue
+from irswitch.events.qwen_transport import LlmComponent, RealizerService, StdlibTransport
 from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.story_director import StoryDirector
 from irswitch.events.stream import (
@@ -228,14 +229,19 @@ class RaceRuntime:
         # fanout subscription; shadow mirrors lifecycle/context only.
         # TTS via tts_effect; realization_effect + StoryDirector composition feed speakable
         # drafts from shadow events. Idle-lane speech disabled (idle_speech_enabled=False).
+        # Optional #269 Qwen path is wired but default-off (_narrative_qwen_enabled=False)
+        # until warmup/StdlibTransport is explicitly enabled.
         # No INI key.
         self._narrative_shadow_enabled = True
+        self._narrative_qwen_enabled = False
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
         self._narrative_runtime_supervisor = None
         self.narrative_runtime = None
         self._speech_draft_cache = None
+        self._narrative_qwen_service = None
+        self._narrative_llm_component = None
         if self._narrative_shadow_enabled:
             self._narrative_shadow_subscription = self._event_fanout.subscribe(
                 "narrative_shadow", capacity=64
@@ -254,8 +260,21 @@ class RaceRuntime:
             )
             self._speech_draft_cache = SpeechDraftCache()
             opportunity_queue = OpportunityQueue()
+            qwen_service = None
+            llm_component = None
+            if self._narrative_qwen_enabled:
+                # Live StdlibTransport is constructed only when the flag is on;
+                # LlmComponent stays not-ready until an explicit warmup kick.
+                llm_component = LlmComponent()
+                qwen_service = RealizerService(transport=StdlibTransport())
+                self._narrative_llm_component = llm_component
+                self._narrative_qwen_service = qwen_service
             realization_effect = build_realization_effect(
-                self._speech_draft_cache, prefer_authored=True
+                self._speech_draft_cache,
+                prefer_authored=True,
+                allow_qwen=self._narrative_qwen_enabled,
+                qwen_service=qwen_service,
+                llm_component=llm_component,
             )
             runtime = NarrativeRuntime(
                 mailbox=mailbox,
