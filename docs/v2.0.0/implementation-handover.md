@@ -473,7 +473,7 @@ git branch --show-current   # #284 slice: cursor/narrative-runtime-284-matrix-ca
 pytest tests/test_narrative_runtime.py -q   # expect 137 passed at bdf5f7f
 ```
 
-Expected before resuming: correct worktree and branch (`cursor/narrative-runtime-284-matrix-cad3` for #284 slice work), local HEAD/upstream relationship understood, **#235–#271, #283 and #262 implemented/closed**, #284 thin library slice present but issue still OPEN (**25/41** AC, **16** remain), clean or intentionally scoped dirty files matching the ownership section, stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) to `codex/commentary-story-flow-spec`, and **no master PR**. Do not resume #239–#271 — those checkpoints are complete. Expand #284 only with human kick. If path, branch, SHA or dirty-file ownership differs from [Handover checkpoint — 2026-09-10](#handover-checkpoint--2026-09-10-284), stop and reconcile before editing.
+Expected before resuming: correct worktree and branch (`cursor/narrative-runtime-284-matrix-cad3` for #284 slice work), local HEAD/upstream relationship understood, **#235–#271, #283 and #262 implemented/closed**, #284 thin library slice present but issue still OPEN (**27/41** AC, **14** remain), clean or intentionally scoped dirty files matching the ownership section, stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) to `codex/commentary-story-flow-spec`, and **no master PR**. Do not resume #239–#271 — those checkpoints are complete. Expand #284 only with human kick. If path, branch, SHA or dirty-file ownership differs from [Handover checkpoint — 2026-09-10](#handover-checkpoint--2026-09-10-284), stop and reconcile before editing.
 
 ## Known risks
 
