@@ -424,6 +424,43 @@ def test_project_runtime_status_llm_tts_config_generation_from_ledger() -> None:
     assert projection["components"]["tts"]["configGeneration"] == 7
 
 
+def test_project_runtime_status_tts_voice_from_config_ledger_desired() -> None:
+    """#273/#284 tts.voice projects from CONFIG_UPDATE desiredValues when effective empty."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert project_runtime_status(runtime.status())["components"]["tts"]["voice"] is None
+    runtime._config_ledger = _config_ledger(desired_generation=3)
+    projection = project_runtime_status(runtime.status())
+    assert projection["components"]["tts"]["voice"] == "en-US"
+
+
+def test_project_runtime_status_tts_voice_prefers_effective_over_desired() -> None:
+    """Effective TTS voice wins over desired when both bags are present."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    ledger = _config_ledger(desired_generation=4)
+    ledger["desiredValues"] = {"voice": "desired-voice"}
+    ledger["effectiveValues"] = {"voice": "M1"}
+    runtime._config_ledger = ledger
+    projection = project_runtime_status(runtime.status())
+    assert projection["components"]["tts"]["voice"] == "M1"
+
+
+def test_project_runtime_status_tts_quarantined_generation_from_status() -> None:
+    """quarantinedGeneration mirrors RuntimeStatus after stop-timeout quarantine."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert (
+        project_runtime_status(runtime.status())["components"]["tts"]["quarantinedGeneration"]
+        is None
+    )
+    runtime._speech_quarantined_generation = 3  # library seam after stop-timeout quarantine
+    runtime._component_health["tts"] = "unavailable"
+    projection = project_runtime_status(runtime.status())
+    assert projection["components"]["tts"]["quarantinedGeneration"] == 3
+    assert projection["components"]["tts"]["status"] == "unavailable"
+
+
 def test_project_runtime_status_llm_last_attempt_after_qwen_success() -> None:
     """#273/#284 lastAttempt fills after first admitted Qwen realization."""
     import binascii

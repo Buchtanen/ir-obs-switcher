@@ -1271,6 +1271,69 @@ async def test_speech_deadline_stages_start_then_stop() -> None:
     assert runtime.current_utterance_token() is None
     await runtime.apply_effects(stop_elapsed.effects)
     assert not runtime.speech_deadline_task_active()
+    status = runtime.status()
+    assert status.speech_quarantined_generation == 1
+    assert status.component_health["tts"] == "unavailable"
+    assert status.runtime_state == "degraded"
+    assert "tts_backend_quarantined" in stop_elapsed.effects
+
+
+@pytest.mark.asyncio
+async def test_tts_quarantine_clears_only_when_health_generation_advances() -> None:
+    """COMPONENT_HEALTH ready clears quarantine only when generation > quarantined."""
+    runtime = NarrativeRuntime(speech_deadline_delay_s=0.02)
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "tts-quarantine:manual", 9900, text="Quarantine line.", admission_ordinal=3
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    await runtime.apply_effects(committed.effects)
+    await runtime.wait_deadline_timers_idle()
+    start_elapsed = runtime.reduce_next()
+    assert start_elapsed is not None
+    await runtime.apply_effects(start_elapsed.effects)
+    await runtime.wait_deadline_timers_idle()
+    stop_elapsed = runtime.reduce_next()
+    assert stop_elapsed is not None
+    await runtime.apply_effects(stop_elapsed.effects)
+    assert runtime.status().speech_quarantined_generation == 1
+
+    runtime.admit(
+        NarrativeCommand.component_health(
+            "tts-quarantine:hold",
+            9910,
+            component="tts",
+            generation=1,
+            status="ready",
+            reason=None,
+        )
+    )
+    held = runtime.reduce_next()
+    assert held is not None
+    assert "tts_quarantine_held" in held.effects
+    status = runtime.status()
+    assert status.speech_quarantined_generation == 1
+    assert status.component_health["tts"] == "unavailable"
+
+    runtime.admit(
+        NarrativeCommand.component_health(
+            "tts-quarantine:clear",
+            9920,
+            component="tts",
+            generation=2,
+            status="ready",
+            reason=None,
+        )
+    )
+    cleared = runtime.reduce_next()
+    assert cleared is not None
+    assert "tts_quarantine_cleared" in cleared.effects
+    status = runtime.status()
+    assert status.speech_quarantined_generation is None
+    assert status.component_health["tts"] == "ready"
 
 
 @pytest.mark.asyncio

@@ -231,6 +231,7 @@ class RuntimeStatus:
     speech_opportunity_id: str | None
     speech_backend: str | None
     speech_backend_generation: int | None
+    speech_quarantined_generation: int | None
     speech_dispatched_at_mono_ms: int | None
     speech_accepted_at_mono_ms: int | None
     speech_last_terminal: dict[str, object] | None
@@ -300,6 +301,7 @@ class NarrativeRuntime:
         self._speech_opportunity_id: str | None = None
         self._speech_backend: str | None = None
         self._speech_backend_generation: int | None = None
+        self._speech_quarantined_generation: int | None = None
         self._speech_dispatched_at_mono_ms: int | None = None
         self._speech_accepted_at_mono_ms: int | None = None
         self._speech_last_terminal: dict[str, object] | None = None
@@ -479,6 +481,7 @@ class NarrativeRuntime:
             speech_opportunity_id=self._speech_opportunity_id,
             speech_backend=self._speech_backend,
             speech_backend_generation=self._speech_backend_generation,
+            speech_quarantined_generation=self._speech_quarantined_generation,
             speech_dispatched_at_mono_ms=self._speech_dispatched_at_mono_ms,
             speech_accepted_at_mono_ms=self._speech_accepted_at_mono_ms,
             speech_last_terminal=(
@@ -1605,6 +1608,17 @@ class NarrativeRuntime:
                 "effect:cancel_speech_deadline",
                 "effect:arm_speech_deadline",
             ]
+        backend_generation: int | None = None
+        if isinstance(self._utterance, dict):
+            raw = self._utterance.get("backendGeneration")
+            if isinstance(raw, int) and not isinstance(raw, bool) and raw > 0:
+                backend_generation = int(raw)
+        elif (
+            isinstance(self._speech_backend_generation, int)
+            and not isinstance(self._speech_backend_generation, bool)
+            and self._speech_backend_generation > 0
+        ):
+            backend_generation = int(self._speech_backend_generation)
         self._retain_speech_terminal(
             reason="timed_out",
             at_mono_ms=int(command.enqueued_mono_ms),
@@ -1613,6 +1627,12 @@ class NarrativeRuntime:
         self._lane = "idle"
         self._speech_deadline_stage = None
         effects = ["speech_deadline_stopped", "effect:cancel_speech_deadline"]
+        if backend_generation is not None:
+            self._speech_quarantined_generation = backend_generation
+            self._component_health["tts"] = "unavailable"
+            if self._runtime == "ready":
+                self._runtime = "degraded"
+            effects.append("tts_backend_quarantined")
         self._invalidate_episode(effects)
         return "handled", effects
 
@@ -1675,6 +1695,15 @@ class NarrativeRuntime:
     def _on_component_health(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         component = str(command.payload["component"])
         status = str(command.payload["status"])
+        generation = int(command.payload["generation"])
+        if component == "tts" and self._speech_quarantined_generation is not None:
+            if status == "ready" and generation > self._speech_quarantined_generation:
+                self._speech_quarantined_generation = None
+                self._component_health["tts"] = "ready"
+                return "handled", ["tts_quarantine_cleared", "component_health_updated"]
+            if status == "ready" and generation <= self._speech_quarantined_generation:
+                self._component_health["tts"] = "unavailable"
+                return "handled", ["tts_quarantine_held"]
         self._component_health[component] = status
         if status == "unavailable" and self._runtime == "ready":
             self._runtime = "degraded"

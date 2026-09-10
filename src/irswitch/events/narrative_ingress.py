@@ -223,6 +223,25 @@ def _llm_component_projection(status: RuntimeStatus) -> dict[str, Any]:
     }
 
 
+def _tts_voice_from_ledger(status: RuntimeStatus) -> str | None:
+    """Best-effort TTS voice from CONFIG_UPDATE ledger bags."""
+
+    ledger = status.config_ledger
+    if not isinstance(ledger, dict):
+        return None
+    for bag_name in ("effectiveValues", "desiredValues"):
+        bag = ledger.get(bag_name)
+        if not isinstance(bag, dict):
+            continue
+        for key in ("voice", "commentary.tts.voice"):
+            raw = bag.get(key)
+            if isinstance(raw, str):
+                voice = raw.strip()
+                if voice:
+                    return voice[:128]
+    return None
+
+
 def _tts_component_projection(
     status: RuntimeStatus,
     *,
@@ -231,14 +250,17 @@ def _tts_component_projection(
     """#273 tts block — speech-lane backend plus configGeneration from ledger."""
 
     mapped_backend = status.speech_backend if status.speech_backend in _TTS_BACKENDS else None
+    quarantined = status.speech_quarantined_generation
+    if not isinstance(quarantined, int) or isinstance(quarantined, bool) or quarantined < 0:
+        quarantined = None
     return {
         "status": component_status,
         "reason": None,
         "backend": mapped_backend,
         "backendGeneration": int(status.speech_backend_generation or 0),
         "configGeneration": _config_desired_generation(status),
-        "quarantinedGeneration": None,
-        "voice": None,
+        "quarantinedGeneration": quarantined,
+        "voice": _tts_voice_from_ledger(status),
     }
 
 
