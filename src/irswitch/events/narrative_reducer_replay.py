@@ -1,20 +1,30 @@
 """#284 reducer-state tape replay equivalence helpers.
 
 Library-only: capture a deterministic reducer trace from a command list and
-replay it on a fresh NarrativeRuntime. Not exported from ``events/__init__.py``.
-Race wiring and master cutover remain deferred.
+replay it on a fresh NarrativeRuntime. Also reads/writes a NarrativeTape-shaped
+command journal (NDJSON) so file→command reconstruction can feed the harness.
+Not exported from ``events/__init__.py``. Race wiring and master cutover remain
+deferred.
 """
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
 
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
+from irswitch.contracts.context import ApplyContextBatch, ContextBatchPart, ExternalOrder
+from irswitch.contracts.narrative import NarrativeEvent
+from irswitch.contracts.primitives import ContractViolation
 from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
 
 MailboxFactory = Callable[[], NarrativeMailbox]
+
+COMMAND_JOURNAL_SCHEMA = "narrative-command-journal/1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,3 +141,130 @@ def traces_equivalent(left: ReducerTrace, right: ReducerTrace) -> bool:
     if left.steps != right.steps:
         return False
     return _status_fingerprint(left.final_status) == _status_fingerprint(right.final_status)
+
+
+def command_from_dict(payload: dict[str, Any]) -> NarrativeCommand:
+    """Rebuild a ``NarrativeCommand`` from ``NarrativeCommand.to_dict()`` JSON.
+
+    Supports the journal slice kinds: ``APPLY_CONTEXT_BATCH``, ordinary
+    deadlines, and ``SHUTDOWN``. Other kinds raise ``ContractViolation``.
+    """
+
+    if not isinstance(payload, dict):
+        raise ContractViolation("command journal payload must be an object")
+    kind = payload.get("kind")
+    command_id = payload.get("commandId")
+    enqueued = payload.get("enqueuedMonoMs")
+    if not isinstance(kind, str) or not isinstance(command_id, str):
+        raise ContractViolation("command journal requires string kind and commandId")
+    if isinstance(enqueued, bool) or not isinstance(enqueued, int):
+        raise ContractViolation("command journal enqueuedMonoMs must be an integer")
+
+    if kind == "APPLY_CONTEXT_BATCH":
+        body = payload.get("payload")
+        external = payload.get("externalOrder")
+        if not isinstance(body, dict) or not isinstance(external, dict):
+            raise ContractViolation("APPLY_CONTEXT_BATCH journal row needs payload+externalOrder")
+        events_raw = body.get("events")
+        if not isinstance(events_raw, list):
+            raise ContractViolation("APPLY_CONTEXT_BATCH payload.events must be an array")
+        events = tuple(NarrativeEvent.from_dict(item) for item in events_raw)
+        batch = ApplyContextBatch(
+            timeline=body["timeline"],
+            fact_view=body["factView"],
+            events=events,
+        )
+        order = ExternalOrder(
+            external["fanoutStreamSequence"],
+            external.get("firstSourceOrdinal"),
+            external.get("lastSourceOrdinal"),
+        )
+        return NarrativeCommand.context_batch(command_id, enqueued, ContextBatchPart(batch, order))
+
+    if kind in {"LONG_SILENCE_ELAPSED", "VALIDITY_DEADLINE_ELAPSED"}:
+        token = payload.get("token")
+        if not isinstance(token, dict):
+            raise ContractViolation(f"{kind} journal row requires token object")
+        generation = token.get("generation")
+        deadline_mono_ms = token.get("deadlineMonoMs")
+        if isinstance(generation, bool) or not isinstance(generation, int):
+            raise ContractViolation(f"{kind} token.generation must be an integer")
+        if isinstance(deadline_mono_ms, bool) or not isinstance(deadline_mono_ms, int):
+            raise ContractViolation(f"{kind} token.deadlineMonoMs must be an integer")
+        return NarrativeCommand.deadline(
+            command_id,
+            kind,  # type: ignore[arg-type]
+            enqueued,
+            generation=generation,
+            deadline_mono_ms=deadline_mono_ms,
+        )
+
+    if kind == "SHUTDOWN":
+        body = payload.get("payload")
+        if not isinstance(body, dict) or not isinstance(body.get("reason"), str):
+            raise ContractViolation("SHUTDOWN journal row requires payload.reason string")
+        return NarrativeCommand.shutdown(command_id, enqueued, body["reason"])
+
+    raise ContractViolation(f"unsupported command journal kind: {kind}")
+
+
+def write_command_journal(path: Path | str, trace: ReducerTrace) -> Path:
+    """Write tape-shaped NDJSON rows: reducerSequence + full command dict."""
+
+    target = Path(path)
+    if len(trace.commands) != len(trace.steps):
+        raise ContractViolation("reducer trace commands/steps length mismatch")
+    lines: list[str] = []
+    for command, step in zip(trace.commands, trace.steps, strict=True):
+        row = {
+            "schemaVersion": COMMAND_JOURNAL_SCHEMA,
+            "reducerSequence": int(step.reducer_sequence),
+            "command": command.to_dict(),
+        }
+        lines.append(json.dumps(row, separators=(",", ":"), ensure_ascii=True))
+    target.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    return target
+
+
+def read_commands_from_journal(path: Path | str) -> tuple[NarrativeCommand, ...]:
+    """Load commands from a journal file ordered by ``reducerSequence``."""
+
+    target = Path(path)
+    rows: list[tuple[int, NarrativeCommand]] = []
+    for line_no, raw in enumerate(target.read_text(encoding="utf-8").splitlines(), start=1):
+        if not raw.strip():
+            continue
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ContractViolation(f"command journal line {line_no} is not JSON") from exc
+        if not isinstance(row, dict):
+            raise ContractViolation(f"command journal line {line_no} must be an object")
+        if row.get("schemaVersion") != COMMAND_JOURNAL_SCHEMA:
+            raise ContractViolation(
+                f"command journal line {line_no} schemaVersion must be {COMMAND_JOURNAL_SCHEMA}"
+            )
+        sequence = row.get("reducerSequence")
+        command_payload = row.get("command")
+        if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 1:
+            raise ContractViolation(
+                f"command journal line {line_no} reducerSequence must be a positive int"
+            )
+        if not isinstance(command_payload, dict):
+            raise ContractViolation(f"command journal line {line_no} command must be an object")
+        rows.append((sequence, command_from_dict(command_payload)))
+    rows.sort(key=lambda item: item[0])
+    return tuple(command for _, command in rows)
+
+
+def replay_command_journal(
+    path: Path | str,
+    *,
+    mailbox_factory: MailboxFactory | None = None,
+) -> ReducerTrace:
+    """Read a command journal file and capture a fresh reducer trace."""
+
+    return capture_reducer_trace(
+        read_commands_from_journal(path),
+        mailbox_factory=mailbox_factory,
+    )
