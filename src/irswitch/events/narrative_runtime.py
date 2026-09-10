@@ -23,6 +23,10 @@ from irswitch.events.freshness_commit import (
     CommitWorld,
     FreshnessGate,
 )
+from irswitch.events.narrative_director_bridge import (
+    build_director_snapshot,
+    planning_impulse_for_lane,
+)
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.story_director import (
     DirectorCandidate,
@@ -150,6 +154,7 @@ class NarrativeRuntime:
         self._story_director = story_director
         self._director_world: DirectorWorld | None = None
         self._director_candidates: tuple[DirectorCandidate, ...] = ()
+        self._director_manual_seed = False
         self._director_selected_beat_id: str | None = None
         self._director_selected_episode_revision: int | None = None
         self._last_admission_reason: str | None = None
@@ -281,6 +286,7 @@ class NarrativeRuntime:
     ) -> None:
         self._director_world = world
         self._director_candidates = candidates
+        self._director_manual_seed = True
 
     def director_selected_beat_for_test(self) -> str | None:
         return self._director_selected_beat_id
@@ -667,6 +673,31 @@ class NarrativeRuntime:
         effects.append("episode_resolved")
         self._clear_episode_binding()
 
+    def _refresh_director_from_live(self, part: ContextBatchPart, effects: list[str]) -> None:
+        """Seed world/candidates from context so evaluate can run (live path)."""
+        if self._story_director is None or self._director_manual_seed:
+            return
+        impulse = planning_impulse_for_lane(self._lane)
+        incumbent_score: float | None = None
+        incumbent_urgency: str | None = None
+        if self._lane == "building" and self._director_selected_beat_id is not None:
+            incumbent_score = 40.0
+            incumbent_urgency = "story"
+        snapshot = build_director_snapshot(
+            events=part.batch.events,
+            timeline=part.batch.timeline,
+            fact_view=part.batch.fact_view,
+            lane=self._lane,
+            impulse=impulse,
+            reducer_sequence=self._reducer_sequence,
+            focused_episode_id=self._episode_id,
+            incumbent_score=incumbent_score,
+            incumbent_urgency=incumbent_urgency,
+        )
+        self._director_world = snapshot.world
+        self._director_candidates = snapshot.candidates
+        effects.append("director_live_seeded")
+
     def _consult_director(self, effects: list[str]) -> bool:
         """Return True when plan dispatch may proceed."""
         if self._story_director is None or self._director_world is None:
@@ -849,6 +880,7 @@ class NarrativeRuntime:
             if self._lane == "building":
                 self._cancel_building(effects, reason="building_invalidated")
             return "handled", effects
+        self._refresh_director_from_live(part, effects)
         self._dispatch_plan(effects)
         return "handled", effects
 
