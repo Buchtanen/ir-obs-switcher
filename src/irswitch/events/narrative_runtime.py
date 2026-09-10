@@ -1584,21 +1584,21 @@ class NarrativeRuntime:
                 # without silencing every unframed utterance.
                 semantic_verdict = "skipped_no_frame"
             else:
-                step = self._semantic_verifier.verify(intent)
+                verify_step = self._semantic_verifier.verify(intent)
                 accepted = (
-                    step.outcome == "succeeded"
-                    and step.result is not None
-                    and bool(step.result.accepted)
+                    verify_step.outcome == "succeeded"
+                    and verify_step.result is not None
+                    and bool(verify_step.result.accepted)
                 )
                 if not accepted:
                     self._realization = None
                     self._commit_token = None
                     self._lane = "idle"
-                    reasons = ()
-                    if step.result is not None:
-                        reasons = tuple(step.result.reasons)
-                    elif step.reason:
-                        reasons = (str(step.reason),)
+                    reasons: tuple[str, ...] = ()
+                    if verify_step.result is not None:
+                        reasons = tuple(verify_step.result.reasons)
+                    elif verify_step.reason:
+                        reasons = (str(verify_step.reason),)
                     effects = [
                         "realization_verify_rejected",
                         "semantic_verdict:rejected",
