@@ -837,7 +837,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | Method | URL | Poznámka |
 | --- | --- | --- |
 | `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
-| `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no runtime attached; does not start NarrativeRuntime) |
+| `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no provider; `APP_NARRATIVE_RUNTIME` or process-level `set_narrative_runtime`; does not start NarrativeRuntime) |
 | `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
@@ -853,8 +853,8 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 
 **Behavior**
 - Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
-- If no `NarrativeRuntime` is attached to the aiohttp app, returns a **disabled** library snapshot (no actor loop).
-- Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `EventSubscription`.
+- Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
+- Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
