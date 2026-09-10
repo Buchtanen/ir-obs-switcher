@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Iterator, Sequence
+from collections import deque
+from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -23,12 +24,14 @@ from irswitch.events.freshness_commit import (
     CommitWorld,
     FreshnessGate,
 )
+from irswitch.events.narrative_decision_projection import build_runtime_decision_entry
 from irswitch.events.narrative_director_bridge import (
     build_director_snapshot,
     planning_impulse_for_lane,
 )
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.story_director import (
+    DECISION_CAPACITY,
     DirectorCandidate,
     DirectorWorld,
     StoryDirector,
@@ -203,6 +206,7 @@ class NarrativeRuntime:
         self._director_manual_seed = False
         self._director_selected_beat_id: str | None = None
         self._director_selected_episode_revision: int | None = None
+        self._decision_ring: deque[dict[str, Any]] = deque(maxlen=DECISION_CAPACITY)
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -352,6 +356,17 @@ class NarrativeRuntime:
 
     def director_selected_beat_for_test(self) -> str | None:
         return self._director_selected_beat_id
+
+    def decisions(self, limit: int = 20) -> tuple[Mapping[str, Any], ...]:
+        """Newest-first decision rows for commentary-runtime/2 projection."""
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            limit = 20
+        if limit < 1:
+            limit = 1
+        if limit > 100:
+            limit = 100
+        newest_first = list(reversed(self._decision_ring))
+        return tuple(newest_first[:limit])
 
     def fail_current_realization_for_test(self) -> None:
         self._realization = None
@@ -826,6 +841,14 @@ class NarrativeRuntime:
         decision = self._story_director.evaluate(self._director_world, self._director_candidates)
         effects.append("director_evaluated")
         effects.append(f"director_step:{decision.reason}")
+        at_mono_ms = int(self._director_world.now_ms)
+        entry = build_runtime_decision_entry(
+            decision,
+            self._director_candidates,
+            reducer_sequence=int(self._reducer_sequence),
+            at_mono_ms=at_mono_ms,
+        )
+        self._decision_ring.append(entry)
         if decision.selected is not None and decision.speech == "speak":
             effects.append("director_selected")
             self._director_selected_beat_id = decision.selected.beat_id

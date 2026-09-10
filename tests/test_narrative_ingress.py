@@ -281,3 +281,124 @@ def test_project_runtime_status_identity_golden_disabled() -> None:
     assert projection["timeline"] == expected["timeline"]
     assert projection["schemaVersion"] == expected["schemaVersion"]
     assert projection["status"] == expected["status"]
+
+
+def test_project_runtime_decisions_selected_golden() -> None:
+    import json
+    from pathlib import Path
+
+    from irswitch.events.narrative_decision_projection import project_runtime_decisions
+
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "decisions_selected.json"
+    )
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    projection = project_runtime_decisions(expected["decisions"], runtime=True)
+    assert projection == expected
+
+
+def test_project_runtime_decisions_clamps_limit_newest_first() -> None:
+    from irswitch.events.narrative_decision_projection import project_runtime_decisions
+
+    entries = [
+        {
+            "reducerSequence": seq,
+            "atMonoMs": seq,
+            "decision": "silence",
+            "reason": "no_candidate",
+            "beatId": None,
+            "episodeId": None,
+            "opportunityId": None,
+            "tapeChannel": None,
+            "candidateSource": None,
+            "candidateOrder": None,
+            "relation": None,
+            "urgency": None,
+            "score": None,
+            "threshold": 35.0,
+            "runnerUp": None,
+            "terminalReason": None,
+        }
+        for seq in (3, 2, 1)
+    ]
+    projection = project_runtime_decisions(entries, runtime=True, limit=2)
+    assert [item["reducerSequence"] for item in projection["decisions"]] == [3, 2]
+    assert (
+        project_runtime_decisions(entries, runtime=True, limit=0)["decisions"][0]["reducerSequence"]
+        == 3
+    )
+    assert len(project_runtime_decisions(entries, runtime=True, limit=999)["decisions"]) == 3
+    assert project_runtime_decisions([], runtime=False) == {
+        "schemaVersion": "commentary-runtime/2",
+        "runtime": False,
+        "decisions": [],
+    }
+
+
+def test_build_runtime_decision_entry_selected_and_silence() -> None:
+    from test_story_director import _cand as _director_cand
+    from test_story_director import _world as _director_world
+
+    from irswitch.events.beat_plan import CandidateOrder
+    from irswitch.events.narrative_decision_projection import build_runtime_decision_entry
+    from irswitch.events.story_director import StoryDirector
+
+    director = StoryDirector()
+    primary = _director_cand(
+        source="event_opportunity",
+        opportunity_id="opp:401",
+        from_accepted_event=True,
+        relation="updates_active_episode",
+        tape_channel="race.battle.closing",
+        candidate_order=CandidateOrder(417, 0),
+    )
+    runner = _director_cand(
+        beat_id="battle.pursuit",
+        source="event_opportunity",
+        opportunity_id="opp:402",
+        from_accepted_event=True,
+        base_priority=50.0,
+        candidate_order=CandidateOrder(417, 1),
+    )
+    selected = director.evaluate(_director_world(now_ms=15_000), (primary, runner))
+    entry = build_runtime_decision_entry(
+        selected,
+        (primary, runner),
+        reducer_sequence=418,
+        at_mono_ms=90_231,
+    )
+    assert entry["decision"] == "selected"
+    assert entry["beatId"] == "battle.approach"
+    assert entry["opportunityId"] == "opp:401"
+    assert entry["candidateOrder"] == {"reducerSequence": 417, "sourceOrdinal": 0}
+    assert entry["runnerUp"] is not None
+    assert entry["runnerUp"]["beatId"] == "battle.pursuit"
+    assert entry["threshold"] == 35.0
+    assert entry["terminalReason"] is None
+    assert entry["atMonoMs"] == 90_231
+
+    silenced = director.evaluate(
+        _director_world(lane="building", impulse="timer", now_ms=15_000),
+        (primary,),
+    )
+    quiet = build_runtime_decision_entry(
+        silenced,
+        (primary,),
+        reducer_sequence=419,
+        at_mono_ms=90_231,
+    )
+    assert quiet["decision"] == "silence"
+    assert quiet["beatId"] is None
+    assert quiet["episodeId"] is None
+    assert quiet["opportunityId"] is None
+    assert quiet["tapeChannel"] is None
+    assert quiet["candidateSource"] is None
+    assert quiet["candidateOrder"] is None
+    assert quiet["relation"] is None
+    assert quiet["urgency"] is None
+    assert quiet["score"] is None
+    assert quiet["runnerUp"] is None

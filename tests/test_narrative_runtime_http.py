@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
+from test_narrative_runtime import _event_impulse
 
 from irswitch.events import __all__ as events_exports
 from irswitch.events.narrative_ingress import project_runtime_status
@@ -105,3 +106,72 @@ async def test_handler_rejects_non_runtime_provider() -> None:
             assert resp.status == 500
             data = await resp.json()
             assert "error" in data
+
+
+@pytest.mark.asyncio
+async def test_runtime_decisions_without_provider_returns_empty_runtime_false() -> None:
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/runtime/decisions")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data == {
+                "schemaVersion": "commentary-runtime/2",
+                "runtime": False,
+                "decisions": [],
+            }
+
+
+@pytest.mark.asyncio
+async def test_runtime_decisions_with_director_ring_and_limit() -> None:
+    from test_story_director import _cand as _director_cand
+    from test_story_director import _world as _director_world
+
+    from irswitch.events.story_director import StoryDirector
+
+    runtime = NarrativeRuntime(story_director=StoryDirector())
+    runtime.enable()
+    runtime.seed_director_for_test(world=_director_world(), candidates=(_director_cand(),))
+    runtime.admit(_event_impulse("http:dec:select", revision=81, fanout=81))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert "director_selected" in planned.effects
+
+    runtime.seed_director_for_test(
+        world=_director_world(lane="building", impulse="timer"),
+        candidates=(_director_cand(),),
+    )
+    runtime.admit(_event_impulse("http:dec:silence", revision=82, fanout=82))
+    silenced = runtime.reduce_next()
+    assert silenced is not None
+    assert "director_silenced" in silenced.effects
+
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/runtime/decisions?limit=1")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["runtime"] is True
+            assert len(data["decisions"]) == 1
+            assert data["decisions"][0]["decision"] == "silence"
+
+            resp_all = await client.get("/api/commentary/runtime/decisions")
+            payload = await resp_all.json()
+            assert [item["decision"] for item in payload["decisions"]] == [
+                "silence",
+                "selected",
+            ]
+
+
+@pytest.mark.asyncio
+async def test_runtime_decisions_route_additive_with_legacy_decisions() -> None:
+    from irswitch.commentary.http import register_commentary_routes
+
+    app = web.Application()
+    register_commentary_routes(app)
+    resources = {route.resource.canonical for route in app.router.routes()}
+    assert "/api/commentary/decisions" in resources
+    assert "/api/commentary/runtime/decisions" in resources

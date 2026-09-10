@@ -847,7 +847,8 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | --- | --- | --- |
 | `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
 | `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no provider; `APP_NARRATIVE_RUNTIME` or process-level `set_narrative_runtime`; does not start NarrativeRuntime) |
-| `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
+| `GET` | `/api/commentary/runtime/decisions?limit=20` | `#284` / `#273` commentary-runtime/2 decisions ring from NarrativeRuntime (`limit` clamp 1–100; newest-first; capacity `DECISION_CAPACITY=128`; additive to legacy `/api/commentary/decisions`) |
+| `GET` | `/api/commentary/decisions?limit=20` | legacy speak/skip decisions; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
 | `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
 | `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
@@ -864,7 +865,8 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
 - Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
-- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete` (full catalog/components/decisions goldens remain later).
+- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`.
+- `#273` decisions ring is mounted separately at `GET /api/commentary/runtime/decisions` (see below). Full catalog/components/validate/speak goldens remain later.
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
