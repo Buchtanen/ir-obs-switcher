@@ -106,9 +106,10 @@ async def test_module_runtime_attach_feeds_http_status() -> None:
 
 def test_race_shadow_cutover_wires_runtime_when_flag_on_still_default_off() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "_narrative_shadow_enabled = False" in race
+    assert "_narrative_shadow_enabled = True" in race
     assert "NarrativeRuntime(mailbox=" in race
     assert "set_narrative_runtime" in race
+    assert "adapt_batch_for_shadow" in race
     assert "runtime=self.narrative_runtime" in race or "runtime=runtime" in race
     # Must not start actor loop from race wiring.
     assert "narrative_runtime.run()" not in race

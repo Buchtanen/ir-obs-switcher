@@ -27,6 +27,7 @@ from irswitch.events.manager_v2 import EventManagerV2
 from irswitch.events.narrative_ingress import NarrativeIngress
 from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import set_narrative_runtime
+from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
 from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
 from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.stream import (
@@ -204,12 +205,11 @@ class RaceRuntime:
         self._commentary_supervisor = WorkerSupervisor(
             "commentary_consumer", self.commentary_consumer.run
         )
-        # #284: explicit opt-in for NarrativeShadowConsumer fanout cutover.
-        # Default off — do not enable without a cutover kick. No INI key.
-        # When enabled: fanout → ingress → mailbox → reduce_next (no run()),
-        # and attach NarrativeRuntime for GET /api/commentary/runtime status.
-        # Does not replace CommentaryConsumer EventSubscription / TTS.
-        self._narrative_shadow_enabled = False
+        # #284: shadow fanout cutover enabled (human kick). Parallel path:
+        # fanout → adapt_batch_for_shadow → ingress → mailbox → reduce_next
+        # (no NarrativeRuntime.run()). Does not replace CommentaryConsumer
+        # EventSubscription / TTS. No INI key in this slice.
+        self._narrative_shadow_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
@@ -229,6 +229,7 @@ class RaceRuntime:
                 enabled=True,
                 ingress=ingress,
                 runtime=runtime,
+                publication_adapter=adapt_batch_for_shadow,
             )
             self._narrative_shadow_supervisor = WorkerSupervisor(
                 "narrative_shadow_consumer",

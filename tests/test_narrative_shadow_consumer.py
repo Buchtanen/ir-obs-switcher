@@ -49,7 +49,7 @@ def test_shadow_source_documents_default_off_boundary() -> None:
     assert "NarrativeShadowConsumer" not in events_exports
     assert "AdaptedPublication" not in events_exports
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "_narrative_shadow_enabled = False" in race
+    assert "_narrative_shadow_enabled = True" in race
     assert "NarrativeShadowConsumer" in race
 
 
