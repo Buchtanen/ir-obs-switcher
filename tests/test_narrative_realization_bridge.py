@@ -82,6 +82,7 @@ def test_race_wires_realization_effect_and_story_director() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "build_realization_effect" in race
     assert "SpeechDraftCache" in race
+    assert "prefer_authored=True" in race
     assert "story_director=StoryDirector()" in race
     assert "realization_effect=realization_effect" in race
     assert "opportunity_queue=opportunity_queue" in race

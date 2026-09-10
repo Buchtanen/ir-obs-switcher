@@ -252,7 +252,9 @@ class RaceRuntime:
             )
             self._speech_draft_cache = SpeechDraftCache()
             opportunity_queue = OpportunityQueue()
-            realization_effect = build_realization_effect(self._speech_draft_cache)
+            realization_effect = build_realization_effect(
+                self._speech_draft_cache, prefer_authored=True
+            )
             runtime = NarrativeRuntime(
                 mailbox=mailbox,
                 realization_effect=realization_effect,

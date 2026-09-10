@@ -798,11 +798,14 @@ class NarrativeRuntime:
             return
         self._plans_in_cycle += 1
         self._lane = "building"
+        beat_id = self._director_selected_beat_id or self._active_beat_id or self._episode_beat_id
         self._realization = {
             "requestId": f"request:{self._reducer_sequence}",
             "requestOrdinal": self._plans_in_cycle,
             "dispatchGeneration": self._planning_cycle_id,
         }
+        if beat_id:
+            self._realization["beatId"] = beat_id
         self._utterance = None
         if self._freshness_gate is not None:
             self._commit_token = self._default_commit_token()
