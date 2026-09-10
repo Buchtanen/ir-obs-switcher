@@ -15,6 +15,7 @@ from test_story_director import _cand as _director_cand
 from test_story_director import _world as _director_world
 
 from irswitch.commentary.mailbox import NarrativeMailbox
+from irswitch.contracts import NarrativeEvent
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
 from irswitch.events.beat_plan import CandidateOrder
@@ -197,7 +198,9 @@ def test_pure_fact_skips_director_event_caps_two_plans() -> None:
     assert first.planning_cycle_id == 1
     assert first.plans_dispatched == 1
     assert first.lane_after == "building"
+    assert "planning_cycle_opened:event_impulse" in first.effects
 
+    # Same-cycle alternate after in-cycle failure (plans_in_cycle == 1).
     runtime.fail_current_realization_for_test()
     runtime.admit(_event_impulse("e2", revision=4, fanout=12))
     second = runtime.reduce_next()
@@ -205,12 +208,14 @@ def test_pure_fact_skips_director_event_caps_two_plans() -> None:
     assert second.planning_cycle_id == 1
     assert second.plans_dispatched == 2
 
+    # New accepted event after the cycle budget is spent opens a fresh cycle.
     runtime.fail_current_realization_for_test()
     runtime.admit(_event_impulse("e3", revision=5, fanout=13))
     third = runtime.reduce_next()
     assert third is not None
-    assert third.plans_dispatched == 2
-    assert "planning_cycle_exhausted" in third.effects
+    assert third.planning_cycle_id == 2
+    assert third.plans_dispatched == 1
+    assert "planning_cycle_opened:event_after_exhausted" in third.effects
 
 
 def test_stale_token_manual_busy_recovery_shutdown() -> None:
@@ -2092,3 +2097,149 @@ async def test_cancel_tape_flush_effect() -> None:
     assert runtime.tape_task_active()
     await runtime.apply_effects(["effect:cancel_tape"])
     assert not runtime.tape_task_active()
+
+
+
+def test_event_replacement_opens_new_planning_cycle() -> None:
+    """#284: accepted event while building closes replaced_precommit and bumps cycle."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime.admit(_event_impulse("rep:1", revision=10, fanout=10))
+    first = runtime.reduce_next()
+    assert first is not None
+    assert first.planning_cycle_id == 1
+    assert first.lane_after == "building"
+
+    runtime.admit(_event_impulse("rep:2", revision=11, fanout=11))
+    second = runtime.reduce_next()
+    assert second is not None
+    assert "replaced_precommit" in second.effects
+    assert "planning_cycle_opened:event_replacement" in second.effects
+    assert second.planning_cycle_id == 2
+    assert second.plans_dispatched == 1
+    assert second.lane_after == "building"
+
+
+def test_manual_speak_never_opens_planning_cycle() -> None:
+    """#284: manual terminal never opens a planning cycle."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    before = runtime.status().planning_cycle_id
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "manual:cycle", 5000, text="Manual line.", admission_ordinal=1
+        )
+    )
+    result = runtime.reduce_next()
+    assert result is not None
+    assert result.planning_cycle_id == before
+    assert not any(effect.startswith("planning_cycle_opened:") for effect in result.effects)
+
+
+def _timeline_run(
+    *,
+    revision: int,
+    stream_epoch: int,
+    narrative_run_active: bool,
+    transition_reasons: list[str] | None = None,
+) -> dict:
+    timeline = _timeline(revision=revision, transition_reasons=transition_reasons)
+    timeline["streamEpoch"] = stream_epoch
+    timeline["narrativeRunActive"] = narrative_run_active
+    return timeline
+
+
+def _fact_view_for_timeline(timeline: dict, *, count: int = 1) -> dict:
+    """FactView aligned to timeline identity + a stable revision offset."""
+
+    revision = int(timeline["timelineRevision"]) + 6
+    stream_epoch = int(timeline["streamEpoch"])
+    view = _fact_view(count, revision=revision)
+    view["streamEpoch"] = stream_epoch
+    for fact in view["facts"]:
+        fact["streamEpoch"] = stream_epoch
+    return view
+
+
+def _context_with_timeline(
+    command_id: str,
+    timeline: dict,
+    *,
+    fanout: int,
+    with_event: bool = False,
+) -> NarrativeCommand:
+    fact_view = _fact_view_for_timeline(timeline)
+    events = ()
+    if with_event:
+        event = _event(0, fanout=fanout, fact_revision=int(fact_view["viewRevision"]))
+        # NarrativeEvent is frozen; rebuild with matching streamEpoch.
+        payload = event.to_dict()
+        payload["streamEpoch"] = int(timeline["streamEpoch"])
+        events = (NarrativeEvent.from_dict(payload),)
+    part = partition_context_batches(
+        timeline=timeline,
+        fact_view=fact_view,
+        events=events,
+        fanout_stream_sequence=fanout,
+    )[0]
+    return NarrativeCommand.context_batch(command_id, 1000, part)
+
+
+def test_disable_closes_run_and_reenable_allocates_stream_epoch() -> None:
+    """#284: disable closes narrative run; re-enable under same broadcast allocates streamEpoch."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+
+    runtime.admit(
+        _context_with_timeline(
+            "run:open",
+            _timeline_run(revision=20, stream_epoch=1, narrative_run_active=True),
+            fanout=20,
+            with_event=True,
+        )
+    )
+    opened = runtime.reduce_next()
+    assert opened is not None
+    assert runtime.status().narrative_run_active is True
+    assert runtime.status().stream_epoch == 1
+    assert opened.lane_after == "building"
+
+    runtime.admit(
+        _context_with_timeline(
+            "run:disable",
+            _timeline_run(
+                revision=21,
+                stream_epoch=1,
+                narrative_run_active=False,
+                transition_reasons=["narrative_disabled"],
+            ),
+            fanout=21,
+        )
+    )
+    disabled = runtime.reduce_next()
+    assert disabled is not None
+    assert "narrative_run_closed" in disabled.effects
+    assert "building_cancelled_on_disable" in disabled.effects
+    assert runtime.status().narrative_run_active is False
+    assert runtime.status().stream_epoch == 1
+    assert runtime.status().lane == "idle"
+
+    runtime.admit(
+        _context_with_timeline(
+            "run:enable",
+            _timeline_run(
+                revision=22,
+                stream_epoch=2,
+                narrative_run_active=True,
+                transition_reasons=["narrative_enabled"],
+            ),
+            fanout=22,
+            with_event=True,
+        )
+    )
+    enabled = runtime.reduce_next()
+    assert enabled is not None
+    assert "narrative_run_opened" in enabled.effects
+    assert "stream_epoch_allocated:2" in enabled.effects
+    assert runtime.status().narrative_run_active is True
+    assert runtime.status().stream_epoch == 2

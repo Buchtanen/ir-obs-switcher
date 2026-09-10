@@ -1128,16 +1128,31 @@ class NarrativeRuntime:
         }
         self._clear_active_speech_projection()
 
-    def _apply_context_projection(self, part: ContextBatchPart) -> None:
+    def _apply_context_projection(self, part: ContextBatchPart) -> list[str]:
+        """Project immutable timeline/fact pointers; return transition effects."""
+
+        transition_effects: list[str] = []
         timeline = part.batch.timeline
         self._timeline_revision = int(timeline["timelineRevision"])
         fact_view = part.batch.fact_view
         self._fact_view_revision = int(fact_view["viewRevision"])
         self._ingest_fact_view_counts(fact_view)
         self._broadcast_epoch = int(timeline.get("broadcastEpoch", self._broadcast_epoch))
-        self._stream_epoch = int(timeline.get("streamEpoch", self._stream_epoch))
+        prev_epoch = int(self._stream_epoch)
+        prev_run_active = bool(self._narrative_run_active)
+        next_epoch = int(timeline.get("streamEpoch", self._stream_epoch))
+        self._stream_epoch = next_epoch
         if "narrativeRunActive" in timeline:
-            self._narrative_run_active = bool(timeline["narrativeRunActive"])
+            next_run_active = bool(timeline["narrativeRunActive"])
+            if prev_run_active and not next_run_active:
+                transition_effects.append("narrative_run_closed")
+                self._plans_in_cycle = 0
+            elif (not prev_run_active) and next_run_active:
+                transition_effects.append("narrative_run_opened")
+                if next_epoch != prev_epoch:
+                    transition_effects.append(f"stream_epoch_allocated:{next_epoch}")
+                self._plans_in_cycle = 0
+            self._narrative_run_active = next_run_active
         obs_state = timeline.get("obsState")
         if obs_state is None and "streamState" in timeline:
             obs_state = timeline.get("streamState")
@@ -1156,6 +1171,7 @@ class NarrativeRuntime:
             self._lineage_id,
             self._stage,
         ) = _session_identity_from_timeline(timeline)
+        return transition_effects
 
     def _bump_deadline_generations(self, effects: list[str]) -> None:
         self._silence_generation += 1
@@ -1273,6 +1289,8 @@ class NarrativeRuntime:
         decision = self._story_director.evaluate(self._director_world, self._director_candidates)
         effects.append("director_evaluated")
         effects.append(f"director_step:{decision.reason}")
+        if int(decision.planning_cycle_id) > 0:
+            self._planning_cycle_id = int(decision.planning_cycle_id)
         at_mono_ms = int(self._director_world.now_ms)
         entry = build_runtime_decision_entry(
             decision,
@@ -1364,9 +1382,19 @@ class NarrativeRuntime:
         self._speech_deadline_stage = "stop"
         effects.append("effect:arm_speech_deadline")
 
-    def _dispatch_plan(self, effects: list[str]) -> None:
-        if self._planning_cycle_id == 0:
-            self._planning_cycle_id = 1
+    def _begin_planning_cycle(self, effects: list[str], *, reason: str) -> None:
+        """Open a new planning impulse cycle; resets the per-cycle plan budget."""
+
+        self._planning_cycle_id += 1
+        self._plans_in_cycle = 0
+        effects.append(f"planning_cycle_opened:{reason}")
+        effects.append(f"planning_cycle_id:{self._planning_cycle_id}")
+
+    def _dispatch_plan(self, effects: list[str], *, open_cycle_reason: str | None = None) -> None:
+        if open_cycle_reason is not None:
+            self._begin_planning_cycle(effects, reason=open_cycle_reason)
+        elif self._planning_cycle_id == 0:
+            self._begin_planning_cycle(effects, reason="initial")
         if self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
             effects.append("planning_cycle_exhausted")
             return
@@ -1437,8 +1465,14 @@ class NarrativeRuntime:
     def _on_context(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         part = command.context_part
         assert part is not None
-        self._apply_context_projection(part)
+        transition_effects = self._apply_context_projection(part)
         effects = ["context_applied"]
+        effects.extend(transition_effects)
+        if "narrative_run_closed" in transition_effects:
+            self._cancel_building(effects, reason="building_cancelled_on_disable")
+            self._request_speech_cancel(effects, reason="speech_cancel_requested_on_disable")
+            if self._tape_effect is not None:
+                effects.append("effect:flush_tape")
         if part.batch.has_timeline_transition:
             self._bump_deadline_generations(effects)
             self._cancel_building(effects, reason="building_cancelled")
@@ -1454,13 +1488,16 @@ class NarrativeRuntime:
         if self._lane == "stopping":
             effects.append("ignored_while_stopping")
             return "handled", effects
-        if self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
-            effects.append("planning_cycle_exhausted")
-            if self._lane == "building":
-                self._cancel_building(effects, reason="building_invalidated")
-            return "handled", effects
+        open_reason: str | None = None
+        if self._lane == "building":
+            self._cancel_building(effects, reason="replaced_precommit")
+            open_reason = "event_replacement"
+        elif self._plans_in_cycle == 0:
+            open_reason = "event_impulse"
+        elif self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
+            open_reason = "event_after_exhausted"
         self._refresh_director_from_live(part, effects)
-        self._dispatch_plan(effects)
+        self._dispatch_plan(effects, open_cycle_reason=open_reason)
         return "handled", effects
 
     def _on_config(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -1494,10 +1531,12 @@ class NarrativeRuntime:
         self._silence_generation = generation
         effects = ["silence_armed"]
         if self._lane == "idle" and self._runtime in {"ready", "degraded"}:
-            if self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
-                effects.append("planning_cycle_exhausted")
-            else:
-                self._dispatch_plan(effects)
+            open_reason: str | None = None
+            if self._plans_in_cycle == 0:
+                open_reason = "silence_impulse"
+            elif self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
+                open_reason = "silence_after_exhausted"
+            self._dispatch_plan(effects, open_cycle_reason=open_reason)
         return "handled", effects
 
     def _on_validity(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
