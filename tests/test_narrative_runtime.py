@@ -2924,3 +2924,95 @@ def test_narrative_runtime_validity_expiry_before_completion_race() -> None:
     assert late.disposition == "ignored_stale_or_inapplicable"
     assert "stale_realization_token" in late.effects
     assert runtime.status().lane == "idle"
+
+
+def test_runtime_does_not_back_mutate_upstream_timeline_or_fact_snapshots() -> None:
+    """#284 AC: StreamTimeline/FactView projections stay immutable upstream truth."""
+
+    import copy
+
+    timeline = _timeline(revision=7)
+    fact_view = _fact_view(1, revision=13)
+    pristine_timeline = copy.deepcopy(timeline)
+    pristine_facts = copy.deepcopy(fact_view)
+    part = partition_context_batches(
+        timeline=timeline,
+        fact_view=fact_view,
+        events=(),
+        fanout_stream_sequence=71,
+    )[0]
+
+    # Caller mutates the dicts it still holds — frozen batch must be unaffected.
+    timeline["timelineRevision"] = 999
+    fact_view["facts"].clear()
+    assert part.batch.timeline == pristine_timeline
+    assert part.batch.fact_view == pristine_facts
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert runtime.admit(NarrativeCommand.context_batch("immut:context", 1000, part)).accepted
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+    assert runtime.status().timeline_revision == 7
+    assert runtime.status().fact_view_revision == 13
+
+    # Property accessors return fresh dicts; mutating them cannot rewrite actor pointers.
+    leaked = part.batch.timeline
+    leaked["timelineRevision"] = 0
+    assert runtime.status().timeline_revision == 7
+    assert part.batch.timeline["timelineRevision"] == 7
+
+    # Actor caches scalar revisions only — not live upstream owner objects.
+    assert not hasattr(runtime, "_stream_timeline")
+    assert not hasattr(runtime, "_feature_engine")
+    assert getattr(runtime, "_timeline", None) is None
+    assert getattr(runtime, "_fact_view", None) is None
+
+
+def test_runtime_reads_detector_bank_status_without_stepping_or_owning_engines() -> None:
+    """#284 AC: DetectorBank remains upstream-owned; FeatureEngine frames stay frozen."""
+
+    import inspect
+    from dataclasses import FrozenInstanceError
+
+    from test_feature_engine import _sample
+
+    from irswitch.events.detector_bank import DetectorBank
+    from irswitch.events.feature_engine import FeatureEngine
+    from irswitch.logic.stream_timeline import StreamTimeline
+
+    bank = DetectorBank()
+    step_calls: list[object] = []
+    original_step = bank.step
+
+    def tracked_step(*args: object, **kwargs: object) -> object:
+        step_calls.append((args, kwargs))
+        return original_step(*args, **kwargs)
+
+    bank.step = tracked_step  # type: ignore[method-assign]
+
+    runtime = NarrativeRuntime(detector_bank=bank)
+    runtime.enable()
+    assert runtime.admit(_pure_fact("immut:detectors", revision=8, fanout=81)).accepted
+    assert runtime.reduce_next() is not None
+    assert step_calls == []
+    assert runtime.status().detector_disabled == ()
+
+    bank.disable_for_run(("battle_ahead_v1",), reason="required_capture_lost")
+    assert runtime.status().detector_disabled == (
+        {"id": "battle_ahead_v1", "reason": "required_capture_lost"},
+    )
+    assert step_calls == []
+
+    # Upstream owners remain independently mutable; actor does not absorb them.
+    _timeline_owner = StreamTimeline()
+    feature_owner = FeatureEngine()
+    assert runtime.__dict__.get("_detector_bank") is bank
+    assert "stream_timeline" not in inspect.signature(NarrativeRuntime.__init__).parameters
+    assert "feature_engine" not in inspect.signature(NarrativeRuntime.__init__).parameters
+
+    feature_step = feature_owner.observe(_sample())
+    assert feature_step.frame is not None
+    with pytest.raises(FrozenInstanceError):
+        feature_step.frame.frame_sequence = 99  # type: ignore[misc]
+    assert step_calls == []
