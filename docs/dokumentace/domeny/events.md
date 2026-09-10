@@ -129,6 +129,15 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 - **`CONFIG_UPDATE` boundary:** rearms silence/validity deadlines without lane mutate; following timeline transition cancels building (`building_cancelled` + `effect:cancel_realization`).
 - Tests: `tests/test_narrative_runtime.py` — `test_timeline_transition_cancels_building_and_stale_deadline_generations`, `test_disable_with_tape_effect_flushes_tape`, `test_config_then_timeline_transition_cancels_building` (**149** total; was **146**). `tests/test_narrative_tape_bridge.py` — `test_open_writer_flush_effect_closes_on_disable` (**4** total; was **3**). **Docs: `API.md` / `CONFIG.md` / `README.md` unchanged** (internal reducer effects; test `d9089a1`).
 
+## Ordering+races verification (`events/narrative_runtime.py`)
+
+Library pytest evidence mapped to frozen `actor-transition-goldens.json` ordering scenarios and completion race traces (test `5f4eb61`):
+
+- **Ordering:** `same_time_external_before_callback` — external callback wins ordering when co-timed with internal playback callback; `same_time_callback_before_reset` — internal playback callback wins over stream reset at same step.
+- **Completion races:** `deadline_before_result`, `reset_before_result`, `config_generation_then_completion`, `validity_expiry_before_completion` — stale completions ignored; one terminal attempt per race.
+- **Matrix:** `test_actor_transition_matrix_row` still covers all **85** lane×command disposition rows separately.
+- Tests: six rows in `tests/test_narrative_runtime.py` (**155** total; was **149**). **Docs: `API.md` / `CONFIG.md` / `README.md` unchanged** (tests-only).
+
 ## Manual speak (`events/narrative_runtime.py`)
 
 - `ManualSpeakOutcome`, `NarrativeRuntime.try_manual_speak` — alokuje latch, admitne `MANUAL_SPEAK_REQUEST`, awaitne resolution (default 1s; `timeout_s` / `reduce_inline` kwargs). Když actor loop neběží, sync inline reduce; jinak `_on_manual` claimne latch před lane mutate. Timeout → `admission_timeout`; abandoned latch zůstává registrovaný (`manual_abandoned`).
