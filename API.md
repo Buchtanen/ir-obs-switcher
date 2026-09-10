@@ -864,7 +864,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
 - Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
-- `#273` identity subset on `timeline`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete` (full catalog/components/decisions goldens remain later).
+- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete` (full catalog/components/decisions goldens remain later).
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
@@ -874,7 +874,30 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
   "schemaVersion": "commentary-runtime/2",
   "status": "disabled",
   "reason": null,
-  "speech": { "state": "idle" },
+  "language": "en",
+  "speech": {
+    "state": "idle",
+    "sourceKind": null,
+    "utteranceId": null,
+    "beatId": null,
+    "opportunityId": null,
+    "backend": null,
+    "backendGeneration": null,
+    "dispatchedAtMonoMs": null,
+    "acceptedAtMonoMs": null,
+    "lastTerminal": null
+  },
+  "components": {
+    "llm": { "status": "ready", "reason": null },
+    "tts": { "status": "ready", "reason": null },
+    "tape": {
+      "status": "disabled",
+      "reason": null,
+      "path": null,
+      "drops": 0,
+      "dropsByPriority": { "sample": 0, "normal": 0, "critical": 0 }
+    }
+  },
   "queues": { "mailbox": { "depth": 0, "capacity": 64, "overflows": 0 } },
   "timeline": {
     "broadcastEpoch": 0,

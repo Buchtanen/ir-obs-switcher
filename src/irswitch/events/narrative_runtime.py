@@ -106,6 +106,16 @@ class RuntimeStatus:
     narrative_run_active: bool
     stream_active: bool | None
     stream_state: str
+    # #273 speech / component projection (commentary-runtime/2 subset)
+    speech_source_kind: str | None
+    speech_utterance_id: str | None
+    speech_beat_id: str | None
+    speech_opportunity_id: str | None
+    speech_backend: str | None
+    speech_backend_generation: int | None
+    speech_dispatched_at_mono_ms: int | None
+    speech_accepted_at_mono_ms: int | None
+    speech_last_terminal: dict[str, object] | None
 
 
 class NarrativeRuntime:
@@ -147,6 +157,15 @@ class NarrativeRuntime:
         self._narrative_run_active = False
         self._stream_active: bool | None = None
         self._stream_state = "unknown"
+        self._speech_source_kind: str | None = None
+        self._speech_utterance_id: str | None = None
+        self._speech_beat_id: str | None = None
+        self._speech_opportunity_id: str | None = None
+        self._speech_backend: str | None = None
+        self._speech_backend_generation: int | None = None
+        self._speech_dispatched_at_mono_ms: int | None = None
+        self._speech_accepted_at_mono_ms: int | None = None
+        self._speech_last_terminal: dict[str, object] | None = None
         self._silence_generation = 0
         self._validity_generation = 0
         self._realization: dict[str, Any] | None = None
@@ -228,6 +247,17 @@ class NarrativeRuntime:
             narrative_run_active=bool(self._narrative_run_active),
             stream_active=self._stream_active,
             stream_state=str(self._stream_state),
+            speech_source_kind=self._speech_source_kind,
+            speech_utterance_id=self._speech_utterance_id,
+            speech_beat_id=self._speech_beat_id,
+            speech_opportunity_id=self._speech_opportunity_id,
+            speech_backend=self._speech_backend,
+            speech_backend_generation=self._speech_backend_generation,
+            speech_dispatched_at_mono_ms=self._speech_dispatched_at_mono_ms,
+            speech_accepted_at_mono_ms=self._speech_accepted_at_mono_ms,
+            speech_last_terminal=(
+                None if self._speech_last_terminal is None else dict(self._speech_last_terminal)
+            ),
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:
@@ -616,6 +646,49 @@ class NarrativeRuntime:
             plans_dispatched=self._plans_in_cycle,
             effects=tuple(effects),
         )
+
+    def _clear_active_speech_projection(self) -> None:
+        self._speech_source_kind = None
+        self._speech_utterance_id = None
+        self._speech_beat_id = None
+        self._speech_opportunity_id = None
+        self._speech_backend = None
+        self._speech_backend_generation = None
+        self._speech_dispatched_at_mono_ms = None
+        self._speech_accepted_at_mono_ms = None
+
+    def _begin_speech_projection(
+        self,
+        *,
+        source_kind: str,
+        utterance_id: str,
+        beat_id: str | None,
+        opportunity_id: str | None,
+        backend_generation: int | None,
+        dispatched_at_mono_ms: int | None,
+    ) -> None:
+        self._speech_source_kind = source_kind
+        self._speech_utterance_id = utterance_id
+        self._speech_beat_id = beat_id
+        self._speech_opportunity_id = opportunity_id
+        self._speech_backend = None
+        self._speech_backend_generation = backend_generation
+        self._speech_dispatched_at_mono_ms = dispatched_at_mono_ms
+        self._speech_accepted_at_mono_ms = None
+
+    def _retain_speech_terminal(self, *, reason: str, at_mono_ms: int | None) -> None:
+        utterance_id = self._speech_utterance_id
+        source_kind = self._speech_source_kind
+        if utterance_id is None or source_kind is None:
+            self._clear_active_speech_projection()
+            return
+        self._speech_last_terminal = {
+            "utteranceId": utterance_id,
+            "sourceKind": source_kind,
+            "reason": reason,
+            "atMonoMs": at_mono_ms,
+        }
+        self._clear_active_speech_projection()
 
     def _apply_context_projection(self, part: ContextBatchPart) -> None:
         timeline = part.batch.timeline
@@ -1038,6 +1111,16 @@ class NarrativeRuntime:
             "dispatchGeneration": int(self._realization["dispatchGeneration"]),
             "text": text,
         }
+        beat_id = self._realization.get("beatId")
+        opportunity_id = self._opportunity_id
+        self._begin_speech_projection(
+            source_kind="narrative",
+            utterance_id=str(self._utterance["utteranceId"]),
+            beat_id=None if beat_id is None else str(beat_id),
+            opportunity_id=None if opportunity_id is None else str(opportunity_id),
+            backend_generation=1,
+            dispatched_at_mono_ms=int(command.enqueued_mono_ms),
+        )
         self._realization = None
         self._commit_token = None
         self._speech_deadline_stage = "start"
@@ -1081,6 +1164,7 @@ class NarrativeRuntime:
         if self._lane == "committed":
             self._lane = "speaking"
             self._speech_deadline_stage = "playback"
+            self._speech_accepted_at_mono_ms = int(command.enqueued_mono_ms)
             effects = [
                 "playback_accepted",
                 "effect:cancel_speech_deadline",
@@ -1119,6 +1203,15 @@ class NarrativeRuntime:
         # Pre-accept SPEECH_FAILED still holds a reservation — release it.
         if command.kind == "SPEECH_FAILED" and self._reservation_token is not None:
             self._release_opportunity_attempt(effects)
+        terminal_reason = {
+            "SPEECH_COMPLETED": "completed",
+            "SPEECH_INTERRUPTED": "interrupted",
+            "SPEECH_FAILED": "failed",
+        }.get(str(command.kind), "failed")
+        self._retain_speech_terminal(
+            reason=terminal_reason,
+            at_mono_ms=int(command.enqueued_mono_ms),
+        )
         self._utterance = None
         self._realization = None
         self._lane = "idle"
@@ -1146,6 +1239,10 @@ class NarrativeRuntime:
                 "effect:cancel_speech_deadline",
                 "effect:arm_speech_deadline",
             ]
+        self._retain_speech_terminal(
+            reason="timed_out",
+            at_mono_ms=int(command.enqueued_mono_ms),
+        )
         self._utterance = None
         self._lane = "idle"
         self._speech_deadline_stage = None
@@ -1167,6 +1264,14 @@ class NarrativeRuntime:
             "dispatchGeneration": max(1, self._planning_cycle_id),
             "text": text,
         }
+        self._begin_speech_projection(
+            source_kind="manual",
+            utterance_id=str(self._utterance["utteranceId"]),
+            beat_id=None,
+            opportunity_id=None,
+            backend_generation=1,
+            dispatched_at_mono_ms=int(command.enqueued_mono_ms),
+        )
         self._speech_deadline_stage = "start"
         return "handled", [
             "manual_committed",

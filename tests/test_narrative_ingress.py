@@ -106,7 +106,19 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
     projection = project_runtime_status(status)
     assert projection["schemaVersion"] == "commentary-runtime/2"
     assert projection["status"] == "ready"
-    assert projection["speech"]["state"] == "idle"
+    assert projection["language"] == "en"
+    assert projection["speech"] == {
+        "state": "idle",
+        "sourceKind": None,
+        "utteranceId": None,
+        "beatId": None,
+        "opportunityId": None,
+        "backend": None,
+        "backendGeneration": None,
+        "dispatchedAtMonoMs": None,
+        "acceptedAtMonoMs": None,
+        "lastTerminal": None,
+    }
     assert projection["queues"]["mailbox"]["capacity"] == 64
     assert projection["queues"]["mailbox"]["depth"] == 0
     assert projection["timeline"] == {
@@ -117,8 +129,102 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
         "streamState": "unknown",
         "historyComplete": True,
     }
+    assert projection["components"]["llm"]["status"] == "ready"
+    assert projection["components"]["tts"]["status"] == "ready"
+    assert projection["components"]["tape"]["status"] == "disabled"
     assert projection["recovery"]["count"] == 0
     assert "admissionDiagnostics" in projection["diagnostics"]
+
+
+def test_project_runtime_status_speech_retains_last_terminal_after_completion() -> None:
+    """#273 speech projection keeps lastTerminal after the lane returns to idle."""
+    from irswitch.contracts.command import NarrativeCommand
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "speech:proj:manual", 12_000, text="Gap is closing.", admission_ordinal=1
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    assert committed.disposition == "handled"
+    projection = project_runtime_status(runtime.status())
+    assert projection["speech"]["state"] == "committed"
+    assert projection["speech"]["sourceKind"] == "manual"
+    assert projection["speech"]["utteranceId"] is not None
+    assert projection["speech"]["beatId"] is None
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+
+    def _tts(kind: str, command_id: str, *, at_mono_ms: int) -> NarrativeCommand:
+        return NarrativeCommand.tts_callback(
+            command_id,
+            kind,  # type: ignore[arg-type]
+            at_mono_ms,
+            utterance_id=str(utterance["utteranceId"]),
+            utterance_ordinal=int(utterance["utteranceOrdinal"]),
+            backend_generation=int(utterance["backendGeneration"]),
+            dispatch_generation=int(utterance["dispatchGeneration"]),
+            callback={
+                "schemaVersion": "tts-callback/2",
+                "callbackId": f"cb:{command_id}",
+                "kind": {
+                    "PLAYBACK_ACCEPTED": "playback_accepted",
+                    "SPEECH_COMPLETED": "completed",
+                }[kind],
+                "utteranceId": utterance["utteranceId"],
+                "utteranceOrdinal": utterance["utteranceOrdinal"],
+                "backend": "sapi",
+                "backendGeneration": utterance["backendGeneration"],
+                "dispatchGeneration": utterance["dispatchGeneration"],
+                "workerSequence": 1,
+                "observedMonoMs": at_mono_ms,
+                "detailCode": None,
+            },
+        )
+
+    runtime.admit(_tts("PLAYBACK_ACCEPTED", "speech:proj:pb", at_mono_ms=12_200))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert accepted.lane_after == "speaking"
+    speaking = project_runtime_status(runtime.status())
+    assert speaking["speech"]["state"] == "speaking"
+    assert speaking["speech"]["acceptedAtMonoMs"] == 12_200
+
+    runtime.admit(_tts("SPEECH_COMPLETED", "speech:proj:done", at_mono_ms=12_500))
+    done = runtime.reduce_next()
+    assert done is not None
+    projection = project_runtime_status(runtime.status())
+    assert projection["speech"]["state"] == "idle"
+    assert projection["speech"]["utteranceId"] is None
+    assert projection["speech"]["lastTerminal"] == {
+        "utteranceId": utterance["utteranceId"],
+        "sourceKind": "manual",
+        "reason": "completed",
+        "atMonoMs": 12_500,
+    }
+
+
+def test_project_runtime_status_speech_idle_golden() -> None:
+    import json
+    from pathlib import Path
+
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "status_speech_idle.json"
+    )
+    projection = project_runtime_status(NarrativeRuntime().status())
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert projection["language"] == expected["language"]
+    assert projection["speech"] == expected["speech"]
+    assert projection["components"]["llm"]["status"] == expected["components"]["llm"]["status"]
+    assert projection["components"]["tts"]["status"] == expected["components"]["tts"]["status"]
+    assert projection["components"]["tape"]["status"] == expected["components"]["tape"]["status"]
 
 
 def test_project_runtime_status_identity_follows_context_timeline() -> None:

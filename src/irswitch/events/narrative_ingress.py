@@ -128,12 +128,35 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
 
     if not isinstance(status, RuntimeStatus):
         raise ContractViolation("projector requires RuntimeStatus")
+    tape_status = status.tape_status
+    tape_component = {
+        "status": "disabled" if not tape_status else str(tape_status),
+        "reason": None,
+        "path": None,
+        "drops": 0,
+        "dropsByPriority": {"sample": 0, "normal": 0, "critical": 0},
+    }
+    if tape_status == "unavailable":
+        tape_component["status"] = "unavailable"
+    llm_status = str(status.component_health.get("llm", "ready"))
+    tts_status = str(status.component_health.get("tts", "ready"))
+    last_terminal = status.speech_last_terminal
     return {
         "schemaVersion": "commentary-runtime/2",
         "status": _RUNTIME_TO_STATUS.get(status.runtime_state, "degraded"),
         "reason": None if not status.reason_codes else status.reason_codes[0],
+        "language": "en",
         "speech": {
             "state": _LANE_TO_SPEECH.get(status.lane, "idle"),
+            "sourceKind": status.speech_source_kind,
+            "utteranceId": status.speech_utterance_id,
+            "beatId": status.speech_beat_id,
+            "opportunityId": status.speech_opportunity_id,
+            "backend": status.speech_backend,
+            "backendGeneration": status.speech_backend_generation,
+            "dispatchedAtMonoMs": status.speech_dispatched_at_mono_ms,
+            "acceptedAtMonoMs": status.speech_accepted_at_mono_ms,
+            "lastTerminal": None if last_terminal is None else dict(last_terminal),
         },
         "queues": {
             "mailbox": {
@@ -149,6 +172,11 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "streamActive": status.stream_active,
             "streamState": str(status.stream_state),
             "historyComplete": bool(status.history_complete),
+        },
+        "components": {
+            "llm": {"status": llm_status, "reason": None},
+            "tts": {"status": tts_status, "reason": None},
+            "tape": tape_component,
         },
         "recovery": {
             "count": int(status.recovery_count),
