@@ -869,6 +869,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
 - `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape,detectors,facts}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`.
 - `#273` thin status_ready stubs (feat `03c34b2`): `catalog` (`narrative-catalog/2`, packaged catalog `hash`, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + capacity constants), `byTapeChannel: {}`, `queues.opportunities` (depth 0, capacity 128), `components.detectors` / `components.facts` ready stubs. **Not** live product wiring — defaults only.
+- `#273` schema-complete `components.llm` / `components.tts` stubs (feat `3670502`): llm — `status`/`reason`, `generation=0`, `configGeneration=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts — `status`/`reason`, `backend=null` (or speech backend when in `{sapi,espeak,supertonic}`), `backendGeneration` from speech lane or `0`, `configGeneration=0`, `quarantinedGeneration=null`, `voice=null`. **Not** live transport/residency wiring.
 - `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; legacy `/api/commentary/validate|speak` cutover deferred). Full live catalog/config/episodes/tape-channel/detectors/facts wiring remains later.
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
@@ -916,8 +917,24 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
     "lastTerminal": null
   },
   "components": {
-    "llm": { "status": "ready", "reason": null },
-    "tts": { "status": "ready", "reason": null },
+    "llm": {
+      "status": "ready",
+      "reason": null,
+      "generation": 0,
+      "configGeneration": 0,
+      "model": "unconfigured",
+      "residencyEvidence": "not_requested",
+      "lastAttempt": null
+    },
+    "tts": {
+      "status": "ready",
+      "reason": null,
+      "backend": null,
+      "backendGeneration": 0,
+      "configGeneration": 0,
+      "quarantinedGeneration": null,
+      "voice": null
+    },
     "tape": {
       "status": "disabled",
       "reason": null,
@@ -962,7 +979,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 }
 ```
 
-Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts stubs only; feat `03c34b2`).
+Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts stubs only; feat `03c34b2`); `tests/fixtures/commentary_runtime/status_components_llm_tts.json` (llm/tts schema-complete stubs; feat `3670502`); `status_speech_idle.json` llm/tts shapes updated in same feat.
 
 ### GET /api/commentary/runtime/decisions
 
