@@ -397,7 +397,7 @@ Conservative audit of issue [#284](https://github.com/Buchtanen/ir-obs-switcher/
 | After health/API reason-code schema slice | **33/41** checked (**30** flipped total) |
 | After fact-only wait / coalesce / callback-branches slice | **34/41** checked (**31** flipped total) |
 | After live verify-frame attachment slice | **34/41** checked (**31** flipped total; slice landed, no formal AC checkbox) |
-| Remaining | **6** unchecked (**PARTIAL** / **OPEN**) — after live verify-frame slice |
+| Remaining | **7** unchecked (**PARTIAL** / **OPEN**) — after live verify-frame slice (slice landed; no formal AC checkbox) |
 | Issue state | **OPEN** — no master PR |
 
 **LANDABLE_NOW (21 flipped this pass):** mailbox routing + total `reducer_sequence`; sync I/O-free reducer; ≤1 generation/speech lane; protected/coalesce matrix + recovery; upstream owner retention; no parallel result merge; priority never reorders truth; worker admit-only; fail-soft overflow/cancel/shutdown visibility; no prepared-speech queue; protected-overflow tests; v2 ownership/mailbox docs; atomic admit→reducer sequencing; 56/7/1 mailbox; recovery barrier + `history_complete=false`; pure FactView close/invalidate-only; fixed capacity (no public override); exact composite revision / non-coalescing `APPLY_CONTEXT_BATCH`; recovery jumps to newest projection; validity/speech watchdogs + component-health transitions.
