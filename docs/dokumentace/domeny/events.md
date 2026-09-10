@@ -150,7 +150,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**45** = prior **44** + **1** health reason-code row feat `cffaab1`). `tests/test_narrative_runtime.py` (**144** = prior **141** + **3** fact-only/callback rows feat `dd64047`). `tests/test_coalesce_policy.py` (**3** feat `dd64047`). `tests/test_actor_transition_goldens.py` (**29** = **13** `raceTraces` + **10** `overflowScenarios` + **2** `orderingScenarios` + sync/assert rows + **2** runtime race rows). Runtime+goldens **176**. Core subset **221** (= **144** + **45** + **29** + **3**). `tests/test_narrative_runtime_http.py` (**16** incl. disabled-subset loop asserts + **2** public-path cutover rows). `tests/test_commentary_http.py` (**7**). Related **311** (= prior **305** + **6** feat `dd64047`). Ingress+http **43** (= prior **42** + **1** health reason row).
+`tests/test_narrative_ingress.py` (**45** = prior **44** + **1** health reason-code row feat `cffaab1`). `tests/test_narrative_runtime.py` (**146** = prior **144** + **2** live verify-frame rows feat `a1ba998`). `tests/test_coalesce_policy.py` (**3** feat `dd64047`). `tests/test_actor_transition_goldens.py` (**29** = **13** `raceTraces` + **10** `overflowScenarios` + **2** `orderingScenarios` + sync/assert rows + **2** runtime race rows). Runtime+goldens **176**. Core subset **223** (= **146** + **45** + **29** + **3**). `tests/test_narrative_runtime_http.py` (**16** incl. disabled-subset loop asserts + **2** public-path cutover rows). `tests/test_commentary_http.py` (**7**). Related **315** (= prior **311** + **4** feat `a1ba998`). Ingress+http **43** (= prior **42** + **1** health reason row).
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
@@ -158,7 +158,9 @@ Full #273 schema: master cutover only (human kick). Loop liveness landed feat `c
 
 Fact-only wait / coalesce / callback branches landed feat `dd64047` (`contracts/coalesce_policy.py`; pure FactView `fact_only_wait`; narrative/manual playback+terminal callback branches; silence pause/rearm).
 
-**#284 stays OPEN** (**34/41** AC, **7** remain) — no master PR.
+Live #270 verify-frame attachment on authored/template realization paths landed feat `a1ba998` (`events/narrative_verify_frame.py` side-stash; `realize_authored_speech` / `template_speech`; `SpeechDraft.verify_frame`; effect `verify_frame_attached_live`; skip-no-frame mainly for Qwen/unframed; `tests/test_narrative_realization_bridge.py` **5**).
+
+**#284 stays OPEN** (**35/41** AC, **6** remain) — no master PR.
 
 ## Related
 
