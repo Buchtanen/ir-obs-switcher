@@ -132,8 +132,71 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
     assert projection["components"]["llm"]["status"] == "ready"
     assert projection["components"]["tts"]["status"] == "ready"
     assert projection["components"]["tape"]["status"] == "disabled"
+    assert projection["components"]["detectors"] == {
+        "status": "ready",
+        "reason": None,
+        "disabled": [],
+    }
+    assert projection["components"]["facts"]["status"] == "ready"
+    assert projection["components"]["facts"]["active"] == 0
+    assert projection["components"]["facts"]["historicalSummaries"] == 0
+    assert projection["components"]["facts"]["historyComplete"] is True
+    assert projection["components"]["facts"]["viewRevision"] == 0
+    assert projection["queues"]["opportunities"] == {
+        "depth": 0,
+        "capacity": 128,
+        "expired": 0,
+        "evicted": 0,
+    }
+    assert projection["catalog"]["schemaVersion"] == "narrative-catalog/2"
+    assert projection["catalog"]["eventIdentifierCount"] == 60
+    assert projection["catalog"]["beatCount"] == 64
+    assert projection["catalog"]["hash"].startswith("sha256:")
+    assert len(projection["catalog"]["hash"]) == len("sha256:") + 64
+    assert projection["config"] == {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 0,
+        "desiredHash": "sha256:" + ("0" * 64),
+        "effectiveHash": "sha256:" + ("0" * 64),
+        "applySequence": 0,
+        "pendingChanges": [],
+    }
+    assert projection["episodes"] == {
+        "active": 0,
+        "candidate": 0,
+        "suspended": 0,
+        "retainedCurrentCapacity": 64,
+        "resolved": 0,
+        "resolvedCapacity": 256,
+    }
+    assert projection["byTapeChannel"] == {}
     assert projection["recovery"]["count"] == 0
     assert "admissionDiagnostics" in projection["diagnostics"]
+
+
+def test_project_runtime_status_ready_library_golden() -> None:
+    """#273 thin status_ready: catalog/config/episodes/byTapeChannel stubs."""
+    import json
+    from pathlib import Path
+
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "status_ready_library.json"
+    )
+    projection = project_runtime_status(NarrativeRuntime().status())
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert projection["schemaVersion"] == expected["schemaVersion"]
+    assert projection["status"] == expected["status"]
+    assert projection["catalog"] == expected["catalog"]
+    assert projection["config"] == expected["config"]
+    assert projection["episodes"] == expected["episodes"]
+    assert projection["byTapeChannel"] == expected["byTapeChannel"]
+    assert projection["queues"]["opportunities"] == expected["queues"]["opportunities"]
+    assert projection["components"]["detectors"] == expected["components"]["detectors"]
+    assert projection["components"]["facts"] == expected["components"]["facts"]
 
 
 def test_project_runtime_status_speech_retains_last_terminal_after_completion() -> None:

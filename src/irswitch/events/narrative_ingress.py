@@ -16,13 +16,67 @@ Production EventSubscription cutover still needs an explicit kick.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
+from irswitch.contracts.catalog_loader import load_narrative_catalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.primitives import ContractViolation
+from irswitch.events.episode_registry import ACTIVE_CAP, RESOLVED_CAP
 from irswitch.events.narrative import NarrativeEvent, partition_context_batches
 from irswitch.events.narrative_runtime import NarrativeRuntime, RuntimeStatus
+from irswitch.events.opportunity_queue import OPPORTUNITY_CAPACITY
+
+_UNLOADED_HASH = "sha256:" + ("0" * 64)
+_CATALOG_EVENT_IDENTIFIER_COUNT = 60
+_CATALOG_BEAT_COUNT = 64
+
+
+@lru_cache(maxsize=1)
+def _packaged_catalog_projection() -> dict[str, Any]:
+    """Schema-shaped catalog block from the frozen packaged narrative catalog.
+
+    Const counts match StatusResponse; hash is the live packaged digest.
+    Catalog load failure must never raise out of status projection.
+    """
+
+    try:
+        catalog = load_narrative_catalog().require_catalog()
+        digest = str(catalog.catalog_hash)
+    except Exception:
+        digest = _UNLOADED_HASH
+    return {
+        "schemaVersion": "narrative-catalog/2",
+        "hash": digest,
+        "eventIdentifierCount": _CATALOG_EVENT_IDENTIFIER_COUNT,
+        "beatCount": _CATALOG_BEAT_COUNT,
+    }
+
+
+def _unloaded_config_projection() -> dict[str, Any]:
+    """Thin config block — live apply/generation wiring is #273 remainder."""
+
+    return {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 0,
+        "desiredHash": _UNLOADED_HASH,
+        "effectiveHash": _UNLOADED_HASH,
+        "applySequence": 0,
+        "pendingChanges": [],
+    }
+
+
+def _empty_episodes_projection() -> dict[str, Any]:
+    return {
+        "active": 0,
+        "candidate": 0,
+        "suspended": 0,
+        "retainedCurrentCapacity": int(ACTIVE_CAP),
+        "resolved": 0,
+        "resolvedCapacity": int(RESOLVED_CAP),
+    }
+
 
 _LANE_TO_SPEECH = {
     "idle": "idle",
@@ -122,8 +176,11 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
 
     HTTP mount: ``GET /api/commentary/runtime`` via ``narrative_runtime_http``
     (additive; does not start the actor loop). Full schema / live actor
-    attachment remain a later cutover slice. This helper only shapes
-    actor/recovery fields already owned by the library RuntimeStatus.
+    attachment remain a later cutover slice. This helper shapes
+    actor/recovery fields already owned by the library RuntimeStatus plus
+    thin #273 catalog/config/episodes/byTapeChannel defaults (packaged
+    catalog hash; unloaded config; empty episode/tape-channel counters;
+    opportunities queue stub; detectors/facts stubs).
     """
 
     if not isinstance(status, RuntimeStatus):
@@ -141,6 +198,7 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     llm_status = str(status.component_health.get("llm", "ready"))
     tts_status = str(status.component_health.get("tts", "ready"))
     last_terminal = status.speech_last_terminal
+    history_complete = bool(status.history_complete)
     return {
         "schemaVersion": "commentary-runtime/2",
         "status": _RUNTIME_TO_STATUS.get(status.runtime_state, "degraded"),
@@ -163,20 +221,39 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
                 "depth": int(status.mailbox_depth),
                 "capacity": int(status.mailbox_capacity),
                 "overflows": int(status.mailbox_overflows),
-            }
+            },
+            "opportunities": {
+                "depth": 0,
+                "capacity": int(OPPORTUNITY_CAPACITY),
+                "expired": 0,
+                "evicted": 0,
+            },
         },
+        "episodes": _empty_episodes_projection(),
+        "catalog": dict(_packaged_catalog_projection()),
+        "config": _unloaded_config_projection(),
+        "byTapeChannel": {},
         "timeline": {
             "broadcastEpoch": int(status.broadcast_epoch),
             "streamEpoch": int(status.stream_epoch),
             "narrativeRunActive": bool(status.narrative_run_active),
             "streamActive": status.stream_active,
             "streamState": str(status.stream_state),
-            "historyComplete": bool(status.history_complete),
+            "historyComplete": history_complete,
         },
         "components": {
             "llm": {"status": llm_status, "reason": None},
             "tts": {"status": tts_status, "reason": None},
             "tape": tape_component,
+            "detectors": {"status": "ready", "reason": None, "disabled": []},
+            "facts": {
+                "status": "ready",
+                "reason": None,
+                "viewRevision": 0,
+                "active": 0,
+                "historicalSummaries": 0,
+                "historyComplete": history_complete,
+            },
         },
         "recovery": {
             "count": int(status.recovery_count),

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "disabled",
+  "catalog": {
+    "schemaVersion": "narrative-catalog/2",
+    "hash": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+    "eventIdentifierCount": 60,
+    "beatCount": 64
+  },
+  "config": {
+    "schemaVersion": "commentary-config/2",
+    "desiredGeneration": 0,
+    "desiredHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "effectiveHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "applySequence": 0,
+    "pendingChanges": []
+  },
+  "episodes": {
+    "active": 0,
+    "candidate": 0,
+    "suspended": 0,
+    "retainedCurrentCapacity": 64,
+    "resolved": 0,
+    "resolvedCapacity": 256
+  },
+  "byTapeChannel": {},
+  "queues": {
+    "mailbox": {
+      "depth": 0,
+      "capacity": 64,
+      "overflows": 0
+    },
+    "opportunities": {
+      "depth": 0,
+      "capacity": 128,
+      "expired": 0,
+      "evicted": 0
+    }
+  },
+  "components": {
+    "detectors": {
+      "status": "ready",
+      "reason": null,
+      "disabled": []
+    },
+    "facts": {
+      "status": "ready",
+      "reason": null,
+      "viewRevision": 0,
+      "active": 0,
+      "historicalSummaries": 0,
+      "historyComplete": true
+    }
+  }
+}
