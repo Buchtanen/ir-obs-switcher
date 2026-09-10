@@ -534,7 +534,7 @@ Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a s
 
 **Slice landed (immutable SHAs)**
 
-- `b4203bc` — docs(#284): handover resume gate after AC5 matrix embed (39/41) (**current resume gate**)
+- `b4203bc` — docs(#284): handover resume gate after AC5 matrix embed (39/41) — superseded by `78a1aeb`
 - `9b0c860` — docs(#284): embed complete actor command and transition matrices (AC5 matrix embed)
 - `5f4eb61` — test(#284): library evidence for ordering and completion races (feat/test gate)
 
