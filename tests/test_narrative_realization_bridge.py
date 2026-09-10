@@ -90,3 +90,51 @@ def test_race_wires_realization_effect_and_story_director() -> None:
     assert "freshness_gate=FreshnessGate(opportunity_queue)" in race
     assert "_adapt_batch_for_shadow_with_drafts" in race
     assert "build_tts_effect" in race
+
+
+def test_realize_authored_speech_includes_verify_frame() -> None:
+    from irswitch.events.narrative_realization_bridge import realize_authored_speech
+    from irswitch.events.semantic_verifier import SemanticVerifier, VerifyIntent
+
+    speech = realize_authored_speech("battle.side_by_side", subject="Alex")
+    assert speech is not None
+    text, frame = speech
+    assert text.startswith("Alex ")
+    assert frame.family
+    assert frame.subject_surface == "Alex"
+    step = SemanticVerifier().verify(
+        VerifyIntent(
+            text=text,
+            family=frame.family,
+            subject_surface=frame.subject_surface,
+            required_claim_surface=frame.required_claim_surface,
+            actor_bindings=frame.actor_bindings,
+            required_actors=frame.required_actors,
+            now_ms=1,
+            deadline_mono_ms=2,
+        )
+    )
+    assert step.result is not None
+    assert step.result.accepted is True
+
+
+def test_template_speech_is_verifiable() -> None:
+    from irswitch.events.narrative_realization_bridge import template_speech
+    from irswitch.events.semantic_verifier import SemanticVerifier, VerifyIntent
+
+    text, frame = template_speech("LAP_COMPLETE", subject="Alex")
+    assert text == "Alex Lap Complete."
+    step = SemanticVerifier().verify(
+        VerifyIntent(
+            text=text,
+            family=frame.family,
+            subject_surface=frame.subject_surface,
+            required_claim_surface=frame.required_claim_surface,
+            actor_bindings=frame.actor_bindings,
+            required_actors=frame.required_actors,
+            now_ms=1,
+            deadline_mono_ms=2,
+        )
+    )
+    assert step.result is not None
+    assert step.result.accepted is True

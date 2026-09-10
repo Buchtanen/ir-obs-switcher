@@ -25,6 +25,10 @@ from irswitch.contracts.authored_pack import (
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.narrative import NarrativeEvent
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
+from irswitch.events.narrative_verify_frame import (
+    VerifyFrame,
+    stash_live_verify_frame,
+)
 from irswitch.events.qwen_transport import (
     FakeTransport,
     LlmComponent,
@@ -39,6 +43,7 @@ logger = logging.getLogger(__name__)
 EffectWorker = Callable[
     [dict[str, Any]], Awaitable[NarrativeCommand | list[NarrativeCommand] | None]
 ]
+
 
 _WORD_RE = re.compile(r"[_\-.]+")
 _PACK: AuthoredPack | None = None
@@ -141,7 +146,7 @@ def _subject_from_event(event: NarrativeEvent | None) -> str:
     return "The field"
 
 
-def realize_authored_text(
+def realize_authored_speech(
     beat_id: str,
     *,
     subject: str = "The field",
@@ -150,8 +155,8 @@ def realize_authored_text(
     spoken_line_ids: tuple[str, ...] = (),
     pack: AuthoredPack | None = None,
     realizer: AuthoredRealizer | None = None,
-) -> str | None:
-    """Render one AuthoredPack line for ``beat_id``, or None when unavailable."""
+) -> tuple[str, VerifyFrame] | None:
+    """Render one AuthoredPack line plus its #270 verify frame, or None."""
 
     catalog = pack if pack is not None else _authored_pack()
     if beat_id not in catalog.beat_ids:
@@ -205,7 +210,60 @@ def realize_authored_text(
         return None
     if step.outcome != "succeeded" or not step.text:
         return None
-    return " ".join(str(step.text).split())
+    rendered = " ".join(str(step.text).split())
+    frame = VerifyFrame(
+        family=str(line.family or beat_id),
+        subject_surface=subject_text,
+        required_claim_surface=claim_text,
+        actor_bindings=(("live", (subject_text,)),),
+        required_actors=frozenset({"live"}),
+    )
+    return rendered, frame
+
+
+def realize_authored_text(
+    beat_id: str,
+    *,
+    subject: str = "The field",
+    claim: str | None = None,
+    now_ms: int | None = None,
+    spoken_line_ids: tuple[str, ...] = (),
+    pack: AuthoredPack | None = None,
+    realizer: AuthoredRealizer | None = None,
+) -> str | None:
+    """Render one AuthoredPack line for ``beat_id``, or None when unavailable."""
+
+    speech = realize_authored_speech(
+        beat_id,
+        subject=subject,
+        claim=claim,
+        now_ms=now_ms,
+        spoken_line_ids=spoken_line_ids,
+        pack=pack,
+        realizer=realizer,
+    )
+    return None if speech is None else speech[0]
+
+
+def template_speech(
+    kind: str,
+    *,
+    subject: str = "The field",
+    family: str | None = None,
+) -> tuple[str, VerifyFrame]:
+    """Build a verifiable template utterance ``{subject} {claim}.``."""
+
+    subject_text = subject.strip() or "The field"
+    claim_text = _humanize_kind(kind).rstrip(".").strip() or "update"
+    rendered = f"{subject_text} {claim_text}."
+    frame = VerifyFrame(
+        family=family or str(kind or "template.update"),
+        subject_surface=subject_text,
+        required_claim_surface=claim_text,
+        actor_bindings=(("live", (subject_text,)),),
+        required_actors=frozenset({"live"}),
+    )
+    return rendered, frame
 
 
 def realize_qwen_text(
@@ -323,6 +381,7 @@ class SpeechDraft:
     text: str
     beat_id: str | None = None
     source: str = "template"
+    verify_frame: VerifyFrame | None = None
 
 
 @dataclass
@@ -371,19 +430,36 @@ def draft_from_event(event: NarrativeEvent) -> SpeechDraft | None:
     if not kind and not event_type:
         return None
     beat_id = resolve_authored_beat_id(kind, event_type=event_type)
+    subject = _subject_from_event(event)
+    now_ms = int(getattr(event, "occurred_mono_ms", 0) or 0) or None
     if beat_id is not None:
-        authored = realize_authored_text(
+        speech = realize_authored_speech(
             beat_id,
-            subject=_subject_from_event(event),
-            now_ms=int(getattr(event, "occurred_mono_ms", 0) or 0) or None,
+            subject=subject,
+            now_ms=now_ms,
         )
-        if authored:
-            return SpeechDraft(text=authored, beat_id=beat_id, source="authored")
-    text = _humanize_kind(kind or event_type or "update")
-    normalized = " ".join(text.split())
+        if speech is not None:
+            authored_text, frame = speech
+            return SpeechDraft(
+                text=authored_text,
+                beat_id=beat_id,
+                source="authored",
+                verify_frame=frame,
+            )
+    rendered, frame = template_speech(
+        kind or event_type or "update",
+        subject=subject,
+        family=beat_id or (kind or event_type or "template.update"),
+    )
+    normalized = " ".join(rendered.split())
     if not 1 <= len(normalized) <= 400:
         return None
-    return SpeechDraft(text=normalized, beat_id=beat_id, source="template")
+    return SpeechDraft(
+        text=normalized,
+        beat_id=beat_id,
+        source="template",
+        verify_frame=frame,
+    )
 
 
 def draft_text_from_event(event: NarrativeEvent) -> str | None:
@@ -447,16 +523,19 @@ def build_realization_effect(
         mono_ms = int(time.monotonic() * 1000)
         text: str | None = None
         backend = "authored"
+        verify_frame: VerifyFrame | None = None
         beat_id = token.get("beatId")
         resolved: str | None = None
         if isinstance(beat_id, str) and beat_id:
             resolved = resolve_authored_beat_id(beat_id) or beat_id
         if prefer_authored and resolved is not None:
-            text = realize_authored_text(
+            speech = realize_authored_speech(
                 resolved,
                 now_ms=mono_ms,
                 spoken_line_ids=cache.spoken_line_ids,
             )
+            if speech is not None:
+                text, verify_frame = speech
         if (
             text is None
             and allow_qwen
@@ -479,15 +558,16 @@ def build_realization_effect(
         if text is None:
             draft = cache.consume(fallback=fallback_text)
             text = draft.text
+            verify_frame = draft.verify_frame
             backend = "authored" if draft.source == "authored" else "authored"
             if prefer_authored and draft.beat_id and draft.source != "authored":
-                authored = realize_authored_text(
+                speech = realize_authored_speech(
                     draft.beat_id,
                     now_ms=mono_ms,
                     spoken_line_ids=cache.spoken_line_ids,
                 )
-                if authored:
-                    text = authored
+                if speech is not None:
+                    text, verify_frame = speech
             if (
                 text == draft.text
                 and allow_qwen
@@ -508,6 +588,8 @@ def build_realization_effect(
                     text = qwen_text
                     backend = "qwen_compiled"
         try:
+            if verify_frame is not None:
+                stash_live_verify_frame(token, verify_frame)
             return NarrativeCommand.realization_result(
                 f"effect:rz:{token['requestId']}",
                 "REALIZATION_SUCCEEDED",

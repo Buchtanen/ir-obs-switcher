@@ -2447,3 +2447,93 @@ def test_manual_callback_branch_rearms_silence_without_director() -> None:
     assert "silence_deadline_rearmed" in done.effects
     assert "director_reentry_eligible" not in done.effects
     assert "narrative_callback_branch" not in done.effects
+
+
+@pytest.mark.asyncio
+async def test_live_authored_verify_frame_attached_and_accepted() -> None:
+    """#284: authored realization_effect stashes a #270 frame; verifier accepts."""
+
+    from irswitch.events.narrative_realization_bridge import (
+        SpeechDraftCache,
+        build_realization_effect,
+    )
+    from irswitch.events.narrative_verify_frame import _LIVE_VERIFY_FRAMES
+
+    _LIVE_VERIFY_FRAMES.clear()
+    effect = build_realization_effect(SpeechDraftCache(), prefer_authored=True)
+    runtime = NarrativeRuntime(
+        realization_effect=effect,
+        semantic_verifier=SemanticVerifier(),
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("live:authored-vf", revision=90, fanout=90))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    assert runtime.current_realization_token() is not None
+    runtime._realization = {
+        **runtime._realization,
+        "beatId": "battle.side_by_side",
+    }
+    await runtime.apply_effects(planned.effects)
+    await runtime.wait_effects_idle()
+    committed = None
+    for _ in range(8):
+        reduced = runtime.reduce_next()
+        if reduced is None:
+            await asyncio.sleep(0.01)
+            continue
+        await runtime.apply_effects(reduced.effects)
+        await runtime.wait_effects_idle()
+        if "realization_committed" in reduced.effects:
+            committed = reduced
+            break
+    assert committed is not None
+    assert "verify_frame_attached_live" in committed.effects
+    assert "semantic_verdict:accepted" in committed.effects
+    assert "semantic_verdict:skipped_no_frame" not in committed.effects
+    assert "effect:dispatch_tts" in committed.effects
+
+
+@pytest.mark.asyncio
+async def test_live_template_verify_frame_attached_from_draft_cache() -> None:
+    """#284: template draft cache carries a verify frame into realization_effect."""
+
+    from irswitch.events.narrative_realization_bridge import (
+        SpeechDraft,
+        SpeechDraftCache,
+        build_realization_effect,
+        template_speech,
+    )
+    from irswitch.events.narrative_verify_frame import _LIVE_VERIFY_FRAMES
+
+    _LIVE_VERIFY_FRAMES.clear()
+    cache = SpeechDraftCache()
+    text, frame = template_speech("SECTOR_BEST", subject="Alex")
+    cache._drafts.append(
+        SpeechDraft(text=text, beat_id=None, source="template", verify_frame=frame)
+    )
+    effect = build_realization_effect(cache, prefer_authored=False)
+    runtime = NarrativeRuntime(
+        realization_effect=effect,
+        semantic_verifier=SemanticVerifier(),
+    )
+    runtime.enable()
+    runtime.admit(_event_impulse("live:template-vf", revision=91, fanout=91))
+    planned = runtime.reduce_next()
+    assert planned is not None
+    await runtime.apply_effects(planned.effects)
+    await runtime.wait_effects_idle()
+    committed = None
+    for _ in range(8):
+        reduced = runtime.reduce_next()
+        if reduced is None:
+            await asyncio.sleep(0.01)
+            continue
+        await runtime.apply_effects(reduced.effects)
+        await runtime.wait_effects_idle()
+        if reduced is not None and "realization_committed" in reduced.effects:
+            committed = reduced
+            break
+    assert committed is not None
+    assert "verify_frame_attached_live" in committed.effects
+    assert "semantic_verdict:accepted" in committed.effects

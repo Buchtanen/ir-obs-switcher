@@ -37,6 +37,7 @@ from irswitch.events.narrative_manual_latch import (
     ADMISSION_TIMEOUT_S,
     ManualAdmissionLatch,
 )
+from irswitch.events.narrative_verify_frame import take_live_verify_frame
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.qwen_transport import LlmComponent
 from irswitch.events.semantic_verifier import (
@@ -361,6 +362,8 @@ class NarrativeRuntime:
             None if command_journal_path is None else Path(command_journal_path)
         )
         self._semantic_verifier = semantic_verifier
+        # Live #270 verify-frame marker for authored/template stash attachment.
+        self._live_verify_frame_attached = False
         self._fact_active_count = 0
         self._fact_historical_summary_count = 0
         self._director_world: DirectorWorld | None = None
@@ -1717,24 +1720,67 @@ class NarrativeRuntime:
             ),
         }
 
+    def _verify_frame_fields(
+        self, command: NarrativeCommand
+    ) -> tuple[dict[str, object] | None, bool]:
+        """Resolve #270 verify-frame fields from token, live stash, or payload.
+
+        Returns ``(fields, attached_from_live_stash)``.
+        """
+
+        token = self._realization if isinstance(self._realization, dict) else {}
+        payload = command.payload if isinstance(command.payload, dict) else {}
+        live = take_live_verify_frame(command.token or token)
+        live_payload = live.as_payload() if live is not None else {}
+        merged: dict[str, object] = {}
+        for key in (
+            "verifyFamily",
+            "verifySubjectSurface",
+            "verifyRequiredClaimSurface",
+            "verifyActorBindings",
+            "verifyRequiredActors",
+        ):
+            value = token.get(key)
+            if value is None or value == "" or value == []:
+                value = live_payload.get(key)
+            if value is None or value == "" or value == []:
+                value = payload.get(key)
+            if value is not None and value != "" and value != []:
+                merged[key] = value
+        family = merged.get("verifyFamily")
+        subject = merged.get("verifySubjectSurface")
+        claim = merged.get("verifyRequiredClaimSurface")
+        if not isinstance(family, str) or not family.strip():
+            return None, False
+        if not isinstance(subject, str) or not subject.strip():
+            return None, False
+        if not isinstance(claim, str) or not claim.strip():
+            return None, False
+        attached_live = live is not None and not any(
+            isinstance(token, dict) and token.get(key)
+            for key in (
+                "verifyFamily",
+                "verifySubjectSurface",
+                "verifyRequiredClaimSurface",
+            )
+        )
+        return merged, attached_live
+
     def _verify_intent_from_realization(
         self, command: NarrativeCommand, *, text: str
-    ) -> VerifyIntent | None:
-        """Build #270 intent from in-flight realization verify frame + result text."""
+    ) -> tuple[VerifyIntent | None, bool]:
+        """Build #270 intent from token/live payload frame + result text.
 
-        token = self._realization
-        if not isinstance(token, dict):
-            return None
-        family = token.get("verifyFamily")
-        subject = token.get("verifySubjectSurface")
-        claim = token.get("verifyRequiredClaimSurface")
-        if not isinstance(family, str) or not family.strip():
-            return None
-        if not isinstance(subject, str) or not subject.strip():
-            return None
-        if not isinstance(claim, str) or not claim.strip():
-            return None
-        raw_bindings = token.get("verifyActorBindings") or ()
+        Returns ``(intent, attached_from_live_payload)``.
+        """
+
+        frame, attached_live = self._verify_frame_fields(command)
+        if frame is None:
+            return None, False
+        family = str(frame["verifyFamily"])
+        subject = str(frame["verifySubjectSurface"])
+        claim = str(frame["verifyRequiredClaimSurface"])
+        raw_bindings = frame.get("verifyActorBindings") or ()
         bindings: list[tuple[str, tuple[str, ...]]] = []
         if isinstance(raw_bindings, (list, tuple)):
             for item in raw_bindings:
@@ -1747,13 +1793,23 @@ class NarrativeRuntime:
                     forms = tuple(str(form) for form in item[1] if str(form).strip())
                     if forms:
                         bindings.append((item[0], forms))
-        raw_required = token.get("verifyRequiredActors") or ()
+        raw_required = frame.get("verifyRequiredActors") or ()
         required: set[str] = set()
         if isinstance(raw_required, (list, tuple, set, frozenset)):
             required = {str(item) for item in raw_required if str(item).strip()}
         if not required and bindings:
             required = {name for name, _ in bindings}
-        return VerifyIntent(
+        # Mirror live payload onto the in-flight token so status/tests see it.
+        if attached_live and isinstance(self._realization, dict):
+            self._realization = {
+                **self._realization,
+                "verifyFamily": family.strip(),
+                "verifySubjectSurface": subject.strip(),
+                "verifyRequiredClaimSurface": claim.strip(),
+                "verifyActorBindings": [[name, list(forms)] for name, forms in bindings],
+                "verifyRequiredActors": sorted(required),
+            }
+        intent = VerifyIntent(
             text=text,
             family=family.strip(),
             subject_surface=subject.strip(),
@@ -1763,6 +1819,7 @@ class NarrativeRuntime:
             now_ms=int(command.enqueued_mono_ms),
             deadline_mono_ms=int(command.enqueued_mono_ms) + 60_000,
         )
+        return intent, attached_live
 
     def _on_realization_succeeded(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
@@ -1805,13 +1862,16 @@ class NarrativeRuntime:
         text = str(command.payload.get("text") or "").strip()
         semantic_verdict: str | None = None
         if self._semantic_verifier is not None:
-            intent = self._verify_intent_from_realization(command, text=text)
+            intent, attached_live = self._verify_intent_from_realization(command, text=text)
             if intent is None:
-                # Live template/authored paths may not yet attach a #270 frame.
-                # Skip rather than fail-closed so race can inject the verifier
-                # without silencing every unframed utterance.
+                # Qwen/unframed paths may omit a #270 frame; skip rather than
+                # fail-closed so the race can still inject the verifier.
                 semantic_verdict = "skipped_no_frame"
             else:
+                if attached_live:
+                    # Marker for live authored/template frame attachment.
+                    # Collected into effects after the accept/reject branch.
+                    self._live_verify_frame_attached = True
                 verify_step = self._semantic_verifier.verify(intent)
                 accepted = (
                     verify_step.outcome == "succeeded"
@@ -1832,6 +1892,9 @@ class NarrativeRuntime:
                         "semantic_verdict:rejected",
                         "effect:cancel_realization_deadline",
                     ]
+                    if self._live_verify_frame_attached:
+                        effects.append("verify_frame_attached_live")
+                        self._live_verify_frame_attached = False
                     effects.extend(f"semantic_reason:{reason}" for reason in reasons)
                     self._release_opportunity_attempt(effects)
                     self._invalidate_episode(effects)
@@ -1873,6 +1936,9 @@ class NarrativeRuntime:
             effects.insert(1, "freshness_verdict:current")
         if semantic_verdict is not None:
             effects.insert(1, f"semantic_verdict:{semantic_verdict}")
+        if self._live_verify_frame_attached:
+            effects.insert(1, "verify_frame_attached_live")
+            self._live_verify_frame_attached = False
         return "handled", effects
 
     def _on_realization_failed(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
