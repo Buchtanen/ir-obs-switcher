@@ -2099,7 +2099,6 @@ async def test_cancel_tape_flush_effect() -> None:
     assert not runtime.tape_task_active()
 
 
-
 def test_event_replacement_opens_new_planning_cycle() -> None:
     """#284: accepted event while building closes replaced_precommit and bumps cycle."""
     runtime = NarrativeRuntime()
