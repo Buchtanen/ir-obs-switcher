@@ -80,6 +80,21 @@ class ReduceResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ManualSpeakOutcome:
+    """Sync library result for offline / test manual-speak admission (#273)."""
+
+    kind: Literal[
+        "accepted",
+        "speech_busy",
+        "component_unavailable",
+        "mailbox_overloaded",
+        "validation_failed",
+    ]
+    request_id: str | None = None
+    admitted_state: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class RuntimeStatus:
     runtime_state: RuntimeState
     lane: LaneState
@@ -367,6 +382,57 @@ class NarrativeRuntime:
             limit = 100
         newest_first = list(reversed(self._decision_ring))
         return tuple(newest_first[:limit])
+
+    async def try_manual_speak(
+        self,
+        text: str,
+        *,
+        request_id: str,
+        now_ms: int,
+        admission_ordinal: int = 1,
+    ) -> ManualSpeakOutcome:
+        """Admit + reduce one MANUAL_SPEAK_REQUEST synchronously (no actor loop).
+
+        Intended for library tests and the additive HTTP speak mount while the
+        full ManualAdmissionLatch (1s await) remains deferred. Do not call this
+        concurrently with ``run()``.
+        """
+
+        if self._runtime == "disabled":
+            self.enable()
+        try:
+            command = NarrativeCommand.manual_speak(
+                request_id,
+                int(now_ms),
+                text=text,
+                admission_ordinal=int(admission_ordinal),
+            )
+        except Exception as exc:  # ContractViolation + TypeError
+            from irswitch.contracts.primitives import ContractViolation
+
+            if not isinstance(exc, (ContractViolation, TypeError, ValueError)):
+                raise
+            return ManualSpeakOutcome(kind="validation_failed")
+
+        admission = self.admit(command)
+        if not admission.accepted:
+            return ManualSpeakOutcome(kind="mailbox_overloaded")
+
+        result = self.reduce_next()
+        if result is None:
+            return ManualSpeakOutcome(kind="component_unavailable")
+        if result.disposition == "rejected_busy":
+            return ManualSpeakOutcome(kind="speech_busy")
+        if result.disposition == "ignored_stale_or_inapplicable":
+            return ManualSpeakOutcome(kind="component_unavailable")
+        if result.disposition == "handled" and self._lane == "committed":
+            await self.apply_effects(result.effects)
+            return ManualSpeakOutcome(
+                kind="accepted",
+                request_id=request_id,
+                admitted_state="committed",
+            )
+        return ManualSpeakOutcome(kind="component_unavailable")
 
     def fail_current_realization_for_test(self) -> None:
         self._realization = None

@@ -175,3 +175,89 @@ async def test_runtime_decisions_route_additive_with_legacy_decisions() -> None:
     resources = {route.resource.canonical for route in app.router.routes()}
     assert "/api/commentary/decisions" in resources
     assert "/api/commentary/runtime/decisions" in resources
+
+
+@pytest.mark.asyncio
+async def test_runtime_validate_supported_golden() -> None:
+    import json
+    from pathlib import Path
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    expected = json.loads((fixtures / "validate_supported.json").read_text(encoding="utf-8"))
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/validate", json=request)
+            assert resp.status == 200
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_validate_malformed_returns_400() -> None:
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/validate",
+                json={"schemaVersion": "commentary-runtime/2"},
+            )
+            assert resp.status == 400
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["error"]["code"] == "invalid_request"
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_accepted_and_busy() -> None:
+    import json
+    from pathlib import Path
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "speak_request.json").read_text(encoding="utf-8"))
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            assert resp.status == 202
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["accepted"] is True
+            assert data["admittedState"] == "committed"
+            assert data["requestId"].startswith("manual:")
+
+            busy = await client.post("/api/commentary/runtime/speak", json=request)
+            assert busy.status == 409
+            payload = await busy.json()
+            assert payload["error"]["code"] == "speech_busy"
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_without_provider_returns_503() -> None:
+    import json
+    from pathlib import Path
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "speak_request.json").read_text(encoding="utf-8"))
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            assert resp.status == 503
+            data = await resp.json()
+            assert data["error"]["code"] == "component_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_runtime_validate_speak_routes_additive_with_legacy() -> None:
+    from irswitch.commentary.http import register_commentary_routes
+
+    app = web.Application()
+    register_commentary_routes(app)
+    resources = {route.resource.canonical for route in app.router.routes()}
+    assert "/api/commentary/validate" in resources
+    assert "/api/commentary/speak" in resources
+    assert "/api/commentary/runtime/validate" in resources
+    assert "/api/commentary/runtime/speak" in resources

@@ -1,8 +1,10 @@
-"""HTTP mount for NarrativeRuntime status + decisions projection (#284).
+"""HTTP mount for NarrativeRuntime status + decisions + validate/speak (#284 / #273).
 
 Exposes:
 - ``GET /api/commentary/runtime`` — commentary-runtime/2 status subset
 - ``GET /api/commentary/runtime/decisions`` — commentary-runtime/2 decisions ring
+- ``POST /api/commentary/runtime/validate`` — offline validate against caller bindings
+- ``POST /api/commentary/runtime/speak`` — manual speak admit via NarrativeRuntime
 
 Providers may be attached via:
 
@@ -10,17 +12,21 @@ Providers may be attached via:
 - process-level ``set_narrative_runtime`` (race shadow fanout cutover).
 
 When neither is set, handlers project a disabled library snapshot (status) or
-``runtime=false`` empty decisions.
+``runtime=false`` empty decisions. Validate stays offline (no provider required).
+Speak without a provider returns ``component_unavailable`` / 503.
 
 This mount does not start the NarrativeRuntime actor loop, does not replace
 ``GET /api/commentary/status`` or ``GET /api/commentary/decisions``, and does
-not replace live CommentaryConsumer EventSubscription. Not exported from
-``events/__init__.py``.
+not replace live CommentaryConsumer EventSubscription. Legacy
+``POST /api/commentary/validate`` and ``POST /api/commentary/speak`` stay
+unchanged. Not exported from ``events/__init__.py``.
 """
 
 from __future__ import annotations
 
 import logging
+import time
+import uuid
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 
@@ -29,7 +35,8 @@ from aiohttp import web
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.events.narrative_decision_projection import project_runtime_decisions
 from irswitch.events.narrative_ingress import project_runtime_status
-from irswitch.events.narrative_runtime import NarrativeRuntime, RuntimeStatus
+from irswitch.events.narrative_runtime import ManualSpeakOutcome, NarrativeRuntime, RuntimeStatus
+from irswitch.events.narrative_validate_projection import project_validate_response
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +78,28 @@ def _parse_limit(request: web.Request) -> int:
         return int(raw)
     except (TypeError, ValueError):
         return 20
+
+
+def _error_response(
+    code: str, status: int, message: str = "Bounded public detail."
+) -> web.Response:
+    return web.json_response(
+        {
+            "schemaVersion": "commentary-runtime/2",
+            "error": {"code": code, "fields": {}, "message": message},
+        },
+        status=status,
+    )
+
+
+async def _read_json_object(request: web.Request) -> dict[str, Any] | web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        return _error_response("invalid_json", 400)
+    if not isinstance(body, dict):
+        return _error_response("invalid_request", 400)
+    return body
 
 
 async def handle_commentary_runtime_status(request: web.Request) -> web.Response:
@@ -120,10 +149,85 @@ async def handle_commentary_runtime_decisions(request: web.Request) -> web.Respo
     return web.json_response(payload)
 
 
+async def handle_commentary_runtime_validate(request: web.Request) -> web.Response:
+    """Offline validate EN text against supplied beat + bindings (no live state)."""
+
+    body = await _read_json_object(request)
+    if isinstance(body, web.Response):
+        return body
+    try:
+        payload = project_validate_response(body)
+    except ContractViolation as exc:
+        logger.warning("narrative runtime validate rejected: %s", exc)
+        return _error_response("invalid_request", 400, str(exc)[:256] or "Bounded public detail.")
+    except Exception as exc:
+        logger.warning("narrative runtime validate failed", exc_info=True)
+        return web.json_response(
+            {"error": f"{type(exc).__name__}: {exc}"},
+            status=500,
+        )
+    return web.json_response(payload, status=200)
+
+
+async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
+    """Admit manual EN speak through NarrativeRuntime (sync reduce path)."""
+
+    body = await _read_json_object(request)
+    if isinstance(body, web.Response):
+        return body
+    if body.get("schemaVersion") != "commentary-runtime/2":
+        return _error_response("invalid_request", 400)
+    if body.get("language") != "en":
+        return _error_response("invalid_request", 400)
+    text = body.get("text")
+    if not isinstance(text, str):
+        return _error_response("validation_failed", 422)
+
+    provider = _resolve_provider(request)
+    if provider is None:
+        return _error_response("component_unavailable", 503)
+    speak = getattr(provider, "try_manual_speak", None)
+    if speak is None:
+        return _error_response("component_unavailable", 503)
+
+    request_id = f"manual:{uuid.uuid4().hex[:4]}"
+    now_ms = int(time.monotonic() * 1000)
+    try:
+        outcome = await speak(text, request_id=request_id, now_ms=now_ms)
+    except Exception as exc:
+        logger.warning("narrative runtime speak failed", exc_info=True)
+        return web.json_response(
+            {"error": f"{type(exc).__name__}: {exc}"},
+            status=500,
+        )
+
+    if not isinstance(outcome, ManualSpeakOutcome):
+        return _error_response("component_unavailable", 503)
+    if outcome.kind == "accepted":
+        return web.json_response(
+            {
+                "schemaVersion": "commentary-runtime/2",
+                "accepted": True,
+                "requestId": outcome.request_id or request_id,
+                "admittedState": outcome.admitted_state or "committed",
+            },
+            status=202,
+        )
+    if outcome.kind == "speech_busy":
+        return _error_response("speech_busy", 409)
+    if outcome.kind == "validation_failed":
+        return _error_response("validation_failed", 422)
+    if outcome.kind == "mailbox_overloaded":
+        return _error_response("mailbox_overloaded", 503)
+    return _error_response("component_unavailable", 503)
+
+
 def register_narrative_runtime_routes(app: web.Application) -> None:
-    """Mount runtime status + decisions (additive; does not run the actor)."""
+    """Mount runtime status + decisions + validate/speak (additive; no actor start)."""
     app.router.add_get("/api/commentary/runtime", handle_commentary_runtime_status)
     app.router.add_get("/api/commentary/runtime/decisions", handle_commentary_runtime_decisions)
+    app.router.add_post("/api/commentary/runtime/validate", handle_commentary_runtime_validate)
+    app.router.add_post("/api/commentary/runtime/speak", handle_commentary_runtime_speak)
 
 
 def attach_narrative_runtime(
@@ -143,7 +247,9 @@ __all__ = [
     "attach_narrative_runtime",
     "get_narrative_runtime",
     "handle_commentary_runtime_decisions",
+    "handle_commentary_runtime_speak",
     "handle_commentary_runtime_status",
+    "handle_commentary_runtime_validate",
     "register_narrative_runtime_routes",
     "set_narrative_runtime",
 ]

@@ -1,0 +1,20 @@
+{
+  "beatId": "battle.approach",
+  "claims": [
+    {
+      "objectId": "hero",
+      "predicate": "battle.approaching",
+      "subjectId": "car:22",
+      "verdict": "unsupported"
+    }
+  ],
+  "issues": [
+    {
+      "code": "actor_reversed",
+      "message": "Actor direction is reversed.",
+      "severity": "error"
+    }
+  ],
+  "schemaVersion": "commentary-runtime/2",
+  "valid": false
+}

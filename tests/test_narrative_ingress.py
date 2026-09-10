@@ -446,3 +446,42 @@ def test_build_runtime_decision_entry_replaced_precommit() -> None:
     assert entry["reason"] == "replaced_precommit"
     assert entry["beatId"] == primary.beat_id
     assert entry["opportunityId"] == "opp:401"
+
+
+def test_project_validate_response_supported_golden() -> None:
+    import json
+    from pathlib import Path
+
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    expected = json.loads((fixtures / "validate_supported.json").read_text(encoding="utf-8"))
+    assert project_validate_response(request) == expected
+
+
+def test_project_validate_response_actor_reversed_golden() -> None:
+    import json
+    from pathlib import Path
+
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    request = {
+        **request,
+        "text": "Morgan is closing on the driver, the gap at one point four seconds.",
+    }
+    expected = json.loads((fixtures / "validate_rejected.json").read_text(encoding="utf-8"))
+    assert project_validate_response(request) == expected
+
+
+def test_project_validate_response_rejects_malformed_request() -> None:
+    from irswitch.contracts.primitives import ContractViolation
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    try:
+        project_validate_response({"schemaVersion": "commentary-runtime/2"})
+    except ContractViolation:
+        return
+    raise AssertionError("expected ContractViolation")
