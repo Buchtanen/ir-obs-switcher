@@ -117,7 +117,14 @@ class RaceRuntime:
         self._sequence_allocator = SessionSequenceAllocator()
         self._event_fanout = AsyncEventFanout()
         self._overlay_subscription = self._event_fanout.subscribe("overlay", capacity=64)
-        self._commentary_subscription = self._event_fanout.subscribe("commentary", capacity=64)
+        # #284 true EventSubscription cutover (human kick): commentary no longer
+        # owns a fanout subscription; shadow mirrors stream items into
+        # CommentaryConsumer.handle for TTS while idle-ticking without get().
+        self._narrative_subscription_cutover = True
+        if self._narrative_subscription_cutover:
+            self._commentary_subscription = None
+        else:
+            self._commentary_subscription = self._event_fanout.subscribe("commentary", capacity=64)
         self.story_registry = MiniStoryRegistry()
         self.pipeline = RacePipeline(
             self._event_fanout,
@@ -205,10 +212,11 @@ class RaceRuntime:
         self._commentary_supervisor = WorkerSupervisor(
             "commentary_consumer", self.commentary_consumer.run
         )
-        # #284: shadow fanout cutover + actor run (human kick). Parallel path:
-        # fanout → adapt_batch_for_shadow → ingress → mailbox → NarrativeRuntime.run()
-        # (reduce_after_admit=False; actor owns drain). Does not replace
-        # CommentaryConsumer EventSubscription / TTS. No INI key in this slice.
+        # #284: shadow fanout cutover + actor run + EventSubscription cutover
+        # (human kick). Path: fanout → adapt_batch_for_shadow → ingress → mailbox
+        # → NarrativeRuntime.run() (reduce_after_admit=False). Commentary has no
+        # fanout subscription; shadow mirrors via legacy_stream_handler into
+        # CommentaryConsumer.handle (TTS). Idle lane still runs. No INI key.
         self._narrative_shadow_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
@@ -232,6 +240,7 @@ class RaceRuntime:
                 runtime=runtime,
                 publication_adapter=adapt_batch_for_shadow,
                 reduce_after_admit=False,
+                legacy_stream_handler=self.commentary_consumer.handle,
             )
             self._narrative_shadow_supervisor = WorkerSupervisor(
                 "narrative_shadow_consumer",
@@ -885,7 +894,11 @@ class RaceRuntime:
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             overlay = self._overlay_subscription.snapshot(producer_stream_sequence=0)
-            commentary = self._commentary_subscription.snapshot(producer_stream_sequence=0)
+            commentary_depth = 0
+            if self._commentary_subscription is not None:
+                commentary_depth = self._commentary_subscription.snapshot(
+                    producer_stream_sequence=0
+                ).depth
             shadow_depth = 0
             if self._narrative_shadow_subscription is not None:
                 shadow_depth = self._narrative_shadow_subscription.snapshot(
@@ -896,7 +909,7 @@ class RaceRuntime:
                 mailbox_depth = int(self.narrative_runtime.status().mailbox_depth)
             if (
                 overlay.depth == 0
-                and commentary.depth == 0
+                and commentary_depth == 0
                 and shadow_depth == 0
                 and mailbox_depth == 0
             ):

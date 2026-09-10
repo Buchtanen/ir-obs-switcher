@@ -4,8 +4,9 @@ Peer that can drain an ``EventSubscription``, admit already adapted
 publications through ``NarrativeIngress`` into ``NarrativeMailbox``, and
 optionally ``reduce_next`` on a shared ``NarrativeRuntime``. When the live
 actor owns drain (``NarrativeRuntime.run()``), race wiring sets
-``reduce_after_admit=False``. It does not speak and does not replace
-``CommentaryConsumer`` EventSubscription / TTS.
+``reduce_after_admit=False``. Under EventSubscription cutover, race sets
+``legacy_stream_handler`` to ``CommentaryConsumer.handle`` so TTS still runs
+while commentary no longer owns a fanout subscription.
 
 Not exported from ``events/__init__.py``. No INI / product config key in this
 slice — the race enable flag stays hard-coded until product config lands.
@@ -14,8 +15,9 @@ slice — the race enable flag stays hard-coded until product config lands.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,6 +35,7 @@ from irswitch.events.stream import (
 logger = logging.getLogger(__name__)
 
 PublicationAdapter = Callable[[FrozenAcceptedEventBatch], "AdaptedPublication | None"]
+LegacyStreamHandler = Callable[[StreamItem], Awaitable[None] | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +71,7 @@ class NarrativeShadowConsumer:
         publication_adapter: PublicationAdapter | None = None,
         runtime: NarrativeRuntime | None = None,
         reduce_after_admit: bool = True,
+        legacy_stream_handler: LegacyStreamHandler | None = None,
     ) -> None:
         self.subscription = subscription
         self.enabled = bool(enabled)
@@ -75,14 +79,25 @@ class NarrativeShadowConsumer:
         self.publication_adapter = publication_adapter
         self.runtime = runtime
         self.reduce_after_admit = bool(reduce_after_admit)
+        self.legacy_stream_handler = legacy_stream_handler
         self.running = False
         self.processed = 0
         self.skipped = 0
         self.reduced = 0
+        self.mirrored = 0
         self.failures = 0
         self.last_error: str | None = None
         self.last_stream_sequence = 0
         self.last_admission: ShadowAdmission | None = None
+
+    async def _mirror_legacy(self, item: StreamItem) -> None:
+        handler = self.legacy_stream_handler
+        if handler is None:
+            return
+        result = handler(item)
+        if inspect.isawaitable(result):
+            await result
+        self.mirrored += 1
 
     def handle_adapted_publication(self, publication: AdaptedPublication) -> ShadowAdmission:
         if not self.enabled:
@@ -139,6 +154,7 @@ class NarrativeShadowConsumer:
         if not self.enabled:
             return None
         self.last_stream_sequence = int(getattr(item, "stream_sequence", 0) or 0)
+        await self._mirror_legacy(item)
         if isinstance(item, (SessionReset, ConfigUpdate)):
             self.skipped += 1
             result = ShadowAdmission(
@@ -146,7 +162,8 @@ class NarrativeShadowConsumer:
                 reason="shadow_non_batch",
                 command_ids=(),
                 mailbox_sequences=(),
-                effects=("shadow_non_batch",),
+                effects=("shadow_non_batch",)
+                + (("shadow_legacy_mirrored",) if self.legacy_stream_handler is not None else ()),
             )
             self.last_admission = result
             return result
@@ -181,11 +198,22 @@ class NarrativeShadowConsumer:
                 reason="shadow_adapter_skipped",
                 command_ids=(),
                 mailbox_sequences=(),
-                effects=("shadow_adapter_skipped",),
+                effects=("shadow_adapter_skipped",)
+                + (("shadow_legacy_mirrored",) if self.legacy_stream_handler is not None else ()),
             )
             self.last_admission = result
             return result
-        return self.handle_adapted_publication(publication)
+        result = self.handle_adapted_publication(publication)
+        if self.legacy_stream_handler is not None:
+            result = ShadowAdmission(
+                accepted=result.accepted,
+                reason=result.reason,
+                command_ids=result.command_ids,
+                mailbox_sequences=result.mailbox_sequences,
+                effects=result.effects + ("shadow_legacy_mirrored",),
+            )
+            self.last_admission = result
+        return result
 
     async def run(self) -> None:
         if not self.enabled:

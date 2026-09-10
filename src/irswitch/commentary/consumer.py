@@ -41,13 +41,15 @@ class CommentaryConsumer:
 
     def __init__(
         self,
-        subscription: EventSubscription,
+        subscription: EventSubscription | None,
         director: CommentaryDirector,
         get_settings: Callable[[], tuple[CommentarySettings, str]],
         *,
         decision_hook: Callable[[dict[str, Any], float], None] | None = None,
         story_registry: MiniStoryRegistry | None = None,
     ) -> None:
+        # subscription may be None under #284 EventSubscription cutover: race mirrors
+        # stream items via NarrativeShadowConsumer and this lane only idle-ticks.
         self.subscription = subscription
         self.director = director
         self._settings, self._language = get_settings()
@@ -62,6 +64,7 @@ class CommentaryConsumer:
         self.expired = 0
         self.last_error: str | None = None
         self.last_stream_sequence = 0
+        self._mirrored_latest_context: bytes | None = None
         self._processed_ids: set[str] = set()
         self._processed_order: list[str] = []
         self.story_registry = story_registry or MiniStoryRegistry()
@@ -90,6 +93,11 @@ class CommentaryConsumer:
         self.running = True
         try:
             while True:
+                if self.subscription is None:
+                    # Cutover idle lane: stream items arrive via mirror handle().
+                    await asyncio.sleep(0.2)
+                    self._idle_tick()
+                    continue
                 try:
                     item = await asyncio.wait_for(self.subscription.get(), timeout=0.2)
                 except TimeoutError:
@@ -171,10 +179,16 @@ class CommentaryConsumer:
             "fillerOutstanding": self._outstanding_filler is not None,
         }
 
+    def _latest_context_payload(self) -> bytes | None:
+        if self.subscription is not None:
+            return self.subscription.latest_context
+        return self._mirrored_latest_context
+
     def _observe_batch(self, batch: FrozenAcceptedEventBatch) -> None:
         now = time.monotonic()
         context = thaw_context(batch.context_payload)
-        latest_payload = self.subscription.latest_context
+        self._mirrored_latest_context = batch.context_payload
+        latest_payload = self._latest_context_payload()
         latest = thaw_context(latest_payload) if latest_payload is not None else context
         if latest.get("session_id") != batch.session_id:
             self._record_skip("session_context_stale", now)
@@ -357,7 +371,7 @@ class CommentaryConsumer:
         envelope.metrics.setdefault(f"{prefix}_start_position", profile.get("start_position"))
 
     def _idle_tick(self) -> None:
-        latest_payload = self.subscription.latest_context
+        latest_payload = self._latest_context_payload()
         if latest_payload is None:
             return
         try:
@@ -376,7 +390,7 @@ class CommentaryConsumer:
             self.last_error = f"{type(exc).__name__}: {exc}"
 
     def _request_filler(self, now: float) -> EventEnvelope | None:
-        context_payload = self.subscription.latest_context
+        context_payload = self._latest_context_payload()
         if context_payload is None:
             return None
         context = thaw_context(context_payload)

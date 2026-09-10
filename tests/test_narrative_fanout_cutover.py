@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
+from test_n12_consumers import _batch
 from test_narrative_context_batch import _event, _fact_view, _timeline
 
 from irswitch.commentary.mailbox import NarrativeMailbox
@@ -19,6 +20,7 @@ from irswitch.events.narrative_runtime_http import (
     register_narrative_runtime_routes,
     set_narrative_runtime,
 )
+from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
 from irswitch.events.narrative_shadow_consumer import (
     AdaptedPublication,
     NarrativeShadowConsumer,
@@ -106,18 +108,21 @@ async def test_module_runtime_attach_feeds_http_status() -> None:
         set_narrative_runtime(None)
 
 
-def test_race_shadow_cutover_wires_actor_run_keeps_commentary_consumer() -> None:
+def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "_narrative_shadow_enabled = True" in race
+    assert "_narrative_subscription_cutover = True" in race
+    assert "self._commentary_subscription = None" in race
     assert "NarrativeRuntime(mailbox=" in race
     assert "set_narrative_runtime" in race
     assert "adapt_batch_for_shadow" in race
     assert "runtime=self.narrative_runtime" in race or "runtime=runtime" in race
     assert "reduce_after_admit=False" in race
+    assert "legacy_stream_handler=self.commentary_consumer.handle" in race
     assert "WorkerSupervisor" in race
     assert '"narrative_runtime"' in race or "'narrative_runtime'" in race
     assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race
-    # Actor owns drain; CommentaryConsumer EventSubscription/TTS stays live.
+    # Commentary object + idle lane remain; EventSubscription ownership moved to shadow.
     assert "CommentaryConsumer" in race
     assert "commentary_consumer" in race
 
@@ -150,3 +155,31 @@ async def test_shadow_admit_without_reduce_actor_run_drains_mailbox() -> None:
         runtime.admit(NarrativeCommand.shutdown("shutdown:cutover", 9_000, "test_exit"))
         await asyncio.wait_for(task, timeout=2.0)
         assert runtime.status().runtime_state == "stopped"
+
+
+@pytest.mark.asyncio
+async def test_shadow_legacy_stream_handler_mirrors_before_admit() -> None:
+    mirrored: list[object] = []
+
+    async def legacy(item: object) -> None:
+        mirrored.append(item)
+
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    consumer = NarrativeShadowConsumer(
+        enabled=True,
+        ingress=ingress,
+        runtime=runtime,
+        reduce_after_admit=False,
+        legacy_stream_handler=legacy,
+        publication_adapter=adapt_batch_for_shadow,
+    )
+    batch = _batch(stream_sequence=42)
+    result = await consumer.handle(batch)
+    assert result is not None
+    assert result.accepted is True
+    assert "shadow_legacy_mirrored" in result.effects
+    assert consumer.mirrored == 1
+    assert mirrored == [batch]

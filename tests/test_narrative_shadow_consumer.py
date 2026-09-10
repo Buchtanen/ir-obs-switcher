@@ -45,7 +45,7 @@ def test_shadow_source_documents_default_off_boundary() -> None:
     text = SOURCE.read_text(encoding="utf-8")
     assert "enabled: bool = False" in text
     assert "CommentaryConsumer" in text
-    assert "does not speak" in text
+    assert "legacy_stream_handler" in text
     assert "NarrativeShadowConsumer" not in events_exports
     assert "AdaptedPublication" not in events_exports
     race = RACE_SOURCE.read_text(encoding="utf-8")
