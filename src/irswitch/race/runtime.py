@@ -19,6 +19,7 @@ from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.commentary.session_briefs import SessionBriefsDetector
 from irswitch.commentary.tts import build_tts_sink
 from irswitch.config import AppConfig
+from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
@@ -36,6 +37,10 @@ from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import set_narrative_runtime
 from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
 from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
+from irswitch.events.narrative_tape_bridge import (
+    build_tape_flush_effect,
+    open_narrative_tape_writer,
+)
 from irswitch.events.narrative_tts_bridge import build_tts_effect
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.qwen_transport import LlmComponent, RealizerService, StdlibTransport
@@ -241,6 +246,7 @@ class RaceRuntime:
         self._narrative_shadow_supervisor = None
         self._narrative_runtime_supervisor = None
         self.narrative_runtime = None
+        self._narrative_tape_writer = None
         self._speech_draft_cache = None
         self._narrative_qwen_service = None
         self._narrative_llm_component = None
@@ -285,11 +291,28 @@ class RaceRuntime:
                 qwen_service=qwen_service,
                 llm_component=llm_component,
             )
+            cfg = self._get_config()
             journal_dir = Path(
                 getattr(getattr(self, "_tape", None), "directory", None)
-                or getattr(getattr(self, "_config", None), "recordings_dir", None)
+                or getattr(cfg, "recordings_dir", None)
                 or "recordings"
             )
+            tape_effect = None
+            try:
+                app_version = str(getattr(cfg, "version", None) or "0.0.0")
+                tape_writer = open_narrative_tape_writer(
+                    journal_dir / "narrative-tape",
+                    shutdown_flush_timeout_s=2.0,
+                    app_version=app_version,
+                )
+                self._narrative_tape_writer = tape_writer
+                tape_effect = build_tape_flush_effect(tape_writer)
+            except Exception:
+                logger.exception(
+                    "narrative tape writer unavailable; continuing without tape_effect"
+                )
+                self._narrative_tape_writer = None
+                tape_effect = None
             runtime = NarrativeRuntime(
                 mailbox=mailbox,
                 realization_effect=realization_effect,
@@ -301,6 +324,7 @@ class RaceRuntime:
                 llm_component=llm_component,
                 command_journal_path=journal_dir / "narrative-command-journal.ndjson",
                 semantic_verifier=SemanticVerifier(),
+                tape_effect=tape_effect,
             )
             runtime.enable()
             self.narrative_runtime = runtime
@@ -923,6 +947,7 @@ class RaceRuntime:
                 await asyncio.sleep(3600)
         except asyncio.CancelledError:
             self._running = False
+            await self._request_narrative_shutdown(reason="application_exit")
             self._tape.close()
             self._event_fanout.close()
             await self._registry.cancel_all()
@@ -983,10 +1008,39 @@ class RaceRuntime:
         runtime = self.narrative_runtime
         if runtime is None:
             return
+        writer = self._narrative_tape_writer
+        if writer is not None and writer.task is None:
+            try:
+                writer.start()
+            except Exception:
+                logger.exception("narrative tape writer failed to start")
         state = runtime.status().runtime_state
         if state in {"stopped", "disabled", "stopping"}:
             runtime.enable()
         await runtime.run()
+
+    async def _request_narrative_shutdown(self, *, reason: str = "application_exit") -> None:
+        """Admit SHUTDOWN so owned tape_effect can flush before worker cancel."""
+
+        runtime = self.narrative_runtime
+        if runtime is None:
+            return
+        try:
+            runtime.admit(
+                NarrativeCommand.shutdown(
+                    "race:stop",
+                    int(time.monotonic() * 1000),
+                    reason,
+                )
+            )
+            deadline = time.monotonic() + 2.0
+            while time.monotonic() < deadline:
+                status = runtime.status()
+                if status.runtime_state == "stopped" and not runtime.tape_task_active():
+                    return
+                await asyncio.sleep(0.02)
+        except Exception:
+            logger.exception("narrative runtime shutdown request failed")
 
     async def _drain_consumer_queues(self, timeout_s: float = 1.0) -> None:
         deadline = time.monotonic() + timeout_s
@@ -1281,6 +1335,7 @@ class RaceRuntime:
 
     async def stop(self) -> None:
         self._running = False
+        await self._request_narrative_shutdown(reason="application_exit")
         self._tape.close()
         self._event_fanout.close()
         try:
