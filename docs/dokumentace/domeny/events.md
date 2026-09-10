@@ -199,7 +199,9 @@ AC5 actor command + transition matrices embed landed docs `9b0c860` (`docs/v2.0.
 
 Upstream snapshot immutability landed test `78a1aeb` (`tests/test_narrative_runtime.py` — `test_runtime_does_not_back_mutate_upstream_timeline_or_fact_snapshots`, `test_runtime_reads_detector_bank_status_without_stepping_or_owning_engines`; runtime **157**, core subset **237**, related **333**).
 
-**#284 stays OPEN** (**40/41** AC, **1** remain: **process TDD AC** — intentionally not flipped) — no master PR.
+**#284 stays OPEN** (**41/41** AC — process TDD AC flipped via human-accepted TDD-exception; pending non-AC close gate / human close) — no master PR.
+
+**TDD-exception (process AC only):** Add focused pytest/pytest-asyncio tests before behavior code. **Reason:** behavior already landed in prior slices; cannot honestly claim tests-first retrospectively. **Alternative verification:** existing `NarrativeRuntime` + actor-transition matrix/ordering/races/immutability pytest evidence. **Risk:** process dilution — scoped to this historical checkbox only.
 
 ## Related
 
