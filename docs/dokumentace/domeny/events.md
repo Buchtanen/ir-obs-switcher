@@ -160,7 +160,7 @@ Fact-only wait / coalesce / callback branches landed feat `dd64047` (`contracts/
 
 Live #270 verify-frame attachment on authored/template realization paths landed feat `a1ba998` (`events/narrative_verify_frame.py` side-stash; `realize_authored_speech` / `template_speech`; `SpeechDraft.verify_frame`; effect `verify_frame_attached_live`; skip-no-frame mainly for Qwen/unframed; `tests/test_narrative_realization_bridge.py` **5**).
 
-**#284 stays OPEN** (**35/41** AC, **6** remain) — no master PR.
+**#284 stays OPEN** (**34/41** AC, **7** remain) — no master PR.
 
 ## Related
 
