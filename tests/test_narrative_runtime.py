@@ -2029,3 +2029,66 @@ async def test_try_manual_speak_timeout_kwarg_returns_admission_timeout() -> Non
     assert later is not None
     assert later.disposition == "ignored_stale_or_inapplicable"
     assert runtime.status().lane == "idle"
+
+
+@pytest.mark.asyncio
+async def test_shutdown_flushes_tape_effect() -> None:
+    """#284: SHUTDOWN owns a cancellable tape flush effect before stop settles."""
+    flushed: list[dict[str, object]] = []
+
+    async def tape_flush(token: dict[str, object]) -> None:
+        flushed.append(dict(token))
+        await asyncio.sleep(0)
+
+    runtime = NarrativeRuntime(tape_effect=tape_flush, shutdown_flush_timeout_s=1.0)
+    runtime.enable()
+    assert runtime.admit(NarrativeCommand.shutdown("tape:flush", 8000, "application_exit")).accepted
+    shutdown = runtime.reduce_next()
+    assert shutdown is not None
+    assert "effect:flush_tape" in shutdown.effects
+    await runtime.apply_effects(shutdown.effects)
+    assert runtime.tape_task_active() or flushed  # may finish immediately
+    await runtime.wait_effects_idle()
+    assert flushed
+    assert flushed[0]["reason"] == "shutdown"
+    assert not runtime.tape_task_active()
+
+
+@pytest.mark.asyncio
+async def test_tape_flush_timeout_is_fail_soft() -> None:
+    """#284: tape flush timeout admits degraded health and does not raise."""
+
+    async def slow_flush(token: dict[str, object]) -> None:
+        await asyncio.sleep(1.0)
+
+    runtime = NarrativeRuntime(tape_effect=slow_flush, shutdown_flush_timeout_s=0.05)
+    runtime.enable()
+    runtime.admit(NarrativeCommand.shutdown("tape:timeout", 8100, "application_exit"))
+    shutdown = runtime.reduce_next()
+    assert shutdown is not None
+    await runtime.apply_effects(shutdown.effects)
+    await runtime.wait_effects_idle()
+    # Ingress is closed by SHUTDOWN, so timeout reports via local tape_status.
+    assert runtime.status().tape_status == "degraded"
+
+
+@pytest.mark.asyncio
+async def test_cancel_tape_flush_effect() -> None:
+    """#284: effect:cancel_tape drops an in-flight flush without crashing."""
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def blocked_flush(token: dict[str, object]) -> None:
+        started.set()
+        await release.wait()
+
+    runtime = NarrativeRuntime(tape_effect=blocked_flush, shutdown_flush_timeout_s=5.0)
+    runtime.enable()
+    runtime.admit(NarrativeCommand.shutdown("tape:cancel", 8200, "application_exit"))
+    shutdown = runtime.reduce_next()
+    assert shutdown is not None
+    await runtime.apply_effects(shutdown.effects)
+    await started.wait()
+    assert runtime.tape_task_active()
+    await runtime.apply_effects(["effect:cancel_tape"])
+    assert not runtime.tape_task_active()

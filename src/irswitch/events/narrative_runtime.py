@@ -275,6 +275,8 @@ class NarrativeRuntime:
         detector_bank: DetectorBank | None = None,
         command_journal_path: Path | str | None = None,
         semantic_verifier: SemanticVerifier | None = None,
+        tape_effect: EffectWorker | None = None,
+        shutdown_flush_timeout_s: float = 2.0,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -319,8 +321,11 @@ class NarrativeRuntime:
         self._wake = asyncio.Event()
         self._realization_effect = realization_effect
         self._tts_effect = tts_effect
+        self._tape_effect = tape_effect
+        self._shutdown_flush_timeout_s = float(shutdown_flush_timeout_s)
         self._realization_task: asyncio.Task[None] | None = None
         self._tts_task: asyncio.Task[None] | None = None
+        self._tape_task: asyncio.Task[None] | None = None
         self._silence_deadline_task: asyncio.Task[None] | None = None
         self._validity_deadline_task: asyncio.Task[None] | None = None
         self._realization_deadline_task: asyncio.Task[None] | None = None
@@ -730,6 +735,9 @@ class NarrativeRuntime:
     def tts_task_active(self) -> bool:
         return self._tts_task is not None and not self._tts_task.done()
 
+    def tape_task_active(self) -> bool:
+        return self._tape_task is not None and not self._tape_task.done()
+
     def silence_deadline_task_active(self) -> bool:
         return self._silence_deadline_task is not None and not self._silence_deadline_task.done()
 
@@ -747,7 +755,11 @@ class NarrativeRuntime:
 
     async def wait_effects_idle(self) -> None:
         # Realization/TTS workers only. Deadline timers are long-lived arms.
-        tasks = [task for task in (self._realization_task, self._tts_task) if task is not None]
+        tasks = [
+            task
+            for task in (self._realization_task, self._tts_task, self._tape_task)
+            if task is not None
+        ]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -771,6 +783,8 @@ class NarrativeRuntime:
                 await self._cancel_task("_realization_task")
             elif effect == "effect:cancel_tts":
                 await self._cancel_task("_tts_task")
+            elif effect == "effect:cancel_tape":
+                await self._cancel_task("_tape_task")
             elif effect == "effect:cancel_silence_deadline":
                 await self._cancel_task("_silence_deadline_task")
             elif effect == "effect:cancel_validity_deadline":
@@ -796,6 +810,18 @@ class NarrativeRuntime:
                 self._tts_task = asyncio.create_task(
                     self._run_worker(self._tts_effect, token, "_tts_task"),
                     name="narrative-tts",
+                )
+            elif effect == "effect:flush_tape":
+                await self._cancel_task("_tape_task")
+                if self._tape_effect is None:
+                    continue
+                token = {
+                    "reason": "shutdown",
+                    "timeoutS": self._shutdown_flush_timeout_s,
+                }
+                self._tape_task = asyncio.create_task(
+                    self._run_tape_flush(token),
+                    name="narrative-tape-flush",
                 )
             elif effect == "effect:arm_silence_deadline":
                 await self._cancel_task("_silence_deadline_task")
@@ -928,6 +954,52 @@ class NarrativeRuntime:
             pass
         if getattr(self, attr) is task:
             setattr(self, attr, None)
+
+    async def _run_tape_flush(self, token: dict[str, Any]) -> None:
+        """Owned cancellable tape flush; timeout is fail-soft (never raises)."""
+
+        effect = self._tape_effect
+        if effect is None:
+            return
+        timeout_s = float(token.get("timeoutS") or self._shutdown_flush_timeout_s)
+        try:
+            produced = await asyncio.wait_for(effect(dict(token)), timeout=max(0.0, timeout_s))
+        except TimeoutError:
+            # Fail-soft: bounded shutdown must not raise into the actor loop.
+            # SHUTDOWN already closed ingress, so admit may be rejected — fall
+            # back to a local tape_status projection.
+            command = NarrativeCommand.tape_health(
+                f"tape:flush-timeout:{self._reducer_sequence}",
+                int(time.monotonic() * 1000),
+                recorder_generation=0,
+                status="degraded",
+                affected_detector_ids=(),
+                first_lost_sequence=None,
+                last_lost_sequence=None,
+            )
+            admitted = self.admit(command)
+            if not getattr(admitted, "accepted", False):
+                self._tape_status = "degraded"
+            return
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            return
+        else:
+            if produced is None:
+                return
+            if hasattr(produced, "kind"):
+                commands: Sequence[Any] = (produced,)
+            elif isinstance(produced, Sequence) and not isinstance(produced, (str, bytes)):
+                commands = produced
+            else:
+                return
+            for command in commands:
+                if isinstance(command, NarrativeCommand):
+                    self.admit(command)
+        finally:
+            if self._tape_task is asyncio.current_task():
+                self._tape_task = None
 
     async def _run_worker(
         self,
@@ -1895,6 +1967,8 @@ class NarrativeRuntime:
             self._cancel_building(effects, reason="building_cancelled")
         elif self._lane in {"committed", "speaking"}:
             self._request_speech_cancel(effects, reason="speech_cancel_requested")
+        if self._tape_effect is not None:
+            effects.append("effect:flush_tape")
         if self.mailbox_empty():
             self._runtime = "stopped"
             # Keep stopping visible only while a cancel token remains; otherwise idle.
