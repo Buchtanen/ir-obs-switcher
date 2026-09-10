@@ -424,6 +424,143 @@ def test_project_runtime_status_llm_tts_config_generation_from_ledger() -> None:
     assert projection["components"]["tts"]["configGeneration"] == 7
 
 
+def test_project_runtime_status_llm_last_attempt_after_qwen_success() -> None:
+    """#273/#284 lastAttempt fills after first admitted Qwen realization."""
+    import binascii
+
+    from irswitch.events.narrative_realization_bridge import (
+        realize_qwen_text,
+        warmup_qwen_component,
+    )
+    from irswitch.events.qwen_transport import (
+        FakeTransport,
+        LlmComponent,
+        RealizerService,
+        load_transport_goldens,
+    )
+
+    goldens = load_transport_goldens()
+    chunks = None
+    for row in goldens["sse"]["valid"]:
+        if row["id"] == "role_content_usage_done":
+            chunks = [binascii.unhexlify(item) for item in row["chunksHex"]]
+            break
+    assert chunks is not None
+
+    component = LlmComponent()
+    assert warmup_qwen_component(component, FakeTransport(chunks=chunks), generation=1) is True
+    # Warmup must not invent a status lastAttempt.
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    assert project_runtime_status(runtime.status())["components"]["llm"]["lastAttempt"] is None
+
+    service = RealizerService(transport=FakeTransport(chunks=chunks))
+    text = realize_qwen_text(
+        beat_id="battle.approach",
+        request_ordinal=2,
+        dispatch_generation=7,
+        service=service,
+        component=component,
+        now_ms=91_000,
+    )
+    assert text is not None
+    attempt = project_runtime_status(runtime.status())["components"]["llm"]["lastAttempt"]
+    assert attempt is not None
+    assert attempt["outcome"] == "succeeded"
+    assert attempt["terminalReason"] is None
+    assert isinstance(attempt["requestId"], str) and attempt["requestId"]
+    assert attempt["ttfbMs"] is None or attempt["ttfbMs"] >= 0
+    assert attempt["ttftMs"] is None or attempt["ttftMs"] >= 0
+    assert attempt["totalMs"] is None or attempt["totalMs"] >= 0
+    assert attempt["reducerLagMs"] is None or attempt["reducerLagMs"] >= 0
+
+
+def test_project_runtime_status_llm_last_attempt_after_qwen_failure() -> None:
+    """Failed admitted Qwen request projects lastAttempt.outcome=failed."""
+    from irswitch.events.narrative_realization_bridge import (
+        realize_qwen_text,
+        warmup_qwen_component,
+    )
+    from irswitch.events.qwen_transport import FakeTransport, LlmComponent, RealizerService
+
+    component = LlmComponent()
+    assert warmup_qwen_component(component, FakeTransport(), generation=2) is True
+    service = RealizerService(transport=FakeTransport(fail=True))
+    assert (
+        realize_qwen_text(
+            beat_id="battle.approach",
+            request_ordinal=3,
+            dispatch_generation=8,
+            service=service,
+            component=component,
+            now_ms=50_000,
+        )
+        is None
+    )
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    attempt = project_runtime_status(runtime.status())["components"]["llm"]["lastAttempt"]
+    assert attempt is not None
+    assert attempt["outcome"] == "failed"
+    assert attempt["terminalReason"] == "realization_transport"
+    assert attempt["requestId"]
+
+
+def test_project_runtime_status_llm_last_attempt_timeout_maps_timed_out() -> None:
+    """Deadline-expired Qwen admission maps outcome to timed_out."""
+    from irswitch.events.qwen_transport import (
+        FakeTransport,
+        LlmComponent,
+        RealizationIntent,
+        RealizerService,
+        load_transport_goldens,
+    )
+
+    component = LlmComponent()
+    component.start_preflight(desired_generation=1, warmup=True)
+    component.complete_preflight(generation=1, residency="warmup_succeeded")
+    component.model = "qwen3:4b-instruct-2507-q4_K_M"
+    prompt = dict(load_transport_goldens()["compiledPrompt"])
+    intent = RealizationIntent(
+        process_instance_id="narrative-runtime",
+        request_ordinal=9,
+        dispatch_generation=1,
+        backend="qwen_compiled",
+        plan_id="plan:timeout",
+        planning_cycle_id="cycle:1",
+        cycle_attempt_ordinal=1,
+        bundle_id="bundle:timeout",
+        bundle_hash="sha256:" + ("88" * 32),
+        compiled_prompt=prompt,
+        component_generation=1,
+        config_generation=1,
+        effective_config_hash="sha256:" + ("55" * 32),
+        config_apply_sequence=1,
+        capture_prompt="hash",
+        capture_completion=True,
+        dispatched_mono_ms=10_000,
+        deadline_mono_ms=10_000,
+        beat_id="battle.approach",
+        episode_revision=1,
+        model="qwen3:4b-instruct-2507-q4_K_M",
+        temperature=0.2,
+        top_p=0.8,
+        max_tokens=96,
+        seed=17,
+        pattern_id="battle.approach:tight:1",
+        render_contract_version=2,
+        now_ms=10_000,
+    )
+    step = RealizerService(transport=FakeTransport()).try_start(intent, component=component)
+    assert step.outcome == "failed"
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    attempt = project_runtime_status(runtime.status())["components"]["llm"]["lastAttempt"]
+    assert attempt is not None
+    assert attempt["outcome"] == "timed_out"
+    assert attempt["terminalReason"] == "realization_timeout"
+
+
 def test_race_wires_llm_component_into_narrative_runtime() -> None:
     """Race cutover passes the warmed LlmComponent into NarrativeRuntime for status."""
     race_src = (

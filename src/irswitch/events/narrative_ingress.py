@@ -219,7 +219,7 @@ def _llm_component_projection(status: RuntimeStatus) -> dict[str, Any]:
         "configGeneration": config_generation,
         "model": model,
         "residencyEvidence": evidence,
-        "lastAttempt": None,
+        "lastAttempt": (None if status.llm_last_attempt is None else dict(status.llm_last_attempt)),
     }
 
 

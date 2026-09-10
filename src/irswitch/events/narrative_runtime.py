@@ -237,6 +237,7 @@ class RuntimeStatus:
     llm_model: str | None
     llm_residency_evidence: str
     llm_reason: str | None
+    llm_last_attempt: dict[str, object] | None
 
 
 class NarrativeRuntime:
@@ -376,6 +377,12 @@ class NarrativeRuntime:
             health["llm"] = mapped
             if mapped == "unavailable":
                 llm_reason = "component_unavailable"
+        llm_last_attempt = None
+        if llm_attached:
+            component = self._llm_component
+            assert component is not None
+            if component.last_attempt is not None:
+                llm_last_attempt = dict(component.last_attempt)
         return RuntimeStatus(
             runtime_state=self._runtime,
             lane=self._lane,
@@ -429,6 +436,7 @@ class NarrativeRuntime:
             llm_model=llm_model,
             llm_residency_evidence=llm_residency_evidence,
             llm_reason=llm_reason,
+            llm_last_attempt=llm_last_attempt,
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:

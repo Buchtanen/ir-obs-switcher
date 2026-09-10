@@ -280,6 +280,7 @@ class LlmComponent:
         self.status = "idle"
         self.residency: str | None = None
         self.model: str | None = None
+        self.last_attempt: dict[str, object] | None = None
 
     @property
     def qwen_ready(self) -> bool:
@@ -436,6 +437,51 @@ def latency_metrics(
         "planToResultMs": result_reduced_mono_ms - planned_mono_ms,
         "timeoutElapsedMs": timeout_elapsed_ms,
     }
+
+
+def build_last_attempt(
+    result: RealizationResult,
+    *,
+    reduced_mono_ms: int | None = None,
+) -> dict[str, object]:
+    """Project public commentary-runtime/2 components.llm.lastAttempt."""
+
+    reduced = int(result.completed_mono_ms if reduced_mono_ms is None else reduced_mono_ms)
+    metrics = latency_metrics(
+        dispatched_mono_ms=int(result.transport_started_mono_ms),
+        transport_started_mono_ms=int(result.transport_started_mono_ms),
+        response_started_mono_ms=result.response_started_mono_ms,
+        first_content_mono_ms=result.first_content_mono_ms,
+        completed_mono_ms=int(result.completed_mono_ms),
+        result_reduced_mono_ms=reduced,
+        planned_mono_ms=int(result.transport_started_mono_ms),
+    )
+    outcome = str(result.outcome)
+    if outcome == "failed" and result.failure_reason == "realization_timeout":
+        outcome = "timed_out"
+    return {
+        "requestId": str(result.request_id),
+        "outcome": outcome,
+        "ttfbMs": metrics["ttfbMs"],
+        "ttftMs": metrics["ttftMs"],
+        "totalMs": metrics["totalMs"],
+        "reducerLagMs": metrics["reducerLagMs"],
+        "terminalReason": result.failure_reason,
+    }
+
+
+def record_qwen_last_attempt(
+    component: LlmComponent,
+    intent: RealizationIntent,
+    step: TransportStep,
+) -> None:
+    """Persist latest admitted Qwen attempt; authored/backend-less steps ignored."""
+
+    if intent.backend == "authored":
+        return
+    if step.result is None or step.outcome == "admitted":
+        return
+    component.last_attempt = build_last_attempt(step.result)
 
 
 def parse_sse(chunks: list[bytes]) -> SseParse:
@@ -625,6 +671,7 @@ class RealizerService:
         self._transport = transport if transport is not None else FakeTransport()
         self._active: RealizationIntent | None = None
         self._active_request: RealizationRequest | None = None
+        self._active_component: LlmComponent | None = None
         self._discarded: set[tuple[str, int]] = set()
 
     @property
@@ -632,6 +679,13 @@ class RealizerService:
         return 0 if self._active is None else 1
 
     def try_start(self, intent: RealizationIntent, *, component: LlmComponent) -> TransportStep:
+        step = self._try_start_inner(intent, component=component)
+        record_qwen_last_attempt(component, intent, step)
+        return step
+
+    def _try_start_inner(
+        self, intent: RealizationIntent, *, component: LlmComponent
+    ) -> TransportStep:
         request = build_realization_request(intent)
         if intent.cancelled:
             result = _result(
@@ -686,6 +740,7 @@ class RealizerService:
         snapshot = replace(intent)
         self._active = snapshot
         self._active_request = request
+        self._active_component = component
         if isinstance(self._transport, FakeTransport) and self._transport.hold:
             return _empty_step("admitted", "admitted", request)
         return self._complete(snapshot, request, intent.now_ms)
@@ -693,17 +748,22 @@ class RealizerService:
     def finish(self, *, now_ms: int) -> TransportStep:
         intent = self._active
         request = self._active_request
+        component = self._active_component
         if intent is None or request is None:
             return _empty_step("realization_transport", "failed", None)
         if isinstance(self._transport, FakeTransport):
             self._transport.hold = False
-        return self._complete(intent, request, now_ms)
+        step = self._complete(intent, request, now_ms)
+        if component is not None:
+            record_qwen_last_attempt(component, intent, step)
+        return step
 
     def _complete(
         self, intent: RealizationIntent, request: RealizationRequest, now_ms: int
     ) -> TransportStep:
         self._active = None
         self._active_request = None
+        self._active_component = None
         try:
             response = self._transport.post(
                 "http://127.0.0.1/v1/chat/completions",
