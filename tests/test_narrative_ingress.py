@@ -454,6 +454,150 @@ def test_project_runtime_status_timeline_session_from_context_golden() -> None:
     assert projection["timeline"] == expected["timeline"]
 
 
+def _config_ledger(
+    *,
+    desired_generation: int = 3,
+    apply_sequence: int = 7,
+) -> dict:
+    digest_a = "sha256:" + ("a" * 64)
+    digest_b = "sha256:" + ("b" * 64)
+    return {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": desired_generation,
+        "desiredHash": digest_a,
+        "effectiveHash": digest_b,
+        "applySequence": apply_sequence,
+        "desiredValues": {"voice": "en-US"},
+        "effectiveValues": {},
+        "pendingChanges": [
+            {
+                "boundary": "next_plan_or_manual",
+                "key": "voice",
+                "desiredGeneration": desired_generation,
+            }
+        ],
+        "acceptedMonoMs": 4_000,
+    }
+
+
+def test_project_runtime_status_config_follows_config_update_ledger() -> None:
+    """#273 live config block from CONFIG_UPDATE ledger (all-or-none unload)."""
+    from irswitch.contracts.command import NarrativeCommand
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert project_runtime_status(runtime.status())["config"]["desiredGeneration"] == 0
+
+    ledger = _config_ledger()
+    assert runtime.admit(
+        NarrativeCommand.config_update(
+            "cfg:live",
+            4_000,
+            valid=True,
+            ledger=ledger,
+            diagnostics=(),
+        )
+    ).accepted
+    assert runtime.reduce_next() is not None
+    config = project_runtime_status(runtime.status())["config"]
+    assert config == {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 3,
+        "desiredHash": ledger["desiredHash"],
+        "effectiveHash": ledger["effectiveHash"],
+        "applySequence": 7,
+        "pendingChanges": list(ledger["pendingChanges"]),
+    }
+
+    assert runtime.admit(
+        NarrativeCommand.config_update(
+            "cfg:clear",
+            4_100,
+            valid=False,
+            ledger=None,
+            diagnostics=(),
+        )
+    ).accepted
+    assert runtime.reduce_next() is not None
+    cleared = project_runtime_status(runtime.status())["config"]
+    assert cleared["desiredGeneration"] == 0
+    assert cleared["applySequence"] == 0
+    assert cleared["pendingChanges"] == []
+
+
+def test_project_runtime_status_episodes_follow_registry_counts() -> None:
+    """#273 live episode counters from EpisodeRegistry snapshot."""
+    from test_episode_registry import _intent
+
+    from irswitch.events.episode_registry import ACTIVE_CAP, RESOLVED_CAP, EpisodeRegistry
+
+    registry = EpisodeRegistry()
+    opened = registry.open(_intent())
+    assert opened.episode is not None
+    activated = registry.activate(
+        opened.episode.episode_id,
+        now_ms=2_000,
+        source_refs=("test:activate",),
+    )
+    assert activated.episode is not None
+    assert activated.episode.state == "active"
+    cand = registry.open(_intent(semantic=("rival", "car.7"), correlation=("corr:2",)))
+    assert cand.episode is not None
+    assert cand.episode.state == "candidate"
+
+    runtime = NarrativeRuntime(episode_registry=registry)
+    runtime.enable()
+    episodes = project_runtime_status(runtime.status())["episodes"]
+    assert episodes == {
+        "active": 1,
+        "candidate": 1,
+        "suspended": 0,
+        "retainedCurrentCapacity": int(ACTIVE_CAP),
+        "resolved": 0,
+        "resolvedCapacity": int(RESOLVED_CAP),
+    }
+
+    resolved = registry.resolve(
+        activated.episode.episode_id,
+        now_ms=5_000,
+        reason="outcome_observed",
+    )
+    assert resolved.episode is not None
+    episodes_after = project_runtime_status(runtime.status())["episodes"]
+    assert episodes_after["active"] == 0
+    assert episodes_after["candidate"] == 1
+    assert episodes_after["resolved"] == 1
+
+
+def test_project_runtime_status_by_tape_channel_follows_opportunity_counters() -> None:
+    """#273 live byTapeChannel from OpportunityQueue channel counters."""
+    from irswitch.events.opportunity_queue import ChannelCounters, OpportunityQueue
+
+    queue = OpportunityQueue()
+    queue._counters["race.battle.closing"] = ChannelCounters(
+        tape_channel="race.battle.closing",
+        kick=3,
+        queued=2,
+        selected=1,
+        consumed=1,
+        expired=1,
+        spoken=2,
+    )
+    runtime = NarrativeRuntime(opportunity_queue=queue)
+    runtime.enable()
+    by_channel = project_runtime_status(runtime.status())["byTapeChannel"]
+    assert by_channel == {
+        "race.battle.closing": {
+            "kick": 3,
+            "accepted": 2,
+            "queued": 2,
+            "selected": 1,
+            "started": 1,
+            "expired": 1,
+        }
+    }
+
+
 def test_session_identity_all_or_none_clears_on_incomplete_timeline() -> None:
     """Incomplete APPLY_CONTEXT timeline clears the whole session-identity set."""
     from irswitch.events.narrative_runtime import _session_identity_from_timeline

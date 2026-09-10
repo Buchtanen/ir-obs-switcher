@@ -569,6 +569,22 @@ class OpportunityQueue:
     def channel_counters(self, tape_channel: str) -> ChannelCounters:
         return self._counters.get(tape_channel, ChannelCounters(tape_channel=tape_channel))
 
+    def tape_channel_status_counts(self) -> dict[str, dict[str, int]]:
+        """Map live channel counters into StatusResponse byTapeChannel shape."""
+
+        projected: dict[str, dict[str, int]] = {}
+        for channel, counters in sorted(self._counters.items()):
+            projected[channel] = {
+                "kick": int(counters.kick),
+                # consumed ≈ playback-accepted terminal; spoken ≈ started utterances
+                "accepted": int(counters.spoken),
+                "queued": int(counters.queued),
+                "selected": int(counters.selected),
+                "started": int(counters.consumed),
+                "expired": int(counters.expired),
+            }
+        return projected
+
     def arbitrate(self, context: ArbitrationContext) -> ArbitrationDecision:
         self.expire_due(context.now_ms)
         scored = self._collect(context)

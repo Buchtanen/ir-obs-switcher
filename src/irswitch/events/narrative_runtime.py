@@ -225,6 +225,10 @@ class RuntimeStatus:
     speech_dispatched_at_mono_ms: int | None
     speech_accepted_at_mono_ms: int | None
     speech_last_terminal: dict[str, object] | None
+    # #273 live catalog/config/episodes/byTapeChannel projection inputs
+    config_ledger: dict[str, object] | None
+    episode_counts: dict[str, int] | None
+    by_tape_channel: dict[str, dict[str, int]] | None
 
 
 class NarrativeRuntime:
@@ -258,6 +262,7 @@ class NarrativeRuntime:
         self._timeline_revision: int | None = None
         self._fact_view_revision: int | None = None
         self._config_valid: bool | None = None
+        self._config_ledger: dict[str, object] | None = None
         self._component_health: dict[str, str] = {"llm": "ready", "tts": "ready"}
         self._tape_status: str | None = None
         # Public-contracts identity defaults before first observed/admitted values.
@@ -380,6 +385,9 @@ class NarrativeRuntime:
             speech_last_terminal=(
                 None if self._speech_last_terminal is None else dict(self._speech_last_terminal)
             ),
+            config_ledger=(None if self._config_ledger is None else dict(self._config_ledger)),
+            episode_counts=self._episode_counts_snapshot(),
+            by_tape_channel=self._by_tape_channel_snapshot(),
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:
@@ -1242,11 +1250,27 @@ class NarrativeRuntime:
 
     def _on_config(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         self._config_valid = bool(command.payload["valid"])
+        ledger = command.payload.get("ledger")
+        if self._config_valid and isinstance(ledger, dict):
+            self._config_ledger = dict(ledger)
+        else:
+            self._config_ledger = None
         effects = ["config_cached"]
         # Config caches ledger + rearms deadline generations; speech/building
         # cancellation waits for the following coherent context batch (matrix).
         self._bump_deadline_generations(effects)
         return "handled", effects
+
+    def _episode_counts_snapshot(self) -> dict[str, int] | None:
+        if self._episode_registry is None:
+            return None
+        return self._episode_registry.status_counts()
+
+    def _by_tape_channel_snapshot(self) -> dict[str, dict[str, int]] | None:
+        if self._opportunity_queue is None:
+            return None
+        snapshot = self._opportunity_queue.tape_channel_status_counts()
+        return snapshot or None
 
     def _on_silence(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         generation = int((command.token or {})["generation"])

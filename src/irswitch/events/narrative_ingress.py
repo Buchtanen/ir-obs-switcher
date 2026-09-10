@@ -55,7 +55,7 @@ def _packaged_catalog_projection() -> dict[str, Any]:
 
 
 def _unloaded_config_projection() -> dict[str, Any]:
-    """Thin config block — live apply/generation wiring is #273 remainder."""
+    """Default config block when no CONFIG_UPDATE ledger is cached."""
 
     return {
         "schemaVersion": "commentary-config/2",
@@ -64,6 +64,41 @@ def _unloaded_config_projection() -> dict[str, Any]:
         "effectiveHash": _UNLOADED_HASH,
         "applySequence": 0,
         "pendingChanges": [],
+    }
+
+
+def _config_projection(status: RuntimeStatus) -> dict[str, Any]:
+    """Project live CONFIG_UPDATE ledger or unloaded zeros."""
+
+    ledger = status.config_ledger
+    if not isinstance(ledger, dict):
+        return _unloaded_config_projection()
+    desired_generation = ledger.get("desiredGeneration")
+    desired_hash = ledger.get("desiredHash")
+    effective_hash = ledger.get("effectiveHash")
+    apply_sequence = ledger.get("applySequence")
+    pending = ledger.get("pendingChanges")
+    if (
+        isinstance(desired_generation, bool)
+        or not isinstance(desired_generation, int)
+        or desired_generation < 0
+        or not isinstance(desired_hash, str)
+        or not desired_hash.startswith("sha256:")
+        or not isinstance(effective_hash, str)
+        or not effective_hash.startswith("sha256:")
+        or isinstance(apply_sequence, bool)
+        or not isinstance(apply_sequence, int)
+        or apply_sequence < 0
+        or not isinstance(pending, list)
+    ):
+        return _unloaded_config_projection()
+    return {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": int(desired_generation),
+        "desiredHash": desired_hash,
+        "effectiveHash": effective_hash,
+        "applySequence": int(apply_sequence),
+        "pendingChanges": [dict(item) if isinstance(item, dict) else item for item in pending],
     }
 
 
@@ -76,6 +111,44 @@ def _empty_episodes_projection() -> dict[str, Any]:
         "resolved": 0,
         "resolvedCapacity": int(RESOLVED_CAP),
     }
+
+
+def _episodes_projection(status: RuntimeStatus) -> dict[str, Any]:
+    counts = status.episode_counts
+    if not isinstance(counts, dict):
+        return _empty_episodes_projection()
+    required = (
+        "active",
+        "candidate",
+        "suspended",
+        "retainedCurrentCapacity",
+        "resolved",
+        "resolvedCapacity",
+    )
+    if any(
+        isinstance(counts.get(key), bool) or not isinstance(counts.get(key), int)
+        for key in required
+    ):
+        return _empty_episodes_projection()
+    return {key: int(counts[key]) for key in required}
+
+
+def _by_tape_channel_projection(status: RuntimeStatus) -> dict[str, dict[str, int]]:
+    raw = status.by_tape_channel
+    if not isinstance(raw, dict) or not raw:
+        return {}
+    projected: dict[str, dict[str, int]] = {}
+    required = ("kick", "accepted", "queued", "selected", "started", "expired")
+    for channel, counters in raw.items():
+        if not isinstance(channel, str) or not isinstance(counters, dict):
+            continue
+        if any(
+            isinstance(counters.get(key), bool) or not isinstance(counters.get(key), int)
+            for key in required
+        ):
+            continue
+        projected[channel] = {key: int(counters[key]) for key in required}
+    return projected
 
 
 _TTS_BACKENDS = frozenset({"sapi", "espeak", "supertonic"})
@@ -241,13 +314,14 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     (additive; does not start the actor loop). Full schema / live actor
     attachment remain a later cutover slice. This helper shapes
     actor/recovery fields already owned by the library RuntimeStatus plus
-    thin #273 catalog/config/episodes/byTapeChannel defaults (packaged
-    catalog hash; unloaded config; empty episode/tape-channel counters;
-    opportunities queue stub; detectors/facts stubs), schema-complete
-    llm/tts component stubs (no live transport/residency wiring), and
-    null-or-live timeline session-identity fields (sessionPlan/sessionRef/
-    occurrenceId/lineageId/stage — all-or-none; filled from APPLY_CONTEXT
-    timeline when complete).
+    thin #273 catalog/config/episodes/byTapeChannel projection (packaged
+    catalog hash; CONFIG_UPDATE ledger when cached; EpisodeRegistry /
+    OpportunityQueue counters when injected; otherwise unloaded/empty
+    stubs), schema-complete llm/tts component stubs (no live
+    transport/residency wiring), and null-or-live timeline
+    session-identity fields (sessionPlan/sessionRef/occurrenceId/
+    lineageId/stage — all-or-none; filled from APPLY_CONTEXT timeline
+    when complete).
     """
 
     if not isinstance(status, RuntimeStatus):
@@ -296,10 +370,10 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
                 "evicted": 0,
             },
         },
-        "episodes": _empty_episodes_projection(),
+        "episodes": _episodes_projection(status),
         "catalog": dict(_packaged_catalog_projection()),
-        "config": _unloaded_config_projection(),
-        "byTapeChannel": {},
+        "config": _config_projection(status),
+        "byTapeChannel": _by_tape_channel_projection(status),
         "timeline": {
             "broadcastEpoch": int(status.broadcast_epoch),
             "streamEpoch": int(status.stream_epoch),
