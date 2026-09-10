@@ -7,6 +7,11 @@
     "narrativeRunActive": true,
     "streamActive": true,
     "streamState": "active",
+    "sessionPlan": null,
+    "sessionRef": null,
+    "occurrenceId": null,
+    "lineageId": null,
+    "stage": null,
     "historyComplete": true
   }
 }

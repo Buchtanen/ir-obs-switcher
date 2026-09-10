@@ -218,8 +218,10 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     actor/recovery fields already owned by the library RuntimeStatus plus
     thin #273 catalog/config/episodes/byTapeChannel defaults (packaged
     catalog hash; unloaded config; empty episode/tape-channel counters;
-    opportunities queue stub; detectors/facts stubs) plus schema-complete
-    llm/tts component stubs (no live transport/residency wiring).
+    opportunities queue stub; detectors/facts stubs), schema-complete
+    llm/tts component stubs (no live transport/residency wiring), and
+    null timeline session-identity fields (sessionPlan/sessionRef/
+    occurrenceId/lineageId/stage — all-or-none nulls until live wiring).
     """
 
     if not isinstance(status, RuntimeStatus):
@@ -278,6 +280,13 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "narrativeRunActive": bool(status.narrative_run_active),
             "streamActive": status.stream_active,
             "streamState": str(status.stream_state),
+            # Session identity is all-or-none; library slice keeps nulls until
+            # live session-plan wiring lands (#273 remainder).
+            "sessionPlan": None,
+            "sessionRef": None,
+            "occurrenceId": None,
+            "lineageId": None,
+            "stage": None,
             "historyComplete": history_complete,
         },
         "components": {

@@ -63,6 +63,11 @@ async def test_runtime_status_without_provider_returns_disabled_subset() -> None
                 "narrativeRunActive": False,
                 "streamActive": None,
                 "streamState": "unknown",
+                "sessionPlan": None,
+                "sessionRef": None,
+                "occurrenceId": None,
+                "lineageId": None,
+                "stage": None,
                 "historyComplete": True,
             }
 

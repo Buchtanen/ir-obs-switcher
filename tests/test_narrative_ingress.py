@@ -127,6 +127,11 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
         "narrativeRunActive": False,
         "streamActive": None,
         "streamState": "unknown",
+        "sessionPlan": None,
+        "sessionRef": None,
+        "occurrenceId": None,
+        "lineageId": None,
+        "stage": None,
         "historyComplete": True,
     }
     assert projection["components"]["llm"] == {
@@ -350,6 +355,12 @@ def test_project_runtime_status_identity_follows_context_timeline() -> None:
     assert timeline["streamActive"] is True
     assert timeline["streamState"] == "active"
     assert timeline["historyComplete"] is True
+    # Session identity remains null until live session-plan wiring.
+    assert timeline["sessionPlan"] is None
+    assert timeline["sessionRef"] is None
+    assert timeline["occurrenceId"] is None
+    assert timeline["lineageId"] is None
+    assert timeline["stage"] is None
 
 
 def test_project_commentary_health_component_disabled_default() -> None:
@@ -380,6 +391,30 @@ def test_project_runtime_status_identity_golden_disabled() -> None:
     assert projection["timeline"] == expected["timeline"]
     assert projection["schemaVersion"] == expected["schemaVersion"]
     assert projection["status"] == expected["status"]
+
+
+def test_project_runtime_status_timeline_session_null_golden() -> None:
+    """#273 thin timeline session identity — all-or-none null stubs."""
+    import json
+    from pathlib import Path
+
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "status_timeline_session_null.json"
+    )
+    projection = project_runtime_status(NarrativeRuntime().status())
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert projection["schemaVersion"] == expected["schemaVersion"]
+    assert projection["status"] == expected["status"]
+    assert projection["timeline"] == expected["timeline"]
+    assert projection["timeline"]["sessionPlan"] is None
+    assert projection["timeline"]["sessionRef"] is None
+    assert projection["timeline"]["occurrenceId"] is None
+    assert projection["timeline"]["lineageId"] is None
+    assert projection["timeline"]["stage"] is None
 
 
 def test_project_runtime_decisions_selected_golden() -> None:
