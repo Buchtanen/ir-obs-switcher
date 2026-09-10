@@ -52,7 +52,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**14** = prior **8** + **3** speech + **3** decision rows). Related **207**.
+`tests/test_narrative_ingress.py` (**14** = prior **7** + **3** speech + **3** decision + **1** replaced rows). Related **207**.
 
 ## Still deferred (#284 OPEN)
 

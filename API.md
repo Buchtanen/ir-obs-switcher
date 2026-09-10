@@ -965,6 +965,12 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 }
 ```
 
+Invalid `limit` query values fall back to the default **20** (clamped to 1–100); the handler does not return 400.
+
+### GET /api/commentary/decisions (legacy)
+
+Legacy CommentaryDirector speak/skip log (`{decisions, runtime}`). Unrelated to the NarrativeRuntime ring above.
+
  Neplatný řádek → 400, audio se nespustí.
 
 **Decision reason codes** (`action` = `spoken` \| `skipped`):

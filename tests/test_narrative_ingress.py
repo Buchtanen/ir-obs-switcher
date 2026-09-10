@@ -402,3 +402,47 @@ def test_build_runtime_decision_entry_selected_and_silence() -> None:
     assert quiet["urgency"] is None
     assert quiet["score"] is None
     assert quiet["runnerUp"] is None
+
+
+def test_build_runtime_decision_entry_replaced_precommit() -> None:
+    from test_story_director import _cand as _director_cand
+
+    from irswitch.events.beat_plan import CandidateOrder
+    from irswitch.events.narrative_decision_projection import build_runtime_decision_entry
+    from irswitch.events.story_director import CandidateRecord, DirectorDecision
+
+    primary = _director_cand(
+        source="event_opportunity",
+        opportunity_id="opp:401",
+        from_accepted_event=True,
+        candidate_order=CandidateOrder(417, 0),
+    )
+    selected = CandidateRecord(
+        beat_id=primary.beat_id,
+        episode_id=primary.episode_id,
+        episode_revision=primary.episode_revision,
+        source=primary.source,
+        eligible=True,
+        reject_reason=None,
+        score=70.0,
+        candidate_order=primary.candidate_order,
+    )
+    decision = DirectorDecision(
+        reason="replaced_precommit",
+        selected=selected,
+        records=(selected,),
+        speech="speak",
+        schema_version="director-decision/2",
+        planning_cycle_id=1,
+        cycle_attempt_ordinal=1,
+    )
+    entry = build_runtime_decision_entry(
+        decision,
+        (primary,),
+        reducer_sequence=420,
+        at_mono_ms=90_231,
+    )
+    assert entry["decision"] == "replaced"
+    assert entry["reason"] == "replaced_precommit"
+    assert entry["beatId"] == primary.beat_id
+    assert entry["opportunityId"] == "opp:401"
