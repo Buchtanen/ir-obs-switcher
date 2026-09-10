@@ -134,7 +134,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 Library pytest evidence mapped to frozen `actor-transition-goldens.json` ordering scenarios and completion race traces (test `5f4eb61`):
 
 - **Ordering:** `same_time_external_before_callback` — external callback wins ordering when co-timed with internal playback callback; `same_time_callback_before_reset` — internal playback callback wins over stream reset at same step.
-- **Completion races:** `deadline_before_result`, `reset_before_result`, `config_generation_then_completion`, `validity_expiry_before_completion` — stale completions ignored; one terminal attempt per race.
+- **Completion races:** frozen `deadline_before_result`/`reset_before_result`; library-only `config_generation_then_completion`/`validity_expiry_before_completion` — stale completions ignored; one terminal attempt per race.
 - **Matrix:** `test_actor_transition_matrix_row` still covers all **85** lane×command disposition rows separately.
 - Tests: six rows in `tests/test_narrative_runtime.py` (**155** total; was **149**). **Docs: `API.md` / `CONFIG.md` / `README.md` unchanged** (tests-only).
 
