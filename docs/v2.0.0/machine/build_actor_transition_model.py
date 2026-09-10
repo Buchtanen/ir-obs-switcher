@@ -54,6 +54,8 @@ PROTECTED = {
     "APPLY_CONTEXT_BATCH": "timeline_transition_or_protected_event",
     "TAPE_HEALTH_CHANGED": "required_capture_loss",
 }
+
+
 def _load_coalesce_fields() -> dict[str, list[str]]:
     """Share health/deadline coalesce paths with runtime NarrativeCommand."""
 
