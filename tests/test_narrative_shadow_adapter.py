@@ -55,10 +55,11 @@ def test_adapt_batch_for_shadow_skips_overlay_only_batch() -> None:
     assert adapt_batch_for_shadow(batch) is None
 
 
-def test_race_enables_shadow_cutover_with_adapter_still_no_run() -> None:
+def test_race_enables_shadow_cutover_with_adapter_and_actor_run() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "_narrative_shadow_enabled = True" in race
     assert "adapt_batch_for_shadow" in race
     assert "CommentaryConsumer" in race
-    assert "narrative_runtime.run()" not in race
-    assert "self.narrative_runtime.run()" not in race
+    assert "reduce_after_admit=False" in race
+    assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race
+    assert '"narrative_runtime"' in race or "'narrative_runtime'" in race

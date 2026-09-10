@@ -205,14 +205,15 @@ class RaceRuntime:
         self._commentary_supervisor = WorkerSupervisor(
             "commentary_consumer", self.commentary_consumer.run
         )
-        # #284: shadow fanout cutover enabled (human kick). Parallel path:
-        # fanout → adapt_batch_for_shadow → ingress → mailbox → reduce_next
-        # (no NarrativeRuntime.run()). Does not replace CommentaryConsumer
-        # EventSubscription / TTS. No INI key in this slice.
+        # #284: shadow fanout cutover + actor run (human kick). Parallel path:
+        # fanout → adapt_batch_for_shadow → ingress → mailbox → NarrativeRuntime.run()
+        # (reduce_after_admit=False; actor owns drain). Does not replace
+        # CommentaryConsumer EventSubscription / TTS. No INI key in this slice.
         self._narrative_shadow_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
+        self._narrative_runtime_supervisor = None
         self.narrative_runtime = None
         if self._narrative_shadow_enabled:
             self._narrative_shadow_subscription = self._event_fanout.subscribe(
@@ -230,10 +231,15 @@ class RaceRuntime:
                 ingress=ingress,
                 runtime=runtime,
                 publication_adapter=adapt_batch_for_shadow,
+                reduce_after_admit=False,
             )
             self._narrative_shadow_supervisor = WorkerSupervisor(
                 "narrative_shadow_consumer",
                 self.narrative_shadow_consumer.run,
+            )
+            self._narrative_runtime_supervisor = WorkerSupervisor(
+                "narrative_runtime",
+                self._run_narrative_runtime_actor,
             )
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
@@ -810,6 +816,11 @@ class RaceRuntime:
                 "narrative_shadow_consumer",
                 self._narrative_shadow_supervisor.run(),
             )
+        if self._narrative_runtime_supervisor is not None:
+            self._registry.spawn(
+                "narrative_runtime",
+                self._narrative_runtime_supervisor.run(),
+            )
         self._registry.spawn(
             "race_producer", SamplingScheduler("race", self._race_hz, self._tick_race).run()
         )
@@ -842,6 +853,11 @@ class RaceRuntime:
                     "narrative_shadow_consumer",
                     self._narrative_shadow_supervisor.run(),
                 )
+            if self._narrative_runtime_supervisor is not None:
+                self._registry.spawn(
+                    "narrative_runtime",
+                    self._narrative_runtime_supervisor.run(),
+                )
             try:
                 await load_n12_replay(path).replay(self._event_fanout)
                 await self._drain_consumer_queues()
@@ -855,6 +871,16 @@ class RaceRuntime:
         logger.info("Overlay replay: %s", path)
         await OverlayReplayer(str(path), self.bus).run()
 
+    async def _run_narrative_runtime_actor(self) -> None:
+        """Own NarrativeRuntime.run(); re-arm if a prior SHUTDOWN stopped it."""
+        runtime = self.narrative_runtime
+        if runtime is None:
+            return
+        state = runtime.status().runtime_state
+        if state in {"stopped", "disabled", "stopping"}:
+            runtime.enable()
+        await runtime.run()
+
     async def _drain_consumer_queues(self, timeout_s: float = 1.0) -> None:
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
@@ -865,7 +891,15 @@ class RaceRuntime:
                 shadow_depth = self._narrative_shadow_subscription.snapshot(
                     producer_stream_sequence=0
                 ).depth
-            if overlay.depth == 0 and commentary.depth == 0 and shadow_depth == 0:
+            mailbox_depth = 0
+            if self.narrative_runtime is not None:
+                mailbox_depth = int(self.narrative_runtime.status().mailbox_depth)
+            if (
+                overlay.depth == 0
+                and commentary.depth == 0
+                and shadow_depth == 0
+                and mailbox_depth == 0
+            ):
                 await asyncio.sleep(0.05)
                 return
             await asyncio.sleep(0.02)

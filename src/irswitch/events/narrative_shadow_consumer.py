@@ -1,14 +1,14 @@
 """Optional shadow consumer beside CommentaryConsumer (#284).
 
-Default-off peer that can drain an ``EventSubscription``, admit already
-adapted publications through ``NarrativeIngress`` into ``NarrativeMailbox``,
-and optionally ``reduce_next`` on a shared ``NarrativeRuntime`` (fanout
-cutover without starting ``run()``). It does not speak, does not replace
-``CommentaryConsumer``, and is not spawned by ``race.runtime`` unless an
-explicit enabled flag is set.
+Peer that can drain an ``EventSubscription``, admit already adapted
+publications through ``NarrativeIngress`` into ``NarrativeMailbox``, and
+optionally ``reduce_next`` on a shared ``NarrativeRuntime``. When the live
+actor owns drain (``NarrativeRuntime.run()``), race wiring sets
+``reduce_after_admit=False``. It does not speak and does not replace
+``CommentaryConsumer`` EventSubscription / TTS.
 
 Not exported from ``events/__init__.py``. No INI / product config key in this
-slice — the race flag stays hard-coded ``False`` until a cutover kick.
+slice — the race enable flag stays hard-coded until product config lands.
 """
 
 from __future__ import annotations

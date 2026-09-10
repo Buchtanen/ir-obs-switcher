@@ -1,7 +1,8 @@
-"""#284 shadow fanout cutover: EventSubscription → ingress → reduce (+ status attach)."""
+"""#284 shadow fanout cutover: EventSubscription → ingress → actor run (+ status)."""
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from aiohttp.test_utils import TestClient, TestServer
 from test_narrative_context_batch import _event, _fact_view, _timeline
 
 from irswitch.commentary.mailbox import NarrativeMailbox
+from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.narrative_ingress import NarrativeIngress
 from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import (
@@ -104,13 +106,47 @@ async def test_module_runtime_attach_feeds_http_status() -> None:
         set_narrative_runtime(None)
 
 
-def test_race_shadow_cutover_wires_runtime_when_flag_on_still_default_off() -> None:
+def test_race_shadow_cutover_wires_actor_run_keeps_commentary_consumer() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "_narrative_shadow_enabled = True" in race
     assert "NarrativeRuntime(mailbox=" in race
     assert "set_narrative_runtime" in race
     assert "adapt_batch_for_shadow" in race
     assert "runtime=self.narrative_runtime" in race or "runtime=runtime" in race
-    # Must not start actor loop from race wiring.
-    assert "narrative_runtime.run()" not in race
-    assert "self.narrative_runtime.run()" not in race
+    assert "reduce_after_admit=False" in race
+    assert "WorkerSupervisor" in race
+    assert '"narrative_runtime"' in race or "'narrative_runtime'" in race
+    assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race
+    # Actor owns drain; CommentaryConsumer EventSubscription/TTS stays live.
+    assert "CommentaryConsumer" in race
+    assert "commentary_consumer" in race
+
+
+@pytest.mark.asyncio
+async def test_shadow_admit_without_reduce_actor_run_drains_mailbox() -> None:
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    consumer = NarrativeShadowConsumer(
+        enabled=True,
+        ingress=ingress,
+        runtime=runtime,
+        reduce_after_admit=False,
+    )
+    task = asyncio.create_task(runtime.run())
+    try:
+        result = consumer.handle_adapted_publication(_adapted(count=2))
+        assert result.accepted is True
+        assert "shadow_reduced" not in result.effects
+        assert consumer.reduced == 0
+        assert len(mailbox) >= 1
+        deadline = asyncio.get_running_loop().time() + 2.0
+        while asyncio.get_running_loop().time() < deadline and len(mailbox) > 0:
+            await asyncio.sleep(0.02)
+        assert len(mailbox) == 0
+        assert runtime.status().runtime_state == "ready"
+    finally:
+        runtime.admit(NarrativeCommand.shutdown("shutdown:cutover", 9_000, "test_exit"))
+        await asyncio.wait_for(task, timeout=2.0)
+        assert runtime.status().runtime_state == "stopped"
