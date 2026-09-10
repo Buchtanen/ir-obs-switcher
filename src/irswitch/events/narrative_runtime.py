@@ -68,6 +68,86 @@ def _stream_projection_from_obs(obs_state: object | None) -> tuple[str, bool | N
     return _OBS_TO_STREAM.get(key, ("unknown", None))
 
 
+_STAGE_ORDER = ("practice", "qualifying", "race")
+
+
+def _stages_through(stage: str) -> list[str]:
+    if stage not in _STAGE_ORDER:
+        return []
+    return list(_STAGE_ORDER[: _STAGE_ORDER.index(stage) + 1])
+
+
+def _session_identity_from_timeline(
+    timeline: Mapping[str, Any],
+) -> tuple[
+    dict[str, object] | None,
+    dict[str, object] | None,
+    str | None,
+    str | None,
+    str | None,
+]:
+    """Build StatusResponse session identity from a context timeline.
+
+    All-or-none: incomplete inputs clear the whole set (nulls).
+    """
+
+    stage_raw = timeline.get("stage")
+    occurrence_id = timeline.get("occurrenceId")
+    lineage_id = timeline.get("lineageId")
+    session_ref_raw = timeline.get("sessionRef")
+    revision_raw = timeline.get("sessionPlanRevision")
+    plan_raw = timeline.get("sessionPlan")
+
+    if not isinstance(stage_raw, str) or stage_raw not in _STAGE_ORDER:
+        return None, None, None, None, None
+    if not isinstance(occurrence_id, str) or not occurrence_id:
+        return None, None, None, None, None
+    if not isinstance(lineage_id, str) or not lineage_id:
+        return None, None, None, None, None
+    if not isinstance(session_ref_raw, Mapping):
+        return None, None, None, None, None
+    sub_session_id = session_ref_raw.get("subSessionId")
+    session_num = session_ref_raw.get("sessionNum")
+    if not isinstance(sub_session_id, str) or not sub_session_id:
+        return None, None, None, None, None
+    if isinstance(session_num, bool) or not isinstance(session_num, int) or session_num < 0:
+        return None, None, None, None, None
+
+    session_plan: dict[str, object] | None = None
+    if isinstance(plan_raw, Mapping):
+        revision = plan_raw.get("revision")
+        valid = plan_raw.get("valid")
+        reason = plan_raw.get("reason")
+        stages = plan_raw.get("stages")
+        if (
+            isinstance(revision, int)
+            and not isinstance(revision, bool)
+            and revision >= 0
+            and isinstance(valid, bool)
+            and (reason is None or reason == "session_plan_conflict")
+            and isinstance(stages, list)
+            and all(isinstance(item, str) and item in _STAGE_ORDER for item in stages)
+        ):
+            session_plan = {
+                "revision": int(revision),
+                "valid": bool(valid),
+                "reason": reason,
+                "stages": list(stages),
+            }
+    if session_plan is None:
+        if isinstance(revision_raw, bool) or not isinstance(revision_raw, int) or revision_raw < 0:
+            return None, None, None, None, None
+        session_plan = {
+            "revision": int(revision_raw),
+            "valid": True,
+            "reason": None,
+            "stages": _stages_through(stage_raw),
+        }
+
+    session_ref = {"subSessionId": sub_session_id, "sessionNum": int(session_num)}
+    return session_plan, session_ref, occurrence_id, lineage_id, stage_raw
+
+
 @dataclass(frozen=True, slots=True)
 class ReduceResult:
     reducer_sequence: int
@@ -129,6 +209,12 @@ class RuntimeStatus:
     narrative_run_active: bool
     stream_active: bool | None
     stream_state: str
+    # #273 session identity (all-or-none; null until context supplies a full set)
+    session_plan: dict[str, object] | None
+    session_ref: dict[str, object] | None
+    occurrence_id: str | None
+    lineage_id: str | None
+    stage: str | None
     # #273 speech / component projection (commentary-runtime/2 subset)
     speech_source_kind: str | None
     speech_utterance_id: str | None
@@ -180,6 +266,11 @@ class NarrativeRuntime:
         self._narrative_run_active = False
         self._stream_active: bool | None = None
         self._stream_state = "unknown"
+        self._session_plan: dict[str, object] | None = None
+        self._session_ref: dict[str, object] | None = None
+        self._occurrence_id: str | None = None
+        self._lineage_id: str | None = None
+        self._stage: str | None = None
         self._speech_source_kind: str | None = None
         self._speech_utterance_id: str | None = None
         self._speech_beat_id: str | None = None
@@ -273,6 +364,11 @@ class NarrativeRuntime:
             narrative_run_active=bool(self._narrative_run_active),
             stream_active=self._stream_active,
             stream_state=str(self._stream_state),
+            session_plan=(None if self._session_plan is None else dict(self._session_plan)),
+            session_ref=(None if self._session_ref is None else dict(self._session_ref)),
+            occurrence_id=self._occurrence_id,
+            lineage_id=self._lineage_id,
+            stage=self._stage,
             speech_source_kind=self._speech_source_kind,
             speech_utterance_id=self._speech_utterance_id,
             speech_beat_id=self._speech_beat_id,
@@ -830,6 +926,13 @@ class NarrativeRuntime:
                 self._stream_active = None if raw_active is None else bool(raw_active)
             else:
                 self._stream_active = stream_active
+        (
+            self._session_plan,
+            self._session_ref,
+            self._occurrence_id,
+            self._lineage_id,
+            self._stage,
+        ) = _session_identity_from_timeline(timeline)
 
     def _bump_deadline_generations(self, effects: list[str]) -> None:
         self._silence_generation += 1

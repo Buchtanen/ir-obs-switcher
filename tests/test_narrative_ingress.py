@@ -355,12 +355,16 @@ def test_project_runtime_status_identity_follows_context_timeline() -> None:
     assert timeline["streamActive"] is True
     assert timeline["streamState"] == "active"
     assert timeline["historyComplete"] is True
-    # Session identity remains null until live session-plan wiring.
-    assert timeline["sessionPlan"] is None
-    assert timeline["sessionRef"] is None
-    assert timeline["occurrenceId"] is None
-    assert timeline["lineageId"] is None
-    assert timeline["stage"] is None
+    assert timeline["sessionPlan"] == {
+        "revision": 1,
+        "valid": True,
+        "reason": None,
+        "stages": ["practice", "qualifying", "race"],
+    }
+    assert timeline["sessionRef"] == {"subSessionId": "42", "sessionNum": 2}
+    assert timeline["occurrenceId"] == "1:race:0"
+    assert timeline["lineageId"] == "1:race:0"
+    assert timeline["stage"] == "race"
 
 
 def test_project_commentary_health_component_disabled_default() -> None:
@@ -394,7 +398,7 @@ def test_project_runtime_status_identity_golden_disabled() -> None:
 
 
 def test_project_runtime_status_timeline_session_null_golden() -> None:
-    """#273 thin timeline session identity — all-or-none null stubs."""
+    """#273 thin timeline session identity — all-or-none null stubs when idle."""
     import json
     from pathlib import Path
 
@@ -415,6 +419,93 @@ def test_project_runtime_status_timeline_session_null_golden() -> None:
     assert projection["timeline"]["occurrenceId"] is None
     assert projection["timeline"]["lineageId"] is None
     assert projection["timeline"]["stage"] is None
+
+
+def test_project_runtime_status_timeline_session_from_context_golden() -> None:
+    """#273 live session identity projected from APPLY_CONTEXT timeline."""
+    import json
+    from pathlib import Path
+
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    result = ingress.admit_context_publication(
+        timeline=_timeline(),
+        fact_view=_fact_view(1),
+        events=(_event(0),),
+        fanout_stream_sequence=11,
+        command_id_prefix="pub:session",
+        enqueued_mono_ms=3_000,
+    )
+    assert result.accepted
+    assert runtime.reduce_next() is not None
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "status_identity_after_context.json"
+    )
+    projection = project_runtime_status(runtime.status())
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert projection["schemaVersion"] == expected["schemaVersion"]
+    assert projection["status"] == expected["status"]
+    assert projection["timeline"] == expected["timeline"]
+
+
+def test_session_identity_all_or_none_clears_on_incomplete_timeline() -> None:
+    """Incomplete APPLY_CONTEXT timeline clears the whole session-identity set."""
+    from irswitch.events.narrative_runtime import _session_identity_from_timeline
+
+    complete = _timeline()
+    plan, ref, occ, lin, stage = _session_identity_from_timeline(complete)
+    assert plan is not None and ref is not None
+    assert occ == "1:race:0" and lin == "1:race:0" and stage == "race"
+
+    incomplete = dict(complete)
+    incomplete.pop("sessionRef")
+    assert _session_identity_from_timeline(incomplete) == (None, None, None, None, None)
+
+    bad_stage = dict(complete)
+    bad_stage["stage"] = "warmup"
+    assert _session_identity_from_timeline(bad_stage) == (None, None, None, None, None)
+
+
+def test_project_runtime_status_incomplete_context_clears_live_session() -> None:
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    assert ingress.admit_context_publication(
+        timeline=_timeline(),
+        fact_view=_fact_view(1),
+        events=(_event(0),),
+        fanout_stream_sequence=11,
+        command_id_prefix="pub:session-ok",
+        enqueued_mono_ms=3_000,
+    ).accepted
+    assert runtime.reduce_next() is not None
+    assert project_runtime_status(runtime.status())["timeline"]["sessionPlan"] is not None
+
+    broken = dict(_timeline(revision=4))
+    broken["sessionRef"] = None
+    assert ingress.admit_context_publication(
+        timeline=broken,
+        fact_view=_fact_view(2, revision=10),
+        events=(_event(1, fanout=12, fact_revision=10),),
+        fanout_stream_sequence=12,
+        command_id_prefix="pub:session-bad",
+        enqueued_mono_ms=4_000,
+    ).accepted
+    assert runtime.reduce_next() is not None
+    timeline = project_runtime_status(runtime.status())["timeline"]
+    assert timeline["sessionPlan"] is None
+    assert timeline["sessionRef"] is None
+    assert timeline["occurrenceId"] is None
+    assert timeline["lineageId"] is None
+    assert timeline["stage"] is None
+    assert timeline["broadcastEpoch"] == 4
 
 
 def test_project_runtime_decisions_selected_golden() -> None:

@@ -7,11 +7,19 @@
     "narrativeRunActive": true,
     "streamActive": true,
     "streamState": "active",
-    "sessionPlan": null,
-    "sessionRef": null,
-    "occurrenceId": null,
-    "lineageId": null,
-    "stage": null,
+    "sessionPlan": {
+      "revision": 1,
+      "valid": true,
+      "reason": null,
+      "stages": ["practice", "qualifying", "race"]
+    },
+    "sessionRef": {
+      "subSessionId": "42",
+      "sessionNum": 2
+    },
+    "occurrenceId": "1:race:0",
+    "lineageId": "1:race:0",
+    "stage": "race",
     "historyComplete": true
   }
 }

@@ -82,6 +82,31 @@ _TTS_BACKENDS = frozenset({"sapi", "espeak", "supertonic"})
 _LLM_MODEL_UNCONFIGURED = "unconfigured"
 
 
+def _timeline_session_identity(status: RuntimeStatus) -> dict[str, Any]:
+    """Project session identity with StatusResponse all-or-none nulls."""
+
+    plan = status.session_plan
+    ref = status.session_ref
+    occurrence_id = status.occurrence_id
+    lineage_id = status.lineage_id
+    stage = status.stage
+    if plan is None or ref is None or occurrence_id is None or lineage_id is None or stage is None:
+        return {
+            "sessionPlan": None,
+            "sessionRef": None,
+            "occurrenceId": None,
+            "lineageId": None,
+            "stage": None,
+        }
+    return {
+        "sessionPlan": dict(plan),
+        "sessionRef": dict(ref),
+        "occurrenceId": occurrence_id,
+        "lineageId": lineage_id,
+        "stage": stage,
+    }
+
+
 def _llm_component_projection(status: str) -> dict[str, Any]:
     """Thin #273 llm block — schema-complete defaults, no live transport wiring."""
 
@@ -220,8 +245,9 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     catalog hash; unloaded config; empty episode/tape-channel counters;
     opportunities queue stub; detectors/facts stubs), schema-complete
     llm/tts component stubs (no live transport/residency wiring), and
-    null timeline session-identity fields (sessionPlan/sessionRef/
-    occurrenceId/lineageId/stage — all-or-none nulls until live wiring).
+    null-or-live timeline session-identity fields (sessionPlan/sessionRef/
+    occurrenceId/lineageId/stage — all-or-none; filled from APPLY_CONTEXT
+    timeline when complete).
     """
 
     if not isinstance(status, RuntimeStatus):
@@ -280,13 +306,7 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "narrativeRunActive": bool(status.narrative_run_active),
             "streamActive": status.stream_active,
             "streamState": str(status.stream_state),
-            # Session identity is all-or-none; library slice keeps nulls until
-            # live session-plan wiring lands (#273 remainder).
-            "sessionPlan": None,
-            "sessionRef": None,
-            "occurrenceId": None,
-            "lineageId": None,
-            "stage": None,
+            **_timeline_session_identity(status),
             "historyComplete": history_complete,
         },
         "components": {
