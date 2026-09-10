@@ -71,7 +71,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 ## Manual speak (`events/narrative_runtime.py`)
 
 - `ManualSpeakOutcome`, `NarrativeRuntime.try_manual_speak` — alokuje latch, admitne `MANUAL_SPEAK_REQUEST`, awaitne resolution (default 1s; `timeout_s` / `reduce_inline` kwargs). Když actor loop neběží, sync inline reduce; jinak `_on_manual` claimne latch před lane mutate. Timeout → `admission_timeout`; abandoned latch zůstává registrovaný (`manual_abandoned`).
-- HTTP mount: `POST /api/commentary/runtime/speak` (202 / 409 / 422 / 503 incl. `admission_timeout`). Legacy `POST /api/commentary/speak` beze změny.
+- HTTP mount: `POST /api/commentary/runtime/speak` (202 / 409 / 422 / 503 incl. `admission_timeout`). Public `POST /api/commentary/speak` cut over na NarrativeRuntime (feat `f2c1f1b`).
 
 ## Goldens
 
@@ -90,7 +90,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: live llm/tts transport/residency wiring; live detectors/facts (beyond ready stubs); final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); status_ready stub slice landed (feat SHA `03c34b2`); live catalog/config/episodes/byTapeChannel status projection landed (feat SHA `bdb9633`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
+Full #273 schema: live llm/tts transport/residency wiring; live detectors/facts (beyond ready stubs); legacy validate/speak cutover landed `f2c1f1b`; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); status_ready stub slice landed (feat SHA `03c34b2`); live catalog/config/episodes/byTapeChannel status projection landed (feat SHA `bdb9633`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
 
 ## Related
 
