@@ -259,6 +259,10 @@ Health check endpoint pro monitoring.
       "available": true
     }
   },
+  "commentary": {
+    "status": "disabled",
+    "reason": null
+  },
   "timestamp": 1704110400000
 }
 ```
@@ -267,6 +271,11 @@ Health check endpoint pro monitoring.
 - `healthy` - oba připojené (iRacing i OBS)
 - `degraded` - jeden připojený
 - `unhealthy` - žádný připojený
+
+**Commentary** (`#273` / `#284` bounded field via `project_commentary_health_component`):
+- Top-level `{status, reason}` only — never flips overall `/health` alone.
+- Resolves process `get_narrative_runtime()` when attached; otherwise library disabled snapshot.
+- Full operator detail remains on `GET /api/commentary/runtime`.
 
 **Použití**: Pro monitoring a health checks (např. Docker, Kubernetes, load balancery).
 
@@ -855,6 +864,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
 - Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
+- `#273` identity subset on `timeline`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete` (full catalog/components/decisions goldens remain later).
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
@@ -866,7 +876,14 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
   "reason": null,
   "speech": { "state": "idle" },
   "queues": { "mailbox": { "depth": 0, "capacity": 64, "overflows": 0 } },
-  "timeline": { "historyComplete": true },
+  "timeline": {
+    "broadcastEpoch": 0,
+    "streamEpoch": 0,
+    "narrativeRunActive": false,
+    "streamActive": null,
+    "streamState": "unknown",
+    "historyComplete": true
+  },
   "recovery": {
     "count": 0,
     "lossFirst": null,

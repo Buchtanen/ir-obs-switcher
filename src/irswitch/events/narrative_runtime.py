@@ -45,6 +45,21 @@ EffectWorker = Callable[
 ]
 CommitWorldProvider = Callable[[], CommitWorld]
 
+_OBS_TO_STREAM: dict[str, tuple[str, bool | None]] = {
+    "inactive": ("inactive", False),
+    "active": ("active", True),
+    "unknown": ("unknown", None),
+}
+
+
+def _stream_projection_from_obs(obs_state: object | None) -> tuple[str, bool | None]:
+    """Map timeline obsState/streamState into public streamState + streamActive."""
+
+    if obs_state is None:
+        return "unknown", None
+    key = str(obs_state)
+    return _OBS_TO_STREAM.get(key, ("unknown", None))
+
 
 @dataclass(frozen=True, slots=True)
 class ReduceResult:
@@ -85,6 +100,12 @@ class RuntimeStatus:
     last_recovery_loss_last: int | None
     last_recovery_safety_effect_count: int
     last_recovery_cancelled_lane: LaneState | None
+    # #273 identity projection (commentary-runtime/2 timeline subset)
+    broadcast_epoch: int
+    stream_epoch: int
+    narrative_run_active: bool
+    stream_active: bool | None
+    stream_state: str
 
 
 class NarrativeRuntime:
@@ -120,6 +141,12 @@ class NarrativeRuntime:
         self._config_valid: bool | None = None
         self._component_health: dict[str, str] = {"llm": "ready", "tts": "ready"}
         self._tape_status: str | None = None
+        # Public-contracts identity defaults before first observed/admitted values.
+        self._broadcast_epoch = 0
+        self._stream_epoch = 0
+        self._narrative_run_active = False
+        self._stream_active: bool | None = None
+        self._stream_state = "unknown"
         self._silence_generation = 0
         self._validity_generation = 0
         self._realization: dict[str, Any] | None = None
@@ -196,6 +223,11 @@ class NarrativeRuntime:
             last_recovery_loss_last=self._last_recovery_loss_last,
             last_recovery_safety_effect_count=self._last_recovery_safety_effect_count,
             last_recovery_cancelled_lane=self._last_recovery_cancelled_lane,
+            broadcast_epoch=int(self._broadcast_epoch),
+            stream_epoch=int(self._stream_epoch),
+            narrative_run_active=bool(self._narrative_run_active),
+            stream_active=self._stream_active,
+            stream_state=str(self._stream_state),
         )
 
     def admit(self, command: NarrativeCommand) -> AdmissionResult:
@@ -586,8 +618,24 @@ class NarrativeRuntime:
         )
 
     def _apply_context_projection(self, part: ContextBatchPart) -> None:
-        self._timeline_revision = int(part.batch.timeline["timelineRevision"])
+        timeline = part.batch.timeline
+        self._timeline_revision = int(timeline["timelineRevision"])
         self._fact_view_revision = int(part.batch.fact_view["viewRevision"])
+        self._broadcast_epoch = int(timeline.get("broadcastEpoch", self._broadcast_epoch))
+        self._stream_epoch = int(timeline.get("streamEpoch", self._stream_epoch))
+        if "narrativeRunActive" in timeline:
+            self._narrative_run_active = bool(timeline["narrativeRunActive"])
+        obs_state = timeline.get("obsState")
+        if obs_state is None and "streamState" in timeline:
+            obs_state = timeline.get("streamState")
+        stream_state, stream_active = _stream_projection_from_obs(obs_state)
+        if obs_state is not None or "streamActive" in timeline:
+            self._stream_state = stream_state
+            if "streamActive" in timeline:
+                raw_active = timeline["streamActive"]
+                self._stream_active = None if raw_active is None else bool(raw_active)
+            else:
+                self._stream_active = stream_active
 
     def _bump_deadline_generations(self, effects: list[str]) -> None:
         self._silence_generation += 1
@@ -1179,6 +1227,8 @@ class NarrativeRuntime:
         del command
         effects = ["shutdown_started"]
         self._runtime = "stopping"
+        # Retain allocated streamEpoch; narrative run is no longer active.
+        self._narrative_run_active = False
         self._bump_deadline_generations(effects)
         if self._lane == "building":
             self._cancel_building(effects, reason="building_cancelled")

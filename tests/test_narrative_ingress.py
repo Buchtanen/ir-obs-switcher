@@ -109,6 +109,69 @@ def test_project_runtime_status_emits_commentary_runtime_subset() -> None:
     assert projection["speech"]["state"] == "idle"
     assert projection["queues"]["mailbox"]["capacity"] == 64
     assert projection["queues"]["mailbox"]["depth"] == 0
-    assert projection["timeline"]["historyComplete"] is True
+    assert projection["timeline"] == {
+        "broadcastEpoch": 0,
+        "streamEpoch": 0,
+        "narrativeRunActive": False,
+        "streamActive": None,
+        "streamState": "unknown",
+        "historyComplete": True,
+    }
     assert projection["recovery"]["count"] == 0
     assert "admissionDiagnostics" in projection["diagnostics"]
+
+
+def test_project_runtime_status_identity_follows_context_timeline() -> None:
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    result = ingress.admit_context_publication(
+        timeline=_timeline(),
+        fact_view=_fact_view(1),
+        events=(_event(0),),
+        fanout_stream_sequence=11,
+        command_id_prefix="pub:identity",
+        enqueued_mono_ms=3_000,
+    )
+    assert result.accepted
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+    projection = project_runtime_status(runtime.status())
+    timeline = projection["timeline"]
+    assert timeline["broadcastEpoch"] == 4
+    assert timeline["streamEpoch"] == 1
+    assert timeline["narrativeRunActive"] is True
+    assert timeline["streamActive"] is True
+    assert timeline["streamState"] == "active"
+    assert timeline["historyComplete"] is True
+
+
+def test_project_commentary_health_component_disabled_default() -> None:
+    from irswitch.events.narrative_ingress import project_commentary_health_component
+
+    assert project_commentary_health_component() == {"status": "disabled", "reason": None}
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert project_commentary_health_component(runtime.status()) == {
+        "status": "ready",
+        "reason": None,
+    }
+
+
+def test_project_runtime_status_identity_golden_disabled() -> None:
+    import json
+    from pathlib import Path
+
+    golden_path = (
+        Path(__file__).resolve().parents[1]
+        / "tests"
+        / "fixtures"
+        / "commentary_runtime"
+        / "status_identity_disabled.json"
+    )
+    projection = project_runtime_status(NarrativeRuntime().status())
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    assert projection["timeline"] == expected["timeline"]
+    assert projection["schemaVersion"] == expected["schemaVersion"]
+    assert projection["status"] == expected["status"]

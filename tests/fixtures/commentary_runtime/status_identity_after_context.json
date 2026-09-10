@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "ready",
+  "timeline": {
+    "broadcastEpoch": 4,
+    "streamEpoch": 1,
+    "narrativeRunActive": true,
+    "streamActive": true,
+    "streamState": "active",
+    "historyComplete": true
+  }
+}

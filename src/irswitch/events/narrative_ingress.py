@@ -5,9 +5,11 @@ Library-adjacent adapter: partitions one accepted publication into
 preserving ``(fanout_stream_sequence, source_ordinal)`` external order.
 
 Not exported from ``events/__init__.py``. Not constructed by
-``commentary.consumer`` or server health handlers. ``race.runtime`` may
-construct ``NarrativeShadowConsumer`` (which owns an ingress) only when
+``commentary.consumer``. ``race.runtime`` may construct
+``NarrativeShadowConsumer`` (which owns an ingress) only when
 ``_narrative_shadow_enabled`` is explicitly True; that flag defaults False.
+``project_commentary_health_component`` is the only helper consumed by
+``GET /health`` (bounded commentary field); it does not construct an ingress.
 Production EventSubscription cutover still needs an explicit kick.
 """
 
@@ -20,7 +22,7 @@ from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.events.narrative import NarrativeEvent, partition_context_batches
-from irswitch.events.narrative_runtime import RuntimeStatus
+from irswitch.events.narrative_runtime import NarrativeRuntime, RuntimeStatus
 
 _LANE_TO_SPEECH = {
     "idle": "idle",
@@ -141,6 +143,11 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             }
         },
         "timeline": {
+            "broadcastEpoch": int(status.broadcast_epoch),
+            "streamEpoch": int(status.stream_epoch),
+            "narrativeRunActive": bool(status.narrative_run_active),
+            "streamActive": status.stream_active,
+            "streamState": str(status.stream_state),
             "historyComplete": bool(status.history_complete),
         },
         "recovery": {
@@ -155,4 +162,21 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "admissionDiagnostics": list(status.admission_diagnostics),
             "reasonCodes": list(status.reason_codes),
         },
+    }
+
+
+def project_commentary_health_component(status: RuntimeStatus | None = None) -> dict[str, Any]:
+    """Bounded ``/health`` commentary field (#273 subset owned by #284).
+
+    Disabled/degraded commentary never fails overall service health. When
+    ``status`` is omitted, projects the disabled library default.
+    """
+
+    if status is None:
+        projected = project_runtime_status(NarrativeRuntime().status())
+    else:
+        projected = project_runtime_status(status)
+    return {
+        "status": projected["status"],
+        "reason": projected["reason"],
     }

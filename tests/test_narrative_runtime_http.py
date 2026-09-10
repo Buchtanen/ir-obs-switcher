@@ -56,7 +56,14 @@ async def test_runtime_status_without_provider_returns_disabled_subset() -> None
             assert data["status"] == "disabled"
             assert data["speech"]["state"] == "idle"
             assert data["queues"]["mailbox"]["capacity"] == 64
-            assert data["timeline"]["historyComplete"] is True
+            assert data["timeline"] == {
+                "broadcastEpoch": 0,
+                "streamEpoch": 0,
+                "narrativeRunActive": False,
+                "streamActive": None,
+                "streamState": "unknown",
+                "historyComplete": True,
+            }
 
 
 @pytest.mark.asyncio

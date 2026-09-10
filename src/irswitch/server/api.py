@@ -627,11 +627,19 @@ async def handle_health(request: web.Request) -> web.Response:
     if not iracing_connected and not obs_connected:
         overall_status = "unhealthy"
 
+    # #273/#284 bounded commentary component — never flips overall health alone.
+    from irswitch.events.narrative_ingress import project_commentary_health_component
+    from irswitch.events.narrative_runtime_http import get_narrative_runtime
+
+    runtime = get_narrative_runtime()
+    commentary = project_commentary_health_component(None if runtime is None else runtime.status())
+
     return web.json_response(
         {
             "status": overall_status,
             "version": __version__,
             "checks": checks,
+            "commentary": commentary,
             "timestamp": int(time.time() * 1000),
         }
     )
