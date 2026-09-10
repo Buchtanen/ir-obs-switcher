@@ -2387,3 +2387,63 @@ def test_disable_closes_run_and_reenable_allocates_stream_epoch() -> None:
     assert "stream_epoch_allocated:2" in enabled.effects
     assert runtime.status().narrative_run_active is True
     assert runtime.status().stream_epoch == 2
+
+
+def test_fact_only_wait_cancels_building_without_replan() -> None:
+    """Pure FactView cancels building and waits; it never opens a plan."""
+
+    runtime = _drive_to("building")
+    before_cycle = runtime.status().planning_cycle_id
+    runtime.admit(_pure_fact("fact:wait", revision=50, fanout=50))
+    result = runtime.reduce_next()
+    assert result is not None
+    assert result.lane_after == "idle"
+    assert "director_skipped_pure_fact" in result.effects
+    assert "fact_only_wait" in result.effects
+    assert "building_invalidated" in result.effects
+    assert not any(effect.startswith("plan_dispatched") for effect in result.effects)
+    assert not any(effect.startswith("planning_cycle_opened:") for effect in result.effects)
+    assert runtime.status().planning_cycle_id == before_cycle
+
+
+def test_narrative_callback_branch_rearms_silence_and_allows_director() -> None:
+    runtime = _drive_to("speaking")
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    runtime.admit(_tts_callback("SPEECH_COMPLETED", utterance, command_id="cb:narrative:done"))
+    done = runtime.reduce_next()
+    assert done is not None
+    assert done.lane_after == "idle"
+    assert "director_reentry_eligible" in done.effects
+    assert "narrative_callback_branch" in done.effects
+    assert "silence_deadline_rearmed" in done.effects
+    assert "manual_callback_branch" not in done.effects
+
+
+def test_manual_callback_branch_rearms_silence_without_director() -> None:
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime.admit(
+        NarrativeCommand.manual_speak(
+            "cb:manual", 13_000, text="Manual check.", admission_ordinal=1
+        )
+    )
+    committed = runtime.reduce_next()
+    assert committed is not None
+    utterance = runtime.current_utterance_token()
+    assert utterance is not None
+    runtime.admit(_tts_callback("PLAYBACK_ACCEPTED", utterance, command_id="cb:manual:pb"))
+    accepted = runtime.reduce_next()
+    assert accepted is not None
+    assert "manual_playback_accepted" in accepted.effects
+    assert "silence_deadline_paused" in accepted.effects
+    assert "narrative_playback_accepted" not in accepted.effects
+    assert "exposure_recorded" not in accepted.effects
+    runtime.admit(_tts_callback("SPEECH_COMPLETED", utterance, command_id="cb:manual:done"))
+    done = runtime.reduce_next()
+    assert done is not None
+    assert done.lane_after == "idle"
+    assert "manual_callback_branch" in done.effects
+    assert "silence_deadline_rearmed" in done.effects
+    assert "director_reentry_eligible" not in done.effects
+    assert "narrative_callback_branch" not in done.effects

@@ -54,28 +54,21 @@ PROTECTED = {
     "APPLY_CONTEXT_BATCH": "timeline_transition_or_protected_event",
     "TAPE_HEALTH_CHANGED": "required_capture_loss",
 }
-COALESCE = {
-    "LONG_SILENCE_ELAPSED": ["kind", "token.generation"],
-    "VALIDITY_DEADLINE_ELAPSED": ["kind", "token.generation"],
-    "REALIZATION_DEADLINE_ELAPSED": [
-        "kind",
-        "token.requestId",
-        "token.requestOrdinal",
-        "token.dispatchGeneration",
-    ],
-    "TAPE_HEALTH_CHANGED": [
-        "kind",
-        "payload.recorderGeneration",
-        "payload.status",
-        "payload.affectedDetectorIds",
-    ],
-    "COMPONENT_HEALTH_CHANGED": [
-        "kind",
-        "payload.component",
-        "payload.generation",
-        "payload.status",
-    ],
-}
+def _load_coalesce_fields() -> dict[str, list[str]]:
+    """Share health/deadline coalesce paths with runtime NarrativeCommand."""
+
+    import sys
+
+    root = Path(__file__).resolve().parents[3]
+    src = str(root / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+    from irswitch.contracts.coalesce_policy import COALESCE_FIELD_PATHS
+
+    return {kind: list(paths) for kind, paths in COALESCE_FIELD_PATHS.items()}
+
+
+COALESCE = _load_coalesce_fields()
 IGNORED_OUTSIDE = {
     "REALIZATION_SUCCEEDED": {"idle", "committed", "speaking", "stopping"},
     "REALIZATION_FAILED": {"idle", "committed", "speaking", "stopping"},

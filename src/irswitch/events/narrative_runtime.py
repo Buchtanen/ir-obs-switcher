@@ -308,6 +308,7 @@ class NarrativeRuntime:
         self._lineage_id: str | None = None
         self._stage: str | None = None
         self._speech_source_kind: str | None = None
+        self._terminal_director_policy: str | None = None
         self._speech_utterance_id: str | None = None
         self._speech_beat_id: str | None = None
         self._speech_opportunity_id: str | None = None
@@ -1110,6 +1111,7 @@ class NarrativeRuntime:
 
     def _clear_active_speech_projection(self) -> None:
         self._speech_source_kind = None
+        self._terminal_director_policy = None
         self._speech_utterance_id = None
         self._speech_beat_id = None
         self._speech_opportunity_id = None
@@ -1130,6 +1132,9 @@ class NarrativeRuntime:
         dispatched_at_mono_ms: int | None,
     ) -> None:
         self._speech_source_kind = source_kind
+        self._terminal_director_policy = (
+            "replan_if_enabled" if source_kind == "narrative" else "never"
+        )
         self._speech_utterance_id = utterance_id
         self._speech_beat_id = beat_id
         self._speech_opportunity_id = opportunity_id
@@ -1204,6 +1209,21 @@ class NarrativeRuntime:
         effects.append("effect:cancel_validity_deadline")
         effects.append("effect:arm_silence_deadline")
         effects.append("effect:arm_validity_deadline")
+
+    def _pause_silence_deadline(self, effects: list[str]) -> None:
+        """Cancel audience silence while speech is accepted; do not rearm yet."""
+
+        self._silence_generation += 1
+        effects.append("effect:cancel_silence_deadline")
+        effects.append("silence_deadline_paused")
+
+    def _rearm_silence_deadline(self, effects: list[str]) -> None:
+        """Rearm audience silence from speech-terminal reduction time."""
+
+        self._silence_generation += 1
+        effects.append("effect:cancel_silence_deadline")
+        effects.append("effect:arm_silence_deadline")
+        effects.append("silence_deadline_rearmed")
 
     def _clear_opportunity_binding(self) -> None:
         self._opportunity_id = None
@@ -1467,6 +1487,8 @@ class NarrativeRuntime:
     def _request_speech_cancel(self, effects: list[str], *, reason: str) -> None:
         if self._lane not in {"committed", "speaking"}:
             return
+        # Truth/lifecycle cancellation must not re-enter the director.
+        self._terminal_director_policy = "never"
         self._lane = "stopping"
         effects.append(reason)
         effects.append("effect:cancel_tts")
@@ -1570,7 +1592,10 @@ class NarrativeRuntime:
             self._cancel_building(effects, reason="building_cancelled")
             self._request_speech_cancel(effects, reason="speech_cancel_requested")
         if not part.planning_impulse:
+            # Pure FactView is close/invalidate-only: cancel building and wait;
+            # replan only when this same command carries a planning impulse.
             effects.append("director_skipped_pure_fact")
+            effects.append("fact_only_wait")
             if self._lane == "building":
                 self._cancel_building(effects, reason="building_invalidated")
             return "handled", effects
@@ -1886,9 +1911,15 @@ class NarrativeRuntime:
                 "effect:cancel_speech_deadline",
                 "effect:arm_speech_deadline",
             ]
-            self._consume_opportunity(effects)
-            self._mark_episode_spoken(effects)
-            self._record_exposure(effects, now_ms=int(command.enqueued_mono_ms))
+            self._pause_silence_deadline(effects)
+            if self._speech_source_kind == "manual":
+                effects.append("manual_playback_accepted")
+                # Manual creates no opportunity/episode/exposure.
+            else:
+                effects.append("narrative_playback_accepted")
+                self._consume_opportunity(effects)
+                self._mark_episode_spoken(effects)
+                self._record_exposure(effects, now_ms=int(command.enqueued_mono_ms))
             return "handled", effects
         if self._lane == "speaking":
             # Duplicate acceptance while speaking requests stop; never a second utterance.
@@ -1925,6 +1956,8 @@ class NarrativeRuntime:
             "SPEECH_INTERRUPTED": "interrupted",
             "SPEECH_FAILED": "failed",
         }.get(str(command.kind), "failed")
+        source_kind = self._speech_source_kind
+        director_policy = self._terminal_director_policy
         self._retain_speech_terminal(
             reason=terminal_reason,
             at_mono_ms=int(command.enqueued_mono_ms),
@@ -1935,10 +1968,22 @@ class NarrativeRuntime:
         self._plans_in_cycle = 0
         effects.append("effect:cancel_speech_deadline")
         self._speech_deadline_stage = None
-        if command.kind == "SPEECH_COMPLETED":
+        self._rearm_silence_deadline(effects)
+        may_reenter_director = (
+            director_policy == "replan_if_enabled"
+            and source_kind == "narrative"
+            and command.kind in {"SPEECH_COMPLETED", "SPEECH_INTERRUPTED", "SPEECH_FAILED"}
+        )
+        if may_reenter_director:
             effects.append("director_reentry_eligible")
-            self._resolve_episode(effects)
+            effects.append("narrative_callback_branch")
         else:
+            effects.append(
+                "manual_callback_branch" if source_kind == "manual" else "callback_no_director"
+            )
+        if command.kind == "SPEECH_COMPLETED" and source_kind == "narrative":
+            self._resolve_episode(effects)
+        elif source_kind == "narrative":
             self._invalidate_episode(effects)
         return "handled", effects
 
