@@ -126,8 +126,20 @@ def replay_reducer_trace(
     return _run_commands(trace.commands, mailbox_factory=mailbox_factory)
 
 
+_STATUS_FINGERPRINT_VOLATILE = frozenset(
+    {
+        # Monotonic clocks differ across live capture vs later journal replay.
+        "loop_last_reduce_mono_ms",
+        "speech_dispatched_at_mono_ms",
+        "speech_accepted_at_mono_ms",
+    }
+)
+
+
 def _status_fingerprint(status: RuntimeStatus) -> dict[str, object]:
     payload = asdict(status)
+    for key in _STATUS_FINGERPRINT_VOLATILE:
+        payload.pop(key, None)
     # component_health is a plain dict already; keep deterministic key order.
     health = payload.get("component_health")
     if isinstance(health, dict):
@@ -206,6 +218,31 @@ def command_from_dict(payload: dict[str, Any]) -> NarrativeCommand:
         return NarrativeCommand.shutdown(command_id, enqueued, body["reason"])
 
     raise ContractViolation(f"unsupported command journal kind: {kind}")
+
+
+def append_command_journal_row(
+    path: Path | str,
+    *,
+    reducer_sequence: int,
+    command: NarrativeCommand,
+) -> None:
+    """Append one tape-shaped NDJSON row for a live reduce (fail-soft caller)."""
+
+    if (
+        isinstance(reducer_sequence, bool)
+        or not isinstance(reducer_sequence, int)
+        or reducer_sequence < 1
+    ):
+        raise ContractViolation("reducer_sequence must be a positive int")
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "schemaVersion": COMMAND_JOURNAL_SCHEMA,
+        "reducerSequence": int(reducer_sequence),
+        "command": command.to_dict(),
+    }
+    with target.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, separators=(",", ":"), ensure_ascii=True) + "\n")
 
 
 def write_command_journal(path: Path | str, trace: ReducerTrace) -> Path:

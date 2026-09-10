@@ -12,6 +12,7 @@ import time
 from collections import deque
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
@@ -268,6 +269,7 @@ class NarrativeRuntime:
         story_director: StoryDirector | None = None,
         llm_component: LlmComponent | None = None,
         detector_bank: DetectorBank | None = None,
+        command_journal_path: Path | str | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -339,6 +341,9 @@ class NarrativeRuntime:
         self._story_director = story_director
         self._llm_component = llm_component
         self._detector_bank = detector_bank
+        self._command_journal_path = (
+            None if command_journal_path is None else Path(command_journal_path)
+        )
         self._fact_active_count = 0
         self._fact_historical_summary_count = 0
         self._director_world: DirectorWorld | None = None
@@ -520,7 +525,26 @@ class NarrativeRuntime:
         result = self._reduce(command)
         self._loop_reduce_count += 1
         self._loop_last_reduce_mono_ms = int(time.monotonic() * 1000)
+        self._append_command_journal(command, result)
         return result
+
+    def _append_command_journal(self, command: NarrativeCommand, result: ReduceResult) -> None:
+        """Best-effort live journal row; never fails the reduce path."""
+
+        path = self._command_journal_path
+        if path is None:
+            return
+        try:
+            from irswitch.events.narrative_reducer_replay import append_command_journal_row
+
+            append_command_journal_row(
+                path,
+                reducer_sequence=int(result.reducer_sequence),
+                command=command,
+            )
+        except Exception:
+            # Journal is diagnostics-only; reduce must stay fail-soft.
+            return
 
     def drain(self) -> Iterator[ReduceResult]:
         while True:

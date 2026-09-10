@@ -10,6 +10,7 @@ from test_narrative_runtime import _pure_fact
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
 from irswitch.events.narrative_reducer_replay import (
+    append_command_journal_row,
     capture_reducer_trace,
     command_from_dict,
     read_commands_from_journal,
@@ -106,8 +107,59 @@ def test_journal_read_orders_by_reducer_sequence_not_file_order(tmp_path: Path) 
     assert traces_equivalent(live, replayed)
 
 
-def test_race_does_not_wire_command_journal_yet() -> None:
+def test_status_fingerprint_ignores_loop_mono_clock_drift() -> None:
+    """Replay equivalence must not depend on wall/monotonic reduce timestamps."""
+    from dataclasses import replace
+
+    from irswitch.events.narrative_reducer_replay import ReducerTrace, _status_fingerprint
+
+    commands = (
+        _pure_fact("mono:1"),
+        NarrativeCommand.shutdown("mono:2", 20, "application_exit"),
+    )
+    live = capture_reducer_trace(commands)
+    base = int(live.final_status.loop_last_reduce_mono_ms or 0)
+    drifted_status = replace(live.final_status, loop_last_reduce_mono_ms=base + 7)
+    assert live.final_status.loop_last_reduce_mono_ms != drifted_status.loop_last_reduce_mono_ms
+    assert _status_fingerprint(live.final_status) == _status_fingerprint(drifted_status)
+    drifted_trace = ReducerTrace(
+        commands=live.commands,
+        steps=live.steps,
+        final_status=drifted_status,
+    )
+    assert traces_equivalent(live, drifted_trace)
+
+
+def test_append_command_journal_row_round_trips(tmp_path: Path) -> None:
+    path = tmp_path / "live.ndjson"
+    first = _pure_fact("append:1")
+    second = NarrativeCommand.shutdown("append:2", 9, "application_exit")
+    append_command_journal_row(path, reducer_sequence=1, command=first)
+    append_command_journal_row(path, reducer_sequence=2, command=second)
+    loaded = read_commands_from_journal(path)
+    assert [command.command_id for command in loaded] == ["append:1", "append:2"]
+
+
+def test_narrative_runtime_appends_command_journal_on_reduce(tmp_path: Path) -> None:
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    path = tmp_path / "runtime.ndjson"
+    runtime = NarrativeRuntime(command_journal_path=path)
+    runtime.enable()
+    runtime.admit(_pure_fact("live:1"))
+    runtime.admit(NarrativeCommand.shutdown("live:2", 11, "application_exit"))
+    assert runtime.reduce_next() is not None
+    assert runtime.reduce_next() is not None
+    loaded = read_commands_from_journal(path)
+    assert [command.command_id for command in loaded] == ["live:1", "live:2"]
+    assert traces_equivalent(capture_reducer_trace(loaded), replay_command_journal(path))
+
+
+def test_race_wires_command_journal_path() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
+    assert "command_journal_path=" in race
+    assert "narrative-command-journal.ndjson" in race
+    # Full write/read/replay helpers stay library-side; race only passes the path.
     assert "write_command_journal" not in race
     assert "read_commands_from_journal" not in race
     assert "replay_command_journal" not in race

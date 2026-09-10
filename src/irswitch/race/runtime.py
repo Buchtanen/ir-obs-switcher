@@ -284,6 +284,11 @@ class RaceRuntime:
                 qwen_service=qwen_service,
                 llm_component=llm_component,
             )
+            journal_dir = Path(
+                getattr(getattr(self, "_tape", None), "directory", None)
+                or getattr(getattr(self, "_config", None), "recordings_dir", None)
+                or "recordings"
+            )
             runtime = NarrativeRuntime(
                 mailbox=mailbox,
                 realization_effect=realization_effect,
@@ -293,6 +298,7 @@ class RaceRuntime:
                 episode_registry=EpisodeRegistry(),
                 freshness_gate=FreshnessGate(opportunity_queue),
                 llm_component=llm_component,
+                command_journal_path=journal_dir / "narrative-command-journal.ndjson",
             )
             runtime.enable()
             self.narrative_runtime = runtime
