@@ -65,7 +65,8 @@ def test_race_wires_tts_effect_and_drops_speech_mirror() -> None:
     assert "build_tts_effect" in bridge
     assert "tts_effect=tts_effect" in race or "tts_effect=build_tts_effect" in race
     assert "build_tts_effect(" in race
-    assert "legacy_stream_handler=self._mirror_lifecycle_without_speech" in race
+    assert "legacy_stream_handler=None" in race
+    assert "_mirror_lifecycle_without_speech" not in race
     assert "legacy_stream_handler=self.commentary_consumer.handle" not in race
-    assert "cache_mirrored_context" in race
+    assert "cache_mirrored_context" not in race
     assert "_narrative_subscription_cutover = True" in race

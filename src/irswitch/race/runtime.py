@@ -135,7 +135,7 @@ class RaceRuntime:
         self._sequence_allocator = SessionSequenceAllocator()
         self._event_fanout = AsyncEventFanout()
         self._overlay_subscription = self._event_fanout.subscribe("overlay", capacity=64)
-        # #284 true EventSubscription cutover (human kick): commentary no longer
+        # #284 EventSubscription full replace (human kick): commentary no longer
         # owns a fanout subscription; shadow mirrors stream items into
         # CommentaryConsumer.handle for TTS while idle-ticking without get().
         self._narrative_subscription_cutover = True
@@ -332,6 +332,10 @@ class RaceRuntime:
             runtime.enable()
             self.narrative_runtime = runtime
             set_narrative_runtime(runtime)
+            # #284 EventSubscription full replace: no CommentaryConsumer stream
+            # mirror — SessionReset/ConfigUpdate/batches enter only via
+            # NarrativeMailbox (shadow admit). CommentaryConsumer remains for
+            # TTS sink / status / filler plumbing with idle speech off.
             self.narrative_shadow_consumer = NarrativeShadowConsumer(
                 self._narrative_shadow_subscription,
                 enabled=True,
@@ -339,7 +343,7 @@ class RaceRuntime:
                 runtime=runtime,
                 publication_adapter=self._adapt_batch_for_shadow_with_drafts,
                 reduce_after_admit=False,
-                legacy_stream_handler=self._mirror_lifecycle_without_speech,
+                legacy_stream_handler=None,
             )
             self._narrative_shadow_supervisor = WorkerSupervisor(
                 "narrative_shadow_consumer",
@@ -994,17 +998,6 @@ class RaceRuntime:
         if publication is not None and self._speech_draft_cache is not None:
             self._speech_draft_cache.observe_publication(publication)
         return publication
-
-    async def _mirror_lifecycle_without_speech(self, item: object) -> None:
-        """Session/config via CommentaryConsumer; batches cache context only (no speech)."""
-        from irswitch.events.stream import ConfigUpdate, FrozenAcceptedEventBatch, SessionReset
-
-        consumer = self.commentary_consumer
-        if isinstance(item, (SessionReset, ConfigUpdate)):
-            await consumer.handle(item)
-            return
-        if isinstance(item, FrozenAcceptedEventBatch):
-            consumer.cache_mirrored_context(item)
 
     async def _run_narrative_runtime_actor(self) -> None:
         """Own NarrativeRuntime.run(); re-arm if a prior SHUTDOWN stopped it."""

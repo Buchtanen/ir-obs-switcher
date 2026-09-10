@@ -4,9 +4,10 @@ Peer that can drain an ``EventSubscription``, admit already adapted
 publications through ``NarrativeIngress`` into ``NarrativeMailbox``, and
 optionally ``reduce_next`` on a shared ``NarrativeRuntime``. When the live
 actor owns drain (``NarrativeRuntime.run()``), race wiring sets
-``reduce_after_admit=False``. Under EventSubscription cutover, race sets
-``legacy_stream_handler`` to ``CommentaryConsumer.handle`` so TTS still runs
-while commentary no longer owns a fanout subscription.
+``reduce_after_admit=False``. Under EventSubscription full replace, race sets
+``legacy_stream_handler=None`` so SessionReset/ConfigUpdate/batches enter
+only via ``NarrativeMailbox``; ``CommentaryConsumer`` keeps TTS sink/status
+with idle speech off and no fanout subscription.
 
 Not exported from ``events/__init__.py``. No INI / product config key in this
 slice — the race enable flag stays hard-coded until product config lands.

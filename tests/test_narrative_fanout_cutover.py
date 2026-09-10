@@ -121,16 +121,57 @@ def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
     assert "adapt_batch_for_shadow" in race
     assert "runtime=self.narrative_runtime" in race or "runtime=runtime" in race
     assert "reduce_after_admit=False" in race
-    assert "legacy_stream_handler=self._mirror_lifecycle_without_speech" in race
+    assert "legacy_stream_handler=None" in race
+    assert "_mirror_lifecycle_without_speech" not in race
+    assert "legacy_stream_handler=self.commentary_consumer.handle" not in race
     assert "build_tts_effect" in race
     assert "WorkerSupervisor" in race
     assert '"narrative_runtime"' in race or "'narrative_runtime'" in race
     assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race
-    # Commentary object remains for SessionReset/ConfigUpdate mirror + context cache;
-    # idle-lane speech is disabled (NarrativeRuntime owns TTS).
+    # Commentary object remains for TTS sink/status/filler plumbing only;
+    # idle-lane speech is disabled (NarrativeRuntime owns TTS). Stream lifecycle
+    # no longer mirrors into CommentaryConsumer (EventSubscription full replace).
     assert "CommentaryConsumer" in race
     assert "commentary_consumer" in race
     assert "idle_speech_enabled=False" in race or "idle_speech_enabled = False" in race
+
+
+@pytest.mark.asyncio
+async def test_shadow_without_legacy_handler_skips_session_reset_and_config() -> None:
+    """Full replace: SessionReset/ConfigUpdate do not require a commentary mirror."""
+    from irswitch.events.stream import ConfigUpdate, SessionReset
+
+    mailbox = NarrativeMailbox()
+    ingress = NarrativeIngress(mailbox)
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    consumer = NarrativeShadowConsumer(
+        enabled=True,
+        ingress=ingress,
+        runtime=runtime,
+        reduce_after_admit=False,
+        legacy_stream_handler=None,
+    )
+    reset = SessionReset(
+        old_session_id="sess-a",
+        new_session_id="sess-b",
+        reason="test",
+        stream_sequence=7,
+    )
+    result = await consumer.handle(reset)
+    assert result is not None
+    assert result.accepted is False
+    assert result.reason == "shadow_non_batch"
+    assert "shadow_legacy_mirrored" not in result.effects
+    assert consumer.mirrored == 0
+    assert len(mailbox) == 0
+
+    config = ConfigUpdate(generation=1, frozen_config=b"{}", stream_sequence=8)
+    result = await consumer.handle(config)
+    assert result is not None
+    assert result.accepted is False
+    assert result.reason == "shadow_non_batch"
+    assert consumer.mirrored == 0
 
 
 @pytest.mark.asyncio

@@ -62,7 +62,8 @@ def test_race_enables_shadow_cutover_with_adapter_and_actor_run() -> None:
     assert "adapt_batch_for_shadow" in race
     assert "CommentaryConsumer" in race
     assert "reduce_after_admit=False" in race
-    assert "legacy_stream_handler=self._mirror_lifecycle_without_speech" in race
+    assert "legacy_stream_handler=None" in race
+    assert "_mirror_lifecycle_without_speech" not in race
     assert "build_tts_effect" in race
     assert "_run_narrative_runtime_actor" in race or "narrative_runtime.run" in race
     assert '"narrative_runtime"' in race or "'narrative_runtime'" in race
