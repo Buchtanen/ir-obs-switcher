@@ -75,8 +75,6 @@ def test_tape_shaped_rows_round_trip_preserves_reducer_sequence() -> None:
     assert traces_equivalent(live, replayed)
 
 
-
-
 def test_capture_replay_with_runtime_factory_preserves_director_and_qwen() -> None:
     from irswitch.events.narrative_runtime import NarrativeRuntime
     from irswitch.events.story_director import StoryDirector

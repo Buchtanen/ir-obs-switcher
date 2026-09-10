@@ -171,8 +171,6 @@ def test_narrative_runtime_appends_command_journal_on_reduce(tmp_path: Path) -> 
     assert traces_equivalent(capture_reducer_trace(loaded), replay_command_journal(path))
 
 
-
-
 def test_journal_replay_reproduces_director_decisions_with_recorded_qwen(tmp_path: Path) -> None:
     """#284 replay closure: director_selected + recorded realization via journal."""
     from irswitch.events.narrative_runtime import NarrativeRuntime
