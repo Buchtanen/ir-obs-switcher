@@ -13,7 +13,7 @@
 - Projekce přes `project_commentary_health_component(get_narrative_runtime().status())` z `events/narrative_ingress.py`.
 - Když není attached runtime → disabled library snapshot (`status: disabled`, `reason: null`).
 - Disabled/degraded commentary **nespadí celý `/health`** — iRacing/OBS zůstávají autorita pro overall status.
-- Detail: `GET /api/commentary/runtime` — timeline identity + `sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` all-or-none null stubs (feat `f58c992`; **not** live session-plan wiring) + fixní `language=en` + plný idle `speech` tvar + bounded `components.{llm,tts,tape,detectors,facts}` (llm/tts schema-complete stubs via `_llm_component_projection` / `_tts_component_projection`; **not** live transport/residency) + tenké stub bloky `catalog`/`config`/`episodes`/`byTapeChannel`/`queues.opportunities` (viz [events](events.md) + `API.md`; **not** full live wiring).
+- Detail: `GET /api/commentary/runtime` — timeline identity + `sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` all-or-none (null idle/disabled/incomplete context — feat `f58c992`; live after valid `APPLY_CONTEXT_BATCH` — feat `ccd0697`) + fixní `language=en` + plný idle `speech` tvar + bounded `components.{llm,tts,tape,detectors,facts}` (llm/tts schema-complete stubs via `_llm_component_projection` / `_tts_component_projection`; **not** live transport/residency) + tenké stub bloky `catalog`/`config`/`episodes`/`byTapeChannel`/`queues.opportunities` (viz [events](events.md) + `API.md`; **not** full live wiring).
 - Decisions ring: additive `GET /api/commentary/runtime/decisions?limit=` — `commentary-runtime/2` newest-first rows; legacy `GET /api/commentary/decisions` beze změny (viz `API.md` + [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup)).
 - Validate/speak: additive `POST /api/commentary/runtime/validate` + `POST /api/commentary/runtime/speak` — offline validate + `try_manual_speak` s `ManualAdmissionLatch` (503 `admission_timeout` on latch timeout); legacy `POST /api/commentary/validate|speak` beze změny (viz `API.md` + [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup) · [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup)).
 
@@ -30,7 +30,7 @@
 
 ## Testy
 
-`tests/test_api.py` — `/health` obsahuje `commentary`; `tests/test_narrative_runtime_http.py` — decisions + validate/speak + admission-timeout mounts (**14** rows); related suite **222** s narrative ingress identity + timeline session null stubs + speech + decision + validate + status_ready + llm/tts components + latch rows; ingress+http **34** (= prior **33** + **1** timeline session golden row).
+`tests/test_api.py` — `/health` obsahuje `commentary`; `tests/test_narrative_runtime_http.py` — decisions + validate/speak + admission-timeout mounts (**14** rows); related suite **225** s narrative ingress identity + timeline session identity (null + live) + speech + decision + validate + status_ready + llm/tts components + latch rows; ingress+http **37** (= prior **34** + **3** timeline session identity rows).
 
 ## Related
 

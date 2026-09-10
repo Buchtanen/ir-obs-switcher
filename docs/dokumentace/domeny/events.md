@@ -1,6 +1,6 @@
 # Events — branch delta (#273/#284 runtime status)
 
-> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Timeline session identity stubs: [§ timeline session identity](../inflight/README.md#284-273-timeline-session-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Components llm/tts stubs: [§ components llm/tts](../inflight/README.md#284-273-components-llm-tts-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup). Manual admission latch: [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup). Status_ready catalog/config/episodes: [§ status_ready](../inflight/README.md#284-273-status-ready-slice-lookup).
+> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Timeline session identity (null-or-live): [§ timeline session identity](../inflight/README.md#284-273-timeline-session-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Components llm/tts stubs: [§ components llm/tts](../inflight/README.md#284-273-components-llm-tts-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup). Manual admission latch: [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup). Status_ready catalog/config/episodes: [§ status_ready](../inflight/README.md#284-273-status-ready-slice-lookup).
 
 ## NarrativeRuntime identity (`events/narrative_runtime.py`)
 
@@ -15,6 +15,20 @@
 | `stream_state` | `"unknown"` | `obsState` / `streamState` |
 
 `SHUTDOWN` maže `narrative_run_active`, **`stream_epoch` zůstává**.
+
+## Session identity (`events/narrative_runtime.py`)
+
+`RuntimeStatus` + reducer state track (all-or-none; null until valid context):
+
+| Field | Default | Update |
+| --- | --- | --- |
+| `session_plan` | `null` | planning `APPLY_CONTEXT_BATCH` → `_session_identity_from_timeline(timeline)` |
+| `session_ref` | `null` | stejně (`subSessionId`, `sessionNum`) |
+| `occurrence_id` | `null` | stejně |
+| `lineage_id` | `null` | stejně |
+| `stage` | `null` | stejně (`practice` \| `qualifying` \| `race`) |
+
+`_session_identity_from_timeline`: neúplný/invalid set → všechny null (maže i dříve live hodnoty). `sessionPlan` z timeline `sessionPlan` když validní, jinak z `sessionPlanRevision` + stages do current stage. Ingress projekce: `_timeline_session_identity(status)` v `project_runtime_status`.
 
 ## Speech projection (`events/narrative_runtime.py`)
 
@@ -36,7 +50,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Ingress projector (`events/narrative_ingress.py`)
 
-- `project_runtime_status(RuntimeStatus)` — `language`: fixní `"en"`; `speech`: plný tvar `{state, sourceKind, utteranceId, beatId, opportunityId, backend, backendGeneration, dispatchedAtMonoMs, acceptedAtMonoMs, lastTerminal}`; `components`: bounded `{llm, tts, tape}` z `RuntimeStatus.component_health` / `tape_status` (tape default `disabled`, drops `0`); `components.llm` / `components.tts` schema-complete stubs via `_llm_component_projection` / `_tts_component_projection` (llm: `generation=0`, `configGeneration=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts: `backend=null` nebo speech backend v `{sapi,espeak,supertonic}`, `backendGeneration` ze speech lane nebo `0`, `configGeneration=0`, `quarantinedGeneration=null`, `voice=null`; **not** live transport/residency); plus tenké #273 stub bloky `catalog` (`narrative-catalog/2`, packaged `hash` přes `load_narrative_catalog().require_catalog().catalog_hash`, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + `ACTIVE_CAP`/`RESOLVED_CAP`), `byTapeChannel: {}`, `queues.opportunities` (depth 0, `OPPORTUNITY_CAPACITY`), `components.detectors` / `components.facts` (ready stubs; `facts.historyComplete` z `RuntimeStatus`); plus `timeline` (identity + `sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` all-or-none null stubs — satisfies `session_identity_all_or_none` without live session-plan wiring), `queues.mailbox`, recovery, diagnostics. **Not** live wiring catalog/config/episodes/tape channels/detectors/facts/llm/tts transport/session-plan.
+- `project_runtime_status(RuntimeStatus)` — `language`: fixní `"en"`; `speech`: plný tvar `{state, sourceKind, utteranceId, beatId, opportunityId, backend, backendGeneration, dispatchedAtMonoMs, acceptedAtMonoMs, lastTerminal}`; `components`: bounded `{llm, tts, tape}` z `RuntimeStatus.component_health` / `tape_status` (tape default `disabled`, drops `0`); `components.llm` / `components.tts` schema-complete stubs via `_llm_component_projection` / `_tts_component_projection` (llm: `generation=0`, `configGeneration=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts: `backend=null` nebo speech backend v `{sapi,espeak,supertonic}`, `backendGeneration` ze speech lane nebo `0`, `configGeneration=0`, `quarantinedGeneration=null`, `voice=null`; **not** live transport/residency); plus tenké #273 stub bloky `catalog` (`narrative-catalog/2`, packaged `hash` přes `load_narrative_catalog().require_catalog().catalog_hash`, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + `ACTIVE_CAP`/`RESOLVED_CAP`), `byTapeChannel: {}`, `queues.opportunities` (depth 0, `OPPORTUNITY_CAPACITY`), `components.detectors` / `components.facts` (ready stubs; `facts.historyComplete` z `RuntimeStatus`); plus `timeline` (identity + `sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` all-or-none — null idle/disabled/incomplete context, live after valid `APPLY_CONTEXT_BATCH` via `_timeline_session_identity`; satisfies `session_identity_all_or_none`), `queues.mailbox`, recovery, diagnostics. **Not** live wiring catalog/config/episodes/tape channels/detectors/facts/llm/tts transport.
 - `project_commentary_health_component(status=None)` → `{status, reason}` pro `GET /health` (jen top-level status/reason, ne speech/components). Jediný ingress helper, který sahá do `server/api.py`. **Not** exported z `events/__init__.py`.
 
 ## Decision ring (`events/narrative_decision_projection.py`, `events/narrative_runtime.py`)
@@ -61,8 +75,8 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Goldens
 
-- Identity: `tests/fixtures/commentary_runtime/status_identity_disabled.json`, `status_identity_after_context.json`
-- Timeline session identity (null stubs): `tests/fixtures/commentary_runtime/status_timeline_session_null.json`
+- Identity: `tests/fixtures/commentary_runtime/status_identity_disabled.json` (null session fields), `status_identity_after_context.json` (live session identity after APPLY_CONTEXT; feat `ccd0697`)
+- Timeline session identity: `tests/fixtures/commentary_runtime/status_timeline_session_null.json` (idle null subset; feat `f58c992`)
 - Status_ready library: `tests/fixtures/commentary_runtime/status_ready_library.json` (`catalog`, `config`, `episodes`, `byTapeChannel`, `queues.opportunities`, `components.detectors`/`facts` stubs)
 - Speech idle: `tests/fixtures/commentary_runtime/status_speech_idle.json` (`language`, idle `speech`, bounded `components` incl. schema-complete llm/tts)
 - Components llm/tts: `tests/fixtures/commentary_runtime/status_components_llm_tts.json`
@@ -72,11 +86,11 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**20** = prior **19** + **1** timeline session golden row). `tests/test_narrative_runtime.py` latch rows (**3**). Related **222** (= prior **221** + **1** timeline session row).
+`tests/test_narrative_ingress.py` (**23** = prior **20** + **3** timeline session identity rows). `tests/test_narrative_runtime.py` latch rows (**3**). Related **225** (= prior **222** + **3**). Ingress+http **37** (= prior **34** + **3**).
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: live llm/tts transport/residency wiring; live catalog/config/episodes/byTapeChannel wiring; live detectors/facts (beyond ready stubs); live session-plan wiring (`sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` beyond all-or-none null stubs); final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); thin status_ready catalog/config/episodes slice landed (feat SHA `03c34b2`); thin components llm/tts schema stubs landed (feat SHA `3670502`); thin timeline session identity null stubs landed (feat SHA `f58c992`).
+Full #273 schema: live llm/tts transport/residency wiring; live catalog/config/episodes/byTapeChannel wiring; live detectors/facts (beyond ready stubs); final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); thin status_ready catalog/config/episodes slice landed (feat SHA `03c34b2`); thin components llm/tts schema stubs landed (feat SHA `3670502`); timeline session identity null stubs landed (feat SHA `f58c992`); live timeline session identity wiring landed (feat SHA `ccd0697`).
 
 ## Related
 

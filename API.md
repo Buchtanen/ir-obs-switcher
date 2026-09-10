@@ -867,7 +867,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
 - Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
-- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape,detectors,facts}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`, plus schema-required session identity fields as all-or-none nulls: `sessionPlan`, `sessionRef`, `occurrenceId`, `lineageId`, `stage` (feat `f58c992`; satisfies `session_identity_all_or_none` without live session-plan wiring).
+- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape,detectors,facts}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`, plus schema-required session identity fields **all-or-none**: `sessionPlan`, `sessionRef`, `occurrenceId`, `lineageId`, `stage`. **Idle / disabled / incomplete context** → all five `null` (feat `f58c992`). **After valid `APPLY_CONTEXT_BATCH`** → live values from context timeline via `_session_identity_from_timeline` on `RuntimeStatus`, projected by `_timeline_session_identity` (feat `ccd0697`; satisfies `session_identity_all_or_none`). `sessionPlan` from timeline `sessionPlan` when valid, else from `sessionPlanRevision` + stages through current `stage` (`practice`|`qualifying`|`race`). Incomplete or invalid identity clears the whole set (including previously live values).
 - `#273` thin status_ready stubs (feat `03c34b2`): `catalog` (`narrative-catalog/2`, packaged catalog `hash`, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + capacity constants), `byTapeChannel: {}`, `queues.opportunities` (depth 0, capacity 128), `components.detectors` / `components.facts` ready stubs. **Not** live product wiring — defaults only.
 - `#273` schema-complete `components.llm` / `components.tts` stubs (feat `3670502`): llm — `status`/`reason`, `generation=0`, `configGeneration=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts — `status`/`reason`, `backend=null` (or speech backend when in `{sapi,espeak,supertonic}`), `backendGeneration` from speech lane or `0`, `configGeneration=0`, `quarantinedGeneration=null`, `voice=null`. **Not** live transport/residency wiring.
 - `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; legacy `/api/commentary/validate|speak` cutover deferred). Full live catalog/config/episodes/tape-channel/detectors/facts wiring remains later.
@@ -984,7 +984,39 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 }
 ```
 
-Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts stubs only; feat `03c34b2`); `tests/fixtures/commentary_runtime/status_components_llm_tts.json` (llm/tts schema-complete stubs; feat `3670502`); `status_speech_idle.json` llm/tts shapes updated in same feat; `tests/fixtures/commentary_runtime/status_timeline_session_null.json` (timeline session identity all-or-none null stubs; feat `f58c992`); `status_identity_*.json` timeline shapes include the same null session fields.
+Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts stubs only; feat `03c34b2`); `tests/fixtures/commentary_runtime/status_components_llm_tts.json` (llm/tts schema-complete stubs; feat `3670502`); `status_speech_idle.json` llm/tts shapes updated in same feat; `tests/fixtures/commentary_runtime/status_timeline_session_null.json` (timeline session identity all-or-none nulls when idle; feat `f58c992`); `tests/fixtures/commentary_runtime/status_identity_disabled.json` (disabled null session fields); `tests/fixtures/commentary_runtime/status_identity_after_context.json` (live session identity after valid APPLY_CONTEXT; feat `ccd0697`).
+
+**Example (ready / after APPLY_CONTEXT — timeline session identity subset)**
+
+Golden lock: `tests/fixtures/commentary_runtime/status_identity_after_context.json`.
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "ready",
+  "timeline": {
+    "broadcastEpoch": 4,
+    "streamEpoch": 1,
+    "narrativeRunActive": true,
+    "streamActive": true,
+    "streamState": "active",
+    "sessionPlan": {
+      "revision": 1,
+      "valid": true,
+      "reason": null,
+      "stages": ["practice", "qualifying", "race"]
+    },
+    "sessionRef": {
+      "subSessionId": "42",
+      "sessionNum": 2
+    },
+    "occurrenceId": "1:race:0",
+    "lineageId": "1:race:0",
+    "stage": "race",
+    "historyComplete": true
+  }
+}
+```
 
 ### GET /api/commentary/runtime/decisions
 
