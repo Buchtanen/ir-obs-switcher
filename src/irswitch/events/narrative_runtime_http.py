@@ -219,6 +219,8 @@ async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
         return _error_response("validation_failed", 422)
     if outcome.kind == "mailbox_overloaded":
         return _error_response("mailbox_overloaded", 503)
+    if outcome.kind == "admission_timeout":
+        return _error_response("admission_timeout", 503)
     return _error_response("component_unavailable", 503)
 
 

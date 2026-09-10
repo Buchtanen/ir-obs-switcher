@@ -29,6 +29,10 @@ from irswitch.events.narrative_director_bridge import (
     build_director_snapshot,
     planning_impulse_for_lane,
 )
+from irswitch.events.narrative_manual_latch import (
+    ADMISSION_TIMEOUT_S,
+    ManualAdmissionLatch,
+)
 from irswitch.events.opportunity_queue import OpportunityQueue
 from irswitch.events.story_director import (
     DECISION_CAPACITY,
@@ -89,6 +93,7 @@ class ManualSpeakOutcome:
         "component_unavailable",
         "mailbox_overloaded",
         "validation_failed",
+        "admission_timeout",
     ]
     request_id: str | None = None
     admitted_state: str | None = None
@@ -222,6 +227,8 @@ class NarrativeRuntime:
         self._director_selected_beat_id: str | None = None
         self._director_selected_episode_revision: int | None = None
         self._decision_ring: deque[dict[str, Any]] = deque(maxlen=DECISION_CAPACITY)
+        self._manual_latches: dict[str, ManualAdmissionLatch] = {}
+        self._run_active = False
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
@@ -310,6 +317,13 @@ class NarrativeRuntime:
     async def run(self) -> None:
         if self._runtime == "disabled":
             self.enable()
+        self._run_active = True
+        try:
+            await self._run_loop()
+        finally:
+            self._run_active = False
+
+    async def _run_loop(self) -> None:
         while self._runtime != "stopped":
             result = self.reduce_next()
             if result is None:
@@ -383,6 +397,14 @@ class NarrativeRuntime:
         newest_first = list(reversed(self._decision_ring))
         return tuple(newest_first[:limit])
 
+    def register_manual_latch(self, request_id: str, latch: ManualAdmissionLatch) -> None:
+        """Attach a one-shot admission latch for ``request_id`` (HTTP/adapter)."""
+
+        self._manual_latches[str(request_id)] = latch
+
+    def _pop_manual_latch(self, request_id: str) -> ManualAdmissionLatch | None:
+        return self._manual_latches.pop(str(request_id), None)
+
     async def try_manual_speak(
         self,
         text: str,
@@ -390,16 +412,22 @@ class NarrativeRuntime:
         request_id: str,
         now_ms: int,
         admission_ordinal: int = 1,
+        timeout_s: float = ADMISSION_TIMEOUT_S,
+        reduce_inline: bool | None = None,
     ) -> ManualSpeakOutcome:
-        """Admit + reduce one MANUAL_SPEAK_REQUEST synchronously (no actor loop).
+        """Admit manual speak via one-shot ``ManualAdmissionLatch`` (1s default).
 
-        Intended for library tests and the additive HTTP speak mount while the
-        full ManualAdmissionLatch (1s await) remains deferred. Do not call this
-        concurrently with ``run()``.
+        Allocates the latch, nonblocking-admits ``MANUAL_SPEAK_REQUEST``, then
+        awaits latch resolution. When the actor loop is not running, reduces
+        inline so library/HTTP tests stay deterministic. On await timeout the
+        caller abandons the latch and returns ``admission_timeout``; a later
+        reduce cannot speak.
         """
 
         if self._runtime == "disabled":
             self.enable()
+        latch = ManualAdmissionLatch()
+        self.register_manual_latch(request_id, latch)
         try:
             command = NarrativeCommand.manual_speak(
                 request_id,
@@ -410,28 +438,40 @@ class NarrativeRuntime:
         except Exception as exc:  # ContractViolation + TypeError
             from irswitch.contracts.primitives import ContractViolation
 
+            self._pop_manual_latch(request_id)
             if not isinstance(exc, (ContractViolation, TypeError, ValueError)):
                 raise
             return ManualSpeakOutcome(kind="validation_failed")
 
         admission = self.admit(command)
         if not admission.accepted:
+            latch.abandon_caller()
+            self._pop_manual_latch(request_id)
             return ManualSpeakOutcome(kind="mailbox_overloaded")
 
-        result = self.reduce_next()
-        if result is None:
-            return ManualSpeakOutcome(kind="component_unavailable")
-        if result.disposition == "rejected_busy":
-            return ManualSpeakOutcome(kind="speech_busy")
-        if result.disposition == "ignored_stale_or_inapplicable":
-            return ManualSpeakOutcome(kind="component_unavailable")
-        if result.disposition == "handled" and self._lane == "committed":
-            await self.apply_effects(result.effects)
-            return ManualSpeakOutcome(
-                kind="accepted",
-                request_id=request_id,
-                admitted_state="committed",
-            )
+        inline = (not self._run_active) if reduce_inline is None else bool(reduce_inline)
+        if inline:
+            result = self.reduce_next()
+            if result is not None:
+                await self.apply_effects(result.effects)
+            elif latch.outcome is None:
+                latch.abandon_caller()
+                self._pop_manual_latch(request_id)
+                return ManualSpeakOutcome(kind="component_unavailable")
+
+        outcome = await latch.wait(timeout_s)
+        if outcome is not None:
+            self._pop_manual_latch(request_id)
+            return outcome
+
+        if latch.abandon_caller():
+            # Keep abandoned latch registered so a later reduce cannot speak.
+            return ManualSpeakOutcome(kind="admission_timeout")
+        # Actor claimed first — wait briefly for resolve without abandoning.
+        outcome = await latch.wait(0.05)
+        self._pop_manual_latch(request_id)
+        if outcome is not None:
+            return outcome
         return ManualSpeakOutcome(kind="component_unavailable")
 
     def fail_current_realization_for_test(self) -> None:
@@ -1340,9 +1380,21 @@ class NarrativeRuntime:
         return "handled", effects
 
     def _on_manual(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
+        request_id = str(command.command_id)
+        latch = self._manual_latches.get(request_id)
+        if latch is not None and not latch.claim_actor():
+            self._pop_manual_latch(request_id)
+            return "ignored_stale_or_inapplicable", ["manual_abandoned"]
+
+        def _resolve(outcome: ManualSpeakOutcome) -> None:
+            if latch is not None:
+                latch.resolve(outcome)
+
         if self._lane != "idle":
+            _resolve(ManualSpeakOutcome(kind="speech_busy"))
             return "rejected_busy", ["manual_rejected_busy"]
         if self._component_health.get("tts") == "unavailable":
+            _resolve(ManualSpeakOutcome(kind="component_unavailable"))
             return "ignored_stale_or_inapplicable", ["tts_unavailable"]
         text = str(command.payload.get("text") or "").strip()
         self._lane = "committed"
@@ -1362,6 +1414,13 @@ class NarrativeRuntime:
             dispatched_at_mono_ms=int(command.enqueued_mono_ms),
         )
         self._speech_deadline_stage = "start"
+        _resolve(
+            ManualSpeakOutcome(
+                kind="accepted",
+                request_id=request_id,
+                admitted_state="committed",
+            )
+        )
         return "handled", [
             "manual_committed",
             "effect:dispatch_tts",

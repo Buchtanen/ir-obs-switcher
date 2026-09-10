@@ -1774,3 +1774,69 @@ def test_story_director_notes_failure_on_realization_failed() -> None:
     exhausted = director.evaluate(_director_world(), (_director_cand(),))
     assert exhausted.speech == "silence"
     assert exhausted.reason == "planning_cycle_exhausted"
+
+
+@pytest.mark.asyncio
+async def test_manual_admission_latch_claim_and_abandon_race() -> None:
+    from irswitch.events.narrative_manual_latch import ManualAdmissionLatch
+    from irswitch.events.narrative_runtime import ManualSpeakOutcome
+
+    latch = ManualAdmissionLatch()
+    assert latch.claim_actor() is True
+    assert latch.state == "actor_claimed"
+    assert latch.abandon_caller() is False
+    latch.resolve(
+        ManualSpeakOutcome(kind="accepted", request_id="manual:1", admitted_state="committed")
+    )
+    assert (await latch.wait(0.01)) is not None
+
+    abandoned = ManualAdmissionLatch()
+    assert abandoned.abandon_caller() is True
+    assert abandoned.claim_actor() is False
+
+
+@pytest.mark.asyncio
+async def test_try_manual_speak_admission_timeout_abandons_later_reduce() -> None:
+    from irswitch.contracts.command import NarrativeCommand
+    from irswitch.events.narrative_manual_latch import ManualAdmissionLatch
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    latch = ManualAdmissionLatch()
+    runtime.register_manual_latch("manual:timeout", latch)
+    admitted = runtime.admit(
+        NarrativeCommand.manual_speak(
+            "manual:timeout", 9000, text="Late admission.", admission_ordinal=1
+        )
+    )
+    assert admitted.accepted
+    assert await latch.wait(0.01) is None
+    assert latch.abandon_caller() is True
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+    assert reduced.disposition == "ignored_stale_or_inapplicable"
+    assert runtime.status().lane == "idle"
+    assert "manual_abandoned" in reduced.effects
+
+
+@pytest.mark.asyncio
+async def test_try_manual_speak_timeout_kwarg_returns_admission_timeout() -> None:
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    # Actor loop not running + reduce_inline=False leaves command queued → timeout.
+    outcome = await runtime.try_manual_speak(
+        "Will time out.",
+        request_id="manual:to2",
+        now_ms=9100,
+        timeout_s=0.01,
+        reduce_inline=False,
+    )
+    assert outcome.kind == "admission_timeout"
+    # Later inline reduce must not speak.
+    later = runtime.reduce_next()
+    assert later is not None
+    assert later.disposition == "ignored_stale_or_inapplicable"
+    assert runtime.status().lane == "idle"

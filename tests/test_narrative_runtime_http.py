@@ -261,3 +261,33 @@ async def test_runtime_validate_speak_routes_additive_with_legacy() -> None:
     assert "/api/commentary/speak" in resources
     assert "/api/commentary/runtime/validate" in resources
     assert "/api/commentary/runtime/speak" in resources
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_admission_timeout_maps_503() -> None:
+    """HTTP maps ManualSpeakOutcome.admission_timeout → error admission_timeout/503."""
+
+    class _TimeoutProvider:
+        def status(self):  # pragma: no cover - unused
+            raise AssertionError("status unused")
+
+        async def try_manual_speak(self, text: str, **kwargs):
+            from irswitch.events.narrative_runtime import ManualSpeakOutcome
+
+            return ManualSpeakOutcome(kind="admission_timeout")
+
+    app = _app_with_runtime(_TimeoutProvider())  # type: ignore[arg-type]
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                json={
+                    "schemaVersion": "commentary-runtime/2",
+                    "language": "en",
+                    "text": "Commentary audio test.",
+                },
+            )
+            assert resp.status == 503
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["error"]["code"] == "admission_timeout"
