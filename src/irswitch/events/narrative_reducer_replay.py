@@ -1,8 +1,10 @@
 """#284 reducer-state tape replay equivalence helpers.
 
 Library-only: capture a deterministic reducer trace from a command list and
-replay it on a fresh NarrativeRuntime. Also reads/writes a NarrativeTape-shaped
-command journal (NDJSON) so file→command reconstruction can feed the harness.
+replay it on a fresh NarrativeRuntime (optional ``runtime_factory`` for
+StoryDirector seed so director decisions stay reproducible). Also reads/writes a
+NarrativeTape-shaped command journal (NDJSON) including recorded realization
+completions so file→command reconstruction can feed the harness.
 Not exported from ``events/__init__.py``. Race wiring and master cutover remain
 deferred.
 """
@@ -23,6 +25,7 @@ from irswitch.contracts.primitives import ContractViolation
 from irswitch.events.narrative_runtime import NarrativeRuntime, ReduceResult, RuntimeStatus
 
 MailboxFactory = Callable[[], NarrativeMailbox]
+RuntimeFactory = Callable[[], NarrativeRuntime]
 
 COMMAND_JOURNAL_SCHEMA = "narrative-command-journal/1"
 
@@ -91,9 +94,13 @@ def _run_commands(
     commands: Sequence[NarrativeCommand],
     *,
     mailbox_factory: MailboxFactory | None = None,
+    runtime_factory: RuntimeFactory | None = None,
 ) -> ReducerTrace:
-    factory = mailbox_factory or NarrativeMailbox
-    runtime = NarrativeRuntime(mailbox=factory())
+    if runtime_factory is not None:
+        runtime = runtime_factory()
+    else:
+        factory = mailbox_factory or NarrativeMailbox
+        runtime = NarrativeRuntime(mailbox=factory())
     runtime.enable()
     for command in commands:
         admitted = runtime.admit(command)
@@ -110,20 +117,34 @@ def capture_reducer_trace(
     commands: Sequence[NarrativeCommand],
     *,
     mailbox_factory: MailboxFactory | None = None,
+    runtime_factory: RuntimeFactory | None = None,
 ) -> ReducerTrace:
-    """Admit+drain ``commands`` and return the deterministic reducer trace."""
+    """Admit+drain ``commands`` and return the deterministic reducer trace.
 
-    return _run_commands(commands, mailbox_factory=mailbox_factory)
+    Optional ``runtime_factory`` builds a pre-seeded ``NarrativeRuntime`` (e.g.
+    StoryDirector + seed) so director decisions stay reproducible under replay.
+    """
+
+    return _run_commands(
+        commands,
+        mailbox_factory=mailbox_factory,
+        runtime_factory=runtime_factory,
+    )
 
 
 def replay_reducer_trace(
     trace: ReducerTrace,
     *,
     mailbox_factory: MailboxFactory | None = None,
+    runtime_factory: RuntimeFactory | None = None,
 ) -> ReducerTrace:
     """Re-run the captured command list on a fresh runtime."""
 
-    return _run_commands(trace.commands, mailbox_factory=mailbox_factory)
+    return _run_commands(
+        trace.commands,
+        mailbox_factory=mailbox_factory,
+        runtime_factory=runtime_factory,
+    )
 
 
 _STATUS_FINGERPRINT_VOLATILE = frozenset(
@@ -159,7 +180,9 @@ def command_from_dict(payload: dict[str, Any]) -> NarrativeCommand:
     """Rebuild a ``NarrativeCommand`` from ``NarrativeCommand.to_dict()`` JSON.
 
     Supports the journal slice kinds: ``APPLY_CONTEXT_BATCH``, ordinary
-    deadlines, and ``SHUTDOWN``. Other kinds raise ``ContractViolation``.
+    deadlines, ``REALIZATION_SUCCEEDED`` / ``REALIZATION_FAILED`` (recorded
+    Qwen/authored completions), and ``SHUTDOWN``. Other kinds raise
+    ``ContractViolation``.
     """
 
     if not isinstance(payload, dict):
@@ -209,6 +232,30 @@ def command_from_dict(payload: dict[str, Any]) -> NarrativeCommand:
             enqueued,
             generation=generation,
             deadline_mono_ms=deadline_mono_ms,
+        )
+
+    if kind in {"REALIZATION_SUCCEEDED", "REALIZATION_FAILED"}:
+        token = payload.get("token")
+        body = payload.get("payload")
+        if not isinstance(token, dict) or not isinstance(body, dict):
+            raise ContractViolation(f"{kind} journal row requires token and payload objects")
+        request_id = token.get("requestId")
+        request_ordinal = token.get("requestOrdinal")
+        dispatch_generation = token.get("dispatchGeneration")
+        if not isinstance(request_id, str):
+            raise ContractViolation(f"{kind} token.requestId must be a string")
+        if isinstance(request_ordinal, bool) or not isinstance(request_ordinal, int):
+            raise ContractViolation(f"{kind} token.requestOrdinal must be an integer")
+        if isinstance(dispatch_generation, bool) or not isinstance(dispatch_generation, int):
+            raise ContractViolation(f"{kind} token.dispatchGeneration must be an integer")
+        return NarrativeCommand.realization_result(
+            command_id,
+            kind,  # type: ignore[arg-type]
+            enqueued,
+            request_id=request_id,
+            request_ordinal=request_ordinal,
+            dispatch_generation=dispatch_generation,
+            result=body,
         )
 
     if kind == "SHUTDOWN":
@@ -298,10 +345,12 @@ def replay_command_journal(
     path: Path | str,
     *,
     mailbox_factory: MailboxFactory | None = None,
+    runtime_factory: RuntimeFactory | None = None,
 ) -> ReducerTrace:
     """Read a command journal file and capture a fresh reducer trace."""
 
     return capture_reducer_trace(
         read_commands_from_journal(path),
         mailbox_factory=mailbox_factory,
+        runtime_factory=runtime_factory,
     )

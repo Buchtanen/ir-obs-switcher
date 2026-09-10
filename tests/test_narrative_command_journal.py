@@ -5,7 +5,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from test_narrative_runtime import _pure_fact
+from test_narrative_runtime import (
+    _director_cand,
+    _director_world,
+    _event_impulse,
+    _pure_fact,
+    _result_for,
+)
 
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events import __all__ as events_exports
@@ -49,9 +55,19 @@ def test_command_from_dict_round_trips_supported_kinds() -> None:
         generation=1,
         deadline_mono_ms=2,
     )
+    token = {"requestId": "request:9", "requestOrdinal": 2, "dispatchGeneration": 3}
+    realization = NarrativeCommand.realization_result(
+        "journal:rz",
+        "REALIZATION_SUCCEEDED",
+        4,
+        request_id="request:9",
+        request_ordinal=2,
+        dispatch_generation=3,
+        result=_result_for(token),
+    )
     shutdown = NarrativeCommand.shutdown("journal:stop", 3, "application_exit")
 
-    for original in (pure, deadline, shutdown):
+    for original in (pure, deadline, realization, shutdown):
         rebuilt = command_from_dict(original.to_dict())
         assert rebuilt.kind == original.kind
         assert rebuilt.command_id == original.command_id
@@ -153,6 +169,49 @@ def test_narrative_runtime_appends_command_journal_on_reduce(tmp_path: Path) -> 
     loaded = read_commands_from_journal(path)
     assert [command.command_id for command in loaded] == ["live:1", "live:2"]
     assert traces_equivalent(capture_reducer_trace(loaded), replay_command_journal(path))
+
+
+
+
+def test_journal_replay_reproduces_director_decisions_with_recorded_qwen(tmp_path: Path) -> None:
+    """#284 replay closure: director_selected + recorded realization via journal."""
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.story_director import StoryDirector
+
+    def runtime_factory() -> NarrativeRuntime:
+        runtime = NarrativeRuntime(story_director=StoryDirector())
+        runtime.seed_director_for_test(
+            world=_director_world(),
+            candidates=(_director_cand(),),
+        )
+        return runtime
+
+    token = {"requestId": "request:1", "requestOrdinal": 1, "dispatchGeneration": 1}
+    commands = (
+        _event_impulse("closure:impulse", revision=71, fanout=71),
+        NarrativeCommand.realization_result(
+            "closure:rz",
+            "REALIZATION_SUCCEEDED",
+            2000,
+            request_id="request:1",
+            request_ordinal=1,
+            dispatch_generation=1,
+            result=_result_for(token),
+        ),
+    )
+    live = capture_reducer_trace(commands, runtime_factory=runtime_factory)
+    assert "director_selected" in live.steps[0].effects
+    assert live.steps[1].lane_after == "committed"
+
+    path = tmp_path / "director-qwen.ndjson"
+    write_command_journal(path, live)
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    assert rows[1]["command"]["kind"] == "REALIZATION_SUCCEEDED"
+
+    from_file = replay_command_journal(path, runtime_factory=runtime_factory)
+    assert traces_equivalent(live, from_file)
+    assert "director_selected" in from_file.steps[0].effects
+    assert from_file.steps[1].lane_after == "committed"
 
 
 def test_race_wires_command_journal_path() -> None:
