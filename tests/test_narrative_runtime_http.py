@@ -256,8 +256,13 @@ async def test_runtime_speak_without_provider_returns_503() -> None:
 
 
 @pytest.mark.asyncio
-async def test_runtime_validate_speak_routes_additive_with_legacy() -> None:
+async def test_public_validate_speak_cutover_aliases_runtime_handlers() -> None:
+    """Public /api/commentary/validate|speak share NarrativeRuntime handlers."""
     from irswitch.commentary.http import register_commentary_routes
+    from irswitch.events.narrative_runtime_http import (
+        handle_commentary_runtime_speak,
+        handle_commentary_runtime_validate,
+    )
 
     app = web.Application()
     register_commentary_routes(app)
@@ -266,6 +271,64 @@ async def test_runtime_validate_speak_routes_additive_with_legacy() -> None:
     assert "/api/commentary/speak" in resources
     assert "/api/commentary/runtime/validate" in resources
     assert "/api/commentary/runtime/speak" in resources
+
+    by_path = {
+        route.resource.canonical: route.handler
+        for route in app.router.routes()
+        if hasattr(route, "handler") and hasattr(route, "resource")
+    }
+    assert by_path["/api/commentary/validate"] is handle_commentary_runtime_validate
+    assert by_path["/api/commentary/runtime/validate"] is handle_commentary_runtime_validate
+    assert by_path["/api/commentary/speak"] is handle_commentary_runtime_speak
+    assert by_path["/api/commentary/runtime/speak"] is handle_commentary_runtime_speak
+
+
+@pytest.mark.asyncio
+async def test_public_validate_matches_runtime_golden() -> None:
+    import json
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    expected = json.loads((fixtures / "validate_supported.json").read_text(encoding="utf-8"))
+    from irswitch.commentary.http import register_commentary_routes
+
+    app = web.Application()
+    register_commentary_routes(app)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/validate", json=request)
+            assert resp.status == 200
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_public_speak_matches_runtime_admit_path() -> None:
+    import json
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "speak_request.json").read_text(encoding="utf-8"))
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    from irswitch.commentary.http import register_commentary_routes
+    from irswitch.events.narrative_runtime_http import APP_NARRATIVE_RUNTIME
+
+    app = web.Application()
+    register_commentary_routes(app)
+    app[APP_NARRATIVE_RUNTIME] = runtime
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/speak", json=request)
+            assert resp.status == 202
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["accepted"] is True
+            assert data["admittedState"] == "committed"
+            assert data["requestId"].startswith("manual:")
+
+            busy = await client.post("/api/commentary/speak", json=request)
+            assert busy.status == 409
+            payload = await busy.json()
+            assert payload["error"]["code"] == "speech_busy"
 
 
 @pytest.mark.asyncio

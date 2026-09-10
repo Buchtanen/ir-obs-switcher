@@ -17,9 +17,11 @@ Speak without a provider returns ``component_unavailable`` / 503.
 
 This mount does not start the NarrativeRuntime actor loop, does not replace
 ``GET /api/commentary/status`` or ``GET /api/commentary/decisions``, and does
-not replace live CommentaryConsumer EventSubscription. Legacy
-``POST /api/commentary/validate`` and ``POST /api/commentary/speak`` stay
-unchanged. Not exported from ``events/__init__.py``.
+not replace live CommentaryConsumer EventSubscription. Public
+``POST /api/commentary/validate`` and ``POST /api/commentary/speak`` are cut
+over to these handlers (registered from ``commentary.http``); the
+``/api/commentary/runtime/validate|speak`` paths remain aliases. Not exported
+from ``events/__init__.py``.
 """
 
 from __future__ import annotations

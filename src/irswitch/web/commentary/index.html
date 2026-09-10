@@ -36,7 +36,7 @@
     <a href="/config">Config</a>
   </nav>
   <h1>Commentary / TTS test</h1>
-  <p class="muted">Krátký poslech: nejdřív <b>prohlížeč</b> (Web Speech, Edge/Chrome), pak <b>server</b> (Windows SAPI → Virtual Audio Driver, ne sluchátka). Validátor hlídá intonaci.</p>
+  <p class="muted">Krátký poslech: nejdřív <b>prohlížeč</b> (Web Speech, Edge/Chrome), pak <b>server</b> (Windows SAPI → Virtual Audio Driver, ne sluchátka). Server speak jde přes NarrativeRuntime (commentary-runtime/2). Offline validate potřebuje beat + bindings.</p>
   <p id="audioHint" class="muted" hidden></p>
   <p id="statusLine" class="muted">Načítám…</p>
 
@@ -256,36 +256,34 @@
     }
 
     async function validate() {
-      const res = await fetch("/api/commentary/validate", {
-        method: "POST",
-        headers: CSRF,
-        body: JSON.stringify({ text: $("text").value, nodeId: $("node").value }),
-      });
-      const body = await res.json();
-      if (body.ok) log("Validátor: OK", "ok");
-      else log("Validátor:\n" + (body.issues || []).map((i) => i.code + ": " + i.message).join("\n"), "bad");
-      return body;
+      log("Offline validate potřebuje commentary-runtime/2 beat + actor/fact bindings (ne graph nodeId).", "bad");
+      return { valid: false };
     }
 
     async function serverSpeak() {
-      const check = await validate();
-      if (!check.ok) return;
-      log("Server TTS…", "");
+      const text = ($("text").value || "").trim();
+      if (!text) { log("Chybí text.", "bad"); return; }
+      if ($("language").value !== "en") {
+        log("Manual speak je jen EN (commentary-runtime/2).", "bad");
+        return;
+      }
+      log("Server speak (NarrativeRuntime)…", "");
       const res = await fetch("/api/commentary/speak", {
         method: "POST",
         headers: CSRF,
         body: JSON.stringify({
-          text: $("text").value,
-          nodeId: $("node").value,
-          locale: $("language").value,
-          voice: $("voice").value,
-          rate: Number($("rate").value || 0),
-          backend: $("backend").value,
+          schemaVersion: "commentary-runtime/2",
+          language: "en",
+          text,
         }),
       });
       const body = await res.json();
-      if (body.spoken) log("Server (" + body.backend + "): hotovo.", "ok");
-      else log("Server (" + (body.backend || "?") + "): " + (body.error || res.status), "bad");
+      if (res.status === 202 && body.accepted) {
+        log("Admitted (" + (body.admittedState || "?") + ") id=" + (body.requestId || "?"), "ok");
+      } else {
+        const code = (body.error && body.error.code) || res.status;
+        log("Speak refused: " + code, "bad");
+      }
     }
 
     $("btnBrowser").onclick = browserSpeak;

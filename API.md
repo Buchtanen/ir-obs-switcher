@@ -849,10 +849,10 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no provider; `APP_NARRATIVE_RUNTIME` or process-level `set_narrative_runtime`; does not start NarrativeRuntime) |
 | `GET` | `/api/commentary/runtime/decisions?limit=20` | `#284` / `#273` commentary-runtime/2 decisions ring from NarrativeRuntime (`limit` clamp 1–100; newest-first; capacity `DECISION_CAPACITY=128`; additive to legacy `/api/commentary/decisions`) |
 | `POST` | `/api/commentary/runtime/validate` | `#284` / `#273` offline validate against caller bindings (`commentary-runtime/2`; **200** even when `valid=false`; **400** malformed; no live runtime required) |
-| `POST` | `/api/commentary/runtime/speak` | `#284` / `#273` manual speak via `NarrativeRuntime.try_manual_speak` + `ManualAdmissionLatch` (**202** accepted / **409** `speech_busy` / **422** `validation_failed` / **503** `component_unavailable`\|`mailbox_overloaded`\|`admission_timeout`; additive to legacy `/api/commentary/speak`) |
+| `POST` | `/api/commentary/runtime/speak` | `#284` / `#273` manual speak via `NarrativeRuntime.try_manual_speak` + `ManualAdmissionLatch` (**202** accepted / **409** `speech_busy` / **422** `validation_failed` / **503** `component_unavailable`\|`mailbox_overloaded`\|`admission_timeout`; alias of public `/api/commentary/speak`) |
 | `GET` | `/api/commentary/decisions?limit=20` | legacy speak/skip decisions; `{decisions, runtime}` |
-| `POST` | `/api/commentary/validate` | legacy localhost + CSRF; `{text, nodeId}` — unchanged; final cutover to runtime validate deferred |
-| `POST` | `/api/commentary/speak` | legacy localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` — unchanged; final cutover to runtime speak deferred |
+| `POST` | `/api/commentary/validate` | `#284` / `#273` cut over to NarrativeRuntime offline validate (`commentary-runtime/2`; same handler as `/api/commentary/runtime/validate`) |
+| `POST` | `/api/commentary/speak` | `#284` / `#273` cut over to NarrativeRuntime manual speak (`commentary-runtime/2`; same handler as `/api/commentary/runtime/speak`) |
 | `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
 
 `speak` nejdřív pustí TTS validator.
@@ -870,7 +870,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape,detectors,facts}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`, plus schema-required session identity fields **all-or-none**: `sessionPlan`, `sessionRef`, `occurrenceId`, `lineageId`, `stage`. **Idle / disabled / incomplete context** → all five `null` (feat `f58c992`). **After valid `APPLY_CONTEXT_BATCH`** → live values from context timeline via `_session_identity_from_timeline` on `RuntimeStatus`, projected by `_timeline_session_identity` (feat `ccd0697`; satisfies `session_identity_all_or_none`). `sessionPlan` from timeline `sessionPlan` when valid, else from `sessionPlanRevision` + stages through current `stage` (`practice`|`qualifying`|`race`). Incomplete or invalid identity clears the whole set (including previously live values).
 - `#273` catalog/config/episodes/byTapeChannel on `GET /api/commentary/runtime` (stub slice feat `03c34b2`; live wiring feat `bdb9633`): `catalog` — packaged `narrative-catalog/2` hash via `load_narrative_catalog().require_catalog().catalog_hash` (fail-soft unloaded digest); const `eventIdentifierCount: 60`, `beatCount: 64`. `config` — live CONFIG_UPDATE ledger from cached `RuntimeStatus.config_ledger` (`desiredGeneration`, `desiredHash`, `effectiveHash`, `applySequence`, `pendingChanges`); invalid or cleared ledger → unloaded zeros. `episodes` — live counts from injected `EpisodeRegistry.status_counts()` via `RuntimeStatus.episode_counts` (`active`, `candidate`, `suspended`, `resolved` + `retainedCurrentCapacity`/`resolvedCapacity`); no registry → empty counts. `byTapeChannel` — live per-channel counters from injected `OpportunityQueue.tape_channel_status_counts()` via `RuntimeStatus.by_tape_channel` (`kick`, `accepted`, `queued`, `selected`, `started`, `expired` per tape channel); no queue or empty counters → `{}`. `queues.opportunities` (depth 0, capacity 128), `components.detectors` / `components.facts` remain ready stubs (**not** live DetectorBank / FactView wiring).
 - `#273` schema-complete `components.llm` / `components.tts` stubs (feat `3670502`): llm — `status`/`reason`, `generation=0`, `configGeneration=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts — `status`/`reason`, `backend=null` (or speech backend when in `{sapi,espeak,supertonic}`), `backendGeneration` from speech lane or `0`, `configGeneration=0`, `quarantinedGeneration=null`, `voice=null`. **Not** live transport/residency wiring.
-- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; legacy `/api/commentary/validate|speak` cutover deferred). Live llm/tts transport/residency and live detectors/facts (beyond ready stubs) remain later.
+- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; public `/api/commentary/validate|speak` cut over to NarrativeRuntime handlers). Live llm/tts transport/residency and live detectors/facts (beyond ready stubs) remain later.
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
@@ -1072,7 +1072,7 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 **Content-Type**: `application/json`
 
 **Behavior**
-- Additive to legacy `POST /api/commentary/validate` (sequence-graph `nodeId` validator + CSRF); does **not** replace it. Final legacy cutover deferred.
+- Public `POST /api/commentary/validate` is cut over to this handler; `/api/commentary/runtime/validate` remains an alias.
 - **Offline** — does not read live `NarrativeRuntime` state, roster, or Qwen; no provider required.
 - Syntactically valid requests always return **200** with a `ValidateResponse` body; `valid` is `false` when any issue has severity `error`.
 - Malformed requests (schema/ binding violations) return **400** with `commentary-runtime/2` error envelope `{schemaVersion, error: {code, fields, message}}` (`code`: `invalid_json` | `invalid_request`).
@@ -1111,9 +1111,9 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 **Content-Type**: `application/json`
 
 **Behavior**
-- Additive to legacy `POST /api/commentary/speak` (TTS test page + CSRF + sequence-graph validator); does **not** replace it. Final legacy cutover deferred.
+- Public `POST /api/commentary/speak` is cut over to this handler; `/api/commentary/runtime/speak` remains an alias.
 - Provider resolution matches status mount (`APP_NARRATIVE_RUNTIME` then `get_narrative_runtime()`). Provider must expose `try_manual_speak`.
-- Requires `schemaVersion: commentary-runtime/2` and `language: en`. Does **not** use legacy CSRF middleware.
+- Requires `schemaVersion: commentary-runtime/2` and `language: en`. Does **not** use legacy CSRF middleware (same as public cut-over path).
 - Allocates a latch per `requestId`, nonblocking-admits `MANUAL_SPEAK_REQUEST`, then awaits actor resolution (default 1s). `_on_manual` claims the latch before lane mutation and resolves `accepted` / `speech_busy` / `component_unavailable`. On timeout the caller abandons the latch and returns `admission_timeout`; the abandoned latch stays registered so a later reduce cannot speak (`ignored_stale_or_inapplicable` / `manual_abandoned`).
 - When the actor loop is **not** running, `try_manual_speak` reduces inline (`reduce_inline` default) so library/HTTP tests stay deterministic; when the actor loop **is** running, admission waits on the latch instead of inline reduce.
 - Does **not** start the actor loop by itself (do not call `try_manual_speak` concurrently with `run()` in library tests).
