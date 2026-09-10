@@ -73,3 +73,52 @@ async def test_open_writer_flush_effect_closes_on_shutdown(tmp_path: Path) -> No
     assert not runtime.tape_task_active()
     files = list(tmp_path.glob("narrative-*.ndjson"))
     assert len(files) == 1
+
+
+@pytest.mark.asyncio
+async def test_open_writer_flush_effect_closes_on_disable(tmp_path: Path) -> None:
+    """#284 race-tape evidence: disable emits effect:flush_tape through owned tape_effect."""
+
+    from test_narrative_runtime import _context_with_timeline, _timeline_run
+
+    writer = open_narrative_tape_writer(tmp_path, app_version="9.9.9")
+    writer.start()
+    runtime = NarrativeRuntime(
+        tape_effect=build_tape_flush_effect(writer),
+        shutdown_flush_timeout_s=1.0,
+    )
+    runtime.enable()
+    runtime.admit(
+        _context_with_timeline(
+            "tape:bridge:open",
+            _timeline_run(revision=40, stream_epoch=1, narrative_run_active=True),
+            fanout=40,
+            with_event=True,
+        )
+    )
+    opened = runtime.reduce_next()
+    assert opened is not None
+    assert opened.lane_after == "building"
+
+    runtime.admit(
+        _context_with_timeline(
+            "tape:bridge:disable",
+            _timeline_run(
+                revision=41,
+                stream_epoch=1,
+                narrative_run_active=False,
+                transition_reasons=["narrative_disabled"],
+            ),
+            fanout=41,
+        )
+    )
+    disabled = runtime.reduce_next()
+    assert disabled is not None
+    assert "narrative_run_closed" in disabled.effects
+    assert "building_cancelled_on_disable" in disabled.effects
+    assert "effect:flush_tape" in disabled.effects
+    await runtime.apply_effects(disabled.effects)
+    await runtime.wait_effects_idle()
+    assert not runtime.tape_task_active()
+    files = list(tmp_path.glob("narrative-*.ndjson"))
+    assert len(files) == 1

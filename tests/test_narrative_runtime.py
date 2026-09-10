@@ -2389,6 +2389,158 @@ def test_disable_closes_run_and_reenable_allocates_stream_epoch() -> None:
     assert runtime.status().stream_epoch == 2
 
 
+def test_timeline_transition_cancels_building_and_stale_deadline_generations() -> None:
+    """#284: occurrence/stream transition cancels building and bumps deadline gens."""
+
+    runtime = _drive_to("building")
+    stale_silence_generation = runtime._silence_generation  # noqa: SLF001
+    stale_validity_generation = runtime._validity_generation  # noqa: SLF001
+    runtime.admit(
+        _context_with_timeline(
+            "transition:restart",
+            _timeline_run(
+                revision=99,
+                stream_epoch=1,
+                narrative_run_active=True,
+                transition_reasons=["session_restarted"],
+            ),
+            fanout=99,
+        )
+    )
+    result = runtime.reduce_next()
+    assert result is not None
+    assert result.lane_after == "idle"
+    assert "building_cancelled" in result.effects
+    assert "effect:cancel_realization" in result.effects
+    assert "effect:cancel_realization_deadline" in result.effects
+    assert "effect:cancel_silence_deadline" in result.effects
+    assert "effect:cancel_validity_deadline" in result.effects
+    assert "effect:arm_silence_deadline" in result.effects
+    assert "effect:arm_validity_deadline" in result.effects
+    assert "narrative_run_closed" not in result.effects
+    assert runtime._silence_generation == stale_silence_generation + 1  # noqa: SLF001
+    assert runtime._validity_generation == stale_validity_generation + 1  # noqa: SLF001
+
+    runtime.admit(
+        NarrativeCommand.deadline(
+            "transition:stale-silence",
+            "LONG_SILENCE_ELAPSED",
+            12_000,
+            generation=stale_silence_generation,
+            deadline_mono_ms=12_000,
+        )
+    )
+    stale_silence = runtime.reduce_next()
+    assert stale_silence is not None
+    assert stale_silence.disposition == "ignored_stale_or_inapplicable"
+    assert "stale_silence_generation" in stale_silence.effects
+
+    runtime.admit(
+        NarrativeCommand.deadline(
+            "transition:stale-validity",
+            "VALIDITY_DEADLINE_ELAPSED",
+            12_010,
+            generation=stale_validity_generation,
+            deadline_mono_ms=12_010,
+        )
+    )
+    stale_validity = runtime.reduce_next()
+    assert stale_validity is not None
+    assert stale_validity.disposition == "ignored_stale_or_inapplicable"
+    assert "stale_validity_generation" in stale_validity.effects
+
+
+@pytest.mark.asyncio
+async def test_disable_with_tape_effect_flushes_tape() -> None:
+    """#284: explicit disable cancels building and flushes owned tape_effect."""
+
+    flushed: list[dict[str, object]] = []
+
+    async def tape_flush(token: dict[str, object]) -> None:
+        flushed.append(dict(token))
+        await asyncio.sleep(0)
+
+    runtime = NarrativeRuntime(tape_effect=tape_flush, shutdown_flush_timeout_s=1.0)
+    runtime.enable()
+    runtime.admit(
+        _context_with_timeline(
+            "tape:open",
+            _timeline_run(revision=30, stream_epoch=1, narrative_run_active=True),
+            fanout=30,
+            with_event=True,
+        )
+    )
+    opened = runtime.reduce_next()
+    assert opened is not None
+    assert opened.lane_after == "building"
+
+    runtime.admit(
+        _context_with_timeline(
+            "tape:disable",
+            _timeline_run(
+                revision=31,
+                stream_epoch=1,
+                narrative_run_active=False,
+                transition_reasons=["narrative_disabled"],
+            ),
+            fanout=31,
+        )
+    )
+    disabled = runtime.reduce_next()
+    assert disabled is not None
+    assert "narrative_run_closed" in disabled.effects
+    assert "building_cancelled_on_disable" in disabled.effects
+    assert "effect:cancel_realization" in disabled.effects
+    assert "effect:flush_tape" in disabled.effects
+    assert "effect:cancel_silence_deadline" in disabled.effects
+    assert "effect:cancel_validity_deadline" in disabled.effects
+    assert runtime.status().lane == "idle"
+    assert runtime.status().narrative_run_active is False
+
+    await runtime.apply_effects(disabled.effects)
+    await runtime.wait_effects_idle()
+    assert flushed
+    assert not runtime.tape_task_active()
+
+
+def test_config_then_timeline_transition_cancels_building() -> None:
+    """#284: config boundary rearms deadlines; following transition cancels building."""
+
+    runtime = _drive_to("building")
+    runtime.admit(
+        NarrativeCommand.config_update(
+            "config:boundary", 14_000, valid=False, ledger=None, diagnostics=()
+        )
+    )
+    config = runtime.reduce_next()
+    assert config is not None
+    assert config.lane_after == "building"
+    assert "effect:cancel_realization" not in config.effects
+    assert "effect:cancel_silence_deadline" in config.effects
+    assert "effect:arm_silence_deadline" in config.effects
+    assert "effect:cancel_validity_deadline" in config.effects
+    assert "effect:arm_validity_deadline" in config.effects
+
+    runtime.admit(
+        _context_with_timeline(
+            "config:follow-transition",
+            _timeline_run(
+                revision=101,
+                stream_epoch=1,
+                narrative_run_active=True,
+                transition_reasons=["session_restarted"],
+            ),
+            fanout=101,
+        )
+    )
+    follow = runtime.reduce_next()
+    assert follow is not None
+    assert follow.lane_after == "idle"
+    assert "building_cancelled" in follow.effects
+    assert "effect:cancel_realization" in follow.effects
+    assert runtime.status().lane == "idle"
+
+
 def test_fact_only_wait_cancels_building_without_replan() -> None:
     """Pure FactView cancels building and waits; it never opens a plan."""
 
