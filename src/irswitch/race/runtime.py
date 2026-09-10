@@ -30,6 +30,7 @@ from irswitch.events.narrative_ingress import NarrativeIngress
 from irswitch.events.narrative_realization_bridge import (
     SpeechDraftCache,
     build_realization_effect,
+    warmup_qwen_component,
 )
 from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import set_narrative_runtime
@@ -229,11 +230,11 @@ class RaceRuntime:
         # fanout subscription; shadow mirrors lifecycle/context only.
         # TTS via tts_effect; realization_effect + StoryDirector composition feed speakable
         # drafts from shadow events. Idle-lane speech disabled (idle_speech_enabled=False).
-        # Optional #269 Qwen path is wired but default-off (_narrative_qwen_enabled=False)
-        # until warmup/StdlibTransport is explicitly enabled.
-        # No INI key.
+        # Optional #269 Qwen path: enabled with short soft-fail warmup
+        # (_narrative_qwen_enabled=True). Missing Ollama leaves component not-ready;
+        # authored/template realization still works. No INI key.
         self._narrative_shadow_enabled = True
-        self._narrative_qwen_enabled = False
+        self._narrative_qwen_enabled = True
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
@@ -263,10 +264,17 @@ class RaceRuntime:
             qwen_service = None
             llm_component = None
             if self._narrative_qwen_enabled:
-                # Live StdlibTransport is constructed only when the flag is on;
-                # LlmComponent stays not-ready until an explicit warmup kick.
+                # Live StdlibTransport + short soft-fail warmup; qwen_ready only
+                # when Ollama answers 200. Authored/template remain on miss.
                 llm_component = LlmComponent()
-                qwen_service = RealizerService(transport=StdlibTransport())
+                transport = StdlibTransport()
+                qwen_service = RealizerService(transport=transport)
+                warmup_qwen_component(
+                    llm_component,
+                    transport,
+                    generation=1,
+                    timeout_ms=500,
+                )
                 self._narrative_llm_component = llm_component
                 self._narrative_qwen_service = qwen_service
             realization_effect = build_realization_effect(

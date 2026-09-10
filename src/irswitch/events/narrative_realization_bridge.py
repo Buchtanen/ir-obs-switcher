@@ -26,9 +26,11 @@ from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.narrative import NarrativeEvent
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
 from irswitch.events.qwen_transport import (
+    FakeTransport,
     LlmComponent,
     RealizationIntent,
     RealizerService,
+    StdlibTransport,
     load_transport_goldens,
 )
 
@@ -271,6 +273,48 @@ def realize_qwen_text(
     except Exception:
         logger.debug("qwen realize failed for %s", beat_id, exc_info=True)
         return None
+
+
+def warmup_qwen_component(
+    component: LlmComponent,
+    transport: FakeTransport | StdlibTransport,
+    *,
+    generation: int = 1,
+    model: str = "qwen3:4b-instruct-2507-q4_K_M",
+    endpoint: str = "http://127.0.0.1:11434/v1/chat/completions",
+    timeout_ms: int = 500,
+) -> bool:
+    """Run #269 preflight warmup against ``transport``; soft-fail closed.
+
+    Returns True when the component becomes ``qwen_ready``. Transport errors and
+    non-200 responses leave Qwen ineligible while authored/template paths remain.
+    """
+
+    from irswitch.contracts.primitives import canonical_json
+    from irswitch.events.qwen_transport import TransportError, warmup_request_body
+
+    component.start_preflight(desired_generation=int(generation), warmup=True)
+    body = canonical_json(warmup_request_body(model)).encode("utf-8")
+    try:
+        response = transport.post(
+            endpoint,
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            body=body,
+            stream=False,
+            timeout_ms=max(1, int(timeout_ms)),
+        )
+        if int(response.status) != 200:
+            component.complete_preflight(generation=int(generation), residency="warmup_failed")
+            return False
+    except TransportError:
+        component.complete_preflight(generation=int(generation), residency="warmup_failed")
+        return False
+    except Exception:
+        logger.debug("qwen warmup failed", exc_info=True)
+        component.complete_preflight(generation=int(generation), residency="warmup_failed")
+        return False
+    component.complete_preflight(generation=int(generation), residency="warmup_succeeded")
+    return bool(component.qwen_ready)
 
 
 @dataclass(frozen=True, slots=True)
