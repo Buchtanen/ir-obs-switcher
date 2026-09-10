@@ -1,6 +1,6 @@
 # Events — branch delta (#273/#284 runtime status)
 
-> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup). Manual admission latch: [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup).
+> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `events.md`. Full v2 narrative moduly: [inflight](../inflight/README.md). Identity: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup). Speech/language/components: [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup). Decisions ring: [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup). Validate/speak: [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup). Manual admission latch: [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup). Status_ready catalog/config/episodes: [§ status_ready](../inflight/README.md#284-273-status-ready-slice-lookup).
 
 ## NarrativeRuntime identity (`events/narrative_runtime.py`)
 
@@ -36,7 +36,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Ingress projector (`events/narrative_ingress.py`)
 
-- `project_runtime_status(RuntimeStatus)` — `language`: fixní `"en"`; `speech`: plný tvar `{state, sourceKind, utteranceId, beatId, opportunityId, backend, backendGeneration, dispatchedAtMonoMs, acceptedAtMonoMs, lastTerminal}`; `components`: bounded `{llm, tts, tape}` z `RuntimeStatus.component_health` / `tape_status` (tape default `disabled`, drops `0`); plus `timeline`, queues, recovery, diagnostics.
+- `project_runtime_status(RuntimeStatus)` — `language`: fixní `"en"`; `speech`: plný tvar `{state, sourceKind, utteranceId, beatId, opportunityId, backend, backendGeneration, dispatchedAtMonoMs, acceptedAtMonoMs, lastTerminal}`; `components`: bounded `{llm, tts, tape}` z `RuntimeStatus.component_health` / `tape_status` (tape default `disabled`, drops `0`); plus tenké #273 stub bloky `catalog` (`narrative-catalog/2`, packaged `hash` přes `load_narrative_catalog().require_catalog().catalog_hash`, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + `ACTIVE_CAP`/`RESOLVED_CAP`), `byTapeChannel: {}`, `queues.opportunities` (depth 0, `OPPORTUNITY_CAPACITY`), `components.detectors` / `components.facts` (ready stubs; `facts.historyComplete` z `RuntimeStatus`); plus `timeline`, `queues.mailbox`, recovery, diagnostics. **Not** live wiring catalog/config/episodes/tape channels/detectors/facts.
 - `project_commentary_health_component(status=None)` → `{status, reason}` pro `GET /health` (jen top-level status/reason, ne speech/components). Jediný ingress helper, který sahá do `server/api.py`. **Not** exported z `events/__init__.py`.
 
 ## Decision ring (`events/narrative_decision_projection.py`, `events/narrative_runtime.py`)
@@ -62,6 +62,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 ## Goldens
 
 - Identity: `tests/fixtures/commentary_runtime/status_identity_disabled.json`, `status_identity_after_context.json`
+- Status_ready library: `tests/fixtures/commentary_runtime/status_ready_library.json` (`catalog`, `config`, `episodes`, `byTapeChannel`, `queues.opportunities`, `components.detectors`/`facts` stubs)
 - Speech idle: `tests/fixtures/commentary_runtime/status_speech_idle.json` (`language`, idle `speech`, bounded `components`)
 - Decisions selected: `tests/fixtures/commentary_runtime/decisions_selected.json`
 - Validate: `validate_request.json`, `validate_supported.json`, `validate_rejected.json`
@@ -69,11 +70,11 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Testy
 
-`tests/test_narrative_ingress.py` (**17** = prior **14** + **3** validate rows). `tests/test_narrative_runtime.py` latch rows (**3**). Related **219** (= prior **215** + **4** latch/HTTP timeout rows).
+`tests/test_narrative_ingress.py` (**18** = prior **17** + **1** status_ready golden row). `tests/test_narrative_runtime.py` latch rows (**3**). Related **220** (= prior **219** + **1** status_ready row).
 
 ## Still deferred (#284 OPEN, #273 remainder)
 
-Full #273 schema: full components (detectors/facts), catalog/config/episodes/byTapeChannel; final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`).
+Full #273 schema: live catalog/config/episodes/byTapeChannel wiring; live detectors/facts (beyond ready stubs); final legacy `/api/commentary/validate|speak` cutover; integrated loop liveness; master cutover. Thin validate/speak slice landed (feat SHA `65651bc`); thin `ManualAdmissionLatch` slice landed (feat SHA `ca0f2f6`); thin status_ready catalog/config/episodes slice landed (feat SHA `03c34b2`).
 
 ## Related
 

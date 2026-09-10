@@ -867,8 +867,9 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 - Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
 - Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
 - Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
-- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`.
-- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; legacy `/api/commentary/validate|speak` cutover deferred). Full catalog/components/detectors/facts remain later.
+- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape,detectors,facts}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`.
+- `#273` thin status_ready stubs (feat `03c34b2`): `catalog` (`narrative-catalog/2`, packaged catalog `hash`, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + capacity constants), `byTapeChannel: {}`, `queues.opportunities` (depth 0, capacity 128), `components.detectors` / `components.facts` ready stubs. **Not** live product wiring — defaults only.
+- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; legacy `/api/commentary/validate|speak` cutover deferred). Full live catalog/config/episodes/tape-channel/detectors/facts wiring remains later.
 - Full schema / live actor attachment remain a later #284 cutover slice.
 
 **Example (disabled / no provider)**
@@ -879,6 +880,29 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
   "status": "disabled",
   "reason": null,
   "language": "en",
+  "catalog": {
+    "schemaVersion": "narrative-catalog/2",
+    "hash": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+    "eventIdentifierCount": 60,
+    "beatCount": 64
+  },
+  "config": {
+    "schemaVersion": "commentary-config/2",
+    "desiredGeneration": 0,
+    "desiredHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "effectiveHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "applySequence": 0,
+    "pendingChanges": []
+  },
+  "episodes": {
+    "active": 0,
+    "candidate": 0,
+    "suspended": 0,
+    "retainedCurrentCapacity": 64,
+    "resolved": 0,
+    "resolvedCapacity": 256
+  },
+  "byTapeChannel": {},
   "speech": {
     "state": "idle",
     "sourceKind": null,
@@ -900,9 +924,21 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
       "path": null,
       "drops": 0,
       "dropsByPriority": { "sample": 0, "normal": 0, "critical": 0 }
+    },
+    "detectors": { "status": "ready", "reason": null, "disabled": [] },
+    "facts": {
+      "status": "ready",
+      "reason": null,
+      "viewRevision": 0,
+      "active": 0,
+      "historicalSummaries": 0,
+      "historyComplete": true
     }
   },
-  "queues": { "mailbox": { "depth": 0, "capacity": 64, "overflows": 0 } },
+  "queues": {
+    "mailbox": { "depth": 0, "capacity": 64, "overflows": 0 },
+    "opportunities": { "depth": 0, "capacity": 128, "expired": 0, "evicted": 0 }
+  },
   "timeline": {
     "broadcastEpoch": 0,
     "streamEpoch": 0,
@@ -925,6 +961,8 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
   }
 }
 ```
+
+Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts stubs only; feat `03c34b2`).
 
 ### GET /api/commentary/runtime/decisions
 
