@@ -564,7 +564,7 @@ Library pytest evidence that `NarrativeRuntime` receives immutable upstream snap
 
 ### #284 process TDD AC human-accepted TDD-exception (2026-09-10)
 
-Docs-only record of human-accepted TDD-exception closing the final process AC checkbox (prior docs tip `ed138a1`):
+Docs-only record of human-accepted TDD-exception closing the final process AC checkbox (docs tip `777843d`):
 
 - **TDD-exception:** Add focused pytest/pytest-asyncio tests before behavior code.
 - **Reason:** behavior already landed in prior slices; cannot honestly claim tests-first retrospectively.
