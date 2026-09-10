@@ -782,6 +782,62 @@ def test_project_commentary_health_component_disabled_default() -> None:
     }
 
 
+def test_project_commentary_health_reason_uses_actor_recovery_code() -> None:
+    """``/health`` commentary.reason may carry mailbox/tape recovery codes (#284)."""
+
+    import json
+    from pathlib import Path
+
+    from test_narrative_runtime import _pure_fact
+
+    from irswitch.contracts.command import NarrativeCommand
+    from irswitch.events.narrative_ingress import project_commentary_health_component
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    latest = _pure_fact("health:latest", revision=70, fanout=70)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "health:recovery",
+            9100,
+            latest_context=latest.context_part,
+            loss_first_sequence=1,
+            loss_last_sequence=2,
+            safety_effects=(latest.safety_effect(),),
+        )
+    )
+    assert runtime.reduce_next() is not None
+    projected = project_commentary_health_component(runtime.status())
+    assert projected["status"] in {"ready", "degraded"}
+    assert projected["reason"] in {
+        "history_incomplete",
+        "mailbox_history_incomplete",
+        "mailbox_recovery",
+    }
+
+    schema = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "docs"
+            / "v2.0.0"
+            / "machine"
+            / "api-contracts.schema.json"
+        ).read_text(encoding="utf-8")
+    )
+    health = schema["$defs"]["HealthCommentarySummary"]
+    reason_enum = health["properties"]["reason"]["oneOf"][0]["enum"]
+    for code in (
+        "mailbox_recovery",
+        "mailbox_overloaded",
+        "mailbox_evicted_update",
+        "deadline_admission_skipped",
+        "capture_unavailable",
+        "history_incomplete",
+    ):
+        assert code in reason_enum
+    assert projected["reason"] in reason_enum
+
+
 def test_project_runtime_status_identity_golden_disabled() -> None:
     import json
     from pathlib import Path

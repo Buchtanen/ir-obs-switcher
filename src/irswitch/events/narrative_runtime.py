@@ -376,6 +376,7 @@ class NarrativeRuntime:
         self._last_admission_reason: str | None = None
         self._admission_diagnostics: list[str] = []
         self._mailbox_overflows = 0
+        self._admission_timeout_seen = False
         self._recovery_seen = False
         self._recovery_count = 0
         self._last_recovery_loss_first: int | None = None
@@ -724,6 +725,7 @@ class NarrativeRuntime:
 
         if latch.abandon_caller():
             # Keep abandoned latch registered so a later reduce cannot speak.
+            self._admission_timeout_seen = True
             return ManualSpeakOutcome(kind="admission_timeout")
         # Actor claimed first — wait briefly for resolve without abandoning.
         outcome = await latch.wait(0.05)
@@ -1043,6 +1045,8 @@ class NarrativeRuntime:
                 setattr(self, attr, None)
 
     def _reason_codes(self) -> tuple[str, ...]:
+        """Project freeze-registry actor/recovery health codes for API/health."""
+
         codes: list[str] = []
         if not self._history_complete:
             codes.append("history_incomplete")
@@ -1053,6 +1057,17 @@ class NarrativeRuntime:
             codes.append("capture_unavailable")
         if any(status == "unavailable" for status in self._component_health.values()):
             codes.append("component_unavailable")
+
+        admission = self._last_admission_reason
+        diagnostics = self._admission_diagnostics
+        if admission == "mailbox_overloaded" or self._mailbox_overflows > 0:
+            codes.append("mailbox_overloaded")
+        if admission == "mailbox_evicted_update" or "mailbox_evicted_update" in diagnostics:
+            codes.append("mailbox_evicted_update")
+        if admission == "deadline_admission_skipped" or "deadline_admission_skipped" in diagnostics:
+            codes.append("deadline_admission_skipped")
+        if self._admission_timeout_seen:
+            codes.append("admission_timeout")
         # stable unique
         return tuple(dict.fromkeys(codes))
 

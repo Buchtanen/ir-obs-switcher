@@ -904,6 +904,9 @@ def test_admission_diagnostics_surface_coalesce_and_overflow_reasons() -> None:
     assert status.last_admission_reason == "mailbox_evicted_update"
     assert "mailbox_evicted_update" in status.admission_diagnostics
     assert status.mailbox_overflows >= 1
+    # Freeze-registry actor/recovery codes projected for health/API (#284).
+    assert "mailbox_evicted_update" in status.reason_codes
+    assert "mailbox_overloaded" in status.reason_codes
 
 
 def test_status_reason_codes_for_recovery_health_and_tape() -> None:
@@ -959,6 +962,39 @@ def test_status_reason_codes_for_recovery_health_and_tape() -> None:
     runtime.reduce_next()
     status = runtime.status()
     assert "component_unavailable" in status.reason_codes
+
+
+def test_status_reason_codes_include_deadline_admission_skipped() -> None:
+    """deadline_admission_skipped is a freeze-registry mailbox/tape health code."""
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    # Saturate ordinary cells with distinct silence generations.
+    for index in range(NarrativeMailbox.ORDINARY_CELLS):
+        admitted = runtime.admit(
+            NarrativeCommand.deadline(
+                f"skip:fill:{index}",
+                "LONG_SILENCE_ELAPSED",
+                9000 + index,
+                generation=1 + index,
+                deadline_mono_ms=9000 + index,
+            )
+        )
+        assert admitted.accepted
+    # Validity deadline is skipped (not protected) when ordinary partition is full.
+    skipped = runtime.admit(
+        NarrativeCommand.deadline(
+            "skip:validity",
+            "VALIDITY_DEADLINE_ELAPSED",
+            9500,
+            generation=1,
+            deadline_mono_ms=9500,
+        )
+    )
+    assert skipped.reason == "deadline_admission_skipped"
+    status = runtime.status()
+    assert "deadline_admission_skipped" in status.reason_codes
+    assert status.last_admission_reason == "deadline_admission_skipped"
 
 
 @pytest.mark.asyncio

@@ -276,6 +276,7 @@ Health check endpoint pro monitoring.
 - Top-level `{status, reason}` only — never flips overall `/health` alone.
 - Resolves process `get_narrative_runtime()` when attached; otherwise library disabled snapshot.
 - Full operator detail remains on `GET /api/commentary/runtime`.
+- `reason` is null when healthy/idle, otherwise the first freeze-registry actor/recovery or config/runtime health code from `RuntimeStatus.reason_codes` (closed enum in `api-contracts.schema.json` → `HealthCommentarySummary.reason`). Includes mailbox/tape codes such as `mailbox_recovery`, `mailbox_overloaded`, `mailbox_evicted_update`, `deadline_admission_skipped`, `capture_unavailable`, plus config/runtime codes (`component_unavailable`, `admission_timeout`, `history_incomplete`, …).
 
 **Použití**: Pro monitoring a health checks (např. Docker, Kubernetes, load balancery).
 
@@ -990,6 +991,13 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
   }
 }
 ```
+
+**Diagnostics (`#284` actor/recovery reason codes):**
+- `lastAdmissionReason` — latest mailbox `AdmissionResult.reason` (`accepted`, `coalesced`, `mailbox_evicted_update`, `mailbox_overloaded`, `deadline_admission_skipped`, `mailbox_recovery`, …).
+- `admissionDiagnostics` — bounded unique admit-reason ring (overflow/coalesce/recovery visibility).
+- `reasonCodes` — closed freeze-registry health set projected by `NarrativeRuntime` for operator/API: `history_incomplete`, `mailbox_history_incomplete`, `mailbox_recovery`, `mailbox_overloaded`, `mailbox_evicted_update`, `deadline_admission_skipped`, `capture_unavailable`, `component_unavailable`, `admission_timeout`, …. Same universe as `/health` `commentary.reason` (schema `HealthCommentarySummary`).
+- Mailbox capacity is fixed at **64** (56 ordinary + 7 protected + 1 emergency); overflow surfaces as `mailbox_overloaded` / `mailbox_evicted_update` reason codes — there is no public capacity override INI key.
+
 
 Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts disabled-library zeros; feat `03c34b2`); `tests/fixtures/commentary_runtime/status_components_llm_tts.json` (llm/tts schema-complete stubs without attached component; feat `3670502`); live llm warmup/residency rows in `tests/test_narrative_ingress.py` (feat `60565ae`); lastAttempt projection rows (feat `19887aa`); live facts/detectors projection rows (feat `d13d6bd`); `status_speech_idle.json` llm/tts shapes updated in feat `3670502`; `tests/fixtures/commentary_runtime/status_timeline_session_null.json` (timeline session identity all-or-none nulls when idle; feat `f58c992`); `tests/fixtures/commentary_runtime/status_identity_disabled.json` (disabled null session fields); `tests/fixtures/commentary_runtime/status_identity_after_context.json` (live session identity after valid APPLY_CONTEXT; feat `ccd0697`).
 
