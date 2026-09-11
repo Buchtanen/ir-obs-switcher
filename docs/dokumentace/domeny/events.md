@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 slice 8 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 1 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -21,6 +21,21 @@ Slice 1–2 inventory for Wave G #275 (all `migration_status=legacy`):
 | Scope / polarity | `lap_sf` vs `sector`; `lap_complete` / `sector_split` / `sector_best` |
 
 Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: `CONFIG.md` / `API.md` unchanged.**
+
+
+## Ops family migration map (`contracts/ops_family_map.py`)
+
+Slice 1 inventory for Wave G #276 (all `migration_status=legacy`):
+
+| Helper | Role |
+| --- | --- |
+| `ops_family_rows()` | Closed rows for pit cycle wires |
+| `migration_status_by_wire_id()` | Coverage-matrix companion |
+| `pit_cycle_phase_order_is_monotonic()` | AC: entry→service→exit→outcome |
+| `pit_cycle_stories_have_explicit_terminals()` | AC: exit/outcome terminals + invalidate reasons |
+
+Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md unchanged.**
+
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)
 

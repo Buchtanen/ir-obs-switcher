@@ -79,7 +79,8 @@
 | #273 INFO/WARN + channel cadence observability (dashboard byTapeChannel + tape log lock) | web + commentary + docs | `web/commentary/index.html` `summarizeByTapeChannel`; `CONFIG.md` `[commentary.tape]`; caplog tape quietness — [§ lookup](#273-info-warn-channel-cadence-slice-lookup) | **landed** @ feat `f19330e` on `cursor/info-warn-cadence-273-cad3` (pending FF → `codex/commentary-story-flow-spec`) |
 | #273 final docs/config close-out (API/dashboard/behavior + CONFIG/example) | docs | `API.md` / `CONFIG.md` / `config/config.example.ini` / `COMMENTARY_ENGINE.md` / `domeny/{server,events}.md` — [§ lookup](#273-final-docs-config-close-out-slice-lookup) | **landed** @ feat `f613064` on `cursor/final-docs-273-cad3` (FF → `codex/commentary-story-flow-spec`) |
 | #274 race-outcome closeout | contracts + events | `race_outcome_activation_evidence.py` + family map/verifier/shadow — [§ lookup](#274-race-outcome-closeout-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md) | **open** on `cursor/race-outcome-closeout-274-cad3` |
-| #275 timing family map (slice 8) | contracts + events | observational `FAMILY_ROUTE[timing]=shadow` + inventory `migration_status=shadow` — [§ lookup](#275-timing-family-map-slice-8-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md) | **open** on `cursor/timing-shadow-activate-275-cad3` |
+| #275 timing family map (slice 8) | contracts + events | observational `FAMILY_ROUTE[timing]=shadow` + inventory `migration_status=shadow` — [§ lookup](#275-timing-family-map-slice-8-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md) | **closed** on `cursor/timing-shadow-activate-275-cad3` |
+| #276 ops family map (slice 1) | contracts | `ops_family_map.py` — pit entry/service/exit/outcome inventory (all `legacy`) — [§ lookup](#276-ops-family-map-slice-1-lookup) · [ops-family-migration.md](../../v2.0.0/ops-family-migration.md) | **open** on `cursor/ops-family-map-276-cad3` |
 | #273 / #284 components llm/tts projection (HTTP + ingress subset) | events + server + race | `events/narrative_ingress.py` (`_llm_component_projection`, `_tts_component_projection`, `_tts_voice_from_ledger`, live `quarantinedGeneration`), `events/narrative_runtime.py` (`llm_component=`, `speech_quarantined_generation`, quarantine on stop-timeout), `race/runtime.py` (passes warmed `LlmComponent`) — [§ lookup](#284-273-components-llm-tts-slice-lookup) | `tests/test_narrative_ingress.py` (**1** golden + **4** live llm/tts + **3** lastAttempt + **3** voice/quarantine rows); golden `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; related **268** |
 | #273 / #284 components detectors/facts projection (HTTP + ingress subset) | events + server | `events/narrative_ingress.py` (`project_runtime_status` `components.facts`/`components.detectors`), `events/narrative_runtime.py` (`detector_bank=`, fact fields, `_ingest_fact_view_counts`, `_detector_disabled_snapshot`), `events/detector_bank.py` (`disabled_for_status`) — [§ lookup](#284-273-components-detectors-facts-slice-lookup) · [§ fact-health continuation](#273-fact-health-continuation-slice-lookup) | live counts feat `d13d6bd` (**3** rows); capacity health **+3** on `cursor/fact-health-273-cad3` ([§ fact-health](#273-fact-health-continuation-slice-lookup)); related **249** / **252** |
 | #273 / #284 timeline session identity (HTTP + ingress subset) | events + server | `events/narrative_runtime.py` (`_session_identity_from_timeline`, `RuntimeStatus` session fields on APPLY_CONTEXT) + `events/narrative_ingress.py` (`_timeline_session_identity` in `project_runtime_status`) — [§ lookup](#284-273-timeline-session-identity-slice-lookup) | `tests/test_narrative_ingress.py` (**3** timeline session rows); goldens `status_timeline_session_null.json`, `status_identity_after_context.json`; related **237** |
@@ -1027,6 +1028,16 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 - **Docs:** COMMENTARY_ENGINE.md Wave G / #275 section; CONFIG.md/API.md unchanged.
 - **Tests:** timing map + closeout + shadow compare routing (**focused suite**).
 - **Branch:** `cursor/timing-shadow-activate-275-cad3`.
+
+
+### #276 ops-family map slice 1 lookup
+
+- **Module:** `src/irswitch/contracts/ops_family_map.py` — closed pit cycle inventory (`PIT_ENTRY`…`PIT_OUTCOME`).
+- **Helpers:** `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`.
+- **Status:** all pit wires `migration_status=legacy`; no machine hash rewrite; no `FAMILY_ROUTE` flip; no live `v2` speech.
+- **Tests:** `tests/test_ops_family_map.py` (**9**).
+- **Docs:** [ops-family-migration.md](../../v2.0.0/ops-family-migration.md); CONFIG/API unchanged.
+- **Branch:** `cursor/ops-family-map-276-cad3`.
 
 
 ### #273 INFO/WARN + channel cadence slice lookup
