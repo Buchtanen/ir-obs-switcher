@@ -134,21 +134,12 @@ def _episodes_projection(status: RuntimeStatus) -> dict[str, Any]:
 
 
 def _by_tape_channel_projection(status: RuntimeStatus) -> dict[str, dict[str, int]]:
+    from irswitch.events.opportunity_queue import project_by_tape_channel_status
+
     raw = status.by_tape_channel
     if not isinstance(raw, dict) or not raw:
         return {}
-    projected: dict[str, dict[str, int]] = {}
-    required = ("kick", "accepted", "queued", "selected", "started", "expired")
-    for channel, counters in raw.items():
-        if not isinstance(channel, str) or not isinstance(counters, dict):
-            continue
-        if any(
-            isinstance(counters.get(key), bool) or not isinstance(counters.get(key), int)
-            for key in required
-        ):
-            continue
-        projected[channel] = {key: int(counters[key]) for key in required}
-    return projected
+    return project_by_tape_channel_status(raw)
 
 
 def _empty_tape_drops_by_priority() -> dict[str, int]:

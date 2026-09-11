@@ -1218,6 +1218,9 @@ def test_project_runtime_status_episodes_follow_registry_counts() -> None:
 
 def test_project_runtime_status_by_tape_channel_follows_opportunity_counters() -> None:
     """#273 live byTapeChannel from OpportunityQueue channel counters."""
+    import json
+    from pathlib import Path
+
     from irswitch.events.opportunity_queue import ChannelCounters, OpportunityQueue
 
     queue = OpportunityQueue()
@@ -1230,11 +1233,71 @@ def test_project_runtime_status_by_tape_channel_follows_opportunity_counters() -
         expired=1,
         spoken=2,
     )
+    # Zero-only channels must not appear in the status projection.
+    queue._counters["race.timing.lap"] = ChannelCounters(tape_channel="race.timing.lap")
     runtime = NarrativeRuntime(opportunity_queue=queue)
     runtime.enable()
     by_channel = project_runtime_status(runtime.status())["byTapeChannel"]
-    assert by_channel == {
-        "race.battle.closing": {
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_by_tape_channel.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert by_channel == golden
+    assert "race.timing.lap" not in by_channel
+
+
+def test_by_tape_channel_projection_filters_zeros_sorts_and_caps() -> None:
+    """#273 byTapeChannel: drop all-zero rows, sort by id, cap at 128."""
+    from dataclasses import replace
+
+    from irswitch.events.narrative_ingress import _by_tape_channel_projection
+    from irswitch.events.opportunity_queue import BY_TAPE_CHANNEL_STATUS_CAP
+
+    raw: dict[str, dict[str, int]] = {
+        "z.zero": {
+            "kick": 0,
+            "accepted": 0,
+            "queued": 0,
+            "selected": 0,
+            "started": 0,
+            "expired": 0,
+        }
+    }
+    for index in range(BY_TAPE_CHANNEL_STATUS_CAP + 2):
+        raw[f"ch.{index:03d}"] = {
+            "kick": 1 if index % 2 == 0 else 0,
+            "accepted": 0,
+            "queued": 0,
+            "selected": 0,
+            "started": 0,
+            "expired": 0 if index % 2 == 0 else 1,
+        }
+    projected = _by_tape_channel_projection(
+        replace(NarrativeRuntime().status(), by_tape_channel=raw)
+    )
+
+    assert "z.zero" not in projected
+    assert list(projected) == sorted(projected)
+    assert len(projected) == BY_TAPE_CHANNEL_STATUS_CAP
+    assert "ch.000" in projected
+    assert f"ch.{BY_TAPE_CHANNEL_STATUS_CAP - 1:03d}" in projected
+    assert f"ch.{BY_TAPE_CHANNEL_STATUS_CAP:03d}" not in projected
+    assert f"ch.{BY_TAPE_CHANNEL_STATUS_CAP + 1:03d}" not in projected
+    assert projected["ch.000"]["kick"] == 1
+    assert projected["ch.001"]["expired"] == 1
+
+
+def test_cohort_funnel_rates_omit_non_applicable_stages() -> None:
+    """#273 cohort-valid rates: N/A stages are None, not zero failures."""
+    from irswitch.events.opportunity_queue import cohort_funnel_rates
+
+    candidate = cohort_funnel_rates(
+        {
             "kick": 3,
             "accepted": 2,
             "queued": 2,
@@ -1242,7 +1305,42 @@ def test_project_runtime_status_by_tape_channel_follows_opportunity_counters() -
             "started": 1,
             "expired": 1,
         }
+    )
+    assert candidate == {
+        "kickToAccepted": 2 / 3,
+        "acceptedToQueued": 1.0,
+        "selectedToStarted": 1.0,
     }
+
+    # Visual-only ends after accepted — queued stage is N/A, not a 0.0 failure.
+    visual_only = cohort_funnel_rates(
+        {
+            "kick": 2,
+            "accepted": 1,
+            "queued": 0,
+            "selected": 0,
+            "started": 0,
+            "expired": 0,
+        }
+    )
+    assert visual_only["kickToAccepted"] == 0.5
+    assert visual_only["acceptedToQueued"] is None
+    assert visual_only["selectedToStarted"] is None
+
+    # Silence / successor: no kick cohort → kick→accepted is N/A.
+    silence = cohort_funnel_rates(
+        {
+            "kick": 0,
+            "accepted": 0,
+            "queued": 1,
+            "selected": 1,
+            "started": 1,
+            "expired": 0,
+        }
+    )
+    assert silence["kickToAccepted"] is None
+    assert silence["acceptedToQueued"] is None
+    assert silence["selectedToStarted"] == 1.0
 
 
 def test_session_identity_all_or_none_clears_on_incomplete_timeline() -> None:

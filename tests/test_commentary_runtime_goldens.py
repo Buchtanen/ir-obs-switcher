@@ -48,6 +48,7 @@ REQUIRED_FIXTURES = (
     "health_commentary_degraded.json",
     "status_component_tape_capture_unavailable.json",
     "status_component_tape_counters.json",
+    "status_by_tape_channel.json",
     "status_component_detectors_disabled.json",
     "status_health_projections_library.json",
 )

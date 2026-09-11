@@ -8,7 +8,7 @@ director package. An opportunity never stores text, a prompt, or a BeatPlan.
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any
 
@@ -33,6 +33,79 @@ from irswitch.events.exposure_store import ChannelPressureView
 
 SCHEMA_VERSION = "event-opportunity/2"
 OPPORTUNITY_CAPACITY = 128
+BY_TAPE_CHANNEL_STATUS_CAP = 128
+BY_TAPE_CHANNEL_COUNTER_KEYS = (
+    "kick",
+    "accepted",
+    "queued",
+    "selected",
+    "started",
+    "expired",
+)
+
+
+def project_by_tape_channel_status(
+    counters_by_channel: Mapping[str, Mapping[str, object]],
+    *,
+    capacity: int = BY_TAPE_CHANNEL_STATUS_CAP,
+) -> dict[str, dict[str, int]]:
+    """Status ``byTapeChannel``: nonzero rows only, sorted by id, capped."""
+
+    if capacity <= 0:
+        return {}
+    projected: dict[str, dict[str, int]] = {}
+    for channel in sorted(counters_by_channel):
+        if not isinstance(channel, str):
+            continue
+        counters = counters_by_channel[channel]
+        if not isinstance(counters, Mapping):
+            continue
+        row: dict[str, int] = {}
+        valid = True
+        for key in BY_TAPE_CHANNEL_COUNTER_KEYS:
+            value = counters.get(key, 0)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                valid = False
+                break
+            row[key] = int(value)
+        if not valid or not any(row.values()):
+            continue
+        projected[channel] = row
+        if len(projected) >= capacity:
+            break
+    return projected
+
+
+def cohort_funnel_rates(counters: Mapping[str, object]) -> dict[str, float | None]:
+    """Cohort-valid funnel rates for one channel; ``None`` means stage N/A."""
+
+    def _nonneg(key: str) -> int:
+        value = counters.get(key, 0)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            return 0
+        return int(value)
+
+    kick = _nonneg("kick")
+    accepted = _nonneg("accepted")
+    queued = _nonneg("queued")
+    selected = _nonneg("selected")
+    started = _nonneg("started")
+    expired = _nonneg("expired")
+
+    kick_to_accepted: float | None = (accepted / kick) if kick > 0 else None
+    # Speakable accepted cohort only — visual-only ends after accepted.
+    speakable_signal = queued + selected + started + expired
+    accepted_to_queued: float | None = (
+        (queued / accepted) if accepted > 0 and speakable_signal > 0 else None
+    )
+    selected_to_started: float | None = (started / selected) if selected > 0 else None
+    return {
+        "kickToAccepted": kick_to_accepted,
+        "acceptedToQueued": accepted_to_queued,
+        "selectedToStarted": selected_to_started,
+    }
+
+
 SWITCH_MARGIN = 8.0
 SELECTION_THRESHOLD = 35.0
 GLOBAL_MIN_INTERVAL_MS = 4_000
@@ -572,18 +645,19 @@ class OpportunityQueue:
     def tape_channel_status_counts(self) -> dict[str, dict[str, int]]:
         """Map live channel counters into StatusResponse byTapeChannel shape."""
 
-        projected: dict[str, dict[str, int]] = {}
-        for channel, counters in sorted(self._counters.items()):
-            projected[channel] = {
+        raw: dict[str, dict[str, int]] = {}
+        for channel, counters in self._counters.items():
+            raw[channel] = {
                 "kick": int(counters.kick),
-                # consumed ≈ playback-accepted terminal; spoken ≈ started utterances
+                # spoken → accepted (status funnel cohort proxy)
+                # consumed → started (PLAYBACK_ACCEPTED / speech-started terminal)
                 "accepted": int(counters.spoken),
                 "queued": int(counters.queued),
                 "selected": int(counters.selected),
                 "started": int(counters.consumed),
                 "expired": int(counters.expired),
             }
-        return projected
+        return project_by_tape_channel_status(raw)
 
     def arbitrate(self, context: ArbitrationContext) -> ArbitrationDecision:
         self.expire_due(context.now_ms)
