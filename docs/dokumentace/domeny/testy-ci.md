@@ -190,3 +190,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 | Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F32/F38 rows; hashes **unchanged**) |
 
 **Slice 11 locks:** F32 update-without-growth, deterministic fact eviction, unknown-not-false, pinned exhaustion without partial, degraded recover, episode eviction order, pinned reject; F38 frozen bundle, equal facts pass, alias immutable, changed/missing stale, malformed rejected, hashes recorded; machine projection still matches frozen expectations; gap inventory **30/44** wired, **14** unwired.
+
+
+## #278 vertical-slice context/prompt runtime (Slice 12)
+
+**Status:** offline F18/F33 drivers on branch `cursor/vertical-slice-context-prompt-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_context_prompt_runtime.py`](../../../tests/test_vertical_slice_context_prompt_runtime.py) (**4** tests: **2** parametrized machine projection + F18/F33 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **32/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 12](../../v2.0.0/vertical-slice-acceptance.md#slice-12--f18f33-context-cut--prompt-freedom-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F18/F33 rows; hashes **unchanged**) |
+
+**Slice 12 locks:** F18 apply-88, mismatch reject, no old-view lookup, no batch merge, apply-89 one director; F33 closed profiles, least-permissive, tight baseline, safe promotion, canonical seed, card-or-fatigue, failure-never-widens; machine projection still matches frozen expectations; gap inventory **32/44** wired, **12** unwired.

@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 11 — offline facts-capacity + realization freshness drivers for F32/F38 (no live Windows §24.9 GO).
+**Status:** Slice 12 — offline context-cut + prompt-freedom drivers for F18/F33 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -160,6 +160,20 @@
 **AC locks (Slice 11):**
 - Machine projection for F32/F38 still matches frozen expectations.
 - Runtime drivers prove update-without-growth, deterministic fact eviction to unknown-not-false, pinned exhaustion without partial publish, degraded recover, episode eviction order, pinned reject, and frozen-bundle freshness equal/alias/stale/malformed/hash locks.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 12 — F18/F33 context-cut + prompt-freedom runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F18` (context batch is a coherent fact/event cut), `F33` (prompt freedom is a deterministic safety clamp) |
+| Pytest | `tests/test_vertical_slice_context_prompt_runtime.py` |
+| Inventory | **32/44** wired; **12** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 12):**
+- Machine projection for F18/F33 still matches frozen expectations/calcs (canonical seed `16041955996680716084`).
+- Runtime drivers prove apply-88 / mismatch reject / no old-view lookup / no batch merge / apply-89 one director, plus closed profiles, least-permissive clamp, tight baseline, safe promotion, canonical seed, card-or-fatigue, and failure-never-widens.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
