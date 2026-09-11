@@ -272,3 +272,16 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 17 locks:** F30 auto snapshots SAPI, no same-text failover, later generation only, SuperTonic explicit-only; machine projection still matches frozen expectations; gap inventory **38/44** wired, **6** unwired.
 
+## #278 vertical-slice TTS request/callback protocol runtime (Slice 18)
+
+**Status:** offline F39 drivers on branch `cursor/vertical-slice-tts-protocol-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_tts_protocol_runtime.py`](../../../tests/test_vertical_slice_tts_protocol_runtime.py) (**2** tests: **1** parametrized machine projection + F39 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **39/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 18](../../v2.0.0/vertical-slice-acceptance.md#slice-18--f39-tts-requestcallback-protocol-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F39 row; hashes **unchanged**) |
+
+**Slice 18 locks:** F39 immutable utterance, callback sequence, consume-once, protocol quarantine, reset consumption rules, one restore, late no-op, manual new token; machine projection still matches frozen expectations; gap inventory **39/44** wired, **5** unwired.
+

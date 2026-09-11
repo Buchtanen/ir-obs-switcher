@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 17 — offline TTS auto-resolution drivers for F30 (no live Windows §24.9 GO).
+**Status:** Slice 18 — offline TTS request/callback protocol drivers for F39 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -248,6 +248,22 @@
 - Machine projection for F30 still matches frozen expectations.
 - Runtime drivers prove auto snapshots SAPI, never fails over the same utterance text, later rebuilds only with a higher generation, and SuperTonic is explicit-only.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 18 — F39 TTS request/callback protocol runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F39` (TTS request and callback protocol is one-shot and ordered) |
+| Pytest | `tests/test_vertical_slice_tts_protocol_runtime.py` |
+| Inventory | **39/44** wired; **5** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 18):**
+- Machine projection for F39 still matches frozen expectations.
+- Runtime drivers prove immutable utterance snapshots, accept→terminal callback sequence, consume-once, protocol quarantine, reset consumption rules, one higher-generation restore, late no-ops, and a later manual token.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
 
 ## Later slices
 
