@@ -162,3 +162,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 | Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F13/F20 rows; hashes **unchanged**) |
 
 **Slice 9 locks:** F13 ordinary eviction first, emergency recovery, latest projection, history incomplete, no lost opportunities, producer nonblocking; F20 abandon returns 503-class no audio, claim linearized 202-or-error, no narrative state, tape terminal decision, manual silence only; machine projection still matches frozen expectations; gap inventory **26/44** wired, **18** unwired.
+
+
+## #278 vertical-slice manual/lexicon runtime (Slice 10)
+
+**Status:** offline F12/F29 drivers on branch `cursor/vertical-slice-manual-lexicon-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_manual_lexicon_runtime.py`](../../../tests/test_vertical_slice_manual_lexicon_runtime.py) (**4** tests: **2** parametrized machine projection + F12/F29 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **28/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 10](../../v2.0.0/vertical-slice-acceptance.md#slice-10--f12f29-manual-disabled--offline-lexicon-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F12/F29 rows; hashes **unchanged**) |
+
+**Slice 10 locks:** F12 manual 202 with no narrative planning state, second busy, race truth without barge-in; F29 only complete parses, invalid 400-class without live reads, reversal actor_reversed; machine projection still matches frozen expectations; gap inventory **28/44** wired, **16** unwired.

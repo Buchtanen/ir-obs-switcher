@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 9 — offline mailbox overflow + manual admission drivers for F13/F20 (no live Windows §24.9 GO).
+**Status:** Slice 10 — offline manual-disabled + lexicon drivers for F12/F29 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -130,6 +130,21 @@
 **AC locks (Slice 9):**
 - Machine projection for F13/F20 still matches frozen expectations.
 - Runtime drivers prove ordinary eviction before emergency recovery with latest projection and incomplete history, non-blocking producer admits, and manual abandon-vs-claim linearization where timeout cannot produce delayed audio.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 10 — F12/F29 manual-disabled + offline lexicon runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F12` (manual speak while automatic commentary disabled), `F29` (offline actor lexicon validation) |
+| Pytest | `tests/test_vertical_slice_manual_lexicon_runtime.py` |
+| Inventory | **28/44** wired; **16** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 10):**
+- Machine projection for F12/F29 still matches frozen expectations.
+- Runtime drivers prove manual 202 with no narrative planning state, second-request busy, race truth without barge-in, and offline lexicon complete-parse / invalid-400 / actor-reversal locks without live reads.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
