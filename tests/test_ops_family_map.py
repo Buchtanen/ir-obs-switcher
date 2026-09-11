@@ -41,145 +41,145 @@ ROOT = Path(__file__).resolve().parents[1]
 GRAPH = ROOT / "src" / "irswitch" / "commentary" / "data" / "sequence_graph.json"
 
 _EXPECT = {
-    'PIT_ENTRY': {
-        'beat_id': 'pit.entry',
-        'beat_role': 'opening',
-        'policy_id': 'live_story',
-        'outcome_ttl_ms': 10000,
-        'pit_phase': 'entry',
-        'incident_phase': None,
-        'scope_kind': 'pit_cycle',
-        'legacy_node_id': 'pit_entry',
-        'story_routes': ('pit_cycle', 'single_result'),
-        'realization_family': 'pit.lifecycle',
-        'terminal': False,
-        'branch_beat_ids': ('pit.entry',),
+    "PIT_ENTRY": {
+        "beat_id": "pit.entry",
+        "beat_role": "opening",
+        "policy_id": "live_story",
+        "outcome_ttl_ms": 10000,
+        "pit_phase": "entry",
+        "incident_phase": None,
+        "scope_kind": "pit_cycle",
+        "legacy_node_id": "pit_entry",
+        "story_routes": ("pit_cycle", "single_result"),
+        "realization_family": "pit.lifecycle",
+        "terminal": False,
+        "branch_beat_ids": ("pit.entry",),
     },
-    'PIT_LANE': {
-        'beat_id': 'pit.lane',
-        'beat_role': 'update',
-        'policy_id': 'live_story',
-        'outcome_ttl_ms': 10000,
-        'pit_phase': 'lane',
-        'incident_phase': None,
-        'scope_kind': 'pit_cycle',
-        'legacy_node_id': None,
-        'story_routes': ('pit_cycle', 'single_result'),
-        'realization_family': 'pit.lifecycle',
-        'terminal': False,
-        'branch_beat_ids': ('pit.lane',),
+    "PIT_LANE": {
+        "beat_id": "pit.lane",
+        "beat_role": "update",
+        "policy_id": "live_story",
+        "outcome_ttl_ms": 10000,
+        "pit_phase": "lane",
+        "incident_phase": None,
+        "scope_kind": "pit_cycle",
+        "legacy_node_id": None,
+        "story_routes": ("pit_cycle", "single_result"),
+        "realization_family": "pit.lifecycle",
+        "terminal": False,
+        "branch_beat_ids": ("pit.lane",),
     },
-    'PIT_STOPPED': {
-        'beat_id': 'pit.stopped',
-        'beat_role': 'update',
-        'policy_id': 'live_story',
-        'outcome_ttl_ms': 10000,
-        'pit_phase': 'stopped',
-        'incident_phase': None,
-        'scope_kind': 'pit_cycle',
-        'legacy_node_id': 'pit_stopped',
-        'story_routes': ('pit_cycle', 'single_result'),
-        'realization_family': 'pit.lifecycle',
-        'terminal': False,
-        'branch_beat_ids': ('pit.stopped',),
+    "PIT_STOPPED": {
+        "beat_id": "pit.stopped",
+        "beat_role": "update",
+        "policy_id": "live_story",
+        "outcome_ttl_ms": 10000,
+        "pit_phase": "stopped",
+        "incident_phase": None,
+        "scope_kind": "pit_cycle",
+        "legacy_node_id": "pit_stopped",
+        "story_routes": ("pit_cycle", "single_result"),
+        "realization_family": "pit.lifecycle",
+        "terminal": False,
+        "branch_beat_ids": ("pit.stopped",),
     },
-    'PIT_RELEASED': {
-        'beat_id': 'pit.released',
-        'beat_role': 'update',
-        'policy_id': 'live_story',
-        'outcome_ttl_ms': 10000,
-        'pit_phase': 'released',
-        'incident_phase': None,
-        'scope_kind': 'pit_cycle',
-        'legacy_node_id': None,
-        'story_routes': ('pit_cycle', 'single_result'),
-        'realization_family': 'pit.lifecycle',
-        'terminal': False,
-        'branch_beat_ids': ('pit.released',),
+    "PIT_RELEASED": {
+        "beat_id": "pit.released",
+        "beat_role": "update",
+        "policy_id": "live_story",
+        "outcome_ttl_ms": 10000,
+        "pit_phase": "released",
+        "incident_phase": None,
+        "scope_kind": "pit_cycle",
+        "legacy_node_id": None,
+        "story_routes": ("pit_cycle", "single_result"),
+        "realization_family": "pit.lifecycle",
+        "terminal": False,
+        "branch_beat_ids": ("pit.released",),
     },
-    'PIT_EXIT': {
-        'beat_id': 'pit.exit',
-        'beat_role': 'closure',
-        'policy_id': 'result',
-        'outcome_ttl_ms': 30000,
-        'pit_phase': 'exit',
-        'incident_phase': None,
-        'scope_kind': 'pit_cycle',
-        'legacy_node_id': None,
-        'story_routes': ('pit_cycle', 'single_result'),
-        'realization_family': 'pit.lifecycle',
-        'terminal': True,
-        'branch_beat_ids': ('pit.exit',),
+    "PIT_EXIT": {
+        "beat_id": "pit.exit",
+        "beat_role": "closure",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "pit_phase": "exit",
+        "incident_phase": None,
+        "scope_kind": "pit_cycle",
+        "legacy_node_id": None,
+        "story_routes": ("pit_cycle", "single_result"),
+        "realization_family": "pit.lifecycle",
+        "terminal": True,
+        "branch_beat_ids": ("pit.exit",),
     },
-    'PIT_OUTCOME': {
-        'beat_id': 'pit.outcome',
-        'beat_role': 'outcome',
-        'policy_id': 'result',
-        'outcome_ttl_ms': 30000,
-        'pit_phase': 'outcome',
-        'incident_phase': None,
-        'scope_kind': 'pit_outcome',
-        'legacy_node_id': 'pit_outcome',
-        'story_routes': ('pit_cycle', 'single_result'),
-        'realization_family': 'pit.outcome',
-        'terminal': True,
-        'branch_beat_ids': ('pit.outcome',),
+    "PIT_OUTCOME": {
+        "beat_id": "pit.outcome",
+        "beat_role": "outcome",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "pit_phase": "outcome",
+        "incident_phase": None,
+        "scope_kind": "pit_outcome",
+        "legacy_node_id": "pit_outcome",
+        "story_routes": ("pit_cycle", "single_result"),
+        "realization_family": "pit.outcome",
+        "terminal": True,
+        "branch_beat_ids": ("pit.outcome",),
     },
-    'INCIDENT': {
-        'beat_id': 'incident.off_track',
-        'beat_role': 'opening',
-        'policy_id': 'result',
-        'outcome_ttl_ms': 30000,
-        'pit_phase': None,
-        'incident_phase': 'event',
-        'scope_kind': 'incident_event',
-        'legacy_node_id': 'incident',
-        'story_routes': ('incident', 'single_result'),
-        'realization_family': 'incident.event',
-        'terminal': False,
-        'branch_beat_ids': ('incident.off_track', 'incident.unclassified'),
+    "INCIDENT": {
+        "beat_id": "incident.off_track",
+        "beat_role": "opening",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "pit_phase": None,
+        "incident_phase": "event",
+        "scope_kind": "incident_event",
+        "legacy_node_id": "incident",
+        "story_routes": ("incident", "single_result"),
+        "realization_family": "incident.event",
+        "terminal": False,
+        "branch_beat_ids": ("incident.off_track", "incident.unclassified"),
     },
-    'INCIDENT_AFTERMATH': {
-        'beat_id': 'incident.aftermath',
-        'beat_role': 'update',
-        'policy_id': 'context',
-        'outcome_ttl_ms': 20000,
-        'pit_phase': None,
-        'incident_phase': 'aftermath',
-        'scope_kind': 'incident_aftermath',
-        'legacy_node_id': 'incident_aftermath',
-        'story_routes': ('incident', 'single_result'),
-        'realization_family': 'incident.aftermath',
-        'terminal': False,
-        'branch_beat_ids': ('incident.aftermath',),
+    "INCIDENT_AFTERMATH": {
+        "beat_id": "incident.aftermath",
+        "beat_role": "update",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "pit_phase": None,
+        "incident_phase": "aftermath",
+        "scope_kind": "incident_aftermath",
+        "legacy_node_id": "incident_aftermath",
+        "story_routes": ("incident", "single_result"),
+        "realization_family": "incident.aftermath",
+        "terminal": False,
+        "branch_beat_ids": ("incident.aftermath",),
     },
-    'BACK_UNDER_WAY': {
-        'beat_id': 'incident.recovery',
-        'beat_role': 'closure',
-        'policy_id': 'result',
-        'outcome_ttl_ms': 30000,
-        'pit_phase': None,
-        'incident_phase': 'recovery',
-        'scope_kind': 'incident_recovery',
-        'legacy_node_id': 'back_under_way',
-        'story_routes': ('incident', 'single_result'),
-        'realization_family': 'incident.recovery',
-        'terminal': True,
-        'branch_beat_ids': ('incident.recovery',),
+    "BACK_UNDER_WAY": {
+        "beat_id": "incident.recovery",
+        "beat_role": "closure",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "pit_phase": None,
+        "incident_phase": "recovery",
+        "scope_kind": "incident_recovery",
+        "legacy_node_id": "back_under_way",
+        "story_routes": ("incident", "single_result"),
+        "realization_family": "incident.recovery",
+        "terminal": True,
+        "branch_beat_ids": ("incident.recovery",),
     },
-    'SESSION_FLAG': {
-        'beat_id': 'session.flag.yellow',
-        'beat_role': 'control',
-        'policy_id': 'critical',
-        'outcome_ttl_ms': 45000,
-        'pit_phase': None,
-        'incident_phase': None,
-        'scope_kind': 'flag_control',
-        'legacy_node_id': 'session_flag_yellow',
-        'story_routes': ('session_occurrence', 'single_result'),
-        'realization_family': 'session.flag',
-        'terminal': True,
-        'branch_beat_ids': ('session.flag.yellow', 'session.flag.green', 'session.checkered'),
+    "SESSION_FLAG": {
+        "beat_id": "session.flag.yellow",
+        "beat_role": "control",
+        "policy_id": "critical",
+        "outcome_ttl_ms": 45000,
+        "pit_phase": None,
+        "incident_phase": None,
+        "scope_kind": "flag_control",
+        "legacy_node_id": "session_flag_yellow",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.flag",
+        "terminal": True,
+        "branch_beat_ids": ("session.flag.yellow", "session.flag.green", "session.checkered"),
     },
 }
 
@@ -221,9 +221,7 @@ def test_rows_match_freeze_registry_and_beats() -> None:
         assert row.policy_id == beat["policyId"] == expect["policy_id"]
         assert row.beat_role == beat["role"] == expect["beat_role"]
         assert (
-            row.realization_family
-            == beat["realization"]["family"]
-            == expect["realization_family"]
+            row.realization_family == beat["realization"]["family"] == expect["realization_family"]
         )
         assert tuple(row.story_routes) == tuple(beat["storyRoutes"]) == expect["story_routes"]
         assert row.outcome_ttl_ms == ttl_by_policy[str(row.policy_id)] == expect["outcome_ttl_ms"]
@@ -237,9 +235,11 @@ def test_rows_match_freeze_registry_and_beats() -> None:
 
 def test_legacy_graph_nodes_exist_when_declared() -> None:
     nodes = json.loads(GRAPH.read_text(encoding="utf-8"))["nodes"]
-    node_ids = set(nodes) if isinstance(nodes, dict) else {
-        (n if isinstance(n, str) else n["id"]) for n in nodes
-    }
+    node_ids = (
+        set(nodes)
+        if isinstance(nodes, dict)
+        else {(n if isinstance(n, str) else n["id"]) for n in nodes}
+    )
     for row in ops_family_rows():
         if row.legacy_node_id is None:
             continue
@@ -277,16 +277,16 @@ def test_pit_cycle_stories_have_explicit_terminals() -> None:
 
 def test_incident_cycle_phase_order_is_monotonic() -> None:
     assert INCIDENT_CYCLE_PHASE_ORDER == ("event", "aftermath", "recovery")
-    assert OPS_INCIDENT_WIRE_IDS == ("INCIDENT", "INCIDENT_AFTERMATH", 'BACK_UNDER_WAY')
+    assert OPS_INCIDENT_WIRE_IDS == ("INCIDENT", "INCIDENT_AFTERMATH", "BACK_UNDER_WAY")
     assert incident_cycle_phase_order_is_monotonic() is True
 
 
 def test_incident_stories_have_explicit_terminals() -> None:
-    assert INCIDENT_TERMINAL_WIRE_IDS == frozenset({'BACK_UNDER_WAY'})
+    assert INCIDENT_TERMINAL_WIRE_IDS == frozenset({"BACK_UNDER_WAY"})
     assert incident_stories_have_explicit_terminals() is True
     assert not row_for_wire_id("INCIDENT").terminal_reasons
     assert not row_for_wire_id("INCIDENT_AFTERMATH").terminal_reasons
-    assert row_for_wire_id('BACK_UNDER_WAY').terminal_reasons
+    assert row_for_wire_id("BACK_UNDER_WAY").terminal_reasons
 
 
 def test_incident_branch_beats_are_documented() -> None:

@@ -48,9 +48,7 @@ OPS_INCIDENT_WIRE_IDS: tuple[str, ...] = (
 )
 
 # Slice 3 inventory: session yellow / green / checkered flag branches.
-OPS_FLAG_WIRE_IDS: tuple[str, ...] = (
-    "SESSION_FLAG",
-)
+OPS_FLAG_WIRE_IDS: tuple[str, ...] = ("SESSION_FLAG",)
 
 OPS_WIRE_IDS: tuple[str, ...] = OPS_PIT_WIRE_IDS + OPS_INCIDENT_WIRE_IDS + OPS_FLAG_WIRE_IDS
 
@@ -332,7 +330,6 @@ _STATIC: dict[str, _StaticSource] = {
             "invent yellow/green/checkered."
         ),
     ),
-
 }
 
 
@@ -595,4 +592,3 @@ def session_flag_branch_beats_are_documented() -> bool:
     if not row.invalidate_reasons or not row.terminal_reasons:
         return False
     return True
-
