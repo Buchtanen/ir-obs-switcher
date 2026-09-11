@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 3 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 4 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -25,11 +25,11 @@ Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). N
 
 ## Ops family migration map (`contracts/ops_family_map.py`)
 
-Slices 1–3 inventory for Wave G #276 (all `migration_status=legacy`; `OPS_WIRE_IDS` **10** = 6 pit + 3 incident + 1 flag):
+Slices 1–4 inventory for Wave G #276 (all `migration_status=legacy`; `OPS_WIRE_IDS` **13** = 6 pit + 3 incident + 1 flag + 3 closeout):
 
 | Helper | Role |
 | --- | --- |
-| `ops_family_rows()` | Closed rows for pit cycle + incident/aftermath/recovery + `SESSION_FLAG` wires |
+| `ops_family_rows()` | Closed rows for pit + incident/aftermath/recovery + `SESSION_FLAG` + closeout wires |
 | `migration_status_by_wire_id()` | Coverage-matrix companion |
 | `pit_cycle_phase_order_is_monotonic()` | Slice 1 AC: entry→service→exit→outcome |
 | `pit_cycle_stories_have_explicit_terminals()` | Slice 1 AC: exit/outcome terminals + invalidate reasons |
@@ -37,10 +37,14 @@ Slices 1–3 inventory for Wave G #276 (all `migration_status=legacy`; `OPS_WIRE
 | `incident_stories_have_explicit_terminals()` | Slice 2 AC: only `BACK_UNDER_WAY` terminal + invalidate reasons |
 | `incident_branch_beats_are_documented()` | Slice 2 AC: `INCIDENT` primary `incident.off_track` + branch `incident.unclassified` |
 | `session_flag_branch_beats_are_documented()` | Slice 3 AC: `SESSION_FLAG` primary `session.flag.yellow` + branches green/checkered; checkered ≠ hero finish / session wrap |
+| `session_wrap_branch_beats_are_documented()` | Slice 4 AC: `SESSION_WRAP` primary `session.wrap.practice` + qualifying/race branches |
+| `closeout_stories_are_separated()` | Slice 4 AC: checkered clock ≠ hero finish ≠ session wrap (scopes/families/tapes/notes) |
 
 **Slice 2 wires:** `INCIDENT` (`IncidentEmitter` + `incident_race_event_to_envelope`); `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY` (`IncidentAftermathFsm`, FSM direct).
 
 **Slice 3 wire:** `SESSION_FLAG` (`SessionFlagFsm` emitter+adapter; scope `flag_control`; policy `critical` / 45s; tape `race.control.flag`; family `session.flag`).
+
+**Slice 4 wires:** `SESSION_CHECKERED` (`LifecycleTriggerBank`; scope `session_checkered`; family `session.flag`; tape `race.control.flag`; critical/45s); `FINISH` (`LifecycleTriggerBank`; scope `hero_finish`; family `session.finish`; tape `race.session.finish`; critical/45s); `SESSION_WRAP` (`StreamNarrativeFsm`; scope `session_wrap`; family `session.wrap`; tape `session.lifecycle`; result/30s; branch beats practice|qualifying|race). Flag checkered *branch* stays on `SESSION_FLAG`.
 
 Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md unchanged.**
 

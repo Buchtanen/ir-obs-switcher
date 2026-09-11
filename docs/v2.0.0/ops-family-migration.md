@@ -1,10 +1,10 @@
 # #276 Ops family migration (pit / incident / flag / recovery)
 
-**Status:** Slice 3 — pit + incident/aftermath/recovery + `SESSION_FLAG` inventory (Slices 1–3; all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 4 — pit + incident/aftermath/recovery + `SESSION_FLAG` + checkered / hero finish / session wrap inventory (Slices 1–4; all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#276](https://github.com/Buchtanen/ir-obs-switcher/issues/276)  
 **Module:** `src/irswitch/contracts/ops_family_map.py`  
-**Tests:** `tests/test_ops_family_map.py` (**13**)  
-**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
+**Tests:** `tests/test_ops_family_map.py` (**15**)  
+**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [inflight § #276 slice 4](../dokumentace/inflight/README.md#276-ops-family-map-slice-4-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
 
 ## Guardrails
 
@@ -58,11 +58,31 @@
 | --- | --- | --- |
 | `SESSION_FLAG` | `irswitch.race.flags:SessionFlagFsm` | FSM direct (same module) |
 
-**`OPS_WIRE_IDS`:** **10** wires (6 pit + 3 incident + 1 flag).
+## Slice 4 inventory — checkered clock / hero finish / session wrap
 
-Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`.
+| Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Status |
+| --- | --- | --- | --- | --- | ---: | --- | --- | --- |
+| `SESSION_CHECKERED` | `session_checkered` | `session.checkered` | outcome | `session.flag` | critical / 45s | `race.control.flag` | `session_checkered` | legacy |
+| `FINISH` | `finish` | `session.hero_finish` | outcome | `session.finish` | critical / 45s | `race.session.finish` | `hero_finish` | legacy |
+| `SESSION_WRAP` | `session_wrap` | `session.wrap.practice` | closure | `session.wrap` | result / 30s | `session.lifecycle` | `session_wrap` | legacy |
 
-## AC locks (Slices 1–3)
+**SESSION_WRAP branch beats:** primary `session.wrap.practice`; registry also binds `session.wrap.qualifying` and `session.wrap.race` (`SESSION_WRAP_BRANCH_BEAT_IDS`, `SESSION_WRAP_PRIMARY_BEAT_ID`).
+
+**Separation AC:** distinct scopes (`session_checkered` / `hero_finish` / `session_wrap`) and families (`session.flag` / `session.finish` / `session.wrap`); `FINISH` tape ≠ checkered; `SESSION_WRAP` tape ≠ `FINISH`; each row's notes cross-reference the other two story kinds. `SESSION_FLAG` still owns the flag checkered *branch* separately from the `SESSION_CHECKERED` wire.
+
+**Emitters / adapters (Slice 4):**
+
+| Wire | Emitter | Adapter |
+| --- | --- | --- |
+| `SESSION_CHECKERED` | `irswitch.events.lifecycle_edges:LifecycleTriggerBank` | LifecycleTriggerBank direct |
+| `FINISH` | `irswitch.events.lifecycle_edges:LifecycleTriggerBank` | LifecycleTriggerBank direct |
+| `SESSION_WRAP` | `irswitch.race.narrative:StreamNarrativeFsm` | FSM direct (same module) |
+
+**`OPS_WIRE_IDS`:** **13** wires (6 pit + 3 incident + 1 flag + 3 closeout).
+
+Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`.
+
+## AC locks (Slices 1–4)
 
 - **Pit phase order** — `entry → lane → stopped → released → exit → outcome`.
 - **Pit explicit terminals** — only `PIT_EXIT` / `PIT_OUTCOME` carry `terminal_reasons`; every pit wire has `invalidate_reasons`.
@@ -70,10 +90,12 @@ Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`,
 - **Incident explicit terminals** — only `BACK_UNDER_WAY` carries `terminal_reasons`; every incident wire has `invalidate_reasons`.
 - **INCIDENT branch beats** — primary `incident.off_track`; branch list `incident.off_track`, `incident.unclassified` documented in row notes.
 - **SESSION_FLAG branch beats** — primary `session.flag.yellow`; branch list `session.flag.yellow`, `session.flag.green`, `session.checkered` documented in row notes; checkered ≠ hero finish / session wrap; unknown not invented.
+- **Closeout separation** — `SESSION_CHECKERED` / `FINISH` / `SESSION_WRAP` keep distinct scopes + families; finish tape ≠ checkered; wrap tape ≠ finish; notes cross-reference; flag checkered branch remains on `SESSION_FLAG`.
+- **SESSION_WRAP branch beats** — primary `session.wrap.practice`; branch list `session.wrap.practice`, `session.wrap.qualifying`, `session.wrap.race` documented in row notes.
 
 ## Later #276 slices
 
-Deferred: `SESSION_CHECKERED` vs hero finish vs session end separation; tow/teleport outcomes; EN patterns + adversarial tests; shadow activation.
+Deferred: tow/teleport outcomes; EN patterns + adversarial tests; shadow activation.
 
 ## Docs / config
 
