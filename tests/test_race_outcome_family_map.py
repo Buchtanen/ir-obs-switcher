@@ -1,4 +1,4 @@
-"""#274 slice 1: race-outcome family map completeness and polarity."""
+"""#274 race-outcome family map: inventory, polarity, story/TTL contract."""
 
 from __future__ import annotations
 
@@ -10,7 +10,9 @@ import pytest
 from irswitch.contracts.coverage_matrix import can_create_event_opportunity
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.race_outcome_family_map import (
+    FALLBACK_STORY_ROUTE,
     RACE_OUTCOME_WIRE_IDS,
+    SELF_CONTAINED_POLICIES,
     migration_status_by_wire_id,
     race_outcome_family_rows,
     row_for_wire_id,
@@ -21,6 +23,65 @@ from irswitch.events.adapters.position import _event_type_for_position_change
 
 ROOT = Path(__file__).resolve().parents[1]
 GRAPH = ROOT / "src" / "irswitch" / "commentary" / "data" / "sequence_graph.json"
+
+# Slice 2 ground truth: beat role + correlation + closing routes + adapter prefix.
+_STORY_TTL_EXPECT = {
+    "OVERTAKE": {
+        "beat_role": "outcome",
+        "policy_id": "critical",
+        "outcome_ttl_ms": 45_000,
+        "correlation_kind": "target",
+        "correlation_bindings": ("hero", "target"),
+        "closing_story_routes": ("battle_ahead", "battle_two_front"),
+        "fallback_story_route": FALLBACK_STORY_ROUTE,
+        "adapter_correlation_prefix": "position:",
+        "story_routes": ("battle_ahead", "battle_two_front", "single_result"),
+    },
+    "POSITION_GAINED": {
+        "beat_role": "result",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30_000,
+        "correlation_kind": "hero_position",
+        "correlation_bindings": ("hero", "oldPosition", "newPosition", "direction"),
+        "closing_story_routes": (),
+        "fallback_story_route": FALLBACK_STORY_ROUTE,
+        "adapter_correlation_prefix": "position:",
+        "story_routes": ("single_result",),
+    },
+    "POSITION_LOST": {
+        "beat_role": "result",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30_000,
+        "correlation_kind": "hero_position",
+        "correlation_bindings": ("hero", "oldPosition", "newPosition", "direction"),
+        "closing_story_routes": ("battle_behind", "battle_two_front"),
+        "fallback_story_route": FALLBACK_STORY_ROUTE,
+        "adapter_correlation_prefix": "position:",
+        "story_routes": ("battle_behind", "battle_two_front", "single_result"),
+    },
+    "LEADER_CHANGE": {
+        "beat_role": "result",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30_000,
+        "correlation_kind": "leader",
+        "correlation_bindings": ("oldLeader", "newLeader"),
+        "closing_story_routes": (),
+        "fallback_story_route": FALLBACK_STORY_ROUTE,
+        "adapter_correlation_prefix": "leader:",
+        "story_routes": ("single_result",),
+    },
+    "FINISH": {
+        "beat_role": "outcome",
+        "policy_id": "critical",
+        "outcome_ttl_ms": 45_000,
+        "correlation_kind": "hero_finish",
+        "correlation_bindings": ("occurrence", "hero"),
+        "closing_story_routes": ("session_occurrence",),
+        "fallback_story_route": FALLBACK_STORY_ROUTE,
+        "adapter_correlation_prefix": "session:",
+        "story_routes": ("session_occurrence", "single_result"),
+    },
+}
 
 
 def test_map_covers_every_race_outcome_wire_id_exactly_once() -> None:
@@ -120,3 +181,49 @@ def test_migration_status_records_every_family_as_legacy() -> None:
 def test_unknown_wire_id_raises() -> None:
     with pytest.raises(ContractViolation, match="unknown race-outcome wire id"):
         row_for_wire_id("NOT_A_RACE_OUTCOME")
+
+
+def test_story_and_beat_roles_match_catalog() -> None:
+    for wire_id, expect in _STORY_TTL_EXPECT.items():
+        row = row_for_wire_id(wire_id)
+        assert row.beat_role == expect["beat_role"]
+        assert row.story_routes == expect["story_routes"]
+        assert row.fallback_story_route == expect["fallback_story_route"]
+        assert row.closing_story_routes == expect["closing_story_routes"]
+        # Closing routes are a subset of authored storyRoutes; fallback is one of them.
+        assert set(row.closing_story_routes).issubset(row.story_routes)
+        assert row.fallback_story_route in row.story_routes
+
+
+def test_correlation_bindings_and_adapter_prefixes() -> None:
+    for wire_id, expect in _STORY_TTL_EXPECT.items():
+        row = row_for_wire_id(wire_id)
+        assert row.correlation_kind == expect["correlation_kind"]
+        assert row.correlation_bindings == expect["correlation_bindings"]
+        assert row.adapter_correlation_prefix == expect["adapter_correlation_prefix"]
+
+    alias = row_for_wire_id("OVERTAKEN")
+    assert alias.correlation_kind == "none"
+    assert alias.correlation_bindings == ()
+    assert alias.closing_story_routes == ()
+    assert alias.fallback_story_route is None
+    assert alias.adapter_correlation_prefix is None
+
+
+def test_outcome_ttl_matches_policy_catalog() -> None:
+    policies = {
+        str(row["id"]): int(row["ttlMs"])
+        for row in json.loads(packaged_schema_bytes("beat-catalog.json"))["policies"]
+    }
+    for wire_id, expect in _STORY_TTL_EXPECT.items():
+        row = row_for_wire_id(wire_id)
+        assert row.policy_id == expect["policy_id"]
+        assert row.outcome_ttl_ms == expect["outcome_ttl_ms"]
+        assert row.outcome_ttl_ms == policies[str(row.policy_id)]
+        assert row.policy_id in SELF_CONTAINED_POLICIES
+        assert row.self_contained is True
+
+    alias = row_for_wire_id("OVERTAKEN")
+    assert alias.policy_id is None
+    assert alias.outcome_ttl_ms is None
+    assert alias.self_contained is False

@@ -1,10 +1,11 @@
-"""#274 race-outcome family migration map (inventory only).
+"""#274 race-outcome family migration map (inventory + story/TTL contract).
 
 Maps wire identifiers for position pass / gain / loss, leader change and
 finish onto legacy emitters, adapters, beat/story routes, predicates,
-realization families, policy TTL and tape channels.
+realization families, policy TTL, tape channels and correlation bindings.
 
-Slice 1 records every family as ``legacy``. It does **not** rewrite frozen
+Slice 1 recorded every family as ``legacy``. Slice 2 locks story/beat roles,
+correlation identity and outcome TTL. It does **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and does **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -20,6 +21,8 @@ from .resources import packaged_schema_bytes
 
 MigrationStatus = Literal["legacy", "shadow", "v2"]
 Polarity = Literal["pass", "gain", "loss", "leader", "finish", "alias"]
+CorrelationKind = Literal["target", "hero_position", "leader", "hero_finish", "none"]
+FALLBACK_STORY_ROUTE = "single_result"
 
 # Speakable race-outcome families + the rejected OVERTAKEN alias.
 RACE_OUTCOME_WIRE_IDS: tuple[str, ...] = (
@@ -59,6 +62,11 @@ class RaceOutcomeFamilyRow:
     polarity: Polarity
     self_contained: bool
     migration_status: MigrationStatus
+    correlation_kind: CorrelationKind
+    correlation_bindings: tuple[str, ...]
+    closing_story_routes: tuple[str, ...]
+    fallback_story_route: str | None
+    adapter_correlation_prefix: str | None
     notes: str = ""
 
 
@@ -69,10 +77,15 @@ class _StaticSource:
     emitter_module: str
     adapter_module: str
     polarity: Polarity
+    correlation_kind: CorrelationKind
+    correlation_bindings: tuple[str, ...]
+    closing_story_routes: tuple[str, ...]
+    fallback_story_route: str | None
+    adapter_correlation_prefix: str | None
     notes: str = ""
 
 
-# Emitter/adapter/legacy-graph sources are branch inventory, not frozen hashes.
+# Emitter/adapter/legacy-graph + correlation sources are branch inventory.
 _STATIC: dict[str, _StaticSource] = {
     "OVERTAKE": _StaticSource(
         legacy_node_id="overtake",
@@ -80,7 +93,12 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.overtake:OvertakeClassifierEmitter",
         adapter_module="irswitch.events.adapters.position:position_race_event_to_envelope",
         polarity="pass",
-        notes="Passer→passed order; correlated battle closer or single_result.",
+        correlation_kind="target",
+        correlation_bindings=("hero", "target"),
+        closing_story_routes=("battle_ahead", "battle_two_front"),
+        fallback_story_route=FALLBACK_STORY_ROUTE,
+        adapter_correlation_prefix="position:",
+        notes="Passer→passed order; closes battle_ahead/two_front or single_result.",
     ),
     "POSITION_GAINED": _StaticSource(
         legacy_node_id="position_gained",
@@ -88,6 +106,11 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.position:PositionEmitter",
         adapter_module="irswitch.events.adapters.position:_event_type_for_position_change",
         polarity="gain",
+        correlation_kind="hero_position",
+        correlation_bindings=("hero", "oldPosition", "newPosition", "direction"),
+        closing_story_routes=(),
+        fallback_story_route=FALLBACK_STORY_ROUTE,
+        adapter_correlation_prefix="position:",
         notes="Adapter maps RaceEvent direction gain → POSITION_GAINED.",
     ),
     "POSITION_LOST": _StaticSource(
@@ -96,6 +119,11 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.position:PositionEmitter",
         adapter_module="irswitch.events.adapters.position:_event_type_for_position_change",
         polarity="loss",
+        correlation_kind="hero_position",
+        correlation_bindings=("hero", "oldPosition", "newPosition", "direction"),
+        closing_story_routes=("battle_behind", "battle_two_front"),
+        fallback_story_route=FALLBACK_STORY_ROUTE,
+        adapter_correlation_prefix="position:",
         notes="Adapter maps RaceEvent direction loss → POSITION_LOST.",
     ),
     "LEADER_CHANGE": _StaticSource(
@@ -104,6 +132,11 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.leader_change:LeaderChangeEmitter",
         adapter_module="irswitch.events.adapters.position:position_race_event_to_envelope",
         polarity="leader",
+        correlation_kind="leader",
+        correlation_bindings=("oldLeader", "newLeader"),
+        closing_story_routes=(),
+        fallback_story_route=FALLBACK_STORY_ROUTE,
+        adapter_correlation_prefix="leader:",
         notes="Old leader → new leader; hero involvement only when bound.",
     ),
     "FINISH": _StaticSource(
@@ -112,6 +145,11 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.lifecycle_edges:LifecycleTriggerBank",
         adapter_module="irswitch.events.adapters.session:session_race_event_to_envelope",
         polarity="finish",
+        correlation_kind="hero_finish",
+        correlation_bindings=("occurrence", "hero"),
+        closing_story_routes=("session_occurrence",),
+        fallback_story_route=FALLBACK_STORY_ROUTE,
+        adapter_correlation_prefix="session:",
         notes="Hero finish / checkered result; self-contained critical outcome.",
     ),
     "OVERTAKEN": _StaticSource(
@@ -120,6 +158,11 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="—",
         adapter_module="—",
         polarity="alias",
+        correlation_kind="none",
+        correlation_bindings=(),
+        closing_story_routes=(),
+        fallback_story_route=None,
+        adapter_correlation_prefix=None,
         notes="compatibility_alias; reject as v2 input; migrate to POSITION_LOST + cause.",
     ),
 }
@@ -229,6 +272,11 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                     polarity=static.polarity,
                     self_contained=False,
                     migration_status="legacy",
+                    correlation_kind=static.correlation_kind,
+                    correlation_bindings=static.correlation_bindings,
+                    closing_story_routes=static.closing_story_routes,
+                    fallback_story_route=static.fallback_story_route,
+                    adapter_correlation_prefix=static.adapter_correlation_prefix,
                     notes=static.notes,
                 )
             )
@@ -245,6 +293,16 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
         if not isinstance(realization, dict) or "family" not in realization:
             raise ContractViolation(f"beat {beat_id} missing realization.family")
         predicate_id, actor_frame, direction_equals = _claim_meta(beat)
+        story_routes = _story_routes(beat)
+        for route in static.closing_story_routes:
+            if route not in story_routes:
+                raise ContractViolation(
+                    f"{wire_id} closing route {route!r} missing from beat storyRoutes"
+                )
+        if static.fallback_story_route is not None and static.fallback_story_route not in story_routes:
+            raise ContractViolation(
+                f"{wire_id} fallback {static.fallback_story_route!r} missing from beat storyRoutes"
+            )
         rows.append(
             RaceOutcomeFamilyRow(
                 wire_id=wire_id,
@@ -258,7 +316,7 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                 beat_id=beat_id,
                 beat_role=str(beat["role"]),
                 realization_family=str(realization["family"]),
-                story_routes=_story_routes(beat),
+                story_routes=story_routes,
                 policy_id=policy_id,
                 outcome_ttl_ms=ttl_by_policy[policy_id],
                 tape_channel=tape_channel,
@@ -267,6 +325,11 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                 polarity=static.polarity,
                 self_contained=policy_id in SELF_CONTAINED_POLICIES,
                 migration_status="legacy",
+                correlation_kind=static.correlation_kind,
+                correlation_bindings=static.correlation_bindings,
+                closing_story_routes=static.closing_story_routes,
+                fallback_story_route=static.fallback_story_route,
+                adapter_correlation_prefix=static.adapter_correlation_prefix,
                 notes=static.notes,
             )
         )
