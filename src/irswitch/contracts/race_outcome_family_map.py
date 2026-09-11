@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from .coverage_matrix import can_create_event_opportunity
 from .primitives import ContractViolation
@@ -125,41 +125,41 @@ _STATIC: dict[str, _StaticSource] = {
 }
 
 
-def _object(value: object, label: str) -> dict[str, object]:
+def _object(value: object, label: str) -> dict[str, Any]:
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
         raise ContractViolation(f"{label} must be a JSON object")
-    return value  # type: ignore[return-value]
+    return value
 
 
-def _rows(value: object, label: str) -> list[dict[str, object]]:
+def _rows(value: object, label: str) -> list[dict[str, Any]]:
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
         raise ContractViolation(f"{label} must be a JSON object list")
-    return value  # type: ignore[return-value]
+    return value
 
 
-def _load(name: str) -> dict[str, object]:
+def _load(name: str) -> dict[str, Any]:
     return _object(json.loads(packaged_schema_bytes(name)), name)
 
 
-def _beat_index(beat_doc: dict[str, object]) -> dict[str, dict[str, object]]:
+def _beat_index(beat_doc: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {str(row["id"]): row for row in _rows(beat_doc["beats"], "beats")}
 
 
-def _policy_ttl(beat_doc: dict[str, object]) -> dict[str, int]:
+def _policy_ttl(beat_doc: dict[str, Any]) -> dict[str, int]:
     out: dict[str, int] = {}
     for row in _rows(beat_doc["policies"], "policies"):
         out[str(row["id"])] = int(row["ttlMs"])
     return out
 
 
-def _registry_row(registry: dict[str, object], wire_id: str) -> dict[str, object]:
+def _registry_row(registry: dict[str, Any], wire_id: str) -> dict[str, Any]:
     for row in _rows(registry["eventIdentifiers"], "eventIdentifiers"):
         if str(row["id"]) == wire_id:
             return row
     raise ContractViolation(f"unknown race-outcome wire id: {wire_id}")
 
 
-def _claim_meta(beat: dict[str, object]) -> tuple[str | None, str | None, str | None]:
+def _claim_meta(beat: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
     claims = beat.get("claims")
     if not isinstance(claims, dict):
         return None, None, None
@@ -178,7 +178,7 @@ def _claim_meta(beat: dict[str, object]) -> tuple[str | None, str | None, str | 
     return predicate_id, actor_frame, direction
 
 
-def _story_routes(beat: dict[str, object]) -> tuple[str, ...]:
+def _story_routes(beat: dict[str, Any]) -> tuple[str, ...]:
     routes = beat.get("storyRoutes")
     if not isinstance(routes, list) or any(not isinstance(item, str) for item in routes):
         raise ContractViolation(f"beat {beat.get('id')!r} storyRoutes must be strings")
