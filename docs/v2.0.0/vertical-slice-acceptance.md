@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 8 — offline Qwen hard-fail drivers for F09/F11 (no live Windows §24.9 GO).
+**Status:** Slice 9 — offline mailbox overflow + manual admission drivers for F13/F20 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -115,6 +115,21 @@
 **AC locks (Slice 8):**
 - Machine projection for F09/F11 still matches frozen expectations.
 - Runtime drivers prove actor-reversed suppress + reservation release, distinct attempt 2 then cycle exhaust, and cold Qwen hard ineligibility without cold-timeout spend or backend rewrite while authored may win.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 9 — F13/F20 mailbox overflow + manual admission runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F13` (protected mailbox overflow / ordinary eviction first), `F20` (manual admission timeout / no delayed audio) |
+| Pytest | `tests/test_vertical_slice_mailbox_manual_runtime.py` |
+| Inventory | **26/44** wired; **18** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 9):**
+- Machine projection for F13/F20 still matches frozen expectations.
+- Runtime drivers prove ordinary eviction before emergency recovery with latest projection and incomplete history, non-blocking producer admits, and manual abandon-vs-claim linearization where timeout cannot produce delayed audio.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

@@ -148,3 +148,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 ## Related
 
 [RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.
+
+
+## #278 vertical-slice mailbox/manual runtime (Slice 9)
+
+**Status:** offline F13/F20 drivers on branch `cursor/vertical-slice-mailbox-manual-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_mailbox_manual_runtime.py`](../../../tests/test_vertical_slice_mailbox_manual_runtime.py) (**4** tests: **2** parametrized machine projection + F13/F20 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **26/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 9](../../v2.0.0/vertical-slice-acceptance.md#slice-9--f13f20-mailbox-overflow--manual-admission-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F13/F20 rows; hashes **unchanged**) |
+
+**Slice 9 locks:** F13 ordinary eviction first, emergency recovery, latest projection, history incomplete, no lost opportunities, producer nonblocking; F20 abandon returns 503-class no audio, claim linearized 202-or-error, no narrative state, tape terminal decision, manual silence only; machine projection still matches frozen expectations; gap inventory **26/44** wired, **18** unwired.
