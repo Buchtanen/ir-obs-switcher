@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 7 — offline partition + silence-origin drivers for F21/F42 (no live Windows §24.9 GO).
+**Status:** Slice 8 — offline Qwen hard-fail drivers for F09/F11 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -101,6 +101,20 @@
 **AC locks (Slice 7):**
 - Machine projection for F21/F42 still matches frozen expectations/calcs (`partition` → `[64,64,2]`).
 - Runtime drivers prove protected/ordinary partition boundaries, source-order preservation, three planning impulses, and silence arm/cancel/rearm/stale/config-next-arm locks.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 8 — F09/F11 Qwen hard-fail runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F09` (invalid Qwen output / distinct cycle attempt), `F11` (cold Qwen hard-ineligible) |
+| Pytest | `tests/test_vertical_slice_qwen_runtime.py` |
+| Inventory | **24/44** wired; **20** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 8):**
+- Machine projection for F09/F11 still matches frozen expectations.
+- Runtime drivers prove actor-reversed suppress + reservation release, distinct attempt 2 then cycle exhaust, and cold Qwen hard ineligibility without cold-timeout spend or backend rewrite while authored may win.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

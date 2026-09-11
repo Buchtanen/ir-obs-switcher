@@ -128,6 +128,23 @@ Lookup: [inflight § #278 slice 6](../inflight/README.md#278-vertical-slice-poli
 
 Lookup: [inflight § #278 slice 7](../inflight/README.md#278-vertical-slice-partition-silence-runtime-slice-7-lookup) · [dokumentace index § #278](../README.md).
 
+## #278 vertical-slice qwen runtime (Slice 8)
+
+**Status:** offline F09/F11 drivers on branch `cursor/vertical-slice-qwen-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_qwen_runtime.py`](../../../tests/test_vertical_slice_qwen_runtime.py) (**4** tests: **2** parametrized machine projection + F09/F11 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **24/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 8](../../v2.0.0/vertical-slice-acceptance.md#slice-8--f09f11-qwen-hard-fail-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F09/F11 rows; hashes **unchanged**) |
+
+**Slice 8 locks:** F09 actor-reversed suppress + reservation release, no retry/fallback, distinct attempt 2, cycle exhaust after second failure; F11 cold Qwen hard-ineligible without cold-timeout spend, authored may win, backend never rewritten to authored; machine projection still matches frozen expectations; gap inventory **24/44** wired, **20** unwired.
+
+**Explicit non-goals:** no rewrite of frozen `machine/*` hashes; **`CONFIG.md` / `API.md` unchanged**; no live §24.9 GO.
+
+Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen-runtime-slice-8-lookup) · [dokumentace index § #278](../README.md).
+
 ## Related
 
 [RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.
