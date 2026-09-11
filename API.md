@@ -1100,7 +1100,7 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 - Syntactically valid requests always return **200** with a `ValidateResponse` body; `valid` is `false` when any issue has severity `error`.
 - Malformed requests (schema/ binding violations) return **400** with `commentary-runtime/2` error envelope `{schemaVersion, error: {code, fields, message}}` (`code`: `invalid_json` | `invalid_request`).
 
-**Request** (`commentary-runtime/2`): `schemaVersion`, `text` (1–512 chars, no control chars), `beatId`, `evaluationAtMonoMs`, `actorBindings` (1–16 actors, 1–8 aliases each), `factBindings` (1–32 `atomic-fact/2` rows; actors must cover fact subjects/objects exactly).
+**Request** (`commentary-runtime/2`): exact keys only — `schemaVersion`, `text` (1–512 chars, no control chars), `beatId`, `evaluationAtMonoMs`, `actorBindings` (0–16 actors, 1–8 aliases each), `factBindings` (1–32 full `atomic-fact/2` `AtomicFact` rows validated via `AtomicFact.from_dict` + FactRegistry; actors must cover fact subjects/objects exactly). Unknown top-level fields, incomplete/unknown AtomicFact fields, or unregistered predicates → **400** `invalid_request`.
 
 **Example (supported)** — golden `tests/fixtures/commentary_runtime/validate_supported.json`:
 

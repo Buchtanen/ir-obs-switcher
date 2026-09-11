@@ -110,7 +110,7 @@ Lane `state` v HTTP projekci mapuje `idle|building|committed|speaking|stopping` 
 
 ## Validate projection (`events/narrative_validate_projection.py`)
 
-- `project_validate_response` — offline `ValidateRequest`→`ValidateResponse` (`commentary-runtime/2`); caller-supplied EN text + `beatId` + `actorBindings` / `factBindings`; nečte live runtime. **Not** exported z `events/__init__.py`.
+- `project_validate_response` — offline `ValidateRequest`→`ValidateResponse` (`commentary-runtime/2`); exact top-level keys only (`schemaVersion`/`text`/`beatId`/`evaluationAtMonoMs`/`actorBindings`/`factBindings`); `factBindings` via `AtomicFact.from_dict` + FactRegistry (incomplete/unknown/unregistered → `ContractViolation`/400); caller-supplied EN text + beat + bindings; nečte live runtime. **Not** exported z `events/__init__.py`.
 - HTTP mount: `POST /api/commentary/runtime/validate` + public `POST /api/commentary/validate` v `events/narrative_runtime_http.py` / `commentary/http.py` (200 i když `valid=false`; 400 malformed; cutover feat `f2c1f1b`).
 
 ## Manual admission latch (`events/narrative_manual_latch.py`)
