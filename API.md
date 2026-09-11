@@ -854,7 +854,8 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | `GET` | `/api/commentary/decisions?limit=20` | legacy speak/skip decisions; `{decisions, runtime}` |
 | `POST` | `/api/commentary/validate` | `#284` / `#273` cut over to NarrativeRuntime offline validate (`commentary-runtime/2`; same handler as `/api/commentary/runtime/validate`) |
 | `POST` | `/api/commentary/speak` | `#284` / `#273` cut over to NarrativeRuntime manual speak (`commentary-runtime/2`; same handler as `/api/commentary/runtime/speak`) |
-| `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
+
+`GET /api/commentary/assignments` was removed in #273: the route is unregistered and returns the server's generic 404 (not a commentary-runtime JSON tombstone). Offline `render_assignments()` in `commentary/assignments.py` remains for CLI/docs.
 
 `speak` nejdřív pustí TTS validator.
 

@@ -135,3 +135,27 @@ async def test_commentary_page_exposes_decision_panel(app: web.Application) -> N
                 or "decision" in html.lower()
             )
             assert "/api/commentary/decisions" in html
+
+
+@pytest.mark.asyncio
+async def test_assignments_route_unregistered_generic_404(app: web.Application) -> None:
+    """#273: GET /api/commentary/assignments removed — generic 404, no tombstone."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    resources = {resource.canonical for resource in app.router.resources()}
+    assert "/api/commentary/assignments" not in resources
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/assignments")
+            assert resp.status == 404
+            content_type = resp.headers.get("Content-Type", "")
+            # Generic aiohttp/server 404 — not a commentary-runtime JSON tombstone.
+            if "application/json" in content_type:
+                body = await resp.json()
+                assert "schemaVersion" not in body
+                assert body.get("error", {}).get("code") != "gone"
+            else:
+                text = await resp.text()
+                assert "commentary-runtime" not in text
+                assert "gone" not in text.lower()

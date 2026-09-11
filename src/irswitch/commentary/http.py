@@ -2,6 +2,9 @@
 
 ``POST /api/commentary/validate`` and ``POST /api/commentary/speak`` are cut
 over to NarrativeRuntime handlers (#284 / #273). Runtime paths remain aliases.
+``GET /api/commentary/assignments`` is unregistered (#273) — generic 404,
+not a commentary tombstone. Offline ``render_assignments`` remains in
+``assignments.py`` for CLI/docs use.
 """
 
 from __future__ import annotations
@@ -11,7 +14,6 @@ from typing import Any
 
 from aiohttp import web
 
-from irswitch.commentary.assignments import render_assignments
 from irswitch.commentary.graph import GraphNode, load_sequence_graph
 from irswitch.commentary.tts import detect_backend, list_voices
 from irswitch.overlay.http import _file_response
@@ -118,13 +120,6 @@ async def handle_commentary_decisions(request: web.Request) -> web.Response:
     return web.json_response({"decisions": director.decisions(limit), "runtime": True})
 
 
-async def handle_commentary_assignments(_request: web.Request) -> web.Response:
-    return web.Response(
-        text=render_assignments(locale=_language()),
-        content_type="text/markdown; charset=utf-8",
-    )
-
-
 def _node_or_default(node_id: str) -> GraphNode:
     graph = load_sequence_graph()
     node = graph.node(node_id) if node_id else None
@@ -167,7 +162,6 @@ def register_commentary_routes(app: web.Application) -> None:
     app.router.add_get("/commentary/", handle_commentary_page)
     app.router.add_get("/api/commentary/status", handle_commentary_status)
     app.router.add_get("/api/commentary/decisions", handle_commentary_decisions)
-    app.router.add_get("/api/commentary/assignments", handle_commentary_assignments)
     app.router.add_post("/api/commentary/validate", handle_commentary_runtime_validate)
     app.router.add_post("/api/commentary/speak", handle_commentary_runtime_speak)
     register_narrative_runtime_routes(app)
