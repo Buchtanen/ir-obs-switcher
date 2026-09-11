@@ -351,3 +351,39 @@ def test_composition_builds_tape_health_without_runtime_import() -> None:
     assert command.payload["status"] == "unavailable"
     assert command.payload["affectedDetectorIds"] == ["closing"]
     assert command.protected is True
+
+
+@pytest.mark.asyncio
+async def test_narrative_tape_writer_emits_no_info_warn_under_full_load(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """#273: full NarrativeTape I/O stays off the INFO/WARN operator log stream."""
+    import logging
+
+    writer = _writer(tmp_path, flush_interval_ms=10)
+    task = asyncio.create_task(writer.run())
+    try:
+        with caplog.at_level(logging.INFO):
+            for idx in range(64):
+                writer.submit(_health(f"record:{idx}", mono_ms=1000 + idx))
+            await asyncio.sleep(0.05)
+        await writer.aclose()
+    finally:
+        if not task.done():
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    noisy = [
+        rec
+        for rec in caplog.records
+        if rec.levelno >= logging.INFO
+        and (
+            "tape_writer" in rec.name
+            or "tape_queue" in rec.name
+            or "narrative_tape" in rec.name
+            or "commentary.tape" in rec.name
+            or rec.name.startswith("irswitch.commentary.tape")
+        )
+    ]
+    assert noisy == [], [f"{r.name}:{r.levelname}:{r.getMessage()}" for r in noisy]

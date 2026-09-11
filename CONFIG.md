@@ -698,6 +698,26 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 - `system_info.lhm_dll_path`
 - `overlay.session_tape_dir`
 
+## Sekce `[commentary.tape]` — NarrativeTape (NDJSON)
+
+Samostatný NDJSON zápis narrative runtime stop (ne `app.log_level` a ne overlay `session_tape`).
+
+| Klíč | Význam |
+| --- | --- |
+| `enabled` | Zapne NarrativeTape writer (default `false`) |
+| `output_dir` | Cílová složka NDJSON / rotovaných `.gz` |
+| `channels` | Allowlist kanálů (katalogové `tape_channel` id) |
+| `detail` | Hloubka payloadu (`minimal` / `normal` / `full`) — **nemění** úroveň `app.log_level` |
+| `writer_capacity` | Kapacita fronty writeru |
+| `flush_interval_ms` / `rotate_mb` / `keep_files` / `compress_rotated` | Flush a rotace |
+| `shutdown_flush_timeout_s` | Bounded flush při shutdown |
+
+Podsekce `[commentary.tape.flow]`, `[commentary.tape.llm_eval]`, `[commentary.tape.detector_tuning]` ladí allowlisty a capture detail per účel.
+
+**#273 AC:** plný tape (`enabled=true`, `detail=full`) musí zůstat použitelný při `app.log_level=INFO`/`WARN`. Objem tape se řídí jen těmito klíči; writer **neemituje** per-record INFO/WARN do provozního logu. Kanálová kadence (kick→expired) je ve `byTapeChannel` na `GET /api/commentary/runtime` a na `/commentary` — bez parsování event names a bez global DEBUG.
+
+Viz také `config/config.example.ini` a `docs/v2.0.0/public-contracts.md`.
+
 ## Overlay / race pipeline
 
 Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče jsou v [`config/config.example.ini`](config/config.example.ini).
@@ -709,7 +729,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` `session_tape` (default **true**) — session HUD JSONL tape: WS eventy, DecisionLog (emitted/suppressed/preempted), změna OBS scény / driving mode, aktivní V4 stories. Ne telemetry ticky. Soubor `recordings/overlay-<utc>-<subsession>-<session>.jsonl`. Gate je stejný session type jako switcher (`extract_session_type` z `SessionInfo.Sessions[SessionNum]`: Practice / Qualify / Race → overlay_mode PRACTICE/QUALIFYING/RACE). `WeekendInfo.EventType` se nepoužívá. Warmup/Test tape nezapisují. Vypni `session_tape = false`. Řádky `commentary` / `llm_polish` se zapisují **jen když je runtime log level DEBUG** (`POST /logging/level`) — ne při běžném INFO/WARN streamu.
 - `[overlay]` `session_tape_dir` (default `recordings`) — adresář tape souborů; změna vyžaduje restart. `..` v cestě se ignoruje.
 - `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. Missing `[event_engine]` = all off. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` / `quali_projection` enable S1/S2(/S3) split callouts (`SECTOR_SPLIT`) in Practice and Quali (absolute sector time; detector uses iRSDK `SplitTimeInfo` sector lines, with geometric 1/3+2/3 only as fallback). Practice still also emits `GAIN_FOUND` / `TIME_LOST` vs a reference lap; `quali_projection` still emits projected lap / position attack / hot lap. Race never announces splits — battles and gaps stay the race overlay. `SessionState` 5 (checkered) is only the **session clock**; widgets stay live on the flying lap until `player_finished` / `mute_field` (S/F post-checkered, eligible pit-rise if the car was on track at checkered, or CoolDown fallback). Already in pits at checkered is not finish. After mute only `finish` / `final_lap` (plus widget EXIT) stay live; hunting, pits, and lap noise are muted. Invalid-lap HUD/commentary is Practice and Quali only (never Race). Pit stories start only after a driven on-track stint (lobby sit-in-car, ESC teleport, and tow do not).
-- V2 commentary používá pouze přesné sekce a klíče z [`docs/v2.0.0/public-contracts.md`](docs/v2.0.0/public-contracts.md) a z validního příkladu v [`config/config.example.ini`](config/config.example.ini). Neznámý `commentary.*` klíč odmítne celý kandidát; strict INI booleany jsou jen `true`/`false` a číselné exponenty nejsou povolené.
+- V2 commentary používá pouze přesné sekce a klíče z [`docs/v2.0.0/public-contracts.md` + `config/config.example.ini`](docs/v2.0.0/public-contracts.md) a z validního příkladu v [`config/config.example.ini`](config/config.example.ini). Neznámý `commentary.*` klíč odmítne celý kandidát; strict INI booleany jsou jen `true`/`false` a číselné exponenty nejsou povolené.
 - Legacy flat TTS/LLM klíče, `[commentary.scheduler]`, `[commentary.graph_runtime]` i hodnoty `legacy`/`shadow`/`active` nejsou aliasy ani rollout přepínače. Vyvolají migraci/diagnostiku a nemohou vybrat starý runtime. Dokud #284 nezapojí jediný `NarrativeRuntime`, zůstává legacy `overlay.commentary` vždy vypnutý i pro validní v2 kandidát.
 - **#284 mailbox/timeouts (reason-code impact):** actor mailbox capacity is fixed at 64 (56+7+1) with **no public INI capacity override**. Overload/eviction/recovery surface as freeze-registry reason codes on `GET /api/commentary/runtime` `diagnostics.reasonCodes` and `/health` `commentary.reason` (`mailbox_overloaded`, `mailbox_evicted_update`, `mailbox_recovery`, `deadline_admission_skipped`, …). Manual speak latch timeout is library-fixed `ADMISSION_TIMEOUT_S=1.0` (not an INI key) and projects `admission_timeout`. Existing `[commentary.llm] timeout_s`, `[commentary.tts] start_timeout_s`/`stop_timeout_s`, and tape `shutdown_flush_timeout_s` remain the transport/flush knobs; they do not change mailbox reservations.
 - `[commentary.llm]` přijímá OpenAI-compatible URL pouze na loopback, RFC1918, link-local nebo IPv6 ULA literal adrese. Konfigurace má jeden transportní pokus, krátký wall-clock timeout a žádný klíč pro teplotu či legacy retry. LLM dostane až v runtime pouze povolený facts/profile payload; validátor zůstává autoritou nad fakty.
@@ -721,7 +741,7 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 
 
 
-**V2 migration:** Přenes jen hodnoty, pro které frozen tabulka uvádí náhradní klíč. Legacy klíče se nikdy tiše neinterpretují, celý chybný commentary kandidát se neinstaluje a podrobná diagnostika uvádí zdroj i případné náhradní klíče. Kompletní tabulka 13 migrací je v [`docs/v2.0.0/public-contracts.md`](docs/v2.0.0/public-contracts.md).
+**V2 migration:** Přenes jen hodnoty, pro které frozen tabulka uvádí náhradní klíč. Legacy klíče se nikdy tiše neinterpretují, celý chybný commentary kandidát se neinstaluje a podrobná diagnostika uvádí zdroj i případné náhradní klíče. Kompletní tabulka 13 migrací je v [`docs/v2.0.0/public-contracts.md` + `config/config.example.ini`](docs/v2.0.0/public-contracts.md).
 
 **Migration:** new optional `[race_observer]` `leader_pace_cooldown_s` (default `300`). Missing section = 300 s between leader field facts; other filler kinds still rotate.
 

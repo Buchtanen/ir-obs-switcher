@@ -76,6 +76,7 @@
 | #273 transport error HTTP goldens (invalid_json/invalid_request/validation_failed) | events + server | `tests/test_commentary_runtime_goldens.py` (+ existing `error_*.json`) — [§ lookup](#273-transport-error-http-goldens-slice-lookup) | **open** on `cursor/error-http-goldens-273-cad3`; **3** new HTTP golden rows; **not** on integration tip yet |
 | #273 golden coverage close-out (forbidden transport + success HTTP goldens) | events + server | `narrative_runtime_http.py` transport guard + goldens tests — [§ lookup](#273-golden-coverage-close-out-slice-lookup) | **landed** @ feat `dc0db7b` on `cursor/golden-coverage-273-cad3` (pending FF → `codex/commentary-story-flow-spec`) |
 | #273 bounds/preflight HTTP verification (limits/invalid/unavailable/mixed-boundary/preflight) | events + server | `tests/test_narrative_runtime_http.py` (+12 HTTP rows) — [§ lookup](#273-bounds-preflight-http-verification-slice-lookup) | **landed** @ feat `e6ee7b8` on `cursor/bounds-preflight-verify-273-cad3` (pending FF → `codex/commentary-story-flow-spec`) |
+| #273 INFO/WARN + channel cadence observability (dashboard byTapeChannel + tape log lock) | web + commentary + docs | `web/commentary/index.html` `summarizeByTapeChannel`; `CONFIG.md` `[commentary.tape]`; caplog tape quietness — [§ lookup](#273-info-warn-channel-cadence-slice-lookup) | **open** on `cursor/info-warn-cadence-273-cad3`; **not** on tip yet |
 | #273 / #284 components llm/tts projection (HTTP + ingress subset) | events + server + race | `events/narrative_ingress.py` (`_llm_component_projection`, `_tts_component_projection`, `_tts_voice_from_ledger`, live `quarantinedGeneration`), `events/narrative_runtime.py` (`llm_component=`, `speech_quarantined_generation`, quarantine on stop-timeout), `race/runtime.py` (passes warmed `LlmComponent`) — [§ lookup](#284-273-components-llm-tts-slice-lookup) | `tests/test_narrative_ingress.py` (**1** golden + **4** live llm/tts + **3** lastAttempt + **3** voice/quarantine rows); golden `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; related **268** |
 | #273 / #284 components detectors/facts projection (HTTP + ingress subset) | events + server | `events/narrative_ingress.py` (`project_runtime_status` `components.facts`/`components.detectors`), `events/narrative_runtime.py` (`detector_bank=`, fact fields, `_ingest_fact_view_counts`, `_detector_disabled_snapshot`), `events/detector_bank.py` (`disabled_for_status`) — [§ lookup](#284-273-components-detectors-facts-slice-lookup) · [§ fact-health continuation](#273-fact-health-continuation-slice-lookup) | live counts feat `d13d6bd` (**3** rows); capacity health **+3** on `cursor/fact-health-273-cad3` ([§ fact-health](#273-fact-health-continuation-slice-lookup)); related **249** / **252** |
 | #273 / #284 timeline session identity (HTTP + ingress subset) | events + server | `events/narrative_runtime.py` (`_session_identity_from_timeline`, `RuntimeStatus` session fields on APPLY_CONTEXT) + `events/narrative_ingress.py` (`_timeline_session_identity` in `project_runtime_status`) — [§ lookup](#284-273-timeline-session-identity-slice-lookup) | `tests/test_narrative_ingress.py` (**3** timeline session rows); goldens `status_timeline_session_null.json`, `status_identity_after_context.json`; related **237** |
@@ -917,6 +918,16 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 
 
 
+
+
+
+### #273 INFO/WARN + channel cadence slice lookup
+
+- **Dashboard (`src/irswitch/web/commentary/index.html`):** `summarizeByTapeChannel` renders `byTapeChannel` kick/accepted/queued/selected/started/expired; optional `components.tape` drops/size.
+- **INFO/WARN lock:** `CONFIG.md` `[commentary.tape]` states tape volume ≠ `app.log_level`; `tests/test_narrative_tape_writer.py` caplog asserts no INFO/WARN from tape modules under full submit load.
+- **Tests:** `test_commentary_page_surfaces_by_tape_channel_cadence`; tape writer quietness.
+- **Branch:** `cursor/info-warn-cadence-273-cad3`; feat SHA **pending**.
+- **Docs impact:** this file, `API.md`, `CONFIG.md`, handover. No handler changes.
 
 ### #273 bounds/preflight HTTP verification slice lookup
 

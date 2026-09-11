@@ -199,3 +199,18 @@ async def test_commentary_page_uses_versioned_contracts_only(app: web.Applicatio
             assert "/api/commentary/decisions" not in html.replace(
                 "/api/commentary/runtime/decisions", ""
             )
+
+
+@pytest.mark.asyncio
+async def test_commentary_page_surfaces_by_tape_channel_cadence(app: web.Application) -> None:
+    """#273: operator page renders byTapeChannel cadence without DEBUG/event parsing."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            page = await client.get("/commentary")
+            html = await page.text()
+            assert "byTapeChannel" in html
+            assert "summarizeByTapeChannel" in html
+            for counter in ("kick", "accepted", "queued", "selected", "started", "expired"):
+                assert counter + "=" in html

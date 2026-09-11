@@ -112,12 +112,33 @@
       });
     }
 
+    function summarizeByTapeChannel(body) {
+      const map = body.byTapeChannel || {};
+      const channels = Object.keys(map).sort();
+      if (!channels.length) {
+        return ["byTapeChannel=(empty)"];
+      }
+      return channels.map(function (channel) {
+        const c = map[channel] || {};
+        return (
+          "byTapeChannel." + channel +
+          " kick=" + String(c.kick ?? 0) +
+          " accepted=" + String(c.accepted ?? 0) +
+          " queued=" + String(c.queued ?? 0) +
+          " selected=" + String(c.selected ?? 0) +
+          " started=" + String(c.started ?? 0) +
+          " expired=" + String(c.expired ?? 0)
+        );
+      });
+    }
+
     function summarizeRuntime(body) {
       const speech = body.speech || {};
       const tts = (body.components && body.components.tts) || {};
       const timeline = body.timeline || {};
       const mailbox = (body.queues && body.queues.mailbox) || {};
       const loop = body.loop || {};
+      const tape = (body.components && body.components.tape) || {};
       return [
         "schema=" + (body.schemaVersion || "?"),
         "status=" + (body.status || "?"),
@@ -128,7 +149,10 @@
         "streamEpoch=" + String(timeline.streamEpoch),
         "mailbox=" + String(mailbox.depth) + "/" + String(mailbox.capacity),
         "loop.active=" + String(loop.active),
-      ].join("\n");
+        "tape.status=" + String(tape.status || "?") +
+          " drops=" + String(tape.drops ?? 0) +
+          " size=" + String(tape.size ?? 0),
+      ].concat(summarizeByTapeChannel(body)).join("\n");
     }
 
     async function loadRuntime() {
