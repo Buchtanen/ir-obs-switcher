@@ -431,3 +431,300 @@ async def test_runtime_speak_admission_timeout_maps_503() -> None:
             data = await resp.json()
             assert data["schemaVersion"] == "commentary-runtime/2"
             assert data["error"]["code"] == "admission_timeout"
+
+
+# ---------------------------------------------------------------------------
+# #273 Verification: bounds / invalid input / unavailable / mixed-boundary /
+# component-preflight exercised through the public HTTP mount.
+# ---------------------------------------------------------------------------
+
+
+def _fixtures() -> Path:
+    return Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+
+
+@pytest.mark.asyncio
+async def test_runtime_write_oversized_content_length_matches_invalid_request() -> None:
+    """#273: Content-Length >64KiB freezes to error_invalid_request before parse."""
+    import json
+
+    expected = json.loads((_fixtures() / "error_invalid_request.json").read_text(encoding="utf-8"))
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                data=b"{}",
+                headers={
+                    **WRITE_CSRF_HEADERS,
+                    "Content-Type": "application/json",
+                    "Content-Length": "65537",
+                },
+            )
+            assert resp.status == 400
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_write_non_json_content_type_matches_invalid_request() -> None:
+    """#273: non-JSON Content-Type freezes to error_invalid_request before parse."""
+    import json
+
+    expected = json.loads((_fixtures() / "error_invalid_request.json").read_text(encoding="utf-8"))
+    body = b'{"schemaVersion":"commentary-runtime/2","language":"en","text":"hi"}'
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                data=body,
+                headers={
+                    **WRITE_CSRF_HEADERS,
+                    "Content-Type": "text/plain",
+                    "Content-Length": str(len(body)),
+                },
+            )
+            assert resp.status == 400
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_text_over_400_matches_validation_failed() -> None:
+    """#273: speak text length 401 freezes to error_validation_failed."""
+    import json
+
+    expected = json.loads((_fixtures() / "error_validation_failed.json").read_text(encoding="utf-8"))
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                json={
+                    "schemaVersion": "commentary-runtime/2",
+                    "language": "en",
+                    "text": "x" * 401,
+                },
+                headers=WRITE_CSRF_HEADERS,
+            )
+            assert resp.status == 422
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_bad_schema_version_matches_invalid_request() -> None:
+    """#273: wrong schemaVersion freezes to error_invalid_request."""
+    import json
+
+    expected = json.loads((_fixtures() / "error_invalid_request.json").read_text(encoding="utf-8"))
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                json={"schemaVersion": "v1", "language": "en", "text": "Commentary audio test."},
+                headers=WRITE_CSRF_HEADERS,
+            )
+            assert resp.status == 400
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_non_en_language_matches_invalid_request() -> None:
+    """#273: non-en language freezes to error_invalid_request; lane stays idle."""
+    import json
+
+    expected = json.loads((_fixtures() / "error_invalid_request.json").read_text(encoding="utf-8"))
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                json={
+                    "schemaVersion": "commentary-runtime/2",
+                    "language": "cs",
+                    "text": "Commentary audio test.",
+                },
+                headers=WRITE_CSRF_HEADERS,
+            )
+            assert resp.status == 400
+            assert await resp.json() == expected
+            assert runtime.status().lane == "idle"
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_non_string_text_matches_validation_failed() -> None:
+    """#273: non-string speak text freezes to error_validation_failed."""
+    import json
+
+    expected = json.loads((_fixtures() / "error_validation_failed.json").read_text(encoding="utf-8"))
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak",
+                json={
+                    "schemaVersion": "commentary-runtime/2",
+                    "language": "en",
+                    "text": 123,
+                },
+                headers=WRITE_CSRF_HEADERS,
+            )
+            assert resp.status == 422
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_validate_unknown_field_matches_invalid_request() -> None:
+    """#273: unknown validate top-level field → invalid_request/400 (detail may name fields)."""
+    import json
+
+    request = json.loads((_fixtures() / "validate_request.json").read_text(encoding="utf-8"))
+    request = dict(request)
+    request["force"] = True
+    app = _app_with_runtime(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/validate",
+                json=request,
+                headers=WRITE_CSRF_HEADERS,
+            )
+            assert resp.status == 400
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["error"]["code"] == "invalid_request"
+            assert "force" in data["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_runtime_decisions_limit_clamps_http() -> None:
+    """#273: decisions ?limit clamps through HTTP (0→1, 101→≤100, garbage→default)."""
+    from test_story_director import _cand as _director_cand
+    from test_story_director import _world as _director_world
+
+    from irswitch.events.story_director import StoryDirector
+
+    runtime = NarrativeRuntime(story_director=StoryDirector())
+    runtime.enable()
+    for idx in range(3):
+        runtime.seed_director_for_test(world=_director_world(), candidates=(_director_cand(),))
+        runtime.admit(_event_impulse(f"http:clamp:{idx}", revision=90 + idx, fanout=90 + idx))
+        assert runtime.reduce_next() is not None
+
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            low = await (await client.get("/api/commentary/runtime/decisions?limit=0")).json()
+            high = await (await client.get("/api/commentary/runtime/decisions?limit=101")).json()
+            bad = await (await client.get("/api/commentary/runtime/decisions?limit=abc")).json()
+            assert len(low["decisions"]) == 1
+            assert 1 <= len(high["decisions"]) <= 100
+            assert len(high["decisions"]) == 3
+            assert len(bad["decisions"]) == 3  # default 20, ring has 3
+
+
+@pytest.mark.asyncio
+async def test_runtime_status_tape_capture_unavailable_http() -> None:
+    """#273: GET runtime projects tape capture_unavailable golden over HTTP."""
+    import json
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime._tape_status = "unavailable"
+    expected = json.loads(
+        (_fixtures() / "status_component_tape_capture_unavailable.json").read_text(encoding="utf-8")
+    )
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/runtime")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["components"]["tape"] == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_status_mixed_boundary_pending_http() -> None:
+    """#273: GET runtime projects value-free mixed pending boundaries over HTTP."""
+    import json
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime._config_ledger = {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 7,
+        "desiredHash": "sha256:" + ("1" * 64),
+        "effectiveHash": "sha256:" + ("2" * 64),
+        "applySequence": 12,
+        "desiredValues": {"commentary.tts.voice": "secret-voice"},
+        "pendingChanges": [
+            {
+                "key": "commentary.tts.voice",
+                "boundary": "next_utterance",
+                "desiredGeneration": 7,
+                "value": "secret-voice",
+            },
+            {
+                "key": "commentary.detector.battle_ahead_v1.max_closing_slope",
+                "boundary": "next_stream",
+                "desiredGeneration": 7,
+                "value": 0.4,
+            },
+        ],
+    }
+    expected = json.loads(
+        (_fixtures() / "status_config_pending_boundaries.json").read_text(encoding="utf-8")
+    )
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/runtime")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["language"] == expected["language"]
+            assert data["catalog"] == expected["catalog"]
+            assert data["config"] == expected["config"]
+            for row in data["config"]["pendingChanges"]:
+                assert set(row) == {"key", "boundary", "desiredGeneration"}
+
+
+@pytest.mark.asyncio
+async def test_runtime_status_llm_preflight_pending_http() -> None:
+    """#273: LLM preflight pending projects components.llm.status=starting over HTTP."""
+    from irswitch.events.qwen_transport import LlmComponent
+
+    component = LlmComponent()
+    component.start_preflight(desired_generation=1, warmup=True)
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/runtime")
+            assert resp.status == 200
+            llm = (await resp.json())["components"]["llm"]
+            assert llm["status"] == "starting"
+            assert llm["reason"] is None
+
+
+@pytest.mark.asyncio
+async def test_runtime_status_llm_preflight_failed_unavailable_http() -> None:
+    """#273: failed LLM preflight projects unavailable + component_unavailable over HTTP."""
+    from irswitch.events.qwen_transport import LlmComponent
+
+    component = LlmComponent()
+    component.start_preflight(desired_generation=1, warmup=True)
+    component.complete_preflight(generation=1, residency="warmup_failed")
+    runtime = NarrativeRuntime(llm_component=component)
+    runtime.enable()
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/api/commentary/runtime")
+            assert resp.status == 200
+            llm = (await resp.json())["components"]["llm"]
+            assert llm["status"] == "unavailable"
+            assert llm["reason"] == "component_unavailable"
+
