@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 10 — offline manual-disabled + lexicon drivers for F12/F29 (no live Windows §24.9 GO).
+**Status:** Slice 11 — offline facts-capacity + realization freshness drivers for F32/F38 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -145,6 +145,21 @@
 **AC locks (Slice 10):**
 - Machine projection for F12/F29 still matches frozen expectations.
 - Runtime drivers prove manual 202 with no narrative planning state, second-request busy, race truth without barge-in, and offline lexicon complete-parse / invalid-400 / actor-reversal locks without live reads.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 11 — F32/F38 facts-capacity + realization freshness runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F32` (bounded facts/episodes fail unknown, never false), `F38` (realization input frozen; freshness compares exact facts) |
+| Pytest | `tests/test_vertical_slice_facts_freshness_runtime.py` |
+| Inventory | **30/44** wired; **14** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 11):**
+- Machine projection for F32/F38 still matches frozen expectations.
+- Runtime drivers prove update-without-growth, deterministic fact eviction to unknown-not-false, pinned exhaustion without partial publish, degraded recover, episode eviction order, pinned reject, and frozen-bundle freshness equal/alias/stale/malformed/hash locks.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

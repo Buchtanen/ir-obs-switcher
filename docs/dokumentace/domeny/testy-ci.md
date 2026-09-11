@@ -176,3 +176,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 | Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F12/F29 rows; hashes **unchanged**) |
 
 **Slice 10 locks:** F12 manual 202 with no narrative planning state, second busy, race truth without barge-in; F29 only complete parses, invalid 400-class without live reads, reversal actor_reversed; machine projection still matches frozen expectations; gap inventory **28/44** wired, **16** unwired.
+
+
+## #278 vertical-slice facts/freshness runtime (Slice 11)
+
+**Status:** offline F32/F38 drivers on branch `cursor/vertical-slice-facts-freshness-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_facts_freshness_runtime.py`](../../../tests/test_vertical_slice_facts_freshness_runtime.py) (**4** tests: **2** parametrized machine projection + F32/F38 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **30/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 11](../../v2.0.0/vertical-slice-acceptance.md#slice-11--f32f38-facts-capacity--realization-freshness-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F32/F38 rows; hashes **unchanged**) |
+
+**Slice 11 locks:** F32 update-without-growth, deterministic fact eviction, unknown-not-false, pinned exhaustion without partial, degraded recover, episode eviction order, pinned reject; F38 frozen bundle, equal facts pass, alias immutable, changed/missing stale, malformed rejected, hashes recorded; machine projection still matches frozen expectations; gap inventory **30/44** wired, **14** unwired.
