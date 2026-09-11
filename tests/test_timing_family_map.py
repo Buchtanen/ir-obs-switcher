@@ -1,4 +1,4 @@
-"""#275 Slice 1 — timing family map (lap/SF + sector inventory)."""
+"""#275 Slice 1–2 — timing family map (lap/SF, sector, PB/gain/loss)."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from irswitch.contracts.timing_family_map import (
     RACE_FINISH_WIRE_IDS,
     TIMING_WIRE_IDS,
     TimingFamilyRow,
+    gain_and_loss_polarities_are_distinct,
     lap_complete_is_not_race_finish,
     migration_status_by_wire_id,
     row_for_wire_id,
@@ -59,13 +60,53 @@ _EXPECT = {
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.sector",
     },
+    "PERSONAL_BEST": {
+        "beat_id": "timing.lap.personal_best",
+        "beat_role": "result",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30_000,
+        "polarity": "personal_best",
+        "scope_kind": "lap_pb",
+        "legacy_node_id": "personal_best",
+        "story_routes": ("timing_attempt", "single_result"),
+        "realization_family": "timing.lap_result",
+    },
+    "GAIN_FOUND": {
+        "beat_id": "timing.pace.gain",
+        "beat_role": "update",
+        "policy_id": "transient",
+        "outcome_ttl_ms": 6_000,
+        "polarity": "gain_found",
+        "scope_kind": "pace_delta",
+        "legacy_node_id": "gain_found",
+        "story_routes": ("timing_attempt", "single_result"),
+        "realization_family": "timing.delta",
+    },
+    "TIME_LOST": {
+        "beat_id": "timing.pace.loss",
+        "beat_role": "update",
+        "policy_id": "transient",
+        "outcome_ttl_ms": 6_000,
+        "polarity": "time_lost",
+        "scope_kind": "pace_delta",
+        "legacy_node_id": "time_lost",
+        "story_routes": ("timing_attempt", "single_result"),
+        "realization_family": "timing.delta",
+    },
 }
 
 
 def test_map_covers_every_timing_wire_id_exactly_once() -> None:
     rows = timing_family_rows()
     assert tuple(row.wire_id for row in rows) == TIMING_WIRE_IDS
-    assert TIMING_WIRE_IDS == ("LAP_COMPLETE", "SECTOR_SPLIT", "SECTOR_BEST")
+    assert TIMING_WIRE_IDS == (
+        "LAP_COMPLETE",
+        "SECTOR_SPLIT",
+        "SECTOR_BEST",
+        "PERSONAL_BEST",
+        "GAIN_FOUND",
+        "TIME_LOST",
+    )
     assert len(rows) == len(set(TIMING_WIRE_IDS))
 
 
@@ -74,8 +115,11 @@ def test_every_row_is_legacy_before_shadow_cutover() -> None:
         "LAP_COMPLETE": "legacy",
         "SECTOR_SPLIT": "legacy",
         "SECTOR_BEST": "legacy",
+        "PERSONAL_BEST": "legacy",
+        "GAIN_FOUND": "legacy",
+        "TIME_LOST": "legacy",
     }
-    assert len(rows_by_migration_status("legacy")) == 3
+    assert len(rows_by_migration_status("legacy")) == 6
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -101,6 +145,31 @@ def test_sector_rows_use_sector_scope_and_distinct_beats() -> None:
     assert best.polarity == "sector_best"
     assert split.legacy_node_id == "sector_split"
     assert best.legacy_node_id is None
+
+
+def test_personal_best_uses_lap_pb_scope() -> None:
+    pb = row_for_wire_id("PERSONAL_BEST")
+    assert pb.scope_kind == "lap_pb"
+    assert pb.polarity == "personal_best"
+    assert pb.beat_id == "timing.lap.personal_best"
+    assert pb.realization_family == "timing.lap_result"
+    assert pb.legacy_node_id == "personal_best"
+    assert pb.emitter_module.endswith("LapEmitter")
+    assert "adapters.lap:" in pb.adapter_module
+
+
+def test_gain_and_loss_polarities_are_distinct() -> None:
+    assert gain_and_loss_polarities_are_distinct() is True
+    gained = row_for_wire_id("GAIN_FOUND")
+    lost = row_for_wire_id("TIME_LOST")
+    assert gained.polarity == "gain_found"
+    assert lost.polarity == "time_lost"
+    assert gained.polarity != lost.polarity
+    assert gained.beat_id != lost.beat_id
+    assert gained.scope_kind == lost.scope_kind == "pace_delta"
+    assert gained.realization_family == lost.realization_family == "timing.delta"
+    assert gained.emitter_module.endswith("PracticeEmitter")
+    assert lost.emitter_module.endswith("PracticeEmitter")
 
 
 def test_rows_match_freeze_registry_and_beats() -> None:

@@ -1,11 +1,12 @@
-"""#275 timing family migration map (lap/SF + sector inventory).
+"""#275 timing family migration map (lap/SF, sector, PB/gain/loss).
 
-Maps wire identifiers for lap completion (start/finish crossing) and sector
-split/best onto legacy emitters, adapters, beat/story routes, predicates,
-realization families, policy TTL and tape channels.
+Maps wire identifiers for lap completion (start/finish crossing), sector
+split/best, personal best, and pace gain/loss onto legacy emitters, adapters,
+beat/story routes, predicates, realization families, policy TTL and tape
+channels.
 
-Slice 1 records every family as ``legacy``. It does **not** rewrite frozen
-``docs/v2.0.0/machine/*`` hashes and does **not** flip ``FAMILY_ROUTE``.
+Slices 1–2 record every family as ``legacy``. They do **not** rewrite frozen
+``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
 from __future__ import annotations
@@ -19,14 +20,24 @@ from .primitives import ContractViolation
 from .resources import packaged_schema_bytes
 
 MigrationStatus = Literal["legacy", "shadow", "v2"]
-Polarity = Literal["lap_complete", "sector_split", "sector_best"]
-ScopeKind = Literal["lap_sf", "sector"]
+Polarity = Literal[
+    "lap_complete",
+    "sector_split",
+    "sector_best",
+    "personal_best",
+    "gain_found",
+    "time_lost",
+]
+ScopeKind = Literal["lap_sf", "sector", "lap_pb", "pace_delta"]
 
-# Slice 1 inventory: lap/SF + sector sources only.
+# Slice 1–2 inventory: lap/SF + sector + personal best / pace gain / time lost.
 TIMING_WIRE_IDS: tuple[str, ...] = (
     "LAP_COMPLETE",
     "SECTOR_SPLIT",
     "SECTOR_BEST",
+    "PERSONAL_BEST",
+    "GAIN_FOUND",
+    "TIME_LOST",
 )
 
 # Finish/race outcome wires that must never share lap-complete semantics.
@@ -98,6 +109,33 @@ _STATIC: dict[str, _StaticSource] = {
         scope_kind="sector",
         notes="Session-best sector improvement; no dedicated sequence-graph node.",
     ),
+    "PERSONAL_BEST": _StaticSource(
+        legacy_node_id="personal_best",
+        race_event_name="personal_best",
+        emitter_module="irswitch.events.lap:LapEmitter",
+        adapter_module="irswitch.events.adapters.lap:lap_race_event_to_envelope",
+        polarity="personal_best",
+        scope_kind="lap_pb",
+        notes="Hero personal-best lap; LapEmitter may emit instead of lap_complete.",
+    ),
+    "GAIN_FOUND": _StaticSource(
+        legacy_node_id="gain_found",
+        race_event_name="gain_found",
+        emitter_module="irswitch.events.practice:PracticeEmitter",
+        adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
+        polarity="gain_found",
+        scope_kind="pace_delta",
+        notes="Pace improved vs reference; practice/qualifying temporal delta.",
+    ),
+    "TIME_LOST": _StaticSource(
+        legacy_node_id="time_lost",
+        race_event_name="time_lost",
+        emitter_module="irswitch.events.practice:PracticeEmitter",
+        adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
+        polarity="time_lost",
+        scope_kind="pace_delta",
+        notes="Pace worsened vs reference; opposite polarity of gain_found.",
+    ),
 }
 
 
@@ -158,7 +196,7 @@ def _story_routes(beat: dict[str, Any]) -> tuple[str, ...]:
 
 
 def timing_family_rows() -> tuple[TimingFamilyRow, ...]:
-    """Return the closed lap/SF + sector migration inventory (currently all legacy)."""
+    """Return the closed timing migration inventory (currently all legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -229,7 +267,7 @@ def rows_by_migration_status(status: MigrationStatus) -> tuple[TimingFamilyRow, 
 
 
 def migration_status_by_wire_id() -> dict[str, MigrationStatus]:
-    """Coverage-matrix companion: every timing slice-1 family → migration status."""
+    """Coverage-matrix companion: every timing inventory family → migration status."""
 
     return {row.wire_id: row.migration_status for row in timing_family_rows()}
 
@@ -247,3 +285,19 @@ def lap_complete_is_not_race_finish() -> bool:
     # Finish lives on race-outcome inventory, not this timing slice.
     finish_ids = RACE_FINISH_WIRE_IDS
     return lap.beat_id != "session.hero_finish" and lap.wire_id not in finish_ids
+
+
+def gain_and_loss_polarities_are_distinct() -> bool:
+    """Slice 2 helper: pace gain must never share polarity/beat with time lost."""
+
+    gained = row_for_wire_id("GAIN_FOUND")
+    lost = row_for_wire_id("TIME_LOST")
+    if gained.polarity != "gain_found" or lost.polarity != "time_lost":
+        return False
+    if gained.polarity == lost.polarity:
+        return False
+    if gained.beat_id == lost.beat_id:
+        return False
+    if gained.scope_kind != "pace_delta" or lost.scope_kind != "pace_delta":
+        return False
+    return gained.realization_family == lost.realization_family == "timing.delta"
