@@ -841,10 +841,11 @@ def test_project_tape_counters_live_from_attached_writer() -> None:
     import copy
     from pathlib import Path
 
+    from test_narrative_tape_writer import _golden
+
     from irswitch.commentary.tape_writer import NarrativeTapeWriter
     from irswitch.events.narrative_ingress import project_runtime_status
     from irswitch.events.narrative_runtime import NarrativeRuntime
-    from tests.test_narrative_tape_writer import _golden
 
     manifest = copy.deepcopy(_golden("tape-manifest-framing"))
     manifest["enabledPurposeChannels"] = ["flow", "detector_tuning"]
