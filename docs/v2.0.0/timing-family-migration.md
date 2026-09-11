@@ -1,10 +1,10 @@
 # #275 Timing family migration (timing + session intros/recaps)
 
-**Status:** Slice 5 — EN patterns + TTS slot formats curated on all inventory wires (all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 6 — restart/rewind replay cases curated for all inventory wires (all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#275](https://github.com/Buchtanen/ir-obs-switcher/issues/275)  
-**Module:** `src/irswitch/contracts/timing_family_map.py`  
-**Tests:** `tests/test_timing_family_map.py`  
-**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-5-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
+**Module:** `src/irswitch/contracts/timing_family_map.py` + `timing_family_replay_cases.py`  
+**Tests:** `tests/test_timing_family_map.py` + `tests/test_timing_family_replay_cases.py`  
+**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
 
 ## Guardrails
 
@@ -62,11 +62,30 @@ Curated without rewriting frozen `machine/realization-pattern-cards.json` hashes
 | `SESSION_INTRO_RACE` | `session.intro.race:tight:1`, `session.intro.race:tight:2`, `session.intro.race:tight:3`, `session.intro.race:tight:4` | opens the race; is into the race… | `practice only`, `qualifying still open as live`, `unofficial win` | `{subjectSurface}`, `{requiredClaimSurface}` |
 | `QUALI_RECAP` | `session.qualifying_recap:tight:1`, `session.qualifying_recap:tight:2`, `session.qualifying_recap:tight:3`, `session.qualifying_recap:tight:4` | recaps qualifying in P{position}; brings the quali result of P{position}… | `live sector split`, `projected as final`, `race already won` | `{subjectSurface}`, `{requiredClaimSurface}` |
 
-Helper: `en_patterns_and_tts_slots_are_curated()`.
+Helpers: `en_patterns_and_tts_slots_are_curated()`, `restart_rewind_replay_cases_are_complete()`.
 
-## Later #275 slices
+## Restart / rewind replay cases (Slice 6)
 
-Deferred: restart/rewind replay cases.
+Closed inventory in `timing_family_replay_cases.py` (no live speech / no `FAMILY_ROUTE` flip):
+
+| Case id | Scenario | Wires | Speakable after | Inherit on active lineage |
+| --- | --- | --- | --- | --- |
+| `same_ref_restart:lap_sf` | `same_ref_restart` | `LAP_COMPLETE` | `none` | no |
+| `same_ref_restart:sector` | `same_ref_restart` | `SECTOR_SPLIT`, `SECTOR_BEST` | `none` | no |
+| `same_ref_restart:pace_delta` | `same_ref_restart` | `GAIN_FOUND`, `TIME_LOST` | `none` | no |
+| `same_ref_restart:attempt_projection` | `same_ref_restart` | `HOT_LAP`, `PROJECTED_LAP` | `none` | no |
+| `same_ref_restart:invalid_lap` | `same_ref_restart` | `INVALID_LAP` | `none` | no |
+| `same_ref_restart:session_intro` | `same_ref_restart` | `SESSION_INTRO_PRACTICE`, `SESSION_INTRO_QUALIFY`, `SESSION_INTRO_RACE` | `active_only` | no |
+| `rewind_superseded:race_timing` | `rewind_superseded` | `LAP_COMPLETE`, `SECTOR_SPLIT`, `SECTOR_BEST`, `GAIN_FOUND`, `TIME_LOST` | `none` | no |
+| `rewind_superseded:quali_result_historical` | `rewind_superseded` | `QUALI_RECAP` | `historical_recap` | no |
+| `post_rewind_forward:personal_best_inherits` | `post_rewind_forward` | `PERSONAL_BEST` | `active_only` | yes |
+| `post_rewind_forward:quali_recap_active_only` | `post_rewind_forward` | `QUALI_RECAP` | `active_only` | yes |
+| `post_rewind_forward:session_intro_race` | `post_rewind_forward` | `SESSION_INTRO_RACE` | `active_only` | no |
+| `post_rewind_forward:attempt_on_new_quali` | `post_rewind_forward` | `HOT_LAP`, `PROJECTED_LAP`, `INVALID_LAP` | `active_only` | no |
+
+Helper: `restart_rewind_replay_cases_are_complete()`.
+
+**Remaining legacy disposition:** all 13 timing wires remain `migration_status=legacy` until a dedicated activation slice (shadow + fail-soft + COMMENTARY_ENGINE/CONFIG/API) lands.
 
 ## Docs / config
 

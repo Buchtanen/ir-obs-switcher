@@ -4,7 +4,7 @@ Maps wire identifiers for lap/sector/PB/pace/hot/projected/invalid lap and
 practice→qualifying→race session intros/recaps onto legacy emitters, adapters,
 beat/story routes, predicates, realization families, policy TTL and tape channels.
 
-Slices 1–5 record every family as ``legacy``. They do **not** rewrite frozen
+Slices 1–6 record every family as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
