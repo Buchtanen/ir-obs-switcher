@@ -35,63 +35,67 @@ from irswitch.contracts.timing_family_map import RACE_FINISH_WIRE_IDS
 
 _EXPECT = {
     "STREAM_START": {
-        "beat_id": 'stream.started',
-        "beat_role": 'opening',
-        "policy_id": 'critical',
+        "beat_id": "stream.started",
+        "beat_role": "opening",
+        "policy_id": "critical",
         "outcome_ttl_ms": 45000,
-        "lifecycle_phase": 'stream_start',
-        "scope_kind": 'stream_lifecycle',
-        "legacy_node_id": 'stream_start',
-        "realization_family": 'stream.lifecycle',
-        "branch_beat_ids": ('stream.started',),
+        "lifecycle_phase": "stream_start",
+        "scope_kind": "stream_lifecycle",
+        "legacy_node_id": "stream_start",
+        "realization_family": "stream.lifecycle",
+        "branch_beat_ids": ("stream.started",),
         "terminal": False,
     },
     "SESSION_PREVIEW": {
-        "beat_id": 'session.preview.next',
-        "beat_role": 'bridge',
-        "policy_id": 'context',
+        "beat_id": "session.preview.next",
+        "beat_role": "bridge",
+        "policy_id": "context",
         "outcome_ttl_ms": 20000,
-        "lifecycle_phase": 'preview',
-        "scope_kind": 'session_preview',
-        "legacy_node_id": 'session_preview',
-        "realization_family": 'session.preview',
-        "branch_beat_ids": ('session.preview.next',),
+        "lifecycle_phase": "preview",
+        "scope_kind": "session_preview",
+        "legacy_node_id": "session_preview",
+        "realization_family": "session.preview",
+        "branch_beat_ids": ("session.preview.next",),
         "terminal": False,
     },
     "ENTER_CAR": {
-        "beat_id": 'session.enter_car.practice',
-        "beat_role": 'vehicle',
-        "policy_id": 'context',
+        "beat_id": "session.enter_car.practice",
+        "beat_role": "vehicle",
+        "policy_id": "context",
         "outcome_ttl_ms": 20000,
-        "lifecycle_phase": 'enter_car',
-        "scope_kind": 'enter_car',
-        "legacy_node_id": 'enter_car',
-        "realization_family": 'session.vehicle',
-        "branch_beat_ids": ('session.enter_car.practice', 'session.enter_car.qualifying', 'session.enter_car.race'),
+        "lifecycle_phase": "enter_car",
+        "scope_kind": "enter_car",
+        "legacy_node_id": "enter_car",
+        "realization_family": "session.vehicle",
+        "branch_beat_ids": (
+            "session.enter_car.practice",
+            "session.enter_car.qualifying",
+            "session.enter_car.race",
+        ),
         "terminal": False,
     },
     "FINAL_LAP": {
-        "beat_id": 'session.final_lap',
-        "beat_role": 'escalation',
-        "policy_id": 'critical',
+        "beat_id": "session.final_lap",
+        "beat_role": "escalation",
+        "policy_id": "critical",
         "outcome_ttl_ms": 45000,
-        "lifecycle_phase": 'final_lap',
-        "scope_kind": 'final_lap',
-        "legacy_node_id": 'final_lap',
-        "realization_family": 'session.final_lap',
-        "branch_beat_ids": ('session.final_lap',),
+        "lifecycle_phase": "final_lap",
+        "scope_kind": "final_lap",
+        "legacy_node_id": "final_lap",
+        "realization_family": "session.final_lap",
+        "branch_beat_ids": ("session.final_lap",),
         "terminal": True,
     },
     "PARADE_PAD": {
-        "beat_id": 'filler.parade_lap',
-        "beat_role": 'single',
-        "policy_id": 'filler',
+        "beat_id": "filler.parade_lap",
+        "beat_role": "single",
+        "policy_id": "filler",
         "outcome_ttl_ms": 12000,
         "lifecycle_phase": None,
-        "scope_kind": 'filler_parade',
-        "legacy_node_id": 'parade_pad',
-        "realization_family": 'filler.track_state',
-        "branch_beat_ids": ('filler.parade_lap',),
+        "scope_kind": "filler_parade",
+        "legacy_node_id": "parade_pad",
+        "realization_family": "filler.track_state",
+        "branch_beat_ids": ("filler.parade_lap",),
         "terminal": False,
     },
 }
@@ -149,13 +153,17 @@ def test_context_wires_do_not_overlap_timing_or_ops_inventory() -> None:
 
 
 def test_context_session_phase_order_is_monotonic() -> None:
-    assert CONTEXT_SESSION_PHASE_ORDER == ('stream_start', 'preview', 'enter_car', 'final_lap')
+    assert CONTEXT_SESSION_PHASE_ORDER == ("stream_start", "preview", "enter_car", "final_lap")
     assert context_session_phase_order_is_monotonic() is True
 
 
 def test_enter_car_branch_beats_are_documented() -> None:
-    assert ENTER_CAR_PRIMARY_BEAT_ID == 'session.enter_car.practice'
-    assert ENTER_CAR_BRANCH_BEAT_IDS == ('session.enter_car.practice', 'session.enter_car.qualifying', 'session.enter_car.race')
+    assert ENTER_CAR_PRIMARY_BEAT_ID == "session.enter_car.practice"
+    assert ENTER_CAR_BRANCH_BEAT_IDS == (
+        "session.enter_car.practice",
+        "session.enter_car.qualifying",
+        "session.enter_car.race",
+    )
     assert enter_car_branch_beats_are_documented() is True
 
 
@@ -168,8 +176,8 @@ def test_context_session_stories_have_explicit_invalidation() -> None:
 
 def test_owned_elsewhere_session_wires_are_documented() -> None:
     assert owned_elsewhere_session_wires_are_documented() is True
-    assert CONTEXT_OWNED_ELSEWHERE['SESSION_INTRO_PRACTICE'] == 'timing_family_map'
-    assert CONTEXT_OWNED_ELSEWHERE['SESSION_WRAP'] == 'ops_family_map'
+    assert CONTEXT_OWNED_ELSEWHERE["SESSION_INTRO_PRACTICE"] == "timing_family_map"
+    assert CONTEXT_OWNED_ELSEWHERE["SESSION_WRAP"] == "ops_family_map"
 
 
 def test_row_for_unknown_wire_raises() -> None:
@@ -188,8 +196,8 @@ def test_filler_beats_are_documented() -> None:
     assert CONTEXT_FILLER_WIRE_IDS == ("PARADE_PAD",)
     assert filler_beats_are_documented() is True
     row = row_for_wire_id("PARADE_PAD")
-    assert row.beat_id == 'filler.parade_lap'
-    assert row.scope_kind == 'filler_parade'
+    assert row.beat_id == "filler.parade_lap"
+    assert row.scope_kind == "filler_parade"
     assert row.policy_id == "filler"
     assert row.outcome_ttl_ms == 12000
     assert row.lifecycle_phase is None
@@ -199,4 +207,4 @@ def test_filler_beats_are_documented() -> None:
 def test_filler_may_resolve_to_silence() -> None:
     assert filler_may_resolve_to_silence() is True
     assert set(CONTEXT_FILLER_BEAT_ONLY_IDS).isdisjoint(set(CONTEXT_WIRE_IDS))
-    assert set(CONTEXT_FILLER_BEAT_ONLY_IDS) | {'filler.parade_lap'} == set(CONTEXT_FILLER_BEAT_IDS)
+    assert set(CONTEXT_FILLER_BEAT_ONLY_IDS) | {"filler.parade_lap"} == set(CONTEXT_FILLER_BEAT_IDS)

@@ -510,4 +510,3 @@ def filler_may_resolve_to_silence() -> bool:
     if set(CONTEXT_FILLER_BEAT_ONLY_IDS) & set(CONTEXT_WIRE_IDS):
         return False
     return True
-
