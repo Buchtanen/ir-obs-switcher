@@ -219,3 +219,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 13 locks:** F14 reset-then-stale-accept unconsumed, accept-then-reset interrupt, reducer-sequence authority; F35 replace-without-suppression, close70, new_cycle71_attempt1, one alternative, lower-event no replace, accepted-event only; machine projection still matches frozen expectations; gap inventory **34/44** wired, **10** unwired.
 
+
+## #278 vertical-slice feature-order runtime (Slice 14)
+
+**Status:** offline F28 drivers on branch `cursor/vertical-slice-feature-order-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_feature_order_runtime.py`](../../../tests/test_vertical_slice_feature_order_runtime.py) (**2** tests: **1** parametrized machine projection + F28 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **35/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 14](../../v2.0.0/vertical-slice-acceptance.md#slice-14--f28-feature-order--bucket-coverage-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F28 row; hashes **unchanged**) |
+
+**Slice 14 locks:** F28 reduce 10→12, older/duplicate noop, lone-sample coverage capped/invalid for trend, OLS three buckets, identity match; FeatureEngine stays free of NarrativeRuntime/DetectorBank imports; machine projection still matches frozen expectations; gap inventory **35/44** wired, **9** unwired.
+

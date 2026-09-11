@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 13 — offline playback-race + planning-replace drivers for F14/F35 (no live Windows §24.9 GO).
+**Status:** Slice 14 — offline feature-order + bucket-coverage drivers for F28 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
