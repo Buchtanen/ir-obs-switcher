@@ -1,10 +1,10 @@
-"""#276 ops family migration map — pit + incident + flag + closeout + unknown/tow/teleport contract (Slices 1–5).
+"""#276 ops family migration map — pit + incident + flag + closeout + unknown/tow/teleport + EN patterns (Slices 1–6).
 
 Maps pit-cycle and incident/aftermath/recovery wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families,
 policy TTL and tape channels.
 
-Slices 1–2 record these families as ``legacy``. They do **not** rewrite frozen
+Slices 1–6 record these families as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -165,6 +165,10 @@ class OpsFamilyRow:
     invalidate_reasons: tuple[str, ...]
     terminal_reasons: tuple[str, ...]
     branch_beat_ids: tuple[str, ...] = ()
+    en_pattern_ids: tuple[str, ...] = ()
+    en_claim_surfaces: tuple[str, ...] = ()
+    en_forbidden_tokens: tuple[str, ...] = ()
+    tts_slot_formats: tuple[str, ...] = ()
     notes: str = ""
 
 
@@ -180,6 +184,10 @@ class _StaticSource:
     invalidate_reasons: tuple[str, ...]
     terminal_reasons: tuple[str, ...]
     primary_beat_id: str | None = None
+    en_pattern_ids: tuple[str, ...] = ()
+    en_claim_surfaces: tuple[str, ...] = ()
+    en_forbidden_tokens: tuple[str, ...] = ()
+    tts_slot_formats: tuple[str, ...] = ()
     notes: str = ""
 
 
@@ -199,6 +207,20 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_superseded",
         ),
         terminal_reasons=(),
+        en_pattern_ids=(
+            "pit.entry:tight:1",
+            "pit.entry:tight:2",
+            "pit.entry:tight:3",
+            "pit.entry:tight:4",
+        ),
+        en_claim_surfaces=(
+            "enters pit road",
+            "pits in",
+            "commits to the pits",
+            "turns into pit entry",
+        ),
+        en_forbidden_tokens=("checkered", "finishes P", "wins the race", "back under way"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Opens a pit cycle when hero enters pit road; not a service/outcome claim. "
             "Missing/ambiguous entry evidence stays unknown — never invent pit service."
@@ -220,6 +242,20 @@ _STATIC: dict[str, _StaticSource] = {
             "left_pit_road_without_stop",
         ),
         terminal_reasons=(),
+        en_pattern_ids=(
+            "pit.lane:tight:1",
+            "pit.lane:tight:2",
+            "pit.lane:tight:3",
+            "pit.lane:tight:4",
+        ),
+        en_claim_surfaces=(
+            "rolls the pit lane",
+            "is in the pit lane",
+            "transits pit lane",
+            "moves through the lane",
+        ),
+        en_forbidden_tokens=("checkered", "race finish", "wins the race", "off track"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "In-lane transit update; must not claim stop/release/exit outcomes. Ambiguous "
             "lane evidence stays unknown — never invent a stop."
@@ -241,6 +277,25 @@ _STATIC: dict[str, _StaticSource] = {
             "motion_resumed_without_release",
         ),
         terminal_reasons=(),
+        en_pattern_ids=(
+            "pit.stopped:tight:1",
+            "pit.stopped:tight:2",
+            "pit.stopped:tight:3",
+            "pit.stopped:tight:4",
+        ),
+        en_claim_surfaces=(
+            "stops in the box",
+            "is boxed",
+            "stands in the pit box",
+            "comes to a stop for service",
+        ),
+        en_forbidden_tokens=(
+            "checkered",
+            "wins the race",
+            "released from the box",
+            "exits pit road",
+        ),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Stationary service update; must not invent service work without bound evidence. "
             "Ambiguous stopped evidence stays unknown."
@@ -261,6 +316,20 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_superseded",
         ),
         terminal_reasons=(),
+        en_pattern_ids=(
+            "pit.released:tight:1",
+            "pit.released:tight:2",
+            "pit.released:tight:3",
+            "pit.released:tight:4",
+        ),
+        en_claim_surfaces=(
+            "is released from the box",
+            "clears the pit box",
+            "gets the go from the box",
+            "leaves the service stall",
+        ),
+        en_forbidden_tokens=("checkered", "wins the race", "still boxed", "off track"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Released-from-box update; must not claim completed pit exit. Ambiguous release "
             "evidence stays unknown — never invent exit/outcome."
@@ -280,6 +349,20 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_closed_without_outcome",
             "unknown_exit_explicit",
         ),
+        en_pattern_ids=(
+            "pit.exit:tight:1",
+            "pit.exit:tight:2",
+            "pit.exit:tight:3",
+            "pit.exit:tight:4",
+        ),
+        en_claim_surfaces=(
+            "exits pit road",
+            "leaves the pits",
+            "rejoins from pit exit",
+            "clears pit exit",
+        ),
+        en_forbidden_tokens=("checkered", "wins the race", "finishes P", "still in the box"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Closes the live pit-cycle phase when hero leaves pit road. Ambiguous exit "
             "evidence stays unknown_exit_explicit — never invent a completed service/outcome."
@@ -299,6 +382,20 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_completed",
             "unknown_delta_explicit",
         ),
+        en_pattern_ids=(
+            "pit.outcome:tight:1",
+            "pit.outcome:tight:2",
+            "pit.outcome:tight:3",
+            "pit.outcome:tight:4",
+        ),
+        en_claim_surfaces=(
+            "completes the pit stop",
+            "finishes service",
+            "ends the pit cycle",
+            "closes the pit stop",
+        ),
+        en_forbidden_tokens=("wins the race", "checkered finish", "hero finish", "yellow flag"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Terminal pit-cycle outcome; unknown position delta must stay explicit.",
     ),
     "INCIDENT": _StaticSource(
@@ -317,6 +414,20 @@ _STATIC: dict[str, _StaticSource] = {
         ),
         terminal_reasons=(),
         primary_beat_id=INCIDENT_PRIMARY_BEAT_ID,
+        en_pattern_ids=(
+            "incident.off_track:tight:1",
+            "incident.off_track:tight:2",
+            "incident.off_track:tight:3",
+            "incident.off_track:tight:4",
+        ),
+        en_claim_surfaces=(
+            "goes off track",
+            "leaves the racing surface",
+            "runs wide off track",
+            "gets off the paved surface",
+        ),
+        en_forbidden_tokens=("makes contact", "is towed", "wins the race", "checkered"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Opening incident wire; classify_incident_branch maps off_track|unknown onto branch beats "
             "incident.off_track|incident.unclassified. Missing surface evidence stays "
@@ -342,6 +453,20 @@ _STATIC: dict[str, _StaticSource] = {
             "recovered_before_classify",
         ),
         terminal_reasons=(),
+        en_pattern_ids=(
+            "incident.aftermath:tight:1",
+            "incident.aftermath:tight:2",
+            "incident.aftermath:tight:3",
+            "incident.aftermath:tight:4",
+        ),
+        en_claim_surfaces=(
+            "is in incident aftermath",
+            "remains in the aftermath",
+            "is still recovering from the excursion",
+            "holds aftermath state",
+        ),
+        en_forbidden_tokens=("back under way", "invents damage", "wins the race", "checkered"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Aftermath update (stalled|rolling). Tow/off-track keep stalled; must not claim "
             "recovery or damage. Tow/teleport invalidate motion claims; ambiguous aftermath "
@@ -370,6 +495,25 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_closed",
             "unknown_motion_explicit",
         ),
+        en_pattern_ids=(
+            "incident.recovery:tight:1",
+            "incident.recovery:tight:2",
+            "incident.recovery:tight:3",
+            "incident.recovery:tight:4",
+        ),
+        en_claim_surfaces=(
+            "is back under way",
+            "resumes after the incident",
+            "recovers to racing speed",
+            "gets going again",
+        ),
+        en_forbidden_tokens=(
+            "still towing",
+            "wins the race",
+            "checkered",
+            "invents a clean recovery",
+        ),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Recovery closure after stalled aftermath; must not claim no-damage. Tow/teleport "
             "block recovery speech; missing motion evidence stays stalled/unknown (no invention)."
@@ -396,6 +540,20 @@ _STATIC: dict[str, _StaticSource] = {
             "unknown_flag_explicit",
         ),
         primary_beat_id=SESSION_FLAG_PRIMARY_BEAT_ID,
+        en_pattern_ids=(
+            "session.flag.yellow:tight:1",
+            "session.flag.yellow:tight:2",
+            "session.flag.yellow:tight:3",
+            "session.flag.yellow:tight:4",
+        ),
+        en_claim_surfaces=(
+            "yellow flag is out",
+            "caution is shown",
+            "yellow is waved",
+            "the field is under yellow",
+        ),
+        en_forbidden_tokens=("green flag", "checkered", "hero finish", "wins the race"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Session flag wire; SessionFlagFsm rising-edge kinds yellow|green|checkered map onto "
             "branch beats session.flag.yellow|session.flag.green|session.checkered. Start lights "
@@ -423,6 +581,20 @@ _STATIC: dict[str, _StaticSource] = {
             "superseded_by_wrap",
             "unknown_checkered_explicit",
         ),
+        en_pattern_ids=(
+            "session.checkered:tight:1",
+            "session.checkered:tight:2",
+            "session.checkered:tight:3",
+            "session.checkered:tight:4",
+        ),
+        en_claim_surfaces=(
+            "checkered flag is out",
+            "the checkered waves",
+            "session is checkered",
+            "checkered ends the clock",
+        ),
+        en_forbidden_tokens=("finishes P", "hero finish", "session wrap", "practice wrap"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Session checkered clock (SessionState/checkered lifecycle). Distinct from "
             "SESSION_FLAG checkered branch (flag rising-edge speech), FINISH (hero done), and "
@@ -449,6 +621,25 @@ _STATIC: dict[str, _StaticSource] = {
             "superseded_by_wrap",
             "unknown_finish_explicit",
         ),
+        en_pattern_ids=(
+            "session.hero_finish:tight:1",
+            "session.hero_finish:tight:2",
+            "session.hero_finish:tight:3",
+            "session.hero_finish:tight:4",
+        ),
+        en_claim_surfaces=(
+            "finishes P{finishPosition}",
+            "takes the checkered in P{finishPosition}",
+            "crosses the line in P{finishPosition}",
+            "ends the race P{finishPosition}",
+        ),
+        en_forbidden_tokens=(
+            "provisional class win",
+            "unofficial classification",
+            "session wrap",
+            "practice wrap",
+        ),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Hero finish (this driver done). Distinct from SESSION_CHECKERED (session clock) and "
             "SESSION_WRAP (session ended for all). Requires hero finished evidence; missing "
@@ -475,6 +666,25 @@ _STATIC: dict[str, _StaticSource] = {
             "unknown_wrap_explicit",
         ),
         primary_beat_id=SESSION_WRAP_PRIMARY_BEAT_ID,
+        en_pattern_ids=(
+            "session.wrap.practice:tight:1",
+            "session.wrap.practice:tight:2",
+            "session.wrap.practice:tight:3",
+            "session.wrap.practice:tight:4",
+        ),
+        en_claim_surfaces=(
+            "wraps practice",
+            "ends the practice session",
+            "closes practice",
+            "practice is wrapped",
+        ),
+        en_forbidden_tokens=(
+            "finishes P",
+            "hero finish",
+            "takes the checkered in P",
+            "yellow flag",
+        ),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
             "Session wrap / ended (practice|qualifying|race stage beats). Distinct from "
             "SESSION_CHECKERED and FINISH. StreamNarrativeFsm emits on boundary/finished edges; "
@@ -586,6 +796,23 @@ def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
         if not isinstance(realization, dict) or "family" not in realization:
             raise ContractViolation(f"beat {beat_id} missing realization.family")
         predicate_id, actor_frame = _claim_meta(beat)
+        if not static.en_pattern_ids:
+            raise ContractViolation(f"{wire_id} must curate EN pattern ids")
+        if not static.en_claim_surfaces:
+            raise ContractViolation(f"{wire_id} must curate EN claim surfaces")
+        if not static.tts_slot_formats:
+            raise ContractViolation(f"{wire_id} must curate TTS slot formats")
+        for pattern_id in static.en_pattern_ids:
+            if not pattern_id.startswith(f"{beat_id}:"):
+                raise ContractViolation(
+                    f"{wire_id} pattern {pattern_id!r} must belong to beat {beat_id}"
+                )
+        for surface in static.en_claim_surfaces:
+            lowered = surface.lower()
+            if any(token in lowered for token in static.en_forbidden_tokens):
+                raise ContractViolation(
+                    f"{wire_id} claim surface {surface!r} contains forbidden token"
+                )
         rows.append(
             OpsFamilyRow(
                 wire_id=wire_id,
@@ -611,6 +838,10 @@ def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
                 invalidate_reasons=static.invalidate_reasons,
                 terminal_reasons=static.terminal_reasons,
                 branch_beat_ids=branch_beat_ids,
+                en_pattern_ids=static.en_pattern_ids,
+                en_claim_surfaces=static.en_claim_surfaces,
+                en_forbidden_tokens=static.en_forbidden_tokens,
+                tts_slot_formats=static.tts_slot_formats,
                 notes=static.notes,
             )
         )
@@ -838,4 +1069,64 @@ def unknown_tow_teleport_outcomes_are_defined() -> bool:
         return False
     if "teleport" not in recovery.notes.lower() and "teleport" not in aftermath.notes.lower():
         return False
+    return True
+
+
+def en_patterns_and_tts_slots_are_curated() -> bool:
+    """Slice 6 helper: every ops wire keeps ≥4 EN patterns, claim surfaces, and TTS slots."""
+
+    rows = ops_family_rows()
+    if len(rows) != len(OPS_WIRE_IDS):
+        return False
+    for row in rows:
+        if len(row.en_pattern_ids) < 4:
+            return False
+        if len(row.en_claim_surfaces) < 4:
+            return False
+        if not row.tts_slot_formats:
+            return False
+        if "subjectSurface" not in row.tts_slot_formats:
+            return False
+        if "requiredClaimSurface" not in row.tts_slot_formats:
+            return False
+        if not row.beat_id:
+            return False
+        if any(not pattern_id.startswith(f"{row.beat_id}:") for pattern_id in row.en_pattern_ids):
+            return False
+        lowered_surfaces = tuple(surface.lower() for surface in row.en_claim_surfaces)
+        if any(
+            token in surface for surface in lowered_surfaces for token in row.en_forbidden_tokens
+        ):
+            return False
+
+    # Adversarial closeout separation: checkered clock ≠ hero finish ≠ session wrap.
+    checkered = row_for_wire_id("SESSION_CHECKERED")
+    finish = row_for_wire_id("FINISH")
+    wrap = row_for_wire_id("SESSION_WRAP")
+    if set(checkered.en_claim_surfaces) & set(finish.en_claim_surfaces):
+        return False
+    if set(finish.en_claim_surfaces) & set(wrap.en_claim_surfaces):
+        return False
+    if set(checkered.en_claim_surfaces) & set(wrap.en_claim_surfaces):
+        return False
+
+    # Pit cycle must not speak race-finish / checkered win language.
+    for wire_id in OPS_PIT_WIRE_IDS:
+        row = row_for_wire_id(wire_id)
+        blob = " ".join(row.en_claim_surfaces).lower()
+        if "wins the race" in blob or "finishes p" in blob:
+            return False
+
+    # Yellow primary flag surfaces must not invent green/checkered.
+    flag = row_for_wire_id("SESSION_FLAG")
+    flag_blob = " ".join(flag.en_claim_surfaces).lower()
+    if "green flag" in flag_blob or "checkered" in flag_blob:
+        return False
+
+    # Incident opening must not invent contact/tow outcomes.
+    incident = row_for_wire_id("INCIDENT")
+    incident_blob = " ".join(incident.en_claim_surfaces).lower()
+    if "contact" in incident_blob or "tow" in incident_blob:
+        return False
+
     return True

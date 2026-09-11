@@ -1,10 +1,10 @@
 # #276 Ops family migration (pit / incident / flag / recovery)
 
-**Status:** Slice 5 — pit + incident/aftermath/recovery + `SESSION_FLAG` + checkered / hero finish / session wrap inventory + unknown/tow/teleport outcome contract (Slices 1–5; all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 6 — Slices 1–5 inventory + curated EN patterns / TTS slots + adversarial closeout/pit/flag/incident tests (all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#276](https://github.com/Buchtanen/ir-obs-switcher/issues/276)  
 **Module:** `src/irswitch/contracts/ops_family_map.py`  
-**Tests:** `tests/test_ops_family_map.py` (**16**)  
-**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [inflight § #276 slice 4](../dokumentace/inflight/README.md#276-ops-family-map-slice-4-lookup) · [inflight § #276 slice 5](../dokumentace/inflight/README.md#276-ops-family-map-slice-5-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
+**Tests:** `tests/test_ops_family_map.py` (**22**)  
+**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [inflight § #276 slice 4](../dokumentace/inflight/README.md#276-ops-family-map-slice-4-lookup) · [inflight § #276 slice 5](../dokumentace/inflight/README.md#276-ops-family-map-slice-5-lookup) · [inflight § #276 slice 6](../dokumentace/inflight/README.md#276-ops-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
 
 ## Guardrails
 
@@ -99,9 +99,9 @@ Taxonomy constants (no dedicated wires; dispositions on existing inventory):
 
 Helper: `unknown_tow_teleport_outcomes_are_defined()`.
 
-Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`, `unknown_tow_teleport_outcomes_are_defined()`.
+Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`, `unknown_tow_teleport_outcomes_are_defined()`, `en_patterns_and_tts_slots_are_curated()`.
 
-## AC locks (Slices 1–5)
+## AC locks (Slices 1–6)
 
 - **Pit phase order** — `entry → lane → stopped → released → exit → outcome`.
 - **Pit explicit terminals** — only `PIT_EXIT` / `PIT_OUTCOME` carry `terminal_reasons`; every pit wire has `invalidate_reasons`.
@@ -112,10 +112,24 @@ Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_sta
 - **Closeout separation** — `SESSION_CHECKERED` / `FINISH` / `SESSION_WRAP` keep distinct scopes + families; finish tape ≠ checkered; wrap tape ≠ finish; notes cross-reference; flag checkered branch remains on `SESSION_FLAG`.
 - **SESSION_WRAP branch beats** — primary `session.wrap.practice`; branch list `session.wrap.practice`, `session.wrap.qualifying`, `session.wrap.race` documented in row notes.
 - **Unknown / tow / teleport** — taxonomy constants defined; every wire invalidates on `hero_teleport`; terminals include `unknown_*_explicit`; aftermath/recovery encode tow (+ recovery teleport); notes forbid invention; `OPS_WIRE_IDS` still **13**.
+- **EN patterns / TTS** — every wire ≥4 catalog pattern ids + claim surfaces + TTS slots; closeout/pit/flag/incident adversarial separations; `en_patterns_and_tts_slots_are_curated()`.
+
+## Slice 6 — EN patterns + adversarial tests
+
+Every ops wire curates ≥4 catalog-backed EN pattern ids (`{beatId}:tight:1..4`), ≥4 claim surfaces, forbidden tokens, and TTS slots `subjectSurface` / `requiredClaimSurface`.
+
+Helper: `en_patterns_and_tts_slots_are_curated()`.
+
+**Adversarial locks:**
+
+- Closeout claim surfaces stay pairwise disjoint (`SESSION_CHECKERED` / `FINISH` / `SESSION_WRAP`).
+- Pit-cycle surfaces never claim race finish / `finishes P…`.
+- `SESSION_FLAG` primary stays yellow — no invented green/checkered wording.
+- `INCIDENT` opening never invents contact/tow.
 
 ## Later #276 slices
 
-Deferred: EN patterns + adversarial tests; shadow activation.
+Deferred: shadow activation; COMMENTARY_ENGINE/CONFIG/API on activation.
 
 ## Docs / config
 

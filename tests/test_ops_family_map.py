@@ -1,4 +1,4 @@
-"""#276 Slices 1-5 — ops family map (pit/incident/flags/closeout + unknown/tow/teleport)."""
+"""#276 Slices 1-6 — ops family map (pit/incident/flags/closeout + unknown/tow/teleport + EN patterns)."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from irswitch.contracts.ops_family_map import (
     INCIDENT_TERMINAL_WIRE_IDS,
     OPS_CLOSEOUT_WIRE_IDS,
     OPS_INCIDENT_WIRE_IDS,
+    OPS_PIT_WIRE_IDS,
     OPS_TELEPORT_OUTCOME_REASON_IDS,
     OPS_TOW_OUTCOME_REASON_IDS,
     OPS_UNKNOWN_OUTCOME_REASON_IDS,
@@ -26,6 +27,7 @@ from irswitch.contracts.ops_family_map import (
     SESSION_WRAP_PRIMARY_BEAT_ID,
     OpsFamilyRow,
     closeout_stories_are_separated,
+    en_patterns_and_tts_slots_are_curated,
     incident_branch_beats_are_documented,
     incident_cycle_phase_order_is_monotonic,
     incident_stories_have_explicit_terminals,
@@ -388,3 +390,78 @@ def test_ops_family_row_is_frozen() -> None:
     assert isinstance(row, OpsFamilyRow)
     with pytest.raises(dataclasses.FrozenInstanceError):
         row.migration_status = "v2"  # type: ignore[misc]
+
+
+def test_en_patterns_and_tts_slots_are_curated() -> None:
+    assert en_patterns_and_tts_slots_are_curated() is True
+    for row in ops_family_rows():
+        assert len(row.en_pattern_ids) >= 4
+        assert len(row.en_claim_surfaces) >= 4
+        assert row.tts_slot_formats == ("subjectSurface", "requiredClaimSurface")
+        assert row.beat_id is not None
+        assert all(pid.startswith(f"{row.beat_id}:") for pid in row.en_pattern_ids)
+        for surface in row.en_claim_surfaces:
+            lowered = surface.lower()
+            assert not any(token in lowered for token in row.en_forbidden_tokens)
+
+
+def test_ops_en_pattern_ids_match_catalog_cards() -> None:
+    cards = {
+        str(row["id"]): row
+        for row in json.loads(packaged_schema_bytes("realization-pattern-cards.json"))["cards"]
+    }
+    for row in ops_family_rows():
+        assert len(row.en_pattern_ids) >= 4
+        for pattern_id in row.en_pattern_ids:
+            card = cards[pattern_id]
+            assert card["beatId"] == row.beat_id
+            assert card["family"] == row.realization_family
+            assert card["enabled"] is True
+            assert card["auditedLanguage"] == "en"
+
+
+def test_closeout_en_claim_surfaces_are_adversarially_disjoint() -> None:
+    checkered = row_for_wire_id("SESSION_CHECKERED")
+    finish = row_for_wire_id("FINISH")
+    wrap = row_for_wire_id("SESSION_WRAP")
+    assert set(checkered.en_claim_surfaces).isdisjoint(set(finish.en_claim_surfaces))
+    assert set(finish.en_claim_surfaces).isdisjoint(set(wrap.en_claim_surfaces))
+    assert set(checkered.en_claim_surfaces).isdisjoint(set(wrap.en_claim_surfaces))
+    # Finish keeps observed finish-position wording; wrap must not.
+    assert all("p{finishposition}" in s.lower() for s in finish.en_claim_surfaces)
+    assert not any("p{finishposition}" in s.lower() for s in wrap.en_claim_surfaces)
+    assert not any("p{finishposition}" in s.lower() for s in checkered.en_claim_surfaces)
+
+
+def test_pit_en_surfaces_are_not_race_finish() -> None:
+    for wire_id in OPS_PIT_WIRE_IDS:
+        row = row_for_wire_id(wire_id)
+        assert row.en_forbidden_tokens
+        for surface in row.en_claim_surfaces:
+            lowered = surface.lower()
+            assert "wins the race" not in lowered
+            assert "finishes p" not in lowered
+            assert not any(token in lowered for token in row.en_forbidden_tokens)
+
+
+def test_session_flag_en_surfaces_stay_yellow_primary() -> None:
+    flag = row_for_wire_id("SESSION_FLAG")
+    assert flag.beat_id == "session.flag.yellow"
+    blob = " ".join(flag.en_claim_surfaces).lower()
+    assert "yellow" in blob
+    assert "green flag" not in blob
+    assert "checkered" not in blob
+    for surface in flag.en_claim_surfaces:
+        lowered = surface.lower()
+        assert not any(token in lowered for token in flag.en_forbidden_tokens)
+
+
+def test_incident_en_surfaces_do_not_invent_contact_or_tow() -> None:
+    incident = row_for_wire_id("INCIDENT")
+    blob = " ".join(incident.en_claim_surfaces).lower()
+    assert "off track" in blob or "racing surface" in blob or "paved surface" in blob
+    assert "contact" not in blob
+    assert "tow" not in blob
+    for surface in incident.en_claim_surfaces:
+        lowered = surface.lower()
+        assert not any(token in lowered for token in incident.en_forbidden_tokens)

@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 5 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 6 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -25,7 +25,7 @@ Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). N
 
 ## Ops family migration map (`contracts/ops_family_map.py`)
 
-Slices 1–5 inventory for Wave G #276 (all `migration_status=legacy`; `OPS_WIRE_IDS` **13** = 6 pit + 3 incident + 1 flag + 3 closeout; Slice 5 adds taxonomy only — no new freeze wires):
+Slices 1–6 inventory for Wave G #276 (all `migration_status=legacy`; `OPS_WIRE_IDS` **13** = 6 pit + 3 incident + 1 flag + 3 closeout; Slice 5 adds taxonomy only; Slice 6 adds EN pattern/TTS curation — no new freeze wires):
 
 | Helper | Role |
 | --- | --- |
