@@ -901,7 +901,7 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 - **Pins:** null session identity + invalid `sessionPlan` + top-level `reason=obs_state_unknown`; episode `retainedCurrentCapacity`/`resolvedCapacity`; facts capacity eviction reason registry ID.
 - **Tests:** `tests/test_commentary_runtime_goldens.py` — REQUIRED_FIXTURES + machine parity for the two StatusResponse rows; `tests/test_narrative_ingress.py` — facts eviction projection loads the fragment golden.
 - **Authority:** `docs/v2.0.0/public-contracts.md` StatusResponse examples + `machine/api-goldens.json` `valid[id=status_ready|status_unknown_invalid_plan]`.
-- **Branch:** `cursor/public-contracts-goldens-273-cad3` → base `codex/commentary-story-flow-spec`; feat SHA **pending**.
+- **Branch:** `cursor/public-contracts-goldens-273-cad3` → base `codex/commentary-story-flow-spec`; feat SHA .
 - **Docs impact:** this file, `docs/dokumentace/domeny/events.md`, `docs/v2.0.0/implementation-handover.md`. `API.md` / `CONFIG.md` unchanged (fixtures only; HTTP shapes already documented).
 
 
