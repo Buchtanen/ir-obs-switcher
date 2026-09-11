@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 5 — offline stream + silence drivers for F01/F10/F17 (no live Windows §24.9 GO).
+**Status:** Slice 6 — offline director policy drivers for F23/F37 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -73,6 +73,20 @@
 **AC locks (Slice 5):**
 - Machine projection for F01/F10/F17 still matches frozen expectations/calcs (`score_36` / threshold gte).
 - Runtime drivers prove null session identity on stream start, 24+12 silence pressure selecting filler, and lobby filler limited to stream facts with missing-track rearm.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 6 — F23/F37 director policy runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F23` (fatigue / order / story cap one formula), `F37` (switch policy vs urgency sort / filler) |
+| Pytest | `tests/test_vertical_slice_policy_runtime.py` |
+| Inventory | **20/44** wired; **24** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 6):**
+- Machine projection for F23/F37 still matches frozen expectations/calcs (half-life 0.5 / effective cap 2).
+- Runtime drivers prove base-2 fatigue, stable `(40,3)` order, cadence cap with closing escape, inclusive margin switch, lower-urgency switch, critical priority, filler fallback-only, and inclusive replacement breakdown.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

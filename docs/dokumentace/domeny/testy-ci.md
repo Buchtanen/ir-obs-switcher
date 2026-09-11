@@ -94,6 +94,23 @@ Lookup: [inflight § #278 slice 4](../inflight/README.md#278-vertical-slice-scor
 
 Lookup: [inflight § #278 slice 5](../inflight/README.md#278-vertical-slice-silence-runtime-slice-5-lookup) · [dokumentace index § #278](../README.md).
 
+## #278 vertical-slice policy runtime (Slice 6)
+
+**Status:** offline F23/F37 drivers on branch `cursor/vertical-slice-policy-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_policy_runtime.py`](../../../tests/test_vertical_slice_policy_runtime.py) (**4** tests: **2** parametrized machine projection + F23/F37 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **20/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 6](../../v2.0.0/vertical-slice-acceptance.md#slice-6--f23f37-director-policy-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F23/F37 rows; hashes **unchanged**) |
+
+**Slice 6 locks:** F23 base-2 fatigue half-life, stable `(40,3)` order, effective story cap 2 with non-closing block and closing/critical escape; F37 inclusive margin switch, lower-urgency switch, critical priority, filler fallback-only, inclusive replacement 78, no non-event replace, full score breakdown; machine projection still matches frozen expectations/calcs; gap inventory **20/44** wired, **24** unwired.
+
+**Explicit non-goals:** no rewrite of frozen `machine/*` hashes; **`CONFIG.md` / `API.md` unchanged**; no live §24.9 GO.
+
+Lookup: [inflight § #278 slice 6](../inflight/README.md#278-vertical-slice-policy-runtime-slice-6-lookup) · [dokumentace index § #278](../README.md).
+
 ## Related
 
 [RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.
