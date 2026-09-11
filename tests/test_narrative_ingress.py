@@ -787,9 +787,7 @@ def test_project_runtime_status_facts_ready_only_on_new_lossless_run() -> None:
         fanout=41,
         enqueued_mono_ms=8_000,
     )
-    assert (
-        project_runtime_status(runtime.status())["components"]["facts"]["status"] == "degraded"
-    )
+    assert project_runtime_status(runtime.status())["components"]["facts"]["status"] == "degraded"
 
     closed = _timeline(revision=5)
     closed["narrativeRunActive"] = False
