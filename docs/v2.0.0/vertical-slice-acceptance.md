@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 6 — offline director policy drivers for F23/F37 (no live Windows §24.9 GO).
+**Status:** Slice 7 — offline partition + silence-origin drivers for F21/F42 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -87,6 +87,20 @@
 **AC locks (Slice 6):**
 - Machine projection for F23/F37 still matches frozen expectations/calcs (half-life 0.5 / effective cap 2).
 - Runtime drivers prove base-2 fatigue, stable `(40,3)` order, cadence cap with closing escape, inclusive margin switch, lower-urgency switch, critical priority, filler fallback-only, and inclusive replacement breakdown.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 7 — F21/F42 partition + silence-origin runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F21` (lossless 64/64/2 context partition), `F42` (one silence origin across opening/busy/inactive) |
+| Pytest | `tests/test_vertical_slice_partition_silence_runtime.py` |
+| Inventory | **22/44** wired; **22** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 7):**
+- Machine projection for F21/F42 still matches frozen expectations/calcs (`partition` → `[64,64,2]`).
+- Runtime drivers prove protected/ordinary partition boundaries, source-order preservation, three planning impulses, and silence arm/cancel/rearm/stale/config-next-arm locks.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

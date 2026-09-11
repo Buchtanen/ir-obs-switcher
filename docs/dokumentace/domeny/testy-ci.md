@@ -111,6 +111,23 @@ Lookup: [inflight § #278 slice 5](../inflight/README.md#278-vertical-slice-sile
 
 Lookup: [inflight § #278 slice 6](../inflight/README.md#278-vertical-slice-policy-runtime-slice-6-lookup) · [dokumentace index § #278](../README.md).
 
+## #278 vertical-slice partition silence runtime (Slice 7)
+
+**Status:** offline F21/F42 drivers on branch `cursor/vertical-slice-partition-silence-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_partition_silence_runtime.py`](../../../tests/test_vertical_slice_partition_silence_runtime.py) (**4** tests: **2** parametrized machine projection + F21/F42 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **22/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 7](../../v2.0.0/vertical-slice-acceptance.md#slice-7--f21f42-partition--silence-origin-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F21/F42 rows; hashes **unchanged**) |
+
+**Slice 7 locks:** F21 lossless `[64,64,2]` partition with first two protected / last ordinary, same-revision idempotency, source order preserved, three planning impulses; F42 single silence origin across run arm, playback cancel, busy rearm, inactive no-credit, stale generation, and config-next-arm; machine projection still matches frozen expectations/calcs; gap inventory **22/44** wired, **22** unwired.
+
+**Explicit non-goals:** no rewrite of frozen `machine/*` hashes; **`CONFIG.md` / `API.md` unchanged**; no live §24.9 GO.
+
+Lookup: [inflight § #278 slice 7](../inflight/README.md#278-vertical-slice-partition-silence-runtime-slice-7-lookup) · [dokumentace index § #278](../README.md).
+
 ## Related
 
 [RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.
