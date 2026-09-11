@@ -104,13 +104,13 @@ _STATIC: dict[str, _StaticSource] = {
 def _object(value: object, label: str) -> dict[str, Any]:
     if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
         raise ContractViolation(f"{label} must be a JSON object")
-    return value  # type: ignore[return-value]
+    return value
 
 
 def _rows(value: object, label: str) -> list[dict[str, Any]]:
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
         raise ContractViolation(f"{label} must be a JSON object list")
-    return value  # type: ignore[return-value]
+    return value
 
 
 def _load(name: str) -> dict[str, Any]:
