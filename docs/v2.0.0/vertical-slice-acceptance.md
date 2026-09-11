@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 12 — offline context-cut + prompt-freedom drivers for F18/F33 (no live Windows §24.9 GO).
+**Status:** Slice 13 — offline playback-race + planning-replace drivers for F14/F35 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -174,6 +174,20 @@
 **AC locks (Slice 12):**
 - Machine projection for F18/F33 still matches frozen expectations/calcs (canonical seed `16041955996680716084`).
 - Runtime drivers prove apply-88 / mismatch reject / no old-view lookup / no batch merge / apply-89 one director, plus closed profiles, least-permissive clamp, tight baseline, safe promotion, canonical seed, card-or-fatigue, and failure-never-widens.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 13 — F14/F35 playback-race + planning-replace runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F14` (playback acknowledgement races reset), `F35` (real new event replaces into a new planning cycle) |
+| Pytest | `tests/test_vertical_slice_playback_replace_runtime.py` |
+| Inventory | **34/44** wired; **10** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 13):**
+- Machine projection for F14/F35 still matches frozen expectations.
+- Runtime drivers prove reset-then-stale-accept stays unconsumed, accept-then-reset interrupts exposed speech, reducer sequence authority, replace-without-suppression, close cycle N / open N+1 attempt 1, one alternative, lower/pure fact does not replace, accepted events only.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

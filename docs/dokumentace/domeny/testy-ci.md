@@ -204,3 +204,18 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 | Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F18/F33 rows; hashes **unchanged**) |
 
 **Slice 12 locks:** F18 apply-88, mismatch reject, no old-view lookup, no batch merge, apply-89 one director; F33 closed profiles, least-permissive, tight baseline, safe promotion, canonical seed, card-or-fatigue, failure-never-widens; machine projection still matches frozen expectations; gap inventory **32/44** wired, **12** unwired.
+
+
+## #278 vertical-slice playback/replace runtime (Slice 13)
+
+**Status:** offline F14/F35 drivers on branch `cursor/vertical-slice-playback-replace-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_playback_replace_runtime.py`](../../../tests/test_vertical_slice_playback_replace_runtime.py) (**4** tests: **2** parametrized machine projection + F14/F35 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **34/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 13](../../v2.0.0/vertical-slice-acceptance.md#slice-13--f14f35-playback-race--planning-replace-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F14/F35 rows; hashes **unchanged**) |
+
+**Slice 13 locks:** F14 reset-then-stale-accept unconsumed, accept-then-reset interrupt, reducer-sequence authority; F35 replace-without-suppression, close70, new_cycle71_attempt1, one alternative, lower-event no replace, accepted-event only; machine projection still matches frozen expectations; gap inventory **34/44** wired, **10** unwired.
+
