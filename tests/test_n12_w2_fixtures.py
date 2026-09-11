@@ -336,18 +336,21 @@ async def test_runtime_reset_and_config_reach_both_consumers() -> None:
     reset = runtime.pipeline.reset_session("99:0", reason="session_changed")
     assert reset is not None
 
+    # #284 cutover: commentary no longer owns a fanout subscription; SessionReset /
+    # ConfigUpdate still broadcast to overlay + narrative_shadow subscribers.
+    assert runtime._commentary_subscription is None
     overlay_items = await _drain(runtime._overlay_subscription)
-    commentary_items = await _drain(runtime._commentary_subscription)
+    shadow_items = await _drain(runtime._narrative_shadow_subscription)
     overlay_resets = [item for item in overlay_items if isinstance(item, SessionReset)]
-    commentary_resets = [item for item in commentary_items if isinstance(item, SessionReset)]
+    shadow_resets = [item for item in shadow_items if isinstance(item, SessionReset)]
     overlay_configs = [item for item in overlay_items if isinstance(item, ConfigUpdate)]
-    commentary_configs = [item for item in commentary_items if isinstance(item, ConfigUpdate)]
+    shadow_configs = [item for item in shadow_items if isinstance(item, ConfigUpdate)]
     assert len(overlay_resets) == 1
-    assert len(commentary_resets) == 1
-    assert overlay_resets[0].stream_sequence == commentary_resets[0].stream_sequence
+    assert len(shadow_resets) == 1
+    assert overlay_resets[0].stream_sequence == shadow_resets[0].stream_sequence
     assert overlay_resets[0].reason == "session_changed"
-    assert overlay_configs and commentary_configs
-    assert overlay_configs[0].generation == commentary_configs[0].generation
+    assert overlay_configs and shadow_configs
+    assert overlay_configs[0].generation == shadow_configs[0].generation
 
     runtime.bus.set_active_events([{"id": "stale"}])
     runtime.bus.set_active_stories_v4([{"eventType": "HUNTING"}])
@@ -359,7 +362,7 @@ async def test_runtime_reset_and_config_reach_both_consumers() -> None:
     runtime._publish_config_update_if_changed()
     config_items = [
         item
-        for item in await _drain(runtime._commentary_subscription)
+        for item in await _drain(runtime._narrative_shadow_subscription)
         if isinstance(item, ConfigUpdate)
     ]
     assert config_items
