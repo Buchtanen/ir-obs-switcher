@@ -200,7 +200,7 @@ Library pytest evidence that `NarrativeRuntime` projects frozen upstream truth w
 
 - Identity: `tests/fixtures/commentary_runtime/status_identity_disabled.json` (null session fields), `status_identity_after_context.json` (live session identity after APPLY_CONTEXT; feat `ccd0697`)
 - Timeline session identity: `tests/fixtures/commentary_runtime/status_timeline_session_null.json` (idle null subset; feat `f58c992`)
-- Status_ready library: `tests/fixtures/commentary_runtime/status_ready_library.json` (`catalog`, `config`, `episodes`, `byTapeChannel`, `queues.opportunities`, `components.detectors`/`facts` disabled-library zeros)
+- Status_ready library: `tests/fixtures/commentary_runtime/status_ready_library.json, exact machine `status_ready.json` / `status_unknown_invalid_plan.json`, `status_component_facts_evicted.json`` (`catalog`, `config`, `episodes`, `byTapeChannel`, `queues.opportunities`, `components.detectors`/`facts` disabled-library zeros)
 - ByTapeChannel live counters: `tests/fixtures/commentary_runtime/status_by_tape_channel.json` (feat `466c2f3`)
 - Speech idle: `tests/fixtures/commentary_runtime/status_speech_idle.json` (`language`, idle `speech`, bounded `components` incl. schema-complete llm/tts)
 - Components llm/tts: `tests/fixtures/commentary_runtime/status_components_llm_tts.json`
