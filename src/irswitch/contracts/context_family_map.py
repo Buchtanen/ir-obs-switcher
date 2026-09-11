@@ -1,10 +1,10 @@
-"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–6).
+"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–7).
 
 Maps remaining non-race session/stream, filler, weather and field wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families, policy
 TTL and tape channels.
 
-Slices 1–6 record these wires as ``legacy``. They do **not** rewrite frozen
+Slices 1–6 recorded these wires as ``legacy``; Slice 7 flips inventory ``migration_status`` to ``shadow`` without flipping ``FAMILY_ROUTE``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 Session intros/recaps stay owned by the timing map; session wrap/checkered/finish
 stay owned by the ops / race-outcome maps. Beat-only silence fillers are documented without inventing freeze wires.
@@ -615,7 +615,7 @@ def _resolve_beat_ids(
 
 
 def context_family_rows() -> tuple[ContextFamilyRow, ...]:
-    """Return the closed context migration inventory (Slices 1–6: session leftovers + filler + weather/field + bio style, legacy)."""
+    """Return the closed context migration inventory (Slices 1–7: session leftovers + filler + weather/field + bio style, observational shadow)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -658,7 +658,7 @@ def context_family_rows() -> tuple[ContextFamilyRow, ...]:
                 can_create=can_create,
                 lifecycle_phase=static.lifecycle_phase,
                 scope_kind=static.scope_kind,
-                migration_status="legacy",
+                migration_status="shadow",
                 invalidate_reasons=static.invalidate_reasons,
                 terminal_reasons=static.terminal_reasons,
                 branch_beat_ids=branch_beat_ids,
@@ -1095,3 +1095,36 @@ def generic_forced_filler_is_removed() -> bool:
     if "silence" not in lowered:
         return False
     return True
+
+
+def context_family_shadow_readiness_is_complete() -> bool:
+    """Slice 7 helper: inventory shadow readiness without FAMILY_ROUTE flip.
+
+    Composes Slices 1–6 AC locks and requires every inventory wire to be
+    ``migration_status=shadow``. Does **not** require compare-harness route
+    ownership (most context wires still resolve to ``unknown``).
+    """
+
+    if migration_status_by_wire_id() != dict.fromkeys(CONTEXT_WIRE_IDS, "shadow"):
+        return False
+    if rows_by_migration_status("legacy") or rows_by_migration_status("v2"):
+        return False
+    if len(rows_by_migration_status("shadow")) != len(CONTEXT_WIRE_IDS):
+        return False
+    return (
+        context_session_phase_order_is_monotonic()
+        and enter_car_branch_beats_are_documented()
+        and context_session_stories_have_explicit_invalidation()
+        and owned_elsewhere_session_wires_are_documented()
+        and filler_beats_are_documented()
+        and filler_may_resolve_to_silence()
+        and weather_and_field_wires_are_documented()
+        and weather_and_field_currency_is_explicit()
+        and bio_style_wires_are_documented()
+        and bio_cannot_invent_sport_truth()
+        and long_silence_eligibility_is_documented()
+        and long_silence_fatigue_is_documented()
+        and filler_can_result_in_silence()
+        and context_en_content_is_curated()
+        and generic_forced_filler_is_removed()
+    )

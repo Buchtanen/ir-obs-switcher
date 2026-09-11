@@ -1,4 +1,4 @@
-"""#277 Slices 1–6 — context family map (session + filler + weather/field + bio style + long-silence)."""
+"""#277 Slices 1–7 — context family map (session + filler + weather/field + bio style + long-silence + inventory shadow)."""
 
 from __future__ import annotations
 
@@ -35,6 +35,7 @@ from irswitch.contracts.context_family_map import (
     bio_style_wires_are_documented,
     context_en_content_is_curated,
     context_family_rows,
+    context_family_shadow_readiness_is_complete,
     context_session_phase_order_is_monotonic,
     context_session_stories_have_explicit_invalidation,
     enter_car_branch_beats_are_documented,
@@ -212,11 +213,12 @@ def test_context_family_rows_cover_full_inventory() -> None:
     assert len(rows) == 10
 
 
-def test_every_context_row_is_legacy_before_shadow_cutover() -> None:
-    assert migration_status_by_wire_id() == dict.fromkeys(CONTEXT_WIRE_IDS, "legacy")
-    assert len(rows_by_migration_status("legacy")) == 10
-    assert rows_by_migration_status("shadow") == ()
+def test_every_context_row_is_inventory_shadow() -> None:
+    assert migration_status_by_wire_id() == dict.fromkeys(CONTEXT_WIRE_IDS, "shadow")
+    assert len(rows_by_migration_status("shadow")) == 10
+    assert rows_by_migration_status("legacy") == ()
     assert rows_by_migration_status("v2") == ()
+    assert context_family_shadow_readiness_is_complete() is True
 
 
 def test_context_rows_match_freeze_and_beat_catalog() -> None:
@@ -235,7 +237,7 @@ def test_context_rows_match_freeze_and_beat_catalog() -> None:
         assert row.can_create is can_create_event_opportunity(row.wire_id)
         assert row.invalidate_reasons
         assert bool(row.terminal_reasons) is expect["terminal"]
-        assert row.migration_status == "legacy"
+        assert row.migration_status == "shadow"
         assert row.emitter_module
         assert row.adapter_module
         assert row.notes
