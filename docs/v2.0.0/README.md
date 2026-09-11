@@ -102,7 +102,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 ## Wave G — complete event-family migration
 
 - [x] [#274 — v2: migrate race outcome event families](https://github.com/Buchtanen/ir-obs-switcher/issues/274) — position/pass/overtake/leader/finish. **Closeout on integration:** shadow activation + evidence/fail-soft/disposition; see [race-outcome-migration.md](race-outcome-migration.md). Live `v2` speech cutover deferred.
-- [ ] [#275 — v2: migrate lap, sector, practice and qualifying families](https://github.com/Buchtanen/ir-obs-switcher/issues/275) — timing and inherited recaps. **Slice 6 open:** restart/rewind replay cases curated — [timing-family-migration.md](timing-family-migration.md).
+- [ ] [#275 — v2: migrate lap, sector, practice and qualifying families](https://github.com/Buchtanen/ir-obs-switcher/issues/275) — timing and inherited recaps. **Slice 7 open:** closeout evidence recorded (still legacy) — [timing-family-migration.md](timing-family-migration.md).
 - [ ] [#276 — v2: migrate pit, incident, flag and recovery families](https://github.com/Buchtanen/ir-obs-switcher/issues/276) — stateful operational stories.
 - [ ] [#277 — v2: migrate session, filler, weather, field and bio families](https://github.com/Buchtanen/ir-obs-switcher/issues/277) — non-race-event commentary.
 - [ ] [#278 — v2: production vertical-slice end-to-end acceptance](https://github.com/Buchtanen/ir-obs-switcher/issues/278) — internal live checkpoint, not a partial release; includes #283 evidence.

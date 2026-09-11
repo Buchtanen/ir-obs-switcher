@@ -1,9 +1,9 @@
 # #275 Timing family migration (timing + session intros/recaps)
 
-**Status:** Slice 6 — restart/rewind replay cases curated for all inventory wires (all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 7 — closeout evidence (coverage/latency/fail-soft) recorded; all wires remain `legacy` (no `FAMILY_ROUTE` flip).  
 **Issue:** [#275](https://github.com/Buchtanen/ir-obs-switcher/issues/275)  
-**Module:** `src/irswitch/contracts/timing_family_map.py` + `timing_family_replay_cases.py`  
-**Tests:** `tests/test_timing_family_map.py` + `tests/test_timing_family_replay_cases.py`  
+**Module:** `src/irswitch/contracts/timing_family_map.py` + `timing_family_replay_cases.py` + `timing_family_closeout_evidence.py`  
+**Tests:** `tests/test_timing_family_map.py` + `tests/test_timing_family_replay_cases.py` + `tests/test_timing_family_closeout_evidence.py`  
 **Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
 
 ## Guardrails
@@ -84,6 +84,17 @@ Closed inventory in `timing_family_replay_cases.py` (no live speech / no `FAMILY
 | `post_rewind_forward:attempt_on_new_quali` | `post_rewind_forward` | `HOT_LAP`, `PROJECTED_LAP`, `INVALID_LAP` | `active_only` | no |
 
 Helper: `restart_rewind_replay_cases_are_complete()`.
+
+
+## Closeout evidence (Slice 7)
+
+Module: `timing_family_closeout_evidence.py`.
+
+- Per-wire coverage: migration status, `can_create`, EN pattern count, restart/rewind replay case count.
+- Shadow/legacy route + compare latency via `observe_family_safely` / `compare_event_decisions`.
+- Fail-soft: forced observation failure yields `observation_failed` without raising.
+- Helper: `timing_family_closeout_evidence_is_complete()`.
+- **Still deferred:** live `FAMILY_ROUTE` / speech activation and COMMENTARY_ENGINE/CONFIG/API behavior docs.
 
 **Remaining legacy disposition:** all 13 timing wires remain `migration_status=legacy` until a dedicated activation slice (shadow + fail-soft + COMMENTARY_ENGINE/CONFIG/API) lands.
 
