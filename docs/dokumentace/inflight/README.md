@@ -80,7 +80,7 @@
 | #273 final docs/config close-out (API/dashboard/behavior + CONFIG/example) | docs | `API.md` / `CONFIG.md` / `config/config.example.ini` / `COMMENTARY_ENGINE.md` / `domeny/{server,events}.md` — [§ lookup](#273-final-docs-config-close-out-slice-lookup) | **landed** @ feat `f613064` on `cursor/final-docs-273-cad3` (FF → `codex/commentary-story-flow-spec`) |
 | #274 race-outcome closeout | contracts + events | `race_outcome_activation_evidence.py` + family map/verifier/shadow — [§ lookup](#274-race-outcome-closeout-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md) | **open** on `cursor/race-outcome-closeout-274-cad3` |
 | #275 timing family map (slice 8) | contracts + events | observational `FAMILY_ROUTE[timing]=shadow` + inventory `migration_status=shadow` — [§ lookup](#275-timing-family-map-slice-8-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md) | **closed** on `cursor/timing-shadow-activate-275-cad3` |
-| #276 ops family map (slice 2) | contracts | `ops_family_map.py` — pit + incident/aftermath/recovery inventory (all `legacy`) — [§ slice 1 lookup](#276-ops-family-map-slice-1-lookup) · [§ slice 2 lookup](#276-ops-family-map-slice-2-lookup) · [ops-family-migration.md](../../v2.0.0/ops-family-migration.md) | **open** on `cursor/ops-incident-inventory-276-cad3` (slice 1 on `cursor/ops-family-map-276-cad3`) |
+| #276 ops family map (slice 3) | contracts | `ops_family_map.py` — pit + incident + `SESSION_FLAG` inventory (all `legacy`; `OPS_WIRE_IDS` **10**) — [§ slice 1 lookup](#276-ops-family-map-slice-1-lookup) · [§ slice 2 lookup](#276-ops-family-map-slice-2-lookup) · [§ slice 3 lookup](#276-ops-family-map-slice-3-lookup) · [ops-family-migration.md](../../v2.0.0/ops-family-migration.md) | **open** on `cursor/ops-flag-inventory-276-cad3` (slice 2 on `cursor/ops-incident-inventory-276-cad3`; slice 1 on `cursor/ops-family-map-276-cad3`) |
 | #273 / #284 components llm/tts projection (HTTP + ingress subset) | events + server + race | `events/narrative_ingress.py` (`_llm_component_projection`, `_tts_component_projection`, `_tts_voice_from_ledger`, live `quarantinedGeneration`), `events/narrative_runtime.py` (`llm_component=`, `speech_quarantined_generation`, quarantine on stop-timeout), `race/runtime.py` (passes warmed `LlmComponent`) — [§ lookup](#284-273-components-llm-tts-slice-lookup) | `tests/test_narrative_ingress.py` (**1** golden + **4** live llm/tts + **3** lastAttempt + **3** voice/quarantine rows); golden `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; related **268** |
 | #273 / #284 components detectors/facts projection (HTTP + ingress subset) | events + server | `events/narrative_ingress.py` (`project_runtime_status` `components.facts`/`components.detectors`), `events/narrative_runtime.py` (`detector_bank=`, fact fields, `_ingest_fact_view_counts`, `_detector_disabled_snapshot`), `events/detector_bank.py` (`disabled_for_status`) — [§ lookup](#284-273-components-detectors-facts-slice-lookup) · [§ fact-health continuation](#273-fact-health-continuation-slice-lookup) | live counts feat `d13d6bd` (**3** rows); capacity health **+3** on `cursor/fact-health-273-cad3` ([§ fact-health](#273-fact-health-continuation-slice-lookup)); related **249** / **252** |
 | #273 / #284 timeline session identity (HTTP + ingress subset) | events + server | `events/narrative_runtime.py` (`_session_identity_from_timeline`, `RuntimeStatus` session fields on APPLY_CONTEXT) + `events/narrative_ingress.py` (`_timeline_session_identity` in `project_runtime_status`) — [§ lookup](#284-273-timeline-session-identity-slice-lookup) | `tests/test_narrative_ingress.py` (**3** timeline session rows); goldens `status_timeline_session_null.json`, `status_identity_after_context.json`; related **237** |
@@ -1035,7 +1035,7 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 - **Module:** `src/irswitch/contracts/ops_family_map.py` — closed pit cycle inventory (`PIT_ENTRY`…`PIT_OUTCOME`).
 - **Helpers:** `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`.
 - **Status:** all pit wires `migration_status=legacy`; no machine hash rewrite; no `FAMILY_ROUTE` flip; no live `v2` speech.
-- **Tests:** `tests/test_ops_family_map.py` (pit rows; full suite **12** after slice 2).
+- **Tests:** `tests/test_ops_family_map.py` (pit rows; full suite **13** after slice 3).
 - **Docs:** [ops-family-migration.md](../../v2.0.0/ops-family-migration.md); CONFIG/API unchanged.
 - **Branch:** `cursor/ops-family-map-276-cad3`.
 
@@ -1050,9 +1050,25 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 - **Adapters:** `incident_race_event_to_envelope` (`irswitch.events.adapters.exception_extra`) for `INCIDENT`; FSM direct for `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY`.
 - **Helpers:** `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`.
 - **Status:** all incident wires `migration_status=legacy`; no machine hash rewrite; no `FAMILY_ROUTE` flip; no live `v2` speech.
-- **Tests:** `tests/test_ops_family_map.py` (**12** total: **9** pit + **3** incident).
+- **Tests:** `tests/test_ops_family_map.py` (**12** after slice 2; full suite **13** after slice 3).
 - **Docs:** [ops-family-migration.md](../../v2.0.0/ops-family-migration.md); CONFIG/API unchanged.
 - **Branch:** `cursor/ops-incident-inventory-276-cad3`.
+
+
+### #276 ops-family map slice 3 lookup
+
+- **Module:** `src/irswitch/contracts/ops_family_map.py` — `SESSION_FLAG` inventory appended to pit + incident wires in `OPS_WIRE_IDS` (**10** = 6 pit + 3 incident + 1 flag).
+- **Wire:** `SESSION_FLAG` (`migration_status=legacy`, scope `flag_control`).
+- **Branch beats:** primary `session.flag.yellow`; registry branch `session.flag.yellow`, `session.flag.green`, `session.checkered` (`SESSION_FLAG_BRANCH_BEAT_IDS`, `SESSION_FLAG_PRIMARY_BEAT_ID`).
+- **Policy / tape / family:** `critical` / 45s; tape `race.control.flag`; realization family `session.flag`.
+- **Emitter / adapter:** `irswitch.race.flags:SessionFlagFsm` (FSM direct).
+- **Notes lock:** checkered branch ≠ hero finish / session wrap; unknown flag evidence not invented as yellow/green/checkered; start lights ignored.
+- **Helper:** `session_flag_branch_beats_are_documented()`.
+- **Status:** no machine hash rewrite; no `FAMILY_ROUTE` flip; no live `v2` speech; CONFIG/API unchanged.
+- **Deferred still:** `SESSION_CHECKERED` vs hero finish vs session end separation; tow/teleport; EN patterns; shadow.
+- **Tests:** `tests/test_ops_family_map.py` (**13** total).
+- **Docs:** [ops-family-migration.md](../../v2.0.0/ops-family-migration.md); CONFIG/API unchanged.
+- **Branch:** `cursor/ops-flag-inventory-276-cad3`.
 
 
 ### #273 INFO/WARN + channel cadence slice lookup

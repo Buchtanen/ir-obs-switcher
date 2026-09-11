@@ -1,15 +1,15 @@
 # #276 Ops family migration (pit / incident / flag / recovery)
 
-**Status:** Slice 2 — pit + incident/aftermath/recovery inventory (Slices 1–2; all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 3 — pit + incident/aftermath/recovery + `SESSION_FLAG` inventory (Slices 1–3; all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#276](https://github.com/Buchtanen/ir-obs-switcher/issues/276)  
 **Module:** `src/irswitch/contracts/ops_family_map.py`  
-**Tests:** `tests/test_ops_family_map.py` (**12**)  
-**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
+**Tests:** `tests/test_ops_family_map.py` (**13**)  
+**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
 
 ## Guardrails
 
 - Does **not** rewrite frozen `docs/v2.0.0/machine/*` hashes.
-- Does **not** flip `FAMILY_ROUTE` (pit/incident remain `legacy`).
+- Does **not** flip `FAMILY_ROUTE` (pit/incident/flag remain `legacy`).
 - Does **not** cut over live `v2` speech.
 - Integration-only; no master PR until cutover (#279).
 
@@ -42,19 +42,38 @@
 | `INCIDENT_AFTERMATH` | `irswitch.race.aftermath:IncidentAftermathFsm` | FSM direct (same module) |
 | `BACK_UNDER_WAY` | `irswitch.race.aftermath:IncidentAftermathFsm` | FSM direct (same module) |
 
-Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`.
+## Slice 3 inventory — session flag (yellow / green / checkered)
 
-## AC locks (Slices 1–2)
+| Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Status |
+| --- | --- | --- | --- | --- | ---: | --- | --- | --- |
+| `SESSION_FLAG` | `session_flag_yellow` | `session.flag.yellow` | control | `session.flag` | critical / 45s | `race.control.flag` | `flag_control` | legacy |
+
+**SESSION_FLAG branch beats:** primary `session.flag.yellow`; registry also binds `session.flag.green` and `session.checkered` (`SESSION_FLAG_BRANCH_BEAT_IDS`, `SESSION_FLAG_PRIMARY_BEAT_ID`). `SessionFlagFsm` rising-edge kinds `yellow|green|checkered` map onto those beats; start lights are ignored.
+
+**Notes lock:** checkered branch ≠ hero finish / session wrap (those stay separate stories). Missing/unclear flag evidence stays unknown — never invent yellow/green/checkered.
+
+**Emitters / adapters (Slice 3):**
+
+| Wire | Emitter | Adapter |
+| --- | --- | --- |
+| `SESSION_FLAG` | `irswitch.race.flags:SessionFlagFsm` | FSM direct (same module) |
+
+**`OPS_WIRE_IDS`:** **10** wires (6 pit + 3 incident + 1 flag).
+
+Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`.
+
+## AC locks (Slices 1–3)
 
 - **Pit phase order** — `entry → lane → stopped → released → exit → outcome`.
 - **Pit explicit terminals** — only `PIT_EXIT` / `PIT_OUTCOME` carry `terminal_reasons`; every pit wire has `invalidate_reasons`.
 - **Incident phase order** — `event → aftermath → recovery`.
 - **Incident explicit terminals** — only `BACK_UNDER_WAY` carries `terminal_reasons`; every incident wire has `invalidate_reasons`.
 - **INCIDENT branch beats** — primary `incident.off_track`; branch list `incident.off_track`, `incident.unclassified` documented in row notes.
+- **SESSION_FLAG branch beats** — primary `session.flag.yellow`; branch list `session.flag.yellow`, `session.flag.green`, `session.checkered` documented in row notes; checkered ≠ hero finish / session wrap; unknown not invented.
 
 ## Later #276 slices
 
-Deferred: yellow/green/checkered flags; checkered vs hero finish vs session end; unknown/tow/teleport outcomes; EN patterns + adversarial tests; shadow activation.
+Deferred: `SESSION_CHECKERED` vs hero finish vs session end separation; tow/teleport outcomes; EN patterns + adversarial tests; shadow activation.
 
 ## Docs / config
 
